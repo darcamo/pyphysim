@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# DICA: rode o flymake-mode
+"""Module docstring"""
+
+__version__ = "$Revision: $"
+# $Source$
 
 import math
 import sys
@@ -12,7 +15,7 @@ sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
 
 import modulators as mod
 from util.darlan import dB2Linear
-from util.progressbar import Progressbar
+from util.progressbar import ProgressbarText
 
 
 class SimulationRunner:
@@ -100,7 +103,7 @@ class SimulationRunner:
             if(use_progress_bar):
                 # If use_progress_bar is true, we create a progressbar and the
                 # function update_progress will update the bar
-                self.bar = Progressbar(self.limit_value, '*', message)
+                self.bar = ProgressbarText(self.limit_value, '*', message)
                 update_progress = lambda value: self.bar.progress(value)
             else:
                 # If use_progress_bar is false, the function update_progress

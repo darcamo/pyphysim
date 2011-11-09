@@ -10,6 +10,8 @@ can use
 and have access to all of these functions.
 
 """
+__version__ = "$Revision: $"
+# $Source$
 
 import math
 from numpy import unravel_index, prod

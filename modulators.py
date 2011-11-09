@@ -5,6 +5,10 @@
 # import struct
 # import binascii
 
+"""Module docstring"""
+
+__version__ = "$Revision: $"
+# $Source$
 
 import sys
 sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
