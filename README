@@ -2,4 +2,18 @@ See http://infinitemonkeycorps.net/docs/pph/#id9
 for info on how to create a python project
 
 
-Put README info here
+
+See http://infinitemonkeycorps.net/docs/pph/#unittesting
+for info on how to write doctests and unittests,
+how to write docummentation, and more.
+
+
+Put README info here. It should have
+ - Name, version, and release date of the package
+ - Brief description of the package
+ - Any dependencies or required versions of Python
+ - How to install the package (ideally just easy_install packagename)
+ - How to run the program(s), if your package contains scripts
+ - Package author and contact information
+ - Copyright and licensing terms
+ - Pointer to full documentation

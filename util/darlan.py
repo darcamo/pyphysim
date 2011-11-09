@@ -19,12 +19,16 @@ from numpy import unravel_index, prod
 import numpy as np
 
 
-# xxxxx mmat xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def mmat(x, format='%+.12e'):
     """Display the ndarray 'x' in a format suitable for pasting to MATLAB
 
     mmat - a function to format arrays of arbitrary dimension for easy copy
     and paste to an interactive matlab session
+
+    >>> a=np.arange(1,10)
+    >>> a.shape=(3,3)
+    >>> mmat(a)
+    [ +1.000000000000e+00 +2.000000000000e+00 +3.000000000000e+00 ;   +4.000000000000e+00 +5.000000000000e+00 +6.000000000000e+00 ;   +7.000000000000e+00 +8.000000000000e+00 +9.000000000000e+00 ]
     """
 
     def print_row(row, format):
@@ -76,27 +80,44 @@ def mmat(x, format='%+.12e'):
         for i in x.shape:
             print '%d' % i,
         print '])'
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# xxxxx randn_c - Start - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def randn_c(rows, cols):
-    """
+    """Generates a random circularly complex gaussian matrix.
 
     Arguments:
-    - `size`:
+    - `rows`: Number of rows for the random matrix
+    - `cols`: Number of columns for the random matrix
+
+    >>> a = randn_c(4,3)
+    >>> a.shape
+    (4, 3)
+    >>> a.dtype
+    dtype('complex128')
     """
-    return (1.0 / math.sqrt(2.0)) * np.random.randn(rows, cols) + (1j * np.random.randn(rows,cols))
-# xxxxx randn_c - End - xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    return (1.0 / math.sqrt(2.0)) * (
+        np.random.randn(rows, cols) + (1j * np.random.randn(rows, cols)))
 
 
-# xxxxx Conversion from dB to Linear and vice-versa xxxxxxxxxxxxxxxxxxxxxxx
 def dB2Linear(valueIndB):
-    """Convert input from dB to linear."""
+    """Convert input from dB to linear.
+
+    >>> dB2Linear(30)
+    1000.0
+    """
     return pow(10, valueIndB / 10.0)
 
 
 def linear2dB(valueInLinear):
-    """Convert input from linear to dB."""
+    """Convert input from linear to dB.
+
+    >>> linear2dB(1000)
+    30.0
+    """
     return 10.0 * np.log10(valueInLinear)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+if __name__ == '__main__':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()

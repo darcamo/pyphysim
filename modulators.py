@@ -12,7 +12,7 @@ __version__ = "$Revision: 5 $"
 
 import sys
 sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
-from darlan import *
+#from darlan import *
 
 import numpy as np
 import math

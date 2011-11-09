@@ -1,2 +1,5 @@
 
 Put license here
+
+See http://infinitemonkeycorps.net/docs/pph/#id9
+for tips

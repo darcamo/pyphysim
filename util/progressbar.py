@@ -16,6 +16,35 @@ __version__ = "$Revision: $"
 
 
 class ProgressbarText:
+    """Class that prints a representation of the current progress as
+    text.
+
+    You can set the final count for the progressbar, the character that
+    will be printed to represent progress and a small message indicating
+    what the progress is related to.
+
+    In order to use this class, create an object outsize a loop and inside
+    the loop call the `progress` function with the number corresponding to
+    the progress (between 0 and finalcount). Each time the `progress`
+    function is called a number of characters will be printed to show the
+    progress. Note that the number of printed characters correspond is
+    equivalent to the progress minus what was already printed.
+
+    Example:
+    >>> pb = ProgressbarText(100, 'o', "Hello Simulation")
+    <BLANKLINE>
+    ---------------- Hello Simulation ---------------1
+        1    2    3    4    5    6    7    8    9    0
+    ----0----0----0----0----0----0----0----0----0----0
+    >>> pb.progress(20)
+    oooooooooo
+    >>> pb.progress(40)
+    oooooooooo
+    >>> pb.progress(50)
+    ooooo
+    >>> pb.progress(100)
+    ooooooooooooooooooooooooo
+    """
     def __init__(self, finalcount, progresschar=None, message=''):
         import sys
         self.finalcount = finalcount
@@ -85,7 +114,8 @@ class ProgressbarText:
         self.blockcount = blockcount
         return
 
-if __name__ == "__main__":
+
+if __name__ == "__main__1":
     from time import sleep
     pb = ProgressbarText(8, "o")
     count = 0
@@ -105,3 +135,10 @@ if __name__ == "__main__":
     print "testing 1:"
     pb = ProgressbarText(1, '*', "Hello Simulation")
     pb.progress(1)
+
+    # lala
+    pb = ProgressbarText(100, 'o', "Hello Simulation")
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
