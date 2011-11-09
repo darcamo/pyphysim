@@ -1,0 +1,6 @@
+
+Put test scripts here.
+
+Note that some modules have doctests, but you should still create test
+scripts here to execute those doctests. See
+http://infinitemonkeycorps.net/docs/pph/#unittesting
