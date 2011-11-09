@@ -3,7 +3,7 @@
 
 """Module docstring"""
 
-__version__ = "$Revision: $"
+__version__ = "$Revision$"
 # $Source$
 
 import math
