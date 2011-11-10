@@ -34,6 +34,9 @@ def level2bits(n):
 
     Arguments:
     - `n`: Number of different levels.
+
+    >>> map(level2bits,range(1,20))
+    [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
     """
     return int2bits(n - 1)
 
@@ -43,6 +46,9 @@ def int2bits(n):
 
     Arguments:
     - `n`: An Ingerger number
+
+    >>> map(int2bits, range(0,19))
+    [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
     """
     assert n >= 0, "int2bits: Improper argument value"
     if n < 0:
@@ -69,6 +75,10 @@ def xor(a, b):
     - `a`: first number
     - `b`: second number
 
+    >>> xor(3,7)
+    4
+    >>> xor(15,6)
+    9
     """
     return (a).__xor__(b)
 
@@ -80,7 +90,10 @@ def binary2gray(num):
     (still in decimal format).
 
     Arguments:
-    - `num`:
+    - `num`: The number in decimal encoding
+
+    >>> binary2gray(np.arange(0,8))
+    array([0, 1, 3, 2, 6, 7, 5, 4])
     """
     return xor((num >> 1), num)
 
@@ -90,8 +103,10 @@ def gray2binary(num):
     value (in decimal format).
 
     Arguments:
-    - `num`:
+    - `num`: The number in gray coding
 
+    >>> gray2binary(binary2gray(np.arange(0,10)))
+    array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     """
     temp = xor(num, (num >> 8))
     temp = xor(temp, (temp >> 4))
@@ -105,7 +120,7 @@ def bitCount(n):
     """Count the number of bits that are set in an interger number.
 
     Arguments:
-    - `n`:
+    - `n`: The number
     """
     count = 0
     while n > 0:
@@ -114,6 +129,9 @@ def bitCount(n):
         n >>= 1
     return count
 
+# TODO: Because I convert bitCount to a ufunc, any doctest in bitCount is
+# lost. Figure it out how to include a doctest in a ufunc.
+#
 # Make bitCount an ufunc
 bitCount = np.frompyfunc(bitCount, 1, 1)
 
@@ -123,6 +141,13 @@ def qfunc(x):
 
     Arguments:
     - `x`:
+
+    >>> qfunc(0.0)
+    0.5
+    >>> round(qfunc(1.0), 9)
+    0.158655254
+    >>> round(qfunc(3.0), 9)
+    0.001349898
     """
     return 0.5 * erfc(x / math.sqrt(2))
 
@@ -469,7 +494,7 @@ def testGrayCodeConversion(maxNum=8):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     M = 4
     psk = PSK(M)
 
@@ -486,3 +511,9 @@ if __name__ == '__main__':
     # testGrayCodeConversion(16)
 
     qam = QAM(16)
+
+
+if __name__ == '__main__':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()
