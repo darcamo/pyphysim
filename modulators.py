@@ -158,7 +158,28 @@ def qfunc(x):
 # xxxxx Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Modulator:
-    """
+    """Base class for digital modulators.
+
+    The derived classes need to at least call setConstellation to set the
+    constellation in their constructors as well as implement
+    calcTheoreticalSER and calcTheoreticalBER.
+
+    >>> constellation = np.array([1+1j, -1+1j, -1-1j, 1-1j])
+    >>> m=Modulator()
+    >>> m.setConstellation(constellation)
+    >>> m.symbols
+    array([ 1.+1.j, -1.+1.j, -1.-1.j,  1.-1.j])
+    >>> m.M
+    4
+    >>> m
+    4-Modulator object
+    >>> m.modulate(np.array([0, 0, 3, 3, 1, 3, 3, 3, 2, 2]))
+    array([ 1.+1.j,  1.+1.j,  1.-1.j,  1.-1.j, -1.+1.j,  1.-1.j,  1.-1.j,
+            1.-1.j, -1.-1.j, -1.-1.j])
+
+    >>> m.demodulate(np.array([ 1.+1.j, 1.+1.j, 1.-1.j, 1.-1.j, -1.+1.j, \
+                                1.-1.j, 1.-1.j, 1.-1.j, -1.-1.j, -1.-1.j]))
+    array([0, 0, 3, 3, 1, 3, 3, 3, 2, 2])
     """
 
     def __init__(self):
@@ -227,12 +248,10 @@ class Modulator:
         - `receivedData`: Data to be demodulated
         """
         def getClosestSymbol(symb):
-            """
-            """
             closestSymbolIndex = abs(self.symbols - symb).argmin()
             return closestSymbolIndex
         getClosestSymbol = np.frompyfunc(getClosestSymbol, 1, 1)
-        return getClosestSymbol(receivedData)
+        return getClosestSymbol(receivedData).astype(int)
 
     def calcTheoreticalSER(self, snr):
         raise NotImplementedError("calcTheoreticalSER: Not implemented")

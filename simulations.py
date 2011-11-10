@@ -180,6 +180,7 @@ class SimulationRunner:
     # xxxxxxxxxx End of SimulationRunner class xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# TODO: Add doctests
 class SimulationResults():
     """This class is used in the SimulationRunner class in order to store
     results from each simulation. It is able to combine the results from
@@ -314,23 +315,65 @@ class Result():
     """Class to store a single simulation result.
 
     The simulation result can be anything, such as the number of errors, a
-    string, an error rate, etc. One caveat is that error rates a stored as
-    the number of errors and the total.
+    string, an error rate, etc. When creating a Result object one needs to
+    specify only the name of the stored result and the result type.
 
+    The diferent types indicate how the Result can be updated (combined
+    with other samples). The possible values are SUMTYPE, RATIOTYPE and
+    STRINGTYPE.
+
+    In the SUMTYPE the new value should be added to current one in update
+    function.
+
+    In the RATIOTYPE the new value should be added to current one and total
+    should be also updated in the update function. One caveat is that rates
+    are stored as a number (numerator) and a total (denominator) instead of
+    as a float.
+
+    In the STRINGTYPE the update should replace current the value, since it
+    is a string.
+
+    >>> result1 = Result("name", Result.SUMTYPE)
+    >>> result1.update(13)
+    >>> result1.update(4)
+    >>> result1.value
+    17
+    >>> result1.get_result()
+    17
+    >>> result1.num_updates
+    2
+    >>> result1
+    Result -> name: 17
+    >>> result1.get_type_name()
+    'SUMTYPE'
+    >>> result1.get_type()
+    0
+    >>> print result1
+    Result -> name: 17
+
+    >>> result2 = Result("name2", Result.RATIOTYPE)
+    >>> result2.update(4,10)
+    >>> result2.update(3,4)
+    >>> result2.get_result()
+    0.5
+    >>> result2.get_type_name()
+    'RATIOTYPE'
+    >>> result2.get_type()
+    1
+    >>> result2_other = Result("name2", Result.RATIOTYPE)
+    >>> result2_other.update(3,11)
+    >>> result2_other.merge(result2)
+    >>> result2_other.get_result()
+    0.4
+    >>> result2_other.num_updates
+    3
+    >>> result2_other.value
+    10
+    >>> result2_other.total
+    25
+    >>> print result2_other
+    Result -> name2: 10/25 -> 0.4
     """
-    # The diferent types indicate how the Result can be updated (combined
-    # with other samples). The possible values are SUMTYPE, RATIOTYPE and
-    # STRINGTYPE.
-    #
-    # In thr SUMTYPE the new value should be added to current one in update
-    # function.
-    #
-    # In the RATIOTYPE the new value should be added to current one and
-    # total should be also updated in the update function.
-    #
-    # In the STRINGTYPE the update should replace current the value, since
-    # it is a string.
-
     # Like an Enumeration for the type of results.
     (SUMTYPE, RATIOTYPE, STRINGTYPE, FLOATTYPE) = range(4)
     all_types = {
@@ -351,7 +394,13 @@ class Result():
                               # updated
 
     def __repr__(self):
-        return "Result -> {0}: {1}".format(self.name, self.get_result())
+        if self.__update_type == Result.RATIOTYPE:
+            v = self.value
+            t = self.total
+            return "Result -> {0}: {1}/{2} -> {3}".format(
+                self.name, v, t, float(v) / t)
+        else:
+            return "Result -> {0}: {1}".format(self.name, self.get_result())
 
     def update(self, value, total=0):
         """Update the current value.
@@ -439,15 +488,21 @@ class Result():
         else:
             if self.__update_type == Result.RATIOTYPE:
                 #assert self.total != 0, 'Total should not be zero'
-                return "%s/%s -> %s" % (self.value,
-                                        self.total,
-                                        float(self.value) / self.total)
+                return float(self.value) / self.total
             else:
                 return self.value
 
 
 def pretty_time(time_in_seconds):
-    """Return the time in a more friendly way."""
+    """Return the time in a more friendly way.
+
+    >>> pretty_time(30)
+    '30.00s'
+    >>> pretty_time(76)
+    '1m:16s'
+    >>> pretty_time(4343)
+    '1h:12m:23s'
+    """
     seconds = time_in_seconds
     minutes = int(seconds) / 60
     seconds = int(round(seconds % 60))
@@ -525,27 +580,6 @@ def simulate_one_psk(SNR, NSymbs=100, M=4):
     #return (symbolErrors, numSymbols, bitErrors, numBits)
     return simResults
 
-#
-# def simulate_psk():
-#     SNR = 5
-#     NSymbs = 200
-#     M = 4
-#     rep_max = 1000
-
-#     totalSymbolErrors = 0
-#     totalBitErrors = 0
-
-#     for rep in xrange(0,rep_max):
-#         (symbolErrors, numSymbols, bitErrors, numBits) =
-#         simulate_one_psk(SNR, NSymbs, M)
-#         totalSymbolErrors = totalSymbolErrors + symbolErrors
-#         totalBitErrors = totalBitErrors + bitErrors
-
-#     SER = totalSymbolErrors / float(rep_max*NSymbs)
-#     BER = totalBitErrors / float(rep_max * NSymbs * np.log2(M))
-
-#     print "SER = %f\n BER = %f" % (SER,BER)
-
 
 def simulate_psk_with_runner():
     NSymbs = int(100)
@@ -621,7 +655,7 @@ if __name__ == '__main__1':
     (simresults1, simresults2, simresults3) = test_results()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__2':
     (sim_results, simrunner) = simulate_psk_with_runner()
 
     # Calculates the error rates
@@ -629,3 +663,9 @@ if __name__ == '__main__':
     bit_errors = np.array(sim_results.get_result_values_list('bit_errors'))
     error_rate = bit_errors.astype(float) / num_bits
     print error_rate
+
+
+if __name__ == '__main__':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()
