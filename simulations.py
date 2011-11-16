@@ -130,11 +130,11 @@ class SimulationRunner:
         from time import time
         tic = time()
         func_args = list(self.func_args)
-        pack_size   = len(func_args[unpack])
+        pack_size = len(func_args[unpack])
         #errorrate   = np.zeros(pack_size, dtype=np.double)
-        self.rep    = np.zeros(pack_size, dtype=np.int)
+        self.rep = np.zeros(pack_size, dtype=np.int)
         self.errors = np.zeros(pack_size, dtype=np.int)
-        index       = 0
+        index = 0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         sim_results = SimulationResults()
@@ -182,11 +182,55 @@ class SimulationRunner:
 
 # TODO: Add doctests
 class SimulationResults():
-    """This class is used in the SimulationRunner class in order to store
+    """Store results from simulations.
+
+    This class is used in the SimulationRunner class in order to store
     results from each simulation. It is able to combine the results from
     multiple simulations.
-    """
 
+    >>> result1 = Result("lala", Result.SUMTYPE)
+    >>> result1.update(13)
+    >>> result2 = Result("lele", Result.RATIOTYPE)
+    >>> result2.update(3, 10)
+    >>> result2.update(8, 10)
+    >>> simresults = SimulationResults()
+    >>> simresults.add_result(result1)
+    >>> simresults.add_result(result2)
+    >>> simresults.get_result_names()
+    ['lele', 'lala']
+    >>> simresults
+    SimulationResults: ['lele', 'lala']
+
+    >>> result1_other = Result('lala', Result.SUMTYPE)
+    >>> result1_other.update(7)
+    >>> simresults.append_result(result1_other)
+    >>> simresults.get_result_values_list('lala')
+    [13, 7]
+    >>> simresults['lala']
+    [Result -> lala: 13, Result -> lala: 7]
+    >>> len(simresults)
+    2
+
+    >>> result3 = Result("lala", Result.SUMTYPE)
+    >>> result3.update(2)
+    >>> result4 = Result("lele", Result.RATIOTYPE)
+    >>> result4.update(1, 2)
+    >>> result4.update(3, 3)
+    >>> simresults2 = SimulationResults()
+    >>> simresults2.add_result(result3)
+    >>> simresults2.add_result(result4)
+    >>> simresults2.merge_all_results(simresults)
+    >>> simresults2['lala']
+    [Result -> lala: 9]
+    >>> simresults2['lele']
+    [Result -> lele: 15/25 -> 0.6]
+    >>> simresults3 = SimulationResults()
+    >>> simresults3.append_all_results(simresults)
+    >>> simresults3['lala']
+    [Result -> lala: 13, Result -> lala: 7]
+    >>> simresults3['lele']
+    [Result -> lele: 11/20 -> 0.55]
+    """
     def __init__(self):
         """
         """
@@ -646,7 +690,7 @@ def test_results():
     simresults2.merge_all_results(simresults)
 
     simresults3 = SimulationResults()
-    simresults3.append_all_results(simresults1)
+    simresults3.append_all_results(simresults)
 
     return (simresults, simresults2, simresults3)
 

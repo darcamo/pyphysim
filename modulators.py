@@ -302,7 +302,7 @@ class PSK(Modulator):
         imagPart[abs(imagPart) < 1e-15] = 0
         return realPart + 1j * imagPart
 
-    def setPhaseOffset(phaseOffset):
+    def setPhaseOffset(self, phaseOffset):
         """Set a new phase offset for the constellation
 
         Arguments:
