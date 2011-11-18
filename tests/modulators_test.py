@@ -12,7 +12,7 @@ import modulators
 
 
 class Test(unittest.TestCase):
-    """Unit tests for darlan."""
+    """Unit tests for modulators."""
 
     def test_modulators(self):
         """Run modulators doctests"""

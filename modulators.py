@@ -10,15 +10,11 @@
 __version__ = "$Revision: 5 $"
 # $Source$
 
-import sys
-sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
-#from darlan import *
-
 import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-from darlan import *
+from util.misc import *
 
 PI = np.pi
 
@@ -141,7 +137,7 @@ class PSK(Modulator):
         """
         Modulator.__init__(self)
         # Check if M is a power of 2
-        assert 2**math.log(M, 2) == M
+        assert 2 ** math.log(M, 2) == M
 
         # Generates the constellation
         symbols = self.___createConstellation(M, phaseOffset)
@@ -286,7 +282,7 @@ class QAM(Modulator):
         # Check if M is an even power of 2
         power = math.log(M, 2)
         assert power % 2 == 0, "M must be a square power of 2"
-        assert 2**power == M, "M must be a square power of 2"
+        assert 2 ** power == M, "M must be a square power of 2"
 
         symbols = self.__createConstellation(M)
 
@@ -360,11 +356,11 @@ class QAM(Modulator):
         rows = np.tile(row, (1, L))
         # Shift the first part by half the number of bits and sum with the
         # second part to form each element in the index matrix
-        index_matrix = (rows << (level2bits(L**2) / 2)) + columns
+        index_matrix = (rows << (level2bits(L ** 2) / 2)) + columns
 
         # Return the indexes as a vector (row order, which is the default
         # in numpy)
-        return np.reshape(index_matrix, L**2)
+        return np.reshape(index_matrix, L ** 2)
     #
     # TODO: Implement calcTheoreticalSER and calcTheoreticalBER for square
     # QAM systems

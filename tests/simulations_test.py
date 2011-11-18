@@ -12,7 +12,7 @@ import simulations
 
 
 class Test(unittest.TestCase):
-    """Unit tests for darlan."""
+    """Unit tests for misc."""
 
     def test_simulations(self):
         """Run simulations doctests"""

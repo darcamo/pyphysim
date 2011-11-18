@@ -7,14 +7,10 @@ __version__ = "$Revision: 5 $"
 # $Source$
 
 import math
-import sys
 import numpy as np
-# import copy
-#sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
-#sys.path.append("../")
 
 import modulators as mod
-from util.darlan import dB2Linear
+from util.conversion import dB2Linear
 from util.progressbar import ProgressbarText
 
 

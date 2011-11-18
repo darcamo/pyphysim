@@ -6,7 +6,7 @@ section.
 
 The folder with this module should be added to the python path, so that I
 can use
-    from darlan import *
+    from misc import *
 and have access to all of these functions.
 
 """

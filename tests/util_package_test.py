@@ -13,19 +13,19 @@ import sys
 
 sys.path.append("..")
 
-from util import darlan, progressbar
+from util import misc, progressbar
 
 
 class Test(unittest.TestCase):
-    """Unit tests for darlan."""
+    """Unit tests for misc."""
 
     def test_progressbar(self):
         """Run progressbar doctests"""
         doctest.testmod(progressbar)
 
-    def test_darlan(self):
-        """Run darlan doctests"""
-        doctest.testmod(darlan)
+    def test_misc(self):
+        """Run misc doctests"""
+        doctest.testmod(misc)
 
 if __name__ == "__main__":
     unittest.main()
