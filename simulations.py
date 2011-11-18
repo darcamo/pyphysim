@@ -10,7 +10,7 @@ import math
 import sys
 import numpy as np
 # import copy
-sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
+#sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
 #sys.path.append("../")
 
 import modulators as mod
@@ -232,8 +232,6 @@ class SimulationResults():
     [Result -> lele: 11/20 -> 0.55]
     """
     def __init__(self):
-        """
-        """
         self.__results = dict()
 
     def __repr__(self):
@@ -709,6 +707,7 @@ if __name__ == '__main__2':
     print error_rate
 
 
+# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     # When this module is run as a script the doctests are executed
     import doctest

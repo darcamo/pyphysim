@@ -67,7 +67,8 @@ class ProgressbarText:
         #
         # If the final count is zero, don't start the progress gauge
         #
-        if not self.finalcount : return
+        if not self.finalcount:
+            return
         if(len(message) != 0):
             messagesize = len(message)
             missfill = 50 - (messagesize + 2)
@@ -110,7 +111,8 @@ class ProgressbarText:
                 self.f.write(self.block)
                 self.f.flush()
 
-        if percentcomplete == 100: self.f.write("\n")
+        if percentcomplete == 100:
+            self.f.write("\n")
         self.blockcount = blockcount
         return
 
@@ -139,6 +141,8 @@ if __name__ == "__main__1":
     # lala
     pb = ProgressbarText(100, 'o', "Hello Simulation")
 
+
+# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

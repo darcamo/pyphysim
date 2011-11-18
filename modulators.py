@@ -17,141 +17,10 @@ sys.path.append("/home/darlan/cvs_files/Python_Funcs/")
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-#import matplotlib.patches as patches
 
-from scipy.special import erfc
-#import math.erf
-# erf tb pode ser encontrada la biblioteca scipy.special
-# erf tb pode ser encontrada la biblioteca math  -> python 2.7 ou superior
-# erf tb pode ser encontrada la biblioteca mpmath
+from darlan import *
 
 PI = np.pi
-
-
-# xxxxx Misc Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def level2bits(n):
-    """Calculates the number of needed to represent n different values.
-
-    Arguments:
-    - `n`: Number of different levels.
-
-    >>> map(level2bits,range(1,20))
-    [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
-    """
-    return int2bits(n - 1)
-
-
-def int2bits(n):
-    """Calculates the number of bits needed to represent an interger n.
-
-    Arguments:
-    - `n`: An Ingerger number
-
-    >>> map(int2bits, range(0,19))
-    [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
-    """
-    assert n >= 0, "int2bits: Improper argument value"
-    if n < 0:
-        raise Exception("int2bits: n must be greater then zero")
-
-    if n == 0:
-        return 1
-
-    bits = 0
-    while n:
-        n >>= 1
-        bits += 1
-    return bits
-
-
-def xor(a, b):
-    """Calculates the xor operation between a and b.
-
-    In python this is performed with a^b. However, sage changed the "^"
-    operator. This xor function was created so that it can be used in
-    either sage or in regular python.
-
-    Arguments:
-    - `a`: first number
-    - `b`: second number
-
-    >>> xor(3,7)
-    4
-    >>> xor(15,6)
-    9
-    """
-    return (a).__xor__(b)
-
-
-# Code from wikipedia
-# http://en.wikipedia.org/wiki/Gray_code#Constructing_an_n-bit_Gray_code
-def binary2gray(num):
-    """Convert a number (in decimal format) to the corresponding Gray code
-    (still in decimal format).
-
-    Arguments:
-    - `num`: The number in decimal encoding
-
-    >>> binary2gray(np.arange(0,8))
-    array([0, 1, 3, 2, 6, 7, 5, 4])
-    """
-    return xor((num >> 1), num)
-
-
-def gray2binary(num):
-    """Convert a number in Gray code (in decimal format) to its original
-    value (in decimal format).
-
-    Arguments:
-    - `num`: The number in gray coding
-
-    >>> gray2binary(binary2gray(np.arange(0,10)))
-    array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-    """
-    temp = xor(num, (num >> 8))
-    temp = xor(temp, (temp >> 4))
-    temp = xor(temp, (temp >> 2))
-    temp = xor(temp, (temp >> 1))
-
-    return temp
-
-
-def bitCount(n):
-    """Count the number of bits that are set in an interger number.
-
-    Arguments:
-    - `n`: The number
-    """
-    count = 0
-    while n > 0:
-        if n & 1 == 1:
-            count += 1
-        n >>= 1
-    return count
-
-# TODO: Because I convert bitCount to a ufunc, any doctest in bitCount is
-# lost. Figure it out how to include a doctest in a ufunc.
-#
-# Make bitCount an ufunc
-bitCount = np.frompyfunc(bitCount, 1, 1)
-
-
-def qfunc(x):
-    """Calculates the qfunction of x.
-
-    Arguments:
-    - `x`:
-
-    >>> qfunc(0.0)
-    0.5
-    >>> round(qfunc(1.0), 9)
-    0.158655254
-    >>> round(qfunc(3.0), 9)
-    0.001349898
-    """
-    return 0.5 * erfc(x / math.sqrt(2))
-
-# xxxxx End of misc functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -532,6 +401,7 @@ if __name__ == '__main__1':
     qam = QAM(16)
 
 
+# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     # When this module is run as a script the doctests are executed
     import doctest
