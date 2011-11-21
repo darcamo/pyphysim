@@ -117,31 +117,6 @@ class ProgressbarText:
         return
 
 
-if __name__ == "__main__1":
-    from time import sleep
-    pb = ProgressbarText(8, "o")
-    count = 0
-    while count < 9:
-        count += 1
-        pb.progress(count)
-        sleep(0.2)
-
-    pb = ProgressbarText(100)
-    pb.progress(20)
-    sleep(0.2)
-    pb.progress(47)
-    sleep(0.2)
-    pb.progress(90)
-    sleep(0.2)
-    pb.progress(100)
-    print "testing 1:"
-    pb = ProgressbarText(1, '*', "Hello Simulation")
-    pb.progress(1)
-
-    # lala
-    pb = ProgressbarText(100, 'o', "Hello Simulation")
-
-
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     import doctest

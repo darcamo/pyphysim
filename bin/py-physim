@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
 cd ../
-python simulations.py
+python util/simulations.py

@@ -5,5 +5,8 @@
 # Bring functions in misc to the util's namespace
 from misc import *
 
+# Bring functions in conversion to the util's namespace
+from conversion import *
+
 # Bring ProgressbarText to the util namespace
 from progressbar import ProgressbarText

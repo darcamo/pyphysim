@@ -2,7 +2,7 @@
 
 
 * progressbar.py
-* darlan.py
+* misc.py
   Várias funções simples em Python que são úteis para mim.
 
   A ideia é que eu adicione essa pasta no path do Python para ter essas
@@ -25,6 +25,7 @@
     sys.path.append("pasta")
   #+end_src
 
+* conversion.py
 
 * Footnotes
 
