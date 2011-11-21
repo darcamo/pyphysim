@@ -9,7 +9,6 @@ __version__ = "$Revision: 5 $"
 import math
 import numpy as np
 
-import modulators as mod
 from util.conversion import dB2Linear
 from util.progressbar import ProgressbarText
 
@@ -165,14 +164,14 @@ class SimulationRunner:
         toc = time()
         self.__elapsed_time = toc - tic
         print "\nxxxxxxxxxxxxxxx End of Simulation xxxxxxxxxxxxxxxx\n"
-        print "Elapsed Time: %s" % pretty_time(self.__elapsed_time)
+        print "Elapsed Time: %s" % _pretty_time(self.__elapsed_time)
         # Return the errorrate
         #return errorrate
         return sim_results
 
     def elapsed_time(self):
         """property: Get the simulation elapsed time. Do not set this value."""
-        return pretty_time(self.__elapsed_time)
+        return _pretty_time(self.__elapsed_time)
     # xxxxxxxxxx End of SimulationRunner class xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -531,14 +530,14 @@ class Result():
                 return self.value
 
 
-def pretty_time(time_in_seconds):
+def _pretty_time(time_in_seconds):
     """Return the time in a more friendly way.
 
-    >>> pretty_time(30)
+    >>> _pretty_time(30)
     '30.00s'
-    >>> pretty_time(76)
+    >>> _pretty_time(76)
     '1m:16s'
-    >>> pretty_time(4343)
+    >>> _pretty_time(4343)
     '1h:12m:23s'
     """
     seconds = time_in_seconds
@@ -705,6 +704,15 @@ if __name__ == '__main__2':
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
+    import os
+    import sys
+    cmd_folder = os.path.dirname(os.path.abspath(__file__))
+    if cmd_folder not in sys.path:
+        # Add the parent folder to the beggining of the path
+        sys.path.insert(0, cmd_folder)
+
+    import comm.modulators as mod
+
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
