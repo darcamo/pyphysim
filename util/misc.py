@@ -22,6 +22,31 @@ from scipy.special import erfc
 # erf tb pode ser encontrada la biblioteca mpmath
 
 
+def pretty_time(time_in_seconds):
+    """Return the time in a more friendly way.
+
+    >>> pretty_time(30)
+    '30.00s'
+    >>> pretty_time(76)
+    '1m:16s'
+    >>> pretty_time(4343)
+    '1h:12m:23s'
+    """
+    seconds = time_in_seconds
+    minutes = int(seconds) / 60
+    seconds = int(round(seconds % 60))
+
+    hours = minutes / 60
+    minutes = minutes % 60
+
+    if(hours > 0):
+        return "%sh:%sm:%ss" % (hours, minutes, seconds)
+    elif(minutes > 0):
+        return "%sm:%ss" % (minutes, seconds)
+    else:
+        return "%.2fs" % time_in_seconds
+
+
 def mmat(x, format='%+.12e'):
     """Display the ndarray 'x' in a format suitable for pasting to MATLAB
 
@@ -193,6 +218,58 @@ def qfunc(x):
     0.001349898
     """
     return 0.5 * erfc(x / math.sqrt(2))
+
+
+def least_right_singular_vectors(A, n):
+    """Return the two matrices. The first one is formed by the `n` least
+    significative right singular vectors of `A`, while the second one is
+    formed by the remaining right singular vectors.
+
+    Arguments:
+    - `A`: A matrix (numpy array)
+    - `n`: An interger between 0 and the number of columns of `A`
+
+    Return:
+    - `V0`: The right singular vectors corresponding to the `n` least
+            significant singular values
+    - `V1`: The remaining right singular vectors
+
+    NOTE: Because of the sort operation, if you call
+    least_right_singular_vectors(A,ncols_of_A) you will get the all the
+    right singular vectors of A with the column order reversed.
+
+    >>> A = np.array([1,2,3,6,5,4,2,2,1])
+    >>> A.shape = (3,3)
+    >>> (min_Vs, remaining_Vs) = least_right_singular_vectors(A,1)
+    >>> min_Vs
+    array([[-0.4474985 ],
+           [ 0.81116484],
+           [-0.3765059 ]])
+    >>> remaining_Vs
+    array([[-0.62341491, -0.64116998],
+           [ 0.01889071, -0.5845124 ],
+           [ 0.78166296, -0.49723869]])
+    """
+    # Note that numpy.linalg.svd returns the hermitian of V
+    [U, S, V_H] = np.linalg.svd(A, full_matrices=True)
+
+    V = V_H.conjugate().transpose()
+
+    # Index in crescent order of the singular values
+
+    # Since the SVD gives the values in decrescent order, we just need to
+    # reverse the order instead of performing a full sort
+    sort_indexes = [i for i in reversed(range(0, V.shape[0]))]
+    #sort_indexes = S.argsort()
+
+    # The `n` columns corresponding to the least significtive singular
+    # values
+    V0 = V[:, sort_indexes[0:n]]
+
+    (nrows, ncols) = V.shape
+    V1 = V[:, sort_indexes[n:]]
+
+    return (V0, V1, S[sort_indexes[n:]])
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

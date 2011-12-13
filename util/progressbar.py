@@ -1,4 +1,5 @@
-# CLASS NAME: DLLInterface
+# http://code.activestate.com/recipes/299207-console-text-progress-indicator-class/
+# CLASS NAME: ProgressbarText
 #
 # Author: Larry Bates (lbates@syscononline.com)
 #
@@ -6,13 +7,21 @@
 #
 # Modified by Darlan Cavalcante Moreira in 10/18/2011
 # Released under: GNU GENERAL PUBLIC LICENSE
-#
-#
 
 """Module docstring"""
 
 __version__ = "$Revision: $"
 # $Source$
+
+
+class DummyProgressbar():
+    """Dummy progress bar that don't really do anything."""
+
+    def __init__(self, ):
+        pass
+
+    def progress(self, count):
+        pass
 
 
 class ProgressbarText:
@@ -45,20 +54,11 @@ class ProgressbarText:
     >>> pb.progress(100)
     ooooooooooooooooooooooooo
     """
-    def __init__(self, finalcount, progresschar=None, message=''):
+    def __init__(self, finalcount, progresschar='*', message=''):
         import sys
         self.finalcount = finalcount
         self.blockcount = 0
-        #
-        # See if caller passed me a character to use on the
-        # progress bar (like "*").  If not use the block
-        # character that makes it look like a real progress
-        # bar.
-        #
-        if not progresschar:
-            self.block = "*"
-        else:
-            self.block = progresschar
+        self.block = progresschar
         #
         # Get pointer to sys.stdout so I can use the write/flush
         # methods to display the progress bar.
@@ -70,13 +70,7 @@ class ProgressbarText:
         if not self.finalcount:
             return
         if(len(message) != 0):
-            messagesize = len(message)
-            missfill = 50 - (messagesize + 2)
-            left = missfill / 2
-            right = 50 - left - (messagesize + 3)
-            bartitle = "\n%s%s%s1\n" % ('-' * left,
-                                        ' %s ' % message,
-                                        "-" * right)
+            bartitle = '\n{0}\n'.format(center_message(message, 50, '-', '', '1'))
         else:
             bartitle = '\n------------------ % Progress -------------------1\n'
 
@@ -84,9 +78,6 @@ class ProgressbarText:
         self.f.write('    1    2    3    4    5    6    7    8    9    0\n')
         self.f.write('----0----0----0----0----0----0----0----0----0----0\n')
         return
-
-    def set_message(self, message):
-        pass
 
     def progress(self, count):
         #
@@ -103,9 +94,7 @@ class ProgressbarText:
         else:
             percentcomplete = 100
 
-        #print "percentcomplete=",percentcomplete
         blockcount = int(percentcomplete / 2)
-        #print "blockcount=",blockcount
         if blockcount > self.blockcount:
             for i in range(self.blockcount, blockcount):
                 self.f.write(self.block)
@@ -115,6 +104,35 @@ class ProgressbarText:
             self.f.write("\n")
         self.blockcount = blockcount
         return
+
+
+def center_message(message, length=50, fill_char=' ', left='', right=''):
+    """Return a string with `message` centralized and surrounded by
+    fill_char.
+
+    Arguments:
+    - `message`: The message to be centered
+    - `length`: Total length of the centered message (original + any fill)
+    - `fill_char`:
+    - `left`:
+    - `right`:
+
+    >>> print center_message("Hello Progress", 50, '-', 'Left', 'Right')
+    Left------------- Hello Progress ------------Right
+    """
+    message_size = len(message)
+    left_size = len(left)
+    right_size = len(right)
+    fill_size = (length - (message_size + 2) - left_size - right_size)
+    left_fill_size = fill_size // 2 + (fill_size % 2)
+    right_fill_size = (fill_size // 2)
+
+    new_message = "{0}{1} {2} {3}{4}".format(left,
+                                           fill_char * left_fill_size,
+                                           message,
+                                           fill_char * right_fill_size,
+                                           right)
+    return new_message
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

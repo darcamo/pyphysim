@@ -6,10 +6,9 @@
 __version__ = "$Revision: 5 $"
 # $Source$
 
-import math
 import numpy as np
+from misc import pretty_time
 
-from util.conversion import dB2Linear
 from util.progressbar import ProgressbarText
 
 
@@ -65,9 +64,9 @@ class SimulationRunner:
         self.func_args = func_args
 
         # Internal counter for the elapsed time since the simulate function
-        # started. __elapsed_time is reseted to zero if simulate is called
+        # started. _elapsed_time is reseted to zero if simulate is called
         # again.
-        self.__elapsed_time = 0.0
+        self._elapsed_time = 0.0
 
     def simulate(self, unpack, use_progress_bar=False):
         """
@@ -106,7 +105,7 @@ class SimulationRunner:
                 update_progress = lambda value: None
             return update_progress
         # Reset the elapsed time and the number of repetitions
-        self.__elapsed_time = 0.0
+        self._elapsed_time = 0.0
 
         # xxxxx Defines the keep_going function xxxxxxxxxxxxxxxxxxxxxxxxxxx
         def keep_going(simulation_results):
@@ -162,16 +161,16 @@ class SimulationRunner:
             index += 1
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         toc = time()
-        self.__elapsed_time = toc - tic
+        self._elapsed_time = toc - tic
         print "\nxxxxxxxxxxxxxxx End of Simulation xxxxxxxxxxxxxxxx\n"
-        print "Elapsed Time: %s" % _pretty_time(self.__elapsed_time)
+        print "Elapsed Time: %s" % pretty_time(self._elapsed_time)
         # Return the errorrate
         #return errorrate
         return sim_results
 
     def elapsed_time(self):
         """property: Get the simulation elapsed time. Do not set this value."""
-        return _pretty_time(self.__elapsed_time)
+        return pretty_time(self._elapsed_time)
     # xxxxxxxxxx End of SimulationRunner class xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -530,178 +529,6 @@ class Result():
                 return self.value
 
 
-def _pretty_time(time_in_seconds):
-    """Return the time in a more friendly way.
-
-    >>> _pretty_time(30)
-    '30.00s'
-    >>> _pretty_time(76)
-    '1m:16s'
-    >>> _pretty_time(4343)
-    '1h:12m:23s'
-    """
-    seconds = time_in_seconds
-    minutes = int(seconds) / 60
-    seconds = int(round(seconds % 60))
-
-    hours = minutes / 60
-    minutes = minutes % 60
-
-    if(hours > 0):
-        return "%sh:%sm:%ss" % (hours, minutes, seconds)
-    elif(minutes > 0):
-        return "%sm:%ss" % (minutes, seconds)
-    else:
-        return "%.2fs" % time_in_seconds
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxx Simulate functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def simulate_one_psk(SNR, NSymbs=100, M=4):
-    """ Simulates one iteration of a PSK scheme"""
-    # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    inputData = np.random.randint(0, M, NSymbs)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    psk = mod.PSK(M)
-    modulatedData = psk.modulate(inputData)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    noiseVar = 1 / dB2Linear(SNR)
-    noise = ((np.random.randn(NSymbs) + 1j * np.random.randn(NSymbs)) *
-             math.sqrt(noiseVar / 2))
-    receivedData = modulatedData + noise
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Demodulate received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    demodulatedData = psk.demodulate(receivedData)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxxxxxx
-    symbolErrors = sum(inputData != demodulatedData)
-    aux = mod.xor(inputData, demodulatedData)
-    # Count the number of bits in aux
-    bitErrors = sum(mod.bitCount(aux))
-    numSymbols = inputData.size
-    numBits = inputData.size * mod.level2bits(M)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # Essa parte abaixo por enquanto é ignorada
-    # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    symbolErrorsResult = Result("symbol_errors", Result.SUMTYPE)
-    symbolErrorsResult.update(symbolErrors)
-    numSymbolsResult = Result("num_symbols", Result.SUMTYPE)
-    numSymbolsResult.update(numSymbols)
-    bitErrorsResult = Result("bit_errors", Result.SUMTYPE)
-    bitErrorsResult.update(bitErrors)
-    numBitsResult = Result("num_bits", Result.SUMTYPE)
-    numBitsResult.update(numBits)
-
-    berResult = Result("ber", Result.RATIOTYPE)
-    berResult.update(bitErrors, numBits)
-    serResult = Result("ser", Result.RATIOTYPE)
-    berResult.update(symbolErrors, numSymbols)
-
-    simResults = SimulationResults()
-    simResults.add_result(symbolErrorsResult)
-    simResults.add_result(numSymbolsResult)
-    simResults.add_result(bitErrorsResult)
-    simResults.add_result(numBitsResult)
-
-    simResults.add_result(berResult)
-    simResults.add_result(serResult)
-
-    #return (symbolErrors, numSymbols, bitErrors, numBits)
-    return simResults
-
-
-def simulate_psk_with_runner():
-    NSymbs = int(100)
-    M = 4
-    SNR = np.array([0, 3, 5])
-    max_errors = 10000
-    rep_max = 10000
-
-    runner = SimulationRunner('bit_errors',
-                              max_errors,
-                              rep_max,
-                              simulate_one_psk,
-                              (SNR, NSymbs, M))
-    errorrate = runner.simulate(0, True)
-
-    # Calculates the theoretical BER
-    psk = mod.PSK(M)
-    theoretical_ber = psk.calcTheoreticalBER(dB2Linear(SNR))
-    print theoretical_ber
-
-    return (errorrate, runner)
-
-
-def calcTheorecticalPSKBitErrorRate():
-    SNRs = np.arange(-2, 11, 2)
-    psk = mod.PSK(4)
-    SER = psk.calcTheoreticalSER(dB2Linear(SNRs))
-    print "BER"
-    print SER
-    BER = psk.calcTheoreticalBER(dB2Linear(SNRs))
-    print "BER"
-    print BER
-
-
-def test_results():
-    result1 = Result("lala", Result.SUMTYPE)
-    result1.update(13)
-
-    result2 = Result("lele", Result.RATIOTYPE)
-    result2.update(3, 10)
-    result2.update(8, 10)
-
-    simresults = SimulationResults()
-    simresults.add_result(result1)
-    #simresults.add_result(result1)
-    simresults.add_result(result2)
-
-    result1_other = Result('lala', Result.SUMTYPE)
-    result1_other.update(7)
-    simresults.append_result(result1_other)
-    #print simresults['lala']
-
-    result3 = Result("lala", Result.SUMTYPE)
-    result3.update(2)
-
-    result4 = Result("lele", Result.RATIOTYPE)
-    result4.update(1, 2)
-    result4.update(3, 3)
-
-    simresults2 = SimulationResults()
-    simresults2.add_result(result3)
-    simresults2.add_result(result4)
-
-    simresults2.merge_all_results(simresults)
-
-    simresults3 = SimulationResults()
-    simresults3.append_all_results(simresults)
-
-    return (simresults, simresults2, simresults3)
-
-
-if __name__ == '__main__1':
-    (simresults1, simresults2, simresults3) = test_results()
-
-
-if __name__ == '__main__2':
-    (sim_results, simrunner) = simulate_psk_with_runner()
-
-    # Calculates the error rates
-    num_bits = np.array(sim_results.get_result_values_list('num_bits'))
-    bit_errors = np.array(sim_results.get_result_values_list('bit_errors'))
-    error_rate = bit_errors.astype(float) / num_bits
-    print error_rate
-
-
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     import os
@@ -711,8 +538,7 @@ if __name__ == '__main__':
         # Add the parent folder to the beggining of the path
         sys.path.insert(0, cmd_folder)
 
-    import comm.modulators as mod
-
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
