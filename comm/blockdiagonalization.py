@@ -64,7 +64,8 @@ class BlockDiaginalizer():
         Return:
         - newH: Block diagonalized channel
         - Ms_good: Precoding matrix used to block diagonalize the channel
-        - vtOptP: Power that was allocated to each channel
+        - vtOptP: Power that was allocated to each channel (before
+                  normalization of the power per AP)
         """
         (iNr, iNt) = mtChannel.shape
         assert iNr % self.iNUsers == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
@@ -141,7 +142,10 @@ class BlockDiaginalizer():
             cur_sqrt_P = np.linalg.norm(user_matrix, 'fro')
             if cur_sqrt_P > max_sqrt_P:
                 max_sqrt_P = cur_sqrt_P
-        Ms_good = Ms_good / max_sqrt_P
+
+        # Normalize the power of the AP with highest transmitted power to
+        # be equal to self.iPu
+        Ms_good = Ms_good * np.sqrt(self.iPu) / max_sqrt_P
 
         # Finally calculates the Block diagonal channel
         newH = np.dot(mtChannel, Ms_good)
@@ -149,8 +153,8 @@ class BlockDiaginalizer():
         # Return block diagonalized channel, the used precoding matrix, and
         # the power allocated to each parallel channel.
         #
-        # TODO: Normalize also vtOptP so that it corresponds to the power
-        # allocated after the power normalization
+        # Note: The power values in vtOptP are before any power
+        # normalization. Maybe vtOptP is not useful to be returned.
         return (newH, Ms_good, vtOptP)
 
     def _get_tilde_channel(self, mtChannel, user):
@@ -215,13 +219,18 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None
 
 
 if __name__ == '__main__':
+    # Power available for each user
+    Pu = 5
+    noise_var = 0.1
+    NUsers = 3
+
     channel = randn_c(6, 6)
     # channel = np.arange(0,36)
     # channel.shape = (6,6)
 
     #BD = BlockDiaginalizer(3, 3, 0.1)
     #(newH, Ms, vtOptP) = BD.block_diagonalize(channel)
-    (newH, Ms, vtOptP) = block_diagonalize(channel, 3, 3, 0.1)
+    (newH, Ms, vtOptP) = block_diagonalize(channel, NUsers, Pu, noise_var)
 
     np.set_printoptions(precision=2, suppress=True)
     print newH
