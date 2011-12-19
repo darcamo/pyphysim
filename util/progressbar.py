@@ -165,13 +165,20 @@ class ProgressbarMultiProcessText:
         self._sleep_time = sleep_time
         self._last_id = -1
 
-        # Process responsible to ubdate the progressbar. It will be started
-        # by the start_updater method
+        # Process responsible to update the progressbar. It will be started
+        # by the start_updater method and it may be finished anytime by
+        # calling the finish_updater function. Also, it is set as a daemon
+        # process so that we don't get errors if the program closes before
+        # the process updating the progressbar ends (because the user
+        # forgot to call the finish_updater method).
         self._update_process = multiprocessing.Process(target=self._update_progress)
+        self._update_process.daemon = True
 
-        # # This will be set to false by the finish_updater method so that
-        # # the process updating the progress bar stops
-        # self._updating = True
+        # The event will be set when the process updating the progressbar
+        # is running and unset (clear) when it is stopped.
+        self.running = multiprocessing.Event()  # Starts unset. Is is set
+                                                # in the _update_progress
+                                                # function
 
     def register_object(self, object, total_count):
         """Register an object as a "producer" whose progress will be
@@ -216,11 +223,20 @@ class ProgressbarMultiProcessText:
 
     def _update_progress(self):
         bar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
+        self.running.set()
         count = 0
-        while count < self._total_final_count:
+        while count < self._total_final_count and self.running.is_set():
             time.sleep(self._sleep_time)
             count = sum(self._process_data_list)
             bar.progress(count)
+
+        # It may exit the while loop in two situations: if count reached
+        # the maximum allowed value, in which case the progressbar is full,
+        # or if the self.running event was cleared in another
+        # process. Since in the first case the event is still set, we clear
+        # it here to have some consistence (a cleared event will always
+        # mean that the progressbar is not running).
+        self.running.clear()
 
     def start_updater(self):
         """Start the process that updates the progressbar.
@@ -235,12 +251,13 @@ class ProgressbarMultiProcessText:
 
     def finish_updater(self, ):
         """Stop the process updating the progressbar.
-        """
-        # TODO: Send an event to the process updaing the progressbar
-        # indicating that it should stop, even if the total count was not
-        # reached yet.
 
-        #self._updating = False
+        You should always call this function in your main process (the same
+        that created the progressbar) after joining all the processes that
+        update the progressbar. This guarantees that the progressbar
+        updated any pending change and exited clearly.
+        """
+        self.running.clear()
         self._update_process.join()
 
 
