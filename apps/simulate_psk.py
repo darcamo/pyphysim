@@ -28,10 +28,7 @@ class SimulationParameters():
     parameters. To add a new parameter to the object just call the `add`
     method passing the name and the value of the parameter. The value can
     be anything as long as the _run_simulation function can understand it.
-
-
     """
-
     def __init__(self):
         """
         """
@@ -314,7 +311,6 @@ class SimulationRunner2():
         print "Resultados:"
         print self.results
 
-
     def get_elapsed_time(self):
         """property: Get the simulation elapsed time. Do not set this
         value."""
@@ -445,10 +441,13 @@ if __name__ == '__main__':
 
     psk_runner = PskSimulationRunner(1000)
     psk_runner.simulate()
-    print psk_runner.results[0]['ser']
-    print psk_runner.results[1]['ser']
+    print psk_runner.results[0]['ber']
+    print psk_runner.results[1]['ber']
     for i in psk_runner._runned_reps:
         print i
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

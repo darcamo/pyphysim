@@ -5,31 +5,10 @@
 
 import numpy as np
 import collections
-from scipy.linalg import block_diag
+#from scipy.linalg import block_diag
 
 from misc import least_right_singular_vectors, randn_c
 import waterfilling
-
-# xxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Imports should be grouped in the following order:
-
-#       1. standard library imports
-#       2. related third party imports
-#       3. local application/library specific imports
-
-#       You should put a blank line between each group of imports.
-
-# xxxxx Constants xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# xxxxx Exception Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# xxxxx Interface Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# xxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# xxxxx Internal Functions & Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# xxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class BlockDiaginalizer():
@@ -114,7 +93,8 @@ class BlockDiaginalizer():
 
         # Concatenates the precoder for each user to form the complete Ms
         # matrix. Ms_bad is the version without waterfilling.
-        Ms_bad = np.concatenate(Ms_bad, axis=1)
+        # This is equivalent to "concatenate(Ms_bad, axis=1)"
+        Ms_bad = np.hstack(Ms_bad)
         Sigma = np.array(Sigma)
 
         # Perform water-filling for the parallel channel gains in Sigma
@@ -176,7 +156,7 @@ class BlockDiaginalizer():
         Channel for 3 receivers, each with 2 receive antennas, where the
         transmitter has 6 transmit antennas.
         >>> BD = BlockDiaginalizer(3, 0, 0)
-        >>> channel = np.concatenate([np.ones([2, 6]), 2 * np.ones([2, 6]), 3 * np.ones([2, 6])], axis=0)
+        >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]), 3 * np.ones([2, 6])])
         >>> BD._getSubChannel(channel, [0,2])
         array([[ 1.,  1.,  1.,  1.,  1.,  1.],
                [ 1.,  1.,  1.,  1.,  1.,  1.],
@@ -218,7 +198,7 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None
     return results_tuble
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     # Power available for each user
     Pu = 5
     noise_var = 0.1
@@ -241,8 +221,8 @@ if __name__ == '__main__':
     #np.set_printoptions(precision=2, suppress=True)
 
 
-# # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# if __name__ == '__main__':
-#     # When this module is run as a script the doctests are executed
-#     import doctest
-#     doctest.testmod()
+# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()
