@@ -14,6 +14,8 @@ __version__ = "$Revision: $"
 # $Source$
 
 import multiprocessing
+import time
+
 
 class DummyProgressbar():
     """Dummy progress bar that don't really do anything."""
@@ -121,23 +123,24 @@ class ProgressbarText:
             self.f.write("\n")
 
 
+# TODO: Finish the implementation
 class ProgressbarMultiProcessText:
-    """Similar to the ProgressbarText class, but the bar measures the
+    """Class that prints a representation of the current progress of
+    multiple process as text.
+
+    Similar to the ProgressbarText class, but the bar measures the
     progress of several process as a whole.
 
-    For this to work, each process needs to put the progress into a
-    multiprocessing.Queue, passed to the ProgressbarMultiProcessText during
-    object creation.
+
 
     Ex:
     TODO: Write an example here
     """
 
     def __init__(self,
-                 progress_queue,
-                 total_final_count,
                  progresschar='*',
-                 message=''):
+                 message='',
+                 sleep_time=1):
         """
         Arguments:
         - `progress_queue`: Queue where the multiple processes will put
@@ -148,52 +151,97 @@ class ProgressbarMultiProcessText:
         - `total_final_count`: Total count of all progress.
         - `progresschar`: Character used in the progressbar.
         - `message`: Message writen in the progressbar
+        - `sleep_time`: Time between progressbar updates
         """
-        self.total_final_count = total_final_count
-        self.progresschar = progresschar
-        self.message = message
-        self.progress_queue = progress_queue
+        # total_final_count will be updated each time the register_*
+        # function is called
+        self._total_final_count = 0
+        self._progresschar = progresschar
+        self._message = message
+
+        self._manager = multiprocessing.Manager()
+        self._process_data_list = self._manager.list()
+
+        self._sleep_time = sleep_time
+        self._last_id = -1
+
+        # Process responsible to ubdate the progressbar. It will be started
+        # by the start_updater method
+        self._update_process = multiprocessing.Process(target=self._update_progress)
+
+        # # This will be set to false by the finish_updater method so that
+        # # the process updating the progress bar stops
+        # self._updating = True
+
+    def register_object(self, object, total_count):
+        """Register an object as a "producer" whose progress will be
+        measured.
+
+        Effectively this will an "process_id" and a "process_data_list"
+        parameters to the object. The object method that runs in another
+        process must update the element process_data_list[process_id]` with
+        the current (progress) count.
+
+        Arguments:
+        - `object`:
+        - `total_count`: Total count that will be equivalent to 100% for
+                         `object`.
+        """
+        NotImplemented("Implement-me")
+
+    def register_function(self, total_count):
+        """Return the `process_id` and a "process_data_list". These must be
+        passed as arguments to the function that will run in another
+        process.
+
+        Arguments:
+        - `total_count`: Total count that will be equivalent to 100% for
+                         function.
+        """
+        # update self._total_final_count
+        self._total_final_count += total_count
+
+        # Update the last_id
+        self._last_id += 1
+
+        # process_id that will be used by the function
+        process_id = self._last_id
+
+        self._process_data_list.append(0)
+        return (process_id, self._process_data_list)
 
     def progress(self):
         """This function should not be called."""
         print "ProgressbarMultiProcessText.progress: This function should not be called"
 
     def _update_progress(self):
-        """This function runs in a diferenc process, which is created by start_updater
-        """
-        bar = ProgressbarText(self.total_final_count, self.progresschar, self.message)
-        simulating = True
-        while simulating:
-            if self.progress_queue.empty() == False:
-                value = self.progress_queue.get()
-                if value < 0:
-                    # Negative value means stop
-                    simulating = False
-                else:
-                    print "value is"
-                    print value
-                    bar.progress(value)
-
-            # if self.progress_queue.empty() == False:
-            #     print "consumed one value"
-            #     # Read the queue
-            #     value = self.progress_queue.get()
-            #     if value < 0:
-            #         # Negative value means stop
-            #         break
-            #     # Update the progressbar
-            #     print "Darlan"
-            #     print "Value is: {0}".format(value)
-            #     bar.progress(value)
+        bar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
+        count = 0
+        while count < self._total_final_count:
+            time.sleep(self._sleep_time)
+            count = sum(self._process_data_list)
+            bar.progress(count)
 
     def start_updater(self):
-        """Start the process that updates the progressbar and return the
-        process object."""
-        # Start update_progress in another process
-        p = multiprocessing.Process(target=self._update_progress)
-        p.start()
+        """Start the process that updates the progressbar.
 
-        return p
+        Returns:
+         - Process that updates the bar. Call the join method of the
+           returned value at the end of your program.
+        """
+        # Start update_progress in the other process
+        #self._updating = True
+        self._update_process.start()
+
+    def finish_updater(self, ):
+        """Stop the process updating the progressbar.
+        """
+        # TODO: Send an event to the process updaing the progressbar
+        # indicating that it should stop, even if the total count was not
+        # reached yet.
+
+        #self._updating = False
+        self._update_process.join()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
