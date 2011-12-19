@@ -1,8 +1,8 @@
 # http://code.activestate.com/recipes/299207-console-text-progress-indicator-class/
 # CLASS NAME: ProgressbarText
 #
-# Author: Larry Bates (lbates@syscononline.com)
-#
+# Original Author of the ProgressbarText class:
+# Larry Bates (lbates@syscononline.com)
 # Written: 12/09/2002
 #
 # Modified by Darlan Cavalcante Moreira in 10/18/2011
@@ -180,22 +180,6 @@ class ProgressbarMultiProcessText:
                                                 # in the _update_progress
                                                 # function
 
-    def register_object(self, object, total_count):
-        """Register an object as a "producer" whose progress will be
-        measured.
-
-        Effectively this will an "process_id" and a "process_data_list"
-        parameters to the object. The object method that runs in another
-        process must update the element process_data_list[process_id]` with
-        the current (progress) count.
-
-        Arguments:
-        - `object`:
-        - `total_count`: Total count that will be equivalent to 100% for
-                         `object`.
-        """
-        NotImplemented("Implement-me")
-
     def register_function(self, total_count):
         """Return the `process_id` and a "process_data_list". These must be
         passed as arguments to the function that will run in another
@@ -204,6 +188,12 @@ class ProgressbarMultiProcessText:
         Arguments:
         - `total_count`: Total count that will be equivalent to 100% for
                          function.
+
+        Returns:
+        - Tuple with the `process_id` and the process_data_list. The
+          function whose process is tracked by the
+          ProgressbarMultiProcessText must update the element `process_id`
+          of the list `process_data_list` with the current count.
         """
         # update self._total_final_count
         self._total_final_count += total_count
@@ -216,6 +206,33 @@ class ProgressbarMultiProcessText:
 
         self._process_data_list.append(0)
         return (process_id, self._process_data_list)
+
+    def register_function_and_get_proxy_progressbar(self, total_count):
+        """Similar to the register_function method, but returns a
+        ProgressbarMultiProcessProxy object.
+
+        The function whose process is tracked by the
+        ProgressbarMultiProcessText must must call the `progress` method of
+        the returned ProgressbarMultiProcessProxy object with the current
+        count. This is a little less intrusive regarding the tracked
+        function.
+
+        Arguments:
+        - `total_count`: Total count that will be equivalent to 100% for
+                         function.
+
+        Returns: ProgressbarMultiProcessProxy object
+        """
+        # xxxxx Inline class definition - Start xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        class ProgressbarMultiProcessProxy:
+            def __init__(self, process_id, process_data_list):
+                self.process_id = process_id
+                self._process_data_list = process_data_list
+
+            def progress(self, count):
+                self._process_data_list[self.process_id] = count
+        # xxxxx Inline class definition - End xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        return ProgressbarMultiProcessProxy(*self.register_function(total_count))
 
     def progress(self):
         """This function should not be called."""
