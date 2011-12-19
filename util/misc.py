@@ -240,7 +240,7 @@ def least_right_singular_vectors(A, n):
 
     >>> A = np.array([1,2,3,6,5,4,2,2,1])
     >>> A.shape = (3,3)
-    >>> (min_Vs, remaining_Vs) = least_right_singular_vectors(A,1)
+    >>> (min_Vs, remaining_Vs, S) = least_right_singular_vectors(A,1)
     >>> min_Vs
     array([[-0.4474985 ],
            [ 0.81116484],
@@ -249,6 +249,8 @@ def least_right_singular_vectors(A, n):
     array([[-0.62341491, -0.64116998],
            [ 0.01889071, -0.5845124 ],
            [ 0.78166296, -0.49723869]])
+    >>> S
+    array([ 1.88354706,  9.81370681])
     """
     # Note that numpy.linalg.svd returns the hermitian of V
     [U, S, V_H] = np.linalg.svd(A, full_matrices=True)

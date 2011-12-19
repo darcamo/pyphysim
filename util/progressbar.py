@@ -13,6 +13,7 @@
 __version__ = "$Revision: $"
 # $Source$
 
+import multiprocessing
 
 class DummyProgressbar():
     """Dummy progress bar that don't really do anything."""
@@ -80,6 +81,11 @@ class ProgressbarText:
         return
 
     def progress(self, count):
+        """Updates the progress bar.
+
+        Arguments:
+        - `count`: The current percentage of completeness.
+        """
         #
         # Make sure I don't try to go off the end (e.g. >100%)
         #
@@ -94,18 +100,103 @@ class ProgressbarText:
         else:
             percentcomplete = 100
 
+        # Divide percentcomplete by two, since we use 50 characters for the
+        # full bar. Therefore, the blockcount variable will give us how
+        # many characters we need to write to represent the correct
+        # percentage of completeness.
         blockcount = int(percentcomplete / 2)
         if blockcount > self.blockcount:
+            # The self.blockcount stores how many characters where already
+            # printed in a previous call to the `progress`
+            # function. Therefore, we only need to print the remaining
+            # characters until we reach `blockcount`.
             for i in range(self.blockcount, blockcount):
                 self.f.write(self.block)
                 self.f.flush()
+            # Update self.blockcount
+            self.blockcount = blockcount
 
+        # If we completed the bar, print a newline
         if percentcomplete == 100:
             self.f.write("\n")
-        self.blockcount = blockcount
-        return
 
 
+class ProgressbarMultiProcessText:
+    """Similar to the ProgressbarText class, but the bar measures the
+    progress of several process as a whole.
+
+    For this to work, each process needs to put the progress into a
+    multiprocessing.Queue, passed to the ProgressbarMultiProcessText during
+    object creation.
+
+    Ex:
+    TODO: Write an example here
+    """
+
+    def __init__(self,
+                 progress_queue,
+                 total_final_count,
+                 progresschar='*',
+                 message=''):
+        """
+        Arguments:
+        - `progress_queue`: Queue where the multiple processes will put
+                            their progress. This must be a
+                            multiprocessing.Manager.Queue object. The
+                            multiprocessing.Queue version will break
+                            things.
+        - `total_final_count`: Total count of all progress.
+        - `progresschar`: Character used in the progressbar.
+        - `message`: Message writen in the progressbar
+        """
+        self.total_final_count = total_final_count
+        self.progresschar = progresschar
+        self.message = message
+        self.progress_queue = progress_queue
+
+    def progress(self):
+        """This function should not be called."""
+        print "ProgressbarMultiProcessText.progress: This function should not be called"
+
+    def _update_progress(self):
+        """This function runs in a diferenc process, which is created by start_updater
+        """
+        bar = ProgressbarText(self.total_final_count, self.progresschar, self.message)
+        simulating = True
+        while simulating:
+            if self.progress_queue.empty() == False:
+                value = self.progress_queue.get()
+                if value < 0:
+                    # Negative value means stop
+                    simulating = False
+                else:
+                    print "value is"
+                    print value
+                    bar.progress(value)
+
+            # if self.progress_queue.empty() == False:
+            #     print "consumed one value"
+            #     # Read the queue
+            #     value = self.progress_queue.get()
+            #     if value < 0:
+            #         # Negative value means stop
+            #         break
+            #     # Update the progressbar
+            #     print "Darlan"
+            #     print "Value is: {0}".format(value)
+            #     bar.progress(value)
+
+    def start_updater(self):
+        """Start the process that updates the progressbar and return the
+        process object."""
+        # Start update_progress in another process
+        p = multiprocessing.Process(target=self._update_progress)
+        p.start()
+
+        return p
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def center_message(message, length=50, fill_char=' ', left='', right=''):
     """Return a string with `message` centralized and surrounded by
     fill_char.
