@@ -180,6 +180,10 @@ class ProgressbarMultiProcessText:
                                                 # in the _update_progress
                                                 # function
 
+        # Used for time tracking
+        self._tic = multiprocessing.Value('f', 0.0)
+        self._toc = multiprocessing.Value('f', 0.0)
+
     def register_function(self, total_count):
         """Return the `process_id` and a "process_data_list". These must be
         passed as arguments to the function that will run in another
@@ -254,6 +258,7 @@ class ProgressbarMultiProcessText:
         # it here to have some consistence (a cleared event will always
         # mean that the progressbar is not running).
         self.running.clear()
+        self._toc.value = time.time()
 
     def start_updater(self):
         """Start the process that updates the progressbar.
@@ -262,11 +267,10 @@ class ProgressbarMultiProcessText:
          - Process that updates the bar. Call the join method of the
            returned value at the end of your program.
         """
-        # Start update_progress in the other process
-        #self._updating = True
+        self._tic.value = time.time()
         self._update_process.start()
 
-    def finish_updater(self, ):
+    def stop_updater(self, ):
         """Stop the process updating the progressbar.
 
         You should always call this function in your main process (the same
@@ -275,7 +279,22 @@ class ProgressbarMultiProcessText:
         updated any pending change and exited clearly.
         """
         self.running.clear()
+        self._toc.value = time.time()
         self._update_process.join()
+
+    # TODO: Make the duration property work correctly
+    @property
+    def duration(self, ):
+        """Duration of the progress.
+        """
+        # The progressbar is still running, calculate the duration sicne
+        # the beginning
+        if self.running.is_set():
+            toc = time.time()
+        else:
+            toc = self._toc.value
+
+        return self._toc.value - self._tic.value
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

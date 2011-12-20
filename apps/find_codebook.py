@@ -5,9 +5,14 @@ import math
 import numpy as np
 from itertools import combinations
 import multiprocessing
+from time import time
+from exceptions import IOError
 
+import scipy.io
+
+from misc import pretty_time
 from subspace.metrics import calcChordalDistance, calcPrincipalAngles
-from util.progressbar import ProgressbarText, DummyProgressbar
+from util.progressbar import ProgressbarText, DummyProgressbar, ProgressbarMultiProcessText
 
 """Module to find good codebooks"""
 
@@ -23,7 +28,7 @@ class CodebookFinder():
         - `Nt`: Number of rows in each precoder in the codebook
         - `Ns`: Number of columns of each precoder in the codebook
         - `K`: Number of precoders in the codebook
-        - `codebook_type`: Type of the desired codebook. The allowed values are: COMPLEX, REAL, and COMPLEX_QEGT
+        - `codebook_type`: Type of the desired codebook. The allowed values are: COMPLEX, REAL, and COMPLEX_QEGT.
         - `prng_seed`: Seed for the pseudo-random number generator. This is
                        passed to numpy and, if not provided, numpy will
                        provide a random seed. You only need to provide this
@@ -50,20 +55,13 @@ class CodebookFinder():
         self._codebook_type = codebook_type
 
         # General Configurations
-        self.use_progressbar = True
+        # self.use_progressbar = True
+
+        # Set this to another progressbar to track the progress
+        self.progressbar = DummyProgressbar()
 
     def __repr__(self):
-        return "CodebookFinder: {0} {1} precoders in G({2},{3}) with minimum distance {4:.4f}".format(self._K, self._get_type_as_string(), self._Nt, self._Ns, self._min_dist)
-
-    def _get_type_as_string(self):
-        """Get the codebook type as a string.
-        """
-        types = {
-            CodebookFinder.COMPLEX: "Complex",
-            CodebookFinder.COMPLEX_QEGT: "Complex QEG",
-            CodebookFinder.REAL: "Real",
-            }
-        return types[self._codebook_type]
+        return "CodebookFinder: {0} {1} precoders in G({2},{3}) with minimum distance {4:.4f}".format(self._K, self.type, self._Nt, self._Ns, self._min_dist)
 
     def _generate_complex_random_codebook(self, K, Nt, Ns):
         """Generates a complex random codebook.
@@ -106,6 +104,17 @@ class CodebookFinder():
         C = self._rs.rand(K, Nt, Ns) * np.pi
         C = np.exp(1j * C)
         return C
+
+    @staticmethod
+    def type_to_string(codebook_type):
+        """Get the codebook type as a string.
+        """
+        types = {
+            CodebookFinder.COMPLEX: "Complex",
+            CodebookFinder.COMPLEX_QEGT: "Complex QEG",
+            CodebookFinder.REAL: "Real",
+            }
+        return types[codebook_type]
 
     @staticmethod
     def calc_min_chordal_dist(codebook):
@@ -160,17 +169,9 @@ class CodebookFinder():
             CodebookFinder.COMPLEX_QEGT: CodebookFinder._generate_complex_qegt_random_codebook
         }
 
-        if self.use_progressbar:
-            pb = ProgressbarText(
-                rep_max,
-                message="Find {0} {1} precoders in G({2},{3})".format(self._K, self.type, self._Nt, self._Ns)
-            )
-        else:
-            pb = DummyProgressbar()
-
         # Simulation
         for rep in xrange(0, rep_max + 1):
-            pb.progress(rep)
+            self.progressbar.progress(rep)
             # Call the apropriated codebook generating function and passes
             # the K, Nt, and Ns arguments to it.
             C = gen_functions[self._codebook_type](self, self._K, self._Nt, self._Ns)
@@ -201,15 +202,42 @@ class CodebookFinder():
     @property
     def type(self):
         """Return a string with the type representation of the codebook."""
-        return self._get_type_as_string()
+        return CodebookFinder.type_to_string(self._codebook_type)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def find_codebook(rep_max=100, seed=None):
-    """Find a codebook using the CodebookFinder class.
+def find_codebook(Nt, Ns, K, rep_max, prng_seed=None, codebook_type=CodebookFinder.COMPLEX, progressbar=None):
+    """Create a CodebookFinder object, use it to find a codebook and return
+ the codebook found.
 
     Arguments:
+    - `Kt`: Number of rows in each precoder in the codebook
+    - `Ns`: Number of columns of each precoder in the codebook
+    - `K`: Number of precoders in the codebook
+    - `rep_max`: Number of simulations, that is, number of generated random
+                 codebooks
+    - `prng_seed`: Seed for the pseudo-random number generator
+    - `codebook_type`: Type of the codebook. The allowed values are:
+                       COMPLEX, REAL, and COMPLEX_QEGT
+    """
+    cb = CodebookFinder(Nt, Ns, K, CodebookFinder.COMPLEX, prng_seed)
+    # An object is always true
+    if progressbar:
+        cb.progressbar = progressbar
+
+    cb.find_codebook(rep_max)
+    return cb.codebook
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Functions that perform a complete simulation xxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def find_codebook_single_process(rep_max=100, seed=None):
+    """Find a codebook using find_codebook function.
+
+    Arguments:
+    - `rep_max`:
     - `seed`: seed passed to the CodebookFinder object
     """
 
@@ -217,107 +245,138 @@ def find_codebook(rep_max=100, seed=None):
     Nt = 3                      # Number of tx antennas
     Ns = 1                      # Number of streams
     K = 16                      # Number of precoders in the codebook
+    codebook_type = CodebookFinder.COMPLEX
 
-    cf = CodebookFinder(Nt, Ns, K, CodebookFinder.COMPLEX, seed)
-    cf.find_codebook(rep_max)
-    print "Maximum minimum distance is: {0:.2f}".format(cf.min_dist)
-    print "Principal angles are (radians): {0}".format(cf.principal_angles)
-    print "Principal angles are (degrees): {0}".format(180 / np.pi * cf.principal_angles)
+    bar = ProgressbarText(
+        rep_max,
+        message="Find {0} {1} precoders in G({2},{3})".format(
+            K,
+            CodebookFinder.type_to_string(codebook_type),
+            Nt,
+            Ns)
+        )
+    codebook = find_codebook(Nt, Ns, K, rep_max, codebook_type=codebook_type, progressbar=bar)
+    (min_dist, principal_angles) = CodebookFinder.calc_min_chordal_dist(codebook)
+    print "Maximum minimum distance is: {0:.2f}".format(min_dist)
+    print "Principal angles are (radians): {0}".format(principal_angles)
+    print "Principal angles are (degrees): {0}".format(180 / np.pi * principal_angles)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Acha melhores codebooks e salva em um arquivo
-def simula_para_o_relatorio():
-    """
-    """
+def find_codebook_multiple_processes():
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def find_codebook_wrapper(queue, args):
+        """Wrapper that calls find_codebook and put the result value in a
+        queue.
+        """
+        queue.put(find_codebook(*args))
+
+    def save_results(best_dist, best_codebook, best_principal_angles, filename):
+        scipy.io.savemat(filename, {'codebook': best_codebook, 'shape': best_codebook.shape}, oned_as='row')
+        np.savez(filename + ".npz", best_codebook=best_codebook, best_dist=best_dist.item(), best_principal_angles=best_principal_angles)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # get number of cpus -> multiprocessing.cpu_count()
+    num_process = multiprocessing.cpu_count()
 
-    # Darlan, implemente essa funcao
+    # xxxxx Simulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     Nt = 3                      # Number of tx antennas
     Ns = 1                      # Number of streams
     K = 16                      # Number of precoders in the codebook
-    finename = "codebook_%s_precoders_in_G(%s,%s)" % (K, Nt, Ns)
-    seed_1 = 1234
-    seed_2 = 1234
+    rep_max = 5000
+    codebook_type = CodebookFinder.COMPLEX
 
-    cbf1 = CodebookFinder(Nt, Ns, K, CodebookFinder.COMPLEX, seed_1)
-    cbf2 = CodebookFinder(Nt, Ns, K, CodebookFinder.COMPLEX, seed_2)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxs
+    # The .mat extension will be added by the scipy.io.savemat function
+    filename = "codebook_%s_precoders_in_G(%s,%s)" % (K, Nt, Ns)
 
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx Abaixo tentativas para rodar em paralelo xxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def run(args):
-    # name = multiprocessing.current_process().name
-    # print name
-
-    (Nt, Ns, K, seed) = args
-    cf = CodebookFinder(Nt, Ns, K, CodebookFinder.COMPLEX, seed)
-    cf.use_progressbar = True
-    cf.find_codebook(100)
-    return cf
-
-
-def run2(args, queue):
-    cf = run(args)
-    queue.put(cf)
-    #return cf
-
-
-def find_codebook_parallel():
-    """Call find_codebook in multiple processes.
-    """
-# Veja http://www.slideshare.net/pvergain/multiprocessing-with-python-presentation
-
-    # Codebook parameters
-    Nt = 3                      # Number of tx antennas
-    Ns = 1                      # Number of streams
-    K = 16                      # Number of precoders in the codebook
-    seed_1 = 1234
-    seed_2 = 5678
-    args1 = (Nt, Ns, K, seed_1)
-    args2 = (Nt, Ns, K, seed_2)
-
-    # xxxxxxxxxx Abordagem 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Note que o parâmetro "args" é um iterable com todos os
-    # argumentos. Como quero que args1 e args2 sejam reconhecidos como um
-    # único argumento, então coloquei dentro de uma lista.
+    # Queue to store the codebooks found in each process
     queue = multiprocessing.Queue()
-    p = multiprocessing.Process(target=run2, args=[args1, queue])
-    p2 = multiprocessing.Process(target=run2, args=[args2, queue])
-    p.start()
-    p2.start()
-
-    p.join()
-    p2.join()
-    # print cf1.min_dist
-    # print cf2.min_dist
-    result1 = queue.get()
-    result2 = queue.get()
-    print result1.min_dist
-    print result2.min_dist
-    print result1
-    return (result1, result2)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Abordagem 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # pool = multiprocessing.Pool(processes=2)
-    # # Map retorna uma lista com o retorno de cada execução da função
-    # results = pool.map(run, [args1, args2])
-    # (cf1, cf2) = results
-    # print cf1.min_dist
-    # print cf2.min_dist
+    # xxxxx Multiprocess progressbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    pb = ProgressbarMultiProcessText(message="Find {0} {1} precoders in G({2},{3})".format(K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Create the processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    procs = []
+    for i in range(0, num_process):
+        proc_args = [
+            Nt,
+            Ns,
+            K,
+            rep_max,
+            # TODO: Pensar em um modo de garantir sementes diferentes
+            np.random.randint(0, 10000, 1).item(),
+            codebook_type,
+            # Register a progressbar proxy for the process to be tracked by
+            # the ProgressbarMultiProcessText processbar
+            pb.register_function_and_get_proxy_progressbar(rep_max)]
+
+        procs.append(multiprocessing.Process(target=find_codebook_wrapper, args=[queue, proc_args]))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Start all processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    for proc in procs:
+        proc.start()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Start the processbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    pb.start_updater()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Join all processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    for proc in procs:
+        proc.join()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Stop the processbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    pb.stop_updater()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Process the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Get all codebooks in the queue
+    codebooks = [queue.get() for i in range(0, num_process)]
+    min_dists = map(CodebookFinder.calc_min_chordal_dist, codebooks)
+    min_dists = np.array([i[0] for i in min_dists])
+
+    # Index of the maximum distance (index of the best codebook)
+    best_index = min_dists.argmax()
+
+    best_codebook = codebooks[best_index]
+    (best_dist, best_principal_angles) = CodebookFinder.calc_min_chordal_dist(best_codebook)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    print "Maximum minimum distance found: {0}".format(best_dist)
+    print "Principal angles found: {0}".format(best_principal_angles)
+
+    # xxxxx Open previously stored results (if there is any) xxxxxxxxxxxxxx
+    try:
+        previous_results = np.load(filename + ".npz")
+        previous_best_dist = previous_results['best_dist']
+        print "Previous minimum distance: {0}".format(previous_best_dist)
+    except IOError:
+        print "Could not open file `{0}`".format(filename + ".npz")
+        previous_best_dist = 0
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Save results to a file in the disk xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Only save if it is better then the previous results
+    if previous_best_dist < best_dist:
+        print "Saving new results"
+        save_results(best_dist, best_codebook, best_principal_angles, filename)
+    else:
+        print "Keeping previous results"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 if __name__ == '__main__':
     # xxxxx Add parent folder to the path xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -333,5 +392,9 @@ if __name__ == '__main__':
     sys.path.append("../")
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    find_codebook()
-    #find_codebook_parallel()
+    tic = time()
+    #find_codebook_single_process(1000)
+    find_codebook_multiple_processes()
+
+    toc = time()
+    print "Elapsed Time: {0}".format(pretty_time(toc - tic))
