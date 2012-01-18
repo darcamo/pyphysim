@@ -10,3 +10,6 @@ from conversion import *
 
 # Bring functions and classes in progressbar to the util namespace
 from progressbar import *
+
+# Bring functions and classes in simulations to the util namespace
+from simulations import *

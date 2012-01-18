@@ -6,175 +6,417 @@
 __version__ = "$Revision: 5 $"
 # $Source$
 
+from collections import OrderedDict, Iterable
+import itertools
+import copy
 import numpy as np
-from misc import pretty_time
 
+from misc import pretty_time
 from util.progressbar import ProgressbarText
 
 
-class SimulationRunner:
+class SimulationRunner2():
+    """Base class to run simulations.
+
+    You need to derive from this class and implement at least the
+    _run_simulation function (see `_run_simulation` help). If a stop
+    criterion besides the maximum number of iterations is desired, then you
+    need to also reimplement the _keep_going function.
+
+    Note that since _run_simulation receives no argument, then whatever is
+    needed must be added to the `params` atribute. That is, in the
+    construtor of the derived class call the `add` method of `params` for
+    each parameter you need in the _run_simulation function.
+
+    Likewise, the _run_simulation method should return the results as a
+    SimulationResults object.
     """
-    Helper class to run a (simulation) function several times and calculate the
-    average result.
-
-    It is expected that the provided (simulation) function returns a tuple with
-    the number of errors (bits or symbols) and the input data size (number of
-    simulated bits or symbols).
-
-    There are two stop criteria: maximum number of obtained errors and maximum
-    number of repetitions. The simulation will be stopped when any of these
-    criteria is reached.
-    """
-    # Will store the simulation function that will be run several times
-    func = None
-    """The function that will be called for each simulation iteration."""
-
-    def __init__(self, param_name, limit_value, rep_max, func, func_args):
-        """Init function.
-        @param param_name: Name of the parameter that will be used as an
-                           early stop criteria
-        @type param_name: string
-
-        @param limit_value: Limit value of the parameter used as an stop
-        criterion. If the type of the stop criterion parameter is SUMTYPE,
-        then limit_value is the maximum allowed value for that
-        parameter. If the type is RATIOTYPE, then limit_value corresponds
-        to a minimum relative precision (a limit_value of 0.01 means that
-        the simulation will stop when the parameter does not change more
-        then 1% of the current stored value).
-
-        @type limit_value: scalar (integer for a type equal to SUMTYPE or a
-        float for a type equal to RATIOTYPE).
-
-        @param rep_max: Maximum number of repetitions.
-        @type rep_max: scalar
-
-        @param func: The function that performs the actual simulation. It
-        must return a SimulationResults object, where one of its element (a
-        Result object) has the same name as param_name.
-
-        @param func_args: Tuple containing the arguments to be passed to func.
-        @type func_args: tuple
-
+    def __init__(self, rep_max):
         """
-        self.param_name = param_name
-        self.limit_value = limit_value
+        """
         self.rep_max = rep_max
-        self.func = func
-        self.func_args = func_args
-
-        # Internal counter for the elapsed time since the simulate function
-        # started. _elapsed_time is reseted to zero if simulate is called
-        # again.
         self._elapsed_time = 0.0
+        self._runned_reps = []  # Number of iterations performed by
+                                # simulation when it finished
+        self.params = SimulationParameters()
 
-    def simulate(self, unpack, use_progress_bar=False):
+        self.results = []
+
+        # Message passed to the _get_update_progress_function function. The
+        # message can contain "{SomeParameterName}" which will be replaced
+        # with the parameter value.
+        #
+        # If, on the other hand, progressbar_message is None, then the
+        # progressbar will be disabled.
+        self.progressbar_message = ''
+
+    def _run_simulation(self, current_parameters):
+        """Performs the one simulation.
+
+        This function must be implemented in a subclass. It should take the
+        needed parameters from the params class attribute (which was filled
+        in the constructor of the derived class) and return the results as
+        a SimulationResults object.
+
+        Note that _run_simulation will be called self.rep_max times (or
+        less if an early stop criteria is reached, which requires
+        reimplementing the _keep_going function in the derived class) and
+        the results from multiple repetitions will be merged.
+
+        Arguments:
+
+        - `current_parameters`: SimulationParameters object with the
+                                parameters for the simulation. The
+                                self.params variable is not used
+                                directly. It is first unpacked in the
+                                simulate function which then calls
+                                _run_simulation for each combination.
         """
-        Run the simulation until one of the stop criteria (max number of
-        errors or maximum repetitions) is reached.
+        NotImplemented("This function must be implemented in a subclass")
 
-        @param unpack: Which parameter in func_args should be
-        unpacked. This usually corresponds to the SNR. If an array of SNRs
-        is the first element in func_args (provided in the __init__
-        function), then the value of unpack is 0.)
+    def _keep_going(self, current_sim_results):
+        """Check if the simulation should continue or stop.
 
-        @type unpack: scalar
-        @param use_progress_bar: If a progress bar should be printed during the
-        @type use_progress_bar: bool
-        simulation.
+        This function may be reimplemented in the derived class if a stop
+        condition besides the number of iterations is desired.  The idea is
+        that _run_simulation returns a SimulationResults object, which is
+        then passed to _keep_going, which is then in charge of deciding if
+        the simulation should stop or not.
 
+        Arguments:
+        - `current_sim_results`: SimulationResults object from the last
+                                 iteration (merged with all the previous
+                                 results)
         """
-        # xxxxxxxxxxxxxxx Defines the update_progress function xxxxxxxxxxxx
-        def get_update_progress_function(message):
-            """Return a function that should be called to update the
-            progress.
+        # If this function is not reimplemented in a subclass it always
+        # returns True. Therefore, the simulation will only stop when the
+        # maximum number of allowed iterations is reached.
+        return True
 
-            `message`: The message to be written in the progressbar, if it
-            is used.
+    def _get_update_progress_function(self, message=''):
+        """Return a function that should be called to update the
+        progressbar.
 
-            The returned function accepts a value between 0 and 1.
-            """
-            if(use_progress_bar):
-                # If use_progress_bar is true, we create a progressbar and the
-                # function update_progress will update the bar
-                self.bar = ProgressbarText(self.limit_value, '*', message)
-                update_progress = lambda value: self.bar.progress(value)
-            else:
-                # If use_progress_bar is false, the function update_progress
-                # won't do anything
-                update_progress = lambda value: None
-            return update_progress
-        # Reset the elapsed time and the number of repetitions
-        self._elapsed_time = 0.0
+        The returned function accepts a single argument, corresponding to
+        the number of iterations executed so far.
 
-        # xxxxx Defines the keep_going function xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        def keep_going(simulation_results):
-            """Return True if simulation should continue or False
-            otherwise. That is, return False when the the Result object in
-            simulation_results with name given by self.param_name has a
-            value greater then self.limit_value.
-            """
-            param = simulation_results[self.param_name][-1]
-            # current_value =
-            # simulation_results.get_last_result_value(self.param_name)
-            current_value = param.get_result()
-            return current_value < self.limit_value
+        Arguments:
+         - `message`: The message to be written in the progressbar, if
+                      it is used.
+        """
+        # The returned function will update the bar
+        self.bar = ProgressbarText(self.rep_max, '*', message)
+        return lambda value: self.bar.progress(value)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    @property
+    def elapsed_time(self):
+        """property: Get the simulation elapsed time. Do not set this
+        value."""
+        return pretty_time(self._elapsed_time)
+
+    @property
+    def runned_reps(self):
+        return self._runned_reps
+
+    def simulate(self):
+        """
+        """
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
         tic = time()
-        func_args = list(self.func_args)
-        pack_size = len(func_args[unpack])
-        #errorrate   = np.zeros(pack_size, dtype=np.double)
-        self.rep = np.zeros(pack_size, dtype=np.int)
-        self.errors = np.zeros(pack_size, dtype=np.int)
-        index = 0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        sim_results = SimulationResults()
-        for i in self.func_args[unpack]:  # SNR
-            # Get the function called to update the progress
-            update_progress = get_update_progress_function(
-                'Simulating for SNR: %s' % i)
+        # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        for current_params in self.params.get_unpacked_params_list():
+            # Get the update_progress_func function
+            if self.progressbar_message is None:
+                # If self.progressbar_message is None then
+                # update_progress_func does nothing
+                update_progress_func = lambda value: None
+            else:
+                update_progress_func = self._get_update_progress_function(
+                    self.progressbar_message.format(**current_params.parameters))
 
-            # xxxxx Perform the simulation for one unpacked value xxxxxxxxx
-            func_args[unpack] = i
+            # First iteration
+            current_sim_results = self._run_simulation(current_params)
+            current_rep = 1
 
-            # Perform the first iteration and append the results in the
-            # sim_results object
-            sim_results.append_all_results(self.func(*func_args))
-            # Perform the remaining iterations and updates current SNR results
-            while (keep_going(sim_results) and
-                   (self.rep[index] < self.rep_max)):
-                #             for j in xrange(0,Repmax):
-                sim_results.merge_all_results(self.func(*func_args))
-                # err = results[0]
-                # self.nsymbits = results[1]
-                # self.errors[index] += err
-                # update_progress(
-                #     sim_results.get_last_result_value(self.param_name))
+            # Run more iterations until one of the stop criteria is reached
+            while (self._keep_going(current_sim_results)
+                   and
+                   current_rep < self.rep_max):
+                current_sim_results.merge_all_results(
+                    self._run_simulation(current_params))
+                update_progress_func(current_rep + 1)
+                current_rep += 1
 
-                update_progress(sim_results[self.param_name][-1].get_result())
-                self.rep[index] += 1
-            # errorrate[index] += (np.double(self.errors[index]) /
-            #                       (self.rep[index] * self.nsymbits))
-            index += 1
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # If the while loop ended before rep_max repetitions (because
+            # _keep_going returned false) then set the progressbar to full.
+            update_progress_func(self.rep_max)
+
+            # Store the number of repetitions actually runned
+            self._runned_reps.append(current_rep)
+            self.results.append(current_sim_results)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         toc = time()
         self._elapsed_time = toc - tic
-        print "\nxxxxxxxxxxxxxxx End of Simulation xxxxxxxxxxxxxxxx\n"
-        print "Elapsed Time: %s" % pretty_time(self._elapsed_time)
-        # Return the errorrate
-        #return errorrate
-        return sim_results
-
-    def elapsed_time(self):
-        """property: Get the simulation elapsed time. Do not set this value."""
-        return pretty_time(self._elapsed_time)
-    # xxxxxxxxxx End of SimulationRunner class xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# TODO: Add doctests
+class SimulationParameters():
+    """Class to store the simulation parameters.
+
+    A SimulationParameters object acts as a container for all simulation
+    parameters. To add a new parameter to the object just call the `add`
+    method passing the name and the value of the parameter. The value can
+    be anything as long as the _run_simulation function can understand it.
+    """
+    def __init__(self):
+        """
+        """
+        # Dictionary that will store the parameters. The key is the
+        # parameter name and the value is the parameter value.
+        self.parameters = {}
+
+        # A set to store the names of the parameters that will be unpacked.
+        # Note there is a property to get the parameters marked to be
+        # unpacked, that is, the unpacked_parameters property.
+        self._unpacked_parameters_set = set()
+
+    @property
+    def unpacked_parameters(self):
+        # Names of the parameters that will be unpacked.
+        return list(self._unpacked_parameters_set)
+
+    @staticmethod
+    def create(params_dict):
+        """Create a new SimulationParameters object.
+
+        This static method provides a different way to create a
+        SimulationParameters object, already containing the parameters in
+        the `params_dict` dictionary.
+
+        Arguments:
+        - `params_dict`: Dictionary containing the parameters. Each
+                         dictionary key corresponds to a parameter.
+        """
+        sim_params = SimulationParameters()
+        sim_params.parameters = copy.deepcopy(params_dict)
+        return sim_params
+
+    def add(self, name, value):
+        """Add a new parameter.
+
+        If there is already a parameter with the same name it will be
+        replaced.
+
+        Arguments:
+        - `name`: Name of the parameter
+        - `value`: Value of the parameter
+        """
+        self.parameters[name] = value
+
+    def set_unpack_parameter(self, name, unpack_bool=True):
+        """Set the unpack property of the parameter with name `name`
+
+        This is used in the SimulationRunner.
+        Arguments:
+        - `name`: Name of the parameter to be unpacked
+        - `unpack_bool`: True activates unpacking for `name`, False
+                         deactivates it
+        Raises:
+        - ValueError: if `name` is not in parameters or is not iterable.
+        """
+        if name in self.parameters.keys():
+            if isinstance(self.parameters[name], Iterable):
+                self._unpacked_parameters_set.add(name)
+            else:
+                raise ValueError("Parameter {0} is not iterable".format(name))
+        else:
+            raise ValueError("Unknown parameter: `{0}`".format(name))
+
+    def __getitem__(self, name):
+        """Return the parameter with name `name`
+
+        Arguments:
+        - `name`: Name of the desired parameter
+        """
+        return self.parameters[name]
+
+    def __repr__(self):
+        def modify_name(name):
+            """Add an * in name if it is set to be unpacked"""
+            if name in self._unpacked_parameters_set:
+                name += '*'
+            return name
+        repr_list = []
+        for name, value in self.parameters.items():
+            repr_list.append("'{0}': {1}".format(modify_name(name), value))
+        return '{%s}' % ', '.join(repr_list)
+
+    def get_num_parameters(self):
+        """Get the number of parameters currently stored.
+        """
+        return len(self.parameters)
+
+    def get_num_unpacked_variations(self):
+        """Get the number of variations when the parameters are unpacked.
+        """
+        # Generator for the lengths of the parameters set to be unpacked
+        gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
+        # Just multiply all the lengths
+        return reduce(lambda x, y: x * y, gen_values)
+
+
+    # TODO: Apagar depois, já que não terminei
+    def get_unpacked_params_list2(self):
+        # If unpacked_parameters is empty, return self
+        if not self._unpacked_parameters_set:
+            return [self]
+
+        # Names of the parameters that don't need to be unpacked
+        regular_params = list(set(self.parameters.keys()) - self._unpacked_parameters_set)
+        print "Regular Parameters: ", regular_params
+
+        # Parameters that will be unpacked
+        print "Unpacked Parameters: ", self.unpacked_parameters
+
+        # Get the lengths of the parameters that will be unpacked
+        print [len(self.parameters[i]) for i in self._unpacked_parameters_set]
+
+    # Get from
+    # https://gist.github.com/1511969/222e3316048bce5763b1004331af898088ffcd9e
+    @staticmethod
+    def ravel_multi_index(indexes, shape):
+        """
+        Arguments
+        - `indexes`: A list with the indexes
+        - `shape`: Shape of the array
+        """
+        #c order only
+        base_c = np.arange(np.prod(shape)).reshape(*shape)
+        return base_c[tuple(indexes)]
+
+    # TODO Escrever uma documentação clara e com exemplos de fácil
+    # entendimento.
+    def get_pack_indexes(self, fixed_params_dict=dict()):
+        """When you call the function get_unpacked_params_list you get a
+        list of SimulationParameters objects corresponding to all
+        combinations of the parameters. The function get_pack_indexes
+        allows you to provided all parameters marked to be unpacked but
+        one, and returns the indexes of the list returned by
+        get_unpacked_params_list that you want.
+
+        Arguments:
+        - `fixed_params_dict`: A ditionary with the name of the fixed
+                               parameters as keys and the fixed value as
+                               value.
+        """
+        # Get the only parameter that was not fixed
+        varying_param = list(
+            self._unpacked_parameters_set - set(fixed_params_dict.keys())
+            )
+        assert len(varying_param) == 1, "All unpacked parameters must be fixed except one"
+        # The only parameter still varying. That is, one parameter marked
+        # to be unpacked, bu not in fixed_params_dict.
+        varying_param = varying_param[0]  # List with one element
+
+        # List to store the indexes (as strings) of the fixed parameters,
+        # as well as ":" for the varying parameter,
+        param_indexes = []
+        for i in self.unpacked_parameters:
+            if i == varying_param:
+                param_indexes.append(':')
+            else:
+                fixed_param_value_index = list(self.parameters[i]).index(fixed_params_dict[i])
+                param_indexes.append(str(fixed_param_value_index))
+
+        # xxxxx Get the indexes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # For this we create a auxiliary numpy array going from 0 to the
+        # number of unpack variations. The we use param_indexes to build a
+        # string that we can evaluate using the auxiliary numpy array in
+        # order to get the linear indexes.
+
+        # Get the lengths of the parameters marked to be unpacked
+        dimensions = [len(self.parameters[i]) for i in self.unpacked_parameters]
+        aux = np.arange(0, self.get_num_unpacked_variations())
+        aux.shape = dimensions
+        indexes = eval("aux" + "[{0}]".format(",".join(param_indexes)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        return indexes
+
+
+
+    def get_unpacked_params_list(self):
+        """Get a list of SimulationParameters objects, each one
+        corresponding to a possible combination of (unpacked) parameters.
+
+        Supose you have a SimulationParameters object with the parameters
+        a=1, b=2, c=[3,4] and d=[5,6]
+        and the parameters `c` and `d` were set to be unpacked.  Then
+        get_unpacked_params_list would return a list of four
+        SimulationParameters objects with parameters (the order
+        may be different)
+        {'a': 1, 'c': 3, 'b': 2, 'd': 5}
+        {'a': 1, 'c': 3, 'b': 2, 'd': 6}
+        {'a': 1, 'c': 4, 'b': 2, 'd': 5}
+        {'a': 1, 'c': 4, 'b': 2, 'd': 6}
+        """
+        # If unpacked_parameters is empty, return self
+        if not self._unpacked_parameters_set:
+            return [self]
+
+        # Lambda function to get an iterator to a (iterable) parameter
+        # given its name
+        get_iter_from_name = lambda name: iter(self.parameters[name])
+
+        # Dictionary that stores the name and an iterator of a parameter
+        # marked to be unpacked
+        unpacked_params_iter_dict = OrderedDict()
+        for i in self._unpacked_parameters_set:
+            unpacked_params_iter_dict[i] = get_iter_from_name(i)
+        keys = unpacked_params_iter_dict.keys()
+
+        # Using itertools.product we can convert the multiple iterators
+        # (for the different parameters marked to be unpacked) to a single
+        # iterator that returns all the possible combinations (cartesian
+        # product) of the individual iterators.
+        all_combinations = itertools.product(*(unpacked_params_iter_dict.values()))
+
+        # Names of the parameters that don't need to be unpacked
+        regular_params = set(self.parameters.keys()) - self._unpacked_parameters_set
+
+        # Constructs a list with dictionaries, where each dictionary
+        # corresponds to a possible parameters combination
+        unpack_params_length = len(self._unpacked_parameters_set)
+        all_possible_dicts_list = []
+        for comb in all_combinations:
+            new_dict = {}
+            # Add current combination of the unpacked parameters
+            for index in range(unpack_params_length):
+                new_dict[keys[index]] = comb[index]
+            # Add the regular parameters
+            for param in regular_params:
+                new_dict[param] = self.parameters[param]
+            all_possible_dicts_list.append(new_dict)
+
+        # Map the list of dictionaries to a list of SimulationParameters
+        # objects and return it
+        return map(SimulationParameters.create, all_possible_dicts_list)
+
+    def save_to_file(self, file_name):
+        """Save the SimulationParameters object to the file `file_name`.
+
+        Arguments:
+        - `file_name`: Name of the file to save the parameters.
+        """
+        NotImplemented("SimulationParameters.save_to_file: Implement-me")
+
+
 class SimulationResults():
     """Store results from simulations.
 
@@ -226,10 +468,10 @@ class SimulationResults():
     [Result -> lele: 11/20 -> 0.55]
     """
     def __init__(self):
-        self.__results = dict()
+        self._results = dict()
 
     def __repr__(self):
-        lista = [i for i in self.__results.keys()]
+        lista = [i for i in self._results.keys()]
         repr = "SimulationResults: %s" % lista
         return repr
 
@@ -241,7 +483,7 @@ class SimulationResults():
         - `result`: Must be an object of the Result class.
         """
         # Added as a list with a single element
-        self.__results[result.name] = [result]
+        self._results[result.name] = [result]
 
     def append_result(self, result):
         """Append a result to the SimulationResults object. This
@@ -258,8 +500,8 @@ class SimulationResults():
         - `result`: A Result object
 
         """
-        if result.name in self.__results.keys():
-            self.__results[result.name].append(result)
+        if result.name in self._results.keys():
+            self._results[result.name].append(result)
         else:
             self.add_result(result)
 
@@ -289,31 +531,19 @@ class SimulationResults():
         - `other`: Another SimulationResults object
 
         """
-        # If the current SimulationResults object is empty
+        # If the current SimulationResults object is empty, we basically
+        # copy the Result objects from other
         if len(self) == 0:
             for name in other.get_result_names():
-                self.__results[name] = other[name]
+                self._results[name] = other[name]
+        # Otherwise, we merge each Result from `self` with the Result from
+        # `other`
         else:
-            for item in self.__results.keys():
-                self.__results[item][-1].merge(other[item][-1])
-
-    # def get_last_result_value(self, result_name):
-    #     """Get the value of the last result with name given by
-    #     "result_name".
-
-    #     Since an SimulationResults object can store multiple Result objects
-    #     with the same name, which are stored in a list. This functions
-    #     provides an easy way to get the value of the last Result stored for
-    #     "result_name".
-
-    #     Arguments:
-    #     - `result_name`: A string with the name of the desired result.
-
-    #     """
-    #     return self.__results[result_name][-1].get_result()
+            for item in self._results.keys():
+                self._results[item][-1].merge(other[item][-1])
 
     def get_result_names(self):
-        return self.__results.keys()
+        return self._results.keys()
 
     def get_result_values_list(self, result_name):
         """Get the values for the results with name "result_name"
@@ -326,15 +556,15 @@ class SimulationResults():
         return [i.value for i in self[result_name]]
 
     def __getitem__(self, key):
-        # if key in self.__results.keys():
-        return self.__results[key]
+        # if key in self._results.keys():
+        return self._results[key]
         # else:
         #     raise KeyError("Invalid key: %s" % key)
 
     def __len__(self):
         """Get the number of results stored in self.
         """
-        return len(self.__results)
+        return len(self._results)
 
     def __iter__(self):
         # """Get an iterator to the internal dictionary. Therefore iterating
@@ -344,7 +574,7 @@ class SimulationResults():
         """Get an iterator to the results stored in the SimulationResults
         object.
         """
-        return self.__results.itervalues()
+        return self._results.itervalues()
 
 
 class Result():
@@ -429,6 +659,24 @@ class Result():
         self.num_updates = 0  # Number of times the Result object was
                               # updated
 
+    @staticmethod
+    def create(name, update_type, value, total=0):
+        """Create a Result object and update it with `value` and `total` at
+        the same time.
+
+        Equivalent to creating the object and then call its update
+        function.
+
+        Arguments:
+        - `name`:
+        - `update_type`:
+        - `value`:
+        - `total`:
+        """
+        result = Result(name, update_type)
+        result.update(value, total)
+        return result
+
     def __repr__(self):
         if self.__update_type == Result.RATIOTYPE:
             v = self.value
@@ -455,42 +703,45 @@ class Result():
         """
         self.num_updates += 1
 
-        # Python does not have a switch statement. It usually uses
-        # dictionaries for this
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Python does not have a switch statement. We use dictionaries as
+        # the equivalent of a switch statement.
+        # First we define a function for each possibility.
+        def __default_update(ignored1, ignored2):
+            print("Warning: update not performed for unknown type %s" %
+                  self.__update_type)
+            pass
+
+        def __update_SUMTYPE_value(value, ignored):
+            self.value += value
+
+        def __update_RATIOTYPE_value(value, total):
+            assert value <= total, ("__update_RATIOTYPE_value: "
+                                    "'value cannot be greater then total'")
+            if total == 0:
+                print("Update Ignored: total should be provided and be greater "
+                      "then 0 when the update type is RATIOTYPE")
+            else:
+                self.value += value
+                self.total += total
+
+        def __update_by_replacing_current_value(value, ignored):
+            self.value = value
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Now we fill the dictionary with the functions
         possible_updates = {
-            Result.RATIOTYPE: self.__update_RATIOTYPE_value,
-            Result.STRINGTYPE: self.__update_by_replacing_current_value,
-            Result.SUMTYPE: self.__update_SUMTYPE_value,
-            Result.FLOATTYPE: self.__update_by_replacing_current_value
+            Result.RATIOTYPE: __update_RATIOTYPE_value,
+            Result.STRINGTYPE: __update_by_replacing_current_value,
+            Result.SUMTYPE: __update_SUMTYPE_value,
+            Result.FLOATTYPE: __update_by_replacing_current_value
             }
 
-        # Call the apropriated update method
+        # Call the apropriated update method. If self.__update_type does
+        # not contain a key in the possible_updates dictionary (that is, a
+        # valid update type), then the function __default_update is called.
         possible_updates.get(self.__update_type,
-                             self.__default_update)(value, total)
-
-    def __default_update(self, ignored1, ignored2):
-        print("Warning: update not performed for unknown type %s" %
-              self.__update_type)
-        pass
-
-    def __update_SUMTYPE_value(self, value, ignored):
-        """Only called inside the update function"""
-        self.value += value
-
-    def __update_RATIOTYPE_value(self, value, total):
-        """Only called inside the update function"""
-        assert value <= total, ("__update_RATIOTYPE_value: "
-                                "'value cannot be greater then total'")
-        if total == 0:
-            print("Update Ignored: total should be provided and be greater "
-                  "then 0 when the update type is RATIOTYPE")
-        else:
-            self.value += value
-            self.total += total
-
-    def __update_by_replacing_current_value(self, value, ignored):
-        """Only called inside the update function"""
-        self.value = value
+                             __default_update)(value, total)
 
     def get_type_name(self):
         return Result.all_types[self.__update_type]
@@ -531,14 +782,27 @@ class Result():
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
-    import os
-    import sys
-    cmd_folder = os.path.dirname(os.path.abspath(__file__))
-    if cmd_folder not in sys.path:
-        # Add the parent folder to the beggining of the path
-        sys.path.insert(0, cmd_folder)
+    # import os
+    # import sys
+    # from exceptions import NameError
+
+    # # Add the parent folder to the path.
+    # try:
+    #     # If this file is executed the __file__ will be defined and we add
+    #     # the parent folder to the path, considering the file location
+    #     cmd_folder = os.path.dirname(os.path.abspath(__file__))
+    # except NameError, e:
+    #     # If the content of this file is executed as a script then __file__
+    #     # will not be defined and we add the parent folder of the current
+    #     # working directory to the path
+    #         cmd_folder = os.getcwd()
+    # finally:
+    #     if cmd_folder not in sys.path:
+    #         # Add the parent folder to the beggining of the path
+    #         sys.path.insert(0, cmd_folder)
 
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
+    print "simulations.py executed"
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

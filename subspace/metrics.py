@@ -25,12 +25,33 @@ def calcPrincipalAngles(matrix1, matrix2):
 
     # TODO: Teste quem tem mais colunas que quem. Q1 deve ter dimensao
     # maior ou igual que Q2 para que a SVD seja calculada nessa ordem
-    # abaixo
+    # abaixo.
+    #
+    # Veja um algoritmo em
+    # http://sensblogs.wordpress.com/2011/09/07/matlab-codes-for-principal-angles-also-termed-as-canonical-correlation-between-any-arbitrary-subspaces-redirected-from-jen-mei-changs-dissertation/
     (U, S, V_H) = np.linalg.svd(Q1.conjugate().transpose().dot(Q2))
 
-    # Os valores singulares sao iguais ao cosseno dos angulos
+    # Os valores singulares em S variam entre 0 e 1, mas devido a
+    # imprecisões computacionais pode ter algum valor acima de um (por um
+    # erro bem pequeno). Abaixo mudo valores maiores que 1 para 1 para
+    # evitar problemas com o arccos mais tarde.
+    S[S > 1] = 1  # Muda valores maiores que 1 para 1
+
+    # Os valores singulares na matriz S sao iguais ao cosseno dos angulos
     # principais. Basta calcular o arcocosseno de cada elemento entao.
     return np.arccos(S)
+
+
+def calcChordalDistanceFromPrincipalAngles(principalAngles):
+    """Calculates the chordal distance from the principal angles.
+
+    It is given by the square root of the sum of the squares of the sin of
+    the principal angles.
+
+    Arguments:
+    - `principalAngles`: Numpy array with the principal angles.
+    """
+    return np.sqrt(np.sum(np.sin(principalAngles) ** 2))
 
 
 def calcChordalDistance(matrix1, matrix2):

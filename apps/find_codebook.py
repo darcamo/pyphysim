@@ -7,12 +7,13 @@ from itertools import combinations
 import multiprocessing
 from time import time
 from exceptions import IOError
-
+from optparse import OptionParser
 import scipy.io
 
-from misc import pretty_time
-from subspace.metrics import calcChordalDistance, calcPrincipalAngles
-from util.progressbar import ProgressbarText, DummyProgressbar, ProgressbarMultiProcessText
+from util.misc import pretty_time
+from cli.configfileparser import CaseSensitiveConfigParser
+from subspace.metrics import calcChordalDistanceFromPrincipalAngles, calcPrincipalAngles  # , calcChordalDistance
+from util import progressbar
 
 """Module to find good codebooks"""
 
@@ -54,11 +55,9 @@ class CodebookFinder():
         # The type affects how the codebook is generated
         self._codebook_type = codebook_type
 
-        # General Configurations
-        # self.use_progressbar = True
-
-        # Set this to another progressbar to track the progress
-        self.progressbar = DummyProgressbar()
+        # For now we set self.progressbar to a dummy progressbar.
+        # Set this to a useful progressbar to track progress
+        self.progressbar = progressbar.DummyProgressbar()
 
     def __repr__(self):
         return "CodebookFinder: {0} {1} precoders in G({2},{3}) with minimum distance {4:.4f}".format(self._K, self.type, self._Nt, self._Ns, self._min_dist)
@@ -130,9 +129,8 @@ class CodebookFinder():
 
         """
         K = codebook.shape[0]
-        #s = codebook.shape[2]
 
-        #Se pegar todas as combinações possíveis (sem repetoção e sem ligar para
+        #Se pegar todas as combinações possíveis (sem repetição e sem ligar para
         # ordem) vc tera (ncols**2-ncols)/2 possibilidades. Isso Equivale a pegar
         # uma matriz matrix.ncols() x matrix.ncols() e contar todos os elementos
         # abaixo (ou acima) da diagonal.
@@ -144,8 +142,9 @@ class CodebookFinder():
         # for comb in calc_all_comb_indexes(K):
         for comb in combinations(range(0, K), 2):
             #comb is a tuple with two elements
-            dists[index] = calcChordalDistance(codebook[comb[0]], codebook[comb[1]])
-            principal_angles.append(calcPrincipalAngles(codebook[comb[0]], codebook[comb[1]]))
+            pa = calcPrincipalAngles(codebook[comb[0]], codebook[comb[1]])
+            principal_angles.append(pa)
+            dists[index] = calcChordalDistanceFromPrincipalAngles(pa)
             index += 1
 
         min_index = dists.argmin()  # Index of the minimum distance (in the
@@ -230,42 +229,42 @@ def find_codebook(Nt, Ns, K, rep_max, prng_seed=None, codebook_type=CodebookFind
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx Functions that perform a complete simulation xxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def find_codebook_single_process(rep_max=100, seed=None):
-    """Find a codebook using find_codebook function.
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# # xxxxxxxxxx Functions that perform a complete simulation xxxxxxxxxxxxxxxxx
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# def find_codebook_single_process(rep_max=100, seed=None):
+#     """Find a codebook using find_codebook function.
 
-    Arguments:
-    - `rep_max`:
-    - `seed`: seed passed to the CodebookFinder object
-    """
+#     Arguments:
+#     - `rep_max`:
+#     - `seed`: seed passed to the CodebookFinder object
+#     """
 
-    # Codebook parameters
-    Nt = 3                      # Number of tx antennas
-    Ns = 1                      # Number of streams
-    K = 16                      # Number of precoders in the codebook
-    codebook_type = CodebookFinder.COMPLEX
+#     # Codebook parameters
+#     Nt = 3                      # Number of tx antennas
+#     Ns = 1                      # Number of streams
+#     K = 16                      # Number of precoders in the codebook
+#     codebook_type = CodebookFinder.COMPLEX
 
-    bar = ProgressbarText(
-        rep_max,
-        message="Find {0} {1} precoders in G({2},{3})".format(
-            K,
-            CodebookFinder.type_to_string(codebook_type),
-            Nt,
-            Ns)
-        )
-    codebook = find_codebook(Nt, Ns, K, rep_max, codebook_type=codebook_type, progressbar=bar)
-    (min_dist, principal_angles) = CodebookFinder.calc_min_chordal_dist(codebook)
-    print "Maximum minimum distance is: {0:.2f}".format(min_dist)
-    print "Principal angles are (radians): {0}".format(principal_angles)
-    print "Principal angles are (degrees): {0}".format(180 / np.pi * principal_angles)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#     bar = ProgressbarText(
+#         rep_max,
+#         message="Find {0} {1} precoders in G({2},{3})".format(
+#             K,
+#             CodebookFinder.type_to_string(codebook_type),
+#             Nt,
+#             Ns)
+#         )
+#     codebook = find_codebook(Nt, Ns, K, rep_max, codebook_type=codebook_type, progressbar=bar)
+#     (min_dist, principal_angles) = CodebookFinder.calc_min_chordal_dist(codebook)
+#     print "Maximum minimum distance is: {0:.2f}".format(min_dist)
+#     print "Principal angles are (radians): {0}".format(principal_angles)
+#     print "Principal angles are (degrees): {0}".format(180 / np.pi * principal_angles)
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Acha melhores codebooks e salva em um arquivo
-def find_codebook_multiple_processes():
+def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def find_codebook_wrapper(queue, args):
         """Wrapper that calls find_codebook and put the result value in a
@@ -274,18 +273,29 @@ def find_codebook_multiple_processes():
         queue.put(find_codebook(*args))
 
     def save_results(best_dist, best_codebook, best_principal_angles, filename):
-        scipy.io.savemat(filename, {'codebook': best_codebook, 'shape': best_codebook.shape}, oned_as='row')
-        np.savez(filename + ".npz", best_codebook=best_codebook, best_dist=best_dist.item(), best_principal_angles=best_principal_angles)
+        # Save matlab version
+        scipy.io.savemat(
+            filename,
+            {'codebook': best_codebook, 'shape': best_codebook.shape},
+            oned_as='row')
+        # Save Python Version.
+        np.savez(
+            filename + ".npz",
+            best_codebook=best_codebook,
+            best_dist=best_dist.item(),
+            best_principal_angles=best_principal_angles)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # get number of cpus -> multiprocessing.cpu_count()
     num_process = multiprocessing.cpu_count()
+    print "Processes: {0}".format(num_process)
+    print "Repmax: {0}".format(rep_max)
 
     # xxxxx Simulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    Nt = 3                      # Number of tx antennas
-    Ns = 1                      # Number of streams
-    K = 16                      # Number of precoders in the codebook
-    rep_max = 5000
+    # Nt = 3                      # Number of tx antennas
+    # Ns = 2                      # Number of streams
+    # K = 64                      # Number of precoders in the codebook
+    # rep_max = 100
     codebook_type = CodebookFinder.COMPLEX
 
     # The .mat extension will be added by the scipy.io.savemat function
@@ -296,7 +306,7 @@ def find_codebook_multiple_processes():
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Multiprocess progressbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    pb = ProgressbarMultiProcessText(message="Find {0} {1} precoders in G({2},{3})".format(K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
+    pb = progressbar.ProgressbarMultiProcessText(message="Find {0} {1} precoders in G({2},{3})".format(K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Create the processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -382,19 +392,52 @@ if __name__ == '__main__':
     # xxxxx Add parent folder to the path xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # import os
     # import sys
+    # from exceptions import NameError
 
-    # cmd_folder = os.path.dirname(os.path.abspath(__file__))
-    # if cmd_folder not in sys.path:
-    #     # Add the parent folder to the beggining of the path
-    #     sys.path.insert(0, cmd_folder)
+    # # Add the parent folder to the path.
+    # try:
+    #     # If this file is executed the __file__ will be defined and we add
+    #     # the parent folder to the path, considering the file location
+    #     cmd_folder = os.path.dirname(os.path.abspath(__file__))
+    # except NameError, e:
+    #     # If the content of this file is executed as a script then __file__
+    #     # will not be defined and we add the parent folder of the current
+    #     # working directory to the path
+    #         cmd_folder = os.getcwd()
+    # finally:
+    #     if cmd_folder not in sys.path:
+    #         # Add the parent folder to the beggining of the path
+    #         sys.path.insert(0, cmd_folder)
 
-    import sys
-    sys.path.append("../")
+    # sys.path.append("../")
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     tic = time()
-    #find_codebook_single_process(1000)
-    find_codebook_multiple_processes()
+
+    # xxxxx Get configuration filename from command line xxxxxxxxxxxxxxxxxx
+    comm_line_parser = OptionParser()
+    comm_line_parser.add_option("-c", "--config_file", help="Specify the configuration file", default="config.txt")
+    (command_line_options, args) = comm_line_parser.parse_args()
+
+    config_file_name = command_line_options.config_file
+    # if config_file_name is None:
+    #     config_file_name = "config.txt"
+    print 'Using Config file: "{0}"'.format(config_file_name)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Read configuration from config file xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    conf_file_parser = CaseSensitiveConfigParser()
+    conf_file_parser.read(config_file_name)
+    Nt = conf_file_parser.getint("Precoder", "Nt")
+    Ns = conf_file_parser.getint("Precoder", "Ns")
+    K = conf_file_parser.getint("Precoder", "K")
+    rep_max = conf_file_parser.getint("Simulation", "rep_max")
+    #results_folder = conf_file_parser.get("Simulation", "results_folder")
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    #find_codebook_single_process(100)
+    find_codebook_multiple_processes(Nt, Ns, K, rep_max)
 
     toc = time()
     print "Elapsed Time: {0}".format(pretty_time(toc - tic))
+    print "---------- End -------------------------------------------\n\n"

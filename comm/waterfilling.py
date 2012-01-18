@@ -1,11 +1,7 @@
-
-# [[id:883179ea-eff0-4a52-94f4-969886f8d63c][Programa_em_Python:1]]
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import numpy as np
-
-from misc import randn_c
-
-#from pdb import set_trace
 
 
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
@@ -214,5 +210,3 @@ if __name__ == '__main__':
 if __name__ == '__main__1':
     import doctest
     doctest.testmod()
-
-# Programa_em_Python:1 ends here
