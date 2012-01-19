@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import math
-import numpy as np
-from itertools import combinations
-import multiprocessing
-from time import time
+from configobj import ConfigObj
 from exceptions import IOError
+from itertools import combinations
 from optparse import OptionParser
+from time import time
+import math
+import multiprocessing
+import numpy as np
 import scipy.io
 
-from util.misc import pretty_time
-from cli.configfileparser import CaseSensitiveConfigParser
-from subspace.metrics import calcChordalDistanceFromPrincipalAngles, calcPrincipalAngles  # , calcChordalDistance
+from subspace.metrics import calcChordalDistanceFromPrincipalAngles, calcPrincipalAngles
 from util import progressbar
+from util.misc import pretty_time
 
 """Module to find good codebooks"""
 
@@ -416,7 +416,7 @@ if __name__ == '__main__':
 
     # xxxxx Get configuration filename from command line xxxxxxxxxxxxxxxxxx
     comm_line_parser = OptionParser()
-    comm_line_parser.add_option("-c", "--config_file", help="Specify the configuration file", default="config.txt")
+    comm_line_parser.add_option("-c", "--config_file", help="Specify the configuration file", default="find_codebook_config.txt")
     (command_line_options, args) = comm_line_parser.parse_args()
 
     config_file_name = command_line_options.config_file
@@ -426,13 +426,12 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Read configuration from config file xxxxxxxxxxxxxxxxxxxxxxxxxxx
-    conf_file_parser = CaseSensitiveConfigParser()
-    conf_file_parser.read(config_file_name)
-    Nt = conf_file_parser.getint("Precoder", "Nt")
-    Ns = conf_file_parser.getint("Precoder", "Ns")
-    K = conf_file_parser.getint("Precoder", "K")
-    rep_max = conf_file_parser.getint("Simulation", "rep_max")
-    #results_folder = conf_file_parser.get("Simulation", "results_folder")
+    conf_file_parser = ConfigObj(config_file_name)
+    Nt = int(conf_file_parser["Precoder"]["Nt"])
+    Ns = int(conf_file_parser["Precoder"]["Ns"])
+    K = int(conf_file_parser["Precoder"]["K"])
+    rep_max = int(conf_file_parser["Simulation"]["rep_max"])
+    #results_folder = conf_file_parser["Simulation"]["results_folder"]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     #find_codebook_single_process(100)
