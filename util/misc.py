@@ -147,7 +147,8 @@ def randn_c(rows, cols):
 
 
 def level2bits(n):
-    """Calculates the number of needed to represent n different values.
+    """Calculates the number of bits needed to represent n different
+    values.
 
     Arguments:
     - `n`: Number of different levels.

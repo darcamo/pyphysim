@@ -15,7 +15,7 @@ import math
 import matplotlib.pyplot as plt
 
 from util.misc import level2bits, qfunc
-from util.conversion import gray2binary, binary2gray
+from util.conversion import gray2binary, binary2gray, dB2Linear
 
 PI = np.pi
 
@@ -104,8 +104,10 @@ class Modulator:
         Arguments:
         - `inputData`: Data to be modulated
         """
-        # TODO: test is inputData is valid (elements between 0 and M-1)
-        return self.symbols[inputData]
+        try:
+            return self.symbols[inputData]
+        except IndexError:
+            raise IndexError("Input data must be between 0 and 2^M")
 
     def demodulate(self, receivedData):
         """Demodulate the data.
@@ -119,10 +121,24 @@ class Modulator:
         getClosestSymbol = np.frompyfunc(getClosestSymbol, 1, 1)
         return getClosestSymbol(receivedData).astype(int)
 
-    def calcTheoreticalSER(self, snr):
+    def calcTheoreticalSER(self, SNR):
+        """Calculates the theoretical symbol error rate.
+
+        This function should be implemented in the derived classes
+
+        Arguments:
+        - `SNR`: Signal-to-noise-value (in dB)
+        """
         raise NotImplementedError("calcTheoreticalSER: Not implemented")
 
-    def calcTheoreticalBER(self, snr):
+    def calcTheoreticalBER(self, SNR):
+        """Calculates the theoretical bit error rate.
+
+        This function should be implemented in the derived classes
+
+        Arguments:
+        - `SNR`: Signal-to-noise-value (in dB)
+        """
         raise NotImplementedError("calcTheoreticalBER: Not implemented")
 # xxxxx End of Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -131,7 +147,7 @@ class Modulator:
 # xxxxx PSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class PSK(Modulator):
-    """
+    """PSK Class
     """
     def __init__(self, M, phaseOffset=0):
         """
@@ -147,9 +163,6 @@ class PSK(Modulator):
         symbols = symbols[gray2binary(np.arange(0, M))]
 
         self.setConstellation(symbols)
-
-    # def __repr__(self):
-    #     return "{0:d}-PSK object".format(self.M)
 
     @staticmethod
     def ___createConstellation(M, phaseOffset):
@@ -176,28 +189,30 @@ class PSK(Modulator):
         """
         self.setConstellation(self.__createConstellation(self.M, phaseOffset))
 
-    def calcTheoreticalSER(self, snr):
-        """Calculates the theoretical (approximation) symbol error rate for
-        the M-PSK squeme.
+    def calcTheoreticalSER(self, SNR):
+        """Calculates the theoretical (approximation for high M and high
+        SNR) symbol error rate for the M-PSK squeme.
 
         Arguments:
-        - `snr`: Signal to noise ration (in linear)
+        - `SNR`: Signal-to-noise-value (in dB)
         """
+        snr = dB2Linear(SNR)
+
         # $P_s \approx 2Q\left(\sqrt{2\gamma_s}\sin\frac{\pi}{M}\right)$
         ser = 2 * qfunc(np.sqrt(2 * snr) * math.sin(PI / self.M))
         return ser
 
-    def calcTheoreticalBER(self, snr):
+    def calcTheoreticalBER(self, SNR):
         """Calculates the theoretical (approximation) bit error rate for
         the M-PSK squeme using Gray coding.
 
         Arguments:
-        - `snr`: Signal to noise ration (in linear)
+        - `SNR`: Signal to noise ration (in dB)
         """
         # $P_b = \frac{1}{k}P_s$
         # Number of bits per symbol
         k = level2bits(self.M)
-        return 1.0 / k * self.calcTheoreticalSER(snr)
+        return 1.0 / k * self.calcTheoreticalSER(SNR)
 
 
 # xxxxx End of PSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -217,16 +232,6 @@ class QPSK(PSK):
 
     def __repr__(self):
         return "QPSK object"
-
-    # def calcTheoreticalBER(self, EbOverN0):
-    #     """
-
-    #     Arguments:
-    #     - `EbOverN0`: Bit energy over noise power
-    #     """
-    #     # $P_b = Q\left(\sqrt{\frac{2E_b}{N_0}}\right)$
-    #     Pb = qfunc(math.sqrt(2*EbOverN0))
-    #     return Pb
 # xxxxx End of QPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -245,25 +250,26 @@ class BPSK(Modulator):
     def __repr__(self):
         return "BPSK object"
 
-    def calcTheoreticalSER(self, snr):
+    def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation) symbol error rate for
         the BPSK squeme.
 
         Arguments:
-        - `snr`: Signal to noise ration (in linear)
+        - `snr`: Signal to noise ration (in dB)
         """
+        snr = dB2Linear(SNR)
         # $P_b = Q\left(\sqrt{\frac{2E_b}{N_0}}\right)$
         ser = qfunc(math.sqrt(2 * snr))
         return ser
 
-    def calcTheoreticalBER(self, snr):
+    def calcTheoreticalBER(self, SNR):
         """Calculates the theoretical (approximation) bit error rate for
         the BPSK squeme.
 
         Arguments:
-        - `snr`: Signal to noise ration (in linear)
+        - `snr`: Signal to noise ration (in dB)
         """
-        return self.calcTheoreticalSER(snr)
+        return self.calcTheoreticalSER(SNR)
 
 # xxxxx End of BPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -287,7 +293,6 @@ class QAM(Modulator):
 
         symbols = self.__createConstellation(M)
 
-        # TODO: Change to Gray mapping
         L = int(round(math.sqrt(M)))
         grayMappingIndexes = self.__calculateGrayMappingIndexQAM(L)
         symbols = symbols[grayMappingIndexes]
@@ -362,9 +367,52 @@ class QAM(Modulator):
         # Return the indexes as a vector (row order, which is the default
         # in numpy)
         return np.reshape(index_matrix, L ** 2)
-    #
+
     # TODO: Implement calcTheoreticalSER and calcTheoreticalBER for square
     # QAM systems
+
+    def _calcTheoreticalSingleCarrierErrorRate(self, SNR):
+        """Calculates the theoretical (approximation) error rate of a
+        single carrier in the QAM system (QAM has two carriers).
+
+        Arguments:
+        - `SNR`: Signal to noise ration (in dB)
+        """
+        snr = dB2Linear(SNR)
+        # Probability of error of each carrier in a square QAM
+        # $P_{sc} = 2\left(1 - \frac{1}{\sqrt M}\right)Q\left(\sqrt{\frac{3}{M-1}\frac{E_s}{N_0}}\right)$
+        sqrtM = np.sqrt(self.M)
+        Psc = 2. * (1. - (1. / sqrtM)) * qfunc(np.sqrt(snr * 3. / (self.M - 1.)))
+        return Psc
+
+    def calcTheoreticalSER(self, SNR):
+        """Calculates the theoretical (approximation) symbol error rate for
+        the QAM squeme.
+
+        Arguments:
+        - `SNR`: Signal to noise ration (in dB)
+        """
+        Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
+        # The SER is then given by
+        # $ser = 1 - (1 - Psc)^2$
+        ser = 1 - (1 - Psc) ** 2
+        return ser
+
+    def calcTheoreticalBER(self, SNR):
+        """Calculates the theoretical (approximation) bit error rate for
+        the QAM squeme.
+
+        Arguments:
+        - `SNR`: Signal to noise ration (in dB)
+        """
+        # For higher SNR values and gray mapping, each symbol error
+        # corresponds to aproximatelly a bit error. The BER is then given
+        # by the probability of error of a single carrier in the QAM system
+        # divided by the number of bits transported in that carrier.
+        k = level2bits(self.M)
+        Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
+        ber = 2 * Psc / k
+        return ber
 # xxxxx End of QAM Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

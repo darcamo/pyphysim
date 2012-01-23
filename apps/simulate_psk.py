@@ -4,22 +4,14 @@
 """Perform the simulation of the transmission of PSK symbols through an
 awgn channel."""
 
-import numpy as np
-import math
-
-from matplotlib import pyplot as plt
-
-# # Installed with pip
-# # See http://www.doughellmann.com/articles/pythonmagazine/features/commandlineapp/index.html
-# from commandlineapp import CommandLineApp
-
-from util.conversion import dB2Linear
-from util import misc
-import comm.modulators as mod
-from simulations import SimulationResults, Result, SimulationRunner2  # , SimulationParameters
-
-#from cli.configfileparser import CaseSensitiveConfigParser
 from configobj import ConfigObj
+from matplotlib import pyplot as plt
+import numpy as np
+
+from simulations import SimulationResults, Result, SimulationRunner2  # , SimulationParameters
+from util import misc
+from util.conversion import dB2Linear
+import comm.modulators as mod
 
 
 class SimplePskSimulationRunner(SimulationRunner2):
@@ -87,7 +79,7 @@ class SimplePskSimulationRunner(SimulationRunner2):
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         noiseVar = 1 / dB2Linear(SNR)
         noise = ((np.random.randn(NSymbs) + 1j * np.random.randn(NSymbs)) *
-                 math.sqrt(noiseVar / 2))
+                 np.sqrt(noiseVar / 2))
         receivedData = modulatedData + noise
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -170,9 +162,13 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         """Plot the results from the simulation, as well as the
         theoretical results.
         """
+        # def make_patch_spines_invisible(ax):
+        #     ax.set_frame_on(True)
+        #     ax.patch.set_visible(False)
+        #     for sp in ax.spines.itervalues():
+        #         sp.set_visible(False)
+
         def get_result_value(index, param_name):
-            """
-            """
             return self.results[index][param_name][0].get_result()
 
         # xxxxx Concatenate the simulation results xxxxxxxxxxxxxxxxxxxxxxxx
@@ -186,43 +182,83 @@ class PskSimulationRunner(SimplePskSimulationRunner):
 
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
+        # Number of bits per symbol
+        k = mod.level2bits(self.modulator.M)
+        Eb_over_N0 = SNR - 10 * np.log10(k)
 
         # xxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         f = plt.figure()
-        line1 = plt.plot(SNR, ber, 'o', color='green', label='Simulated BER')
-        line2 = plt.plot(SNR, ser, '^', color='blue', label='Simulated SER')
+        ax = f.add_subplot(211)
+        ax2 = f.add_subplot(212)
+
+        line1 = ax.plot(SNR, ber, '--o', color='green', label='Simulated BER')
+        line2 = ax.plot(SNR, ser, '--^', color='blue', label='Simulated SER')
+        ax2.plot(Eb_over_N0, ber, '--o', color='green', label='Simulated BER')
+        ax2.plot(Eb_over_N0, ser, '--^', color='blue', label='Simulated SER')
 
         # Calculates the Theoretical SER and BER
-        psk = mod.PSK(self.params['M'])
-        theoretical_ser = psk.calcTheoreticalSER(dB2Linear(SNR))
-        theoretical_ber = psk.calcTheoreticalBER(dB2Linear(SNR))
+        theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
+        theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
 
-        line3 = plt.plot(SNR, theoretical_ber, color='green', label='Theoretical BER')
-        line4 = plt.plot(SNR, theoretical_ser, color='blue', label='Theoretical SER')
+        line3 = ax.plot(SNR, theoretical_ber, color='green', label='Theoretical BER')
+        line4 = ax.plot(SNR, theoretical_ser, color='blue', label='Theoretical SER')
+        ax2.plot(Eb_over_N0, theoretical_ber, color='green', label='Theoretical BER')
+        ax2.plot(Eb_over_N0, theoretical_ser, color='blue', label='Theoretical SER')
         # Not really necessary. Just to make flymake happy in emacs
         line1 + line2 + line3 + line4
 
-        # Get the first axes (we only have one, since subplot was not used)
-        ax = f.axes[0]
+        # xxxxx Set the properties of the ax axes xxxxxxxxxxxxxxxxxxxxxxxxx
         # Uses the label property of each line as the legend, since I'm not
         # specifying the legend here
         ax.legend()
-        ax.set_title('PSK Simulation')
+        title_string = '{0}-{1} Simulation'.format(
+            self.modulator.M,
+            self.modulator.__class__.__name__)
+        ax.set_title(title_string)
         ax.set_xlabel('SNR')
+        ax.set_ylabel('Error Rate')
         ax.set_yscale('log')
         ax.axis('tight')
-        ax.grid(True)
+        ax.grid(True, which='both')
+
+        # xxxxx Set the properties of the ax2 axes xxxxxxxxxxxxxxxxxxxxxxxx
+        ax2.legend()
+        # title_string = '{0}-{1} Simulation'.format(
+        #     self.modulator.M,
+        #     self.modulator.__class__.__name__)
+        # ax2.set_title(title_string)
+        ax2.set_xlabel('Eb/N0')
+        ax2.set_ylabel('Error Rate')
+        ax2.set_yscale('log')
+        ax2.axis('tight')
+        ax2.grid(True, which='both')
 
         f.show()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def write_config_file_template():
+# def make_second_bottom_spine(ax=None, label=None, offset=0, labeloffset=20):
+#     """Makes a second bottom spine"""
+#     if ax is None:
+#         ax = plt.gca()
+#     second_bottom = mpl.spines.Spine(ax, 'bottom', ax.spines['bottom']._path)
+#     second_bottom.set_position(('outward', offset))
+#     ax.spines['second_bottom'] = second_bottom
+
+#     if label is not None:
+#         # Make a new xlabel
+#         ax.annotate(label,
+#                 xy=(0.5, 0), xycoords='axes fraction',
+#                 xytext=(0, -labeloffset), textcoords='offset points',
+#                 verticalalignment='top', horizontalalignment='center')
+
+
+
+def write_config_file_template(config_file_name="psk_simulation_config.txt"):
     """Write a configuration file that can be used to run the simulate
     function of a PskSimulationRunner object.
     """
     # See http://www.voidspace.org.uk/python/configobj.html#getting-started
-    config_file_name = "psk_simulation_config.txt"
     configobj = ConfigObj(config_file_name)
     configobj.clear()
     configobj.initial_comment = ["Simulation Parameters"]
