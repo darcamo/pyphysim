@@ -8,7 +8,13 @@ import math
 
 from projections import calcProjectionMatrix
 
+# TODO: Create doctests for this module
 
+
+# TODO: I think calcPrincipalAngles is not correct when matrix1 e matrix2
+# have different sizes. At least obtaining the chordal distance from the
+# principal angles does not work when matrix1 and matrix2 have different
+# shapes.
 def calcPrincipalAngles(matrix1, matrix2):
     """Calculates the principal angles between matrix1 and matrix2.
 
@@ -29,7 +35,7 @@ def calcPrincipalAngles(matrix1, matrix2):
     #
     # Veja um algoritmo em
     # http://sensblogs.wordpress.com/2011/09/07/matlab-codes-for-principal-angles-also-termed-as-canonical-correlation-between-any-arbitrary-subspaces-redirected-from-jen-mei-changs-dissertation/
-    (U, S, V_H) = np.linalg.svd(Q1.conjugate().transpose().dot(Q2))
+    (U, S, V_H) = np.linalg.svd(Q1.conjugate().transpose().dot(Q2), full_matrices=False)
 
     # Os valores singulares em S variam entre 0 e 1, mas devido a
     # imprecisões computacionais pode ter algum valor acima de um (por um
@@ -106,7 +112,7 @@ if __name__ == '__main__':
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# if __name__ == '__main__':
-#     # When this module is run as a script the doctests are executed
-#     import doctest
-#     doctest.testmod()
+if __name__ == '__main__':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()

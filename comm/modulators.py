@@ -222,7 +222,7 @@ class PSK(Modulator):
 # xxxxx QPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class QPSK(PSK):
-    """QPSK Class.
+    """QPSK Class
     """
 
     def __init__(self, ):
@@ -239,7 +239,7 @@ class QPSK(PSK):
 # xxxxx BPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BPSK(Modulator):
-    """
+    """BPSK Class
     """
     def __init__(self, ):
         """
@@ -278,7 +278,7 @@ class BPSK(Modulator):
 # xxxxx QAM Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class QAM(Modulator):
-    """
+    """QAM Class
     """
 
     def __init__(self, M):
@@ -367,9 +367,6 @@ class QAM(Modulator):
         # Return the indexes as a vector (row order, which is the default
         # in numpy)
         return np.reshape(index_matrix, L ** 2)
-
-    # TODO: Implement calcTheoreticalSER and calcTheoreticalBER for square
-    # QAM systems
 
     def _calcTheoreticalSingleCarrierErrorRate(self, SNR):
         """Calculates the theoretical (approximation) error rate of a
