@@ -15,7 +15,10 @@ from misc import pretty_time
 from util.progressbar import ProgressbarText
 
 
-class SimulationRunner2():
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SimulationRunner():
     """Base class to run simulations.
 
     You need to derive from this class and implement at least the
@@ -31,10 +34,10 @@ class SimulationRunner2():
     Likewise, the _run_simulation method should return the results as a
     SimulationResults object.
     """
-    def __init__(self, rep_max):
+    def __init__(self):
         """
         """
-        self.rep_max = rep_max
+        self.rep_max = 1
         self._elapsed_time = 0.0
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
@@ -164,8 +167,12 @@ class SimulationRunner2():
         toc = time()
         self._elapsed_time = toc - tic
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationParameters():
     """Class to store the simulation parameters.
 
@@ -270,23 +277,6 @@ class SimulationParameters():
         # Just multiply all the lengths
         return reduce(lambda x, y: x * y, gen_values)
 
-
-    # TODO: Apagar depois, já que não terminei
-    def get_unpacked_params_list2(self):
-        # If unpacked_parameters is empty, return self
-        if not self._unpacked_parameters_set:
-            return [self]
-
-        # Names of the parameters that don't need to be unpacked
-        regular_params = list(set(self.parameters.keys()) - self._unpacked_parameters_set)
-        print "Regular Parameters: ", regular_params
-
-        # Parameters that will be unpacked
-        print "Unpacked Parameters: ", self.unpacked_parameters
-
-        # Get the lengths of the parameters that will be unpacked
-        print [len(self.parameters[i]) for i in self._unpacked_parameters_set]
-
     # Get from
     # https://gist.github.com/1511969/222e3316048bce5763b1004331af898088ffcd9e
     @staticmethod
@@ -348,8 +338,6 @@ class SimulationParameters():
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return indexes
-
-
 
     def get_unpacked_params_list(self):
         """Get a list of SimulationParameters objects, each one
@@ -415,8 +403,12 @@ class SimulationParameters():
         - `file_name`: Name of the file to save the parameters.
         """
         NotImplemented("SimulationParameters.save_to_file: Implement-me")
+# xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SimulationResults - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationResults():
     """Store results from simulations.
 
@@ -575,8 +567,12 @@ class SimulationResults():
         object.
         """
         return self._results.itervalues()
+# xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Result - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Result():
     """Class to store a single simulation result.
 
@@ -778,6 +774,7 @@ class Result():
                 return float(self.value) / self.total
             else:
                 return self.value
+# xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

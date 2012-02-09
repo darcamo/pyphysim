@@ -17,6 +17,9 @@ import multiprocessing
 import time
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx DummyProgressbar - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class DummyProgressbar():
     """Dummy progress bar that don't really do anything."""
 
@@ -25,8 +28,12 @@ class DummyProgressbar():
 
     def progress(self, count):
         pass
+# xxxxxxxxxx DummyProgressbar - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarText - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarText:
     """Class that prints a representation of the current progress as
     text.
@@ -73,7 +80,7 @@ class ProgressbarText:
         if not self.finalcount:
             return
         if(len(message) != 0):
-            bartitle = '\n{0}\n'.format(center_message(message, 50, '-', '', '1'))
+            bartitle = '\n{0}\n'.format(self.center_message(message, 50, '-', '', '1'))
         else:
             bartitle = '\n------------------ % Progress -------------------1\n'
 
@@ -122,7 +129,42 @@ class ProgressbarText:
         if percentcomplete == 100:
             self.f.write("\n")
 
+    @classmethod
+    def center_message(cls, message, length=50, fill_char=' ', left='', right=''):
+        """Return a string with `message` centralized and surrounded by
+        fill_char.
 
+        Arguments:
+        - `cls`: This Class. This is required because this method was
+                 marked as a classmethod
+        - `message`: The message to be centered
+        - `length`: Total length of the centered message (original + any fill)
+        - `fill_char`:
+        - `left`:
+        - `right`:
+
+        >>> print center_message("Hello Progress", 50, '-', 'Left', 'Right')
+        Left------------- Hello Progress ------------Right
+        """
+        message_size = len(message)
+        left_size = len(left)
+        right_size = len(right)
+        fill_size = (length - (message_size + 2) - left_size - right_size)
+        left_fill_size = fill_size // 2 + (fill_size % 2)
+        right_fill_size = (fill_size // 2)
+
+        new_message = "{0}{1} {2} {3}{4}".format(left,
+                                               fill_char * left_fill_size,
+                                               message,
+                                               fill_char * right_fill_size,
+                                               right)
+        return new_message
+# xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarMultiProcessText - START xxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: Finish the implementation
 class ProgressbarMultiProcessText:
     """Class that prints a representation of the current progress of
@@ -130,8 +172,6 @@ class ProgressbarMultiProcessText:
 
     Similar to the ProgressbarText class, but the bar measures the
     progress of several process as a whole.
-
-
 
     Ex:
     TODO: Write an example here
@@ -282,7 +322,7 @@ class ProgressbarMultiProcessText:
         self._toc.value = time.time()
         self._update_process.join()
 
-    # TODO: Make the duration property work correctly
+    # TODO: Check if the duration property work correctly
     @property
     def duration(self, ):
         """Duration of the progress.
@@ -294,37 +334,8 @@ class ProgressbarMultiProcessText:
         else:
             toc = self._toc.value
 
-        return self._toc.value - self._tic.value
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def center_message(message, length=50, fill_char=' ', left='', right=''):
-    """Return a string with `message` centralized and surrounded by
-    fill_char.
-
-    Arguments:
-    - `message`: The message to be centered
-    - `length`: Total length of the centered message (original + any fill)
-    - `fill_char`:
-    - `left`:
-    - `right`:
-
-    >>> print center_message("Hello Progress", 50, '-', 'Left', 'Right')
-    Left------------- Hello Progress ------------Right
-    """
-    message_size = len(message)
-    left_size = len(left)
-    right_size = len(right)
-    fill_size = (length - (message_size + 2) - left_size - right_size)
-    left_fill_size = fill_size // 2 + (fill_size % 2)
-    right_fill_size = (fill_size // 2)
-
-    new_message = "{0}{1} {2} {3}{4}".format(left,
-                                           fill_char * left_fill_size,
-                                           message,
-                                           fill_char * right_fill_size,
-                                           right)
-    return new_message
+        return toc - self._tic.value
+# xxxxxxxxxx ProgressbarMultiProcessText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
