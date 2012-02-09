@@ -4,17 +4,51 @@
 """Perform the simulation of the transmission of PSK symbols through an
 awgn channel."""
 
+from traits.etsconfig.etsconfig import ETSConfig
+ETSConfig.toolkit = "qt4"
+
 from configobj import ConfigObj
+
+import matplotlib
+matplotlib.use('Gtk')
 from matplotlib import pyplot as plt
+
 import numpy as np
 
-from simulations import SimulationResults, Result, SimulationRunner2  # , SimulationParameters
+from simulations import SimulationResults, Result, SimulationRunner, SimulationParameters
 from util import misc
 from util.conversion import dB2Linear
 import comm.modulators as mod
+from traits.api import HasTraits, Int, Float, Array, Instance, ListFloat, Property
+from traits.api import on_trait_change
+from traitsui.api import View, Item, Group, ArrayEditor, ListEditor, TabularEditor, CustomEditor, Action, Handler, Controller, ModelView
 
 
-class SimplePskSimulationRunner(SimulationRunner2):
+# class SimplePskSimulationRunnerHandler(Controller):
+#     """
+#     """
+#     # Handler must be able to observe and manipulate both its corresponding
+#     # window and model objects. In Traits UI, this is accomplished by means
+#     # of the UIInfo object.  Whenever Traits UI creates a window or panel
+#     # from a View, a UIInfo object is created to act as the Handler’s
+#     # reference to that window and to the objects whose trait attributes
+#     # are displayed in it.
+#     def start_simulation(self, UIInfo_object):
+#         """Handler method for the simulate action
+
+#         Arguments:
+#         - `UIInfo_object`:
+#         """
+#         # print "haha"
+#         # print UIInfo_object.get()
+#         runner = UIInfo_object.ui.get()['context']['object']
+#         runner.simulate()
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SimplePskSimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SimplePskSimulationRunner(SimulationRunner, HasTraits):
     """Implements a simulation runner for a transmission with a PSK
     modulation through an AWGN channel.
 
@@ -24,38 +58,87 @@ class SimplePskSimulationRunner(SimulationRunner2):
       single SimulationParameters object which contains the simulation
       parameters.
     - The _keep_going may be optionally implemented.
+
+    This class also inherits from HasTraits and the simulation parameters
+    are traits. Because of this, we can configure the parameters
+    graphically by calling the configure_traits method. In addition,
+    attributes that depend on other attributes are automatically updated
+    using the on_trait_change decorator.
     """
-    def __init__(self, rep_Max):
-        """
-        """
-        SimulationRunner2.__init__(self, rep_Max)
 
-        SNR = np.array([5, 10])
-        M = 4
-        NSymbs = 100
-        self.modulator = mod.PSK(M)
+    # Define the traits for the simulation parameters that the user may set
+    SNR = Array()
+    M = Int()
+    NSymbs = Int()
+    rep_max = Int()  # rep_max is in the base class. Does traits works?
+    max_bit_errors = Int()
 
-        # We can add anything to the simulation parameters. Note that most
-        # of these parameters will be used in the _run_simulation function
-        # and we could put them there, but putting the parameters here
-        # makes thinks more modular.
-        self.params.add("description", "Parameters for the simulation of a {0}-PSK transmission through an AWGN channel ".format(M))
-        self.params.add("SNR", SNR)
-        self.params.add("M", M)         # Modulation cardinality
-        self.params.add("NSymbs", NSymbs)  # Number of symbols that will be
-                                           # transmitted in the _run_simulation
-                                           # function
+    # Define traits for other attributes (that depend on other traits)
+    modulator = Instance(mod.PSK)
+    params = Instance(SimulationParameters)
 
-        # Unpack the SNR parameter
-        self.params.set_unpack_parameter("SNR")
+    # # Action for when the "Simulate" button is clicked
+    # simulate_action = Action(name="Simulate",
+    #                          action="start_simulation")
+
+    # Define the view used when the configure_traits method is called
+    parameters_view = View(Group(Item('SNR', style='simple', editor=ArrayEditor(), label='SNR'),
+                                 Item('M'),
+                                 Item('NSymbs'),
+                                 Item('max_bit_errors'),
+                                 Item('rep_max', style='readonly'),
+                                 label='Simulation Parameters',
+                                 show_border=False),
+                           #handler=SimplePskSimulationRunnerHandler(),
+                           #buttons=[simulate_action, 'Cancel', 'Revert'],
+                           buttons=['OK', 'Cancel', 'Revert'],
+                           resizable=True,
+                           # Action if the user closes the window
+                           close_result=False)
+
+    def __init__(self):
+        # Call the __init__ function of the base classes
+        SimulationRunner.__init__(self)
+        HasTraits.__init__(self)
+
+        # Set the simulations parameters as attributes here, but what is
+        # really necessary is to set the self.params object
+        self.SNR = np.array([5, 10, 15])
+        self.M = 4
+        self.NSymbs = 500
+        self.rep_max = 1000
 
         # We will stop when the number of bit errors is greater than
         # max_bit_errors
-        self.max_bit_errors = 5000
+        self.max_bit_errors = 200
 
         # Message Exibited in the progressbar. Set to None to disable the
-        # progressbar
-        self.progressbar_message = "{M}-PSK Simulation - SNR: {SNR}"
+        # progressbar. See the comment on the SimulationRunner class.
+        self.progressbar_message = "{M}-" + \
+            self.modulator.__class__.__name__ + " Simulation - SNR: {SNR}"
+
+    @on_trait_change('M')
+    def _update_modulator_object(self, ):
+        """Updates the modulator object whenever M changes
+        """
+        self.modulator = mod.PSK(self.M)
+
+    @on_trait_change('SNR, NSymbs, M')
+    def _update_params_object(self):
+        """Updates the self.params object to the current values of the
+        simulation aprameters"""
+        # The self.params object must contain all the simulation parameters
+        # that will be accessed in the 'simulate' function.
+        self.params.add("description", "Parameters for the simulation of a {0}-{1} transmission through an AWGN channel ".format(
+                self.M,
+                self.modulator.__class__.__name__))
+        self.params.add("SNR", self.SNR)
+        # Modulation cardinality
+        self.params.add("M", self.M)
+        # Number of symbols that will be transmitted in the _run_simulation
+        # function Unpack the SNR parameter
+        self.params.add("NSymbs", self.NSymbs)
+        self.params.set_unpack_parameter("SNR")
 
     def _run_simulation(self, current_parameters):
         # To make sure that this function does not modify the object state,
@@ -127,8 +210,12 @@ class SimplePskSimulationRunner(SimulationRunner2):
         # max_bit_errors
         cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
         return cumulated_bit_errors < self.max_bit_errors
+# xxxxxxxxxx SimplePskSimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx PskSimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class PskSimulationRunner(SimplePskSimulationRunner):
     """A more complete simulation runner for a transmission with a PSK
     modulation through an AWGN channel.
@@ -140,10 +227,12 @@ class PskSimulationRunner(SimplePskSimulationRunner):
     def __init__(self, config_file_name='psk_simulation_config.txt'):
         """
         """
+        SimplePskSimulationRunner.__init__(self)
+
         # Read the configuration file
         conf_file_parser = ConfigObj(config_file_name, list_values=True)
 
-        # Pegue da linha de comando
+        # Read the simulation parameters
         rep_max = int(conf_file_parser['Simulation']['rep_max'])
         M = int(conf_file_parser['Simulation']['M'])
         NSymbs = int(conf_file_parser['Simulation']['NSymbs'])
@@ -151,23 +240,14 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         SNR = [int(i) for i in SNR]
         max_bit_errors = int(conf_file_parser['Simulation']['max_bit_errors'])
 
-        SimplePskSimulationRunner.__init__(self, rep_max)
-        self.params.add('M', M)
-        self.params.add('NSymbs', NSymbs)
-        self.params.add('SNR', SNR)
+        # Set the simulations parameters from the configuration file
+        self.SNR = SNR
+        self.M = M
+        self.NSymbs = NSymbs
+        self.rep_max = rep_max
         self.max_bit_errors = max_bit_errors
-        self.modulator = mod.PSK(M)
 
-    def plot_results(self):
-        """Plot the results from the simulation, as well as the
-        theoretical results.
-        """
-        # def make_patch_spines_invisible(ax):
-        #     ax.set_frame_on(True)
-        #     ax.patch.set_visible(False)
-        #     for sp in ax.spines.itervalues():
-        #         sp.set_visible(False)
-
+    def get_data_to_be_plotted(self):
         def get_result_value(index, param_name):
             return self.results[index][param_name][0].get_result()
 
@@ -186,6 +266,22 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         k = mod.level2bits(self.modulator.M)
         Eb_over_N0 = SNR - 10 * np.log10(k)
 
+        # Calculates the Theoretical SER and BER
+        theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
+        theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
+        return (SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser)
+
+    def plot_results(self):
+        """Plot the results from the simulation, as well as the
+        theoretical results.
+        """
+        # def make_patch_spines_invisible(ax):
+        #     ax.set_frame_on(True)
+        #     ax.patch.set_visible(False)
+        #     for sp in ax.spines.itervalues():
+        #         sp.set_visible(False)
+        SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser = self.get_data_to_be_plotted()
+
         # xxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         f = plt.figure()
         ax = f.add_subplot(211)
@@ -195,10 +291,6 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         line2 = ax.plot(SNR, ser, '--^', color='blue', label='Simulated SER')
         ax2.plot(Eb_over_N0, ber, '--o', color='green', label='Simulated BER')
         ax2.plot(Eb_over_N0, ser, '--^', color='blue', label='Simulated SER')
-
-        # Calculates the Theoretical SER and BER
-        theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
-        theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
 
         line3 = ax.plot(SNR, theoretical_ber, color='green', label='Theoretical BER')
         line4 = ax.plot(SNR, theoretical_ser, color='blue', label='Theoretical SER')
@@ -233,27 +325,31 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         ax2.axis('tight')
         ax2.grid(True, which='both')
 
-        f.show()
+        #f.show()
+        plt.show()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def plot_results_with_chaco_shell(self):
+        SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser = self.get_data_to_be_plotted()
 
-# def make_second_bottom_spine(ax=None, label=None, offset=0, labeloffset=20):
-#     """Makes a second bottom spine"""
-#     if ax is None:
-#         ax = plt.gca()
-#     second_bottom = mpl.spines.Spine(ax, 'bottom', ax.spines['bottom']._path)
-#     second_bottom.set_position(('outward', offset))
-#     ax.spines['second_bottom'] = second_bottom
+        from chaco.shell import hold, semilogy, legend, tool, show
+        semilogy(SNR, ber, '-r', name='BER')
+        hold(True)
+        semilogy(SNR, ser, name='SER')
+        legend(True)
+        tool()
+        show()
 
-#     if label is not None:
-#         # Make a new xlabel
-#         ax.annotate(label,
-#                 xy=(0.5, 0), xycoords='axes fraction',
-#                 xytext=(0, -labeloffset), textcoords='offset points',
-#                 verticalalignment='top', horizontalalignment='center')
-
+    def plot_results_with_chaco(self):
+        from plot.simulationresultsplotter import SimulationResultsPlotter
+        results_plotter = SimulationResultsPlotter(self)
+        results_plotter.configure_traits()
+# xxxxxxxxxx PskSimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def write_config_file_template(config_file_name="psk_simulation_config.txt"):
     """Write a configuration file that can be used to run the simulate
     function of a PskSimulationRunner object.
@@ -299,4 +395,14 @@ if __name__ == '__main__':
     print "Elapsed Time: {0}".format(psk_runner.elapsed_time)
     print "Iterations Executed: {0}".format(psk_runner.runned_reps)
 
-    psk_runner.plot_results()
+    # psk_runner.plot_results()
+    psk_runner.plot_results_with_chaco()
+    #psk_runner.plot_results_with_chaco_shell()
+
+    #results_plotter = psk_runner.results_plotter
+
+
+if __name__ == '__main__1':
+    #runner = SimplePskSimulationRunner(250)
+    runner = PskSimulationRunner()
+    runner.configure_traits()
