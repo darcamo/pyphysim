@@ -27,15 +27,15 @@ from traitsui.api import View, Item, Group, VGroup
 # Chaco imports
 from chaco.plot_factory import _create_data_sources
 from chaco.api import Plot, ArrayPlotData, marker_trait, ArrayDataSource, OverlayPlotContainer, create_line_plot, Legend, PlotLabel
-from chaco.tools.api import PanTool, ZoomTool, BroadcasterTool, LegendTool, SaveTool, TraitsTool
+from chaco.tools.api import PanTool, ZoomTool, BroadcasterTool, LegendTool, SaveTool, TraitsTool, BetterZoom, BetterSelectingZoom
 
 # Enable imports
 from enable.component_editor import ComponentEditor
 
 from enable.api import MarkerTrait, black_color_trait
-from traits.api import Float, Any, ListInstance
-from traitsui.editors import ArrayEditor, TabularEditor, TableEditor, CompoundEditor, CustomEditor, ListEditor, TreeEditor, InstanceEditor, DropEditor
-from chaco.api import LinePlot, DataRange1D, LinearMapper, ScatterPlot
+from traits.api import Float, Any, ListInstance, Bool
+from traitsui.editors import ArrayEditor, TabularEditor, TableEditor, CompoundEditor, CustomEditor, ListEditor, TreeEditor, InstanceEditor, DropEditor, RangeEditor, ButtonEditor, CheckListEditor, EnumEditor
+from chaco.api import LinePlot, DataRange1D, LinearMapper, ScatterPlot, log_auto_ticks
 from chaco.scatterplot import render_markers
 from chaco.plot_factory import add_default_axes, add_default_grids
 
@@ -298,6 +298,15 @@ if __name__ == '__main__':
     #plot_config_view.configure_traits()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+_scatterlineplot_view = View(Item('marker_size',
+                                  style='custom',
+                                  editor=RangeEditor(mode='spinner', low=1, high=15)),
+                             Item('marker'),
+                             Item('color'),
+                             Item('line_style'),
+                             Item('line_width'),
+                             Item('visible'))
+
 
 class SimulationResultsPlotter(HasTraits):
     """Class to plot the results with chaco.
@@ -307,18 +316,43 @@ class SimulationResultsPlotter(HasTraits):
     marker = marker_trait(desc='Marker type of the plot')
     marker_size = Range(low=1, high=6, value=4, desc='Marker size of the plot')
 
+    # xxxxx Traits for the curves indexes and data xxxxxxxxxxxxxxxxxxxxxxxx
+    #index = List(Array)  # We can have multiple index datas, but only the
+                         # first one will be used for now (we will be able
+                         # to choose in the future)
+
+    # List of curves. Each one is a numpy array
+    #curves_data = List(Array)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    curves_renderers = List()
+    index_datasources_dict = Dict(Str, ArrayDataSource)
+    index_data_labels = List(Str)
+    chosen_index = Str()
+
     # If no view is specified when configure_traits() is called on
     # the SimulationResultsPlotter object, then the one named traits_view takes
     # preference
     traits_view = View(
         Group(
-            Item('plot', editor=ComponentEditor(), show_label=False),
-            Item('marker', label='Marker'),
-            Item('marker_size', label='Size'),
+            Item('plot', editor=ComponentEditor(), show_label=False, width=800, height=600, resizable=True),
+            Item('_'),
+            Group(
+                Item('curves_renderers', style='custom', editor=ListEditor(
+                        use_notebook=True,
+                        view=_scatterlineplot_view), show_label=False),
+                Group(
+                    Item('marker', label='All Markers Type'),
+                    Item('marker_size', label='All Markers Size'),
+                    # Change the chosen_index value according to one of the
+                    # values in index_data_labels
+                    Item('chosen_index', style='simple', editor=EnumEditor(name='index_data_labels')),
+                    orientation='vertical'),
+                orientation='horizontal'),
             orientation='vertical'
         ),
-        width=500,
-        height=500,
+        width=800,
+        height=600,
         resizable=True,
         title="Chaco Plot")
 
@@ -340,6 +374,18 @@ class SimulationResultsPlotter(HasTraits):
 
         # Create the plot object
         self.plot = Plot(plotdata)
+        self.plot.padding_left=90
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Data sources for the possible index values
+        SNR_ds = ArrayDataSource(SNR)
+        Eb_over_N0_ds = ArrayDataSource(Eb_over_N0)
+        self.index_datasources_dict['SNR'] = SNR_ds
+        self.index_datasources_dict['Eb/N0'] = Eb_over_N0_ds
+        self.index_data_labels.append('SNR')
+        self.index_data_labels.append('Eb/N0')
+        self.chosen_index = self.index_data_labels[0]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Simulated values
         self.ber_plot_renderer = self.plot.add_xy_plot(
@@ -368,10 +414,12 @@ class SimulationResultsPlotter(HasTraits):
         theoretical_ser_plot_renderer = self.plot.plot(
             ("SNR", "theoretical_ser"),
             type="line",
-            color="green",
+            color="blue",
             name='Theoretical SER',
             value_scale='log',
             line_style='solid')[0]
+
+        self.curves_renderers = self.plot.components
 
         # Turn on the plot legend
         self.plot.legend.visible = True
@@ -404,24 +452,47 @@ class SimulationResultsPlotter(HasTraits):
         self._marker_changed()
 
         # xxxxx Add a SaveTool to the plot xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.plot.tools.append(SaveTool(self.plot))
+        if self.plot.title is '':
+            filename = 'saved_plot.pdf'
+        else:
+            filename = '%s.pdf' % self.plot.title
+        self.plot.tools.append(SaveTool(self.plot, filename=filename))
 
-        def _get_logscale_tick_string(tick):
-            """Function that receives the tick values and return a
-            string representation suitable to a logscale axis.
+        # xxxxx Add a Zoom tool and a pan tool xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Because the zoom tool draws a visible "zoom box", we need to add
+        # it to the list of overlays instead of the list of tools. (It will
+        # still get events.)
+        self.plot.overlays.append(BetterSelectingZoom(self.plot, tool_mode="box", always_on=True, drag_button='right'))
+        # self.plot.overlays.append(ZoomTool(self.plot, tool_mode="box", always_on=True, drag_button='right'))
+        #self.plot.tools.append(BetterZoom(self.plot, tool_mode="box", always_on=True, drag_button='right'))
+        self.plot.tools.append(PanTool(self.plot, tool_mode="box", always_on=True))
 
-            Arguments:
-            - `tick`: tick numerical value
-            """
-            floor_power = np.floor(np.log10(tick))
-            index = int(np.round(tick * (10 ** (-floor_power))))
-            power = int(floor_power)
-            if index == 1:
-                return "10^%s" % power
-            else:
-                return ""
+        # Change the Y Axis labels
+        self.plot.y_axis.tick_label_formatter = SimulationResultsPlotter._get_logscale_tick_string
 
-        self.plot.y_axis.tick_label_formatter = _get_logscale_tick_string
+    def _chosen_index_changed(self):
+        """Change the index datasource of all renderers, as well as the x
+        axis label acording to the chosen_index trait.
+        """
+        for renderer in self.plot.components:
+            renderer.index = self.index_datasources_dict[self.chosen_index]
+        self.plot.x_axis.title = self.chosen_index
+
+    @staticmethod
+    def _get_logscale_tick_string(tick):
+        """Function that receives the tick values and return a
+        string representation suitable to a logscale axis.
+
+        Arguments:
+        - `tick`: tick numerical value
+        """
+        floor_power = np.floor(np.log10(tick))
+        index = int(np.round(tick * (10 ** (-floor_power))))
+        power = int(floor_power)
+        if index == 1:
+            return "10^%s" % power
+        else:
+            return ""
 
     def _marker_size_changed(self):
         # self.ber_plot_renderer.marker_size = self.marker_size
@@ -434,111 +505,14 @@ class SimulationResultsPlotter(HasTraits):
         self.ser_plot_renderer.marker = self.marker
 
 
-class DummyPlotter(HasTraits):
-    """Class to plot the results with chaco.
-    """
-    plot = Instance(OverlayPlotContainer)
-    # Traits can have a description, the 'desc' argument
-    marker = marker_trait(desc='Marker type of the plot')
-    marker_size = Range(low=1, high=6, value=4, desc='Marker size of the plot')
-
-    # If no view is specified when configure_traits() is called on
-    # the SimulationResultsPlotter object, then the one named traits_view takes
-    # preference
-    traits_view = View(
-        Group(
-            Item('plot', editor=ComponentEditor(), show_label=False),
-            Item('marker', label='Marker'),
-            Item('marker_size', label='Size'),
-            orientation='vertical'
-        ),
-        width=500,
-        height=500,
-        resizable=True,
-        title="Chaco Plot")
-
-    def __init__(self, simulation_runner):
-        super(DummyPlotter, self).__init__()
-        self.simulation_runner = simulation_runner
-
-    @staticmethod
-    def _get_logscale_tick_string(tick):
-        """Function that receives the tick values and return a
-        string representation suitable to a logscale axis.
-
-        This function will be set as the y_axis.tick_label_formatter of the
-        plot so that the y_axis tick labels follow MATLAB style.
-
-        Arguments:
-        - `tick`: tick numerical value of the tick
-        """
-        floor_power = np.floor(np.log10(tick))
-        index = int(np.round(tick * (10 ** (-floor_power))))
-        power = int(floor_power)
-        if index == 1:
-            return "10^%s" % power
-        else:
-            return ""
-
-    def _make_curves(self):
-        # SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser = self.simulation_runner.get_data_to_be_plotted()
-
-        # Get Dummy data
-        from comm.modulators import PSK
-        SNR = np.arange(0, 20, 3)
-
-        psk = PSK(16)
-        SER = psk.calcTheoreticalSER(SNR)
-        BER = psk.calcTheoreticalBER(SNR)
-
-        # SNR_ds = ArrayDataSource(SNR)
-        # BER_ds = ArrayDataSource(BER)
-        # SER_ds = ArrayDataSource(SER)
-
-        # Create the curves here and return them
-        # ber_plot_line = LinePlot(index=SNR_ds,
-        #                          value=BER_ds)
-        # ser_plot_line = LinePlot(index=SNR_ds,
-        #                          value=SER_ds)
-        ber_plot_line = create_line_plot((SNR, BER), color='green')
-        ser_plot_line = create_line_plot((SNR, SER), color='blue')
-
-        return (ber_plot_line, ser_plot_line)
-
-    def _create_plot_component(self):
-        """Creates the OverlayPlotContainer"""
-        container = OverlayPlotContainer(padding=40, bgcolor="lightgray",
-                                         use_backbuffer=True,
-                                         border_visible=True,
-                                         fill_padding=True)
-
-        # Add the cursves to the container
-        # ... ... ...
-        for line in self._make_curves():
-            container.add(line)
-
-        # index_mapper = plot.index_mapper
-        # value_mapper = plot.value_mapper
-
-        return container
-
-    def _plot_default(self):
-        return self._create_plot_component()
-
-    def _marker_size_changed(self):
-        self.ber_plot_renderer.marker_size = self.marker_size
-        self.ser_plot_renderer.marker_size = self.marker_size
-
-    def _marker_changed(self):
-        self.ber_plot_renderer.marker = self.marker
-        self.ser_plot_renderer.marker = self.marker
-
-
 if __name__ == '__main__1':
-    #SimulationResultsPlotter().configure_traits()
+    # SimulationResultsPlotter().configure_traits()
 
-    # Get some plot data
-    #pd = get_dummy_plot_data()
+    # from comm.modulators import PSK
+    # SNR = np.arange(0, 20, 3)
 
-    plotter = DummyPlotter(None)
-    plotter.configure_traits()
+    # psk = PSK(16)
+    # SER = psk.calcTheoreticalSER(SNR)
+    # BER = psk.calcTheoreticalBER(SNR)
+
+    pass
