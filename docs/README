@@ -1,0 +1,11 @@
+
+*Run make html to generate the documentation (_build/index.html)*
+
+
+Sphinx is used to generate the documentation.
+
+In order to write the documentation you must create .rst files that sphinx
+will then process.
+
+Using some directives such as ".. automodule:: " sphinx will automatically
+create documentation from the python code.
