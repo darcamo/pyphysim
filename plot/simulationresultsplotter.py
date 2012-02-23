@@ -43,11 +43,28 @@ from chaco.plot_factory import add_default_axes, add_default_grids
 # xxxxx Chaco Renderer for a line plot with markers xxxxxxxxxxxxxxxxxxxxxxx
 # Renderer class for a line plot with markers
 # https://github.com/sergey-miryanov/chaco/blob/master/chaco/ScatterLinePlot.py
+# Author of this class "sergey miryanov"
+#
+# I made only small changes:
+# - In the _render_icon function I added a shift in the x axis of half the
+#   marker size so that the marker is rendered in the middle of the line in
+#   the legend
+# - In the _render function I added "with gc:" and the gc.clip_to_rect (as
+#   well as the save and restore state) so that the markers are not draw
+#   outside the plot area (if the user moved the plot with the PanTool). I
+#   got this from the _render function from the ScatterPlot class.
 class ScatterLinePlot(LinePlot):
     marker = MarkerTrait
     marker_size = Float(2.0)
     outline_color = black_color_trait
     custom_symbol = Any
+
+    traits_view = View(Item("color", style="custom"),
+                       "line_width",
+                       "line_style",
+                       Item("marker", label="Marker type"),
+                       Item("marker_size", label="Marker Size"),
+                       buttons=["OK", "Cancel"])
 
     def _gather_points(self):
         super(ScatterLinePlot, self)._gather_points()
@@ -60,13 +77,17 @@ class ScatterLinePlot(LinePlot):
 
     def _render(self, gc, points, selected_points=None):
         super(ScatterLinePlot, self)._render(gc, points, selected_points)
-        if len(points) > 0:
-            for pts in points:
-                self._render_markers(gc, pts)
+        with gc:
+            gc.save_state()
+            gc.clip_to_rect(self.x, self.y, self.width, self.height)
+            if len(points) > 0:
+                for pts in points:
+                    self._render_markers(gc, pts)
+            gc.restore_state()
 
     def _render_icon(self, gc, x, y, width, height):
         super(ScatterLinePlot, self)._render_icon(gc, x, y, width, height)
-        point = np.array([x + width / 2, y + height / 2])
+        point = np.array([x + width / 2. - self.marker_size / 2., y + height / 2.])
         self._render_markers(gc, [point])
 
     def _marker_size_changed(self):
@@ -74,8 +95,6 @@ class ScatterLinePlot(LinePlot):
 
     def _marker_changed(self):
         self.request_redraw()
-
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -121,13 +140,8 @@ class PlotView(HasTraits):
     auto_colors = List(["green", "blue", "red",
                         "pink", "darkgray", "silver", "lightgreen", "lightblue"])
 
-    # Trait Definitions
-
-
     # Group for the curves_data traits
     curves_group = Instance(Group)
-
-
     traits_view = View(
         Group(Item('plot_container', editor=ComponentEditor(), show_label=False),
               Group(Item('curves_data', editor=InstanceEditor()),
@@ -242,7 +256,6 @@ class PlotView(HasTraits):
         curve_data = PlotCurveData(name=name, data=curve_array)
         self.curves_data[name] = curve_data
 
-
     # NOTE: Since curves_data is a container (a dictionary) and we want
     # this method to run even if some item in the container changes, we had
     # to add "items" to the special name convention that traits use. If the
@@ -254,27 +267,7 @@ class PlotView(HasTraits):
             self.chosen_index = self.indexes_data.keys()[0]
 
 
-# TODO: Apagar se não conseguir fazer prestar
-class PlotConfigView(HasTraits):
-    plot_view = Instance(PlotView)
-    curves = Set()
-
-    traits_view = View(Item('plot_view'),
-                       Item('curves'))
-
-    def __init__(self, plot_view):
-        """
-
-        Arguments:
-        - `plot_view`: PlotView object
-        """
-        HasTraits.__init__(self)
-        self.plot_view = plot_view
-
-        self.curves = set(self.plot_view.plot_container.plot_components)
-
-
-
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     # index_data = PlotIndexData()
     # plot_curve = PlotCurveData()
@@ -292,20 +285,7 @@ if __name__ == '__main__':
 
     plot_view.plot_container = plot_view.create_the_plot()
     plot_view.configure_traits()
-
-
-    #plot_config_view = PlotConfigView(plot_view)
-    #plot_config_view.configure_traits()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-_scatterlineplot_view = View(Item('marker_size',
-                                  style='custom',
-                                  editor=RangeEditor(mode='spinner', low=1, high=15)),
-                             Item('marker'),
-                             Item('color'),
-                             Item('line_style'),
-                             Item('line_width'),
-                             Item('visible'))
 
 
 class SimulationResultsPlotter(HasTraits):
@@ -313,23 +293,29 @@ class SimulationResultsPlotter(HasTraits):
     """
     plot = Instance(Plot)
     # Traits can have a description, the 'desc' argument
-    marker = marker_trait(desc='Marker type of the plot')
-    marker_size = Range(low=1, high=6, value=4, desc='Marker size of the plot')
+    marker = marker_trait(desc='the marker type of all curves')
+    marker_size = Range(low=1, high=6, value=4, desc='the marker size of all curves')
 
-    # xxxxx Traits for the curves indexes and data xxxxxxxxxxxxxxxxxxxxxxxx
-    #index = List(Array)  # We can have multiple index datas, but only the
-                         # first one will be used for now (we will be able
-                         # to choose in the future)
-
-    # List of curves. Each one is a numpy array
-    #curves_data = List(Array)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    # xxxxx Choose one of the index data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # We can have multiple index datas, but only the selected one will be
+    # used
     curves_renderers = List()
-    index_datasources_dict = Dict(Str, ArrayDataSource)
+
     index_data_labels = List(Str)
     chosen_index = Str()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # View used to display a single curve renderer
+    _scatterlineplot_view = View(Item('marker_size',
+                                      style='custom',
+                                      editor=RangeEditor(mode='spinner', low=1, high=15)),
+                                 Item('marker'),
+                                 Item('color'),
+                                 Item('line_style'),
+                                 Item('line_width'),
+                                 Item('visible'))
+
+    # xxxxx Default Viewfor the SimulationResultsPlotter class xxxxxxxxxxxx
     # If no view is specified when configure_traits() is called on
     # the SimulationResultsPlotter object, then the one named traits_view takes
     # preference
@@ -355,6 +341,31 @@ class SimulationResultsPlotter(HasTraits):
         height=600,
         resizable=True,
         title="Chaco Plot")
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # TODO: Ainda não é usado
+    def add_index(self, index_label, index_array):
+        """Add a new index in the plot.
+
+        All curves will be plotted for the same index data.
+
+        Note: You can call add_index multiple times to add several
+        indexes. You will then be able to select the used on in the plot
+        window.
+
+        Arguments:
+        - `index_label`: A label for the index
+        - `index_array`: A numpy array with the index values.
+        """
+        # plot.data is the plot ArrayPlotData object. The method
+        # "list_data" return a list of the names of the data managed by the
+        # ArrayPlotData object
+        if index_label not in self.plot.data.list_data():
+            self.plot.data.set_data(index_label, index_array)
+            self.index_data_labels.append(index_label)
+
+        if index_label not in self.index_data_labels:
+            self.index_data_labels.append(index_label)
 
     def __init__(self, simulation_runner):
         #super(SimulationResultsPlotter, self).__init__()
@@ -374,28 +385,26 @@ class SimulationResultsPlotter(HasTraits):
 
         # Create the plot object
         self.plot = Plot(plotdata)
-        self.plot.padding_left=90
+        self.plot.padding_left = 90
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Data sources for the possible index values
-        SNR_ds = ArrayDataSource(SNR)
-        Eb_over_N0_ds = ArrayDataSource(Eb_over_N0)
-        self.index_datasources_dict['SNR'] = SNR_ds
-        self.index_datasources_dict['Eb/N0'] = Eb_over_N0_ds
+        # Labels for the possible index values
         self.index_data_labels.append('SNR')
-        self.index_data_labels.append('Eb/N0')
+        self.index_data_labels.append('Eb_over_N0')  # Must be the same
+                                                     # attibute name used
+                                                     # in the ArrayPlotData
         self.chosen_index = self.index_data_labels[0]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Simulated values
-        self.ber_plot_renderer = self.plot.add_xy_plot(
+        self.plot.add_xy_plot(
             "SNR", "ber", ScatterLinePlot,
             color="green",
             name='Simulated BER',
             value_scale='log',
             line_style='dash')[0]
 
-        self.ser_plot_renderer = self.plot.add_xy_plot(
+        self.plot.add_xy_plot(
             "SNR", "ser", ScatterLinePlot,
             color="blue",
             name='Simulated SER',
@@ -403,7 +412,7 @@ class SimulationResultsPlotter(HasTraits):
             line_style='dash')[0]
 
         # Theoretical BER
-        theoretical_ber_plot_renderer = self.plot.plot(
+        self.plot.plot(
             ("SNR", "theoretical_ber"),
             type="line",
             color="green",
@@ -411,7 +420,7 @@ class SimulationResultsPlotter(HasTraits):
             value_scale='log',
             line_style='solid')[0]
         # Theoretical SER
-        theoretical_ser_plot_renderer = self.plot.plot(
+        self.plot.plot(
             ("SNR", "theoretical_ser"),
             type="line",
             color="blue",
@@ -438,7 +447,7 @@ class SimulationResultsPlotter(HasTraits):
 
         # Set the y and x axis
         self.plot.y_axis.title = 'Error Rate'
-        self.plot.x_axis.title = 'SNR'
+        self.plot.x_axis.title = self.chosen_index
 
         # Increase the size of the tick labels and axes labels
         self.plot.x_axis.tick_label_font.size = 13
@@ -474,8 +483,15 @@ class SimulationResultsPlotter(HasTraits):
         """Change the index datasource of all renderers, as well as the x
         axis label acording to the chosen_index trait.
         """
+        print 'chosen index: x%sx' % self.chosen_index
+        # _get_or_create_datasource is defined in the Plot class. It
+        # returns a datasource associated to the provided name (which was
+        # added to the ArrayPlotData object passed in the creation of the
+        # Plot object)
+        index_ds = self.plot._get_or_create_datasource(self.chosen_index)
+
         for renderer in self.plot.components:
-            renderer.index = self.index_datasources_dict[self.chosen_index]
+            renderer.index = index_ds
         self.plot.x_axis.title = self.chosen_index
 
     @staticmethod
@@ -495,14 +511,12 @@ class SimulationResultsPlotter(HasTraits):
             return ""
 
     def _marker_size_changed(self):
-        # self.ber_plot_renderer.marker_size = self.marker_size
-        # self.ser_plot_renderer.marker_size = self.marker_size
-        for plot in self.plot.components:
-            plot.marker_size = self.marker_size
+        for renderer in self.plot.components:
+            renderer.marker_size = self.marker_size
 
     def _marker_changed(self):
-        self.ber_plot_renderer.marker = self.marker
-        self.ser_plot_renderer.marker = self.marker
+        for renderer in self.plot.components:
+            renderer.marker = self.marker
 
 
 if __name__ == '__main__1':
