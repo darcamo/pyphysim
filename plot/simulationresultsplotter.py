@@ -22,18 +22,18 @@ import numpy as np
 
 # Traits and traitsui imports
 from traits.api import HasTraits, Instance, Int, Range, Str, Array, Enum, Dict, on_trait_change, List, Set
-from traitsui.api import View, Item, Group, VGroup
+from traitsui.api import View, Item, Group, VGroup, HGroup
 
 # Chaco imports
 from chaco.plot_factory import _create_data_sources
-from chaco.api import Plot, ArrayPlotData, marker_trait, ArrayDataSource, OverlayPlotContainer, create_line_plot, Legend, PlotLabel
+from chaco.api import Plot, ArrayPlotData, marker_trait, ArrayDataSource, OverlayPlotContainer, create_line_plot, Legend, PlotLabel, ToolbarPlot
 from chaco.tools.api import PanTool, ZoomTool, BroadcasterTool, LegendTool, SaveTool, TraitsTool, BetterZoom, BetterSelectingZoom
 
 # Enable imports
 from enable.component_editor import ComponentEditor
 
 from enable.api import MarkerTrait, black_color_trait
-from traits.api import Float, Any, ListInstance, Bool
+from traits.api import Float, Any, ListInstance, Bool, Button, Event
 from traitsui.editors import ArrayEditor, TabularEditor, TableEditor, CompoundEditor, CustomEditor, ListEditor, TreeEditor, InstanceEditor, DropEditor, RangeEditor, ButtonEditor, CheckListEditor, EnumEditor
 from chaco.api import LinePlot, DataRange1D, LinearMapper, ScatterPlot, log_auto_ticks
 from chaco.scatterplot import render_markers
@@ -285,6 +285,11 @@ if __name__ == '__main__':
 
     plot_view.plot_container = plot_view.create_the_plot()
     plot_view.configure_traits()
+
+
+    # RESET PAN
+    # plotter.plot.range2d.x_range.reset()
+    # plotter.plot.range2d.y_range.reset()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -296,6 +301,8 @@ class SimulationResultsPlotter(HasTraits):
     marker = marker_trait(desc='the marker type of all curves')
     marker_size = Range(low=1, high=6, value=4, desc='the marker size of all curves')
 
+    reset_plot = Event("Reset Plot")
+
     # xxxxx Choose one of the index data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can have multiple index datas, but only the selected one will be
     # used
@@ -306,7 +313,7 @@ class SimulationResultsPlotter(HasTraits):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # View used to display a single curve renderer
-    _scatterlineplot_view = View(Item('marker_size',
+    _plot_curve_view = View(Item('marker_size',
                                       style='custom',
                                       editor=RangeEditor(mode='spinner', low=1, high=15)),
                                  Item('marker'),
@@ -326,13 +333,14 @@ class SimulationResultsPlotter(HasTraits):
             Group(
                 Item('curves_renderers', style='custom', editor=ListEditor(
                         use_notebook=True,
-                        view=_scatterlineplot_view), show_label=False),
+                        view=_plot_curve_view), show_label=False),
                 Group(
                     Item('marker', label='All Markers Type'),
                     Item('marker_size', label='All Markers Size'),
                     # Change the chosen_index value according to one of the
                     # values in index_data_labels
                     Item('chosen_index', style='simple', editor=EnumEditor(name='index_data_labels')),
+                    Group(Item("reset_plot", editor=ButtonEditor(), show_label=False)),
                     orientation='vertical'),
                 orientation='horizontal'),
             orientation='vertical'
@@ -517,6 +525,12 @@ class SimulationResultsPlotter(HasTraits):
     def _marker_changed(self):
         for renderer in self.plot.components:
             renderer.marker = self.marker
+
+    def _reset_plot_fired(self, a):
+        """Reset the plot (pan and zoom) when the event is fired."""
+        self.plot.range2d.x_range.reset()
+        self.plot.range2d.y_range.reset()
+
 
 
 if __name__ == '__main__1':
