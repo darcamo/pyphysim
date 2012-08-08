@@ -8,9 +8,31 @@
 # Modified by Darlan Cavalcante Moreira in 10/18/2011
 # Released under: GNU GENERAL PUBLIC LICENSE
 
-"""Module docstring"""
+"""Implement classes to represent the progress of a task.
 
-__version__ = "$Revision: $"
+Use the ProgressbarText class for tasks that do not use multiprocessing,
+and the ProgressbarMultiProcessText class for tasks using multiprocessing.
+
+Basically, the task code must call the "progress" function to update the
+progress bar and pass a number equivalent to the increment in the progress
+since the last call. The progressbar must know the maximum value equivalent
+to all the progress, which is passed during object creator for
+ProgressbarText class.
+
+The ProgressbarMultiProcessText is similar to ProgressbarText class,
+accounts for the progress of multiple processes. For each process you need
+to call the register_function_and_get_proxy_progressbar to get a proxy
+progressbar, where the maximum value equivalent to all the progress that
+will be performed by that process is passed in this proxy creation. Each
+process then calls the progress method of the proxy progressbar.
+
+Note that there is also a DummyProgressbar whose progress function does
+nothing. This is useful when you want to give the user a choice to show or
+not the progressbar such that the task code can always call the progress
+method and you only change the progressbar object.
+"""
+
+__version__ = "$Revision$"
 # $Source$
 
 import multiprocessing
@@ -170,11 +192,29 @@ class ProgressbarMultiProcessText:
     """Class that prints a representation of the current progress of
     multiple process as text.
 
-    Similar to the ProgressbarText class, but the bar measures the
-    progress of several process as a whole.
+    While the ProgressbarText only tracks the progress of a single process,
+    the ProgressbarMultiProcessText class can track the joint progress of
+    multiple processes. This is used when you parallelize some task using
+    the multiprocessing module.
+
+    The usage requires a little more work than ProgressbarText and is
+    described as follows:
+      - First you create the ProgressbarMultiProcessText as usual (although
+        it does not receive the value equivalent to the full progress yet).
+      - Then, for each process, call the
+        register_function_and_get_proxy_progressbar function passing the
+        number equivalent to full progress for that process. This function
+        returns a "proxy progressbar" that must be passed as argument to
+        that process. Each process will call the "progress" method of that
+        proxy as if it was a ProgressbarText object.
+      - Start all the processes and call the start_updater method of
+        ProgressbarMultiProcessText object so that the bar is updated by
+        the different processes.
+      - After joining all the process (all work is finished) call the
+        stop_updater method of the ProgressbarMultiProcessText object.
 
     Ex:
-    TODO: Write an example here
+    TODO: Write an example here. See the find_codebook.py application.
     """
 
     def __init__(self,
@@ -280,7 +320,7 @@ class ProgressbarMultiProcessText:
 
     def progress(self):
         """This function should not be called."""
-        print "ProgressbarMultiProcessText.progress: This function should not be called"
+        print "ProgressbarMultiProcessText.progress: This function should not be called directly. Call the register_function_and_get_proxy_progressbar function to get a proxy object for the progressbar and call the progress method of that proxy."
 
     def _update_progress(self):
         bar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
@@ -327,7 +367,7 @@ class ProgressbarMultiProcessText:
     def duration(self, ):
         """Duration of the progress.
         """
-        # The progressbar is still running, calculate the duration sicne
+        # The progressbar is still running, calculate the duration since
         # the beginning
         if self.running.is_set():
             toc = time.time()
