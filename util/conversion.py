@@ -7,7 +7,7 @@
 """
 
 import numpy as np
-from misc import xor
+from util.misc import xor
 
 
 def dB2Linear(valueIndB):

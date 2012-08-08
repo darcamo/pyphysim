@@ -86,7 +86,7 @@ class SimplePskSimulationRunner(SimulationRunner, HasTraits):
                                  Item('M'),
                                  Item('NSymbs'),
                                  Item('max_bit_errors'),
-                                 Item('rep_max', style='readonly'),
+                                 Item('rep_max'),
                                  label='Simulation Parameters',
                                  show_border=False),
                            #handler=SimplePskSimulationRunnerHandler(),

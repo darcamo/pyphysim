@@ -1,12 +1,12 @@
 See http://infinitemonkeycorps.net/docs/pph/#id9
 for info on how to create a python project
 
-
-
 See http://infinitemonkeycorps.net/docs/pph/#unittesting
 for info on how to write doctests and unittests,
 how to write docummentation, and more.
 
+Tip: Use the pyreverse program (part of pylint) to generate the diagram of
+classes and packages (in dot format).
 
 Put README info here. It should have
  - Name, version, and release date of the package
