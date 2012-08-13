@@ -1,10 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module docstring"""
+"""Implements the SimulationRunner class and the associated classes
+SimulationParameters, SimulationResults and Result.
 
-__version__ = "$Revision: 5 $"
-# $Source$
+The simulation parameters are stored in an object of the
+SimulationParameters class. The SimulationParameters acts as a container
+for the several parameters involved in the simulation. It is also able to
+unpack parameters that should be varied. For instance, you might want to
+simulate a transmission for different values of SNR (but keeping with the
+other parameters unchanged). For this you can pass a vector of SNR values
+and mark the SNR parameter to be unpacked and the simulation will be
+performed for each value of SNR with the results aggregated after that.
+
+
+
+"""
+
+__version__ = "$Revision$"
 
 from collections import OrderedDict, Iterable
 import itertools
@@ -180,6 +193,9 @@ class SimulationParameters():
     parameters. To add a new parameter to the object just call the `add`
     method passing the name and the value of the parameter. The value can
     be anything as long as the _run_simulation function can understand it.
+
+    Parameters that will be later marked to be unpacked must be iterable,
+    so that the itens will be used as the unpacked versions.
     """
     def __init__(self):
         """
@@ -282,9 +298,28 @@ class SimulationParameters():
     @staticmethod
     def ravel_multi_index(indexes, shape):
         """
+        Get the linear index corresponding to `indexes`.
+
+        The linear index is calculated in 'C' order. That is, it "travels"
+        the array faster in the fist dimension than in the last (row order
+        in bi-dimensional arrays).
+
         Arguments
-        - `indexes`: A list with the indexes
+        - `indexes`: A list with the indexes of each dimension in the array.
         - `shape`: Shape of the array
+
+        Ex:
+        For shape=[3,3] we get the matrix
+        array([[0, 1, 2],
+               [3, 4, 5],
+               [6, 7, 8]])
+        Therefore (the indexes start at zero),
+        >>> SimulationParameters.ravel_multi_index([0,2],[3,3])
+        2
+
+        Similarly
+        >>> SimulationParameters.ravel_multi_index([3,1],[4,3])
+        10
         """
         #c order only
         base_c = np.arange(np.prod(shape)).reshape(*shape)
