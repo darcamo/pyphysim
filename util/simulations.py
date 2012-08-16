@@ -12,12 +12,11 @@ simulate a transmission for different values of SNR (but keeping with the
 other parameters unchanged). For this you can pass a vector of SNR values
 and mark the SNR parameter to be unpacked and the simulation will be
 performed for each value of SNR with the results aggregated after that.
-
-
-
 """
 
+
 __version__ = "$Revision$"
+
 
 from collections import OrderedDict, Iterable
 import itertools
@@ -67,7 +66,7 @@ class SimulationRunner():
         self.progressbar_message = ''
 
     def _run_simulation(self, current_parameters):
-        """Performs the one simulation.
+        """Performs one iteration of the simulation.
 
         This function must be implemented in a subclass. It should take the
         needed parameters from the params class attribute (which was filled
@@ -88,7 +87,7 @@ class SimulationRunner():
                                 simulate function which then calls
                                 _run_simulation for each combination.
         """
-        NotImplemented("This function must be implemented in a subclass")
+        raise NotImplementedError("This function must be implemented in a subclass")
 
     def _keep_going(self, current_sim_results):
         """Check if the simulation should continue or stop.
@@ -136,7 +135,15 @@ class SimulationRunner():
         return self._runned_reps
 
     def simulate(self):
-        """
+        """Implements the general code for every simulation. Any code
+        specific to a single simulator must be implemented in the
+        _run_simulation method of a subclass of SimulationRunner.
+
+        The main idea behind the SimulationRunner class is that the general
+        code in every simulator is implemented in the SimulationRunner
+        class, more specifically in the `simulate` method, while the
+        specific code is implemented in the _run_simulation method in a
+        subclass.
         """
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
@@ -144,6 +151,7 @@ class SimulationRunner():
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Loop through all the parameters combinations
         for current_params in self.params.get_unpacked_params_list():
             # Get the update_progress_func function
             if self.progressbar_message is None:
@@ -171,7 +179,8 @@ class SimulationRunner():
             # _keep_going returned false) then set the progressbar to full.
             update_progress_func(self.rep_max)
 
-            # Store the number of repetitions actually runned
+            # Store the number of repetitions actually ran for the current
+            # parameters combination
             self._runned_reps.append(current_rep)
             self.results.append(current_sim_results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -194,12 +203,12 @@ class SimulationParameters():
     method passing the name and the value of the parameter. The value can
     be anything as long as the _run_simulation function can understand it.
 
-    Parameters that will be later marked to be unpacked must be iterable,
-    so that the itens will be used as the unpacked versions.
+    Parameters can be marked to be "unpacked", as long as they are
+    iterable, by calling the set_unpack_parameter function. Different
+    simulations will be performed for every combination of parameters
+    marked to be unpacked, with the other parameters kept constant.
     """
     def __init__(self):
-        """
-        """
         # Dictionary that will store the parameters. The key is the
         # parameter name and the value is the parameter value.
         self.parameters = {}
@@ -211,12 +220,12 @@ class SimulationParameters():
 
     @property
     def unpacked_parameters(self):
-        # Names of the parameters that will be unpacked.
+        """Names of the parameters marked to be unpacked."""
         return list(self._unpacked_parameters_set)
 
     @staticmethod
     def create(params_dict):
-        """Create a new SimulationParameters object.
+        """Creates a new SimulationParameters object.
 
         This static method provides a different way to create a
         SimulationParameters object, already containing the parameters in
@@ -231,7 +240,7 @@ class SimulationParameters():
         return sim_params
 
     def add(self, name, value):
-        """Add a new parameter.
+        """Adds a new parameter to the SimulationParameters object.
 
         If there is already a parameter with the same name it will be
         replaced.
@@ -243,7 +252,10 @@ class SimulationParameters():
         self.parameters[name] = value
 
     def set_unpack_parameter(self, name, unpack_bool=True):
-        """Set the unpack property of the parameter with name `name`
+        """Set the unpack property of the parameter with name `name`.
+
+        The parameter `name` must be already added to the
+        SimulationParameters object and be an iterable.
 
         This is used in the SimulationRunner.
         Arguments:
@@ -262,7 +274,9 @@ class SimulationParameters():
             raise ValueError("Unknown parameter: `{0}`".format(name))
 
     def __getitem__(self, name):
-        """Return the parameter with name `name`
+        """Return the parameter with name `name`.
+
+        Easy access to a given parameter using the brackets syntax.
 
         Arguments:
         - `name`: Name of the desired parameter
@@ -281,7 +295,8 @@ class SimulationParameters():
         return '{%s}' % ', '.join(repr_list)
 
     def get_num_parameters(self):
-        """Get the number of parameters currently stored.
+        """Get the number of parameters currently stored in the
+        SimulationParameters object.
         """
         return len(self.parameters)
 
@@ -325,13 +340,11 @@ class SimulationParameters():
         base_c = np.arange(np.prod(shape)).reshape(*shape)
         return base_c[tuple(indexes)]
 
-    # TODO Escrever uma documentação clara e com exemplos de fácil
-    # entendimento.
     def get_pack_indexes(self, fixed_params_dict=dict()):
         """When you call the function get_unpacked_params_list you get a
         list of SimulationParameters objects corresponding to all
         combinations of the parameters. The function get_pack_indexes
-        allows you to provided all parameters marked to be unpacked but
+        allows you to provided all parameters marked to be unpacked except
         one, and returns the indexes of the list returned by
         get_unpacked_params_list that you want.
 
@@ -339,6 +352,32 @@ class SimulationParameters():
         - `fixed_params_dict`: A ditionary with the name of the fixed
                                parameters as keys and the fixed value as
                                value.
+
+        Ex: Suppose we have
+        >>> p={'p1':[1,2,3], 'p2':['a','b'],'p3':15}
+        >>> params=SimulationParameters.create(p)
+        >>> params.set_unpack_parameter('p1')
+        >>> params.set_unpack_parameter('p2')
+
+        If we call params.get_unpacked_params_list we will get a list of
+        SimulationParameters objects, one for each combination of the
+        values of p1 and p2. That is,
+        >>> params.get_unpacked_params_list()
+        [{'p2': a, 'p3': 15, 'p1': 1}, {'p2': a, 'p3': 15, 'p1': 2}, {'p2': a, 'p3': 15, 'p1': 3}, {'p2': b, 'p3': 15, 'p1': 1}, {'p2': b, 'p3': 15, 'p1': 2}, {'p2': b, 'p3': 15, 'p1': 3}]
+
+        Likewise, in the simulation the SimulationRunner object will return
+        a list of results in the order corresponding to the order of the
+        list of parameters. The get_pack_indexes is used to get the index
+        of the results corresponding to a specific configuration of
+        parameters. Suppose now you want the results when 'p2' is varying,
+        but with the other parameters fixed to some specific value. For
+        this create a dictionary specifying all parameters except 'p2' and
+        call get_pack_indexes with this dictionary. You will get an array
+        of indexes that can be used in the results list to get the desired
+        results. For instance
+        >>> fixed={'p1':3,'p3':15}
+        >>> params.get_pack_indexes(fixed)
+        array([2, 5])
         """
         # Get the only parameter that was not fixed
         varying_param = list(
@@ -437,7 +476,7 @@ class SimulationParameters():
         Arguments:
         - `file_name`: Name of the file to save the parameters.
         """
-        NotImplemented("SimulationParameters.save_to_file: Implement-me")
+        raise NotImplementedError("SimulationParameters.save_to_file: Implement-me")
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
