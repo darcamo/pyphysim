@@ -165,7 +165,7 @@ class ProgressbarText:
         - `left`:
         - `right`:
 
-        >>> print center_message("Hello Progress", 50, '-', 'Left', 'Right')
+        >>> print ProgressbarText.center_message("Hello Progress", 50, '-', 'Left', 'Right')
         Left------------- Hello Progress ------------Right
         """
         message_size = len(message)
@@ -187,7 +187,6 @@ class ProgressbarText:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarMultiProcessText - START xxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Finish the implementation
 class ProgressbarMultiProcessText:
     """Class that prints a representation of the current progress of
     multiple process as text.
@@ -382,3 +381,4 @@ class ProgressbarMultiProcessText:
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+    print "{0} executed".format(__file__)

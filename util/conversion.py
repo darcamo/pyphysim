@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module containing function related to conversion.
-
-
+"""Module containing function related to several conversions, such as
+linear to dB, binary to gray code, as well as the inverse of them.
 """
 
 import numpy as np
@@ -66,3 +65,4 @@ if __name__ == '__main__':
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
+    print "{0} executed".format(__file__)

@@ -275,8 +275,55 @@ def least_right_singular_vectors(A, n):
     return (V0, V1, S[sort_indexes[n:]])
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Veja o arquivo Rx_est.m nessa mesma pasta para o código MATLAB
+
+# # TODO: Ainda está errado. Veja http://en.wikipedia.org/wiki/Autocorrelation
+# def calc_autocorr(x, M=-1):
+#     """Calculates the autocorrelation of a x.
+
+#     Arguments:
+#     - `x`: Numpy vector.
+#     - `M`: Size of the output
+#     """
+#     (N,) = x.shape
+#     if M < 0:
+#         M = N
+
+#     Rx = np.zeros(M)
+#     for m in range(0, M):
+#         for n in range(0, N - m):
+#             Rx[m] = Rx[m] + x[n] * x[n + m - 1]
+#         Rx[m] = Rx[m] / (N - m + 1)
+
+#     return Rx
+
+
+# TODO: Write doctests and validate this function
+def calc_autocorr(x):
+    """Calculates the autocorrelation of a x.
+
+    Arguments:
+    - `x`: Numpy vector.
+    """
+    R = np.convolve(x, x[::-1], 'full')
+    (n,) = R.shape
+    # Return the autocorrelation for indexes greater then or equal to 0
+    return R[(n - 1) / 2:]
+
+def test_calc_autocorr():
+    #x = np.r_[0:10]
+    x = np.array([2, 3, 1])
+    print x
+    Rx = calc_autocorr(x)
+    print Rx
+    #print Rx/Rx[0]
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
+    print "{0} executed".format(__file__)

@@ -8,7 +8,9 @@ import math
 
 from projections import calcProjectionMatrix
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: Create doctests for this module
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # TODO: I think calcPrincipalAngles is not correct when matrix1 e matrix2
@@ -102,7 +104,7 @@ if __name__ == '__main__1':
     print calcChordalDistance2(A, B)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__2':
     # Pegue do livro Matrix computations
     A = np.array([1, 2, 3, 4, 5, 6])
     A.shape = (3, 2)
@@ -116,3 +118,4 @@ if __name__ == '__main__':
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
+    print "{0} executed".format(__file__)
