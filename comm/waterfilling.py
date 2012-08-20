@@ -210,3 +210,4 @@ if __name__ == '__main__':
 if __name__ == '__main__1':
     import doctest
     doctest.testmod()
+    print "{0} executed".format(__file__)
