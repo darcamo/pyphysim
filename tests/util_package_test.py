@@ -175,6 +175,6 @@ if __name__ == '__main__':
     p2.join()
 
     # Stop the process that updates the progressbar.
-    bar.finish_updater()
+    bar.stop_updater()
 
     print "FIM"
