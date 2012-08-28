@@ -10,8 +10,7 @@ can use
 and have access to all of these functions.
 
 """
-__version__ = "$Revision: $"
-# $Source$
+__version__ = "$Revision$"
 
 import math
 import numpy as np
@@ -275,50 +274,52 @@ def least_right_singular_vectors(A, n):
     return (V0, V1, S[sort_indexes[n:]])
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Veja o arquivo Rx_est.m nessa mesma pasta para o código MATLAB
-
-# # TODO: Ainda está errado. Veja http://en.wikipedia.org/wiki/Autocorrelation
-# def calc_autocorr(x, M=-1):
-#     """Calculates the autocorrelation of a x.
-
-#     Arguments:
-#     - `x`: Numpy vector.
-#     - `M`: Size of the output
-#     """
-#     (N,) = x.shape
-#     if M < 0:
-#         M = N
-
-#     Rx = np.zeros(M)
-#     for m in range(0, M):
-#         for n in range(0, N - m):
-#             Rx[m] = Rx[m] + x[n] * x[n + m - 1]
-#         Rx[m] = Rx[m] / (N - m + 1)
-
-#     return Rx
-
-
-# TODO: Write doctests and validate this function
-def calc_autocorr(x):
-    """Calculates the autocorrelation of a x.
+def calc_unorm_autocorr(x):
+    """Calculates the unormalized autocorrelation of an array x starting
+    from lag 0.
 
     Arguments:
-    - `x`: Numpy vector.
-    """
-    R = np.convolve(x, x[::-1], 'full')
-    (n,) = R.shape
-    # Return the autocorrelation for indexes greater then or equal to 0
-    return R[(n - 1) / 2:]
+    - `x`: A Numpy array.
 
-def test_calc_autocorr():
-    #x = np.r_[0:10]
-    x = np.array([2, 3, 1])
-    print x
-    Rx = calc_autocorr(x)
-    print Rx
-    #print Rx/Rx[0]
+    Ex:
+    >>> x = np.array([4, 2, 1, 3, 7, 3, 8])
+    >>> calc_unorm_autocorr(x)
+    array([152,  79,  82,  53,  42,  28,  32])
+    """
+    #R = np.convolve(x, x[::-1], 'full')
+    R = np.correlate(x, x, 'full')
+
+    # Return the autocorrelation for indexes greater then or equal to 0
+    return R[R.size / 2:]
+
+
+def calc_autocorr(x):
+    """Calculates the (normalized) autocorrelation of an array x starting
+    from lag 0.
+
+    Arguments:
+    - `x`: A Numpy array.
+
+    Ex:
+    >>> x = np.array([4, 2, 1, 3, 7, 3, 8])
+    >>> calc_autocorr(x)
+    array([ 1.   , -0.025,  0.15 , -0.175, -0.25 , -0.2  ,  0.   ])
+    """
+    x2 = x - np.mean(x)
+    variance = float(np.var(x2))  # Biased variance of x2
+    # We divide by x2.size because the calculated variance is the biased version. If yt was teh unbiased we would have to divide by x2.size-1 instead.
+    return calc_unorm_autocorr(x2) / (x2.size * variance)
+
+
+# def test_calc_autocorr():
+#     #x = np.r_[0:10]
+#     x = np.array([4, 2, 1, 3, 7, 3, 8])
+#     print x
+#     Rx = calc_autocorr(x)
+#     print Rx
+#     #print Rx/Rx[0]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
