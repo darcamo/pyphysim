@@ -3,7 +3,7 @@
 
 """module docstring"""
 
-__version__ = "$Revision: $"
+__version__ = "$Revision$"
 # $Source$
 
 import numpy as np
