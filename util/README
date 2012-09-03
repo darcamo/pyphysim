@@ -2,6 +2,10 @@
 
 
 * progressbar.py
+  - DummyProgressbar
+  - ProgressbarText
+  - ProgressbarMultiProcessText
+  - 
 * misc.py
   Várias funções simples em Python que são úteis para mim.
 

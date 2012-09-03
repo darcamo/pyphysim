@@ -7,8 +7,6 @@ import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
 
-import IPython
-
 
 class OFDM():
     """OFDM class.
@@ -182,7 +180,7 @@ class OFDM():
         size).
 
         Arguments:
-        - `input_data`: OFDM modulated data
+        - `input_data`: OFDM modulated data (after the IFFT)
         Output:
         - `output`: input_data with the cyclic prefix added. The shape of
                     the output is (Number of OFDM symbols, IFFT size + CP
@@ -194,6 +192,19 @@ class OFDM():
             output = input_data
         return output
 
+    def _remove_CP(self, received_data):
+        """Remove the Cyclic prefix of the received data.
+
+        Arguments:
+        - `received_data`: Data that must be demodulated by the OFDM
+                           object.
+        Output:
+        - `output`: received data without the Cyclic prefix.
+
+        """
+        # TODO: Implement-me
+        return received_data
+
     def modulate(self, input_signal):
         """
 
@@ -202,48 +213,23 @@ class OFDM():
         - `input_signal`: Input signal that must be modulated by the OFDM
                           modulate function.
         """
-        # # Number of data symbols passed to the modulate function
-        # num_symbs = input_signal.size
-        # # Calculates how many zeros need to be added as well as the number
-        # # of equivalent OFDM symbols.
-        # zeropad, num_ofdm_symbols = self._calc_zeropad(num_symbs)
-
-        # Finally add the zeros to the input data
-        # input_signal = np.concatenate([input_signal, np.zeros(self.num_used_subcarriers * num_ofdm_symbols - num_symbs)], 1)
-
-        # Change the shape of the imput data. Each row will be modulated as
-        # one OFDM symbol.
-        # input_signal.shape = (num_ofdm_symbols, self.num_used_subcarriers)
-
-
-
-        # xxxxx Add zeros in both sides of the spectrum xxxxxxxxxxxxxxxxxxx
-        # half_subcarriers = self.num_used_subcarriers / 2.0
-        # # Subcarrier 0 is not included. Then we include the negative and
-        # # positive half_subcarriers
-        # subcarrier_indexes = np.r_[-half_subcarriers:0, 1:half_subcarriers + 1].astype(int)
-        # input_ifft = np.zeros([num_ofdm_symbols, self.fft_size])
-        # input_ifft[:, subcarrier_indexes] = input_signal[:, :]
-        # # shift subcarriers at indices [-26 to -1] to fft input indices [38
-        # # to 63]
-        # input_ifft = np.fft.fftshift(input_ifft)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # _prepare_input_signal will perform any zero padding needed as
         # well as deactivating the DC subcarrier and the guard subcarriers
         # when the number of used subcarriers is lower then the IFFT size.
-        # will also
+        # Notice that the output of _prepare_input_signal will be a
+        # bi-dimensional array, where each row has the input data for a
+        # single OFDM symbol.
         input_ifft = self._prepare_input_signal(input_signal)
 
         # Now we calculate the ifft for the second axis. That is equivalent
         # to calculate the ifft separatelly for each row in the input_ifft
-        # variable
+        # variable.
         output_ifft = np.fft.ifft(input_ifft, self.fft_size, 1)
 
         # Add the Cyclic prefix
         modulated_ofdm = self._add_CP(output_ifft)
 
-        # Change the shape to an array and return that array
+        # Change the shape to one dimensional array and return that array
         return modulated_ofdm.flatten()
 
     def demodulate(self, received_signal):
@@ -251,11 +237,18 @@ class OFDM():
 
         Arguments:
         - `received_signal`:
+        Output:
+        - `demodulated_data`: Demodulated symbols
         """
-        pass
+        received_signal_no_CP = self._remove_CP(received_signal)
 
+        num_ofdm_symbols = received_signal_no_CP.size / self.fft_size
+        received_signal_no_CP.shape = (num_ofdm_symbols, self.fft_size)
 
-if __name__ == '__main__1':
+        demodulated_data = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
+        return demodulated_data
+
+if __name__ == '__main__':
     # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
     num_bits = 2500
     # generating 1's and 0's
@@ -269,86 +262,13 @@ if __name__ == '__main__1':
     # bit1 --> +1
     ip_mod = 2 * ip_bits - 1
 
-    #xxxxx APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    num_mod_symbols = 100
-    ip_mod = np.r_[1:num_mod_symbols]
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    ofdm = OFDM(64, 16)
-    ofdm.num_used_subcarriers = 52
+    ofdm = OFDM(64, 16, 52)
     ofdm_symbols = ofdm.modulate(ip_mod)
 
     # MATLAB code to plot the power spectral density
     # close all
     fsMHz = 20e6
     Pxx, W = pylab.psd(ofdm_symbols, NFFT=ofdm.fft_size, Fs=fsMHz)
-    # [Pxx,W] = pwelch(st,[],[],4096,20);
-    plt.plot(
-        W,
-        #10 * np.log10(np.fft.fftshift(Pxx))
-        10 * np.log10(Pxx)
-        )
-    plt.xlabel('frequency, MHz')
-    plt.ylabel('power spectral density')
-    plt.title('Transmit spectrum OFDM (based on 802.11a)')
-    plt.show()
-
-if __name__ == '__main__':
-    # OFDM parameters
-    fft_size = 64
-    cp_size = 12
-    num_used_subcarriers = 52
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # Indexes from -26 to -1 and from 1 to 26
-    assert num_used_subcarriers % 2 == 0, "The number of used subcarriers must be even"
-    half_subcarriers = num_used_subcarriers / 2
-    # Subcarrier 0 is not included. Then we include the negative and
-    # positive half_subcarriers
-    subcarrier_indexes = np.r_[-half_subcarriers:0, 1:half_subcarriers + 1]
-
-    # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
-    num_bits = 2500
-    # generating 1's and 0's
-    ip_bits = np.random.random_integers(0, 1, num_bits)
-    # Number of modulated symbols
-    num_mod_symbols = num_bits * 1
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # OFDM details
-    num_ofdm_symbols = int(np.ceil(float(num_mod_symbols) / num_used_subcarriers))
-
-    # BPSK modulation
-    # bit0 --> -1
-    # bit1 --> +1
-    ip_mod = 2 * ip_bits - 1
-    # Zero-padding so that ip_mod size is a multiple of the
-    ip_mod = np.concatenate([ip_mod, np.zeros(num_used_subcarriers * num_ofdm_symbols - num_bits)], 1)
-    ip_mod.shape = (num_ofdm_symbols, num_used_subcarriers)
-
-    st = []
-    for symb_index in range(0, num_ofdm_symbols):
-        input_ifft = np.zeros(fft_size)
-
-        # assigning bits a1 to a52 to subcarriers [-26 to -1, 1 to 26]
-        input_ifft[subcarrier_indexes + fft_size / 2] = ip_mod[symb_index]
-
-        # shift subcarriers at indices [-26 to -1] to fft input indices [38 to 63]
-        input_ifft = np.fft.fftshift(input_ifft)
-
-        output_ifft = np.fft.ifft(input_ifft, fft_size)
-
-        # adding cyclic prefix of 16 samples
-        output_ifft_with_CP = np.concatenate([output_ifft[49:64], output_ifft])
-        st.append(output_ifft_with_CP)
-
-    # Concatenates the samples of all OFDM symbols
-    st = np.concatenate(st)
-
-    # MATLAB code to plot the power spectral density
-    # close all
-    fsMHz = 20e6
-    Pxx, W = pylab.psd(st, NFFT=fft_size, Fs=fsMHz)
     # [Pxx,W] = pwelch(st,[],[],4096,20);
     plt.plot(
         W,

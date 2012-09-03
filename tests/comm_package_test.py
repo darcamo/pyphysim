@@ -136,7 +136,6 @@ class OfdmTestCase(unittest.TestCase):
               25., 26., 27., 28., 29., 30., 31., 32.]])
         np.testing.assert_array_equal(self.ofdm_object._prepare_input_signal(input_signal), expected_data3)
 
-
     def test_modulate(self):
         input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
                                      # subcarriers)
@@ -172,7 +171,73 @@ class OfdmTestCase(unittest.TestCase):
             self.ofdm_object.modulate(input_signal[0:52]), expected_data2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# TODO: Test the other methods
+    def test_demodulate(self):
+        """
+        """
+        # TODO: Implement-me
+        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
+                                     # subcarriers)
 
+        # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
+        self.ofdm_object.set_parameters(64, 0, 52)
+        modulated_ofdm_symbols = self.ofdm_object.modulate(input_signal)
+
+        demodulated_symbols = self.ofdm_object.demodulate(modulated_ofdm_symbols)
+        print demodulated_symbols
+        pass
+
+
+# Power Specral Density
+def plot_psd_OFDM_symbols():
+    """Plot the power spectral density of OFDM modulated symbols.
+
+    This function is not used in any unittest, but it is interesting to
+    visualize that the modulate method of the OFDM class is working as it
+    should.
+    """
+    from matplotlib import pylab
+    from matplotlib import pyplot as plt
+
+    # xxxxxxxxxx OFDM Details xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    fft_size = 64
+    cp_size = 12
+    num_used_subcarriers = 52
+    ofdm_object = ofdm.OFDM(fft_size, cp_size, num_used_subcarriers)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
+    num_bits = 2500
+    # generating 1's and 0's
+    ip_bits = np.random.random_integers(0, 1, num_bits)
+    # Number of modulated symbols
+    num_mod_symbols = num_bits * 1
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # BPSK modulation
+    # bit0 --> -1
+    # bit1 --> +1
+    ip_mod = 2 * ip_bits - 1
+
+    # OFDM Modulation
+    output = ofdm_object.modulate(ip_mod)
+
+    # xxxxxxxxxx Plot the PSD xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # MATLAB code to plot the power spectral density
+    # close all
+    fsMHz = 20e6
+    Pxx, W = pylab.psd(output, NFFT=fft_size, Fs=fsMHz)
+    # [Pxx,W] = pwelch(output,[],[],4096,20);
+    plt.plot(
+        W,
+        10 * np.log10(Pxx)
+        )
+    plt.xlabel('frequency, MHz')
+    plt.ylabel('power spectral density')
+    plt.title('Transmit spectrum OFDM (based on 802.11a)')
+    plt.show()
+
+
+# TODO: Test the other methods
 if __name__ == "__main__":
+    # plot_psd_OFDM_symbols()
     unittest.main()
