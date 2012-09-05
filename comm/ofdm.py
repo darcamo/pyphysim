@@ -173,6 +173,52 @@ class OFDM():
 
         return input_ifft
 
+    # def _prepare_received_signal(self, received_signal):
+    #     """Prepare the received signal that will still be passed to the FFT
+    #     function in the demodulate method.
+
+    #     NOTE: The received_signal will be modified. That is, no copy will
+    #     be performed, but the input of the _prepare_received_signal will be
+    #     modified.
+
+    #     Arguments:
+    #     - `received_signal`: Received signal that will still be passed to
+    #                          the FFT in the demodulate function.
+    #     Output:
+    #     - `input_fft`: Signal suitable to be passed to the FFT function
+    #                    to actually perform the OFDM demodulation.
+
+    #     """
+    #     num_ofdm_symbols = received_signal.size // self.fft_size
+    #     received_signal.shape = (num_ofdm_symbols, self.fft_size)
+    #     return received_signal
+
+
+
+    def _prepare_decoded_signal(self, decoded_signal):
+        """Prepare the decoded signal that was processed by the FFT in the
+        demodulate function.
+
+        This is equivalent of reversing the indexing that was done by the
+        _prepare_input_signal method.
+
+        NOTE: This method should be called AFTER the Cyclic Prefix was
+        removed and the FFT was performed.
+
+        NOTE2: Because the number of zeropad was not saved, then
+        _prepare_decoded_signal has no way to remove them.
+
+        Arguments:
+        - `decoded_signal`: Signal that was decoded by the FFT in the OFDM
+                            demodulate method.
+        Output:
+        - `demodulated_samples`: Demodulated samples of the symbols that
+                                 were modulated by the OFDM object (for
+                                 instance the PSK or M-QAM symbols passed
+                                 to OFDM).
+        """
+        return decoded_signal[:, self._get_used_subcarrier_indexes_proper()].flatten()
+
     def _add_CP(self, input_data):
         """Add the Cyclic prefix to the input data.
 
@@ -195,23 +241,34 @@ class OFDM():
     def _remove_CP(self, received_data):
         """Remove the Cyclic prefix of the received data.
 
+        NOTE: The _remove_CP method will also change the shape so that it
+        is suitable to be passed to the FFT function.
+
         Arguments:
         - `received_data`: Data that must be demodulated by the OFDM
-                           object.
+                           object. This is a one dimensional array.
         Output:
-        - `output`: received data without the Cyclic prefix.
+        - `output`: received data without the Cyclic prefix. This is a
+                    bi-dimensional array.
 
         """
         # TODO: Implement-me
-        return received_data
+        num_ofdm_symbols = received_data.size // (self.fft_size + self.cp_size)
+        received_data.shape = (num_ofdm_symbols, self.fft_size + self.cp_size)
+        received_data_no_CP = received_data[:, self.cp_size:]
+
+        return received_data_no_CP
 
     def modulate(self, input_signal):
-        """
+        """Perform the OFDM modulation of the input_signal.
+
+        TODO: Talk about the performed zeropadding as well as CP addition.
 
         Arguments:
-
         - `input_signal`: Input signal that must be modulated by the OFDM
                           modulate function.
+        Outputs:
+        - An array with the samples of the modulated OFDM symbols.
         """
         # _prepare_input_signal will perform any zero padding needed as
         # well as deactivating the DC subcarrier and the guard subcarriers
@@ -233,20 +290,49 @@ class OFDM():
         return modulated_ofdm.flatten()
 
     def demodulate(self, received_signal):
-        """
+        """Perform the OFDM demodulation of the received_signal.
+
+        TODO: Talk about the zeropadding (which is not removed) as well as
+        CP removal.
 
         Arguments:
-        - `received_signal`:
+        - `received_signal`: An array with the samples of the received OFDM
+                             symbols.
         Output:
-        - `demodulated_data`: Demodulated symbols
+        - `demodulated_data`: Demodulated symbols.
+
         """
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # - Remove the Cyclic Prefix -> the output will have a shape of
+        # num_ofdm_symbols x fft_size
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # TODO: remove the CP here
         received_signal_no_CP = self._remove_CP(received_signal)
 
-        num_ofdm_symbols = received_signal_no_CP.size / self.fft_size
-        received_signal_no_CP.shape = (num_ofdm_symbols, self.fft_size)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # - Call The FFT
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now we calculate the FFT for the second axis. That is equivalent
+        # to calculate the fft separatelly for each row in the
+        # received_signal variable.
+        output_fft = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
 
-        demodulated_data = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
-        return demodulated_data
+        # - CALL THE _prepare_decoded_signal METHOD TO GET THE DATA ONLY
+        # FROM THE USEFUL SUBCARRIERS
+        # TODO: Implement _prepare_decoded_signal and call it here
+        decoded_symbols = self._prepare_decoded_signal(output_fft)
+
+        # - RETURN THE DECODED DATA
+        return decoded_symbols
+        #
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # received_signal_no_CP = self._remove_CP(received_signal)
+
+        # num_ofdm_symbols = received_signal_no_CP.size / self.fft_size
+        # received_signal_no_CP.shape = (num_ofdm_symbols, self.fft_size)
+
+        # demodulated_data = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
+        # return demodulated_data
 
 if __name__ == '__main__':
     # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx

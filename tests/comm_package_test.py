@@ -55,8 +55,7 @@ class OfdmTestCase(unittest.TestCase):
         from comm.ofdm import OFDM
         self.ofdm_object = OFDM(64, 16, 52)
 
-    # TODO: change "lalala" to test
-    def lalala_ofdm_set_parameters(self):
+    def test_ofdm_set_parameters(self):
         # Test regular usage
         self.assertEqual(self.ofdm_object.fft_size, 64)
         self.assertEqual(self.ofdm_object.cp_size, 16)
@@ -136,6 +135,12 @@ class OfdmTestCase(unittest.TestCase):
               25., 26., 27., 28., 29., 30., 31., 32.]])
         np.testing.assert_array_equal(self.ofdm_object._prepare_input_signal(input_signal), expected_data3)
 
+    def test_prepare_decoded_signal(self):
+        input1 = np.r_[1:105]
+        input2 = self.ofdm_object._prepare_input_signal(input1)
+        output = self.ofdm_object._prepare_decoded_signal(input2)
+        np.testing.assert_array_equal(output, input1)
+
     def test_modulate(self):
         input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
                                      # subcarriers)
@@ -172,21 +177,56 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_demodulate(self):
-        """
-        """
-        # TODO: Implement-me
+        # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
                                      # subcarriers)
+        # print input_signal
+        # print self.ofdm_object._prepare_input_signal(input_signal)
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
         modulated_ofdm_symbols = self.ofdm_object.modulate(input_signal)
 
         demodulated_symbols = self.ofdm_object.demodulate(modulated_ofdm_symbols)
-        print demodulated_symbols
-        pass
+        np.testing.assert_array_equal(
+            np.real(demodulated_symbols.round()).astype(int),
+            input_signal
+        )
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
+        input_signal2 = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
+                                     # subcarriers)
+        self.ofdm_object.set_parameters(64, 16, 52)
+        modulated_ofdm_symbols2 = self.ofdm_object.modulate(input_signal2)
+
+        demodulated_symbols2 = self.ofdm_object.demodulate(modulated_ofdm_symbols2)
+        np.testing.assert_array_equal(
+            np.real(demodulated_symbols2.round()).astype(int),
+            input_signal2
+        )
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
+        input_signal3 = np.r_[1:110]  # Exactly two OFDM symbols (with 52 used
+                                     # subcarriers)
+        self.ofdm_object.set_parameters(64, 16, 52)
+        modulated_ofdm_symbols3 = self.ofdm_object.modulate(input_signal3)
+
+        demodulated_symbols3 = self.ofdm_object.demodulate(modulated_ofdm_symbols3)
+        # OFDM will not remove the zeropadding therefore we need to do it
+        # manually
+        demodulated_symbols3 = demodulated_symbols3[0:109]
+        np.testing.assert_array_equal(
+            np.real(demodulated_symbols3.round()).astype(int),
+            input_signal3
+        )
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Power Specral Density
 def plot_psd_OFDM_symbols():
     """Plot the power spectral density of OFDM modulated symbols.
