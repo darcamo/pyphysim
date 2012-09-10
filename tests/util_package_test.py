@@ -13,7 +13,7 @@ import sys
 
 sys.path.append("..")
 
-from util import misc, progressbar
+from util import misc, progressbar, simulations
 
 
 class Test(unittest.TestCase):
@@ -27,8 +27,12 @@ class Test(unittest.TestCase):
         """Run misc doctests"""
         doctest.testmod(misc)
 
+    def test_simulations(self):
+        """Run simulations doctests"""
+        doctest.testmod(simulations)
+
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == "__main__1":
+if __name__ == "__main__":
     unittest.main()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -140,7 +144,7 @@ def progress_producer(process_id, process_data_list, sleep_time=0.5):
         process_data_list[process_id] = i
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from time import sleep
     import multiprocessing
     from progressbar import ProgressbarMultiProcessText
