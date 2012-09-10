@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Implements a waterfilling method.
+
+The doWF performs the waterfilling algorithm.
+
+The genLatexCode returns latex code that can draw the provided solution by
+the waterfilling algorithm, while the drawWF creates a file with this
+code.
+"""
+
 import numpy as np
 
 
@@ -56,12 +65,15 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
 
 
 def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
-    """Generates latex code to draw (using Tikz) the waterfilling representation.
+    """Generates latex code to draw (using Tikz) the waterfilling
+    representation.
 
     Arguments:
-    - `vtChannels`: Numpy array with the channel gains of the parallel AWGN channels.
+    - `vtChannels`: Numpy array with the channel gains of the parallel AWGN
+                    channels.
     - `waterLevel`: Water level
-    - `channelLength`: Length (in cm) of the representation of each channel in the X axis.
+    - `channelLength`: Length (in cm) of the representation of each channel
+                       in the X axis.
     """
 
     # Draw Parameters
@@ -152,12 +164,13 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
     """
 
     pointsString = pointsToString(maxYcoord * (vtInvChannels / yMax))
-    newTexCode = texCode.format(XMax=xMax,
-                                YMax=maxYcoord + 0.2,  # yMax,
-                                WaterLevelCoord=maxYcoord * (waterLevel / yMax),
-                                WaterLevelLabel=waterLevel,
-                                Points=pointsString,
-                                LastPoint=(maxYcoord * (vtInvChannels[-1] / yMax)))
+    newTexCode = texCode.format(
+        XMax=xMax,
+        YMax=maxYcoord + 0.2,  # yMax,
+        WaterLevelCoord=maxYcoord * (waterLevel / yMax),
+        WaterLevelLabel=waterLevel,
+        Points=pointsString,
+        LastPoint=(maxYcoord * (vtInvChannels[-1] / yMax)))
 
     return newTexCode
 
@@ -186,11 +199,10 @@ def test_drawwf():
 
 if __name__ == '__main__':
     #vtChannels = np.abs(randn_c(4,1))
-    vtChannels = np.array([ 0.49702888,
-                            0.59012981,
-                            0.43485267,
-                            0.6692608 ])
-
+    vtChannels = np.array([0.49702888,
+                           0.59012981,
+                           0.43485267,
+                           0.6692608])
     Power = 4
     noise_var = 0.1
     Es = 1

@@ -252,7 +252,6 @@ class OFDM():
                     bi-dimensional array.
 
         """
-        # TODO: Implement-me
         num_ofdm_symbols = received_data.size // (self.fft_size + self.cp_size)
         received_data.shape = (num_ofdm_symbols, self.fft_size + self.cp_size)
         received_data_no_CP = received_data[:, self.cp_size:]
@@ -300,13 +299,11 @@ class OFDM():
                              symbols.
         Output:
         - `demodulated_data`: Demodulated symbols.
-
         """
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # - Remove the Cyclic Prefix -> the output will have a shape of
         # num_ofdm_symbols x fft_size
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # TODO: remove the CP here
         received_signal_no_CP = self._remove_CP(received_signal)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

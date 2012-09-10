@@ -5,7 +5,12 @@
 # import struct
 # import binascii
 
-"""Module docstring"""
+"""Implement class for several modulators, such as PSK and M-QAM.
+
+All modulators inherit from the `Modulator` class and should call the
+self.setConstellation method in their __init__ method, as well as implement
+the calcTheoreticalSER and calcTheoreticalBER methods.
+"""
 
 __version__ = "$Revision: $"
 # $Source$
@@ -59,7 +64,7 @@ class Modulator:
         return "{0:d}-{1:s} object".format(self.M, self.__class__.__name__)
 
     def setConstellation(self, symbols):
-        """Set the constelation of the modulator.
+        """Set the constellation of the modulator.
 
         This function should be called in the constructor of the derived
         classes.
@@ -191,7 +196,7 @@ class PSK(Modulator):
 
     def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation for high M and high
-        SNR) symbol error rate for the M-PSK squeme.
+        SNR) symbol error rate for the M-PSK scheme.
 
         Arguments:
         - `SNR`: Signal-to-noise-value (in dB)
@@ -204,7 +209,7 @@ class PSK(Modulator):
 
     def calcTheoreticalBER(self, SNR):
         """Calculates the theoretical (approximation) bit error rate for
-        the M-PSK squeme using Gray coding.
+        the M-PSK scheme using Gray coding.
 
         Arguments:
         - `SNR`: Signal to noise ration (in dB)
@@ -252,7 +257,7 @@ class BPSK(Modulator):
 
     def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation) symbol error rate for
-        the BPSK squeme.
+        the BPSK scheme.
 
         Arguments:
         - `snr`: Signal to noise ration (in dB)
@@ -264,7 +269,7 @@ class BPSK(Modulator):
 
     def calcTheoreticalBER(self, SNR):
         """Calculates the theoretical (approximation) bit error rate for
-        the BPSK squeme.
+        the BPSK scheme.
 
         Arguments:
         - `snr`: Signal to noise ration (in dB)
@@ -297,10 +302,9 @@ class QAM(Modulator):
         grayMappingIndexes = self.__calculateGrayMappingIndexQAM(L)
         symbols = symbols[grayMappingIndexes]
 
-        # Set the constelation
+        # Set the constellation
         self.setConstellation(symbols)
 
-        # __createConstellation deve retornar os simbolos
     def __createConstellation(self, M):
         """Generates the Constellation for the (SQUARE) M-QAM modulation
         scheme.
@@ -348,7 +352,7 @@ class QAM(Modulator):
         [0, 1, 3, 2, 4, 5, 7, 6, 12, 13, 15, 14, 8, 9, 11, 10]
 
         Arguments:
-        - `L`: Square root of the modulation cardinality (must be an interger)
+        - `L`: Square root of the modulation cardinality (must be an integer)
 
         """
         # Row vector with the column variation (second half of the index in
@@ -384,7 +388,7 @@ class QAM(Modulator):
 
     def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation) symbol error rate for
-        the QAM squeme.
+        the QAM scheme.
 
         Arguments:
         - `SNR`: Signal to noise ration (in dB)
@@ -397,13 +401,13 @@ class QAM(Modulator):
 
     def calcTheoreticalBER(self, SNR):
         """Calculates the theoretical (approximation) bit error rate for
-        the QAM squeme.
+        the QAM scheme.
 
         Arguments:
         - `SNR`: Signal to noise ration (in dB)
         """
         # For higher SNR values and gray mapping, each symbol error
-        # corresponds to aproximatelly a bit error. The BER is then given
+        # corresponds to approximately a bit error. The BER is then given
         # by the probability of error of a single carrier in the QAM system
         # divided by the number of bits transported in that carrier.
         k = level2bits(self.M)
@@ -419,8 +423,7 @@ class QAM(Modulator):
 def testGrayCodeConversion(maxNum=8):
     for i in range(0, maxNum):
         grayNumber = binary2gray(i)
-        print ("Normal: ({0:2}) {0:0=4b} | Gray: ({1:2}) {1:0=4b} -> Conver"
-               "tido {2:2}").format(i, grayNumber, gray2binary(grayNumber))
+        print ("Normal: ({0:2}) {0:0=4b} | Gray: ({1:2}) {1:0=4b} -> Converted {2:2}").format(i, grayNumber, gray2binary(grayNumber))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
