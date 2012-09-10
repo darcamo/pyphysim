@@ -10,7 +10,6 @@ defined here.
 
 import unittest
 import doctest
-import sys
 
 import numpy as np
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling
@@ -50,6 +49,7 @@ class CommDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxx OFDM Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class OfdmTestCase(unittest.TestCase):
+    """Unittests for the OFDM class in the ofdm module."""
     def setUp(self):
         """Called before each test."""
         from comm.ofdm import OFDM
@@ -284,7 +284,7 @@ def plot_psd_OFDM_symbols():
 # xxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BlastTestCase(unittest.TestCase):
-    """
+    """Unittests for the Blast class in the mimo module.
     """
     def setUp(self):
         """Called before each test."""
@@ -335,6 +335,45 @@ class BlastTestCase(unittest.TestCase):
 
 
 # Implement test classes for other mimo schemes
+class AlamoutiTestCase(unittest.TestCase):
+    """Unittests for the Alamouti class in the mimo module.
+    """
+
+    def setUp(self):
+        """Called before each test."""
+        from comm.mimo import Alamouti
+        self.alamouti_object = Alamouti()
+
+    def test_getNumberOfLayers(self):
+        # The number of layers in the Alamouti scheme is always equal to
+        # one.
+        self.assertEqual(self.alamouti_object.getNumberOfLayers(), 1)
+
+    def test_encode(self):
+        data = np.r_[0:16] + np.r_[0:16] * 1j
+
+        expected_encoded_data = np.array(
+            [[0 + 0j, -1 + 1j, 2 + 2j, -3 + 3j, 4 + 4j, -5 + 5j, 6 + 6j,
+              -7 + 7j, 8 + 8j, -9 + 9j, 10 + 10j, -11 + 11j, 12 + 12j,
+              -13 + 13j, 14 + 14j, -15 + 15j],
+             [1 + 1j, 0 - 0j, 3 + 3j, 2 - 2j, 5 + 5j, 4 - 4j, 7 + 7j,
+              6 - 6j, 9 + 9j, 8 - 8j, 11 + 11j, 10 - 10j, 13 + 13j, 12 - 12j,
+              15 + 15j, 14 - 14j]]
+        ) / np.sqrt(2)
+
+        np.testing.assert_array_almost_equal(
+            self.alamouti_object.encode(data),
+            expected_encoded_data)
+
+    def test_decode(self):
+        from util.misc import randn_c
+        data = np.r_[0:16] + np.r_[0:16] * 1j
+        encoded_data = self.alamouti_object.encode(data)
+        # We will test the deconding with a random channel
+        channel = randn_c(3, 2)
+        received_data = np.dot(channel, encoded_data)
+        decoded_data = self.alamouti_object.decode(received_data, channel)
+        np.testing.assert_array_almost_equal(decoded_data, data)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

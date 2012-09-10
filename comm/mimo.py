@@ -43,7 +43,7 @@ class Mimo():
         of the channel matrix.
 
         Arguments:
-        - `channel`: MIMO Channel Matrix
+        - `channel`: MIMO channel matrix
         """
         # print "Zero-Force used"
         return np.linalg.pinv(channel)
@@ -54,7 +54,7 @@ class Mimo():
         interference.
 
         Arguments:
-        - `channel`: MIMO Channel Matrix
+        - `channel`: MIMO channel matrix
         - `noise_var`: Noise variance
         """
         # print "MMSE used"
@@ -82,10 +82,6 @@ class Blast(Mimo):
     """MIMO class for the BLAST scheme.
 
     The number of streams need to be specified during object creation.
-    For instance:
-    >>> b = Blast(3)
-    >>> b.getNumberOfLayers()
-    3
     """
 
     def __init__(self, nStreams):
@@ -117,35 +113,66 @@ class Blast(Mimo):
         else:
             self.calc_filter = Mimo._calcZeroForceFilter
 
+    def _encode(self, transmit_data):
+        """Encode the transmit data array to be transmitted using the BLAST
+        scheme, but without dividing the power among the transmit antennas.
+
+        The idea is that the encode method will call _encode and perform
+        the power division. This separation allows better code reuse.
+
+        Arguments:
+        - `transmit_data`: A numpy array with a number of elements which is
+                           a multiple of the number of transmit
+                           antennas.
+        """
+        num_elements = transmit_data.size
+        assert num_elements % self.nStreams == 0, "Input array number of elements must be a multiple of the number of transmit antennas"
+        return transmit_data.reshape(self.nStreams, num_elements / self.nStreams, order='F')
+
     def encode(self, transmit_data):
         """Encode the transmit data array to be transmitted using the BLAST
         scheme.
 
         Arguments:
-        - `transmit_data`: A numpy array with a number of elements which is a multiple of the number of transmit antennas.
+        - `transmit_data`: A numpy array with a number of elements which is
+                           a multiple of the number of transmit
+                           antennas.
         """
-        num_elements = transmit_data.size
-        assert num_elements % self.nStreams == 0, "Input array number of elements must be a multiple of the number of transmit antennas"
-        return transmit_data.reshape(self.nStreams, num_elements / self.nStreams, order='F') / np.sqrt(self.nStreams)
+        return self._encode(transmit_data) / np.sqrt(self.nStreams)
+
+    def _decode(self, received_data, channel):
+        """Decode the received data array, but does not compensate for the
+        power division among transmit antennas.
+
+        The idea is that the decode method will call _decode and perform
+        the power compensation. This separation allows better code reuse.
+
+        Arguments:
+        - `received_data`: Received data, which was encoded with the
+                           Blast scheme and corrupted by the channel
+                           `channel`.
+        - `channel`: MIMO channel matrix.
+        """
+        (Nr, Ns) = received_data.shape
+        W = self.calc_filter(channel)
+        decoded_data = W.dot(received_data).reshape(self.nStreams * Ns, order='F')
+        return decoded_data
 
     def decode(self, received_data, channel):
         """Decode the received data array.
 
         Arguments:
         - `received_data`:
-        - `channel`: Channel matrix
+        - `channel`: MIMO channel matrix
         """
-        (Nr, Ns) = received_data.shape
-        W = self.calc_filter(channel)
-        decoded_data = W.dot(received_data) * np.sqrt(self.nStreams)
-        return decoded_data.reshape(self.nStreams * Ns, order='F')
+        return self._decode(received_data, channel) * np.sqrt(self.nStreams)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Alamouti Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Alamouti(Mimo):
-    """
+    """MIMO class for the Alamouti scheme.
     """
 
     def __init__(self, ):
@@ -155,15 +182,21 @@ class Alamouti(Mimo):
 
     def getNumberOfLayers(self, ):
         """Get the number of layers of the MIMO scheme.
+
+        The number of layers in the Alamouti scheme is always equal to
+        one.
         """
         return 1
 
-    # TODO: Falta dividir a potência entre as antenas transmissoras
-    def encode(self, transmit_data):
-        """
+    def _encode(self, transmit_data):
+        """Perform the Alamouti encoding, but without dividing the power
+        among the transmit antennas.
+
+        The idea is that the encode method will call _encode and perform
+        the power division. This separation allows better code reuse.
 
         Arguments:
-        - `transmit_data`:
+        - `transmit_data`: Data to be encoded by the Alamouit scheme.
         """
         Ns = transmit_data.size
         encoded_data = np.empty((2, Ns), dtype=complex)
@@ -174,14 +207,25 @@ class Alamouti(Mimo):
             encoded_data[1, n + 1] = (transmit_data[n]).conjugate()
         return encoded_data
 
-    # TODO: Falta dividir a potência entre as antenas transmissoras
-    # TODO: Apagar depois
-    # Mais lento que encode
-    def encode2(self, transmit_data):
-        """
+    def encode(self, transmit_data):
+        """Perform the Alamouiti encoding.
 
         Arguments:
-        - `transmit_data`:
+        - `transmit_data`: Data to be encoded by the Alamouit scheme.
+        """
+        return self._encode(transmit_data) / np.sqrt(2)
+
+    # TODO: Apagar depois
+    # Mais lento que _encode
+    def _encode2(self, transmit_data):
+        """Perform the Alamouti encoding, but without dividing the power
+        among the transmit antennas.
+
+        The idea is that the encode method will call _encode and perform
+        the power division. This separation allows better code reuse.
+
+        Arguments:
+        - `transmit_data`: Data to be encoded by the Alamouit scheme.
         """
         # transmit_data will have symbols $s_1, s_2, s_3, s_4, \ldots$
 
@@ -211,12 +255,19 @@ class Alamouti(Mimo):
         # $\begin{bmatrix} s_1 & -s_2^* & s_3 & -s_4^* \\ s_2 & s_1^* & s_4 & s_3^*\end{bmatrix} \ldots$
         return encoded_data
 
-    def decode(self, received_data, channel):
-        """
+    def _decode(self, received_data, channel):
+        """Perform the decoding of the received_data for the Alamouit
+        scheme with the channel `channel`, but does not compensate for the
+        power division among transmit antennas.
+
+        The idea is that the decode method will call _decode and perform
+        the power compensation. This separation allows better code reuse.
 
         Arguments:
-        - `received_data`:
-        - `channel`:
+        - `received_data`: Received data, which was encoded with the
+                           Alamouit scheme and corrupted by the channel
+                           `channel`.
+        - `channel`: MIMO channel matrix.
         """
         Nr, Ns = received_data.shape
         # Number of Alamouti codewords
@@ -239,11 +290,22 @@ class Alamouti(Mimo):
 
         # The Alamouti code gives a gain of the square of the frobenius
         # norm of the channel. We need to compensate that gain.
-        decoded_data = decoded_data / np.linalg.norm(channel, 'fro') ** 2
+        decoded_data = decoded_data / (np.linalg.norm(channel, 'fro') ** 2)
         return decoded_data
 
+    def decode(self, received_data, channel):
+        """Perform the decoding of the received_data for the Alamouit
+        scheme with the channel `channel`.
 
-if __name__ == '__main__1':
+        Arguments:
+        - `received_data`: Received data, which was encoded with the
+                           Alamouit scheme and corrupted by the channel
+                           `channel`.
+        - `channel`: MIMO channel matrix.
+        """
+        return self._decode(received_data, channel) * np.sqrt(2)
+
+if __name__ == '__main__':
     nStreams = 2
     Nr = 3
     Ns = 16
@@ -260,7 +322,7 @@ if __name__ == '__main__1':
     print decoded_data
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     data = np.arange(0, 9)
     print data
     nStreams = 3
