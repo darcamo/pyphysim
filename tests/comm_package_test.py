@@ -46,9 +46,9 @@ class CommDoctestsTestCase(unittest.TestCase):
         doctest.testmod(waterfilling)
 
 
-# TODO: Create test cases for the other methods and classes in each module,
-# even for methods that are already doctested.
-
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx OFDM Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class OfdmTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -275,6 +275,68 @@ def plot_psd_OFDM_symbols():
     plt.ylabel('power spectral density')
     plt.title('Transmit spectrum OFDM (based on 802.11a)')
     plt.show()
+
+
+# TODO: Create test cases for the other methods and classes in each module,
+# even for methods that are already doctested.
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class BlastTestCase(unittest.TestCase):
+    """
+    """
+    def setUp(self):
+        """Called before each test."""
+        from comm.mimo import Blast
+        self.blast_object = Blast(3)
+
+    def test_getNumberOfLayers(self):
+        from comm.mimo import Blast
+        self.assertEqual(self.blast_object.getNumberOfLayers(), 3)
+        blast2 = Blast(5)
+        self.assertEqual(blast2.getNumberOfLayers(), 5)
+
+    def test_encode(self):
+        data = np.r_[0:15]
+        expected_encoded_data = data.reshape(3, 5, order='F') / np.sqrt(3)
+        np.testing.assert_array_almost_equal(
+            self.blast_object.encode(data),
+            expected_encoded_data)
+
+    def test_decode(self):
+        from util.misc import randn_c
+        data = np.r_[0:15]
+        encoded_data = self.blast_object.encode(data)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with an identity channel
+        channel = np.eye(3)
+        decoded_data1 = self.blast_object.decode(encoded_data, channel)
+        np.testing.assert_array_almost_equal(decoded_data1, data)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with a random channel and a zero-force filter
+        self.blast_object.set_noise_var(-1)  # This should use the ZF filter
+        self.assertEqual(self.blast_object.calc_filter, mimo.Mimo._calcZeroForceFilter)
+        channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
+        received_data2 = np.dot(channel, encoded_data)
+        decoded_data2 = self.blast_object.decode(received_data2, channel)
+        np.testing.assert_array_almost_equal(decoded_data2, data)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with a random channel and a MMSE filter
+        self.blast_object.set_noise_var(0.00000001)  # This should use the ZF filter
+        self.assertNotEqual(self.blast_object.calc_filter, mimo.Mimo._calcMMSEFilter)
+        channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
+        received_data3 = np.dot(channel, encoded_data)
+        decoded_data3 = self.blast_object.decode(received_data3, channel)
+        np.testing.assert_array_almost_equal(decoded_data3, data)
+
+
+# Implement test classes for other mimo schemes
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # TODO: Test the other methods

@@ -14,6 +14,16 @@ import numpy as np
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Mimo():
     """Base Class for MIMO schemes.
+
+    All subclasses must implement the following methods:
+
+    - getNumberOfLayers: Should return the number of layers of that
+                         specific MIMO scheme
+    - encode: The encode method must perform everything performed at the
+              transmitter for that specific MIMO scheme. This also include
+              the power division among the transmit antennas.
+    - decode: Analogous to the encode method, the decode method must
+              perform everything performed at the receiver.
     """
 
     def __init__(self):
@@ -35,7 +45,7 @@ class Mimo():
         Arguments:
         - `channel`: MIMO Channel Matrix
         """
-        print "Zero-Force used"
+        # print "Zero-Force used"
         return np.linalg.pinv(channel)
 
     @staticmethod
@@ -47,7 +57,7 @@ class Mimo():
         - `channel`: MIMO Channel Matrix
         - `noise_var`: Noise variance
         """
-        print "MMSE used"
+        # print "MMSE used"
         H = channel
         H_H = H.transpose().conjugate()
         Nr, Nt = H.shape
@@ -69,22 +79,28 @@ class Mimo():
 # xxxxxxxxxxxxxxx Blast Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Blast(Mimo):
-    """
+    """MIMO class for the BLAST scheme.
+
+    The number of streams need to be specified during object creation.
+    For instance:
+    >>> b = Blast(3)
+    >>> b.getNumberOfLayers()
+    3
     """
 
-    def __init__(self, Nt):
+    def __init__(self, nStreams):
         """
         """
         Mimo.__init__(self)
         # Function to calculate the receive filter
         self.calc_filter = Mimo._calcZeroForceFilter
         self.noise_var = 0
-        self.Nt = Nt
+        self.nStreams = nStreams
 
     def getNumberOfLayers(self, ):
         """Get the number of layers of the MIMO scheme.
         """
-        return self.Nt
+        return self.nStreams
 
     def set_noise_var(self, noise_var):
         """Set the noise variance for the MMSE receive filter.
@@ -109,8 +125,8 @@ class Blast(Mimo):
         - `transmit_data`: A numpy array with a number of elements which is a multiple of the number of transmit antennas.
         """
         num_elements = transmit_data.size
-        assert num_elements % Nt == 0, "Input array number of elements must be a multiple of the number of transmit antennas"
-        return transmit_data.reshape(self.Nt, num_elements / Nt, order='F') / np.sqrt(self.Nt)
+        assert num_elements % self.nStreams == 0, "Input array number of elements must be a multiple of the number of transmit antennas"
+        return transmit_data.reshape(self.nStreams, num_elements / self.nStreams, order='F') / np.sqrt(self.nStreams)
 
     def decode(self, received_data, channel):
         """Decode the received data array.
@@ -121,8 +137,8 @@ class Blast(Mimo):
         """
         (Nr, Ns) = received_data.shape
         W = self.calc_filter(channel)
-        decoded_data = W.dot(received_data) * np.sqrt(Nt)
-        return decoded_data.reshape(self.Nt * Ns, order='F')
+        decoded_data = W.dot(received_data) * np.sqrt(self.nStreams)
+        return decoded_data.reshape(self.nStreams * Ns, order='F')
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -227,8 +243,8 @@ class Alamouti(Mimo):
         return decoded_data
 
 
-if __name__ == '__main__':
-    Nt = 2
+if __name__ == '__main__1':
+    nStreams = 2
     Nr = 3
     Ns = 16
 
@@ -237,24 +253,24 @@ if __name__ == '__main__':
     alamouti = Alamouti()
     encoded_data = alamouti.encode(transmit_data)
 
-    channel = np.random.randn(Nr, Nt)
+    channel = np.random.randn(Nr, nStreams)
     received_data = channel.dot(encoded_data)
 
     decoded_data = alamouti.decode(received_data, channel)
     print decoded_data
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     data = np.arange(0, 9)
     print data
-    Nt = 3
+    nStreams = 3
     Nr = 4
-    blast = Blast(Nt)
+    blast = Blast(nStreams)
     print blast.getNumberOfLayers()
     transmitted_data = blast.encode(data)
     print transmitted_data
 
-    channel = np.random.randn(Nr, Nt)
+    channel = np.random.randn(Nr, nStreams)
     received_data = channel.dot(transmitted_data)
 
     blast.set_noise_var(0.001)
