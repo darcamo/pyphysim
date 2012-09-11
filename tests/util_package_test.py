@@ -13,7 +13,7 @@ import sys
 
 sys.path.append("..")
 
-from util import misc, progressbar, simulations
+from util import misc, progressbar, simulations, conversion
 
 
 class Test(unittest.TestCase):
@@ -30,6 +30,11 @@ class Test(unittest.TestCase):
     def test_simulations(self):
         """Run simulations doctests"""
         doctest.testmod(simulations)
+
+    def test_conversion(self, ):
+        """Run conversion doctests"""
+        doctest.testmod(conversion)
+
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
