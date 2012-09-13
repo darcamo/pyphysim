@@ -5,19 +5,18 @@
 
 Each module has doctests for its functions and all we need to do is run all
 of them them.
-
 """
+
 import unittest
 import doctest
-import sys
-
-sys.path.append("..")
 
 from util import misc, progressbar, simulations, conversion
 
 
-class Test(unittest.TestCase):
-    """Unit tests for misc."""
+class UtilDoctestsTestCase(unittest.TestCase):
+    """Teste case that run all the doctests in the modules of the util
+    package.
+    """
 
     def test_progressbar(self):
         """Run progressbar doctests"""
@@ -31,7 +30,7 @@ class Test(unittest.TestCase):
         """Run simulations doctests"""
         doctest.testmod(simulations)
 
-    def test_conversion(self, ):
+    def test_conversion(self):
         """Run conversion doctests"""
         doctest.testmod(conversion)
 

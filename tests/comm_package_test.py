@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for the modules in the coom package.
-
+"""Tests for the modules in the comm package.
 
 Each module has several doctests that we run in addition to the unittests
 defined here.
