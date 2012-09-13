@@ -40,7 +40,7 @@ class Projection():
 
         # Matrix to project in the orthogonal subspace. Note that self.Q is
         # always a square matrix
-        self.oQ = np.eye(self.Q.shape[0]) - self.Q
+        self.oQ = Projection.calcOrthogonalProjectionMatrix(A)
 
     def project(self, M):
         """Project the matrix (or vector) M in the desired subspace.
@@ -84,15 +84,6 @@ class Projection():
 
         Arguments:
         - `A`:
-
-        Example:
-        >>> A = np.array([[1+1j, 2-2j], [3-2j, 0], [-1-1j, 2-3j]])
-        >>> Q = Projection.calcProjectionMatrix(A)
-        >>> Q.round(4)
-        array([[ 0.5239-0.j    ,  0.0366+0.3296j,  0.3662+0.0732j],
-               [ 0.0366-0.3296j,  0.7690-0.j    , -0.0789+0.2479j],
-               [ 0.3662-0.0732j, -0.0789-0.2479j,  0.7070+0.j    ]])
-
         """
         # MATLAB version: A/(A'*A)*A';
         A_H = A.conjugate().transpose()
@@ -106,17 +97,6 @@ class Projection():
 
         Arguments:
         - `A`:
-
-        Example:
-        >>> M = np.array([[1+1j, 2-2j], [3-2j, 0], [-1-1j, 2-3j]])
-        >>> oQ = calcOrthogonalProjectionMatrix(M)
-        >>> oQ
-        array([[ 0.47605634 +2.77555756e-17j, -0.03661972 -3.29577465e-01j,
-                -0.36619718 -7.32394366e-02j],
-               [-0.03661972 +3.29577465e-01j,  0.23098592 +1.38777878e-17j,
-                 0.07887324 -2.47887324e-01j],
-               [-0.36619718 +7.32394366e-02j,  0.07887324 +2.47887324e-01j,
-                 0.29295775 -2.77555756e-17j]])
         """
         Q = Projection.calcProjectionMatrix(A)
         return np.eye(Q.shape[0]) - Q
