@@ -151,7 +151,6 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         """Called before each test."""
         self.alt = AlternatingMinIASolver()
 
-    # TODO: Test the Ns property
     def test_properties(self):
         K = 3
         Nr = np.array([2, 4, 6])
@@ -165,11 +164,6 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.alt.Nr, Nr)
         np.testing.assert_array_equal(self.alt.Nt, Nt)
         np.testing.assert_array_equal(self.alt.Ns, Ns)
-
-    def test_randomizeH(self):
-        # Not really necessary because the logic is implemented (and
-        # already tested) in the MultiUserChannelMatrix class.
-        pass
 
     def test_randomizeF(self):
         K = 3
