@@ -9,6 +9,7 @@ of them them.
 
 import unittest
 import doctest
+import numpy as np
 
 from util import misc, progressbar, simulations, conversion
 
@@ -33,6 +34,81 @@ class UtilDoctestsTestCase(unittest.TestCase):
     def test_conversion(self):
         """Run conversion doctests"""
         doctest.testmod(conversion)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class MiscFunctionsTestCase(unittest.TestCase):
+    """Test the functions in the module."""
+    def test_pgig(self, ):
+        """
+        """
+        A = np.array(
+            [[2 - 0j, 3 + 12j, 7 + 1j],
+             [3 - 12j, 6 + 0j, 5 + 3j],
+             [7 - 1j, 5 - 3j, 4 + 0j]])
+
+        # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        [V_n3, D_n3] = misc.peig(A, 3)
+
+        expected_V_n3 = np.array(
+            [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j, 0.69593520],
+             [0.68522942, -0.24255902 + 0.37567057j, -0.02693857 + 0.57425752j],
+             [0.38918583 + 0.09728652j, 0.80863645, -0.40625488 - 0.14189355j]])
+        np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
+
+        # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        [V_n2, D_n2] = misc.peig(A, 2)
+
+        expected_V_n2 = np.array(
+            [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j],
+             [0.68522942, -0.24255902 + 0.37567057j],
+             [0.38918583 + 0.09728652j, 0.80863645]])
+        np.testing.assert_array_almost_equal(V_n2, expected_V_n2)
+
+        # xxxxx Test for n==1 (one column) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        [V_n1, D_n1] = misc.peig(A, 1)
+
+        expected_V_n1 = np.array(
+            [[0.27354856 + 0.54286421j],
+             [0.68522942],
+             [0.38918583 + 0.09728652j]])
+        np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
+
+    def test_leig(self):
+        A = np.array(
+            [[2 - 0j, 3 + 12j, 7 + 1j],
+             [3 - 12j, 6 + 0j, 5 + 3j],
+             [7 - 1j, 5 - 3j, 4 + 0j]])
+
+        # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        [V_n3, D_n3] = misc.leig(A, 3)
+
+        expected_V_n3 = np.array(
+            [[0.69593520, 0.15266747 - 0.35048035j, 0.27354856 + 0.54286421j],
+             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j, 0.68522942],
+             [-0.40625488 - 0.14189355j, 0.80863645, 0.38918583 + 0.09728652j]])
+        np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
+
+        # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        [V_n2, D_n2] = misc.leig(A, 2)
+
+        expected_V_n2 = np.array(
+            [[0.69593520, 0.15266747 - 0.35048035j],
+             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j],
+             [-0.40625488 - 0.14189355j, 0.80863645]])
+        np.testing.assert_array_almost_equal(V_n2, expected_V_n2)
+
+        # xxxxx Test for n==1 (one column) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        [V_n1, D_n1] = misc.leig(A, 1)
+
+        expected_V_n1 = np.array(
+            [[0.69593520],
+             [-0.02693857 + 0.57425752j],
+             [-0.40625488 - 0.14189355j]])
+        np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
+
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

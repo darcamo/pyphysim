@@ -21,6 +21,59 @@ from scipy.special import erfc
 # erf tb pode ser encontrada la biblioteca mpmath
 
 
+def peig(A, n):
+    """Returns a matrix whose columns are the `n` dominant eigenvectors
+    of `A` (eigenvectors corresponding to the `n` dominant
+    eigenvalues).
+
+    NOTE: `A` must be a symmetric matrix so that its eigenvalues are
+    real and positive.
+
+    Arguments:
+    - `A`: A symmetric matrix (bi-dimensional numpy array)
+    - `n`: An integer
+
+    Raises:
+    - ValueError: if `n` is greater than the number of columns of `A`.
+    """
+    (nrows, ncols) = A.shape
+    if n > ncols:
+        raise ValueError("`n` must be lower then the number of columns in `A`")
+
+    [D, V] = np.linalg.eig(A)
+    indexes = np.argsort(D.real)
+    indexes = indexes[::-1]
+    V = V[:, indexes[0:n]]
+    D = D[indexes[0:n]]
+    return [V, D]
+
+
+def leig(A, n):
+    """Returns a matrix whose columns are the `n` least significant
+    eigenvectors of `A` (eigenvectors corresponding to the `n` dominant
+    eigenvalues).
+
+    NOTE: `A` must be a symmetric matrix so that its eigenvalues are
+    real and positive.
+
+    Arguments:
+    - `A`: A symmetric matrix (bi-dimensional numpy array)
+    - `n`: An integer
+
+    Raises:
+    - ValueError: if `n` is greater than the number of columns of `A`.
+    """
+    (nrows, ncols) = A.shape
+    if n > ncols:
+        raise ValueError("`n` must be lower then the number of columns in `A`")
+
+    [D, V] = np.linalg.eig(A)
+    indexes = np.argsort(D.real)
+    V = V[:, indexes[0:n]]
+    D = D[indexes[0:n]]
+    return [V, D]
+
+
 def pretty_time(time_in_seconds):
     """Return the time in a more friendly way.
 
@@ -128,12 +181,13 @@ def xor(a, b):
     return (a).__xor__(b)
 
 
-def randn_c(rows, cols):
+def randn_c(*args):
     """Generates a random circularly complex gaussian matrix.
 
     Arguments:
-    - `rows`: Number of rows for the random matrix
-    - `cols`: Number of columns for the random matrix
+    - Variable number of arguments specifying the dimensions of the
+      returned array. This is directly passed to the numpy.random.randn
+      function.
 
     >>> a = randn_c(4,3)
     >>> a.shape
@@ -142,7 +196,7 @@ def randn_c(rows, cols):
     dtype('complex128')
     """
     return (1.0 / math.sqrt(2.0)) * (
-        np.random.randn(rows, cols) + (1j * np.random.randn(rows, cols)))
+        np.random.randn(*args) + (1j * np.random.randn(*args)))
 
 
 def level2bits(n):

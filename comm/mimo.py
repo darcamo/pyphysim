@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""module docstring"""
+"""Module with several MIMO related classes, such as classes for the BLAST
+and Alamouti MIMO schemes.
+"""
 
 __version__ = "$Revision$"
 # $Source$
