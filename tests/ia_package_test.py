@@ -440,11 +440,33 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == "__main__1":
+if __name__ == '__main__1':
+    import itertools
+
+    F = np.zeros(3, dtype=np.ndarray)
+    Ns = [1, 2, 2]
+    F[0] = np.array([[1, 2], [2, 2]])
+    F[1] = np.array([[3, 3, 2], [0, 0, 2], [1, 5, 1]])
+    F[2] = np.array([[4, 3, 2], [4, 4, 4], [3, 1, 3]])
+
+    print leig(F[2], 2)[0]
+
+    g = lambda f, ns: leig(f, ns)[0]
+
+    iterator = itertools.imap(g, F, Ns)
+    print np.array(list(iterator)).shape
+
+
+if __name__ == "__main__":
     # plot_psd_OFDM_symbols()
     unittest.main()
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
+    import time
+    from misc import pretty_time
+
+    tic = time.time()
+
     K = 4
     Nr = np.array([5, 5, 5, 5])
     Nt = np.array([5, 5, 5, 5])
@@ -458,6 +480,9 @@ if __name__ == '__main__':
     for i in np.arange(maxIter):
         alt.step()
         Cost[i] = alt.getCost()
+
+    toc = time.time()
+    print pretty_time(toc - tic)
 
     # from pylab import *
     # semilogy(Cost)
