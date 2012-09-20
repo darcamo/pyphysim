@@ -54,10 +54,33 @@ class MultiUserChannelMatrix(object):
     """
 
     def __init__(self, ):
-        self.H = np.array([])
+        self.H = np.array([], dtype=np.ndarray)
         self.Nr = np.array([])
         self.Nt = np.array([])
         self.K = 0
+
+    @staticmethod
+    def _from_big_matrix_to_matrix_of_matrices(big_matrix, Nr, Nt, K):
+        """Convert from a big matrix that concatenates the channel of all
+        users (from each transmitter to each receiver) to the matrix of
+        matrices representation.
+
+        Arguments:
+        - `big_matrix`:
+        - `Nr`:
+        - `Nt`:
+        - `K`:
+        """
+        cumNr = np.hstack([0, np.cumsum(Nr)])
+        cumNt = np.hstack([0, np.cumsum(Nt)])
+
+        output = np.zeros([K, K], dtype=np.ndarray)
+
+        for rx in np.arange(K):
+            for tx in np.arange(K):
+                output[rx, tx] = big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
+
+        return output
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
         """Initializes the multiuser channel matrix from the given
@@ -83,7 +106,12 @@ class MultiUserChannelMatrix(object):
         self.K = K
         self.Nr = Nr
         self.Nt = Nt
-        self.H = channel_matrix
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Lets convert the full channel_matrix matrix to our internal
+        # representation of H as a matrix of matrices.
+        self.H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
+            channel_matrix, Nr, Nt, K)
 
     def randomize(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
@@ -105,7 +133,11 @@ class MultiUserChannelMatrix(object):
         self.Nr = Nr
         self.Nt = Nt
         self.K = K
-        self.H = randn_c(np.sum(Nr), np.sum(Nt))
+
+        self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
+        for rx in np.arange(self.K):
+            for tx in np.arange(self.K):
+                self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
 
     def getChannel(self, k, l):
         """Get the channel from user l to user k.
@@ -114,10 +146,7 @@ class MultiUserChannelMatrix(object):
         - `l`: Transmitting user.
         - `k`: Receiving user
         """
-        cumNr = np.hstack([0, np.cumsum(self.Nr)])
-        cumNt = np.hstack([0, np.cumsum(self.Nt)])
-
-        return self.H[cumNr[k]:cumNr[k + 1], cumNt[l]:cumNt[l + 1]]
+        return self.H[k, l]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

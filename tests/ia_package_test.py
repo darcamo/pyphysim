@@ -54,6 +54,47 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.Nr = np.array([2, 4, 6])
         self.Nt = np.array([2, 3, 5])
 
+    def test_from_big_matrix(self):
+        """Test the _from_big_matrix_to_matrix_of_matrices method."""
+        # TODO: Termine de implementar
+        newH = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(self.H, self.Nr, self.Nt, self.K)
+
+        np.testing.assert_array_equal(
+            newH[0, 0],
+            np.ones([2, 2]) * 0)
+
+        np.testing.assert_array_equal(
+            newH[0, 1],
+            np.ones([2, 3]) * 1)
+
+        np.testing.assert_array_equal(
+            newH[0, 2],
+            np.ones([2, 5]) * 2)
+
+        np.testing.assert_array_equal(
+            newH[1, 0],
+            np.ones([4, 2]) * 3)
+
+        np.testing.assert_array_equal(
+            newH[1, 1],
+            np.ones([4, 3]) * 4)
+
+        np.testing.assert_array_equal(
+            newH[1, 2],
+            np.ones([4, 5]) * 5)
+
+        np.testing.assert_array_equal(
+            newH[2, 0],
+            np.ones([6, 2]) * 6)
+
+        np.testing.assert_array_equal(
+            newH[2, 1],
+            np.ones([6, 3]) * 7)
+
+        np.testing.assert_array_equal(
+            newH[2, 2],
+            np.ones([6, 5]) * 8)
+
     def test_randomize(self):
         K = 3
         Nr = np.array([2, 4, 6])
@@ -62,7 +103,16 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.assertEqual(self.multiH.K, K)
         np.testing.assert_array_equal(self.multiH.Nr, Nr)
         np.testing.assert_array_equal(self.multiH.Nt, Nt)
-        self.assertEqual(self.multiH.H.shape, (12, 10))
+
+        # Test the shape of the matrix of channels
+        self.assertEqual(self.multiH.H.shape, (K, K))
+
+        # Test the shape of each individual channel
+        for rx in np.arange(K):
+            for tx in np.arange(K):
+                self.assertEqual(
+                    self.multiH.H[rx, tx].shape,
+                    (Nr[rx], Nt[tx]))
 
     def test_init_from_channel_matrix(self):
         H = self.H
@@ -89,7 +139,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.assertEqual(self.multiH.K, K)
         np.testing.assert_array_equal(self.multiH.Nr, Nr)
         np.testing.assert_array_equal(self.multiH.Nt, Nt)
-        np.testing.assert_array_equal(self.multiH.H, H)
+
+        self.assertEqual(self.multiH.H.shape, (K, K))
+
+        # We don't really need to test multiH.H because the code was alread
+        # tested in test_from_big_matrix
 
     def test_getChannel(self):
         H = self.H
@@ -100,48 +154,39 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(0, 0),
-            np.ones([2, 2]) * 0
-        )
+            np.ones([2, 2]) * 0)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(0, 1),
-            np.ones([2, 3]) * 1
-        )
+            np.ones([2, 3]) * 1)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(0, 2),
-            np.ones([2, 5]) * 2
-        )
+            np.ones([2, 5]) * 2)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(1, 0),
-            np.ones([4, 2]) * 3
-        )
+            np.ones([4, 2]) * 3)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(1, 1),
-            np.ones([4, 3]) * 4
-        )
+            np.ones([4, 3]) * 4)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(1, 2),
-            np.ones([4, 5]) * 5
-        )
+            np.ones([4, 5]) * 5)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(2, 0),
-            np.ones([6, 2]) * 6
-        )
+            np.ones([6, 2]) * 6)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(2, 1),
-            np.ones([6, 3]) * 7
-        )
+            np.ones([6, 3]) * 7)
 
         np.testing.assert_array_equal(
             self.multiH.getChannel(2, 2),
-            np.ones([6, 5]) * 8
-        )
+            np.ones([6, 5]) * 8)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -395,11 +440,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == "__main__":
+if __name__ == "__main__1":
     # plot_psd_OFDM_symbols()
     unittest.main()
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     K = 4
     Nr = np.array([5, 5, 5, 5])
     Nt = np.array([5, 5, 5, 5])
@@ -408,13 +453,20 @@ if __name__ == '__main__1':
     alt.randomizeH(Nr, Nt, K)
     alt.randomizeF(Nt, Ns, K)
 
-    maxIter = 100
+    maxIter = 5000
     Cost = np.zeros(maxIter)
     for i in np.arange(maxIter):
         alt.step()
         Cost[i] = alt.getCost()
 
-    from pylab import *
-    semilogy(Cost)
-    grid(which='minor')
-    show()
+    # from pylab import *
+    # semilogy(Cost)
+    # grid(which='minor')
+    # show()
+
+    # 11.9 segundos
+
+        # self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
+        # for rx in np.arange(self.K):
+        #     for tx in np.arange(self.K):
+        #         self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
