@@ -5,6 +5,7 @@
 """Module with implementation of Interference Alignment algorithms"""
 
 import numpy as np
+import itertools
 
 from misc import peig, leig, randn_c
 
@@ -54,10 +55,33 @@ class MultiUserChannelMatrix(object):
     """
 
     def __init__(self, ):
-        self.H = np.array([])
+        self.H = np.array([], dtype=np.ndarray)
         self.Nr = np.array([])
         self.Nt = np.array([])
         self.K = 0
+
+    @staticmethod
+    def _from_big_matrix_to_matrix_of_matrices(big_matrix, Nr, Nt, K):
+        """Convert from a big matrix that concatenates the channel of all
+        users (from each transmitter to each receiver) to the matrix of
+        matrices representation.
+
+        Arguments:
+        - `big_matrix`:
+        - `Nr`:
+        - `Nt`:
+        - `K`:
+        """
+        cumNr = np.hstack([0, np.cumsum(Nr)])
+        cumNt = np.hstack([0, np.cumsum(Nt)])
+
+        output = np.zeros([K, K], dtype=np.ndarray)
+
+        for rx in np.arange(K):
+            for tx in np.arange(K):
+                output[rx, tx] = big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
+
+        return output
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
         """Initializes the multiuser channel matrix from the given
@@ -83,7 +107,12 @@ class MultiUserChannelMatrix(object):
         self.K = K
         self.Nr = Nr
         self.Nt = Nt
-        self.H = channel_matrix
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Lets convert the full channel_matrix matrix to our internal
+        # representation of H as a matrix of matrices.
+        self.H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
+            channel_matrix, Nr, Nt, K)
 
     def randomize(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
@@ -105,7 +134,11 @@ class MultiUserChannelMatrix(object):
         self.Nr = Nr
         self.Nt = Nt
         self.K = K
-        self.H = randn_c(np.sum(Nr), np.sum(Nt))
+
+        self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
+        for rx in np.arange(self.K):
+            for tx in np.arange(self.K):
+                self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
 
     def getChannel(self, k, l):
         """Get the channel from user l to user k.
@@ -114,10 +147,7 @@ class MultiUserChannelMatrix(object):
         - `l`: Transmitting user.
         - `k`: Receiving user
         """
-        cumNr = np.hstack([0, np.cumsum(self.Nr)])
-        cumNt = np.hstack([0, np.cumsum(self.Nt)])
-
-        return self.H[cumNr[k]:cumNr[k + 1], cumNt[l]:cumNt[l + 1]]
+        return self.H[k, l]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -177,20 +207,25 @@ class AlternatingMinIASolver(object):
         precoder.
         """
         Cost = 0
-        for k in np.arange(self.K):
-            for l in np.arange(self.K):
-                if l != k:
-                    Hkl_Fl = np.dot(
-                        self.getChannel(k, l),
-                        self.F[l])
-                    Cost = Cost + np.linalg.norm(
-                        Hkl_Fl -
-                        np.dot(
-                            np.dot(
-                                self.C[k],
-                                self.C[k].transpose().conjugate()),
-                            Hkl_Fl
-                        ), 'fro') ** 2
+        # This will get all combinations of (k,l) without repetition. This
+        # is equivalent to two nested for loops with an if statement to
+        # only execute the code only when `k` is different of `l`.
+        all_kl_indexes = itertools.permutations(range(self.K), 2)
+
+        for kl in all_kl_indexes:
+            (k, l) = kl
+            Hkl_Fl = np.dot(
+                self.getChannel(k, l),
+                self.F[l])
+            Cost = Cost + np.linalg.norm(
+                Hkl_Fl -
+                np.dot(
+                    np.dot(
+                        self.C[k],
+                        self.C[k].transpose().conjugate()),
+                    Hkl_Fl
+                ), 'fro') ** 2
+
         return Cost
 
     def step(self):
@@ -208,24 +243,33 @@ class AlternatingMinIASolver(object):
         user k. It corresponds to the Nk-Sk dominant eigenvectors of
         $\sum_{l \neq k} H_{k,l} F_l F_l^H H_{k,l}^H$
         """
+        Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
+
         self.C = np.zeros(self.K, dtype=np.ndarray)
+        # This will get all combinations of (k,l) without repetition. This
+        # is equivalent to two nested for loops with an if statement to
+        # only execute the code only when `k` is different of `l`.
+        all_kl_indexes = itertools.permutations(range(self.K), 2)
+
+        # This code will store in self.C[k] the equivalent of
+        # $\sum_{l \neq k} H_{k,l} F_l F_l^H H_{k,l}^H$
+        for kl in all_kl_indexes:
+            (k, l) = kl
+            Hkl_F = np.dot(
+                self.getChannel(k, l),
+                self.F[l])
+            self.C[k] = self.C[k] + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
+
+        # Every element in self.C[k] is a matrix. We want to replace each
+        # element by the dominant eigenvectors of that element.
         for k in np.arange(self.K):
-            self.C[k] = np.zeros(self.Nr[k])
-            for l in np.arange(self.K):
-                if k != l:
-                    Hkl_F = np.dot(
-                        self.getChannel(k, l),
-                        self.F[l]
-                        )
-                    self.C[k] = self.C[k] + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
             # TODO: implement and test with external interference
             # # We are inside only of the first for loop
             # # Add the external interference contribution
             # self.C[k] = obj.C{k} + obj.Rk{k}
 
-            Ni = self.Nr[k] - self.Ns[k]
             # C[k] will receive the Ni most dominant eigenvectors of C[k]
-            self.C[k] = peig(self.C[k], Ni)[0]
+            self.C[k] = peig(self.C[k], Ni[k])[0]
 
     def updateF(self):
         """Update the value of the precoder of all K users.
@@ -238,33 +282,33 @@ class AlternatingMinIASolver(object):
         # xxxxx Calculates the temporary variable Y[k] for all k xxxxxxxxxx
         # Note that $Y[k] = (I - C_k C_k^H)$
         Y = np.zeros(self.K, dtype=np.ndarray)
-
-        # TODO: Perform benchmarks and try to replace this maybe with a
-        # ufunc to avoid the for loop
         for k in np.arange(self.K):
             Y[k] = np.eye(self.Nr[k], dtype=complex) - \
                    np.dot(
                        self.C[k],
                        self.C[k].conjugate().transpose())
 
-        # g = np.vectorize(lambda Ck, Nrk: np.eye(Nrk, dtype=complex) - \
-        #                  np.dot(
-        #                      self.Ck,
-        #                      self.Ck.conjugate().transpose()))
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         newF = np.zeros(self.K, dtype=np.ndarray)
-        for l in np.arange(self.K):
-            newF[l] = np.zeros(self.Nt[l], self.Nt[l])
-            for k in np.arange(self.K):
-                if k != l:
-                    lH = self.getChannel(k, l)
-                    newF[l] = newF[l] + np.dot(
-                        np.dot(lH.conjugate().transpose(),
-                               Y[k]),
-                        lH)
+        # This will get all combinations of (l,k) without repetition. This
+        # is equivalent to two nested for loops with an if statement to
+        # only execute the code only when `l` is different of `k`
+        all_lk_indexes = itertools.permutations(range(self.K), 2)
 
+        # This code will store in newF[l] the equivalent of
+        # $\sum_{k \neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}$
+        for lk in all_lk_indexes:
+            (l, k) = lk
+            lH = self.getChannel(k, l)
+            newF[l] = newF[l] + np.dot(
+                np.dot(lH.conjugate().transpose(),
+                       Y[k]),
+                lH)
+
+        # Every element in newF is a matrix. We want to replace each
+        # element by the least dominant eigenvectors of that element.
+        for l in range(self.K):
             newF[l] = leig(newF[l], self.Ns[l])[0]
+
         self.F = newF
 
     def updateW(self):
