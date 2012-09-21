@@ -18,7 +18,7 @@ from util.misc import pretty_time
 """Module to find good codebooks"""
 
 
-class CodebookFinder():
+class CodebookFinder(object):
     """Class to find good codebooks using random search.
     """
     (COMPLEX, REAL, COMPLEX_QEGT) = range(3)

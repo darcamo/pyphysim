@@ -11,7 +11,7 @@ from misc import least_right_singular_vectors, randn_c
 import waterfilling
 
 
-class BlockDiaginalizer():
+class BlockDiaginalizer(object):
     """Class to perform the block diagonalization algorithm.
 
     Reference:

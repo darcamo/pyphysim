@@ -6,7 +6,7 @@
 import numpy as np
 
 
-class Projection():
+class Projection(object):
     """Class to calculate the projection, orthogonal projection and
     reflection of a given matrix in a Subspace S spanned by the columns of
     a matrix A.

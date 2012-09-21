@@ -8,7 +8,7 @@ from matplotlib import pylab
 from matplotlib import pyplot as plt
 
 
-class OFDM():
+class OFDM(object):
     """OFDM class.
     """
     def __init__(self, fft_size, cp_size, num_used_subcarriers=0):
