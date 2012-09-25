@@ -14,7 +14,7 @@ import numpy as np
 
 import ia  # Import the package ia
 from ia.ia import MultiUserChannelMatrix, AlternatingMinIASolver
-from misc import peig, leig
+from misc import peig, leig, randn_c
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -187,6 +187,33 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_equal(
             self.multiH.getChannel(2, 2),
             np.ones([6, 5]) * 8)
+
+    def test_corrupt_data(self):
+        NSymbs = 20
+        # Create some input data for the 3 users
+        input_data = np.zeros(self.K, dtype=np.ndarray)
+        input_data[0] = randn_c(self.Nt[0], NSymbs)
+        input_data[1] = randn_c(self.Nt[1], NSymbs)
+        input_data[2] = randn_c(self.Nt[2], NSymbs)
+
+        self.multiH.randomize(self.Nr, self.Nt, self.K)
+
+        # Note that the corrupt_concatenated_data is implicitelly called by
+        # corrupt_data and thus we will only test corrupt_data.
+        output = self.multiH.corrupt_data(input_data)
+
+        # Calculates the expected output
+        expected_output = np.zeros(self.K, dtype=np.ndarray)
+        for rx in np.arange(self.K):
+            for tx in np.arange(self.K):
+                expected_output[rx] += np.dot(
+                    self.multiH.getChannel(rx, tx), input_data[tx])
+
+        # Test the received data for the 3 users
+        np.testing.assert_array_almost_equal(output[0], expected_output[0])
+        np.testing.assert_array_almost_equal(output[1], expected_output[1])
+        np.testing.assert_array_almost_equal(output[2], expected_output[2])
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

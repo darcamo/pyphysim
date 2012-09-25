@@ -9,8 +9,8 @@ ETSConfig.toolkit = "qt4"
 
 from configobj import ConfigObj
 
-import matplotlib
-matplotlib.use('Gtk')
+#import matplotlib
+#matplotlib.use('Gtk')
 from matplotlib import pyplot as plt
 
 import numpy as np
@@ -350,17 +350,20 @@ class PskSimulationRunner(SimplePskSimulationRunner):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def write_config_file_template(config_file_name="psk_simulation_config.txt"):
-    """Write a configuration file that can be used to run the simulate
-    function of a PskSimulationRunner object.
+def get_configobj_template(config_file_name="psk_simulation_config.txt"):
+    """Get a template of a ConfigObj already filled with the simulation
+    parameters. The `write` method of this ConfigObj object can be called
+    to write the configuration file.
     """
     # See http://www.voidspace.org.uk/python/configobj.html#getting-started
     configobj = ConfigObj(config_file_name)
     configobj.clear()
-    configobj.initial_comment = ["Simulation Parameters"]
+    configobj.initial_comment = ["This file can be easily read in python to get the simulation parameters by using the ConfigObj module."]
 
     # xxxxx Creates a section for the simulation parameters xxxxxxxxxxxxxxx
     configobj['Simulation'] = {}
+    configobj.comments["Simulation"].append(
+        "General Parameters for the Simulation")
 
     # xxxxx Simulation parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     configobj['Simulation']['SNR'] = range(0, 19, 3)
@@ -379,6 +382,14 @@ def write_config_file_template(config_file_name="psk_simulation_config.txt"):
     s.comments['rep_max'].extend(['', "Maximum Number of iterations (Simulation stops after rep_max or", "max_bit_errors is reached)"])
     s.comments['max_bit_errors'].extend(['', "Maximum Number of bit Errors (Simulation stops after rep_max or", "max_bit_errors is reached)"])
 
+    return configobj
+
+
+def write_config_file_template(config_file_name="psk_simulation_config.txt"):
+    """Write a configuration file that can be used to run the simulate
+    function of a PskSimulationRunner object.
+    """
+    configobj = get_configobj_template(config_file_name)
     configobj.write()
 
 

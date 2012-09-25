@@ -330,7 +330,7 @@ class BlastTestCase(unittest.TestCase):
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.blast_object.decode(received_data3, channel)
-        np.testing.assert_array_almost_equal(decoded_data3, data)
+        np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
 
 
 # Implement test classes for other mimo schemes

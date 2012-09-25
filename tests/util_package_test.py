@@ -4,7 +4,7 @@
 """Tests for the modules in the util package.
 
 Each module has doctests for its functions and all we need to do is run all
-of them them.
+of them.
 """
 
 import unittest
@@ -12,10 +12,11 @@ import doctest
 import numpy as np
 
 from util import misc, progressbar, simulations, conversion
+from simulations import *
 
 
 class UtilDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the util
+    """Test case that run all the doctests in the modules of the util
     package.
     """
 
@@ -37,11 +38,147 @@ class UtilDoctestsTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ResultTestCase(unittest.TestCase):
+    """Unit-tests for the Result class in the simulations module."""
+
+    def setUp(self):
+        """Called before each test."""
+        self.result1 = Result("name", Result.SUMTYPE)
+        self.result2 = Result("name2", Result.RATIOTYPE)
+        self.result3 = Result("name3", Result.MISCTYPE)
+
+    def test_get_update_type(self):
+        """Test the two properties, one to get the update type code and
+        other to get the update type name. Note that both properties
+        reflect the value of the same variable, the self._update_type
+        variable.
+        """
+        self.assertEqual(self.result1.type_code, Result.SUMTYPE)
+        self.assertEqual(self.result1.type_name, "SUMTYPE")
+
+        self.assertEqual(self.result2.type_code, Result.RATIOTYPE)
+        self.assertEqual(self.result2.type_name, "RATIOTYPE")
+
+        self.assertEqual(self.result3.type_code, Result.MISCTYPE)
+        self.assertEqual(self.result3.type_name, "MISCTYPE")
+
+    def test_update(self):
+        # Test the update function of the SUMTYPE
+        self.result1.update(13)
+        self.result1.update(4)
+        self.assertEqual(self.result1._value, 17)
+        self.assertEqual(self.result1.get_result(), 17)
+
+        # Test the update function of the RATIOTYPE
+        self.result2.update(3, 4)
+        self.result2.update(9, 36)
+        self.assertEqual(self.result2._value, 12)
+        self.assertEqual(self.result2._total, 40)
+        self.assertEqual(self.result2.get_result(), 0.3)
+
+        # Test the update function of the MISCTYPE. Note how we can store
+        # anything.
+        self.result3.update("First")
+        self.assertEqual(self.result3.get_result(), "First")
+        self.result3.update("Second")
+        self.assertEqual(self.result3.get_result(), "Second")
+        self.result3.update(0.4)
+        self.assertEqual(self.result3.get_result(), 0.4)
+        self.result3.update(0.4)
+        self.assertEqual(self.result3.get_result(), 0.4)
+
+    def test_merge(self):
+        # Test merge of Results of SUMTYPE
+        self.result1.update(13)
+        self.result1.update(30)
+        result1_other = Result.create("name", Result.SUMTYPE, 11)
+        self.result1.merge(result1_other)
+        self.assertEqual(self.result1.name, "name")
+        self.assertEqual(self.result1.get_result(), 54)
+        self.assertEqual(self.result1.num_updates, 3)
+
+        # Test merge of Results of RATIOTYPE
+        self.result2.update(3, 10)
+        self.result2.update(6, 7)
+        self.result2.update(1, 15)
+        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50)
+        result2_other.update(12, 18)
+        self.result2.merge(result2_other)
+        self.assertEqual(self.result2.name, "name2")
+        self.assertEqual(self.result2._value, 56)
+        self.assertEqual(self.result2._total, 100)
+        self.assertEqual(self.result2.get_result(), 0.56)
+        self.assertEqual(self.result2.num_updates, 5)
+
+        # Test merge of Results of MISCTYPE
+        # There is no merge for misc type and an exception should be raised
+        self.result3.update(0.4)
+        result3_other = Result.create("name3", Result.MISCTYPE, 0.3)
+        with self.assertRaises(AssertionError):
+            self.result3.merge(result3_other)
+
+        # Test merging results with different name or type
+        result4 = Result.create("name4", Result.SUMTYPE, 3)
+        with self.assertRaises(AssertionError):
+            self.result1.merge(result4)
+
+        result5 = Result.create("name", Result.RATIOTYPE, 3, 4)
+        with self.assertRaises(AssertionError):
+            self.result1.merge(result5)
+
+
+# TODO: Implement tests for the methods in the SimulationResults class
+class SimulationResultsTestCase(unittest.TestCase):
+    """Unit-tests for the SimulationResults class in the simulations
+    module.
+    """
+
+    def setUp(self):
+        result1 = Result("lala", Result.SUMTYPE)
+        result1.update(13)
+        result2 = Result("lele", Result.RATIOTYPE)
+        result2.update(3, 10)
+        result2.update(8, 10)
+        self.simresults = SimulationResults()
+        self.simresults.add_result(result1)
+        self.simresults.add_result(result2)
+
+    def test_get_result_names(self):
+        # The output of the get_result_names is a list of names. We
+        # transform it into a set in this test only to make the order of
+        # the names uninportant.
+        expected_output = set(['lala', 'lele'])
+        self.assertEqual(set(self.simresults.get_result_names()), expected_output)
+
+
+# TODO: Implement-me
+class SimulationParametersTestCase(unittest.TestCase):
+    """Unit-tests for the SimulationParameters class in the simulations
+    module.
+    """
+
+    def setUp(self):
+        pass
+
+
+# TODO: Implement-me
+class SimulationRunnerTestCase(unittest.TestCase):
+    """Unit-tests for the SimulationRunner class in the simulations
+    module.
+    """
+
+    def setUp(self):
+        pass
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
-    def test_pgig(self, ):
+    def test_pgig(self):
         """
         """
         A = np.array(
@@ -108,7 +245,6 @@ class MiscFunctionsTestCase(unittest.TestCase):
              [-0.02693857 + 0.57425752j],
              [-0.40625488 - 0.14189355j]])
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
-
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

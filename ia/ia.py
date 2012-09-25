@@ -79,7 +79,8 @@ class MultiUserChannelMatrix(object):
 
         for rx in np.arange(K):
             for tx in np.arange(K):
-                output[rx, tx] = big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
+                output[rx, tx] = \
+                big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
 
         return output
 
@@ -108,6 +109,7 @@ class MultiUserChannelMatrix(object):
         self.Nr = Nr
         self.Nt = Nt
 
+        self._H = channel_matrix
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
@@ -135,10 +137,14 @@ class MultiUserChannelMatrix(object):
         self.Nt = Nt
         self.K = K
 
-        self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
-        for rx in np.arange(self.K):
-            for tx in np.arange(self.K):
-                self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
+        self._H = randn_c(np.sum(self.Nr), np.sum(self.Nt))
+        self.H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
+            self._H, Nr, Nt, K)
+
+        # self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
+        # for rx in np.arange(self.K):
+        #     for tx in np.arange(self.K):
+        #         self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
 
     def getChannel(self, k, l):
         """Get the channel from user l to user k.
@@ -148,6 +154,59 @@ class MultiUserChannelMatrix(object):
         - `k`: Receiving user
         """
         return self.H[k, l]
+
+    def corrupt_concatenated_data(self, concatenated_data, noise_var=None):
+        """Corrupt data passed through the channel.
+
+        If the noise_var is supplied then an white noise will also be
+        added.
+
+        Arguments:
+        - `data`: A bi-dimensional numpy array with the concatenated data of
+                  all transmitters. The dimension of concatenated_data is
+                  sum(self.Nt) x NSymb. That is, the number of rows
+                  corresponds to the sum of the number of transmit antennas
+                  of all users and the number of columns correspond to the
+                  number of transmitted symbols.
+        - `noise_var`: Variance of the AWGN noise.
+        Output:
+        - A bi-dimension numpy array where the number of rows corresponds
+          to the sum of the number of receive antennas of all users and the
+          number of columns correspond to the number of transmitted
+          symbols.
+
+        """
+        output = np.dot(self._H, concatenated_data)
+        if noise_var != None:
+            awgn_noise = (randn_c(*output.shape) * np.sqrt(noise_var))
+            output = output + awgn_noise
+        return output
+
+    def corrupt_data(self, data, noise_var=None):
+        """Corrupt data passed through the channel.
+
+        If the noise_var is supplied then an white noise will also be
+        added.
+
+        Arguments:
+        - `data`: An array of numpy matrices with the data of the multiple
+                  users. The k-th element in `data` is a numpy array with
+                  dimension Nt_k x NSymbs, where Nt_k is the number of
+                  transmit antennas of the k-th user and NSymbs is the
+                  number of transmitted symbols.
+        - `noise_var`: Variance of the AWGN noise.
+        """
+        concatenated_data = np.vstack(data)
+        concatenated_output = self.corrupt_concatenated_data(
+            concatenated_data, noise_var)
+
+        output = np.zeros(self.K, dtype=np.ndarray)
+        cumNr = np.hstack([0, np.cumsum(self.Nr)])
+
+        for k in np.arange(self.K):
+            output[k] = concatenated_output[cumNr[k]:cumNr[k + 1], :]
+
+        return output
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -163,7 +222,7 @@ class AlternatingMinIASolver(object):
     - Nr
     - Ns
     """
-    def __init__(self, ):
+    def __init__(self):
         """
         """
         # The F and W variables will be numpy arrays OF numpy arrays.
@@ -396,4 +455,5 @@ if __name__ == '__main__':
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()
+    print "Hello"
     print "{0} executed".format(__file__)
