@@ -4,8 +4,8 @@
 """Perform the simulation of the transmission of QAM symbols through an
 awgn channel."""
 
-import simulate_psk
-from simulate_psk import PskSimulationRunner
+import simulate_psk_with_traits
+from simulate_psk_with_traits import PskSimulationRunner
 import comm.modulators as mod
 
 from traits.api import Instance, on_trait_change
@@ -35,7 +35,7 @@ class QamSimulationRunner(PskSimulationRunner):
 
 # The configuration file is the same as used for the PSK simulation
 def write_config_file_template(config_file_name="qam_simulation_config.txt"):
-    return simulate_psk.write_config_file_template(config_file_name)
+    return simulate_psk_with_traits.write_config_file_template(config_file_name)
 
 
 if __name__ == '__main__':

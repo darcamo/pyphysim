@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """Perform the simulation of the transmission of PSK symbols through an
-awgn channel."""
+awgn channel.
+
+"""
 
 from traits.etsconfig.etsconfig import ETSConfig
 ETSConfig.toolkit = "qt4"
