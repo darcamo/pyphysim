@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # http://code.activestate.com/recipes/299207-console-text-progress-indicator-class/
 # CLASS NAME: ProgressbarText
 #

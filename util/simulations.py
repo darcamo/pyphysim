@@ -47,8 +47,6 @@ class SimulationRunner(object):
     SimulationResults object.
     """
     def __init__(self):
-        """
-        """
         self.rep_max = 1
         self._elapsed_time = 0.0
         self._runned_reps = []  # Number of iterations performed by
@@ -63,7 +61,7 @@ class SimulationRunner(object):
         #
         # If, on the other hand, progressbar_message is None, then the
         # progressbar will be disabled.
-        self.progressbar_message = ''
+        self.progressbar_message = 'Progress'
 
     def _run_simulation(self, current_parameters):
         """Performs one iteration of the simulation.
@@ -487,8 +485,9 @@ class SimulationResults(object):
     """Store results from simulations.
 
     This class is used in the SimulationRunner class in order to store
-    results from each simulation. It is able to combine the results from
-    multiple simulations.
+    results from a simulation. It is able to combine the results from
+    multiple iterations (of the _run_simulation method in the
+    SimulationRunner class).
 
     >>> result1 = Result("lala", Result.SUMTYPE)
     >>> result1.update(13)
@@ -532,6 +531,7 @@ class SimulationResults(object):
     [Result -> lala: 13, Result -> lala: 7]
     >>> simresults3['lele']
     [Result -> lele: 11/20 -> 0.55]
+
     """
     def __init__(self):
         self._results = dict()
@@ -619,7 +619,7 @@ class SimulationResults(object):
         Arguments:
         - `result_name`: A string
         """
-        return [i.value for i in self[result_name]]
+        return [i._value for i in self[result_name]]
 
     def __getitem__(self, key):
         # if key in self._results.keys():
@@ -647,32 +647,39 @@ class SimulationResults(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Result - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Simplify the doctests here, since we have created unittests to test
+# the Result class. Now the Doctests should only act as examples, instead
+# of trying to test everything.
 class Result(object):
     """Class to store a single simulation result.
 
-    The simulation result can be anything, such as the number of errors, a
-    string, an error rate, etc. When creating a Result object one needs to
-    specify only the name of the stored result and the result type.
+    A simulation result can be anything, such as the number of errors, a
+    string, an error rate, etc. When creating a `Result` object one needs to
+    specify only the `name` of the stored result and the result `type`.
 
-    The diferent types indicate how the Result can be updated (combined
-    with other samples). The possible values are SUMTYPE, RATIOTYPE and
-    STRINGTYPE.
+    The different types indicate how multiple samples (from multiple
+    iterations) of the same Result can be merged (usually to get a result
+    with more statistical reliability). The possible values are SUMTYPE,
+    RATIOTYPE and MISCTYPE.
 
-    In the SUMTYPE the new value should be added to current one in update
+    In the `SUMTYPE` the new value should be added to current one in update
     function.
 
-    In the RATIOTYPE the new value should be added to current one and total
-    should be also updated in the update function. One caveat is that rates
-    are stored as a number (numerator) and a total (denominator) instead of
-    as a float.
+    In the `RATIOTYPE` the new value should be added to current one and
+    total should be also updated in the update function. One caveat is that
+    rates are stored as a number (numerator) and a total (denominator)
+    instead of as a float. For instance, if you need to store a result such
+    as a bit error rate, then you could use the a Result with the RATIOTYPE
+    type and when updating the result, pass the number of bit errors and
+    the number of simulated bits.
 
-    In the STRINGTYPE the update should replace current the value, since it
-    is a string.
+    The `MISCTYPE` type can store anything and the update will simple
+    replace the stored value with the current value.
 
     >>> result1 = Result("name", Result.SUMTYPE)
     >>> result1.update(13)
     >>> result1.update(4)
-    >>> result1.value
+    >>> result1._value
     17
     >>> result1.get_result()
     17
@@ -680,9 +687,9 @@ class Result(object):
     2
     >>> result1
     Result -> name: 17
-    >>> result1.get_type_name()
+    >>> result1.type_name
     'SUMTYPE'
-    >>> result1.get_type()
+    >>> result1.type_code
     0
     >>> print result1
     Result -> name: 17
@@ -692,9 +699,9 @@ class Result(object):
     >>> result2.update(3,4)
     >>> result2.get_result()
     0.5
-    >>> result2.get_type_name()
+    >>> result2.type_name
     'RATIOTYPE'
-    >>> result2.get_type()
+    >>> result2.type_code
     1
     >>> result2_other = Result("name2", Result.RATIOTYPE)
     >>> result2_other.update(3,11)
@@ -703,29 +710,27 @@ class Result(object):
     0.4
     >>> result2_other.num_updates
     3
-    >>> result2_other.value
+    >>> result2_other._value
     10
-    >>> result2_other.total
+    >>> result2_other._total
     25
     >>> print result2_other
     Result -> name2: 10/25 -> 0.4
+
     """
     # Like an Enumeration for the type of results.
-    (SUMTYPE, RATIOTYPE, STRINGTYPE, FLOATTYPE) = range(4)
-    all_types = {
+    (SUMTYPE, RATIOTYPE, MISCTYPE) = range(3)
+    _all_types = {
         SUMTYPE: "SUMTYPE",
         RATIOTYPE: "RATIOTYPE",
-        STRINGTYPE: "STRINGTYPE",
-        FLOATTYPE: "FLOATTYPE",
+        MISCTYPE: "MISCTYPE",
     }
 
-    def __init__(self, name, update_type):
-        """
-        """
+    def __init__(self, name, update_type_code):
         self.name = name
-        self.__update_type = update_type
-        self.value = 0
-        self.total = 0
+        self._update_type_code = update_type_code
+        self._value = 0
+        self._total = 0
         self.num_updates = 0  # Number of times the Result object was
                               # updated
 
@@ -738,21 +743,39 @@ class Result(object):
         function.
 
         Arguments:
-        - `name`:
-        - `update_type`:
-        - `value`:
-        - `total`:
+        - `name`: Name of the Result.
+        - `update_type`: Type of the result (SUMTYPE, RATIOTYPE or MISCTYPE)
+        - `value`: Value of the result.
+        - `total`: Total value of the result (used only for the RATIOTYPE).
         """
         result = Result(name, update_type)
         result.update(value, total)
         return result
 
+    @property
+    def type_name(self):
+        """Get the Result type name."""
+        return Result._all_types[self._update_type_code]
+
+    @property
+    def type_code(self):
+        """Get the Result type.
+
+        The returned value is a number corresponding to one of the types
+        SUMTYPE, RATIOTYPE or MISCTYPE.
+        """
+        return self._update_type_code
+
     def __repr__(self):
-        if self.__update_type == Result.RATIOTYPE:
-            v = self.value
-            t = self.total
-            return "Result -> {0}: {1}/{2} -> {3}".format(
-                self.name, v, t, float(v) / t)
+        if self._update_type_code == Result.RATIOTYPE:
+            v = self._value
+            t = self._total
+            if t != 0:
+                return "Result -> {0}: {1}/{2} -> {3}".format(
+                    self.name, v, t, float(v) / t)
+            else:
+                return "Result -> {0}: {1}/{2} -> NaN".format(
+                    self.name, v, t)
         else:
             return "Result -> {0}: {1}".format(self.name, self.get_result())
 
@@ -767,9 +790,7 @@ class Result(object):
         How the update is performed for each Result type
         - RATIOTYPE: Add "value" to current value and "total" to current total
         - SUMTYPE: Add "value" to current value. "total" is ignored.
-        - STRINGTYPE: Replace the current value with "value".
-        - FLOATTYPE: Replace the current value with "value".
-
+        - MISCTYPE: Replace the current value with "value".
         """
         self.num_updates += 1
 
@@ -777,13 +798,13 @@ class Result(object):
         # Python does not have a switch statement. We use dictionaries as
         # the equivalent of a switch statement.
         # First we define a function for each possibility.
-        def __default_update(ignored1, ignored2):
+        def __default_update(dummy1, dummy2):
             print("Warning: update not performed for unknown type %s" %
-                  self.__update_type)
+                  self._update_type_code)
             pass
 
-        def __update_SUMTYPE_value(value, ignored):
-            self.value += value
+        def __update_SUMTYPE_value(value, dummy):
+            self._value += value
 
         def __update_RATIOTYPE_value(value, total):
             assert value <= total, ("__update_RATIOTYPE_value: "
@@ -792,36 +813,25 @@ class Result(object):
                 print("Update Ignored: total should be provided and be greater "
                       "then 0 when the update type is RATIOTYPE")
             else:
-                self.value += value
-                self.total += total
+                self._value += value
+                self._total += total
 
-        def __update_by_replacing_current_value(value, ignored):
-            self.value = value
+        def __update_by_replacing_current_value(value, dummy):
+            self._value = value
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Now we fill the dictionary with the functions
         possible_updates = {
             Result.RATIOTYPE: __update_RATIOTYPE_value,
-            Result.STRINGTYPE: __update_by_replacing_current_value,
+            Result.MISCTYPE: __update_by_replacing_current_value,
             Result.SUMTYPE: __update_SUMTYPE_value,
-            Result.FLOATTYPE: __update_by_replacing_current_value
             }
 
-        # Call the apropriated update method. If self.__update_type does
+        # Call the apropriated update method. If self._update_type_code does
         # not contain a key in the possible_updates dictionary (that is, a
         # valid update type), then the function __default_update is called.
-        possible_updates.get(self.__update_type,
+        possible_updates.get(self._update_type_code,
                              __default_update)(value, total)
-
-    def get_type_name(self):
-        return Result.all_types[self.__update_type]
-
-    def get_type(self):
-        """Get the Result type.
-
-        The returned value is one of the keys in Result.all_types.
-        """
-        return self.__update_type
 
     def merge(self, other):
         """Merge the result from other with self.
@@ -829,25 +839,25 @@ class Result(object):
         Arguments:
         - `other`: Another Result object.
         """
-        assert self.__update_type == other.__update_type, (
-            "Can only merge to objects with the same name and type")
-        assert self.__update_type != Result.STRINGTYPE, (
-            "Cannot merge results of the STRINGTYPE type")
+        assert self._update_type_code == other._update_type_code, (
+            "Can only merge two objects with the same name and type")
+        assert self._update_type_code != Result.MISCTYPE, (
+            "Cannot merge results of the MISCTYPE type")
         assert self.name == other.name, (
-            "Can only merge to objects with the same name and update_type")
+            "Can only merge two objects with the same name and type")
         self.num_updates += other.num_updates
-        self.value += other.value
-        self.total += other.total
+        self._value += other._value
+        self._total += other._total
 
     def get_result(self):
         if self.num_updates == 0:
             return "Nothing yet".format(self.name)
         else:
-            if self.__update_type == Result.RATIOTYPE:
-                #assert self.total != 0, 'Total should not be zero'
-                return float(self.value) / self.total
+            if self._update_type_code == Result.RATIOTYPE:
+                #assert self._total != 0, 'Total should not be zero'
+                return float(self._value) / self._total
             else:
-                return self.value
+                return self._value
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
