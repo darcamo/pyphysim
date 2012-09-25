@@ -60,8 +60,12 @@ class Modulator(object):
         self.M = 0
         self.symbols = np.array([])
 
+    @property
+    def name(self):
+        return "{0:d}-{1:s}".format(self.M, self.__class__.__name__)
+
     def __repr__(self):
-        return "{0:d}-{1:s} object".format(self.M, self.__class__.__name__)
+        return "{0} object".format(self.name)
 
     def setConstellation(self, symbols):
         """Set the constellation of the modulator.
