@@ -167,18 +167,9 @@ class AlternatingSimulationRunner(SimulationRunner):
         is useful after the simulation is finished to get the results
         easily for plot.
         """
-        def get_result_value(index, param_name):
-            return self.results[index][param_name][0].get_result()
-
-        # xxxxx Concatenate the simulation results xxxxxxxxxxxxxxxxxxxxxxxx
-        N_SNR_values = len(self.results)
-        ber = np.zeros(N_SNR_values)
-        ser = np.zeros(N_SNR_values)
-        for i in range(0, N_SNR_values):
-            ber[i] = get_result_value(i, 'ber')
-            ser[i] = get_result_value(i, 'ser')
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+        ber = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ber')
+        
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
 

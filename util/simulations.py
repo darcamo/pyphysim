@@ -55,7 +55,7 @@ class SimulationRunner(object):
 
         # TODO: Change self.results from a list to a SimulationResults
         # object.
-        self.results = []
+        self.results = SimulationResults()
 
         # Message passed to the _get_update_progress_function function. The
         # message can contain "{SomeParameterName}" which will be replaced
@@ -182,7 +182,8 @@ class SimulationRunner(object):
             # Store the number of repetitions actually ran for the current
             # parameters combination
             self._runned_reps.append(current_rep)
-            self.results.append(current_sim_results)
+            # Lets append the simulation results for the current parameters
+            self.results.append_all_results(current_sim_results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

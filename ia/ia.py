@@ -213,18 +213,24 @@ class MultiUserChannelMatrix(object):
 # xxxxxxxxxx AlternatingMinIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class AlternatingMinIASolver(object):
-    """Implements the "Interference Alignment via % Alternating
-    Minimization" algorithm from the paper with the same name.
+    """Implements the "Interference Alignment via Alternating Minimization"
+    algorithm from the paper with the same name.
 
-    Read only variables:
-    - K
-    - Nt
-    - Nr
-    - Ns
+    This algorithm applicable to a "K-user" scenario and it is very
+    flexible in the sense that you can change the number of transmit
+    antennas, receive antennas and streams per user, as well as the number
+    of users involved in the IA process. However, note that alignment is
+    only feasible for some cases configurations.
+
+    Example of a common exenario:
+    - 3 pair or transmitter/receiver with 2 antennas in each node and 1
+      stream transmitted per node.
+
+    You can determine the scenario of an AlternatingMinIASolver object by
+    infering the variables K, Nt, Nr and Ns.
+
     """
     def __init__(self):
-        """
-        """
         # The F and W variables will be numpy arrays OF numpy arrays.
         self.F = np.array([])  # Precoder: One precoder for each user
         self.W = np.array([])  # Receive filter: One for each user
