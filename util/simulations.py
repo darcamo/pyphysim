@@ -53,6 +53,8 @@ class SimulationRunner(object):
                                 # simulation when it finished
         self.params = SimulationParameters()
 
+        # TODO: Change self.results from a list to a SimulationResults
+        # object.
         self.results = []
 
         # Message passed to the _get_update_progress_function function. The
@@ -487,50 +489,8 @@ class SimulationResults(object):
     This class is used in the SimulationRunner class in order to store
     results from a simulation. It is able to combine the results from
     multiple iterations (of the _run_simulation method in the
-    SimulationRunner class).
-
-    >>> result1 = Result("lala", Result.SUMTYPE)
-    >>> result1.update(13)
-    >>> result2 = Result("lele", Result.RATIOTYPE)
-    >>> result2.update(3, 10)
-    >>> result2.update(8, 10)
-    >>> simresults = SimulationResults()
-    >>> simresults.add_result(result1)
-    >>> simresults.add_result(result2)
-    >>> simresults.get_result_names()
-    ['lele', 'lala']
-    >>> simresults
-    SimulationResults: ['lele', 'lala']
-
-    >>> result1_other = Result('lala', Result.SUMTYPE)
-    >>> result1_other.update(7)
-    >>> simresults.append_result(result1_other)
-    >>> simresults.get_result_values_list('lala')
-    [13, 7]
-    >>> simresults['lala']
-    [Result -> lala: 13, Result -> lala: 7]
-    >>> len(simresults)
-    2
-
-    >>> result3 = Result("lala", Result.SUMTYPE)
-    >>> result3.update(2)
-    >>> result4 = Result("lele", Result.RATIOTYPE)
-    >>> result4.update(1, 2)
-    >>> result4.update(3, 3)
-    >>> simresults2 = SimulationResults()
-    >>> simresults2.add_result(result3)
-    >>> simresults2.add_result(result4)
-    >>> simresults2.merge_all_results(simresults)
-    >>> simresults2['lala']
-    [Result -> lala: 9]
-    >>> simresults2['lele']
-    [Result -> lele: 15/25 -> 0.6]
-    >>> simresults3 = SimulationResults()
-    >>> simresults3.append_all_results(simresults)
-    >>> simresults3['lala']
-    [Result -> lala: 13, Result -> lala: 7]
-    >>> simresults3['lele']
-    [Result -> lele: 11/20 -> 0.55]
+    SimulationRunner class) as well as append results for different
+    simulation parameters configurations.
 
     """
     def __init__(self):
@@ -647,9 +607,6 @@ class SimulationResults(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Result - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Simplify the doctests here, since we have created unittests to test
-# the Result class. Now the Doctests should only act as examples, instead
-# of trying to test everything.
 class Result(object):
     """Class to store a single simulation result.
 
@@ -676,11 +633,10 @@ class Result(object):
     The `MISCTYPE` type can store anything and the update will simple
     replace the stored value with the current value.
 
+    Example of usage:
     >>> result1 = Result("name", Result.SUMTYPE)
     >>> result1.update(13)
     >>> result1.update(4)
-    >>> result1._value
-    17
     >>> result1.get_result()
     17
     >>> result1.num_updates
@@ -691,8 +647,6 @@ class Result(object):
     'SUMTYPE'
     >>> result1.type_code
     0
-    >>> print result1
-    Result -> name: 17
 
     >>> result2 = Result("name2", Result.RATIOTYPE)
     >>> result2.update(4,10)
@@ -714,6 +668,8 @@ class Result(object):
     10
     >>> result2_other._total
     25
+    >>> result2.get_result()
+    0.5
     >>> print result2_other
     Result -> name2: 10/25 -> 0.4
 
@@ -863,25 +819,6 @@ class Result(object):
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
-    # import os
-    # import sys
-    # from exceptions import NameError
-
-    # # Add the parent folder to the path.
-    # try:
-    #     # If this file is executed the __file__ will be defined and we add
-    #     # the parent folder to the path, considering the file location
-    #     cmd_folder = os.path.dirname(os.path.abspath(__file__))
-    # except NameError, e:
-    #     # If the content of this file is executed as a script then __file__
-    #     # will not be defined and we add the parent folder of the current
-    #     # working directory to the path
-    #         cmd_folder = os.getcwd()
-    # finally:
-    #     if cmd_folder not in sys.path:
-    #         # Add the parent folder to the beggining of the path
-    #         sys.path.insert(0, cmd_folder)
-
     # When this module is run as a script the doctests are executed
     import doctest
     doctest.testmod()

@@ -249,7 +249,7 @@ def plot_psd_OFDM_symbols():
     # generating 1's and 0's
     ip_bits = np.random.random_integers(0, 1, num_bits)
     # Number of modulated symbols
-    num_mod_symbols = num_bits * 1
+    #num_mod_symbols = num_bits * 1
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # BPSK modulation
@@ -377,7 +377,6 @@ class AlamoutiTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# TODO: Test the other methods
 if __name__ == "__main__":
     # plot_psd_OFDM_symbols()
     unittest.main()

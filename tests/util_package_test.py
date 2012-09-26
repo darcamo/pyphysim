@@ -18,8 +18,8 @@ from simulations import *
 class UtilDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the util
     package.
-    """
 
+    """
     def test_progressbar(self):
         """Run progressbar doctests"""
         doctest.testmod(progressbar)
@@ -129,12 +129,11 @@ class ResultTestCase(unittest.TestCase):
             self.result1.merge(result5)
 
 
-# TODO: Implement tests for the methods in the SimulationResults class
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
     module.
-    """
 
+    """
     def setUp(self):
         # First SimulationResults object
         result1 = Result.create("lala", Result.SUMTYPE, 13)
@@ -236,14 +235,44 @@ class SimulationResultsTestCase(unittest.TestCase):
             ['a string'])
 
 
-# TODO: Implement-me
+# TODO: Finish the implementation
 class SimulationParametersTestCase(unittest.TestCase):
     """Unit-tests for the SimulationParameters class in the simulations
     module.
     """
-
     def setUp(self):
-        pass
+        params_dict = {'first': 10, 'second': 20}
+        self.sim_params = SimulationParameters.create(params_dict)
+
+    def test_create(self):
+        # The create method was already called in the setUp.
+        self.assertEqual(self.sim_params.get_num_parameters(), 2)
+        self.assertEqual(self.sim_params['first'], 10)
+        self.assertEqual(self.sim_params['second'], 20)
+
+    def test_add(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.assertEqual(self.sim_params.get_num_parameters(), 3)
+        np.testing.assert_array_equal(
+            self.sim_params['third'], np.array([1, 3, 2, 5]))
+
+    def test_unpacking_parameters(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # One unpacked param with four values and other with two will give
+        # us 4x2=8 unpacked variations.
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 8)
+        # We make the unpacked_parameters and the expected value sets
+        # because the order does not matter
+        self.assertEqual(
+            set(self.sim_params.unpacked_parameters),
+            set(['third', 'fourth']))
+
+        # We may have 8 variations, but there are still only 4 parameters
+        self.assertEqual(self.sim_params.get_num_parameters(), 4)
 
 
 # TODO: Implement-me

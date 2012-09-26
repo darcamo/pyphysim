@@ -193,8 +193,6 @@ class OFDM(object):
     #     received_signal.shape = (num_ofdm_symbols, self.fft_size)
     #     return received_signal
 
-
-
     def _prepare_decoded_signal(self, decoded_signal):
         """Prepare the decoded signal that was processed by the FFT in the
         demodulate function.
@@ -316,7 +314,6 @@ class OFDM(object):
 
         # - CALL THE _prepare_decoded_signal METHOD TO GET THE DATA ONLY
         # FROM THE USEFUL SUBCARRIERS
-        # TODO: Implement _prepare_decoded_signal and call it here
         decoded_symbols = self._prepare_decoded_signal(output_fft)
 
         # - RETURN THE DECODED DATA

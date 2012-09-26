@@ -294,7 +294,6 @@ class AlternatingMinIASolver(object):
         self.updateF()
         self.updateW()
 
-    # TODO: Try to reimplement in a more efficient way without for loops
     def updateC(self):
         """Update the value of Ck for all K users.
 
@@ -340,12 +339,9 @@ class AlternatingMinIASolver(object):
         """
         # xxxxx Calculates the temporary variable Y[k] for all k xxxxxxxxxx
         # Note that $Y[k] = (I - C_k C_k^H)$
-        Y = np.zeros(self.K, dtype=np.ndarray)
-        for k in np.arange(self.K):
-            Y[k] = np.eye(self.Nr[k], dtype=complex) - \
-                   np.dot(
-                       self.C[k],
-                       self.C[k].conjugate().transpose())
+        calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
+            np.dot(C, C.conjugate().transpose())
+        Y = map(calc_Y, self.Nr, self.C)
 
         newF = np.zeros(self.K, dtype=np.ndarray)
         # This will get all combinations of (l,k) without repetition. This
@@ -365,10 +361,7 @@ class AlternatingMinIASolver(object):
 
         # Every element in newF is a matrix. We want to replace each
         # element by the least dominant eigenvectors of that element.
-        for l in range(self.K):
-            newF[l] = leig(newF[l], self.Ns[l])[0]
-
-        self.F = newF
+        self.F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
 
     def updateW(self):
         """Update the zero-forcing filters.
