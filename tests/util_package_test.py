@@ -136,8 +136,8 @@ class SimulationResultsTestCase(unittest.TestCase):
     """
 
     def setUp(self):
-        result1 = Result("lala", Result.SUMTYPE)
-        result1.update(13)
+        # First SimulationResults object
+        result1 = Result.create("lala", Result.SUMTYPE, 13)
         result2 = Result("lele", Result.RATIOTYPE)
         result2.update(3, 10)
         result2.update(8, 10)
@@ -145,12 +145,95 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.add_result(result1)
         self.simresults.add_result(result2)
 
+        # Second SimulationResults object
+        self.other_simresults = SimulationResults()
+        result1_other = Result.create('lala', Result.SUMTYPE, 30)
+        result2_other = Result.create('lele', Result.RATIOTYPE, 4, 10)
+        result3 = Result.create('lili', Result.MISCTYPE, "a string")
+        self.other_simresults.add_result(result1_other)
+        self.other_simresults.add_result(result2_other)
+        self.other_simresults.add_result(result3)
+
     def test_get_result_names(self):
         # The output of the get_result_names is a list of names. We
         # transform it into a set in this test only to make the order of
         # the names uninportant.
         expected_output = set(['lala', 'lele'])
         self.assertEqual(set(self.simresults.get_result_names()), expected_output)
+
+    def test_add_result(self):
+        # Add a result with the same name of an existing result -> Should
+        # replace it
+        result1_other = Result.create("lala", Result.SUMTYPE, 25)
+        self.simresults.add_result(result1_other)
+        self.assertEqual(len(self.simresults['lala']), 1)
+        self.assertEqual(self.simresults['lala'][0].get_result(), 25)
+
+        # Add a new result
+        result3 = Result.create('lili', Result.MISCTYPE, "a string")
+        self.simresults.add_result(result3)
+        self.assertEqual(set(self.simresults.get_result_names()),
+                         set(["lala", "lele", "lili"]))
+        self.assertEqual(self.simresults['lili'][0].get_result(), "a string")
+
+    def test_append_result(self):
+        result1_other = Result.create("lala", Result.SUMTYPE, 25)
+        self.simresults.append_result(result1_other)
+        # Since we append a new Result with the name 'lala', then now we
+        # should have two Results for 'lala' (in a simulation these two
+        # results would probably corresponds to 'lala' results with
+        # different simulation parameters)
+        self.assertEqual(len(self.simresults['lala']), 2)
+        self.assertEqual(self.simresults['lala'][0].get_result(), 13)
+        self.assertEqual(self.simresults['lala'][1].get_result(), 25)
+
+    def test_append_all_results(self):
+        self.simresults.append_all_results(self.other_simresults)
+        # Note that self.simresults only has the 'lala' and 'lele' results.
+        # After we append the results in self.other_simresults
+        # self.simresults should have also the 'lili' result, but with only
+        # a single result for 'lili' and two results for both 'lala' and
+        # 'lele'..
+        self.assertEqual(set(self.simresults.get_result_names()),
+                         set(["lala", "lele", "lili"]))
+        self.assertEqual(len(self.simresults['lala']), 2)
+        self.assertEqual(len(self.simresults['lele']), 2)
+        self.assertEqual(len(self.simresults['lili']), 1)
+
+    def test_merge_all_results(self):
+        # Note that even though there is a 'lili' result in
+        # self.other_simresults, only 'lala' and 'lele' will be
+        # merged. Also, self.other_simresults must have all the results in
+        # self.simresults otherwise we will he a KeyError.
+        self.simresults.merge_all_results(self.other_simresults)
+        self.assertEqual(self.simresults['lala'][-1].get_result(), 43)
+        self.assertEqual(
+            self.simresults['lele'][-1].get_result(),
+            (11. + 4.) / (20. + 10.))
+
+        # One update from the 'lala' result in self.simresults and other
+        # from the 'lala' result in self.other_simresults
+        self.assertEqual(self.simresults['lala'][0].num_updates, 2)
+
+        # Two updates from the 'lele' result in self.simresults and other
+        # from the 'lele' result in self.other_simresults
+        self.assertEqual(self.simresults['lele'][0].num_updates, 3)
+
+    def test_get_result_values_list(self):
+        self.simresults.append_all_results(self.other_simresults)
+
+        self.assertEqual(
+            self.simresults.get_result_values_list('lala'),
+            [13, 30])
+        self.assertEqual(
+            self.simresults.get_result_values_list('lele'),
+            [0.55, 0.4])
+
+        # There is only one result for 'lili', which comes from
+        # self.other_simresults.
+        self.assertEqual(
+            self.simresults.get_result_values_list('lili'),
+            ['a string'])
 
 
 # TODO: Implement-me

@@ -619,7 +619,7 @@ class SimulationResults(object):
         Arguments:
         - `result_name`: A string
         """
-        return [i._value for i in self[result_name]]
+        return [i.get_result() for i in self[result_name]]
 
     def __getitem__(self, key):
         # if key in self._results.keys():
