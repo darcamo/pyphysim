@@ -309,38 +309,6 @@ class SimulationParameters(object):
         # Just multiply all the lengths
         return reduce(lambda x, y: x * y, gen_values)
 
-    # Get from
-    # https://gist.github.com/1511969/222e3316048bce5763b1004331af898088ffcd9e
-    @staticmethod
-    def ravel_multi_index(indexes, shape):
-        """
-        Get the linear index corresponding to `indexes`.
-
-        The linear index is calculated in 'C' order. That is, it "travels"
-        the array faster in the fist dimension than in the last (row order
-        in bi-dimensional arrays).
-
-        Arguments
-        - `indexes`: A list with the indexes of each dimension in the array.
-        - `shape`: Shape of the array
-
-        Ex:
-        For shape=[3,3] we get the matrix
-        array([[0, 1, 2],
-               [3, 4, 5],
-               [6, 7, 8]])
-        Therefore (the indexes start at zero),
-        >>> SimulationParameters.ravel_multi_index([0,2],[3,3])
-        2
-
-        Similarly
-        >>> SimulationParameters.ravel_multi_index([3,1],[4,3])
-        10
-        """
-        #c order only
-        base_c = np.arange(np.prod(shape)).reshape(*shape)
-        return base_c[tuple(indexes)]
-
     def get_pack_indexes(self, fixed_params_dict=dict()):
         """When you call the function get_unpacked_params_list you get a
         list of SimulationParameters objects corresponding to all
@@ -471,6 +439,7 @@ class SimulationParameters(object):
         # objects and return it
         return map(SimulationParameters.create, all_possible_dicts_list)
 
+    # TODO: Implement and test
     def save_to_file(self, file_name):
         """Save the SimulationParameters object to the file `file_name`.
 

@@ -274,6 +274,8 @@ def qfunc(x):
     return 0.5 * erfc(x / math.sqrt(2))
 
 
+# TODO: Isn't this method too similar to leig? See if one of them can be
+# removed.
 def least_right_singular_vectors(A, n):
     """Return the two matrices. The first one is formed by the `n` least
     significative right singular vectors of `A`, while the second one is
@@ -326,6 +328,38 @@ def least_right_singular_vectors(A, n):
     V1 = V[:, sort_indexes[n:]]
 
     return (V0, V1, S[sort_indexes[n:]])
+
+
+# New versions of numpy already have this method
+# https://gist.github.com/1511969/222e3316048bce5763b1004331af898088ffcd9e
+# def ravel_multi_index(indexes, shape):
+#     """
+#     Get the linear index corresponding to `indexes`.
+
+#     The linear index is calculated in 'C' order. That is, it "travels"
+#     the array faster in the fist dimension than in the last (row order
+#     in bi-dimensional arrays).
+
+#     Arguments
+#     - `indexes`: A list with the indexes of each dimension in the array.
+#     - `shape`: Shape of the array
+
+#     Ex:
+#     For shape=[3,3] we get the matrix
+#     array([[0, 1, 2],
+#            [3, 4, 5],
+#            [6, 7, 8]])
+#     Therefore (the indexes start at zero),
+#     >>> ravel_multi_index([0,2],[3,3])
+#     2
+
+#     Similarly
+#     >>> ravel_multi_index([3,1],[4,3])
+#     10
+#     """
+#     #c order only
+#     base_c = np.arange(np.prod(shape)).reshape(*shape)
+#     return base_c[tuple(indexes)]
 
 
 def calc_unorm_autocorr(x):

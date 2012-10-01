@@ -274,6 +274,87 @@ class SimulationParametersTestCase(unittest.TestCase):
         # We may have 8 variations, but there are still only 4 parameters
         self.assertEqual(self.sim_params.get_num_parameters(), 4)
 
+    def test_get_unpacked_params_list(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        params_dict = {'first': [], 'second': [], 'third': [], 'fourth': []}
+        unpacked_param_list = self.sim_params.get_unpacked_params_list()
+        for i in unpacked_param_list:
+            # This will add value multiple times when it shouldn't
+            params_dict['first'].append(i['first'])
+            params_dict['second'].append(i['second'])
+            params_dict['third'].append(i['third'])
+            params_dict['fourth'].append(i['fourth'])
+
+        # We make change all values to sets to remove repeated values for
+        # testing purposes.
+        self.assertEqual(set(params_dict['first']),
+                         set([self.sim_params['first']]))
+        self.assertEqual(set(params_dict['second']),
+                         set([self.sim_params['second']]))
+        self.assertEqual(set(params_dict['third']),
+                         set(self.sim_params['third']))
+        self.assertEqual(set(params_dict['fourth']),
+                         set(self.sim_params['fourth']))
+
+    def test_get_pack_indexes(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # The parameters 'third' and 'fourth' are marked to be unpacked,
+        # while the parameters 'first' and 'second' will always be the
+        # same. The combinations after unpacking are shown below
+        #   {'second': 20, 'fourth': A, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fourth': A, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fourth': A, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fourth': A, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 5, 'first': 10}
+        #
+        # Lets focus on the 'third' and 'fourth' parameters, since they are
+        # the only ones changing. Suppose we want to get the indexes
+        # corresponding to varying the 'fourth' parameters with the 'third'
+        # parameter equal to 2. We create a dictionary
+        fixed_third_2 = {'third': 2}
+
+        # The desired indexes are [2, 6]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_third_2),
+            [2, 6])
+
+        fixed_third_5 = {'third': 5}
+        # The desired indexes are [3, 7]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_third_5),
+            [3, 7])
+
+        # Now lets fix the 'fourth' parameter and let the 'third' vary.
+        fixed_fourth_A = {'fourth': 'A'}
+        # The desired indexes are [0, 1, 2, 3]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_fourth_A),
+            [0, 1, 2, 3])
+
+        fixed_fourth_B = {'fourth': 'B'}
+        # The desired indexes are [4, 5, 6, 7]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_fourth_B),
+            [4, 5, 6, 7])
+
+        # Lets try to fix some invalid value to see if an exception is
+        # raised
+        fixed_fourth_invalid = {'fourth': 'C'}
+        with self.assertRaises(ValueError):
+            # This should raise a ValueError, since the parameter 'fourth'
+            # has no value 'C'
+            self.sim_params.get_pack_indexes(fixed_fourth_invalid)
 
 # TODO: Implement-me
 class SimulationRunnerTestCase(unittest.TestCase):
