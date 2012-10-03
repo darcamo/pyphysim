@@ -8,7 +8,7 @@
 
 
 from simulations import *
-from comm import modulators, mimo
+from comm import modulators
 from util.conversion import dB2Linear
 import misc
 from ia import ia
@@ -24,15 +24,14 @@ class AlternatingSimulationRunner(SimulationRunner):
 
         # The _keep_going method will stop the simulation earlier when
         # max_bit_errors are achieved.
-        self.max_bit_errors = 2000
+        self.max_bit_errors = 3000
 
         #SNR = np.array([0., 3., 6, 9])
         # SNR = np.array([0., 3, 6, 9, 12])
         SNR = np.array([0., 5, 10, 15, 20, 25, 30])
         #SNR = np.array([50])
         M = 16
-        self.alamouti = mimo.Alamouti()
-        self.NSymbs = 100
+        self.NSymbs = 50
         self.modulator = modulators.PSK(M)
         self.K = 3
         self.Nr = np.ones(self.K) * 2
@@ -45,9 +44,9 @@ class AlternatingSimulationRunner(SimulationRunner):
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
-        self.rep_max = 4000
+        self.rep_max = 1000
         #self.rep_max = 200
-        self.progressbar_message = "Alamouti with {0}-QAM - SNR: {{SNR}}".format(M)
+        self.progressbar_message = "Alternating Min. ({0}-QAM mod.) - SNR: {{SNR}}".format(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # We need to add the parameters to the self.param variable.
@@ -169,7 +168,7 @@ class AlternatingSimulationRunner(SimulationRunner):
         """
         ber = self.results.get_result_values_list('ber')
         ser = self.results.get_result_values_list('ber')
-        
+
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
 
@@ -199,4 +198,5 @@ if __name__ == '__main__':
         grid(True, which='both', axis='both')
         show()
 
+    print "Runned iterations: {0}".format(sim.runned_reps)
     print sim.elapsed_time
