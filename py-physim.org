@@ -1,0 +1,31 @@
+#+TITLE:Py-PhySim
+#+AUTHOR:Darlan Cavalcante Moreira
+#+EMAIL:darcamo@gmail.com
+#+SETUPFILE: ~/.emacs.d/lisp/org-setup-file-template/setup.org
+
+* Folders
+** apps
+   .rst files are used by sphinx to generate the documentation
+** bin
+** comm
+   Modules
+**** blockdiagonalization
+**** mimo
+**** modulators
+**** ofdm
+**** pathloss
+**** waterfilling
+** dist
+** docs
+** lib
+** plot
+** subspace
+** templates
+** tests
+** uml
+** util
+   Modules with utility functions.
+***** Progressbar
+***** misc
+***** simulations
+      
