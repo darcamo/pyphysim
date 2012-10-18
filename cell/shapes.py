@@ -36,7 +36,6 @@ class Coordinate(object):
         return dist
 
 
-# TODO: Implement the rest of the Shape class
 class Shape(Coordinate):
     """Base class for all 2D shapes.
 
@@ -52,13 +51,36 @@ class Shape(Coordinate):
                       number).
         """
         Coordinate.__init__(self, pos)
-        self.radius = radius
-        self.rotation = rotation
+
+        self._radius = radius
+        self._rotation = rotation
 
         # Properties for the plot representation
         self.fill_face_bool = False
         self.fill_color = 'r'
         self.fill_opacity = 0.1
+
+    # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Property to get the shape radius.
+    def _set_radius(self, value):
+        self._radius = value
+
+    # Property to set the shape radius
+    def _get_radius(self):
+        return self._radius
+
+    radius = property(_get_radius, _set_radius)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def _set_rotation(self, value):
+        self._rotation = value
+
+    def _get_rotation(self):
+        return self._rotation
+
+    rotation = property(_get_rotation, _set_rotation)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_vertex_positions(self):
         """Calculates the vertex positions ignoring any rotation and considering
@@ -75,7 +97,7 @@ class Shape(Coordinate):
     def _get_vertices(self):
         vertex_positions = self._get_vertex_positions()
         vertex_positions = self.pos + Shape._rotate(
-            vertex_positions, self.rotation)
+            vertex_positions, self._rotation)
         return vertex_positions
 
     vertices = property(_get_vertices)
@@ -92,7 +114,6 @@ class Shape(Coordinate):
         # pnpoly returns 1 if point is inside the polygon and 0 otherwise
         return mnx.pnpoly(point.real, point.imag, conv_N_complex_array_to_N_by_2_real_matrix(self.vertices)) == 1
 
-    # TODO: Test and Validate this method
     def get_border_point(self, angle, ratio):
         """Calculates the coordinate of the point that intercepts the
         border of the cell if we go from the origin with a given angle
@@ -105,12 +126,12 @@ class Shape(Coordinate):
         """
         # Get the vertices (WITH rotation, but WITHOUT translation)
         vertices_no_trans = Shape._rotate(self._get_vertex_positions(),
-                                         self.rotation)
+                                         self._rotation)
         angle_rad = np.pi * angle / 180.
 
         # Which point we get if we walk a distance of cell radius in the
         # desired angle direction?
-        point = self.radius * np.exp(angle_rad*1j)
+        point = self._radius * np.exp(angle_rad*1j)
 
         # Calculates the distance of this point to all vertices and finds
         # the closest vertices
@@ -190,7 +211,7 @@ class Shape(Coordinate):
         return cur_pos * np.exp(1j * angle_rad)
 
 
-# TODO: create a doctest for the heght property. The other stuff should go
+# TODO: create a doctest for the height property. The other stuff should go
 # in the unittests.
 class Hexagon(Shape):
     """Hexagon shape class.
@@ -212,7 +233,7 @@ class Hexagon(Shape):
         Shape.__init__(self, pos, radius, rotation)
 
     def _get_height(self):
-        return self.radius * np.sqrt(3.) / 2.0
+        return self._radius * np.sqrt(3.) / 2.0
 
     height = property(_get_height)
 
@@ -226,11 +247,11 @@ class Hexagon(Shape):
 
         """
         vertexPositions = np.zeros(6, dtype=complex)
-        vertexPositions[0] = complex(-self.radius / 2., -self.height)
+        vertexPositions[0] = complex(-self._radius / 2., -self.height)
         angles = np.linspace(0, 240, 5) * np.pi / 180.
 
         for k in range(5):
-            vertexPositions[k + 1] = vertexPositions[k] + self.radius * np.exp(angles[k] * 1j)
+            vertexPositions[k + 1] = vertexPositions[k] + self._radius * np.exp(angles[k] * 1j)
         return vertexPositions
 
 
@@ -276,6 +297,8 @@ class Rectangle(Shape):
         return vertex_positions
 
 
+# TODO: create a specialized plot method for the Circle class. For now it
+# uses the plot method of the Shape class.
 class Circle(Shape):
     """Circle shape class.
     """
@@ -295,7 +318,7 @@ class Circle(Shape):
     def _get_vertex_positions(self):
         # 180 points from 0 to 2pi
         angles = np.linspace(0, 2 * np.pi, 180)
-        vertex_positions = self.radius * np.exp(1j * angles)
+        vertex_positions = self._radius * np.exp(1j * angles)
         return vertex_positions
 
 
