@@ -110,7 +110,7 @@ class Shape(Coordinate):
 
         # Which point we get if we walk a distance of cell radius in the
         # desired angle direction?
-        point = self.radius * np.exp(angle_rad)
+        point = self.radius * np.exp(angle_rad*1j)
 
         # Calculates the distance of this point to all vertices and finds
         # the closest vertices
@@ -133,11 +133,10 @@ class Shape(Coordinate):
 
         # The point in the border of the shape is the point where these two
         # equations meet. That is, "a*x+b == a2*x+b2"
-        x = (b2-b) / (a-a2)
-        y = a*x + b
+        x = (b2 - b) / (a - a2)
+        y = a * x + b
 
         point = complex(x, y) * ratio + self.pos
-
         return point
 
     def plot(self, ax=None):
