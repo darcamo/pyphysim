@@ -53,7 +53,7 @@ class Node(Coordinate):
             pylab.show()
 
 
-class CellBaseClass(Node, Shape):
+class CellBase(Node, Shape):
     """Base class for all cell types.
     """
 
@@ -201,14 +201,14 @@ class CellBaseClass(Node, Shape):
             user.plot_node(ax)
 
 
-class Cell(Hexagon, CellBaseClass):
+class Cell(Hexagon, CellBase):
     """Class representing an hexagon cell.
     """
 
     def __init__(self, pos, radius, cell_id=None, rotation=0):
         """
         """
-        CellBaseClass.__init__(self, pos, radius, cell_id, rotation)
+        CellBase.__init__(self, pos, radius, cell_id, rotation)
 
     def plot(self, ax=None):
         """Plot the cell using the matplotlib library.
@@ -370,7 +370,7 @@ class Cluster(Shape):
 
     @staticmethod
     def _calc_cell_positions(cell_radius, num_cells):
-        """Helper function used by the ClusterClass.
+        """Helper function used by the Cluster class.
 
         The calc_cell_positions method calculates the position (and
         rotation) of the 'num_cells' different cells, each with radius

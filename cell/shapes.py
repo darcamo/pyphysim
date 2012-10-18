@@ -8,7 +8,7 @@ Each shape knows how to plot itself.
 
 import numpy as np
 from matplotlib import pylab
-from matplotlib.patches import Polygon
+from matplotlib import patches
 
 
 class Coordinate(object):
@@ -181,7 +181,7 @@ class Shape(Coordinate):
             # Matplotlib does not seem to allow us to set a different alpha
             # value for the face and the edges. Therefore, we will need to
             # plot twice to get that effect.
-            polygon_face = Polygon(
+            polygon_face = patches.Polygon(
                 conv_N_complex_array_to_N_by_2_real_matrix(self.vertices),
                 True,
                 facecolor=self.fill_color,
@@ -189,7 +189,7 @@ class Shape(Coordinate):
                 alpha=self.fill_opacity)
             ax.add_patch(polygon_face)
 
-        polygon_edges = Polygon(
+        polygon_edges = patches.Polygon(
             conv_N_complex_array_to_N_by_2_real_matrix(self.vertices),
             True,
             facecolor='none',  # No face
@@ -297,8 +297,6 @@ class Rectangle(Shape):
         return vertex_positions
 
 
-# TODO: create a specialized plot method for the Circle class. For now it
-# uses the plot method of the Shape class.
 class Circle(Shape):
     """Circle shape class.
     """
@@ -321,6 +319,46 @@ class Circle(Shape):
         vertex_positions = self._radius * np.exp(1j * angles)
         return vertex_positions
 
+    def plot(self, ax=None):
+        """Plot the circle using the Matplotlib library.
+
+        If an axes 'ax' is specified, then the circle is added to that
+        axes. Otherwise a new figure and axes are created and the circle is
+        plotted to that.
+
+        Arguments:
+        - `ax`:  A matplotlib axes
+
+        """
+        stand_alone_plot = False
+
+        if (ax is None):
+            # This is a stand alone plot. Lets create a new axes.
+            ax = pylab.axes()
+            stand_alone_plot = True
+
+        if self.fill_face_bool:
+            # Matplotlib does not seem to allow us to set a different alpha
+            # value for the face and the edges. Therefore, we will need to
+            # plot twice to get that effect.
+            circle_face = patches.Circle(
+                [self.pos.real, self.pos.imag],
+                True,
+                facecolor=self.fill_color,
+                edgecolor='none',  # No edges
+                alpha=self.fill_opacity)
+            ax.add_patch(circle_face)
+
+        circle_edges = patches.Circle(
+            [self.pos.real, self.pos.imag],
+            True,
+            facecolor='none',  # No face
+            alpha=1)
+        ax.add_patch(circle_edges)
+
+        if stand_alone_plot is True:
+            ax.plot()
+            pylab.show()
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: Create a better name and rename this method (use ropemacs for that)
@@ -360,7 +398,7 @@ if __name__ == '__main__':
     r.fill_face_bool = True
     r.fill_color = 'b'
 
-    c = Circle(0, 1)
+    c = Circle(0.2+0.4j, 1)
     c.fill_face_bool = True
     c.fill_color = 'g'
 
