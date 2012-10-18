@@ -5,6 +5,7 @@
 
 from matplotlib import pylab
 from collections import Iterable
+from numpy.random import rand
 
 from shapes import Coordinate, Shape, Hexagon
 
@@ -132,6 +133,47 @@ class CellBaseClass(Node, Shape):
 
             self.add_user(new_user)
 
+    def add_random_user(self, user_color=None, min_dist_ratio=0):
+        """Adds a user randomly located in the cell.
+
+        The variable `userColor` can be any color that the plot command and
+        friends can understand. If not specified the default value of the
+        node class will be used.
+
+        Arguments:
+        - `user_color`:
+        - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
+                            cell center and the generated random user. The
+                            value must be between 0 and 0.7.
+
+        """
+        # Creates a new user. Note that this user can be invalid (outside
+        # the cell) or not.
+        new_user = Node(self.pos + complex(2 * (rand() - 0.5) * self.radius, 2 * (rand() - 0.5) * self.radius))
+
+        while (not self.is_point_inside_shape(new_user.pos) or (self.calc_dist(new_user) < (min_dist_ratio * self.radius))):
+            # Create another, since the previous one is not valid
+            new_user = Node(self.pos + complex(2 * (rand() - 0.5) * self.radius, 2 * (rand() - 0.5) * self.radius))
+
+        if user_color is not None:
+            new_user.marker_color = user_color
+
+        # Finally add the user to the cell
+        self.add_user(new_user)
+
+    def add_random_users(self, num_users, user_color=None, min_dist_ratio=0):
+        """Add `num_users` users randomly located in the cell.
+
+        Arguments:
+        - `num_users`: Number of users to be added to the cell.
+        - `user_color`:
+        - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
+                            cell center and the generated random user. The
+                            value must be between 0 and 0.7.
+        """
+        for k in range(num_users):
+            self.add_random_user(user_color, min_dist_ratio)
+
     def _plot_common_part(self, ax):
         """Common code for plotting the classes. Each subclass must implement a
         `plot` method in which it calls the command to plot the class shape
@@ -205,5 +247,7 @@ if __name__ == '__main__':
     #n.plot_node()
 
     c.add_user(n)
-    c.add_border_user([90, 130], 0.7,'b')
+    #c.add_border_user([90, 130], 0.7,'b')
+    c.add_random_users(100, 'b', 0.5)
+
     c.plot()
