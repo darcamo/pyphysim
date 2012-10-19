@@ -15,15 +15,15 @@ from shapes import Coordinate, Shape, Hexagon
 class Node(Coordinate):
     """Class representing a node in the network.
     """
-    def __init__(self, pos):
+    def __init__(self, pos, plot_marker='*', marker_color='r'):
         """
 
         Arguments:
         - `pos`: The position of the node (a complex number)
         """
         Coordinate.__init__(self, pos)
-        self.plot_marker = '*'
-        self.marker_color = 'r'
+        self.plot_marker = plot_marker
+        self.marker_color = marker_color
 
     def plot_node(self, ax=None):
         """Plot the node using the matplotlib library.
@@ -110,7 +110,9 @@ class CellBase(Node, Shape):
         angle (in degrees).
 
         If the `angles` variable is an iterable, one user will be added for
-        each value in `angles`.
+        each value in `angles`. Also, in that case ration and userColor may
+        also be iterables with the same length of `angles` in order to
+        specify individual ratio and userColor for each angle.
 
         Arguments:
         - `angles`:
@@ -118,20 +120,42 @@ class CellBase(Node, Shape):
         - `userColor`:
 
         """
-        if ratio is None:
-            ratio = 1.0
-        else:
-            if (ratio < 0) or (ratio > 1):
-                raise ValueError("ratio must be between 0 and 1")
+        def validate_ratio(ratio):
+            """Return `ratio` if is valid, 1.0 if `ratio` is None, or throw an
+            exception if it is not valid.
 
+            Arguments:
+            - `ratio`: An scalar.
+            """
+            if ratio is None:
+                ratio = 1.0
+            else:
+                if (ratio < 0) or (ratio > 1):
+                    raise ValueError("ratio must be between 0 and 1")
+            return ratio
+        # xxxxx
+        # Assures that angle is an iterable
         if not isinstance(angles, Iterable):
             angles = [angles]
 
-        for angle in angles:
+        if isinstance(userColor, str):
+                userColor = itertools.repeat(userColor)
+        else:
+            if not isinstance(userColor, Iterable):
+                userColor = itertools.repeat(userColor)
+        if not isinstance(ratio, Iterable):
+            ratio = validate_ratio(ratio)
+            ratio = itertools.repeat(ratio)
+        else:
+            ratio = [validate_ratio(i) for i in ratio]
+
+        all_data = zip(angles, ratio, userColor)
+        for data in all_data:
+            print data
+            angle, ratio, userColor = data
             new_user = Node(self.get_border_point(angle, ratio))
             if userColor is not None:
                 new_user.marker_color = userColor
-
             self._users.append(new_user)
 
     def add_random_user(self, user_color=None, min_dist_ratio=0):
@@ -500,8 +524,7 @@ class Cluster(Shape):
             ax.plot()
             pylab.show()
 
-    def add_random_users(self, cell_ids,
-                         num_users=1, user_color=None, min_dist_ratio=0):
+    def add_random_users(self, cell_ids, num_users=1, user_color=None, min_dist_ratio=0):
         """Adds one or more users to the Cells with the specified cell IDs (the
         first cell has an ID equal to 1.).
 
@@ -543,17 +566,16 @@ class Cluster(Shape):
 
 
 if __name__ == '__main__':
-    c = Cell(3+2j, 1, cell_id=3)
+    c = Cell(3 + 2j, 1, cell_id=3)
     c.fill_face_bool = True
-    print c
 
     n = Node(0.2 + 0.3j)
     #n.plot_node()
 
     c.add_user(n)
-    c.add_border_user(90, 1, userColor='g')
+    c.add_border_user([0, 30, 60, 90, 120], 0.9, userColor='g')
     #c.add_border_user([90, 130], 0.7,'b')
-    c.add_random_users(100, 'b', 0.5)
+    #c.add_random_users(100, 'b', 0.5)
 
     c.plot()
 
@@ -568,7 +590,6 @@ if __name__ == '__main__1':
     C = Cluster(cell_radius, num_cells, pos, cluster_id)
 
     C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
-
 
     C.fill_face_bool = True
     C.plot(ax)
