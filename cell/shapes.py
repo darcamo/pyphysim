@@ -131,11 +131,11 @@ class Shape(Coordinate):
 
         # Which point we get if we walk a distance of cell radius in the
         # desired angle direction?
-        point = self._radius * np.exp(angle_rad*1j)
+        point = self._radius * np.exp(angle_rad * 1j)
 
         # Calculates the distance of this point to all vertices and finds
         # the closest vertices
-        dists = np.abs(self.vertices - point)
+        dists = np.abs(vertices_no_trans - point)
         # Get the two closest vertices from point
         closest_vertices = vertices_no_trans[np.argsort(dists)[:2]]
 
@@ -375,16 +375,16 @@ def conv_N_complex_array_to_N_by_2_real_matrix(a):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
     ax = pylab.axes()
-    h = Hexagon(0, 1)
-    point = h.get_border_point(30, 1)
-    print point
+    h = Hexagon(2+3j, 2)
+    point = h.get_border_point(90, 1)
+    print "Border Point is: {0}".format(point)
     h.plot(ax)
     ax.plot(point.real, point.imag, 'r*')
     pylab.show()
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
     ax = pylab.axes()
 

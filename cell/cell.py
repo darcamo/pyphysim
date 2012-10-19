@@ -132,7 +132,7 @@ class CellBase(Node, Shape):
             if userColor is not None:
                 new_user.marker_color = userColor
 
-            self.add_user(new_user)
+            self._users.append(new_user)
 
     def add_random_user(self, user_color=None, min_dist_ratio=0):
         """Adds a user randomly located in the cell.
@@ -542,8 +542,8 @@ class Cluster(Shape):
                 self._cells[cell_ids - 1].add_random_user(user_color, min_dist_ratio)
 
 
-if __name__ == '__main__1':
-    c = Cell(0, 1, cell_id=3)
+if __name__ == '__main__':
+    c = Cell(3+2j, 1, cell_id=3)
     c.fill_face_bool = True
     print c
 
@@ -551,12 +551,13 @@ if __name__ == '__main__1':
     #n.plot_node()
 
     c.add_user(n)
+    c.add_border_user(90, 1, userColor='g')
     #c.add_border_user([90, 130], 0.7,'b')
     c.add_random_users(100, 'b', 0.5)
 
     c.plot()
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from shapes import *
     from matplotlib import pyplot as plt
     ax = pylab.axes()
