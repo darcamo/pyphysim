@@ -343,7 +343,7 @@ class Circle(Shape):
             # plot twice to get that effect.
             circle_face = patches.Circle(
                 [self.pos.real, self.pos.imag],
-                True,
+                self.radius,
                 facecolor=self.fill_color,
                 edgecolor='none',  # No edges
                 alpha=self.fill_opacity)
@@ -351,7 +351,7 @@ class Circle(Shape):
 
         circle_edges = patches.Circle(
             [self.pos.real, self.pos.imag],
-            True,
+            self.radius,
             facecolor='none',  # No face
             alpha=1)
         ax.add_patch(circle_edges)
