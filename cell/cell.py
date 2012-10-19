@@ -7,6 +7,7 @@ from matplotlib import pylab
 from collections import Iterable
 import numpy as np
 from numpy.random import rand
+import itertools
 
 from shapes import Coordinate, Shape, Hexagon
 
@@ -141,7 +142,7 @@ class CellBase(Node, Shape):
         node class will be used.
 
         Arguments:
-        - `user_color`:
+        - `user_color`: Color of the user marker.
         - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
                             cell center and the generated random user. The
                             value must be between 0 and 0.7.
@@ -159,7 +160,7 @@ class CellBase(Node, Shape):
             new_user.marker_color = user_color
 
         # Finally add the user to the cell
-        self.add_user(new_user)
+        self.add_user(new_user, relative_pos_bool=False)
 
     def add_random_users(self, num_users, user_color=None, min_dist_ratio=0):
         """Add `num_users` users randomly located in the cell.
@@ -403,7 +404,6 @@ class Cluster(Shape):
                 cell_positions[index, 0] = 3 * cell_radius * np.exp(1j * angles_second_ring_A[index - 7])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # FIXME: Positions from cells 14 to 19 are not correct
         # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
         if num_cells > 13:
             angles_second_ring_B = angles_first_ring
@@ -500,6 +500,46 @@ class Cluster(Shape):
             ax.plot()
             pylab.show()
 
+    def add_random_users(self, cell_ids,
+                         num_users=1, user_color=None, min_dist_ratio=0):
+        """Adds one or more users to the Cells with the specified cell IDs (the
+        first cell has an ID equal to 1.).
+
+        Note: If `cell_ids` is an iterable then the other atributes
+        (num_users, user_color and min_dist_ratio) may also be iterable
+        with the same length of cell_ids in order to specifying individual
+        values for each cell ID.
+
+        Arguments:
+        - `cell_ids`: IDs of the cells in the Cluster for which users will
+                      be added. The first cell has an ID equal to 1 and
+                      `cell_ids` may be an iterable with the IDs of several
+                      cells.
+        - `num_users`: Number of users to be added to each cell.
+        - `user_color`: Color of the user marker.
+        - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
+                            cell center and the generated random user. See
+                            Cell.add_random_user method for details.
+
+        """
+        if isinstance(cell_ids, Iterable):
+            if not isinstance(num_users, Iterable):
+                num_users = itertools.repeat(num_users)
+            if isinstance(user_color, str):
+                user_color = itertools.repeat(user_color)
+            else:
+                if not isinstance(user_color, Iterable):
+                    user_color = itertools.repeat(user_color)
+            if not isinstance(min_dist_ratio, Iterable):
+                min_dist_ratio = itertools.repeat(min_dist_ratio)
+
+            all_data = zip(cell_ids, num_users, user_color, min_dist_ratio)
+            for data in all_data:
+                self.add_random_users(*data)
+        else:
+            for index in range(num_users):
+                # Note that here cell_ids will be a single value, as well as user_color and min_dist_ratio
+                self._cells[cell_ids - 1].add_random_user(user_color, min_dist_ratio)
 
 
 if __name__ == '__main__1':
@@ -525,14 +565,17 @@ if __name__ == '__main__':
     pos = 0 + 0j
     cluster_id = None
     C = Cluster(cell_radius, num_cells, pos, cluster_id)
-    #print Cluster._calc_cell_positions(1, 7).round(4)
-    # print C.radius
-    # print C.external_radius
+
+    C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
+
+
     C.fill_face_bool = True
     C.plot(ax)
 
     # Circle ilustrating the cluster radius
+    print C.radius
     circ = Circle(C.pos, C.radius)
+    print circ.radius
     circ.plot(ax)
 
     # Circle ilustrating the cluster external radius
