@@ -372,12 +372,6 @@ class Cluster(Shape):
             all_users.extend(cell.users)
         return all_users
 
-    def delete_all_users(self):
-        """Delete all users in every cell of the cluster.
-        """
-        for cell in self._cells:
-            cell.delete_all_users()
-
     @staticmethod
     def _get_ii_and_jj(num_cells):
         """Valid cluster sizes are given by the formula
@@ -712,6 +706,31 @@ class Cluster(Shape):
         # cell_ids. That is, we can't add users in different locations in
         # each cell.
 
+    def remove_all_users(self, cell_id=None):
+        """Remove all users from one or more cells.
+
+        If cell_id is an integer > 0, only the users from the cell whose
+        index is `cell_id` will be removed. If cell_id is an iterable, then
+        the users of cells pointed by it will be removed. If cell_id is
+        `None` or not specified, then the users of all cells will be
+        removed.
+
+        Arguments:
+        - `cell_id`: ID(s) of the cells from which users will be
+                     removed. If equal to None, all the users from all
+                     cells will be removed.
+
+        """
+        if isinstance(cell_id, Iterable):
+            for i in cell_id:
+                self._cells[i - 1].users.delete_all_users()
+        elif cell_id is None:
+            for cell in self._cells:
+                cell.delete_all_users()
+        else:
+            self._cells[cell_id - 1].delete_all_users()
+
+
 if __name__ == '__main__1':
     c = Cell(3 + 2j, 1, cell_id=3)
     c.fill_face_bool = True
@@ -736,7 +755,7 @@ if __name__ == '__main__':
     cluster_id = None
     C = Cluster(cell_radius, num_cells, pos, cluster_id)
 
-    #C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
+    C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
     #C.add_border_users([1, 5, 7], [90, 60], [1, 0.8], ['g', 'k'])
 
     # vertexes = C.vertices
