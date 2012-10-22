@@ -639,7 +639,7 @@ class Cluster(Shape):
                 stand_alone_plot = True
 
             polygon_edges = patches.Polygon(
-                conv_N_complex_array_to_N_by_2_real_matrix(self.vertices),
+                from_complex_array_to_real_matrix(self.vertices),
                 True,
                 facecolor='none',  # No face
                 alpha=1,

@@ -112,7 +112,7 @@ class Shape(Coordinate):
         """
         import matplotlib.nxutils as mnx
         # pnpoly returns 1 if point is inside the polygon and 0 otherwise
-        return mnx.pnpoly(point.real, point.imag, conv_N_complex_array_to_N_by_2_real_matrix(self.vertices)) == 1
+        return mnx.pnpoly(point.real, point.imag, from_complex_array_to_real_matrix(self.vertices)) == 1
 
     def get_border_point(self, angle, ratio):
         """Calculates the coordinate of the point that intercepts the
@@ -182,7 +182,7 @@ class Shape(Coordinate):
             # value for the face and the edges. Therefore, we will need to
             # plot twice to get that effect.
             polygon_face = patches.Polygon(
-                conv_N_complex_array_to_N_by_2_real_matrix(self.vertices),
+                from_complex_array_to_real_matrix(self.vertices),
                 True,
                 facecolor=self.fill_color,
                 edgecolor='none',  # No edges
@@ -190,7 +190,7 @@ class Shape(Coordinate):
             ax.add_patch(polygon_face)
 
         polygon_edges = patches.Polygon(
-            conv_N_complex_array_to_N_by_2_real_matrix(self.vertices),
+            from_complex_array_to_real_matrix(self.vertices),
             True,
             facecolor='none',  # No face
             alpha=1)
@@ -360,12 +360,22 @@ class Circle(Shape):
             ax.plot()
             pylab.show()
 
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Create a better name and rename this method (use ropemacs for that)
-def conv_N_complex_array_to_N_by_2_real_matrix(a):
-    """Convert an array of complex number to a matrix of real numbers. The
-    first coloumn of the matrix is the real part while the second column is
-    the imaginary part of the original array.
+def from_complex_array_to_real_matrix(a):
+    """Convert an array of complex numbers to a matrix of real numbers.
+
+    We use complex number to represent coordinates, where the real part is
+    the 'x' coordinate and the imaginary part is the 'y' coordinate pf a
+    point.
+
+    However, matplotlib methods need the coordinates to be separated. For
+    instance, a vector of complex coordinates must be converted to a matrix
+    with two columns, where the two columns are the 'x' and 'y' coordinates
+    and each row corresponds to a point.
+
+    The method from_complex_array_to_real_matrix does exactly this
+    conversion.
 
     """
     num_elem = np.size(a)
