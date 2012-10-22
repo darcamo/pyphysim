@@ -105,68 +105,57 @@ class CellBase(Node, Shape):
         else:
             raise TypeError("User must be Node object.")
 
-    def add_border_user(self, angles, ratio=None, userColor=None):
+    def add_border_user(self, angles, ratio=None, user_color=None):
         """Adds a user at the border of the cell, located at a specified
         angle (in degrees).
 
         If the `angles` variable is an iterable, one user will be added for
-        each value in `angles`. Also, in that case ration and userColor may
+        each value in `angles`. Also, in that case ration and user_color may
         also be iterables with the same length of `angles` in order to
-        specify individual ratio and userColor for each angle.
+        specify individual ratio and user_color for each angle.
 
         Arguments:
-        - `angles`:
-        - `ratio`:
-        - `userColor`:
+        - `angles`: Angles for which users will be added (may be a single
+                    number or an iterable)
+        - `ratio`: The ration (relative distance from cell center) for
+                   which users will be added (may be a single number or an
+                   iterable)
+        - `user_color`: Color of the user's marker.
 
         """
-        def validate_ratio(ratio):
-            """Return `ratio` if is valid, 1.0 if `ratio` is None, or throw an
-            exception if it is not valid.
-
-            Arguments:
-            - `ratio`: An scalar.
-            """
-            if ratio is None:
-                ratio = 1.0
-            else:
-                if (ratio < 0) or (ratio > 1):
-                    raise ValueError("ratio must be between 0 and 1")
-            return ratio
-        # xxxxx
         # Assures that angle is an iterable
         if not isinstance(angles, Iterable):
             angles = [angles]
 
-        if isinstance(userColor, str):
-                userColor = itertools.repeat(userColor)
+        if isinstance(user_color, str):
+                user_color = itertools.repeat(user_color)
         else:
-            if not isinstance(userColor, Iterable):
-                userColor = itertools.repeat(userColor)
+            if not isinstance(user_color, Iterable):
+                user_color = itertools.repeat(user_color)
         if not isinstance(ratio, Iterable):
-            ratio = validate_ratio(ratio)
+            ratio = CellBase._validate_ratio(ratio)
             ratio = itertools.repeat(ratio)
         else:
-            ratio = [validate_ratio(i) for i in ratio]
+            ratio = [CellBase._validate_ratio(i) for i in ratio]
 
-        all_data = zip(angles, ratio, userColor)
+        all_data = zip(angles, ratio, user_color)
         for data in all_data:
             print data
-            angle, ratio, userColor = data
+            angle, ratio, user_color = data
             new_user = Node(self.get_border_point(angle, ratio))
-            if userColor is not None:
-                new_user.marker_color = userColor
+            if user_color is not None:
+                new_user.marker_color = user_color
             self._users.append(new_user)
 
     def add_random_user(self, user_color=None, min_dist_ratio=0):
         """Adds a user randomly located in the cell.
 
-        The variable `userColor` can be any color that the plot command and
+        The variable `user_color` can be any color that the plot command and
         friends can understand. If not specified the default value of the
         node class will be used.
 
         Arguments:
-        - `user_color`: Color of the user marker.
+        - `user_color`: Color of the user's marker.
         - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
                             cell center and the generated random user. The
                             value must be between 0 and 0.7.
@@ -224,6 +213,28 @@ class CellBase(Node, Shape):
         # Now we plot all the users in the cell
         for user in self.users:
             user.plot_node(ax)
+
+    @staticmethod
+    def _validate_ratio(ratio):
+        """Return `ratio` if is valid, 1.0 if `ratio` is None, or throw an
+        exception if it is not valid.
+
+        This is a herper method used in the add_border_user method
+        implementation.
+
+        Arguments:
+        - `ratio`: An scalar.
+
+        Throws:
+        - ValueError: If `ratio` is not between 0 and 1.
+
+        """
+        if ratio is None:
+            ratio = 1.0
+        else:
+            if (ratio < 0) or (ratio > 1):
+                raise ValueError("ratio must be between 0 and 1")
+        return ratio
 
 
 class Cell(Hexagon, CellBase):
@@ -499,8 +510,94 @@ class Cluster(Shape):
         external_radius = np.max(np.abs(dists))
         return external_radius
 
+    def _get_outer_vertexes(self, vertexes, central_pos, distance):
+        """Filter out vertexes closer to the shape center them `distance`.
+
+        This is a herper method used in the _get_vertex_positions method.
+
+        Arguments:
+        - `vertexes`: A numpy array of vertexes.
+        - `central_pos`: Central position of the shape.
+        - `distance`: A minimum distance. Any vertex that is closer to the
+                      shape center then this distance will be removed.
+
+        """
+        # Filter function. Returns True for vertexes which are closer to
+        # the shape center then distance.
+        f = lambda x: np.abs(x - central_pos) > (distance)
+        vertexes = vertexes[f(vertexes)]
+
+        # Remove duplicates
+
+        # Float equality test (used implicitly by 'set' to remove
+        # duplicates) is not trustable. We lower the precision to make
+        # it more trustable but maybe calculating the cluster vertexes
+        # like this is not the best way.
+        vertexes = set(vertexes.round(12))
+        vertexes = np.array([i for i in vertexes])
+
+        # In order to use these vertices for plotting, we need them to be
+        # in order (lowest angle to highest)
+        vertexes = vertexes[np.argsort(np.angle(vertexes - self.pos))]
+        return vertexes
+
+    def _get_vertex_positions(self):
+        """Get the vertex positions of the cluster borders.
+
+        This is only valid for cluster sizes equal to 1, 7 or 19.
+
+          1
+          3
+          4
+          7
+         13
+         19
+        """
+        cell_radius = self._cells[0].radius
+        if self.num_cells == 1:
+            # If the cluster has a single cell, the cluster vertexes are
+            # the same as the ones from this single cell. We don't have to
+            # do anything else.
+            return self._cells[0].vertices
+
+        if self.num_cells < 4:  # From 2 to 3
+            start_index = 0
+            distance = 0.2 * cell_radius
+        elif self.num_cells < 7:  # From 4 to 6
+            start_index = 0
+            distance = 1.05 * cell_radius
+        elif self.num_cells < 11:  # From 7 to 10
+            start_index = 1
+            distance = 1.8 * cell_radius
+        elif self.num_cells < 14:  # From 11 to 13
+            start_index = 4
+            distance = 2.15 * cell_radius
+        elif self.num_cells < 16:  # From 14 to 15
+            start_index = 7
+            distance = 2.45 * cell_radius
+        elif self.num_cells < 20:  # From 16 to 19
+            start_index = 7
+            distance = 2.80 * cell_radius
+        else:
+            # Invalid number of cells per cluster
+            return np.array([])
+
+        all_vertexes = np.array([cell.vertices for cell in self._cells[start_index:]]).flatten()
+        return self._get_outer_vertexes(all_vertexes, self.pos, distance)
+    # Note: The _get_vertex_positions method which should return the shape
+    # vertexes without translation and rotation and the vertexes property
+    # from the Shape class would add the translation and rotation. However,
+    # the _get_vertex_positions method in the Cluster class return vertices's
+    # that already contains the translation and rotation. Therefore, we
+    # overwrite the property here to return the output of
+    # _get_vertex_positions.
+    vertices = property(_get_vertex_positions)
+
     def plot(self, ax=None):
         """Plot the cluster
+
+        Arguments:
+        - `ax`:  A matplotlib axes
         """
         stand_alone_plot = False
         if (ax is None):
@@ -524,6 +621,35 @@ class Cluster(Shape):
             ax.plot()
             pylab.show()
 
+    def plot_border(self, ax=None):
+        """Plot only the border of the Cluster.
+
+        Only workers for cluster sizes that can calculate the cluster
+        vertices, such as cluster with 1, 7 or 19 cells.
+
+        Arguments:
+        - `ax`: A matplotlib axes
+
+        """
+        if len(self.vertices) != 0:
+            stand_alone_plot = False
+            if (ax is None):
+                # This is a stand alone plot. Lets create a new axes.
+                ax = pylab.axes()
+                stand_alone_plot = True
+
+            polygon_edges = patches.Polygon(
+                conv_N_complex_array_to_N_by_2_real_matrix(self.vertices),
+                True,
+                facecolor='none',  # No face
+                alpha=1,
+                linewidth=2)
+            ax.add_patch(polygon_edges)
+
+            if stand_alone_plot is True:
+                ax.plot()
+                pylab.show()
+
     def add_random_users(self, cell_ids, num_users=1, user_color=None, min_dist_ratio=0):
         """Adds one or more users to the Cells with the specified cell IDs (the
         first cell has an ID equal to 1.).
@@ -539,7 +665,7 @@ class Cluster(Shape):
                       `cell_ids` may be an iterable with the IDs of several
                       cells.
         - `num_users`: Number of users to be added to each cell.
-        - `user_color`: Color of the user marker.
+        - `user_color`: Color of the user's marker.
         - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
                             cell center and the generated random user. See
                             Cell.add_random_user method for details.
@@ -564,8 +690,29 @@ class Cluster(Shape):
                 # Note that here cell_ids will be a single value, as well as user_color and min_dist_ratio
                 self._cells[cell_ids - 1].add_random_user(user_color, min_dist_ratio)
 
+    def add_border_users(self, cell_ids, angles, ratios=None, user_color=None):
+        """Add users to all the cells indicated by `cell_indexes` at the
+        specified angle(s) (in degrees) and ratio (relative distance from
+        the center to the border of the cell.
 
-if __name__ == '__main__':
+        Arguments:
+        - `cell_ids`: IDs of the cells in the Cluster for which users will
+                      be added. The first cell has an ID equal to 1 and
+                      `cell_ids` may be an iterable with the IDs of several
+                      cells.
+        - `angles`: Angles (in degrees)
+        - `ratios`: Ratios (from 0 to 1)
+        - `user_color`: Color of the user's marker.
+
+        """
+        for cell_id in cell_ids:
+            self._cells[cell_id - 1].add_border_user(angles, ratios, user_color)
+        # TODO: Finish the implementation. The current implementation
+        # simply pass angles, ratios, user_color to each cell in
+        # cell_ids. That is, we can't add users in different locations in
+        # each cell.
+
+if __name__ == '__main__1':
     c = Cell(3 + 2j, 1, cell_id=3)
     c.fill_face_bool = True
 
@@ -573,36 +720,41 @@ if __name__ == '__main__':
     #n.plot_node()
 
     c.add_user(n)
-    c.add_border_user([0, 30, 60, 90, 120], 0.9, userColor='g')
+    c.add_border_user([0, 30, 60, 90, 120], 0.9, user_color='g')
     #c.add_border_user([90, 130], 0.7,'b')
     #c.add_random_users(100, 'b', 0.5)
 
     c.plot()
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from shapes import *
     from matplotlib import pyplot as plt
     ax = pylab.axes()
     cell_radius = 1
     num_cells = 19
-    pos = 0 + 0j
+    pos = 3 + 15j
     cluster_id = None
     C = Cluster(cell_radius, num_cells, pos, cluster_id)
 
-    C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
+    #C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
+    #C.add_border_users([1, 5, 7], [90, 60], [1, 0.8], ['g', 'k'])
+
+    # vertexes = C.vertices
+    # ax.plot(vertexes.real, vertexes.imag, 'o')
 
     C.fill_face_bool = True
     C.plot(ax)
+    C.plot_border(ax)
 
-    # Circle ilustrating the cluster radius
-    print C.radius
-    circ = Circle(C.pos, C.radius)
-    print circ.radius
-    circ.plot(ax)
+    # # Circle ilustrating the cluster radius
+    # print C.radius
+    # circ = Circle(C.pos, C.radius)
+    # print circ.radius
+    # circ.plot(ax)
 
-    # Circle ilustrating the cluster external radius
-    circ2 = Circle(C.pos, C.external_radius)
-    circ2.plot(ax)
+    # # Circle ilustrating the cluster external radius
+    # circ2 = Circle(C.pos, C.external_radius)
+    # circ2.plot(ax)
 
     ax.plot()
     plt.axis('equal')
