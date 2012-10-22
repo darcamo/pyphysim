@@ -12,6 +12,9 @@ import itertools
 from shapes import Coordinate, Shape, Hexagon
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Node class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Node(Coordinate):
     """Class representing a node in the network.
     """
@@ -52,8 +55,14 @@ class Node(Coordinate):
         if stand_alone_plot is True:
             ax.plot()
             pylab.show()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Cell classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class CellBase(Node, Shape):
     """Base class for all cell types.
     """
@@ -140,7 +149,6 @@ class CellBase(Node, Shape):
 
         all_data = zip(angles, ratio, user_color)
         for data in all_data:
-            print data
             angle, ratio, user_color = data
             new_user = Node(self.get_border_point(angle, ratio))
             if user_color is not None:
@@ -272,8 +280,14 @@ class Cell(Hexagon, CellBase):
         if stand_alone_plot is True:
             ax.plot()
             pylab.show()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Cluster Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Cluster(Shape):
     """Class representing a cluster of Hexagonal cells.
 
@@ -363,6 +377,11 @@ class Cluster(Shape):
         return len(self._cells)
 
     num_cells = property(_get_num_cells)
+
+    def _get_cell_radius(self):
+        return self._cell_radius
+    # Property to get the radius of the cells in the cluster.
+    cell_radius = property(_get_cell_radius)
 
     def get_all_users(self):
         """Return all users in the cluster.
@@ -527,7 +546,7 @@ class Cluster(Shape):
         # duplicates) is not trustable. We lower the precision to make
         # it more trustable but maybe calculating the cluster vertexes
         # like this is not the best way.
-        vertexes = set(vertexes.round(12))
+        vertexes = frozenset(vertexes.round(12))
         vertexes = np.array([i for i in vertexes])
 
         # In order to use these vertices for plotting, we need them to be
@@ -538,14 +557,8 @@ class Cluster(Shape):
     def _get_vertex_positions(self):
         """Get the vertex positions of the cluster borders.
 
-        This is only valid for cluster sizes equal to 1, 7 or 19.
+        This is only valid for cluster sizes from 1 to 19.
 
-          1
-          3
-          4
-          7
-         13
-         19
         """
         cell_radius = self._cells[0].radius
         if self.num_cells == 1:
@@ -588,7 +601,7 @@ class Cluster(Shape):
     vertices = property(_get_vertex_positions)
 
     def plot(self, ax=None):
-        """Plot the cluster
+        """Plot the cluster.
 
         Arguments:
         - `ax`:  A matplotlib axes
@@ -729,9 +742,168 @@ class Cluster(Shape):
                 cell.delete_all_users()
         else:
             self._cells[cell_id - 1].delete_all_users()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__1':
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Grid Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class Grid(object):
+    """Class representing a grid of clusters of cells or a single cluster with
+    its surrounding cells.
+
+    Valid cluster sizes are given by the formula
+          $N = i^2+i*j+j^2$
+    where i and j are integer numbers. The values allowed in the Cluster
+    are summarized below with the corresponding values of i and j.
+    | i,j |  N |
+    |-----+----|
+    | 1,0 |  1 |
+    | 1,1 |  3 |
+    | 2,0 |  4 |
+    | 2,1 |  7 |
+    | 3,1 | 13 |
+    | 3,2 | 19 |
+
+    """
+    # Available colors for the clusters. These colos must be understook by
+    # the plot library
+    _colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+
+    def __init__(self):
+        """
+        """
+        self._cell_radius = 0
+        self._num_cells = 0
+
+        # A list with the clusters in the grid
+        self._clusters = []
+        # Surrounding cells in the grid, which are not part of any cluster
+        self._surrounding_cells = []
+
+    def _get_num_clusters(self):
+        return len(self._clusters)
+    # Property to get the number of clusters in the grid
+    num_clusters = property(_get_num_clusters)
+
+    def clear(self):
+        """Clear everything in the grid.
+        """
+        self._clusters = []
+        self._surrounding_cells = []
+        self._cell_radius = 0
+        self._num_cells = 0
+
+    def create_clusters(self, num_clusters, num_cells, cell_radius):
+        """Create the clusters in the grid.
+
+        Arguments:
+        - `num_clusters`: Number of clusters to be created in the grid.
+        - `num_cells`: Number of cells per clusters.
+        - `cell_radius`: The radius of each cell.
+        """
+        self.clear()
+
+        if not num_cells in frozenset([2, 3, 7]):
+            raise AttributeError("The Grid class does not implement the case of clusters with {0} cells".format(num_cells))
+
+        self._cell_radius = cell_radius
+        self._num_cells = num_cells
+
+        options = {2: self._calc_cluster_pos2,
+                   3: self._calc_cluster_pos3,
+                   7: self._calc_cluster_pos7}
+
+        # Method to calculate the central position of the next cluster
+        calc_pos = options[num_cells]
+
+        for index in range(num_clusters):
+            central_pos = calc_pos()
+            # cell_radius, num_cells, pos=0 + 0j, cluster_id=None
+            new_cluster = Cluster(cell_radius,
+                              num_cells,
+                              central_pos,
+                              self.num_clusters + 1)
+            new_cluster.fill_face_bool = True
+            new_cluster.fill_color = Grid._colors[self.num_clusters]
+            new_cluster.fill_opacity = 0.3
+            self._clusters.append(new_cluster)
+
+    def _calc_cluster_pos2(self):
+        """Calculates the central position of clusters with 2 cells.
+
+        Note that the returned central position will depend on how many
+        clusters were already added to the grid.
+
+        """
+        cluster_index = self.num_clusters + 1
+        if cluster_index == 1:
+            return 0 + 0j
+        elif cluster_index == 2:
+            angle = np.pi / 3.0
+            length = np.sqrt(3) * self._cell_radius
+            return length * np.exp(1j * angle)
+        else:
+            RuntimeError("For the two cells per cluster case only two clusters may be used")
+
+    def _calc_cluster_pos3(self):
+        """Calculates the central position of clusters with 3 cells.
+
+        Note that the returned central position will depend on how many
+        clusters were already added to the grid.
+
+        """
+        cluster_index = self.num_clusters + 1
+        if cluster_index == 1:
+            return 0 + 0j
+        else:
+            angle = (np.pi / 3.) * (cluster_index - 1) - (np.pi / 6.)
+            length = 3 * self._cell_radius
+            return length * np.exp(1j * angle)
+
+    def _calc_cluster_pos7(self):
+        """Calculates the central position of clusters with 7 cells.
+
+        Note that the returned central position will depend on how many
+        clusters were already added to the grid.
+
+        """
+        cluster_index = self.num_clusters + 1
+        if cluster_index == 1:
+            return 0 + 0j
+        else:
+            angle = np.arctan(np.sqrt(3.) / 5.)
+            angle = angle + (np.pi / 3) * (cluster_index - 2)
+            length = np.sqrt(21) * self._cell_radius
+            return length * np.exp(1j * angle)
+
+    def plot(self, ax=None):
+        """Plot the grid of clusters.
+
+        Arguments:
+        - `ax`:  A matplotlib axes
+        """
+        stand_alone_plot = False
+        if (ax is None):
+            # This is a stand alone plot. Lets create a new axes.
+            ax = pylab.axes()
+            stand_alone_plot = True
+
+        for cluster in self._clusters:
+            cluster.plot(ax)
+
+        if stand_alone_plot is True:
+            ax.plot()
+            pylab.show()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxx Main methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':
     c = Cell(3 + 2j, 1, cell_id=3)
     c.fill_face_bool = True
 
@@ -745,7 +917,7 @@ if __name__ == '__main__1':
 
     c.plot()
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from shapes import *
     from matplotlib import pyplot as plt
     ax = pylab.axes()
@@ -774,6 +946,32 @@ if __name__ == '__main__':
     # # Circle ilustrating the cluster external radius
     # circ2 = Circle(C.pos, C.external_radius)
     # circ2.plot(ax)
+
+    ax.plot()
+    plt.axis('equal')
+    plt.show()
+
+
+if __name__ == '__main__1':
+    from shapes import *
+    from matplotlib import pyplot as plt
+    ax = pylab.axes()
+    cell_radius = 1
+    num_cells = 7
+    num_clusters = 7
+
+    # pos1 = 2 + 8j
+    # C1 = Cluster(cell_radius, num_cells, pos1, cluster_id=1)
+
+    # pos2 = 0 + 0j
+    # C2 = Cluster(cell_radius, num_cells, pos2, cluster_id=2)
+
+    grid = Grid()
+    # grid._clusters = [C1, C2]
+
+    grid.create_clusters(num_clusters, num_cells, cell_radius)
+
+    grid.plot(ax)
 
     ax.plot()
     plt.axis('equal')
