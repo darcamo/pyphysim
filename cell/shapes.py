@@ -211,8 +211,6 @@ class Shape(Coordinate):
         return cur_pos * np.exp(1j * angle_rad)
 
 
-# TODO: create a doctest for the height property. The other stuff should go
-# in the unittests.
 class Hexagon(Shape):
     """Hexagon shape class.
 
@@ -387,7 +385,7 @@ def from_complex_array_to_real_matrix(a):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     ax = pylab.axes()
-    h = Hexagon(2+3j, 2)
+    h = Hexagon(2 + 3j, 2)
     point = h.get_border_point(90, 1)
     print "Border Point is: {0}".format(point)
     h.plot(ax)
@@ -408,14 +406,13 @@ if __name__ == '__main__1':
     r.fill_face_bool = True
     r.fill_color = 'b'
 
-    c = Circle(0.2+0.4j, 1)
+    c = Circle(0.2 + 0.4j, 1)
     c.fill_face_bool = True
     c.fill_color = 'g'
 
     r.plot(ax)
     h.plot(ax)
     c.plot(ax)
-
 
     ax.plot()
     plt.axis('equal')
