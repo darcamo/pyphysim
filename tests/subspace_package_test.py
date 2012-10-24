@@ -11,6 +11,9 @@ import unittest
 import doctest
 import numpy as np
 
+import sys
+sys.path.append("../")
+
 from subspace import metrics, projections
 
 

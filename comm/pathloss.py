@@ -12,7 +12,10 @@ the desired path loss model and then call the calc_path_loss_dB or the
 calc_path_loss methods to actually calculate the path loss.
 """
 
-import conversion
+import sys
+sys.path.append("../")
+
+from util import conversion
 import numpy as np
 
 

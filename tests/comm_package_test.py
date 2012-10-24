@@ -11,8 +11,11 @@ import unittest
 import doctest
 import numpy as np
 
+import sys
+sys.path.append("../")
+
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
-from misc import randn_c
+from util.misc import randn_c
 
 
 # UPDATE THIS CLASS if another module is added to the comm package

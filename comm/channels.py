@@ -3,8 +3,11 @@
 
 """Module with implementation of channel related classes"""
 
+import sys
+sys.path.append("../")
+
 import numpy as np
-from misc import randn_c
+from util.misc import randn_c
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -6,7 +6,7 @@ linear to dB, binary to gray code, as well as the inverse of them.
 """
 
 import numpy as np
-from util.misc import xor
+from misc import xor
 
 
 def dB2Linear(valueIndB):

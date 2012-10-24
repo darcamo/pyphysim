@@ -11,8 +11,11 @@ import unittest
 import doctest
 import numpy as np
 
+import sys
+sys.path.append("../")
+
 from util import misc, progressbar, simulations, conversion
-from simulations import *
+from util.simulations import *
 
 
 class UtilDoctestsTestCase(unittest.TestCase):

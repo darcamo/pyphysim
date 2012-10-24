@@ -7,7 +7,10 @@ import numpy as np
 import collections
 #from scipy.linalg import block_diag
 
-from misc import least_right_singular_vectors, randn_c
+import sys
+sys.path.append("../")
+
+from util.misc import least_right_singular_vectors, randn_c
 import waterfilling
 
 

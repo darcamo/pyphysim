@@ -24,7 +24,7 @@ import copy
 import numpy as np
 
 from misc import pretty_time
-from util.progressbar import ProgressbarText
+from progressbar import ProgressbarText
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

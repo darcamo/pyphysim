@@ -12,9 +12,12 @@ import doctest
 
 import numpy as np
 
+import sys
+sys.path.append("../")
+
 import ia  # Import the package ia
 from ia.ia import AlternatingMinIASolver
-from misc import peig, leig
+from util.misc import peig, leig
 
 
 # UPDATE THIS CLASS if another module is added to the comm package

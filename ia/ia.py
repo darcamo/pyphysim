@@ -7,7 +7,10 @@
 import numpy as np
 import itertools
 
-from misc import peig, leig, randn_c
+import sys
+sys.path.append("../")
+
+from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
 
