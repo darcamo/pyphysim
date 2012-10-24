@@ -3,13 +3,13 @@
 
 """Module that implements Cell related classes."""
 
-from matplotlib import pylab
+from matplotlib import pylab, patches
 from collections import Iterable
 import numpy as np
 from numpy.random import rand
 import itertools
 
-from shapes import Coordinate, Shape, Hexagon
+from shapes import Coordinate, Shape, Hexagon, from_complex_array_to_real_matrix
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -137,7 +137,7 @@ class CellBase(Node, Shape):
             angles = [angles]
 
         if isinstance(user_color, str):
-                user_color = itertools.repeat(user_color)
+            user_color = itertools.repeat(user_color)
         else:
             if not isinstance(user_color, Iterable):
                 user_color = itertools.repeat(user_color)
@@ -903,7 +903,7 @@ class Grid(object):
 
 
 # xxxxxxxxxx Main methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     c = Cell(3 + 2j, 1, cell_id=3)
     c.fill_face_bool = True
 
@@ -917,15 +917,14 @@ if __name__ == '__main__':
 
     c.plot()
 
-if __name__ == '__main__1':
-    from shapes import *
+if __name__ == '__main__':
     from matplotlib import pyplot as plt
     ax = pylab.axes()
     cell_radius = 1
     num_cells = 19
-    pos = 3 + 15j
+    node_pos = 3 + 15j
     cluster_id = None
-    C = Cluster(cell_radius, num_cells, pos, cluster_id)
+    C = Cluster(cell_radius, num_cells, node_pos, cluster_id)
 
     C.add_random_users([3, 10, 13], [5, 10, 20], ['y', 'k', 'g'], [0.7, 0.3, 0.5])
     #C.add_border_users([1, 5, 7], [90, 60], [1, 0.8], ['g', 'k'])
@@ -939,12 +938,12 @@ if __name__ == '__main__1':
 
     # # Circle ilustrating the cluster radius
     # print C.radius
-    # circ = Circle(C.pos, C.radius)
+    # circ = Circle(C.node_pos, C.radius)
     # print circ.radius
     # circ.plot(ax)
 
     # # Circle ilustrating the cluster external radius
-    # circ2 = Circle(C.pos, C.external_radius)
+    # circ2 = Circle(C.node_pos, C.external_radius)
     # circ2.plot(ax)
 
     ax.plot()
@@ -953,7 +952,6 @@ if __name__ == '__main__1':
 
 
 if __name__ == '__main__1':
-    from shapes import *
     from matplotlib import pyplot as plt
     ax = pylab.axes()
     cell_radius = 1

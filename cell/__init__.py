@@ -2,3 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """Package with cell related modules and classes"""
+
+import shapes
+import cell

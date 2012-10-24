@@ -5,10 +5,21 @@ from distutils.core import setup
 import os
 
 
-# Utility function to read the README file.
-# Used for the long_description.  It's nice, because now 1) we have a top level
-# README file and 2) it's easier to type in the README file than to put a raw
-# string in below ...
+packages = ['',
+            'util',
+            'tests',
+            'cell',
+            'comm',
+            'ia',
+            'plot',
+            'subspace']
+
+requires = ["numpy",
+            "nose"]
+
+# Utility function to read the README file. Used for the long_description.
+# It's nice, because now 1) we have a top level README file and 2) it's
+# easier to type in the README file than to put a raw string in below ...
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -16,15 +27,14 @@ setup(name="Py-PhySim",
       version="0.1",
       author="Darlan Cavalcante Moreira",
       author_email="darcamo@gmail.com",
-      description=("Implementation of a digital communication (physical layer)"
-                   " in python."),
+      description=("Implementation of a digital communication (physical layer) in python."),
       long_description=read("README"),
-      requires=["numpy"],
+      requires=requires,
       url="http://code.google.com/p/py-physim/",
       license="GNU General Public License (GPL)",
-      scripts=["bin"],
-      py_modules=['modulators', 'simulations'],
-      packages=['', 'util', 'tests'],
+      scripts=["bin/"],
+      #py_modules=['modulators', 'simulations'],
+      packages=packages,
       package_data={'': ["LICENSE.txt"],
                     'tests': ["README"],
                     'util': ["README"]},

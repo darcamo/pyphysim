@@ -3,5 +3,10 @@
 
 """module docstring"""
 
-# Bring functions in modulators to the comm's namespace
-from modulators import *
+import blockdiagonalization
+import channels
+import mimo
+import modulators
+import ofdm
+import pathloss
+import waterfilling
