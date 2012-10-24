@@ -116,7 +116,7 @@ class Shape(Coordinate):
 
     def get_border_point(self, angle, ratio):
         """Calculates the coordinate of the point that intercepts the
-        border of the cell if we go from the origin with a given angle
+        border of the shape if we go from the origin with a given angle
         (in degrees).
 
         Arguments:
@@ -124,20 +124,17 @@ class Shape(Coordinate):
         - `ratio`: Ratio (between 0 and 1)
 
         """
-        # Get the vertices (WITH rotation, but WITHOUT translation)
-        vertices_no_trans = Shape._rotate(self._get_vertex_positions(),
-                                         self._rotation)
         angle_rad = np.pi * angle / 180.
 
         # Which point we get if we walk a distance of cell radius in the
         # desired angle direction?
-        point = self._radius * np.exp(angle_rad * 1j)
+        point = self.pos + self._radius * np.exp(angle_rad * 1j)
 
         # Calculates the distance of this point to all vertices and finds
         # the closest vertices
-        dists = np.abs(vertices_no_trans - point)
+        dists = np.abs(self.vertices - point)
         # Get the two closest vertices from point
-        closest_vertices = vertices_no_trans[np.argsort(dists)[:2]]
+        closest_vertices = self.vertices[np.argsort(dists)[:2]]
 
         # The equation of a straight line is given by "y = ax + b". We have
         # two points in this line (the two closest vertices) and we can use
@@ -146,19 +143,34 @@ class Shape(Coordinate):
         a = a.imag / a.real
         b = closest_vertices[1].imag - a * closest_vertices[1].real
 
-        # Now lets find the equation of the straight line from the origin
-        # of the shape with the desired angle.
-        a2 = np.tan(angle_rad)
-        b2 = 0
-        # The equation of this line is then given by "y2 = a2 x2 + b2"
+        # Note that is we start from self.pos and walk in the direction
+        # pointed by the angle by "some step" we should reach the line
+        # where the two closest vertexes are. If we can find this "step"
+        # then we will get our desired point.
+        # That is, for the step "z" we have
+        #    self.pos + np.exp(1j * angle_rad) * z = complex(x, a * x + b)
+        # Which we can write as the sytem of equations
+        #    self.pos.real + np.exp(1j * angle).real * z = x
+        #    self.pos.imag + np.exp(1j * angle).imag * z = a * x + b
+        # Lets create some aliases for the constants so that
+        #     A + B * z = x
+        #     C + D * z = a * x + b
+        A = self.pos.real
+        B = np.exp(1j * angle_rad).real
+        C = self.pos.imag
+        D = np.exp(1j * angle_rad).imag
+        # Through some algebraic manipulation the correct step "z" is given
+        # by
+        z = (A * a + b - C) / (D - (a * B))
 
-        # The point in the border of the shape is the point where these two
-        # equations meet. That is, "a*x+b == a2*x+b2"
-        x = (b2 - b) / (a - a2)
-        y = a * x + b
+        # Now we can finally find the desired point at the border of the
+        # shape
+        point = self.pos + np.exp(1j * angle_rad) * z
 
-        point = complex(x, y) * ratio + self.pos
-        return point
+        # Now all that is left to do is apply the ratio, which only means
+        # that the returned point is a linear combination between the
+        # shape's central position and the point at the border of the shape
+        return (1 - ratio) * self.pos + ratio * point
 
     def plot(self, ax=None):
         """Plot the shape using the matplotlib library.
@@ -253,6 +265,10 @@ class Hexagon(Shape):
         return vertexPositions
 
 
+# TODO: Implement a is_point_inside_shape method. The method from the Shape
+# class works, but because a Rectangle is very simple it would be more
+# efficient to re-implement this method. Note that you will have to write a
+# testcase for this as well in the cell_package_test.py file.
 class Rectangle(Shape):
     """Rectangle shape class.
     """
@@ -264,8 +280,8 @@ class Rectangle(Shape):
         the rotation.
 
         Arguments:
-        - `A`: First coordinate.
-        - `B`: Second coordinate.
+        - `A`: First coordinate (without rotation).
+        - `B`: Second coordinate (without rotation).
         - `rotation`: Rotation of the rectangle in degrees (a positive real
                       number).
 
@@ -273,8 +289,8 @@ class Rectangle(Shape):
         central_pos = (A + B) / 2
         radius = np.abs(B - central_pos)
         Shape.__init__(self, central_pos, radius, rotation)
-        self._lower_coord = A
-        self._upper_coord = B
+        self._lower_coord = complex(min(A.real, B.real), min(A.imag, B.imag))
+        self._upper_coord = complex(max(A.real, B.real), max(A.imag, B.imag))
 
     def _get_vertex_positions(self):
         """Calculates the vertex positions ignoring any rotation and considering
@@ -316,6 +332,19 @@ class Circle(Shape):
         angles = np.linspace(0, 2 * np.pi, 180)
         vertex_positions = self._radius * np.exp(1j * angles)
         return vertex_positions
+
+    def get_border_point(self, angle, ratio):
+        """Calculates the coordinate of the point that intercepts the
+        border of the circle if we go from the origin with a given angle
+        (in degrees).
+
+        Arguments:
+        - `angle`: Angle (in degrees)
+        - `ratio`: Ratio (between 0 and 1)
+
+        """
+        angle_rad = np.pi * angle / 180.
+        return self.pos + np.exp(1j * angle_rad) * self.radius * ratio
 
     def plot(self, ax=None):
         """Plot the circle using the Matplotlib library.
@@ -385,11 +414,27 @@ def from_complex_array_to_real_matrix(a):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     ax = pylab.axes()
-    h = Hexagon(2 + 3j, 2)
-    point = h.get_border_point(90, 1)
-    print "Border Point is: {0}".format(point)
+    h = Hexagon(2 + 3j, 2, 30)
+
+    #print "Border Point is: {0}".format(point)
     h.plot(ax)
-    ax.plot(point.real, point.imag, 'r*')
+
+    point1 = h.get_border_point(90, 0.9)
+    ax.plot(point1.real, point1.imag, 'ro')
+
+    point2 = h.get_border_point(60, 0.9)
+    ax.plot(point2.real, point2.imag, 'go')
+
+    point3 = h.get_border_point(30, 0.9)
+    ax.plot(point3.real, point3.imag, 'bo')
+
+    point4 = h.get_border_point(107, 1)
+    ax.plot(point4.real, point4.imag, 'bo')
+
+    ax.plot(h.pos.real, h.pos.imag, 'ro')
+
+    print h.vertices
+
     pylab.show()
 
 if __name__ == '__main__1':
