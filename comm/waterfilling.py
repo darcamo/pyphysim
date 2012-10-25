@@ -13,6 +13,7 @@ code.
 import numpy as np
 
 
+# TODO: Change comments from portuguese to english
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     """Performs the Waterfilling algorithm and returns the optimum power and water level.
 
@@ -43,14 +44,14 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     minMu = float(noiseVar) / (
         Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
     Ps = (minMu - float(noiseVar) / (
-            Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+        Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     while (sum(Ps) > dPt) and (dRemoveChannels < dNChannels):
         dRemoveChannels = dRemoveChannels + 1
         minMu = float(noiseVar) / (
             Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
         Ps = (minMu - float(noiseVar) / (
-                Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+            Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     # Distribui a potencia restante entre todos os canais remanescentes
     dPdiff = dPt - Ps.sum()
@@ -186,7 +187,9 @@ def drawWF(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
     fId.close()
 
 
-def test_drawwf():
+# This method is only for testing purposes and is does not need to be
+# exposed to the outside of this module.
+def _test_drawwf():
     print "Inicio"
     vtChannels = np.array([9.32904521e-13, 2.63321084e-13, 5.06505202e-14])
     noiseVar = 2.5119e-14
@@ -219,7 +222,7 @@ if __name__ == '__main__':
     #drawWF(vtChannels, mu, noise_var)
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     import doctest
     doctest.testmod()
     print "{0} executed".format(__file__)

@@ -242,7 +242,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx OFDM Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx OFDM Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class OfdmTestCase(unittest.TestCase):
     """Unittests for the OFDM class in the ofdm module."""
@@ -473,11 +473,8 @@ def plot_psd_OFDM_symbols():
     plt.show()
 
 
-# TODO: Create test cases for the other methods and classes in each module,
-# even for methods that are already doctested.
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BlastTestCase(unittest.TestCase):
     """Unittests for the Blast class in the mimo module.
@@ -572,6 +569,72 @@ class AlamoutiTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(decoded_data, data)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Waterfilling Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Implement-me
+class WaterfillingTestCase(unittest.TestCase):
+    """Unittests for the waterfilling module.
+
+    """
+    def test_doWF(self):
+        """
+        - `vtChannels`: Numpy array with the channel POWER gains (power of the
+        parallel AWGN channels).
+        - `dPt`: Total available power.
+        - `noiseVar`: Noise variance (power in linear scale)
+        - `Es`: Symbol energy (in linear scale)
+        """
+        # doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0)
+        channel_power_gains = np.array([0.49702888,
+                                        0.59012981,
+                                        0.43485267,
+                                        0.6692608])
+        total_power = 4
+        noise_var = 0.1
+        Es = 1
+        (vtOptP, mu) = waterfilling.doWF(
+            channel_power_gains, total_power, noise_var, Es)
+        # The sum of the powers in each channel must be equal to the
+        # total_power
+        self.assertAlmostEqual(np.sum(vtOptP), total_power)
+
+        # test the powers in each channel
+        expected_vtOptP = np.array(
+            [0.98631228, 1.01805359, 0.95754489, 1.03808925])
+        np.testing.assert_array_almost_equal(vtOptP, expected_vtOptP)
+
+        # Test the water level
+        expected_mu = 1.18750783021
+        self.assertAlmostEqual(mu, expected_mu)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Block Diagonalization Module xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Implement-me
+class BlockDiaginalizerTestCase(unittest.TestCase):
+    """Unittests for the BlockDiaginalizer class in the blockdiagonalization
+    module.
+
+    """
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Implement-me soemday
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Implement-me soemday
 
 
 if __name__ == "__main__":
