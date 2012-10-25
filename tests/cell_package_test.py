@@ -20,6 +20,30 @@ sys.path.append("../")
 from cell import shapes, cell
 
 
+# def positivy_angle_rad(angle):
+#     """Return the positive angle corresponding to `angle`..
+
+#     Arguments:
+#     - `angle`: An angle (in radians)
+
+#     """
+#     if angle >= 0:
+#         return angle
+#     else:
+#         return 2 * np.pi + angle
+
+# def get_sorted_array_by_angle(x):
+#     """Function to return the complex array sorted by the angles
+#     ("positivated angles")
+
+#     """
+#     angles_rad = np.angle(x)
+#     #while any(x < 0):
+
+#     angles_rad = map(positivy_angle_rad, angles_rad)
+#     return x[np.argsort(angles_rad)]
+
+
 # UPDATE THIS CLASS if another module is added to the comm package
 class CellDoctestsTestCase(unittest.TestCase):
     """Teste case that run all the doctests in the modules of the cell
@@ -252,54 +276,33 @@ class CircleTestCase(unittest.TestCase):
         # pylab.show()
 
     def test_get_vertex_positions(self):
-        # TODO: Finish the implementation
-        #
-        # The _get_vertex_positions in the Circle class should return
-        # border points for angles in 0:2:360
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        def positivy_angle_rad(angle):
-            """Return the positive angle corresponding to angle.
-
-            Arguments:
-            - `angle`: An angle (in radians)
-
-            """
-            if angle > 0:
-                return angle
-            else:
-                return 2 * np.pi + angle
-
-        def get_sorted_array_by_angle(x):
-            """Function to return the complex array sorted by the angles
-            ("positivated angles")
-
-            """
-            angles_rad = np.angle(x)
-            angles_rad = map(positivy_angle_rad, angles_rad)
-            return x[np.argsort(angles_rad)]
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        #
-
-        angles_rad = np.linspace(0, 2 * np.pi, 180)
+        num_vertexes = 12
+        # The angles need to be in degrees for the get_border_point method
+        angles = np.linspace(0,
+                             (num_vertexes - 1.) / num_vertexes * 360,
+                             num_vertexes)
         expected_vertexes = np.array(
             map(self.C1.get_border_point,
-                angles_rad, np.ones(angles_rad.shape))) - self.C1.pos
-        expected_vertexes = get_sorted_array_by_angle(expected_vertexes)
-        vertexes = get_sorted_array_by_angle(self.C1._get_vertex_positions())
-
+                angles, np.ones(angles.shape))) - self.C1.pos
+        vertexes = self.C1._get_vertex_positions()
         np.testing.assert_array_almost_equal(expected_vertexes, vertexes)
-        #print self.C1._get_vertex_positions()
-        #print expected_vertexes
 
-        # print f(expected_vertexes)
-        # print
-        # print f(self.C1._get_vertex_positions())
+    def test_is_point_inside_shape(self):
+        # Note that the Shape class version of the is_point_inside_shape
+        # method will fail in these tests. That is because it uses the
+        # shape's vertexes to determine if a point is inside of the shape
+        # of not, which is not good for a circle. The circle class version
+        # of the is_point_inside_shape compares the distance from the point
+        # to the circle center with the circle radius to determine of the
+        # point is inside or outside the circle.
 
+        # This point is inside the circle
+        point = self.C1.get_border_point(89, 0.99999999)
+        self.assertTrue(self.C1.is_point_inside_shape(point))
 
-
-        expected_vertexes[np.argsort(np.angle(expected_vertexes))]
-
-
+        # This point is NOT inside the circle
+        point2 = self.C1.get_border_point(89, 1.00000001)
+        self.assertFalse(self.C1.is_point_inside_shape(point2))
 
 
 class ShapesModuleMethodsTestCase(unittest.TestCase):

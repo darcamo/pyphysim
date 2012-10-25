@@ -328,8 +328,10 @@ class Circle(Shape):
         Shape.__init__(self, pos, radius)
 
     def _get_vertex_positions(self):
-        # 180 points from 0 to 2pi
-        angles = np.linspace(0, 2 * np.pi, 180)
+        num_vertexes = 12
+        angles = np.linspace(0,
+                             (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
+                             num_vertexes)
         vertex_positions = self._radius * np.exp(1j * angles)
         return vertex_positions
 
@@ -345,6 +347,15 @@ class Circle(Shape):
         """
         angle_rad = np.pi * angle / 180.
         return self.pos + np.exp(1j * angle_rad) * self.radius * ratio
+
+    def is_point_inside_shape(self, point):
+        """Tests is a point is inside the circle
+
+        Arguments:
+        - `point`: A single complex number.
+
+        """
+        return (np.abs(self.pos - point) < self.radius)
 
     def plot(self, ax=None):
         """Plot the circle using the Matplotlib library.
@@ -412,7 +423,7 @@ def from_complex_array_to_real_matrix(a):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     ax = pylab.axes()
     h = Hexagon(2 + 3j, 2, 30)
 
@@ -433,8 +444,8 @@ if __name__ == '__main__':
 
     ax.plot(h.pos.real, h.pos.imag, 'ro')
 
-    print h.vertices
-
+    #print h.vertices
+    ax.axis('equal')
     pylab.show()
 
 if __name__ == '__main__1':
@@ -462,3 +473,19 @@ if __name__ == '__main__1':
     ax.plot()
     plt.axis('equal')
     plt.show()
+
+if __name__ == '__main__':
+    ax = pylab.axes()
+    c = Circle(2 + 3j, 2)
+
+    #print "Border Point is: {0}".format(point)
+    c.plot(ax)
+
+    for v in c.vertices:
+        ax.plot(v.real, v.imag, 'bo')
+
+    ax.plot(c.pos.real, c.pos.imag, 'ro')
+
+    #print c.vertices
+    ax.axis('equal')
+    pylab.show()
