@@ -238,7 +238,6 @@ class SimulationResultsTestCase(unittest.TestCase):
             ['a string'])
 
 
-# TODO: Finish the implementation
 class SimulationParametersTestCase(unittest.TestCase):
     """Unit-tests for the SimulationParameters class in the simulations
     module.
@@ -452,7 +451,7 @@ if __name__ == "__main__":
 #     process_pid = multiprocessing.current_process().pid
 #     for i in range(1, 11):
 #         sleep(sleep_time)
-#         # TODO put a tuple in the queue instead of just the value. The
+#         # TODO: put a tuple in the queue instead of just the value. The
 #         # tuple should have the process identifier and the value.
 #         queue.put((process_pid, i))
 #     queue.put((process_pid, -1))

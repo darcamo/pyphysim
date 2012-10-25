@@ -259,13 +259,15 @@ class OFDM(object):
     def modulate(self, input_signal):
         """Perform the OFDM modulation of the input_signal.
 
-        TODO: Talk about the performed zeropadding as well as CP addition.
+        TODO: Write here about the performed zeropadding as well as CP
+        addition.
 
         Arguments:
         - `input_signal`: Input signal that must be modulated by the OFDM
                           modulate function.
         Outputs:
         - An array with the samples of the modulated OFDM symbols.
+
         """
         # _prepare_input_signal will perform any zero padding needed as
         # well as deactivating the DC subcarrier and the guard subcarriers
@@ -289,14 +291,15 @@ class OFDM(object):
     def demodulate(self, received_signal):
         """Perform the OFDM demodulation of the received_signal.
 
-        TODO: Talk about the zeropadding (which is not removed) as well as
-        CP removal.
+        TODO: Write here about the zeropadding (which is not removed) as
+        well as CP removal.
 
         Arguments:
         - `received_signal`: An array with the samples of the received OFDM
                              symbols.
         Output:
         - `demodulated_data`: Demodulated symbols.
+
         """
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # - Remove the Cyclic Prefix -> the output will have a shape of

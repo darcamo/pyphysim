@@ -52,9 +52,6 @@ class SimulationRunner(object):
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
         self.params = SimulationParameters()
-
-        # TODO: Change self.results from a list to a SimulationResults
-        # object.
         self.results = SimulationResults()
 
         # Message passed to the _get_update_progress_function function. The

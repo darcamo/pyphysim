@@ -180,8 +180,8 @@ class PlotView(HasTraits):
 
         index_mapper = LinearMapper(range=index_range)
 
-        # TODO: So estou adicionando a primeira curva!!!
-        # Adicione todas
+        # TODO: Only the first curve is beeing added here.  Add all of
+        # them!
         value_mapper = LinearMapper(range=value_range)
 
         plot_container = OverlayPlotContainer(padding=60,

@@ -304,8 +304,6 @@ class CircleTestCase(unittest.TestCase):
 
 class ShapesModuleMethodsTestCase(unittest.TestCase):
     def test_from_complex_array_to_real_matrix(self, ):
-        import copy
-        # TODO: Implement-me
         A = np.random.randn(10) + 1j * np.random.randn(10)
         B = A.copy()
         B.shape = (B.size, 1)

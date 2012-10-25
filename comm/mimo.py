@@ -217,8 +217,7 @@ class Alamouti(Mimo):
         """
         return self._encode(transmit_data) / np.sqrt(2)
 
-    # TODO: Apagar depois
-    # Mais lento que _encode
+    # Remove this method later. It is slower then "_encode".
     def _encode2(self, transmit_data):
         """Perform the Alamouti encoding, but without dividing the power
         among the transmit antennas.

@@ -8,10 +8,6 @@ import math
 
 from projections import calcProjectionMatrix
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Create doctests for this module
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # TODO: I think calcPrincipalAngles is not correct when matrix1 e matrix2
 # have different sizes. At least obtaining the chordal distance from the

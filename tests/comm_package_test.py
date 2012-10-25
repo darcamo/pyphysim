@@ -81,7 +81,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
     def test_from_big_matrix(self):
         """Test the _from_big_matrix_to_matrix_of_matrices method."""
-        # TODO: Termine de implementar
         newH = channels.MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(self.H, self.Nr, self.Nt, self.K)
 
         np.testing.assert_array_equal(
