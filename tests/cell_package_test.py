@@ -8,8 +8,6 @@ defined here.
 
 """
 
-# TODO: Implement all the tests for the cell package.
-
 import unittest
 import doctest
 import numpy as np
@@ -253,7 +251,6 @@ class RectangleTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(R1._get_vertex_positions(), R3._get_vertex_positions())
 
 
-# TODO: Implement-me
 class CircleTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -307,15 +304,23 @@ class CircleTestCase(unittest.TestCase):
 
 class ShapesModuleMethodsTestCase(unittest.TestCase):
     def test_from_complex_array_to_real_matrix(self, ):
-        pass
+        import copy
         # TODO: Implement-me
+        A = np.random.randn(10) + 1j * np.random.randn(10)
+        B = A.copy()
+        B.shape = (B.size, 1)
 
+        expected_value = np.hstack([B.real, B.imag])
+        np.testing.assert_array_almost_equal(
+            expected_value,
+            shapes.from_complex_array_to_real_matrix(A))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx CELL module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Implement all the tests for the cell.cell module.
 class CellTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
