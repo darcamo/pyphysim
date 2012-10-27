@@ -200,7 +200,7 @@ def _test_drawwf():
     drawWF(vtChannels, mu, noiseVar)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     #vtChannels = np.abs(randn_c(4,1))
     vtChannels = np.array([0.49702888,
                            0.59012981,

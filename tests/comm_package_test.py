@@ -574,7 +574,6 @@ class AlamoutiTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Waterfilling Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Implement-me
 class WaterfillingTestCase(unittest.TestCase):
     """Unittests for the waterfilling module.
 
@@ -587,28 +586,36 @@ class WaterfillingTestCase(unittest.TestCase):
         - `noiseVar`: Noise variance (power in linear scale)
         - `Es`: Symbol energy (in linear scale)
         """
-        # doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0)
-        channel_power_gains = np.array([0.49702888,
-                                        0.59012981,
-                                        0.43485267,
-                                        0.6692608])
-        total_power = 4
-        noise_var = 0.1
-        Es = 1
+        # See the link below this example
+        #http://jungwon.comoj.com/ucsd_ece287b_spr12/lecture_slides/lecture4.pdf
+
+        # Abs of the parallel channels
+        vtChannels_abs = np.array([1.90, 1.76, 1.76, 1.35, 1.35, .733, .733,
+                                   .100])
+        # Power of the parallel channels
+        channel_power_gains = vtChannels_abs ** 2
+
+        # Total power available to be distributed
+        total_power = 8
+        noise_var = 0.181
+
+        # Calculates the optimum powers and water level
         (vtOptP, mu) = waterfilling.doWF(
-            channel_power_gains, total_power, noise_var, Es)
+            channel_power_gains, total_power, noise_var)
+
         # The sum of the powers in each channel must be equal to the
         # total_power
         self.assertAlmostEqual(np.sum(vtOptP), total_power)
 
-        # test the powers in each channel
-        expected_vtOptP = np.array(
-            [0.98631228, 1.01805359, 0.95754489, 1.03808925])
-        np.testing.assert_array_almost_equal(vtOptP, expected_vtOptP)
-
         # Test the water level
-        expected_mu = 1.18750783021
+        expected_mu = 1.29134061296
         self.assertAlmostEqual(mu, expected_mu)
+
+        # test the powers in each channel
+        expected_vtOptP = np.array([1.24120211, 1.23290828, 1.23290828,
+                                    1.19202648, 1.19202648, 0.95446418,
+                                    0.95446418, 0.])
+        np.testing.assert_array_almost_equal(vtOptP, expected_vtOptP)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
