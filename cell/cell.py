@@ -237,8 +237,13 @@ class CellBase(Node, Shape):
         - ValueError: If `ratio` is not between 0 and 1.
 
         """
-        if ratio is None:
-            ratio = 1.0
+        # If ratio is None then it was not specified and we assume it to be
+        # equal to one (border of the shape). However, if we set ratio to
+        # be exactly 1.0 then the is_point_inside_shape method would
+        # return false which is probably not what you want. Therefore, we
+        # set it to be a little bit lower then 1.0.
+        if (ratio is None) or (ratio == 1.0):
+            ratio = 1.0 - 1e-15
         else:
             if (ratio < 0) or (ratio > 1):
                 raise ValueError("ratio must be between 0 and 1")

@@ -28,15 +28,15 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     vtChannelsSortIndexes = np.argsort(vtChannels)[::-1]
     vtChannelsSorted = vtChannels[vtChannelsSortIndexes]
 
-    #####################################################################
-    # Calcula o waterlevel que toca o pior canal (o mais alto) e       #
-    # portanto que transmite potencia 0 no pior canal.  Depois disso    #
-    # calcula a potencia em cada canal (o vetor Ps) para esse           #
-    # waterlevel.  Se a soma dessas potencias for menor do que a       #
-    # portencia total entao e so dividir a potencia restante igualmente #
-    # entre todos os canais (aumentar o waterlevel). Caso contrario,   #
-    # removo o pior canal e repito o processo.                          #
-    #####################################################################
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Calcula o waterlevel que toca o pior canal (o mais alto) e
+    # portanto que transmite potencia 0 no pior canal.  Depois disso
+    # calcula a potencia em cada canal (o vetor Ps) para esse
+    # waterlevel.  Se a soma dessas potencias for menor do que a
+    # portencia total entao e so dividir a potencia restante igualmente
+    # entre todos os canais (aumentar o waterlevel). Caso contrario,
+    # removo o pior canal e repito o processo.
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Calculates minimum waterlevel $\mu$ required to use all channels
     dNChannels = vtChannels.size
     dRemoveChannels = 0

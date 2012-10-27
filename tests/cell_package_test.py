@@ -417,8 +417,38 @@ class CellTestCase(unittest.TestCase):
             self.assertAlmostEqual(self.C3.users[index].pos, absolute_pos)
             self.assertEqual(self.C3.users[index].marker_color, colors[index])
 
-    # TODO: Implement-me
     def test_add_random_user(self):
+        self.C1.add_random_user(user_color='y')
+        self.assertEqual(self.C1.num_users, 1)
+        self.assertEqual(self.C1.users[0].marker_color, 'y')
+
+        min_dist_ratio = 0.6
+        user_color = 'g'
+        self.C1.add_random_users(10, user_color, min_dist_ratio)
+        self.assertEqual(self.C1.num_users, 11)
+        for index in range(1, 11):
+            self.assertEqual(self.C1.users[index].marker_color, 'g')
+            min_dist = self.C1.radius * min_dist_ratio
+            self.assertTrue(self.C1.calc_dist(self.C1.users[index]) > min_dist)
+
+
+# TODO: finish implementation
+class ClusterTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_some_method(self):
+        pass
+
+
+# TODO: finish implementation
+class GridTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_some_method(self):
         pass
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
