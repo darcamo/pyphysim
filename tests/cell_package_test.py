@@ -315,17 +315,112 @@ class ShapesModuleMethodsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# TODO: Implement all the tests for the cell.cell module.
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx CELL module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Implement all the tests for the cell.cell module.
+class NodeTestCase(unittest.TestCase):
+    def test_attributes(self):
+        n = cell.Node(1 + 3j, plot_marker='v', marker_color='g')
+        self.assertEqual(n.pos, 1 + 3j)
+        self.assertEqual(n.plot_marker, 'v')
+        self.assertEqual(n.marker_color, 'g')
+
+
+# TODO: finish implementation
 class CellTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
+        self.C1 = cell.Cell(2 - 3j, 2.5, 1, 30)
+        self.C2 = cell.Cell(0 + 2j, 2, 1, 20)
+        self.C3 = cell.Cell(-3 + 5j, 1.5, 1, 70)
+
+    def test_add_user(self):
+        # The cell has no users yet
+        self.assertEqual(self.C1.num_users, 0)
+
+        # User with the same position as the cell center
+        user1 = cell.Node(self.C1.pos, marker_color='b')
+        self.C1.add_user(user1, relative_pos_bool=False)
+
+        # User (relative to cell center) located at the top of the cell
+        user2 = cell.Node(0 + 0.99999j, marker_color='r')
+        self.C1.add_user(user2)
+
+        # User (relative to cell center) located at some point in the north
+        # east part of the cell
+        user3 = cell.Node(0.4 + 0.7j, marker_color='g')
+        self.C1.add_user(user3)
+
+        # We have successfully added 3 users to the cell
+        self.assertEqual(self.C1.num_users, 3)
+
+        # This user will fall ouside the cell and add_user should raise an
+        # exception
+        user4 = cell.Node(0.4 + 0.8j)
+        self.assertRaises(ValueError, self.C1.add_user,
+                          # Args to self.C1.add_user
+                          user4)
+
+        # This user will also fall ouside the cell and add_user should
+        # raise an exception
+        user5 = cell.Node(0 + 0j)
+        self.assertRaises(ValueError, self.C1.add_user,
+                          # Args to self.C1.add_user
+                          user5, relative_pos_bool=False)
+
+        # The cell still has only 3 users
+        self.assertEqual(self.C1.num_users, 3)
+
+        # Lets get a list with the users added to the cell
+        users = self.C1.users
+        self.assertEqual(users[0], user1)
+        self.assertEqual(users[1], user2)
+        self.assertEqual(users[2], user3)
+
+        # Now lets delete all users
+        self.C1.delete_all_users()
+        self.assertEqual(self.C1.num_users, 0)
+
+    # TODO:Implement-me
+    def test_add_border_user(self):
+        # xxxxx Test adding a single user
+        angles = 30
+        ratio = 0.8
+        # The get_border_point comes from the shape class and it should be
+        # already tested.
+        expected_pos = self.C1.get_border_point(angles, ratio)
+        self.C1.add_border_user(angles, ratio, user_color='g')
+        self.assertAlmostEqual(self.C1.users[0].pos,
+                               expected_pos)
+
+        # xxxxx Test adding multiple users with the same ratio
+        angles2 = [30, 45, 60, 90, 120]
+        ratio2 = 0.75
+        self.C2.add_border_user(angles2, ratio2)
+        self.assertEqual(self.C2.num_users, 5)
+        for index in range(5):
+            expected_pos2 = self.C2.get_border_point(angles2[index], ratio2)
+            self.assertAlmostEqual(self.C2.users[index].pos, expected_pos2)
+
+
+        # xxxxx Test adding multiple users with the different ratios and
+        # user colors
+        angles3 = [30, 45, 60, 90, 120]
+        ratios3 = [0.9, 0.4, 0.6, 0.85, 0.3]
+        colors = ['g', 'b', 'k', 'r', 'y']
+        self.C3.add_border_user(angles3, ratios3, colors)
+        self.assertEqual(self.C3.num_users, 5)
+        for index in range(5):
+            absolute_pos = self.C3.get_border_point(
+                angles3[index], ratios3[index])
+            self.assertAlmostEqual(self.C3.users[index].pos, absolute_pos)
+            self.assertEqual(self.C3.users[index].marker_color, colors[index])
+
+    # TODO: Implement-me
+    def test_add_random_user(self):
         pass
 
-    def test_some_method(self):
-        pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
