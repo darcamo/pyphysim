@@ -10,8 +10,12 @@ from misc import xor
 
 
 def dB2Linear(valueIndB):
-    """Convert input from dB to linear.
+    """Convert input from dB to linear scale.
 
+    Arguments:
+    - `valueIndB`: Value in dB
+
+    Ex:
     >>> dB2Linear(30)
     1000.0
     """
@@ -19,12 +23,42 @@ def dB2Linear(valueIndB):
 
 
 def linear2dB(valueInLinear):
-    """Convert input from linear to dB.
+    """Convert input from linear to dB scale.
 
+    Arguments:
+    - `valueInLinear`: Value in Linear scale
+
+    Ex:
     >>> linear2dB(1000)
     30.0
     """
     return 10.0 * np.log10(valueInLinear)
+
+
+def dBm2Linear(valueIndBm):
+    """Convert input from dBm to linear scale.
+
+    Arguments:
+    - `valueIndBm`: Value in dBm
+
+    Ex:
+    >>> dBm2Linear(60)
+    1000.0
+    """
+    return dB2Linear(valueIndBm) / 1000.
+
+
+def linear2dBm(valueInLinear):
+    """Convert input from linear to dBm scale.
+
+    Arguments:
+    - `valueInLinear`: Value in Linear scale
+
+    Ex:
+    >>> linear2dBm(1000)
+    60.0
+    """
+    return linear2dB(valueInLinear * 1000.)
 
 
 # Code from wikipedia
