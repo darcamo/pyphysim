@@ -277,9 +277,11 @@ def qfunc(x):
 # TODO: Isn't this method too similar to leig? See if one of them can be
 # removed.
 def least_right_singular_vectors(A, n):
-    """Return the two matrices. The first one is formed by the `n` least
-    significative right singular vectors of `A`, while the second one is
-    formed by the remaining right singular vectors.
+    """Return the three matrices. The first one is formed by the `n` least
+    significative right singular vectors of `A`, the second one is formed
+    by the remaining right singular vectors of `A` and the third one has
+    the singular values of the singular vectors of the second matrix (the
+    most significative ones).
 
     Arguments:
     - `A`: A matrix (numpy array)
@@ -307,6 +309,7 @@ def least_right_singular_vectors(A, n):
            [ 0.78166296, -0.49723869]])
     >>> S
     array([ 1.88354706,  9.81370681])
+
     """
     # Note that numpy.linalg.svd returns the hermitian of V
     [U, S, V_H] = np.linalg.svd(A, full_matrices=True)

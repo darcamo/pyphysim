@@ -621,7 +621,7 @@ class WaterfillingTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Block Diagonalization Module xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Implement-me
+# TODO: Test the other methods of the BlockDiaginalizer class
 class BlockDiaginalizerTestCase(unittest.TestCase):
     """Unittests for the BlockDiaginalizer class in the blockdiagonalization
     module.
@@ -630,6 +630,51 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         pass
+
+    def test_block_diagonalize(self):
+        from util.misc import randn_c
+        Pu = 5.
+        noise_var = 0.1
+        num_users = 3
+        num_antenas = 2
+        # Total number of transmit and receive antennas
+        iNr = iNt = num_antenas * num_users
+
+        channel = randn_c(iNr, iNt)
+        (newH, Ms) = blockdiagonalization.block_diagonalize(
+            channel, num_users, Pu, noise_var)
+
+        # xxxxx Test if the channel is really block diagonal xxxxxxxxxxxxxx
+        # First we buld a 'mask' to filter out the elements in the block
+        # diagonal.
+        mask = np.zeros([iNr, iNt])
+        cum_Nr = np.cumsum(
+            np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
+        cum_Nt = cum_Nr
+        for i in range(num_users):
+            mask[cum_Nr[i]:cum_Nr[i] + num_antenas,
+                 cum_Nt[i]:cum_Nt[i] + num_antenas] = 1
+        # With the mask we can create a masked array of the block
+        # diagonalized channel
+        masked_newH = np.ma.masked_array(newH, mask)
+        # Now we can sum all elements of this masked array (which
+        # effectively means all elements outside the block diagonal) and
+        # see if it is close to zero.
+        self.assertAlmostEqual(0., np.abs(masked_newH).sum())
+
+        # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
+        # Total power restriction
+        self.assertTrue(np.linalg.norm(Ms, 'fro') ** 2 < num_users * Pu)
+        # Individual power restriction of each class
+
+        individual_powers = []
+        for i in range(num_users):
+            # Most likelly only one base station (the one with the worst
+            # channel) will employ a precoder a precoder with total power
+            # of `Pu`, while the other base stations will use less power.
+            individual_powers.append(np.linalg.norm(Ms[cum_Nr[i]:cum_Nr[i] + num_antenas, :], 'fro') ** 2)
+            self.assertTrue(individual_powers[-1] <= Pu + 1e-12)
+
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

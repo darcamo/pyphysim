@@ -15,11 +15,20 @@ import waterfilling
 
 
 class BlockDiaginalizer(object):
-    """Class to perform the block diagonalization algorithm.
+    """Class to perform the block diagonalization algorithm in a joint
+    transmission scenario. That is, multiple base stations act as a single
+    transmitter to send data to the users.
+
+    The waterfilling algorithm is also applied to optimally distribute the
+    power. However, since we have multiple base stations, each one with a
+    power restriction, then after the power is optimally allocated at each
+    base station all powers will be normalized to respect the power
+    restriction.
 
     Reference:
       "Zero-Forcing Methods for Downlink Spatial Multiplexing in Multiuser
       MIMO Channels"
+
     """
 
     def __init__(self, iNUsers, iPu, noiseVar):
@@ -73,8 +82,7 @@ class BlockDiaginalizer(object):
             nStreams = iNr - np.linalg.matrix_rank(tilde_H_cur_user)
             (tilde_V0, tilde_V1, tilde_S) = least_right_singular_vectors(
                 tilde_H_cur_user,
-                nStreams
-                )
+                nStreams)
 
             # The equivalent channel of the current user corresponds to
             # $\mtH_j \tilde{\mtV}_j^{(0)}$
@@ -87,8 +95,7 @@ class BlockDiaginalizer(object):
                 np.dot(H_cur_user, tilde_V0),
                 # Number of receive antennas minus number of desired
                 # streams
-                iNrU - nStreams
-                )
+                iNrU - nStreams)
 
             # Get Ms and Sigma
             Ms_bad.append(np.dot(tilde_V0, V1))
@@ -108,8 +115,7 @@ class BlockDiaginalizer(object):
 
         Ms_good = np.dot(
             Ms_bad,
-            np.diag(np.sqrt(vtOptP))
-            )
+            np.diag(np.sqrt(vtOptP)))
 
         # Since we used a global power constraint but we have in fact a
         # power constraint for each AP, we need to normalize the allocated
@@ -138,7 +144,8 @@ class BlockDiaginalizer(object):
         #
         # Note: The power values in vtOptP are before any power
         # normalization. Maybe vtOptP is not useful to be returned.
-        return (newH, Ms_good, vtOptP)
+        #return (newH, Ms_good, vtOptP)
+        return (newH, Ms_good)
 
     def _get_tilde_channel(self, mtChannel, user):
         """Return the combined channel of all users except `user`."""
@@ -182,8 +189,7 @@ class BlockDiaginalizer(object):
 
 
 def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None):
-    """Create a BlockDiaginalizer object and performs the block
-    diagonalization.
+    """Performs the block diagonalization of `mtChannel`.
 
     Arguments:
     - `mtChannel`: (numpy bidimensional array) Global channel matrix
@@ -195,34 +201,25 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None
 
     Return:
     - Same as `block_diagonalize`
+
     """
     BD = BlockDiaginalizer(iNUsers, iPu, noiseVar)
-    results_tuble = BD.block_diagonalize(channel)
+    results_tuble = BD.block_diagonalize(mtChannel)
     return results_tuble
 
 
 if __name__ == '__main__1':
     # Power available for each user
-    Pu = 5
+    Pu = 1
     noise_var = 0.1
     NUsers = 3
 
     channel = randn_c(6, 6)
-    # channel = np.arange(0,36)
-    # channel.shape = (6,6)
 
-    #BD = BlockDiaginalizer(3, 3, 0.1)
-    #(newH, Ms, vtOptP) = BD.block_diagonalize(channel)
-    (newH, Ms, vtOptP) = block_diagonalize(channel, NUsers, Pu, noise_var)
+    (newH, Ms) = block_diagonalize(channel, NUsers, Pu, noise_var)
 
     np.set_printoptions(precision=2, suppress=True)
     print newH
-    # print
-    # print Ms
-
-
-    #np.set_printoptions(precision=2, suppress=True)
-
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
