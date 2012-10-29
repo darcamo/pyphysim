@@ -122,10 +122,11 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         """The _keep_going method is not really required, but it can speed
         up the simulation.
 
-        The _keep_going method should return True if more itertions of
+        The _keep_going method should return True if more iterations of
         _run_simulation should be run. If we can stop the simulation
         earlier because some condition was achieved, then _keep_going
         should return False to indicate that.
+
         """
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors

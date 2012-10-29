@@ -137,6 +137,18 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 self.assertEqual(
                     self.multiH.H[rx, tx].shape,
                     (Nr[rx], Nt[tx]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now lets test when the number of transmit and receive antennas
+        # are the same for all users
+        Nr = 2
+        Nt = 3
+        self.multiH.randomize(Nr, Nt, K)
+        # Test the shape of the matrix of channels
+        self.assertEqual(self.multiH.H.shape, (K, K))
+        # Test the shape of each individual channel
+        for rx in np.arange(K):
+            for tx in np.arange(K):
+                self.assertEqual(self.multiH.H[rx, tx].shape, (Nr, Nt))
 
     def test_init_from_channel_matrix(self):
         H = self.H
