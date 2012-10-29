@@ -1,0 +1,91 @@
+10.000 repetições
+
+REAL CODEBOOKS
+
+In [1]: run find_codebook.py
+-------- Search for 4 precoders in G(3,1) --------
+Maximum minimum distance is: 0.92
+Principal angles are (radians): [ 1.17803756]
+Principal angles are (degrees): [ 67.49658025]
+
+
+In [2]: run find_codebook.py
+-------- Search for 4 precoders in G(3,1) --------
+Maximum minimum distance is: 0.90
+Principal angles are (radians): [ 1.12809212]
+Principal angles are (degrees): [ 64.63491715]
+
+
+In [3]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.62
+Principal angles are (radians): [ 0.67248083]
+Principal angles are (degrees): [ 38.53031337]
+
+
+In [4]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.61
+Principal angles are (radians): [ 0.6528877]
+Principal angles are (degrees): [ 37.40770967]
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+COMPLEX CODEBOOKS
+
+In [5]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.69
+Principal angles are (radians): [ 0.76054388]
+Principal angles are (degrees): [ 43.57595454]
+
+
+In [6]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.68
+Principal angles are (radians): [ 0.75063794]
+Principal angles are (degrees): [ 43.00838611]
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+COMPLEX QEGT CODEBOOKS
+
+In [7]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.53
+Principal angles are (radians): [ 0.55493027]
+Principal angles are (degrees): [ 31.79516231]
+
+In [8]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.58
+Principal angles are (radians): [ 0.62277553]
+Principal angles are (degrees): [ 35.68240927]
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+100.000 repetições -> COMPLEX CODEBOOKS
+
+In [9]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.70
+Principal angles are (radians): [ 0.7782351]
+Principal angles are (degrees): [ 44.58958687]
+
+In [10]: run find_codebook.py
+-------- Search for 8 precoders in G(3,1) --------
+Maximum minimum distance is: 0.73
+Principal angles are (radians): [ 0.81293265]
+Principal angles are (degrees): [ 46.57760965]
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+10.000 repetições COMPLEX CODEBOOKS
+
+In [11]: run find_codebook.py
+------- Search for 16 precoders in G(3,1) --------
+Maximum minimum distance is: 0.51
+Principal angles are (radians): [ 0.53008703]
+Principal angles are (degrees): [ 30.37174981]
+
+In [12]: run find_codebook.py
+------- Search for 16 precoders in G(3,1) --------
+Maximum minimum distance is: 0.55
+Principal angles are (radians): [ 0.58281008]
+Principal angles are (degrees): [ 33.3925579]

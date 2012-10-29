@@ -1,0 +1,14 @@
+[Precoder]
+# Number of tx antennas
+Nt = 5
+# Number of streams
+Ns = 2
+# Number of precoders in the codebook
+K = 64
+
+[Simulation]
+# Number of repetitions per process
+rep_max = 100
+results_folder=results
+
+[Other]
