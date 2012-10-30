@@ -31,20 +31,103 @@ from progressbar import ProgressbarText
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationRunner(object):
-    """Base class to run simulations.
+    """Base class to run Monte Carlo simulations.
 
-    You need to derive from this class and implement at least the
-    _run_simulation function (see `_run_simulation` help). If a stop
-    criterion besides the maximum number of iterations is desired, then you
-    need to also reimplement the _keep_going function.
+    A Monte Carlo simulation involves performing the same simulation many
+    times with random samples to calculate the statistical properties of
+    some phenomenon.
 
-    Note that since _run_simulation receives no argument, then whatever is
-    needed must be added to the `params` atribute. That is, in the
-    construtor of the derived class call the `add` method of `params` for
-    each parameter you need in the _run_simulation function.
+    The SimulationRunner class makes implementing Monte Carlo simulations
+    easier by implementing much of the necessary code while leaving the
+    specifics of each simulator to be implemented in a subclass.
 
-    Likewise, the _run_simulation method should return the results as a
-    SimulationResults object.
+    In the simplest case, in order to implement a simulator one would
+    subclass SimulationRunner, set the simulation parameters in the
+    __init__ method and implement the _run_simulation method with the code
+    to simulate a single iteration for that specific simulator. The
+    simulation can then be performed by calling the "simulate" method of an
+    object of that derived class. After the simulation is finished, the
+    'results' parameter of that object will have the simulation results.
+
+    The process of implementing a simulator is described in more details in
+    the following.
+
+    * Simulation Parameters
+
+      The simulation parameters can be set in any way as long as they can
+      be accessed in the _run_simulation method. For parameters that won't
+      be changed, a simple way that works very well is to store these
+      parameters as attributes in the __init__ method.
+
+      On the other hand, if you want to run multiple simulations, each one
+      with different values for some of the simulation parameters then
+      store these parameters in the self.params attribute and set them to
+      be unpacked (See docummentation of the SimulationParameters class for
+      more details). The simulate method will automatically get all
+      possible combinations of parameters and perform a whole Monte Carlo
+      simulation for each of them. The simulate method will pass the
+      'current_parameters' (a SimulationParameters object) to
+      _run_simulation from where _run_simulation can get the current
+      combination of parameters.
+
+    * Simulation Results
+
+      In the implementation of the _run_simulation method in a subclass of
+      SimulationRunner it is necessary to create an object of the
+      SimulationResults class, add each desided result to it (using the
+      add_result method of the SimulationResults class) and then return
+      this object at the end of _run_simulation. Note that each result
+      added to this SimulationResults object must itself be an object of
+      the 'Result' class.
+
+      After each run of the _run_simulation method the returned
+      SimulationResults object is merged with the self.results attribute
+      from where the simulation results can be retreived after the
+      simulation finishes. Note that the way the results from each
+      _run_simulation run are merged together depend on the the Result
+      'update_type'.
+
+    * Number of iterations the _run_simulation method is performed
+
+      The number of times the _run_simulation method is performed for a
+      given parameter combination depend on the self.rep_max attribute. It
+      is set by default to '1' and therefore you should set it to the
+      desired value in the __init__ method of the SimulationRunner subclass.
+
+    * Optional methods
+
+      A few methods can be implemented in the SimulationRunner subclass for
+      extra functionalities. The most useful one is probably the
+      _keep_going method, which can speed up the simulation by avoid
+      running unecessary iterations of the _run_simulation method.
+
+      Basically, after each iteration of the _run_simulation method the
+      _keep_going method is called. If it returns True then more iterations
+      of _run_simulation will be performed until _keep_going returns False
+      or rep_max iterations are performed. When the _keep_going method is
+      called it receives a SimulationResults object with the cumulated
+      results from all iterations so far, which it can then use to decide
+      it the iterations should continue or not.
+
+      The other optional methods provide hooks to run code at specific
+      points of the simulate method. They are described briefly below:
+      => _on_simulate_start:
+             This method is called once at the beginning of the simulate
+             method.
+      => _on_simulate_finish:
+             This method is called once at the end of the simulate method.
+      => _on_simulate_current_params_start:
+             This method is called once for each combination of simulation
+             parameters before any iteration of _run_simulation is
+             performed.
+      => _on_simulate_current_params_finish:
+             This method is called once for each combination of simulation
+             parameters after all iteration of _run_simulation are
+             performed.
+
+    At last, for a working example of a simulator, see
+    apps/simulate_psk.py.
+
     """
     def __init__(self):
         self.rep_max = 1
@@ -147,6 +230,10 @@ class SimulationRunner(object):
         tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # Implement the _on_simulate_start method in a subclass if you need
+        # to run code at the start of the simulate method.
+        self._on_simulate_start()
+
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Loop through all the parameters combinations
         for current_params in self.params.get_unpacked_params_list():
@@ -157,9 +244,18 @@ class SimulationRunner(object):
                 update_progress_func = lambda value: None
             else:
                 update_progress_func = self._get_update_progress_function(
+                    # If the progressbar_message has any string
+                    # replacements in the form {some_param} where
+                    # 'some_param' is a parameter in current_params then it
+                    # will be replace by the current value of 'some_param'.
                     self.progressbar_message.format(**current_params.parameters))
 
-            # First iteration
+            # Implement the _on_simulate_current_params_start method in a
+            # subclass if you need to run code before the _run_simulation
+            # iterations for each combination of simulation parameters.
+            self._on_simulate_current_params_start(current_params)
+
+            # Perform the first iteration of _run_simulation
             current_sim_results = self._run_simulation(current_params)
             current_rep = 1
 
@@ -171,6 +267,11 @@ class SimulationRunner(object):
                     self._run_simulation(current_params))
                 update_progress_func(current_rep + 1)
                 current_rep += 1
+
+            # Implement the _on_simulate_current_params_finish method in a
+            # subclass if you need to run code after all _run_simulation
+            # iterations for each combination of simulation parameters.
+            self._on_simulate_current_params_finish(current_params)
 
             # If the while loop ended before rep_max repetitions (because
             # _keep_going returned false) then set the progressbar to full.
@@ -187,6 +288,44 @@ class SimulationRunner(object):
         toc = time()
         self._elapsed_time = toc - tic
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Implement the _on_simulate_finish method in a subclass if you
+        # need to run code at the end of the simulate method.
+        self._on_simulate_finish()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def _on_simulate_start(self):
+        """This method is called only once, in the beginning of the the simulate
+        method.
+        """
+        pass
+
+    def _on_simulate_finish(self):
+        """This method is called only once at the end of the simulate method.
+        """
+        pass
+
+    def _on_simulate_current_params_start(self, current_params):
+        """This method is called once for each simulation parameters combination
+        before any iteration of _run_simulation is performed (for that
+        combination of simulation parameters).
+
+        Arguments:
+        - `current_params`: The current combination of simulation
+                            parameters
+        """
+        pass
+
+    def _on_simulate_current_params_finish(self, current_params):
+        """This method is called once for each simulation parameters combination
+        after all iterations of _run_simulation are performed (for that
+        combination of simulation parameters).
+
+        Arguments:
+        - `current_params`: The current combination of simulation
+                            parameters
+        """
+        pass
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -292,9 +431,10 @@ class SimulationParameters(object):
             repr_list.append("'{0}': {1}".format(modify_name(name), value))
         return '{%s}' % ', '.join(repr_list)
 
-    def get_num_parameters(self):
-        """Get the number of parameters currently stored in the
+    def __len__(self):
+        """Get the number of different parameters stored in the
         SimulationParameters object.
+
         """
         return len(self.parameters)
 
@@ -347,8 +487,7 @@ class SimulationParameters(object):
         """
         # Get the only parameter that was not fixed
         varying_param = list(
-            self._unpacked_parameters_set - set(fixed_params_dict.keys())
-            )
+            self._unpacked_parameters_set - set(fixed_params_dict.keys()))
         assert len(varying_param) == 1, "All unpacked parameters must be fixed except one"
         # The only parameter still varying. That is, one parameter marked
         # to be unpacked, bu not in fixed_params_dict.
@@ -747,8 +886,7 @@ class Result(object):
         possible_updates = {
             Result.RATIOTYPE: __update_RATIOTYPE_value,
             Result.MISCTYPE: __update_by_replacing_current_value,
-            Result.SUMTYPE: __update_SUMTYPE_value,
-            }
+            Result.SUMTYPE: __update_SUMTYPE_value}
 
         # Call the apropriated update method. If self._update_type_code does
         # not contain a key in the possible_updates dictionary (that is, a

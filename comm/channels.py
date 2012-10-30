@@ -55,10 +55,38 @@ class MultiUserChannelMatrix(object):
     """
 
     def __init__(self, ):
-        self.H = np.array([], dtype=np.ndarray)
-        self.Nr = np.array([])
-        self.Nt = np.array([])
-        self.K = 0
+        # The _big_H variable is an internal variable with all the channels
+        # from each transmitter to each receiver represented as a single
+        # big matrix.
+        self._big_H = np.array([], dtype=np.ndarray)
+        # The _H variable is an internal variable with all the channels
+        # from each transmitter to each receiver. It points to the same
+        # data as the _big_H variable, however, _H is a "matrix of
+        # matrices" instead of a single big matrix.
+        self._H = np.array([], dtype=np.ndarray)
+        self._Nr = np.array([])
+        self._Nt = np.array([])
+        self._K = 0
+
+    # Property to get the number of receive antennas
+    def _get_Nr(self):
+        return self._Nr
+    Nr = property(_get_Nr)
+
+    # Property to get the number of transmit antennas
+    def _get_Nt(self):
+        return self._Nt
+    Nt = property(_get_Nt)
+
+    # Property to get the number of users
+    def _get_K(self):
+        return self._K
+    K = property(_get_K)
+
+    # Property to get the matrix of channel matrices
+    def _get_H(self):
+        return self._H
+    H = property(_get_H)
 
     @staticmethod
     def _from_big_matrix_to_matrix_of_matrices(big_matrix, Nr, Nt, K):
@@ -79,8 +107,8 @@ class MultiUserChannelMatrix(object):
 
         for rx in np.arange(K):
             for tx in np.arange(K):
-                output[rx, tx] = \
-                big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
+                output[rx, tx] = big_matrix[
+                    cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
 
         return output
 
@@ -105,15 +133,15 @@ class MultiUserChannelMatrix(object):
         if Nt.size != K:
             raise ValueError("K must be equal to the number of elements in Nr and Nt")
 
-        self.K = K
-        self.Nr = Nr
-        self.Nt = Nt
+        self._K = K
+        self._Nr = Nr
+        self._Nt = Nt
 
-        self._H = channel_matrix
+        self._big_H = channel_matrix
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
-        self.H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
+        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
             channel_matrix, Nr, Nt, K)
 
     def randomize(self, Nr, Nt, K):
@@ -133,18 +161,13 @@ class MultiUserChannelMatrix(object):
         if isinstance(Nt, int):
             Nt = np.ones(K) * Nt
 
-        self.Nr = Nr
-        self.Nt = Nt
-        self.K = K
+        self._Nr = Nr
+        self._Nt = Nt
+        self._K = K
 
-        self._H = randn_c(np.sum(self.Nr), np.sum(self.Nt))
-        self.H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
-            self._H, Nr, Nt, K)
-
-        # self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
-        # for rx in np.arange(self.K):
-        #     for tx in np.arange(self.K):
-        #         self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
+        self._big_H = randn_c(np.sum(self._Nr), np.sum(self._Nt))
+        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
+            self._big_H, Nr, Nt, K)
 
     def getChannel(self, k, l):
         """Get the channel from user l to user k.
@@ -153,7 +176,7 @@ class MultiUserChannelMatrix(object):
         - `l`: Transmitting user.
         - `k`: Receiving user
         """
-        return self.H[k, l]
+        return self._H[k, l]
 
     def corrupt_concatenated_data(self, concatenated_data, noise_var=None):
         """Corrupt data passed through the channel.
@@ -164,7 +187,7 @@ class MultiUserChannelMatrix(object):
         Arguments:
         - `data`: A bi-dimensional numpy array with the concatenated data of
                   all transmitters. The dimension of concatenated_data is
-                  sum(self.Nt) x NSymb. That is, the number of rows
+                  sum(self._Nt) x NSymb. That is, the number of rows
                   corresponds to the sum of the number of transmit antennas
                   of all users and the number of columns correspond to the
                   number of transmitted symbols.
@@ -176,8 +199,8 @@ class MultiUserChannelMatrix(object):
           symbols.
 
         """
-        output = np.dot(self._H, concatenated_data)
-        if noise_var != None:
+        output = np.dot(self._big_H, concatenated_data)
+        if noise_var is not None:
             awgn_noise = (randn_c(*output.shape) * np.sqrt(noise_var))
             output = output + awgn_noise
         return output
@@ -200,10 +223,51 @@ class MultiUserChannelMatrix(object):
         concatenated_output = self.corrupt_concatenated_data(
             concatenated_data, noise_var)
 
-        output = np.zeros(self.K, dtype=np.ndarray)
-        cumNr = np.hstack([0, np.cumsum(self.Nr)])
+        output = np.zeros(self._K, dtype=np.ndarray)
+        cumNr = np.hstack([0, np.cumsum(self._Nr)])
 
-        for k in np.arange(self.K):
+        for k in np.arange(self._K):
             output[k] = concatenated_output[cumNr[k]:cumNr[k + 1], :]
 
         return output
+
+    def set_pathloss(self, pathloss_matrix):
+        """Set the path loss from each transmitter to each receiver.
+
+        This path loss will be accounted when calling the getChannel, the
+        corrupt_concatenated_data and the corrupt_data methods.
+
+        Arguments:
+        - `pathloss_matrix`: A matrix with dimension "K x K", where K is
+                             the number of users, with the path loss from
+                             each transmitter (columns) to each receiver
+                             (rows).
+
+        """
+        self.pathloss_matrix = pathloss_matrix
+
+
+if __name__ == '__main__':
+    multiH = MultiUserChannelMatrix()
+    H = np.array(
+        [
+            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8]])
+
+    K = 3
+    Nr = np.array([2, 4, 6])
+    Nt = np.array([2, 3, 5])
+    multiH.init_from_channel_matrix(H, Nr, Nt, K)
+    print multiH.Nr
+    print multiH.Nt
+    print multiH._big_H.shape

@@ -50,19 +50,19 @@ class AlternatingMinIASolver(object):
     def K(self):
         """The number of users.
         """
-        return self._multiUserChannel.K
+        return self._multiUserChannel._K
 
     @property
     def Nr(self):
         """Number of receive antennas of all users.
         """
-        return self._multiUserChannel.Nr
+        return self._multiUserChannel._Nr
 
     @property
     def Nt(self):
         """Number of transmit antennas of all users.
         """
-        return self._multiUserChannel.Nt
+        return self._multiUserChannel._Nt
 
     @property
     def Ns(self):

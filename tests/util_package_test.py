@@ -248,13 +248,13 @@ class SimulationParametersTestCase(unittest.TestCase):
 
     def test_create(self):
         # The create method was already called in the setUp.
-        self.assertEqual(self.sim_params.get_num_parameters(), 2)
+        self.assertEqual(len(self.sim_params), 2)
         self.assertEqual(self.sim_params['first'], 10)
         self.assertEqual(self.sim_params['second'], 20)
 
     def test_add(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.assertEqual(self.sim_params.get_num_parameters(), 3)
+        self.assertEqual(len(self.sim_params), 3)
         np.testing.assert_array_equal(
             self.sim_params['third'], np.array([1, 3, 2, 5]))
 
@@ -274,7 +274,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             set(['third', 'fourth']))
 
         # We may have 8 variations, but there are still only 4 parameters
-        self.assertEqual(self.sim_params.get_num_parameters(), 4)
+        self.assertEqual(len(self.sim_params), 4)
 
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
