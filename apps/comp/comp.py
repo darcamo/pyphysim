@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Perform the simulation of COmP transmission (using the BD algorithm)"""
+"""Perform the simulation of COmP transmission (using the BD algorithm).
 
+Different scenarios can be simulated such as:
+- 'RandomUsers': One user at each cell and users are placed at a random
+                 position in each cell.
+# - 'SymmetricFar': User placed at symmetric locations at each cell as far as
+#                   possible. This is shown in the figure below.
+
+"""
+# TODO: Create the several simulation scenarios
 
 import sys
 sys.path.append('../../')
@@ -11,6 +19,7 @@ import numpy as np
 
 from util import simulations, conversion
 from comm import modulators, pathloss
+from cell import cell
 
 
 class CompSimulationRunner(simulations.SimulationRunner):
@@ -28,12 +37,13 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self._path_loss_obj = pathloss.PathLoss3GPP1()
 
         # xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.cell_radius = 1.000  # Cell radius (in Km)
-        self.min_dist = 0.250  # Minimum allowed distance from a bse
-                               # station and its user (same unit as
-                               # cell_radius)
+        self.cell_radius = 0.5  # Cell radius (in Km)
+        self.min_dist = 0.250   # Minimum allowed distance from a bse
+                                # station and its user (same unit as
+                                # cell_radius)
         #self.users_per_cell = 1  # Number of users in each cell
         self.num_cells = 3
+        self.num_clusters = 1
 
         # xxxxxxxxxx Modulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.M = 4
@@ -55,8 +65,46 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                    # the simulation earlier if possible.
         # self.progressbar_message = "COmP Simulation with {0}-PSK - SNR: {{SNR}}".format(self.M)
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
-        #self.path_loss_border =
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Path loss (in linear scale) from the cell center to
+        self.path_loss_border = self._path_loss_obj.calc_path_loss(self.cell_radius)
+        # Cell Grid
+        self.cell_grid = cell.Grid()
+        self.cell_grid.create_clusters(self.num_clusters, self.num_cells, self.cell_radius)
+
+        # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
+        # the scenario specific variables are created by running the
+        # _prepare_scenario method.
+        #
+        # Here we set the _prepare_scenario method to be the method to
+        # prepare the RandomUsers scenario.
+        self._prepare_scenario = self._prepare_random_users_scenario
+        #self._prepare_scenario = self._prepare_symmetric_far_away_scenario
+
+    def _prepare_random_users_scenario(self):
+        """Run this method to set variables specific to the 'RandomUsers' scenario.
+
+        The 'RandomUsers'
+        """
+        import pudb
+        cluster0 = self.cell_grid._clusters[0]
+        cell_ids = np.arange(1, self.num_cells + 1)
+        cluster0.remove_all_users()
+        cluster0.add_random_users(cell_ids)
+        pudb.set_trace()
+
+        # Distances between each transmitter and each receiver
+        dists = np.zeros([self.num_cells, self.num_cells], dtype=float)
+        for base_station in range(self.num_cells):
+            for mobile_station in range(self.num_cells):
+                # Remember that the Base Stations are the transmitters and
+                # the mobile stations (one in each cell) are the receivers
+                #dists[mobile_station, base_station] = cluster0
+                pass
+
+
 
     def _run_simulation(self, current_parameters):
         """The _run_simulation method is where the actual code to simulate
@@ -76,6 +124,9 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                 combination.
 
         """
+        # recalculate the scenario (and user positions) at each iteration
+        self._prepare_scenario()
+
         # xxxxx Simulation Code here xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Transmit power at each base station
         # pt = CompSimulationRunner._calc_transmit_power(
@@ -125,5 +176,6 @@ if __name__ == '__main__':
     runner = CompSimulationRunner()
 
     runner.simulate()
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
 
     #print runner.results

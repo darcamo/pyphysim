@@ -6,16 +6,15 @@
 from matplotlib import pylab, patches
 from collections import Iterable
 import numpy as np
-from numpy.random import rand
 import itertools
 
-from shapes import Coordinate, Shape, Hexagon, from_complex_array_to_real_matrix
+import shapes
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Node class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Node(Coordinate):
+class Node(shapes.Coordinate):
     """Class representing a node in the network.
     """
     def __init__(self, pos, plot_marker='*', marker_color='r'):
@@ -24,7 +23,7 @@ class Node(Coordinate):
         Arguments:
         - `pos`: The position of the node (a complex number)
         """
-        Coordinate.__init__(self, pos)
+        shapes.Coordinate.__init__(self, pos)
         self.plot_marker = plot_marker
         self.marker_color = marker_color
 
@@ -63,7 +62,7 @@ class Node(Coordinate):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Cell classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class CellBase(Node, Shape):
+class CellBase(Node, shapes.Shape):
     """Base class for all cell types.
     """
 
@@ -71,7 +70,7 @@ class CellBase(Node, Shape):
         """
         """
         Node.__init__(self, pos)
-        Shape.__init__(self, pos, radius, rotation)
+        shapes.Shape.__init__(self, pos, radius, rotation)
         self.plot_marker = '^'
         self.marker_color = 'b'
 
@@ -171,11 +170,11 @@ class CellBase(Node, Shape):
         """
         # Creates a new user. Note that this user can be invalid (outside
         # the cell) or not.
-        new_user = Node(self.pos + complex(2 * (rand() - 0.5) * self.radius, 2 * (rand() - 0.5) * self.radius))
+        new_user = Node(self.pos + complex(2 * (np.random.rand() - 0.5) * self.radius, 2 * (np.random.rand() - 0.5) * self.radius))
 
         while (not self.is_point_inside_shape(new_user.pos) or (self.calc_dist(new_user) < (min_dist_ratio * self.radius))):
             # Create another, since the previous one is not valid
-            new_user = Node(self.pos + complex(2 * (rand() - 0.5) * self.radius, 2 * (rand() - 0.5) * self.radius))
+            new_user = Node(self.pos + complex(2 * (np.random.rand() - 0.5) * self.radius, 2 * (np.random.rand() - 0.5) * self.radius))
 
         if user_color is not None:
             new_user.marker_color = user_color
@@ -250,7 +249,7 @@ class CellBase(Node, Shape):
         return ratio
 
 
-class Cell(Hexagon, CellBase):
+class Cell(shapes.Hexagon, CellBase):
     """Class representing an hexagon cell.
     """
 
@@ -278,7 +277,7 @@ class Cell(Hexagon, CellBase):
             stand_alone_plot = True
 
         # Plot the shape part
-        Hexagon.plot(self, ax)
+        shapes.Hexagon.plot(self, ax)
         # Plot the node part as well as the users in the cell
         self._plot_common_part(ax)
 
@@ -293,7 +292,7 @@ class Cell(Hexagon, CellBase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Cluster Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Cluster(Shape):
+class Cluster(shapes.Shape):
     """Class representing a cluster of Hexagonal cells.
 
     Valid cluster sizes are given by the formula
@@ -321,7 +320,7 @@ class Cluster(Shape):
     # from shape. However, since here it represents the cluster radius,
     # which depends on the number of cells and the cell radius, then we
     # disable setting this property.
-    radius = property(Shape._get_radius)
+    radius = property(shapes.Shape._get_radius)
 
     def __init__(self, cell_radius, num_cells, pos=0 + 0j, cluster_id=None):
         """
@@ -332,7 +331,7 @@ class Cluster(Shape):
         - `pos`: Central Position of the Cluster
         - `cluster_id`: ID of the cluster
         """
-        Shape.__init__(self, pos, radius=0, rotation=0)
+        shapes.Shape.__init__(self, pos, radius=0, rotation=0)
 
         self.cluster_id = cluster_id
         self._cell_radius = cell_radius
@@ -468,7 +467,7 @@ class Cluster(Shape):
         # The cell positions calculated up to now do not consider
         # rotation. Lets use the rotate function of the Shape class to
         # rotate the coordinates.
-        cell_positions[:, 0] = Shape._rotate(cell_positions[:, 0], -30)
+        cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], -30)
         cell_positions[:, 1] = 30
 
         # The coordinates of the cells calculated up to now consider the
@@ -651,7 +650,7 @@ class Cluster(Shape):
                 stand_alone_plot = True
 
             polygon_edges = patches.Polygon(
-                from_complex_array_to_real_matrix(self.vertices),
+                shapes.from_complex_array_to_real_matrix(self.vertices),
                 True,
                 facecolor='none',  # No face
                 alpha=1,
@@ -747,6 +746,38 @@ class Cluster(Shape):
                 cell.delete_all_users()
         else:
             self._cells[cell_id - 1].delete_all_users()
+
+    # TODO: Implement a unittest for this method
+    def calc_dist_all_cells_to_all_users(self):
+        """Returns a matrix with the distance from each cell center to each
+        user in each cell.
+
+        This matrix is suitable to later calculate the path loss from each
+        base station to each mobile station.
+
+        Because usually the base station is the transmitter and the mobile
+        station is the receiver the matrix is such that each column
+        corresponds to a different base station and each row corresponds to
+        a different mobile station.
+
+        Note that there is no explicit indication from which cell each user
+        is. However, in a case, for instance, where there are 3 cells in
+        the cluster with 2, 2 and 3 users in each of them, respectively,
+        then the first 2 rows correspond to the users in the first cell,
+        the following 2 rows correspond to the users in the second cell and
+        the last three rows correspond to the users in the third cell.
+
+        """
+        dists = np.zeros([self.num_users, self.num_cells], dtype=float)
+        all_cells = self._cells
+        all_users = self.get_all_users()
+
+        for user_index in range(self.num_users):
+            for cell_index in range(self.num_cells):
+                dists[user_index, cell_index] = all_cells[cell_index].calc_dist(all_users[user_index])
+
+        return dists
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -828,9 +859,9 @@ class Grid(object):
             central_pos = calc_pos()
             # cell_radius, num_cells, pos=0 + 0j, cluster_id=None
             new_cluster = Cluster(cell_radius,
-                              num_cells,
-                              central_pos,
-                              self.num_clusters + 1)
+                                  num_cells,
+                                  central_pos,
+                                  self.num_clusters + 1)
             new_cluster.fill_face_bool = True
             new_cluster.fill_color = Grid._colors[self.num_clusters]
             new_cluster.fill_opacity = 0.3
@@ -922,7 +953,21 @@ if __name__ == '__main__1':
 
     c.plot()
 
+
 if __name__ == '__main__':
+    cell_radius = 1
+    num_cells = 3
+    node_pos = 3 + 15j
+    cluster_id = None
+    C = Cluster(cell_radius, num_cells, node_pos, cluster_id)
+    C.fill_face_bool = True
+    C.add_random_users(range(1, num_cells + 1))
+    dists = C.calc_dist_all_cells_to_all_users()
+    print dists
+    C.plot()
+
+
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
     ax = pylab.axes()
     cell_radius = 1
