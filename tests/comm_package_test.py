@@ -119,6 +119,30 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             newH[2, 2],
             np.ones([6, 5]) * 8)
 
+    def test_from_small_matrix_to_big_matrix(self):
+        K = 3
+        Nr = np.array([2, 4, 6])
+        Nt = np.array([2, 3, 5])
+        small_matrix = np.arange(1, 10)
+        small_matrix.shape = (3, 3)
+        big_matrix = channels.MultiUserChannelMatrix._from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K)
+
+        expected_big_matrix = np.array(
+            [[1., 1., 2., 2., 2., 3., 3., 3., 3., 3.],
+             [1., 1., 2., 2., 2., 3., 3., 3., 3., 3.],
+             [4., 4., 5., 5., 5., 6., 6., 6., 6., 6.],
+             [4., 4., 5., 5., 5., 6., 6., 6., 6., 6.],
+             [4., 4., 5., 5., 5., 6., 6., 6., 6., 6.],
+             [4., 4., 5., 5., 5., 6., 6., 6., 6., 6.],
+             [7., 7., 8., 8., 8., 9., 9., 9., 9., 9.],
+             [7., 7., 8., 8., 8., 9., 9., 9., 9., 9.],
+             [7., 7., 8., 8., 8., 9., 9., 9., 9., 9.],
+             [7., 7., 8., 8., 8., 9., 9., 9., 9., 9.],
+             [7., 7., 8., 8., 8., 9., 9., 9., 9., 9.],
+             [7., 7., 8., 8., 8., 9., 9., 9., 9., 9.]])
+
+        np.testing.assert_array_equal(big_matrix, expected_big_matrix)
+
     def test_randomize(self):
         K = 3
         Nr = np.array([2, 4, 6])
@@ -181,48 +205,88 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # We don't really need to test multiH.H because the code was alread
         # tested in test_from_big_matrix
 
-    def test_getChannel(self):
+    def test_get_channel(self):
         H = self.H
         K = self.K
         Nr = self.Nr
         Nt = self.Nt
         self.multiH.init_from_channel_matrix(H, Nr, Nt, K)
 
+        # xxxxxxxxxx Test get_channel without Pathloss xxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
-            self.multiH.getChannel(0, 0),
+            self.multiH.get_channel(0, 0),
             np.ones([2, 2]) * 0)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(0, 1),
+            self.multiH.get_channel(0, 1),
             np.ones([2, 3]) * 1)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(0, 2),
+            self.multiH.get_channel(0, 2),
             np.ones([2, 5]) * 2)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(1, 0),
+            self.multiH.get_channel(1, 0),
             np.ones([4, 2]) * 3)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(1, 1),
+            self.multiH.get_channel(1, 1),
             np.ones([4, 3]) * 4)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(1, 2),
+            self.multiH.get_channel(1, 2),
             np.ones([4, 5]) * 5)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(2, 0),
+            self.multiH.get_channel(2, 0),
             np.ones([6, 2]) * 6)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(2, 1),
+            self.multiH.get_channel(2, 1),
             np.ones([6, 3]) * 7)
 
         np.testing.assert_array_equal(
-            self.multiH.getChannel(2, 2),
+            self.multiH.get_channel(2, 2),
             np.ones([6, 5]) * 8)
+
+        # xxxxxxxxxx Test get_channel with Pathloss xxxxxxxxxxxxxxxxxxxxxxx
+        pathloss = np.random.randn(self.K, self.K)
+        self.multiH.set_pathloss(pathloss)
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(0, 0),
+            self.multiH.pathloss[0, 0] * np.ones([2, 2]) * 0)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(0, 1),
+            self.multiH.pathloss[0, 1] * np.ones([2, 3]) * 1)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(0, 2),
+            self.multiH.pathloss[0, 2] * np.ones([2, 5]) * 2)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(1, 0),
+            self.multiH.pathloss[1, 0] * np.ones([4, 2]) * 3)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(1, 1),
+            self.multiH.pathloss[1, 1] * np.ones([4, 3]) * 4)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(1, 2),
+            self.multiH.pathloss[1, 2] * np.ones([4, 5]) * 5)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(2, 0),
+            self.multiH.pathloss[2, 0] * np.ones([6, 2]) * 6)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(2, 1),
+            self.multiH.pathloss[2, 1] * np.ones([6, 3]) * 7)
+
+        np.testing.assert_array_equal(
+            self.multiH.get_channel(2, 2),
+            self.multiH.pathloss[2, 2] * np.ones([6, 5]) * 8)
 
     def test_corrupt_data(self):
         NSymbs = 20
@@ -234,21 +298,44 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(self.Nr, self.Nt, self.K)
 
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Note that the corrupt_concatenated_data is implicitelly called by
         # corrupt_data and thus we will only test corrupt_data.
         output = self.multiH.corrupt_data(input_data)
 
-        # Calculates the expected output
+        # Calculates the expected output (without pathloss)
         expected_output = np.zeros(self.K, dtype=np.ndarray)
         for rx in np.arange(self.K):
             for tx in np.arange(self.K):
                 expected_output[rx] += np.dot(
-                    self.multiH.getChannel(rx, tx), input_data[tx])
+                    self.multiH.get_channel(rx, tx), input_data[tx])
 
         # Test the received data for the 3 users
         np.testing.assert_array_almost_equal(output[0], expected_output[0])
         np.testing.assert_array_almost_equal(output[1], expected_output[1])
         np.testing.assert_array_almost_equal(output[2], expected_output[2])
+
+        # xxxxxxxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        pathloss = np.random.randn(self.K, self.K)
+        self.multiH.set_pathloss(pathloss)
+
+        # Note that the corrupt_concatenated_data is implicitelly called by
+        # corrupt_data and thus we will only test corrupt_data. Also, they
+        # are affected by the pathloss.
+        output2 = self.multiH.corrupt_data(input_data)
+
+        # Calculates the expected output (with pathloss)
+        expected_output2 = np.zeros(self.K, dtype=np.ndarray)
+        for rx in np.arange(self.K):
+            for tx in np.arange(self.K):
+                expected_output2[rx] += np.dot(
+                    # Note that get_channel is affected by the pathloss
+                    self.multiH.get_channel(rx, tx), input_data[tx])
+
+        # Test the received data for the 3 users, but now with pathloss
+        np.testing.assert_array_almost_equal(output2[0], expected_output2[0])
+        np.testing.assert_array_almost_equal(output2[1], expected_output2[1])
+        np.testing.assert_array_almost_equal(output2[2], expected_output2[2])
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

@@ -251,7 +251,7 @@ class AlternatingMinIASolver(object):
         - `l`: Transmitting user.
         - `k`: Receiving user
         """
-        return self._multiUserChannel.getChannel(k, l)
+        return self._multiUserChannel.get_channel(k, l)
 
 
 # xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

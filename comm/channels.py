@@ -51,7 +51,7 @@ class MultiUserChannelMatrix(object):
     `init_from_channel_matrix` method.
 
     In order to get the channel matrix of a specific user `k` to another
-    user `l`, call the `getChannel` method.
+    user `l`, call the `get_channel` method.
     """
 
     def __init__(self, ):
@@ -67,6 +67,10 @@ class MultiUserChannelMatrix(object):
         self._Nr = np.array([])
         self._Nt = np.array([])
         self._K = 0
+        self._pathloss_matrix = None
+        # _pathloss_big_matrix should not be set directly. It is set when
+        # _pathloss_matrix is set in the set_pathloss method.
+        self._pathloss_big_matrix = None
 
     # Property to get the number of receive antennas
     def _get_Nr(self):
@@ -88,6 +92,12 @@ class MultiUserChannelMatrix(object):
         return self._H
     H = property(_get_H)
 
+    # Property to get the pathloss. Use the "set_pathloss" method to set
+    # the pathloss.
+    def _get_pathloss(self):
+        return self._pathloss_matrix
+    pathloss = property(_get_pathloss)
+
     @staticmethod
     def _from_big_matrix_to_matrix_of_matrices(big_matrix, Nr, Nt, K):
         """Convert from a big matrix that concatenates the channel of all
@@ -96,9 +106,9 @@ class MultiUserChannelMatrix(object):
 
         Arguments:
         - `big_matrix`:
-        - `Nr`:
-        - `Nt`:
-        - `K`:
+        - `Nr`: A numpy array with the number of antennas at each receiver.
+        - `Nt`: A numpy array with the number of antennas at each transmitter.
+        - `K`: Number of transmit/receive pairs.
         """
         cumNr = np.hstack([0, np.cumsum(Nr)])
         cumNt = np.hstack([0, np.cumsum(Nt)])
@@ -112,6 +122,40 @@ class MultiUserChannelMatrix(object):
 
         return output
 
+    @staticmethod
+    def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K):
+        """Convert from a small matrix to a big matrix by repeating elements
+        according to the number of receive and transmit antennas.
+
+        Arguments:
+        - `small_matrix`:
+        - `Nr`: A numpy array with the number of antennas at each receiver.
+        - `Nt`: A numpy array with the number of antennas at each transmitter.
+        - `K`: Number of transmit/receive pairs.
+
+        Ex:
+        >>> small_matrix = np.array([[1, 2], [3, 4]])
+        >>> K=2
+        >>> Nr = np.array([2, 3])
+        >>> Nt = np.array([2, 2])
+        >>> print small_matrix
+        [[1 2]
+         [3 4]]
+        >>> print MultiUserChannelMatrix._from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K)
+        [[1 1 2 2]
+         [1 1 2 2]
+         [3 3 4 4]
+         [3 3 4 4]
+         [3 3 4 4]]
+        """
+        cumNr = np.hstack([0, np.cumsum(Nr)])
+        cumNt = np.hstack([0, np.cumsum(Nt)])
+        big_matrix = np.ones([np.sum(Nr), np.sum(Nt)], dtype=small_matrix.dtype)
+        for rx in range(K):
+            for tx in range(K):
+                big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]] *= small_matrix[rx, tx]
+        return big_matrix
+
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
         """Initializes the multiuser channel matrix from the given
         `channel_matrix`.
@@ -119,9 +163,9 @@ class MultiUserChannelMatrix(object):
         Arguments:
         - `channel_matrix`: A matrix concatenating the channel of all users
                             (from each transmitter to each receiver).
-        - `Nr`: An array with the number of receive antennas of each user.
-        - `Nt`: An array with the number of transmit antennas of each user.
-        - `K`: (int) Number of users.
+        - `Nr`: A numpy array with the number of antennas at each receiver.
+        - `Nt`: A numpy array with the number of antennas at each transmitter.
+        - `K`: Number of transmit/receive pairs.
 
         Raises: ValueError if the arguments are invalid.
         """
@@ -138,11 +182,16 @@ class MultiUserChannelMatrix(object):
         self._Nt = Nt
 
         self._big_H = channel_matrix
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
-        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
-            channel_matrix, Nr, Nt, K)
+        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(channel_matrix, Nr, Nt, K)
+
+        # Assures that _big_H and _H will stay in sync by disallowing
+        # modification of individual elements in both of them.
+        self._big_H.setflags(write=False)
+        self._H.setflags(write=False)
 
     def randomize(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
@@ -166,17 +215,25 @@ class MultiUserChannelMatrix(object):
         self._K = K
 
         self._big_H = randn_c(np.sum(self._Nr), np.sum(self._Nt))
-        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(
-            self._big_H, Nr, Nt, K)
+        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(self._big_H, Nr, Nt, K)
 
-    def getChannel(self, k, l):
+        # Assures that _big_H and _H will stay in sync by disallowing
+        # modification of individual elements in both of them.
+        self._big_H.setflags(write=False)
+        self._H.setflags(write=False)
+
+    def get_channel(self, k, l):
         """Get the channel from user l to user k.
 
         Arguments:
         - `l`: Transmitting user.
         - `k`: Receiving user
         """
-        return self._H[k, l]
+        channel = self._H[k, l]
+        # Apply path loss if it was set.
+        if self._pathloss_matrix is not None:
+            channel = channel * self._pathloss_matrix[k, l]
+        return channel
 
     def corrupt_concatenated_data(self, concatenated_data, noise_var=None):
         """Corrupt data passed through the channel.
@@ -199,7 +256,16 @@ class MultiUserChannelMatrix(object):
           symbols.
 
         """
-        output = np.dot(self._big_H, concatenated_data)
+        if self._pathloss_matrix is None:
+            # No path loss
+            channel_matrix = self._big_H
+        else:
+            # Apply path loss. Note that the _pathloss_big_matrix matrix
+            # has the same dimension as the self._big_H matrix and we are
+            # performing element-wise multiplication here.
+            channel_matrix = self._big_H * self._pathloss_big_matrix
+
+        output = np.dot(channel_matrix, concatenated_data)
         if noise_var is not None:
             awgn_noise = (randn_c(*output.shape) * np.sqrt(noise_var))
             output = output + awgn_noise
@@ -231,11 +297,13 @@ class MultiUserChannelMatrix(object):
 
         return output
 
-    def set_pathloss(self, pathloss_matrix):
+    def set_pathloss(self, pathloss_matrix=None):
         """Set the path loss from each transmitter to each receiver.
 
-        This path loss will be accounted when calling the getChannel, the
+        The path loss will be accounted when calling the getChannel, the
         corrupt_concatenated_data and the corrupt_data methods.
+
+        If you want to disable the path loss, set pathloss_matrix to None.
 
         Arguments:
         - `pathloss_matrix`: A matrix with dimension "K x K", where K is
@@ -244,9 +312,22 @@ class MultiUserChannelMatrix(object):
                              (rows).
 
         """
-        self.pathloss_matrix = pathloss_matrix
+        # A matrix with the path loss from each transmitter to each
+        # receiver
+        self._pathloss_matrix = pathloss_matrix
 
+        if pathloss_matrix is None:
+            self._pathloss_big_matrix = None
+        else:
+            self._pathloss_big_matrix = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(pathloss_matrix, self._Nr, self._Nt, self._K)
 
+        # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
+        # in sync by disallowing modification of individual elements in
+        # both of them.
+        self._pathloss_matrix.setflags(write=False)
+        self._pathloss_big_matrix.setflags(write=False)
+
+# xxxxxxxxxx Main method xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     multiH = MultiUserChannelMatrix()
     H = np.array(
@@ -268,6 +349,20 @@ if __name__ == '__main__':
     Nr = np.array([2, 4, 6])
     Nt = np.array([2, 3, 5])
     multiH.init_from_channel_matrix(H, Nr, Nt, K)
-    print multiH.Nr
-    print multiH.Nt
-    print multiH._big_H.shape
+    # print multiH.Nr
+    # print multiH.Nt
+    # print multiH._big_H.shape
+    pathloss = np.array([[1, 1.1, 1.2],
+                         [1.3, 1.4, 1.5],
+                         [1.6, 1.7, 1.8]])
+    multiH.set_pathloss(pathloss)
+    print multiH._big_H
+    print multiH._pathloss_big_matrix
+
+
+# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__1':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()
+    print "{0} executed".format(__file__)

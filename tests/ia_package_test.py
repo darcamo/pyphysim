@@ -89,11 +89,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxx Calculate the expected C[0] after one step xxxxxxxxxxxxxxxx
         k = 0
         H01_F1 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, 1),
+            self.alt._multiUserChannel.get_channel(k, 1),
             self.alt.F[1]
         )
         H02_F2 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, 2),
+            self.alt._multiUserChannel.get_channel(k, 2),
             self.alt.F[2]
         )
         expected_C0 = np.dot(H01_F1, H01_F1.transpose().conjugate()) + \
@@ -107,11 +107,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxx Calculate the expected C[1] after one step xxxxxxxxxxxxxxxx
         k = 1
         H10_F0 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, 0),
+            self.alt._multiUserChannel.get_channel(k, 0),
             self.alt.F[0]
         )
         H12_F2 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, 2),
+            self.alt._multiUserChannel.get_channel(k, 2),
             self.alt.F[2]
         )
         expected_C1 = np.dot(H10_F0, H10_F0.transpose().conjugate()) + \
@@ -125,11 +125,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxx Calculate the expected C[2] after one step xxxxxxxxxxxxxxxx
         k = 2
         H20_F0 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, 0),
+            self.alt._multiUserChannel.get_channel(k, 0),
             self.alt.F[0]
         )
         H21_F1 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, 1),
+            self.alt._multiUserChannel.get_channel(k, 1),
             self.alt.F[1]
         )
         expected_C2 = np.dot(H20_F0, H20_F0.transpose().conjugate()) + \
@@ -152,14 +152,14 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         self.alt.updateF()
 
         # xxxxxxxxxx Aliases for each channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        H01 = self.alt._multiUserChannel.getChannel(0, 1)
-        H02 = self.alt._multiUserChannel.getChannel(0, 2)
+        H01 = self.alt._multiUserChannel.get_channel(0, 1)
+        H02 = self.alt._multiUserChannel.get_channel(0, 2)
 
-        H10 = self.alt._multiUserChannel.getChannel(1, 0)
-        H12 = self.alt._multiUserChannel.getChannel(1, 2)
+        H10 = self.alt._multiUserChannel.get_channel(1, 0)
+        H12 = self.alt._multiUserChannel.get_channel(1, 2)
 
-        H20 = self.alt._multiUserChannel.getChannel(2, 0)
-        H21 = self.alt._multiUserChannel.getChannel(2, 1)
+        H20 = self.alt._multiUserChannel.get_channel(2, 0)
+        H21 = self.alt._multiUserChannel.get_channel(2, 1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Aliases for (I-Ck Ck^H)) for each k xxxxxxxxxxxxxxxxxx
@@ -218,7 +218,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
         # xxxxx Calculates the expected receive filter for user 0 xxxxxxxxx
         tildeH0 = np.dot(
-            self.alt._multiUserChannel.getChannel(0, 0),
+            self.alt._multiUserChannel.get_channel(0, 0),
             self.alt.F[0])
         tildeH0 = np.hstack([tildeH0, self.alt.C[0]])
         expected_W0 = np.linalg.inv(tildeH0)[0:self.alt.Ns[0]]
@@ -226,7 +226,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
         # xxxxx Calculates the expected receive filter for user 1 xxxxxxxxx
         tildeH1 = np.dot(
-            self.alt._multiUserChannel.getChannel(1, 1),
+            self.alt._multiUserChannel.get_channel(1, 1),
             self.alt.F[1])
         tildeH1 = np.hstack([tildeH1, self.alt.C[1]])
         expected_W1 = np.linalg.inv(tildeH1)[0:self.alt.Ns[1]]
@@ -234,7 +234,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
         # xxxxx Calculates the expected receive filter for user 2 xxxxxxxxx
         tildeH2 = np.dot(
-            self.alt._multiUserChannel.getChannel(2, 2),
+            self.alt._multiUserChannel.get_channel(2, 2),
             self.alt.F[2])
         tildeH2 = np.hstack([tildeH2, self.alt.C[2]])
         expected_W2 = np.linalg.inv(tildeH2)[0:self.alt.Ns[2]]
@@ -259,7 +259,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         Cost = 0
         k, l = (0, 1)
         H01_F1 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, l),
+            self.alt._multiUserChannel.get_channel(k, l),
             self.alt.F[l])
         Cost = Cost + np.linalg.norm(
             H01_F1 -
@@ -270,7 +270,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
         k, l = (1, 0)
         H10_F0 = np.dot(
-            self.alt._multiUserChannel.getChannel(k, l),
+            self.alt._multiUserChannel.get_channel(k, l),
             self.alt.F[l])
         Cost = Cost + np.linalg.norm(
             H10_F0 -
