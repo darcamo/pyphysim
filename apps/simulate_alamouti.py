@@ -6,9 +6,12 @@ scheme.
 
 """
 
-from simulations import *
+import sys
+sys.path.append('../')
+
+from util.simulations import *
 from comm import modulators, mimo
-import misc
+from util import misc
 from util.conversion import dB2Linear
 
 

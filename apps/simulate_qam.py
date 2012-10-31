@@ -5,6 +5,8 @@
 awgn channel.
 
 """
+import sys
+sys.path.append('../')
 
 from simulate_psk import VerySimplePskSimulationRunner
 from comm import modulators

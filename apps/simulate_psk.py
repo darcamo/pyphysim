@@ -6,10 +6,13 @@ awgn channel.
 
 """
 
-from simulations import *
+import sys
+sys.path.append('../')
+
+from util.simulations import *
 from comm import modulators
 from util.conversion import dB2Linear
-import misc
+from util import misc
 
 
 class VerySimplePskSimulationRunner(SimulationRunner):

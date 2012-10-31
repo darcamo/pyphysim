@@ -4,6 +4,9 @@
 """Perform the simulation of the transmission of QAM symbols through an
 awgn channel."""
 
+import sys
+sys.path.append('../')
+
 import simulate_psk_with_traits
 from simulate_psk_with_traits import PskSimulationRunner
 import comm.modulators as mod

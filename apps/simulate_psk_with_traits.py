@@ -5,6 +5,8 @@
 awgn channel.
 
 """
+import sys
+sys.path.append('../')
 
 from traits.etsconfig.etsconfig import ETSConfig
 ETSConfig.toolkit = "qt4"
@@ -17,7 +19,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
-from simulations import SimulationResults, Result, SimulationRunner, SimulationParameters
+from util.simulations import SimulationResults, Result, SimulationRunner, SimulationParameters
 from util import misc
 from util.conversion import dB2Linear
 import comm.modulators as mod

@@ -5,12 +5,13 @@
 "Interference Alignment via Alternating Minimization"
 
 """
+import sys
+sys.path.append('../')
 
-
-from simulations import *
+from util.simulations import *
 from comm import modulators
 from util.conversion import dB2Linear
-import misc
+from util import misc
 from ia import ia
 
 
