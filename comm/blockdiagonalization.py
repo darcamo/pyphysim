@@ -55,8 +55,6 @@ class BlockDiaginalizer(object):
         Return:
         - newH: Block diagonalized channel
         - Ms_good: Precoding matrix used to block diagonalize the channel
-        - vtOptP: Power that was allocated to each channel (before
-                  normalization of the power per AP)
         """
         (iNr, iNt) = mtChannel.shape
         assert iNr % self.iNUsers == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
@@ -200,7 +198,8 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None
     - `Re`: Not used
 
     Return:
-    - Same as `block_diagonalize`
+    - newH: Block diagonalized channel
+    - Ms_good: Precoding matrix used to block diagonalize the channel
 
     """
     BD = BlockDiaginalizer(iNUsers, iPu, noiseVar)

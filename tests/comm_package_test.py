@@ -288,6 +288,28 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_channel(2, 2),
             self.multiH.pathloss[2, 2] * np.ones([6, 5]) * 8)
 
+    def test_H_and_big_H_properties(self):
+        H = self.H
+        K = self.K
+        Nr = self.Nr
+        Nt = self.Nt
+        self.multiH.init_from_channel_matrix(H, Nr, Nt, K)
+        pathloss = np.random.randn(self.K, self.K)
+        self.multiH.set_pathloss(pathloss)
+
+        cumNr = np.hstack([0, np.cumsum(Nr)])
+        cumNt = np.hstack([0, np.cumsum(Nt)])
+
+        for row in range(K):
+            for col in range(K):
+                # Test the 'H' property
+                np.testing.assert_array_equal(
+                    self.multiH.get_channel(row, col), self.multiH.H[row, col])
+                # Test the 'big_H' property
+                np.testing.assert_array_equal(
+                    self.multiH.get_channel(row, col),
+                    self.multiH.big_H[cumNr[row]:cumNr[row + 1], cumNt[col]:cumNt[col + 1]])
+
     def test_corrupt_data(self):
         NSymbs = 20
         # Create some input data for the 3 users

@@ -17,8 +17,8 @@ sys.path.append('../../')
 
 import numpy as np
 
-from util import simulations, conversion
-from comm import modulators, pathloss
+from util import simulations, conversion, misc
+from comm import modulators, pathloss, channels, blockdiagonalization
 from cell import cell
 
 
@@ -27,14 +27,6 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
     def __init__(self, ):
         simulations.SimulationRunner.__init__(self)
-
-        # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.Nr = 2  # Number of receive antennas
-        self.Nt = 2  # Number of transmit antennas
-        self.Ns_BD = self.Nr  # Number of streams (per user) in the BD algorithm
-        # self.AlphaValues = 0.2;
-        # self.BetaValues = 0;
-        self._path_loss_obj = pathloss.PathLoss3GPP1()
 
         # xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.cell_radius = 0.5  # Cell radius (in Km)
@@ -45,20 +37,29 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.num_cells = 3
         self.num_clusters = 1
 
+        # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.Nr = np.ones(self.num_cells) * 2  # Number of receive antennas
+        self.Nt = np.ones(self.num_cells) * 2  # Number of transmit antennas
+        self.Ns_BD = self.Nt  # Number of streams (per user) in the BD algorithm
+        # self.AlphaValues = 0.2;
+        # self.BetaValues = 0;
+        self.path_loss_obj = pathloss.PathLoss3GPP1()
+        self.multiuser_channel = channels.MultiUserChannelMatrix()
+
         # xxxxxxxxxx Modulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.M = 4
         self.modulator = modulators.PSK(self.M)
 
         # xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.SNR = 20.
+        SNR = 20.
         #SNR = np.array([5., 10., 15.])
         self.NSymbs = 500
-        # self.params.add('SNR', SNR)
+        self.params.add('SNR', SNR)
         # self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 100  # Maximum number of repetitions for each
+        self.rep_max = 1  # Maximum number of repetitions for each
                             # unpacked parameters set self.params
                             # self.results
         self.max_bit_errors = 200  # Used in the _keep_going method to stop
@@ -69,11 +70,11 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Path loss (in linear scale) from the cell center to
-        self.path_loss_border = self._path_loss_obj.calc_path_loss(self.cell_radius)
+        self.path_loss_border = self.path_loss_obj.calc_path_loss(self.cell_radius)
         # Cell Grid
         self.cell_grid = cell.Grid()
         self.cell_grid.create_clusters(self.num_clusters, self.num_cells, self.cell_radius)
-
+        self.noise_var = conversion.dBm2Linear(self.N0)
         # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
         # the scenario specific variables are created by running the
         # _prepare_scenario method.
@@ -84,27 +85,42 @@ class CompSimulationRunner(simulations.SimulationRunner):
         #self._prepare_scenario = self._prepare_symmetric_far_away_scenario
 
     def _prepare_random_users_scenario(self):
-        """Run this method to set variables specific to the 'RandomUsers' scenario.
+        """Run this method to set variables specific to the 'RandomUsers'
+        scenario.
 
-        The 'RandomUsers'
+        The 'RandomUsers' scenarios place a user in each cell at a random
+        position.
+
         """
-        import pudb
         cluster0 = self.cell_grid._clusters[0]
         cell_ids = np.arange(1, self.num_cells + 1)
         cluster0.remove_all_users()
         cluster0.add_random_users(cell_ids)
-        pudb.set_trace()
 
         # Distances between each transmitter and each receiver
-        dists = np.zeros([self.num_cells, self.num_cells], dtype=float)
-        for base_station in range(self.num_cells):
-            for mobile_station in range(self.num_cells):
-                # Remember that the Base Stations are the transmitters and
-                # the mobile stations (one in each cell) are the receivers
-                #dists[mobile_station, base_station] = cluster0
-                pass
+        dists = cluster0.calc_dist_all_cells_to_all_users()
+        # Path loss from each base station to each user
+        pathloss = self.path_loss_obj.calc_path_loss(dists)
 
+        # Generate a random channel and set the path loss
+        self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells)
+        self.multiuser_channel.set_pathloss(pathloss)
 
+    def _on_simulate_current_params_start(self, current_params):
+        """This method is called once for each combination of transmit
+        parameters.
+
+        """
+        # xxxxx Calculates the transmit power at each base station. xxxxxxx
+        # Because this value does not change in the different iterations of
+        # _run_simulation, but only when the parameters change the
+        # calculation is performed here in the
+        # _on_simulate_current_params_start.
+        self.transmit_power = CompSimulationRunner._calc_transmit_power(
+            current_params['SNR'],
+            self.N0,
+            self.cell_radius,
+            self.path_loss_obj)
 
     def _run_simulation(self, current_parameters):
         """The _run_simulation method is where the actual code to simulate
@@ -124,16 +140,61 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                 combination.
 
         """
-        # recalculate the scenario (and user positions) at each iteration
+        # xxxxxxxxxx Prepare the scenario for this iteration. xxxxxxxxxxxxx
+        # This will place the users at the locations specified by the
+        # scenario (random locations or not), calculate the path loss and
+        # generate a new random channel (in the self.multiuser_channel
+        # variable).
         self._prepare_scenario()
 
-        # xxxxx Simulation Code here xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Transmit power at each base station
-        # pt = CompSimulationRunner._calc_transmit_power(
-        #     current_parameters['SNR'],
-        #     self.N0,
-        #     self.cell_radius,
-        #     self._path_loss_obj)
+        # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
+        input_data = np.random.randint(0,
+                                       self.M,
+                                       [np.sum(self.Ns_BD), self.NSymbs])
+        symbols = self.modulator.modulate(input_data)
+
+        # xxxxxxxxxx Perform the block diagonalization xxxxxxxxxxxxxxxxxxxx
+        (newH, Ms) = blockdiagonalization.block_diagonalize(
+            self.multiuser_channel.big_H,
+            self.num_cells,
+            self.transmit_power,
+            #self.noise_var
+            1e-50
+        )
+
+        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
+        precoded_data = np.dot(Ms, symbols)
+        received_signal = self.multiuser_channel.corrupt_concatenated_data(
+            precoded_data,
+            self.noise_var
+        )
+
+        print np.min(np.abs(received_signal))
+        print self.noise_var
+
+        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        receive_filter = np.linalg.pinv(newH)
+        received_symbols = np.dot(receive_filter, received_signal)
+
+        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
+        decoded_symbols = self.modulator.demodulate(received_symbols)
+
+        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
+        num_symbol_errors = np.sum(decoded_symbols == input_data)
+        num_symbols = input_data.size
+        SER = 1 - float(num_symbol_errors) / float(num_symbols)
+
+        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
+        num_bit_errors = np.sum(misc.xor(decoded_symbols, input_data))
+        num_bits = num_symbols * np.log2(self.M)
+        BER = float(num_bit_errors) / num_bits
+
+        print SER
+        print BER
+
+        # ...
+        # ...
+        # ...
 
         # xxxxx Return the Simulation results for this iteration xxxxxxxxxx
         simResults = simulations.SimulationResults()

@@ -87,10 +87,30 @@ class MultiUserChannelMatrix(object):
         return self._K
     K = property(_get_K)
 
-    # Property to get the matrix of channel matrices
+    # Property to get the matrix of channel matrices (with pass loss
+    # applied if any)
     def _get_H(self):
-        return self._H
+        if self._pathloss_matrix is None:
+            # No path loss
+            return self._H
+        else:
+            # Apply path loss. Note that the _pathloss_big_matrix matrix
+            # has the same dimension as the self._big_H matrix and we are
+            # performing element-wise multiplication here.
+            return self._H * self._pathloss_matrix
     H = property(_get_H)
+
+    # Property to get the big channel matrix (with pass loss applied if any)
+    def _get_big_H(self):
+        if self._pathloss_matrix is None:
+            # No path loss
+            return self._big_H
+        else:
+            # Apply path loss. Note that the _pathloss_big_matrix matrix
+            # has the same dimension as the self._big_H matrix and we are
+            # performing element-wise multiplication here.
+            return self._big_H * self._pathloss_big_matrix
+    big_H = property(_get_big_H)
 
     # Property to get the pathloss. Use the "set_pathloss" method to set
     # the pathloss.
