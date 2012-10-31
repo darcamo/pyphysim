@@ -250,43 +250,44 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             np.ones([6, 5]) * 8)
 
         # xxxxxxxxxx Test get_channel with Pathloss xxxxxxxxxxxxxxxxxxxxxxx
-        pathloss = np.random.randn(self.K, self.K)
+        # pathloss (in linear scale) must be a positive number
+        pathloss = np.abs(np.random.randn(self.K, self.K))
         self.multiH.set_pathloss(pathloss)
         np.testing.assert_array_equal(
             self.multiH.get_channel(0, 0),
-            self.multiH.pathloss[0, 0] * np.ones([2, 2]) * 0)
+            np.sqrt(self.multiH.pathloss[0, 0]) * np.ones([2, 2]) * 0)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(0, 1),
-            self.multiH.pathloss[0, 1] * np.ones([2, 3]) * 1)
+            np.sqrt(self.multiH.pathloss[0, 1]) * np.ones([2, 3]) * 1)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(0, 2),
-            self.multiH.pathloss[0, 2] * np.ones([2, 5]) * 2)
+            np.sqrt(self.multiH.pathloss[0, 2]) * np.ones([2, 5]) * 2)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(1, 0),
-            self.multiH.pathloss[1, 0] * np.ones([4, 2]) * 3)
+            np.sqrt(self.multiH.pathloss[1, 0]) * np.ones([4, 2]) * 3)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(1, 1),
-            self.multiH.pathloss[1, 1] * np.ones([4, 3]) * 4)
+            np.sqrt(self.multiH.pathloss[1, 1]) * np.ones([4, 3]) * 4)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(1, 2),
-            self.multiH.pathloss[1, 2] * np.ones([4, 5]) * 5)
+            np.sqrt(self.multiH.pathloss[1, 2]) * np.ones([4, 5]) * 5)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(2, 0),
-            self.multiH.pathloss[2, 0] * np.ones([6, 2]) * 6)
+            np.sqrt(self.multiH.pathloss[2, 0]) * np.ones([6, 2]) * 6)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(2, 1),
-            self.multiH.pathloss[2, 1] * np.ones([6, 3]) * 7)
+            np.sqrt(self.multiH.pathloss[2, 1]) * np.ones([6, 3]) * 7)
 
         np.testing.assert_array_equal(
             self.multiH.get_channel(2, 2),
-            self.multiH.pathloss[2, 2] * np.ones([6, 5]) * 8)
+            np.sqrt(self.multiH.pathloss[2, 2]) * np.ones([6, 5]) * 8)
 
     def test_H_and_big_H_properties(self):
         H = self.H
@@ -294,7 +295,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Nr = self.Nr
         Nt = self.Nt
         self.multiH.init_from_channel_matrix(H, Nr, Nt, K)
-        pathloss = np.random.randn(self.K, self.K)
+        # pathloss (in linear scale) must be a positive number
+        pathloss = np.abs(np.random.randn(self.K, self.K))
         self.multiH.set_pathloss(pathloss)
 
         cumNr = np.hstack([0, np.cumsum(Nr)])
@@ -338,7 +340,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output[2], expected_output[2])
 
         # xxxxxxxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        pathloss = np.random.randn(self.K, self.K)
+        # pathloss (in linear scale) must be a positive number
+        pathloss = np.abs(np.random.randn(self.K, self.K))
         self.multiH.set_pathloss(pathloss)
 
         # Note that the corrupt_concatenated_data is implicitelly called by

@@ -360,7 +360,7 @@ class Cluster(shapes.Shape):
         # cluster radius, the circles should be tangent to each other.
         self._radius = Cluster._calc_cluster_radius(num_cells, cell_radius)
         # Calculates the cluster external radius.
-        self._external_radius = self._calc_cluster_external_radius(cell_radius)
+        self._external_radius = self._calc_cluster_external_radius()
 
     # Property to get the cluster external radius
     # The cluster class also has a external_radius parameter that
@@ -511,16 +511,12 @@ class Cluster(shapes.Shape):
         radius = np.abs(other_cluster_pos)
         return radius
 
-    def _calc_cluster_external_radius(self, cell_radius):
+    def _calc_cluster_external_radius(self):
         """Calculates the radius of the smallest circle that can completely
         hold the cluster inside of it. This circle should touch only the
         most external vertexes of the cells in the cluster.
 
         Get the vertex positions of the last cell
-
-        Arguments:
-        - `cell_radius`: Radius of each cell in the cluster.
-
         """
         vertex_positions = self._cells[-1].vertices
         dists = vertex_positions - self.pos
@@ -715,13 +711,59 @@ class Cluster(shapes.Shape):
         - `ratios`: Ratios (from 0 to 1)
         - `user_color`: Color of the user's marker.
 
+        Ex:
+        >>> cluster = Cluster(cell_radius=1.0, num_cells=3)
+
+        # Add a single user in the angle of 30 degrees with a ration of 0.9
+        # to the first cell in the cluster
+        >>> cluster.add_border_users(1, 30, 0.9)
+
+        # Add 3 users at the angles of 0, 95 and 185 degrees to the second
+        # cell of the cluster
+        >>> cluster.add_border_users(2, [0, 95, 185], 0.9, 'b')
+
+        # Add one user in each cell at the angle of 10 degrees
+        >>> cluster.add_border_users([1, 2, 3], 10, 0.9, 'g')
+
+        # Add a user in each cell at different angles per cell
+        >>> cluster.add_border_users([1, 2, 3], [90, 150, 190], 0.9, 'y')
+
+        # Add multiple users to multiple cells at different angles
+        >>> cluster.add_border_users([1, 2, 3], [[180, 270], [-30], [60, 120]], 0.9, 'k')
         """
-        for cell_id in cell_ids:
-            self._cells[cell_id - 1].add_border_user(angles, ratios, user_color)
-        # TODO: Finish the implementation. The current implementation
-        # simply pass angles, ratios, user_color to each cell in
-        # cell_ids. That is, we can't add users in different locations in
-        # each cell.
+        # If cell_ids is not an iterable, that is, cell_ids is a single
+        # number, then we are simply calling the add_border_users method of
+        # the specified cell
+        if (not isinstance(cell_ids, Iterable)):
+            self._cells[cell_ids - 1].add_border_user(
+                angles, ratios, user_color)
+        else:
+            # If angles is not an iterable, then lets repeat the same value
+            # for all specified cells by using itertools.repeat to make
+            # angles an iterable.
+            if not isinstance(angles, Iterable):
+                angles = itertools.repeat(angles)
+
+            # If ratios is not an iterable, then lets repeat the same value
+            # for all specified cells by using itertools.repeat to make
+            # ratios an iterable.
+            if not isinstance(ratios, Iterable):
+                ratios = itertools.repeat(ratios)
+
+            # If user_color is not an iterable of strings, then lets repeat
+            # the same value for all specified cells by using
+            # itertools.repeat to make user_color an iterable of strings.
+            if isinstance(user_color, str):
+                user_color = itertools.repeat(user_color)
+            else:
+                if not isinstance(user_color, Iterable):
+                    user_color = itertools.repeat(user_color)
+
+            all_data = zip(cell_ids, angles, ratios, user_color)
+
+            for data in all_data:
+                cell_id, angle, ratio, color = data
+                self._cells[cell_id - 1].add_border_user(angle, ratio, color)
 
     def remove_all_users(self, cell_id=None):
         """Remove all users from one or more cells.
@@ -954,7 +996,7 @@ if __name__ == '__main__1':
     c.plot()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     cell_radius = 1
     num_cells = 3
     node_pos = 3 + 15j
@@ -1024,3 +1066,11 @@ if __name__ == '__main__1':
     ax.plot()
     plt.axis('equal')
     plt.show()
+
+
+# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':
+    # When this module is run as a script the doctests are executed
+    import doctest
+    doctest.testmod()
+    print "{0} executed".format(__file__)

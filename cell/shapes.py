@@ -138,9 +138,30 @@ class Shape(Coordinate):
 
         # The equation of a straight line is given by "y = ax + b". We have
         # two points in this line (the two closest vertices) and we can use
-        # them to find 'a' and 'b'.
-        a = closest_vertices[0] - closest_vertices[1]
-        a = a.imag / a.real
+        # them to find 'a' and 'b'. First let's find the different of these
+        # two closest vertexes
+        diff = closest_vertices[0] - closest_vertices[1]
+
+        # xxxxx Special case for a vertical line xxxxxxxxxxxxxxxxxxxxxxxxxx
+        if np.allclose(diff.real, 0.0, atol=1e-16):
+            # If the the real part of diff is equal to zero, that means
+            # that the straight line is actually a vertical
+            # line. Therefore, all we need to do to get the border point is
+            # to start from the shape's center and go with the desired
+            # angle until the value in the 'x' axis equivalent to
+            # closest_vertices[0].real.
+            adjacent_side = np.abs(self.pos.real - closest_vertices[0].real)
+            side = np.tan(angle_rad) * adjacent_side
+            point = self.pos + adjacent_side + 1j * side
+            # Now all that is left to do is apply the ratio, which only
+            # means that the returned point is a linear combination between
+            # the shape's central position and the point at the border of
+            # the shape
+            return (1 - ratio) * self.pos + ratio * point
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Calculates the 'a' and 'b' in the line equation "y=ax+b"
+        a = diff.imag / diff.real
         b = closest_vertices[1].imag - a * closest_vertices[1].real
 
         # Note that is we start from self.pos and walk in the direction
@@ -423,7 +444,7 @@ def from_complex_array_to_real_matrix(a):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
     ax = pylab.axes()
     h = Hexagon(2 + 3j, 2, 30)
 
@@ -433,7 +454,7 @@ if __name__ == '__main__1':
     point1 = h.get_border_point(90, 0.9)
     ax.plot(point1.real, point1.imag, 'ro')
 
-    point2 = h.get_border_point(60, 0.9)
+    point2 = h.get_border_point(10, 0.9)
     ax.plot(point2.real, point2.imag, 'go')
 
     point3 = h.get_border_point(30, 0.9)
@@ -474,7 +495,7 @@ if __name__ == '__main__1':
     plt.axis('equal')
     plt.show()
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     ax = pylab.axes()
     c = Circle(2 + 3j, 2)
 

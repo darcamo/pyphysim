@@ -403,7 +403,6 @@ class CellTestCase(unittest.TestCase):
             expected_pos2 = self.C2.get_border_point(angles2[index], ratio2)
             self.assertAlmostEqual(self.C2.users[index].pos, expected_pos2)
 
-
         # xxxxx Test adding multiple users with the different ratios and
         # user colors
         angles3 = [30, 45, 60, 90, 120]
@@ -436,10 +435,136 @@ class CellTestCase(unittest.TestCase):
 class ClusterTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
+        self.C1 = cell.Cluster(cell_radius=1.0, num_cells=3)
+        self.C2 = cell.Cluster(cell_radius=1.0, num_cells=7)
+        self.C3 = cell.Cluster(cell_radius=1.0, num_cells=19)
+
+        # Add two users to the first cell of Cluster1
+        self.C1._cells[0].add_random_user()
+        self.C1._cells[0].add_random_user()
+
+        # Add three users to the second cell of Cluster1
+        self.C1._cells[1].add_random_user()
+        self.C1._cells[1].add_random_user()
+        self.C1._cells[1].add_random_user()
+
+        # Add five users to the third cell of Cluster1
+        self.C1._cells[2].add_random_user()
+        self.C1._cells[2].add_random_user()
+        self.C1._cells[2].add_random_user()
+        self.C1._cells[2].add_random_user()
+        self.C1._cells[2].add_random_user()
+
+    def test_get_ii_and_jj(self):
+        # This test is here simple to indicate if the Cluster._ii_and_jj
+        # variable ever changes, in which case it will fail. If this is the
+        # case change this test_get_ii_and_jj unittest to reflect the
+        # changes and make this test below pass.
+        self.assertEqual(cell.Cluster._ii_and_jj.keys(), [1, 3, 4, 7, 13, 19])
+
+        self.assertEqual(cell.Cluster._get_ii_and_jj(1), (1, 0))
+        self.assertEqual(cell.Cluster._get_ii_and_jj(3), (1, 1))
+        self.assertEqual(cell.Cluster._get_ii_and_jj(4), (2, 0))
+        self.assertEqual(cell.Cluster._get_ii_and_jj(7), (2, 1))
+        self.assertEqual(cell.Cluster._get_ii_and_jj(13), (3, 1))
+        self.assertEqual(cell.Cluster._get_ii_and_jj(19), (3, 2))
+
+        # Test if we get (0,0) for an invalid key.
+        self.assertEqual(cell.Cluster._get_ii_and_jj(30), (0, 0))
+
+    def test_remove_all_users(self):
+        self.C1.remove_all_users()
+        self.assertEqual(self.C1._cells[0].num_users, 0)
+        self.assertEqual(self.C1._cells[1].num_users, 0)
+        self.assertEqual(self.C1._cells[2].num_users, 0)
+
+    def test_get_all_users(self):
+        self.assertEqual(len(self.C1.get_all_users()), 10)
+
+        self.C1._cells[0].delete_all_users()
+        self.assertEqual(len(self.C1.get_all_users()), 8)
+
+        self.C1.remove_all_users()
+        self.assertEqual(len(self.C1.get_all_users()), 0)
+
+    def test_calc_cluster_radius(self):
         pass
 
-    def test_some_method(self):
+    def test_calc_cluster_external_radius(self):
+        self.assertAlmostEqual(self.C1._calc_cluster_external_radius(),
+                               2.0 * self.C1.cell_radius)
+
+        self.assertAlmostEqual(self.C2._calc_cluster_external_radius(),
+                               2.6457513110645903 * self.C2.cell_radius)
+
+        self.assertAlmostEqual(self.C3._calc_cluster_external_radius(),
+                               4.3588989435406731 * self.C3.cell_radius)
+
+    def test_calc_cell_positions(self):
         pass
+
+    def test_get_outer_vertexes(self):
+        pass
+
+    def test_get_vertex_positions(self):
+        pass
+
+    def test_add_random_users(self):
+        pass
+
+    # TODO: Finish implementation
+    def test_add_border_users(self):
+        self.C1.remove_all_users()
+        cell_ids = [1, 2, 3]
+        angles = [210, 30, 90]
+
+        # There are many possible ways to call the add_border_users method.
+        # 1. Single cell_id with a single or multiple angles
+        self.C1.add_border_users(1, 0, 0.9)
+        self.C1.add_border_users(1, angles, 0.7)
+        self.assertEqual(self.C1._cells[0].num_users, 4)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # 2. Multiple cell_ids with one user added per cell. The angle of
+        # the added users may be the same for each cell or different for
+        # each cell.
+        self.C1.remove_all_users()
+        # Add a user with the same angle in each cell
+        self.C1.add_border_users(cell_ids, 270, 0.9)
+        self.assertEqual(self.C1._cells[0].num_users, 1)
+        self.assertEqual(self.C1._cells[1].num_users, 1)
+        self.assertEqual(self.C1._cells[2].num_users, 1)
+        # Add a user with different angles and ratios for each cell
+        self.C1.add_border_users(cell_ids, angles, [0.95, 0.8, 0.7], 'b')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # 3. Add multiple users to multiple cells with different angles,
+        # ratios, etc.
+        self.C1.remove_all_users()
+        # Notice how we have to repeate "angles" 3 times, one time for each
+        # cell_id. We also set a different color for the users in each
+        # cell.
+        self.C1.add_border_users(cell_ids,
+                                 [angles, angles, angles],
+                                 0.9,
+                                 ['g', 'b', 'k'])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_dist_all_cells_to_all_users(self):
+        pass
+
+    def test_properties(self):
+        # Test num_cells property
+        self.assertEqual(self.C1.num_cells, 3)
+        self.assertEqual(self.C2.num_cells, 7)
+        self.assertEqual(self.C3.num_cells, 19)
+        # Test num_users property
+        self.assertEqual(self.C1.num_users, 10)
+        self.assertEqual(self.C2.num_users, 0)
+        # Test cell_radius property
+        self.assertEqual(self.C1.cell_radius, 1.0)
+        self.assertEqual(self.C2.cell_radius, 1.0)
+        self.assertEqual(self.C3.cell_radius, 1.0)
 
 
 # TODO: finish implementation

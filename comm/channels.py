@@ -97,7 +97,7 @@ class MultiUserChannelMatrix(object):
             # Apply path loss. Note that the _pathloss_big_matrix matrix
             # has the same dimension as the self._big_H matrix and we are
             # performing element-wise multiplication here.
-            return self._H * self._pathloss_matrix
+            return self._H * np.sqrt(self._pathloss_matrix)
     H = property(_get_H)
 
     # Property to get the big channel matrix (with pass loss applied if any)
@@ -109,7 +109,7 @@ class MultiUserChannelMatrix(object):
             # Apply path loss. Note that the _pathloss_big_matrix matrix
             # has the same dimension as the self._big_H matrix and we are
             # performing element-wise multiplication here.
-            return self._big_H * self._pathloss_big_matrix
+            return self._big_H * np.sqrt(self._pathloss_big_matrix)
     big_H = property(_get_big_H)
 
     # Property to get the pathloss. Use the "set_pathloss" method to set
@@ -252,7 +252,7 @@ class MultiUserChannelMatrix(object):
         channel = self._H[k, l]
         # Apply path loss if it was set.
         if self._pathloss_matrix is not None:
-            channel = channel * self._pathloss_matrix[k, l]
+            channel = channel * np.sqrt(self._pathloss_matrix[k, l])
         return channel
 
     def corrupt_concatenated_data(self, concatenated_data, noise_var=None):
@@ -276,16 +276,9 @@ class MultiUserChannelMatrix(object):
           symbols.
 
         """
-        if self._pathloss_matrix is None:
-            # No path loss
-            channel_matrix = self._big_H
-        else:
-            # Apply path loss. Note that the _pathloss_big_matrix matrix
-            # has the same dimension as the self._big_H matrix and we are
-            # performing element-wise multiplication here.
-            channel_matrix = self._big_H * self._pathloss_big_matrix
-
-        output = np.dot(channel_matrix, concatenated_data)
+        # Note that self.big_H already accounts the path loss (while
+        # self._big_H does not)
+        output = np.dot(self.big_H, concatenated_data)
         if noise_var is not None:
             awgn_noise = (randn_c(*output.shape) * np.sqrt(noise_var))
             output = output + awgn_noise

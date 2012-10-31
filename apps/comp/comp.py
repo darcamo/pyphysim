@@ -51,20 +51,25 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.modulator = modulators.PSK(self.M)
 
         # xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        SNR = 20.
-        #SNR = np.array([5., 10., 15.])
+        # Number of symbols (per stream per user simulated at each
+        # iteration of _run_simulation
         self.NSymbs = 500
+        SNR = np.linspace(0, 30, 7)
         self.params.add('SNR', SNR)
-        # self.params.set_unpack_parameter('SNR')
+        self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 1  # Maximum number of repetitions for each
-                            # unpacked parameters set self.params
-                            # self.results
-        self.max_bit_errors = 200  # Used in the _keep_going method to stop
-                                   # the simulation earlier if possible.
-        # self.progressbar_message = "COmP Simulation with {0}-PSK - SNR: {{SNR}}".format(self.M)
+        self.rep_max = 1#0000  # Maximum number of repetitions for each
+                              # unpacked parameters set self.params
+                              # self.results
+
+        # max_bit_errors is used in the _keep_going method to stop the
+        # simulation earlier if possible. We stop the simulation if the
+        # accumulated number of bit errors becomes greater then 1% of the
+        # total number of simulated bits
+        self.max_bit_errors = self.rep_max * self.NSymbs / 100.
+        self.progressbar_message = "COmP Simulation with {0}-PSK - SNR: {{SNR}}".format(self.M)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
@@ -88,8 +93,8 @@ class CompSimulationRunner(simulations.SimulationRunner):
         """Run this method to set variables specific to the 'RandomUsers'
         scenario.
 
-        The 'RandomUsers' scenarios place a user in each cell at a random
-        position.
+        The 'RandomUsers' scenario place a user in each cell at a random
+        location.
 
         """
         cluster0 = self.cell_grid._clusters[0]
@@ -105,6 +110,21 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # Generate a random channel and set the path loss
         self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells)
         self.multiuser_channel.set_pathloss(pathloss)
+
+    def _prepare_symmetric_far_away_scenario(self):
+        """Run this method to set variables specific to the 'FarAwayUsers70%'
+        scenario.
+
+        The 'FarAwayUsers70%' scenario place a user in each cell at a the
+        angle further away from the cell center in a distance from the cell
+        center to the cell border equivalent to 70% of the cell radius.
+
+        """
+        cluster0 = self.cell_grid._clusters[0]
+        cell_ids = np.arange(1, self.num_cells + 1)
+        angles = np.array([210, 30, 90])
+        cluster0.remove_all_users()
+        cluster0.add_border_users(cell_ids, angles, 0.7)
 
     def _on_simulate_current_params_start(self, current_params):
         """This method is called once for each combination of transmit
@@ -169,9 +189,6 @@ class CompSimulationRunner(simulations.SimulationRunner):
             self.noise_var
         )
 
-        print np.min(np.abs(received_signal))
-        print self.noise_var
-
         # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         receive_filter = np.linalg.pinv(newH)
         received_symbols = np.dot(receive_filter, received_signal)
@@ -180,36 +197,38 @@ class CompSimulationRunner(simulations.SimulationRunner):
         decoded_symbols = self.modulator.demodulate(received_symbols)
 
         # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors = np.sum(decoded_symbols == input_data)
+        num_symbol_errors = np.sum((decoded_symbols == input_data) == False)
         num_symbols = input_data.size
-        SER = 1 - float(num_symbol_errors) / float(num_symbols)
+        SER = float(num_symbol_errors) / float(num_symbols)
 
         # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
         num_bit_errors = np.sum(misc.xor(decoded_symbols, input_data))
         num_bits = num_symbols * np.log2(self.M)
         BER = float(num_bit_errors) / num_bits
 
-        print SER
-        print BER
-
-        # ...
-        # ...
-        # ...
-
         # xxxxx Return the Simulation results for this iteration xxxxxxxxxx
+        ber_result = simulations.Result.create(
+            'ber',
+            simulations.Result.RATIOTYPE,
+            num_bit_errors,
+            num_bits)
+        ser_result = simulations.Result.create(
+            'ser',
+            simulations.Result.RATIOTYPE,
+            num_symbol_errors,
+            num_symbols)
+
         simResults = simulations.SimulationResults()
-        # simResults.add_result(symbolErrorsResult)
-        # simResults.add_result(numSymbolsResult)
-        # simResults.add_result(bitErrorsResult)
-        # simResults.add_result(numBitsResult)
-        # simResults.add_result(berResult)
-        # simResults.add_result(serResult)
+        simResults.add_result(ber_result)
+        simResults.add_result(ser_result)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
 
     def _keep_going(self, current_sim_results):
-        return True
+        ber_result = current_sim_results['ber'][-1]
+        num_bit_errors = ber_result._value
+        return num_bit_errors < self.max_bit_errors
 
     @staticmethod
     def _calc_transmit_power(SNR_dB, N0_dBm, cell_radius, path_loss_obj):
@@ -233,10 +252,38 @@ class CompSimulationRunner(simulations.SimulationRunner):
         pt = snr * conversion.dBm2Linear(N0_dBm) / path_loss_border
         return pt
 
+    def get_data_to_be_plotted(self):
+        """The get_data_to_be_plotted is not part of the simulation, but it is
+        useful after the simulation is finished to get the results easily
+        for plot.
+
+        """
+        ber = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ber')
+
+        # Get the SNR from the simulation parameters
+        SNR = np.array(self.params['SNR'])
+
+        return (SNR, ber, ser)
+
 if __name__ == '__main__':
+    from matplotlib import pyplot as plt
     runner = CompSimulationRunner()
 
     runner.simulate()
-    print "Elapsed Time: {0}".format(runner.elapsed_time)
+    SNR, ber, ser = runner.get_data_to_be_plotted()
 
-    #print runner.results
+    # Can only plot if we simulated for more then one value of SNR
+    if SNR.size > 1:
+        plt.semilogy(SNR, ber, '--g*', label='BER')
+        plt.semilogy(SNR, ser, '--b*', label='SER')
+
+        plt.xlabel('SNR')
+        plt.ylabel('Error')
+        plt.title('BER and SER for a COmP simulation ({0} modulation)'.format(runner.modulator.name))
+        plt.legend()
+
+        plt.grid(True, which='both', axis='both')
+        plt.show()
+
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
