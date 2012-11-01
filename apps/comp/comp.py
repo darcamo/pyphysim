@@ -60,7 +60,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 1#0000  # Maximum number of repetitions for each
+        self.rep_max = 10000  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -86,8 +86,8 @@ class CompSimulationRunner(simulations.SimulationRunner):
         #
         # Here we set the _prepare_scenario method to be the method to
         # prepare the RandomUsers scenario.
-        self._prepare_scenario = self._prepare_random_users_scenario
-        #self._prepare_scenario = self._prepare_symmetric_far_away_scenario
+        #self._prepare_scenario = self._prepare_random_users_scenario
+        self._prepare_scenario = self._prepare_symmetric_far_away_scenario
 
     def _prepare_random_users_scenario(self):
         """Run this method to set variables specific to the 'RandomUsers'
@@ -125,6 +125,15 @@ class CompSimulationRunner(simulations.SimulationRunner):
         angles = np.array([210, 30, 90])
         cluster0.remove_all_users()
         cluster0.add_border_users(cell_ids, angles, 0.7)
+
+        # Distances between each transmitter and each receiver
+        dists = cluster0.calc_dist_all_cells_to_all_users()
+        # Path loss from each base station to each user
+        pathloss = self.path_loss_obj.calc_path_loss(dists)
+
+        # Generate a random channel and set the path loss
+        self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells)
+        self.multiuser_channel.set_pathloss(pathloss)
 
     def _on_simulate_current_params_start(self, current_params):
         """This method is called once for each combination of transmit
@@ -259,7 +268,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         """
         ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ser')
 
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
@@ -275,12 +284,15 @@ if __name__ == '__main__':
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
-        plt.semilogy(SNR, ber, '--g*', label='BER')
-        plt.semilogy(SNR, ser, '--b*', label='SER')
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        p1 = ax.semilogy(SNR, ber, '--g*', label='BER')
+        ax.hold(True)
+        p2 = ax.semilogy(SNR, ser, '--b*', label='SER')
 
         plt.xlabel('SNR')
         plt.ylabel('Error')
-        plt.title('BER and SER for a COmP simulation ({0} modulation)'.format(runner.modulator.name))
+        ax.set_title('BER and SER for a COmP simulation ({0} modulation)'.format(runner.modulator.name))
         plt.legend()
 
         plt.grid(True, which='both', axis='both')
