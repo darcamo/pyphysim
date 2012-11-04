@@ -88,30 +88,3 @@ def calcChordalDistance2(matrix1, matrix2):
 
     """
     return np.linalg.norm(calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') / math.sqrt(2)
-
-
-# Tests
-if __name__ == '__main__1':
-    A = np.arange(1, 9.)
-    A.shape = (4, 2)
-    B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
-    print calcPrincipalAngles(A, B)
-    print calcChordalDistance(A, B)
-    print calcChordalDistance2(A, B)
-
-
-if __name__ == '__main__2':
-    # Pegue do livro Matrix computations
-    A = np.array([1, 2, 3, 4, 5, 6])
-    A.shape = (3, 2)
-    B = np.array([1, 5, 3, 7, 5, -1])
-    B.shape = (3, 2)
-    print (calcPrincipalAngles(A, B))
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

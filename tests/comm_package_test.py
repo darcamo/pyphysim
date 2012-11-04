@@ -320,6 +320,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         input_data[1] = randn_c(self.Nt[1], NSymbs)
         input_data[2] = randn_c(self.Nt[2], NSymbs)
 
+        # Disable the path loss
+        self.multiH.set_pathloss()
         self.multiH.randomize(self.Nr, self.Nt, self.K)
 
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -362,6 +364,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output2[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output2[2], expected_output2[2])
 
+        # Now we also pass the noise_variance to corrupt_data to actually
+        # call the code that does the noise addition, but with a variance
+        # so low that the expected output should be the same (we do this in
+        # order to be able to test it).
+        output3 = self.multiH.corrupt_data(input_data, 1e-20)
+        np.testing.assert_array_almost_equal(output3[0], expected_output2[0])
+        np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
+        np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -388,7 +399,7 @@ class OfdmTestCase(unittest.TestCase):
         # Test if an exception is raised when any invalid parameters are
         # passed to set_parameters
 
-        # Raises an exception if number of used subcarriers is negative
+        # Raises an exception if number of used subcarriers is odd
         self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, 16, 51)
         # Raises an exception if number of used subcarriers is greater than
         # the fft_size
@@ -397,6 +408,11 @@ class OfdmTestCase(unittest.TestCase):
         self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, -2, 52)
         # Raises an exception if cp_size is greater than the fft_size
         self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, 65, 52)
+        # Test if the number of subcarriers defaults to the fft_size when
+        # not provided
+        self.ofdm_object.set_parameters(64, 16)
+        self.assertEqual(self.ofdm_object.num_used_subcarriers, 64)
+
 
     def test_prepare_input_signal(self, ):
         input_signal = np.r_[1:53]  # 52 elements -> exactly the number of
@@ -600,6 +616,22 @@ def plot_psd_OFDM_symbols():
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: finish implementation
+class MimoBaseTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.mimo_base = mimo.MimoBase()
+
+    # This is here to make code nosetests coverage happy
+    def test_not_implemented_methods(self):
+        with self.assertRaises(NotImplementedError):
+            self.mimo_base.getNumberOfLayers()
+        with self.assertRaises(NotImplementedError):
+            self.mimo_base.encode(None)
+        with self.assertRaises(NotImplementedError):
+            self.mimo_base.decode(None, None)
+
+
 class BlastTestCase(unittest.TestCase):
     """Unittests for the Blast class in the mimo module.
     """
@@ -635,7 +667,7 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a zero-force filter
         self.blast_object.set_noise_var(-1)  # This should use the ZF filter
-        self.assertEqual(self.blast_object.calc_filter, mimo.Mimo._calcZeroForceFilter)
+        self.assertEqual(self.blast_object.calc_filter, mimo.MimoBase._calcZeroForceFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         received_data2 = np.dot(channel, encoded_data)
         decoded_data2 = self.blast_object.decode(received_data2, channel)
@@ -644,7 +676,7 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a MMSE filter
         self.blast_object.set_noise_var(0.00000001)  # This should use the ZF filter
-        self.assertNotEqual(self.blast_object.calc_filter, mimo.Mimo._calcMMSEFilter)
+        self.assertNotEqual(self.blast_object.calc_filter, mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.blast_object.decode(received_data3, channel)
@@ -800,17 +832,65 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             self.assertTrue(individual_powers[-1] <= Pu + 1e-12)
 
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Implement-me soemday
+# TODO: Implement-me someday
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Implement-me soemday
+# TODO: finish implementation
+class PathLossBaseTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.pl = pathloss.PathLossBase()
+
+    # This is here to make code nosetests coverage happy
+    def test_not_implemented_methods(self):
+        with self.assertRaises(NotImplementedError):
+            self.pl.which_distance_dB(None)
+        with self.assertRaises(NotImplementedError):
+            self.pl._calc_deterministic_path_loss_dB(None)
+
+
+# TODO: finish implementation
+class PathLossFreeSpaceTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.pl = pathloss.PathLossFreeSpace()
+
+    def test_calc_path_loss(self):
+        # Test for a single path loss value
+        self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
+                               4.88624535312e-10)
+        self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
+                               93.1102472958)
+
+        # Test for multiple path loss values
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+            np.array([4.88624535e-10, 3.58989455e-10, 2.74851301e-10]), 16)
+
+        # Test test_calc_path_loss with shadow
+        self.pl.use_shadow_bool = True
+        # We don't know the value of the shadowing to test it, but we can
+        # at least test that the shadowing modified the path loss
+        self.assertNotAlmostEqual(self.pl.calc_path_loss_dB(1.2),
+                                  93.1102472958)
+
+        # Test if calc_path_loss works with shadowing for multiple values.
+        self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+
+    def test_calc_which_distance(self):
+        self.assertAlmostEqual(self.pl.which_distance(4.88624535312e-10),
+                               1.2)
+        self.assertAlmostEqual(self.pl.which_distance_dB(93.1102472958),
+                               1.2)
+
+    # _calc_deterministic_path_loss_dB
+    # which_distance_dB
 
 
 if __name__ == "__main__":

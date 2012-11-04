@@ -12,9 +12,9 @@ import numpy as np
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Mimo Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MimoBase Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Mimo(object):
+class MimoBase(object):
     """Base Class for MIMO schemes.
 
     All subclasses must implement the following methods:
@@ -29,8 +29,7 @@ class Mimo(object):
     """
 
     def __init__(self):
-        """
-        """
+        pass
 
     def getNumberOfLayers(self):
         """Get the number of layers of the MIMO scheme."""
@@ -80,7 +79,7 @@ class Mimo(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Blast Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Blast(Mimo):
+class Blast(MimoBase):
     """MIMO class for the BLAST scheme.
 
     The number of streams need to be specified during object creation.
@@ -89,9 +88,9 @@ class Blast(Mimo):
     def __init__(self, nStreams):
         """
         """
-        Mimo.__init__(self)
+        MimoBase.__init__(self)
         # Function to calculate the receive filter
-        self.calc_filter = Mimo._calcZeroForceFilter
+        self.calc_filter = MimoBase._calcZeroForceFilter
         self.noise_var = 0
         self.nStreams = nStreams
 
@@ -111,9 +110,9 @@ class Blast(Mimo):
         """
         self.noise_var = noise_var
         if noise_var > 0:
-            self.calc_filter = lambda H: Mimo._calcMMSEFilter(H, self.noise_var)
+            self.calc_filter = lambda H: MimoBase._calcMMSEFilter(H, self.noise_var)
         else:
-            self.calc_filter = Mimo._calcZeroForceFilter
+            self.calc_filter = MimoBase._calcZeroForceFilter
 
     def _encode(self, transmit_data):
         """Encode the transmit data array to be transmitted using the BLAST
@@ -173,14 +172,14 @@ class Blast(Mimo):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Alamouti Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Alamouti(Mimo):
+class Alamouti(MimoBase):
     """MIMO class for the Alamouti scheme.
     """
 
     def __init__(self, ):
         """
         """
-        Mimo.__init__(self)
+        MimoBase.__init__(self)
 
     def getNumberOfLayers(self, ):
         """Get the number of layers of the MIMO scheme.
@@ -217,44 +216,44 @@ class Alamouti(Mimo):
         """
         return self._encode(transmit_data) / np.sqrt(2)
 
-    # Remove this method later. It is slower then "_encode".
-    def _encode2(self, transmit_data):
-        """Perform the Alamouti encoding, but without dividing the power
-        among the transmit antennas.
+    # # Remove this method later. It is slower then "_encode".
+    # def _encode2(self, transmit_data):
+    #     """Perform the Alamouti encoding, but without dividing the power
+    #     among the transmit antennas.
 
-        The idea is that the encode method will call _encode and perform
-        the power division. This separation allows better code reuse.
+    #     The idea is that the encode method will call _encode and perform
+    #     the power division. This separation allows better code reuse.
 
-        Arguments:
-        - `transmit_data`: Data to be encoded by the Alamouit scheme.
-        """
-        # transmit_data will have symbols $s_1, s_2, s_3, s_4, \ldots$
+    #     Arguments:
+    #     - `transmit_data`: Data to be encoded by the Alamouit scheme.
+    #     """
+    #     # transmit_data will have symbols $s_1, s_2, s_3, s_4, \ldots$
 
-        # Number of symbols
-        Ns = transmit_data.size
+    #     # Number of symbols
+    #     Ns = transmit_data.size
 
-        # aux is the conjugate of transmit_data and the signal of the first
-        # of each two symbols will also be changed
-        aux = transmit_data.conjugate()
-        aux[np.arange(0, Ns) % 2 == 1] = -aux[np.arange(0, Ns) % 2 == 1]
+    #     # aux is the conjugate of transmit_data and the signal of the first
+    #     # of each two symbols will also be changed
+    #     aux = transmit_data.conjugate()
+    #     aux[np.arange(0, Ns) % 2 == 1] = -aux[np.arange(0, Ns) % 2 == 1]
 
-        # Then we use some clever reshaping
-        transmit_data = transmit_data.reshape(2, Ns / 2, order='F')
-        aux = aux.reshape(2, Ns / 2, order='F')
+    #     # Then we use some clever reshaping
+    #     transmit_data = transmit_data.reshape(2, Ns / 2, order='F')
+    #     aux = aux.reshape(2, Ns / 2, order='F')
 
-        # Swap the two rows of aux
-        aux[0], aux[1] = aux[1].copy(), aux[0].copy()
+    #     # Swap the two rows of aux
+    #     aux[0], aux[1] = aux[1].copy(), aux[0].copy()
 
-        # Column i of transmit_data corresponds to the first column of the
-        # i-th codeword, while column i of aux corresponds to the second
-        # column of the i-th codeword.
-        encoded_data = np.empty((2, Ns), dtype=complex)
-        encoded_data[:, np.arange(0, Ns) % 2 == 0] = transmit_data
-        encoded_data[:, np.arange(0, Ns) % 2 == 1] = aux
+    #     # Column i of transmit_data corresponds to the first column of the
+    #     # i-th codeword, while column i of aux corresponds to the second
+    #     # column of the i-th codeword.
+    #     encoded_data = np.empty((2, Ns), dtype=complex)
+    #     encoded_data[:, np.arange(0, Ns) % 2 == 0] = transmit_data
+    #     encoded_data[:, np.arange(0, Ns) % 2 == 1] = aux
 
-        # encoded_data will then have the form
-        # $\begin{bmatrix} s_1 & -s_2^* & s_3 & -s_4^* \\ s_2 & s_1^* & s_4 & s_3^*\end{bmatrix} \ldots$
-        return encoded_data
+    #     # encoded_data will then have the form
+    #     # $\begin{bmatrix} s_1 & -s_2^* & s_3 & -s_4^* \\ s_2 & s_1^* & s_4 & s_3^*\end{bmatrix} \ldots$
+    #     return encoded_data
 
     def _decode(self, received_data, channel):
         """Perform the decoding of the received_data for the Alamouit
@@ -305,37 +304,4 @@ class Alamouti(Mimo):
         - `channel`: MIMO channel matrix.
         """
         return self._decode(received_data, channel) * np.sqrt(2)
-
-if __name__ == '__main__':
-    nStreams = 2
-    Nr = 3
-    Ns = 16
-
-    transmit_data = np.arange(0, Ns)
-    transmit_data = transmit_data + 1j * transmit_data
-    alamouti = Alamouti()
-    encoded_data = alamouti.encode(transmit_data)
-
-    channel = np.random.randn(Nr, nStreams)
-    received_data = channel.dot(encoded_data)
-
-    decoded_data = alamouti.decode(received_data, channel)
-    print decoded_data
-
-
-if __name__ == '__main__1':
-    data = np.arange(0, 9)
-    print data
-    nStreams = 3
-    Nr = 4
-    blast = Blast(nStreams)
-    print blast.getNumberOfLayers()
-    transmitted_data = blast.encode(data)
-    print transmitted_data
-
-    channel = np.random.randn(Nr, nStreams)
-    received_data = channel.dot(transmitted_data)
-
-    blast.set_noise_var(0.001)
-    decoded_data = blast.decode(received_data, channel)
-    print decoded_data
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

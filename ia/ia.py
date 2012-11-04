@@ -85,7 +85,7 @@ class AlternatingMinIASolver(object):
         for kl in all_kl_indexes:
             (k, l) = kl
             Hkl_Fl = np.dot(
-                self.getChannel(k, l),
+                self.get_channel(k, l),
                 self.F[l])
             Cost = Cost + np.linalg.norm(
                 Hkl_Fl -
@@ -125,7 +125,7 @@ class AlternatingMinIASolver(object):
         for kl in all_kl_indexes:
             (k, l) = kl
             Hkl_F = np.dot(
-                self.getChannel(k, l),
+                self.get_channel(k, l),
                 self.F[l])
             self.C[k] = self.C[k] + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
 
@@ -164,7 +164,7 @@ class AlternatingMinIASolver(object):
         # $\sum_{k \neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}$
         for lk in all_lk_indexes:
             (l, k) = lk
-            lH = self.getChannel(k, l)
+            lH = self.get_channel(k, l)
             newF[l] = newF[l] + np.dot(
                 np.dot(lH.conjugate().transpose(),
                        Y[k]),
@@ -184,7 +184,7 @@ class AlternatingMinIASolver(object):
         newW = np.zeros(self.K, dtype=np.ndarray)
         for k in np.arange(self.K):
             tildeHi = np.hstack(
-                [np.dot(self.getChannel(k, k), self.F[k]),
+                [np.dot(self.get_channel(k, k), self.F[k]),
                  self.C[k]])
             newW[k] = np.linalg.inv(tildeHi)
             # We only want the first Ns[k] lines
@@ -240,11 +240,11 @@ class AlternatingMinIASolver(object):
         Raises: ValueError if the arguments are invalid.
         """
         self._multiUserChannel.init_from_channel_matrix(channel_matrix, Nr,
-                                                       Nt, K)
+                                                        Nt, K)
 
     # This method does not need testing, since the logic is implemented in
     # the MultiUserChannelMatrix class and it is already tested.
-    def getChannel(self, k, l):
+    def get_channel(self, k, l):
         """Get the channel from user l to user k.
 
         Arguments:
@@ -252,12 +252,3 @@ class AlternatingMinIASolver(object):
         - `k`: Receiving user
         """
         return self._multiUserChannel.get_channel(k, l)
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "Hello"
-    print "{0} executed".format(__file__)

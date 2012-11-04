@@ -4,8 +4,6 @@
 """module docstring"""
 
 import numpy as np
-from matplotlib import pylab
-from matplotlib import pyplot as plt
 
 
 class OFDM(object):
@@ -18,21 +16,22 @@ class OFDM(object):
         """
         self.set_parameters(fft_size, cp_size, num_used_subcarriers)
 
-    def set_parameters(self, fft_size, cp_size, num_used_subcarriers=0):
-        """
+    def set_parameters(self, fft_size, cp_size, num_used_subcarriers=None):
+        """Set the OFDM parameters.
 
         Arguments:
         - `fft_size`: Size of the FFT and IFFT used by the OFDM class.
         - `cp_size`: Size of the cyclic prefix (in samples)
         - `num_used_subcarriers`: Number of used subcarriers. Must be
                                   greater than or equal to 2 and lower than
-                                  or equal to fft_size. Otherwise fft_size
-                                  will be used instead.
+                                  or equal to fft_size. If not provided,
+                                  fft_size will be used
+
         """
         if (cp_size < 0) or cp_size > fft_size:
             raise ValueError("cp_size must be nonnegative and cannot be greater than fft_size")
 
-        if num_used_subcarriers < 0:
+        if num_used_subcarriers is None:
             num_used_subcarriers = fft_size
 
         if num_used_subcarriers > fft_size:
@@ -126,9 +125,8 @@ class OFDM(object):
         half_used = self.num_used_subcarriers // 2
 
         indexes_proper = np.hstack([
-                self.fft_size + indexes[half_used:],
-                indexes[0:half_used]
-                ])
+            self.fft_size + indexes[half_used:],
+            indexes[0:half_used]])
         return indexes_proper
 
     def _prepare_input_signal(self, input_signal):
@@ -330,35 +328,3 @@ class OFDM(object):
 
         # demodulated_data = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
         # return demodulated_data
-
-if __name__ == '__main__':
-    # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
-    num_bits = 2500
-    # generating 1's and 0's
-    ip_bits = np.random.random_integers(0, 1, num_bits)
-    # Number of modulated symbols
-    num_mod_symbols = num_bits * 1
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxxxxxxx BPSK modulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # bit0 --> -1
-    # bit1 --> +1
-    ip_mod = 2 * ip_bits - 1
-
-    ofdm = OFDM(64, 16, 52)
-    ofdm_symbols = ofdm.modulate(ip_mod)
-
-    # MATLAB code to plot the power spectral density
-    # close all
-    fsMHz = 20e6
-    Pxx, W = pylab.psd(ofdm_symbols, NFFT=ofdm.fft_size, Fs=fsMHz)
-    # [Pxx,W] = pwelch(st,[],[],4096,20);
-    plt.plot(
-        W,
-        #10 * np.log10(np.fft.fftshift(Pxx))
-        10 * np.log10(Pxx)
-        )
-    plt.xlabel('frequency, MHz')
-    plt.ylabel('power spectral density')
-    plt.title('Transmit spectrum OFDM (based on 802.11a)')
-    plt.show()

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     for ij in all_possibilities:
         i, j = ij
         print "H{0}{1}".format(i, j)
-        Hij = alt.getChannel(i, j)
+        Hij = alt.get_channel(i, j)
         Hij_eff = np.dot(alt.W[i], np.dot(Hij, alt.F[j]))
         print np.linalg.svd(Hij_eff)[1].round(5)
         print np.linalg.svd(Hij_eff)[0].round(5)

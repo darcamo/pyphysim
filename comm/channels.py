@@ -192,9 +192,7 @@ class MultiUserChannelMatrix(object):
         if channel_matrix.shape != (np.sum(Nr), np.sum(Nt)):
             raise ValueError("Shape of the channel_matrix must be equal to the sum or receive antennas of all users times the sum of the receive antennas of all users.")
 
-        if Nr.size != Nt.size:
-            raise ValueError("K must be equal to the number of elements in Nr and Nt")
-        if Nt.size != K:
+        if (Nt.size != K) or (Nr.size != K):
             raise ValueError("K must be equal to the number of elements in Nr and Nt")
 
         self._K = K
@@ -322,11 +320,12 @@ class MultiUserChannelMatrix(object):
         - `pathloss_matrix`: A matrix with dimension "K x K", where K is
                              the number of users, with the path loss from
                              each transmitter (columns) to each receiver
-                             (rows).
+                             (rows). If you want to disable the path loss
+                             then set it to None.
 
         """
         # A matrix with the path loss from each transmitter to each
-        # receiver
+        # receiver.
         self._pathloss_matrix = pathloss_matrix
 
         if pathloss_matrix is None:
@@ -334,48 +333,8 @@ class MultiUserChannelMatrix(object):
         else:
             self._pathloss_big_matrix = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(pathloss_matrix, self._Nr, self._Nt, self._K)
 
-        # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
-        # in sync by disallowing modification of individual elements in
-        # both of them.
-        self._pathloss_matrix.setflags(write=False)
-        self._pathloss_big_matrix.setflags(write=False)
-
-# xxxxxxxxxx Main method xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    multiH = MultiUserChannelMatrix()
-    H = np.array(
-        [
-            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
-            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
-            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8]])
-
-    K = 3
-    Nr = np.array([2, 4, 6])
-    Nt = np.array([2, 3, 5])
-    multiH.init_from_channel_matrix(H, Nr, Nt, K)
-    # print multiH.Nr
-    # print multiH.Nt
-    # print multiH._big_H.shape
-    pathloss = np.array([[1, 1.1, 1.2],
-                         [1.3, 1.4, 1.5],
-                         [1.6, 1.7, 1.8]])
-    multiH.set_pathloss(pathloss)
-    print multiH._big_H
-    print multiH._pathloss_big_matrix
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)
+            # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
+            # in sync by disallowing modification of individual elements in
+            # both of them.
+            self._pathloss_matrix.setflags(write=False)
+            self._pathloss_big_matrix.setflags(write=False)

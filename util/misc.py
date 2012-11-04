@@ -98,70 +98,6 @@ def pretty_time(time_in_seconds):
     else:
         return "%.2fs" % time_in_seconds
 
-
-def mmat(x, format='%+.12e'):
-    """Display the ndarray 'x' in a format suitable for pasting to MATLAB
-
-    mmat - a function to format arrays of arbitrary dimension for easy copy
-    and paste to an interactive matlab session
-
-    >>> a=np.arange(1,10)
-    >>> a.shape=(3,3)
-    >>> mmat(a)
-    [ +1.000000000000e+00 +2.000000000000e+00 +3.000000000000e+00 ;   +4.000000000000e+00 +5.000000000000e+00 +6.000000000000e+00 ;   +7.000000000000e+00 +8.000000000000e+00 +9.000000000000e+00 ]
-    """
-
-    def print_row(row, format):
-        if row.dtype == 'complex':
-            for i in row:
-                format_string = "%s%sj" % (format, format)
-                print format_string % (i.real, i.imag)
-        else:
-            for i in row:
-                print format % i,
-
-    # if x.dtype=='complex':
-    #     raise Exception ("conversion invalid for complex type")
-
-    if x.ndim == 1:
-        # 1d input
-        print "[",
-        print_row(x, format)
-        print "]"
-        print ""
-
-    if x.ndim == 2:
-        print "[",
-        print_row(x[0], format)
-        if x.shape[0] > 1:
-            print ';',
-        for row in x[1:-1]:
-            print " ",
-            print_row(row, format)
-            print ";",
-        if x.shape[0] > 1:
-            print " ",
-            print_row(x[-1], format)
-        print "]",
-
-    if x.ndim > 2:
-        d_to_loop = x.shape[2:]
-        sls = [slice(None, None)] * 2
-        print "reshape([ ",
-        # loop over flat index
-        for i in range(np.prod(d_to_loop)):
-            # reverse order for matlab
-            # tricky double reversal to get first index to vary fastest
-            ind_tuple = np.unravel_index(i, d_to_loop[::-1])[::-1]
-            ind = sls + list(ind_tuple)
-            mmat(x[ind], format)
-
-        print '],[',
-        for i in x.shape:
-            print '%d' % i,
-        print '])'
-
-
 def xor(a, b):
     """Calculates the xor operation between a and b.
 
@@ -241,8 +177,6 @@ def bitCount(n):
 
     Arguments:
     - `n`: The number
-
-    >>> 10
     """
     count = 0
     while n > 0:
@@ -398,24 +332,10 @@ def calc_autocorr(x):
     """
     x2 = x - np.mean(x)
     variance = float(np.var(x2))  # Biased variance of x2
-    # We divide by x2.size because the calculated variance is the biased version. If yt was teh unbiased we would have to divide by x2.size-1 instead.
+
+    # We divide by x2.size because the calculated variance is the biased
+    # version. If it was the unbiased we would have to divide by x2.size-1
+    # instead.
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
-
-# def test_calc_autocorr():
-#     #x = np.r_[0:10]
-#     x = np.array([4, 2, 1, 3, 7, 3, 8])
-#     print x
-#     Rx = calc_autocorr(x)
-#     print Rx
-#     #print Rx/Rx[0]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

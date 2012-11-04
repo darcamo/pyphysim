@@ -205,24 +205,3 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None
     BD = BlockDiaginalizer(iNUsers, iPu, noiseVar)
     results_tuble = BD.block_diagonalize(mtChannel)
     return results_tuble
-
-
-if __name__ == '__main__1':
-    # Power available for each user
-    Pu = 1
-    noise_var = 0.1
-    NUsers = 3
-
-    channel = randn_c(6, 6)
-
-    (newH, Ms) = block_diagonalize(channel, NUsers, Pu, noise_var)
-
-    np.set_printoptions(precision=2, suppress=True)
-    print newH
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

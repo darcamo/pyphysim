@@ -41,6 +41,38 @@ class UtilDoctestsTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Conversion Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: finish implementation
+class ConversionTestCase(unittest.TestCase):
+    def test_dB2Linear(self):
+        self.assertAlmostEqual(conversion.dB2Linear(30),
+                               1000.0)
+
+    def test_linear2dB(self):
+        self.assertAlmostEqual(conversion.linear2dB(1000),
+                               30.0)
+
+    def test_dBm2Linear(self):
+        self.assertAlmostEqual(conversion.dBm2Linear(60),
+                               1000.0)
+
+    def test_linear2dBm(self):
+        self.assertAlmostEqual(conversion.linear2dBm(1000),
+                               60.0)
+
+    def test_binary2gray(self):
+        np.testing.assert_array_equal(conversion.binary2gray(np.arange(0, 8)),
+                                      np.array([0, 1, 3, 2, 6, 7, 5, 4]))
+
+    def test_gray2binary(self):
+        vec = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        np.testing.assert_array_equal(
+            conversion.gray2binary(conversion.binary2gray(vec)),
+            vec)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ResultTestCase(unittest.TestCase):
@@ -92,6 +124,17 @@ class ResultTestCase(unittest.TestCase):
         self.result3.update(0.4)
         self.assertEqual(self.result3.get_result(), 0.4)
 
+        # Test if an exception is raised when updating a Result of the
+        # RATIOTYPE without specifying both the value and the total.
+        with self.assertRaises(ValueError):
+            self.result2.update(3)
+
+        # Test if an exception is thrown when updating a result of some
+        # unknown type
+        result_invalid = Result('invalid', 'invalid_type')
+        with self.assertRaises(ValueError):
+            result_invalid.update(10)
+
     def test_merge(self):
         # Test merge of Results of SUMTYPE
         self.result1.update(13)
@@ -131,6 +174,20 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.result1.merge(result5)
 
+    def test_test_representation(self):
+        self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
+        self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
+        self.assertEqual(self.result3.__repr__(),
+                         "Result -> name3: Nothing yet")
+
+        self.result1.update(10)
+        self.result2.update(2, 4)
+        self.result3.update(0.4)
+
+        self.assertEqual(self.result1.__repr__(), "Result -> name: 10")
+        self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
+        self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
+
 
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
@@ -162,6 +219,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         # the names uninportant.
         expected_output = set(['lala', 'lele'])
         self.assertEqual(set(self.simresults.get_result_names()), expected_output)
+        # Test also the representation of the SimulationResults object
+        self.assertEqual(self.simresults.__repr__(), """SimulationResults: ['lele', 'lala']""")
 
     def test_add_result(self):
         # Add a result with the same name of an existing result -> Should
@@ -206,7 +265,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # Note that even though there is a 'lili' result in
         # self.other_simresults, only 'lala' and 'lele' will be
         # merged. Also, self.other_simresults must have all the results in
-        # self.simresults otherwise we will he a KeyError.
+        # self.simresults otherwise there will be a KeyError.
         self.simresults.merge_all_results(self.other_simresults)
         self.assertEqual(self.simresults['lala'][-1].get_result(), 43)
         self.assertEqual(
@@ -220,6 +279,14 @@ class SimulationResultsTestCase(unittest.TestCase):
         # Two updates from the 'lele' result in self.simresults and other
         # from the 'lele' result in self.other_simresults
         self.assertEqual(self.simresults['lele'][0].num_updates, 3)
+
+        # Test if an empty SimulationResults object can merge with another
+        # SimulationResults objec.
+        emptyresults = SimulationResults()
+        emptyresults.merge_all_results(self.simresults)
+        self.assertEqual(
+            set(emptyresults.get_result_names()),
+            set(['lala', 'lele']))
 
     def test_get_result_values_list(self):
         self.simresults.append_all_results(self.other_simresults)
@@ -275,6 +342,23 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # We may have 8 variations, but there are still only 4 parameters
         self.assertEqual(len(self.sim_params), 4)
+
+        # Test if an exception is raised if we try to set a non iterable
+        # parameter to be unpacked.
+        self.sim_params.add('fifth', 10)
+        with self.assertRaises(ValueError):
+            self.sim_params.set_unpack_parameter('fifth')
+
+        # Test if an exception is thrown if we try to set a non existing
+        # parameter to be unset.
+        with self.assertRaises(ValueError):
+            self.sim_params.set_unpack_parameter('sixth')
+
+        # Now that a few parameters were added and set to be unpacked, lets
+        # test the representation of the SimulationParameters object. Note
+        # that the parameters that are marked for unpacking have '*'
+        # appended to their name.
+        self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
 
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -358,28 +442,85 @@ class SimulationParametersTestCase(unittest.TestCase):
             # has no value 'C'
             self.sim_params.get_pack_indexes(fixed_fourth_invalid)
 
-# TODO: Implement-me
+    def test_save_to_file(self):
+        # This method is not implemented yet and for now we only test if it
+        # raises an exception.
+        with self.assertRaises(NotImplementedError):
+            self.sim_params.save_to_file('filename')
+
+
+# TODO: Finish the implementation
 class SimulationRunnerTestCase(unittest.TestCase):
     """Unit-tests for the SimulationRunner class in the simulations
     module.
     """
 
     def setUp(self):
-        pass
+        self.runner = SimulationRunner()
 
+    # Test if the SimulationRunner sets a few default attributs in its init
+    # method.
+    def test_default_values(self):
+        # Note that we are also testing the elapsed_time and runned_reps
+        # properties, which should just return these attributes.
+        self.assertEqual(self.runner.rep_max, 1)
+        self.assertEqual(self.runner._elapsed_time, 0.0)
+        self.assertEqual(self.runner.elapsed_time, "0.00s")
+        self.assertEqual(self.runner.runned_reps, [])
+        self.assertTrue(isinstance(self.runner.params, SimulationParameters))
+        self.assertTrue(isinstance(self.runner.results, SimulationResults))
+        self.assertEqual(self.runner.progressbar_message, "Progress")
+
+    def test_not_implemented_methods(self):
+        pass
+        #self.assertRaises(NotImplementedError, self.S1._get_vertex_positions)
+        with self.assertRaises(NotImplementedError):
+            self.runner._run_simulation(None)
+
+    def test_keep_going(self):
+        # the _keep_going method in the SimulationRunner class should
+        # return True
+        self.assertTrue(self.runner._keep_going(None))
+
+    def test_simulate(self):
+        # First we need to create a dummy subclass of SimulationRunner that
+        # implements the _run_simulation method.
+        class DummyRunner(simulations.SimulationRunner):
+            def __init__(self):
+                simulations.SimulationRunner.__init__(self)
+                # Set the progress bar message to None to avoid print the
+                # progressbar in these testes.
+                self.rep_max = 2
+                self.progressbar_message = None
+                # Now we add a dummy parameter to our runner object
+                self.params.add('dummy_increment', 1)
+
+            def _run_simulation(self, current_params):
+                return SimulationResults()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now we create an instance of DummyRunner
+        dummyrunner = DummyRunner()
+        # then we call its simulate method
+        dummyrunner.simulate()
+
+        dummyrunner.progressbar_message = 'Progress'
+        dummyrunner.simulate()
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
-    def test_pgig(self):
-        """
-        """
+    def test_peig(self):
         A = np.array(
             [[2 - 0j, 3 + 12j, 7 + 1j],
              [3 - 12j, 6 + 0j, 5 + 3j],
              [7 - 1j, 5 - 3j, 4 + 0j]])
+
+        # Test if an exception is raised if 'n' is greater then the number
+        # of columns of A
+        with self.assertRaises(ValueError):
+            misc.peig(A, 4)
 
         # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         [V_n3, D_n3] = misc.peig(A, 3)
@@ -414,6 +555,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
              [3 - 12j, 6 + 0j, 5 + 3j],
              [7 - 1j, 5 - 3j, 4 + 0j]])
 
+        # Test if an exception is raised if 'n' is greater then the number
+        # of columns of A
+        with self.assertRaises(ValueError):
+            misc.leig(A, 4)
+
         # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         [V_n3, D_n3] = misc.leig(A, 3)
 
@@ -440,6 +586,77 @@ class MiscFunctionsTestCase(unittest.TestCase):
              [-0.02693857 + 0.57425752j],
              [-0.40625488 - 0.14189355j]])
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
+
+    def test_level2bits(self):
+        self.assertEqual(
+            map(misc.level2bits, range(1, 20)),
+            [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
+
+        # Test if an exception is raised for a value of n lower then 1
+        with self.assertRaises(ValueError):
+            misc.level2bits(0)
+        with self.assertRaises(ValueError):
+            misc.level2bits(-2)
+
+    def test_int2bits(self):
+        self.assertEqual(
+            map(misc.int2bits, range(0, 19)),
+            [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
+
+        # Test if an exception is raised for a negative value of n
+        with self.assertRaises(ValueError):
+            misc.int2bits(-1)
+
+    def test_bitCount(self):
+        self.assertEqual(misc.bitCount(0), 0)
+        self.assertEqual(misc.bitCount(1), 1)
+        self.assertEqual(misc.bitCount(2), 1)
+        self.assertEqual(misc.bitCount(3), 2)
+        self.assertEqual(misc.bitCount(4), 1)
+        self.assertEqual(misc.bitCount(5), 2)
+        self.assertEqual(misc.bitCount(6), 2)
+        self.assertEqual(misc.bitCount(7), 3)
+        self.assertEqual(misc.bitCount(8), 1)
+        self.assertEqual(misc.bitCount(15), 4)
+
+    def test_qfunc(self):
+        self.assertAlmostEqual(misc.qfunc(0.0), 0.5)
+        self.assertAlmostEqual(misc.qfunc(1.0), 0.158655254, 9)
+        self.assertAlmostEqual(misc.qfunc(3.0), 0.001349898, 9)
+
+    def test_least_right_singular_vectors(self):
+        A = np.array([1, 2, 3, 6, 5, 4, 2, 2, 1])
+        A.shape = (3, 3)
+        (min_Vs, remaining_Vs, S) = misc.least_right_singular_vectors(A, 1)
+        np.testing.assert_array_almost_equal(min_Vs,
+                                             np.array([[-0.4474985],
+                                                       [0.81116484],
+                                                       [-0.3765059]]),
+                                             8)
+        np.testing.assert_array_almost_equal(
+            remaining_Vs,
+            np.array([[-0.62341491, -0.64116998],
+                      [0.01889071, -0.5845124],
+                      [0.78166296, -0.49723869]]),
+            8)
+
+        np.testing.assert_array_almost_equal(
+            S,
+            np.array([1.88354706, 9.81370681]),
+            8)
+
+    def test_calc_unorm_autocorr(self):
+        x = np.array([4, 2, 1, 3, 7, 3, 8])
+        unorm_autocor = misc.calc_unorm_autocorr(x)
+        expected_unorm_autocor = np.array([152, 79, 82, 53, 42, 28, 32])
+        np.testing.assert_array_equal(unorm_autocor, expected_unorm_autocor)
+
+    def test_calc_autocorr(self):
+        x = np.array([4, 2, 1, 3, 7, 3, 8])
+        autocor = misc.calc_autocorr(x)
+        expected_autocor = np.array(
+            [1. , -0.025, 0.15 , -0.175, -0.25 , -0.2 , 0.])
+        np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

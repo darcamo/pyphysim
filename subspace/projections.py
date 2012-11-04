@@ -105,13 +105,4 @@ class Projection(object):
 # xxxxx Alias for the static methods of Projection class xxxxxxxxxxxxxxxxxx
 calcProjectionMatrix = Projection.calcProjectionMatrix
 calcOrthogonalProjectionMatrix = Projection.calcOrthogonalProjectionMatrix
-calcProjectionMatrix.__doc__ += "\nThis is just an alias to Projection.calcProjectionMatrix"
-calcOrthogonalProjectionMatrix.__doc__ += "\nThis is just an alias to Projection.calcOrthogonalProjectionMatrix"
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

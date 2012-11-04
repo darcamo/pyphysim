@@ -17,6 +17,7 @@ sys.path.append("../")
 
 from util import conversion
 import numpy as np
+from collections import Iterable
 
 
 class PathLossBase(object):
@@ -40,8 +41,6 @@ class PathLossBase(object):
     """
 
     def __init__(self, ):
-        """
-        """
         self.sigma_shadow = 8  # Shadow standard deviation
         self.use_shadow_bool = False
 
@@ -79,10 +78,20 @@ class PathLossBase(object):
         Arguments:
         - `d`: Distance (in Km)
         """
-        if self.use_shadow_bool == True:
-            PL = self._calc_deterministic_path_loss_dB(d) + self.gen_shadow()
-        else:
-            PL = self._calc_deterministic_path_loss_dB(d)
+        PL = self._calc_deterministic_path_loss_dB(d)
+        if self.use_shadow_bool is True:
+            if isinstance(d, Iterable):
+                # If 'd' is a numpy array (or something similar such as a
+                # list), shadow must be a numpy array with the same shape
+                shadow = conversion.dB2Linear(
+                    np.random.randn(np.size(d)) * self.sigma_shadow)
+                shadow.shape = np.shape(d)
+            else:
+                # If 'd' is not an array but add a scalar shadowing
+                shadow = conversion.dB2Linear(
+                    np.random.randn() * self.sigma_shadow)
+            PL = PL + shadow
+
         return PL
 
     def calc_path_loss(self, d):
@@ -104,22 +113,7 @@ class PathLossBase(object):
         """
         d = self.which_distance_dB(-conversion.linear2dB(pl))
         return d
-
-    def gen_shadow(self, dim=1):
-        """Generates samples for the shadowing with the lognormal standard
-        deviation given by the sigmaShadow property. The "dim" variable
-        specifies the dimension of the output and defaults to a scalar.
-
-        Arguments:
-        - `dim`: Dimensions (scalar) of the output
-        """
-        shadow = conversion.dB2Linear(np.random.randn(dim) * self.sigma_shadow)
-        if dim == 1:
-            # Return shadow as a scalar instead of as an array with a
-            # single element
-            return shadow[0]
-        else:
-            return shadow
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class PathLossFreeSpace(PathLossBase):
@@ -150,8 +144,7 @@ class PathLossFreeSpace(PathLossBase):
     0.83882020174144778
     """
 
-    def __init__(self, ):
-        #super(PathLossFreeSpace, self).__init__()
+    def __init__(self):
         PathLossBase.__init__(self)
         self.n = 2       # Path Loss Coefficient
         self.fc = 900e6  # Frequency of the central carrier
@@ -243,11 +236,3 @@ class PathLoss3GPP1(PathLossBase):
         """
         PL = 128.1 + 37.6 * np.log10(d)
         return PL
-
-
-# xxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

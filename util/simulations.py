@@ -841,7 +841,7 @@ class Result(object):
         else:
             return "Result -> {0}: {1}".format(self.name, self.get_result())
 
-    def update(self, value, total=0):
+    def update(self, value, total=None):
         """Update the current value.
 
         Arguments:
@@ -861,22 +861,21 @@ class Result(object):
         # the equivalent of a switch statement.
         # First we define a function for each possibility.
         def __default_update(dummy1, dummy2):
-            print("Warning: update not performed for unknown type %s" %
-                  self._update_type_code)
-            pass
+            raise ValueError("Can't update a Result object of type '{0}'".format(self._update_type_code))
+            # print("Warning: update not performed for unknown type %s" %
+            #       self._update_type_code)
 
         def __update_SUMTYPE_value(value, dummy):
             self._value += value
 
         def __update_RATIOTYPE_value(value, total):
+            if total is None:
+                raise ValueError("A 'value' and a 'total' are required when updating a Result object of the RATIOTYPE type.")
+
             assert value <= total, ("__update_RATIOTYPE_value: "
                                     "'value cannot be greater then total'")
-            if total == 0:
-                print("Update Ignored: total should be provided and be greater "
-                      "then 0 when the update type is RATIOTYPE")
-            else:
-                self._value += value
-                self._total += total
+            self._value += value
+            self._total += total
 
         def __update_by_replacing_current_value(value, dummy):
             self._value = value
@@ -920,12 +919,3 @@ class Result(object):
             else:
                 return self._value
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
