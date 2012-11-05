@@ -70,6 +70,13 @@ class SimulationRunner(object):
       _run_simulation from where _run_simulation can get the current
       combination of parameters.
 
+      If you want/need to save the simulation parameters for future
+      reference, however, then you should store all the simulation
+      parameters in the self.params attribute. This will allow you to call
+      its save_to_file method to save everything into a file. The
+      simulation parameters can be recovered latter from this file by
+      calling the static method SimulationParameters.load_from_file.
+
     * Simulation Results
 
       In the implementation of the _run_simulation method in a subclass of
@@ -86,6 +93,15 @@ class SimulationRunner(object):
       simulation finishes. Note that the way the results from each
       _run_simulation run are merged together depend on the the Result
       'update_type'.
+
+      Since you will have the complete simulation results in the
+      self.results object you can easily save them to a file calling its
+      save_to_file method.
+
+      TIP: create a new 'params' attribute with the simulation parameters
+      in the self.results object before calling its save_to_file
+      method. This way you will have information about which simulation
+      parameters were used to generate the results.
 
     * Number of iterations the _run_simulation method is performed
 
