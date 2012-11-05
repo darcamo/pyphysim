@@ -10,7 +10,7 @@ import collections
 import sys
 sys.path.append("../")
 
-from util.misc import least_right_singular_vectors, randn_c
+from util.misc import least_right_singular_vectors
 import waterfilling
 
 

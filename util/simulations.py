@@ -707,6 +707,32 @@ class SimulationResults(object):
         object.
         """
         return self._results.itervalues()
+
+    def save_to_file(self, filename):
+        """Save the SimulationResults to the file `filename`.
+
+        Arguments:
+        - `filename`: Name of the file to save the results.
+
+        """
+        import pickle
+        with open(filename, 'w') as output:
+            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def load_from_file(filename):
+        """Load the SimulationResults from the file `filename`.
+
+        Arguments:
+        - `filename`: Name of the file from where the results will be
+                      loaded.
+
+        """
+        import pickle
+        with open(filename, 'r') as input:
+            obj = pickle.load(input)
+        return obj
+
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
