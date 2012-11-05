@@ -17,7 +17,7 @@ performed for each value of SNR with the results aggregated after that.
 
 __version__ = "$Revision$"
 
-
+import pickle
 from collections import OrderedDict, Iterable
 import itertools
 import copy
@@ -575,14 +575,27 @@ class SimulationParameters(object):
         # objects and return it
         return map(SimulationParameters.create, all_possible_dicts_list)
 
-    # TODO: Implement and test
-    def save_to_file(self, file_name):
-        """Save the SimulationParameters object to the file `file_name`.
+    def save_to_file(self, filename):
+        """Save the SimulationParameters object to the file `filename`.
 
         Arguments:
-        - `file_name`: Name of the file to save the parameters.
+        - `filename`: Name of the file to save the parameters.
         """
-        raise NotImplementedError("SimulationParameters.save_to_file: Implement-me")
+        with open(filename, 'w') as output:
+            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def load_from_file(filename):
+        """Load the SimulationParameters from the file 'filename'.
+
+        Arguments:
+        - `filename`: Name of the file from where the results will be
+                       loaded.
+        """
+        with open(filename, 'r') as input:
+            obj = pickle.load(input)
+        return obj
+
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -715,7 +728,6 @@ class SimulationResults(object):
         - `filename`: Name of the file to save the results.
 
         """
-        import pickle
         with open(filename, 'w') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
@@ -728,7 +740,6 @@ class SimulationResults(object):
                       loaded.
 
         """
-        import pickle
         with open(filename, 'r') as input:
             obj = pickle.load(input)
         return obj
