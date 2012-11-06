@@ -7,10 +7,7 @@ import os
 
 
 # find_packages returns a list all Python packages found within directory
-packages = find_packages()
-
-requires = ["numpy",
-            "nose"]
+packages = find_packages(where='.', exclude=[])
 
 # Run the command "python setup.py nosetests" to run the tests.
 
@@ -23,7 +20,7 @@ def read(fname):
 
 setup(
     # Basic Package Information
-    name="Py-PhySim",
+    name="PyPhySim",
     version="0.1",
 
     # Metadata for PyPI
@@ -45,15 +42,13 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Topic :: Scientific/Engineering",
     ],
-
-
-    requires=requires,
-
-
-    scripts=["bin/"],
+    requires=["setuptools", "numpy", "nose"],
+    scripts=["bin/run_nosetests_with_coverage.sh",
+             "bin/run_python_coverage.sh",
+             "py-physim"],
     #py_modules=['modulators', 'simulations'],
     packages=packages,
-    package_data={'': ["LICENSE.txt"],
+    package_data={'': ["README", "Makefile", "LICENSE.txt"],
                   'tests': ["README"],
                   'util': ["README"]},
     #data_files=['pena_calculator.org'],
@@ -65,3 +60,10 @@ setup(
 
     setup_requires=['nose>=1.0'],
 )
+
+
+# Mensagem para escrever no Fórum
+
+# Como construir um pacote Python para rodar em outra máquina?
+
+# Preciso de uma maneira de rodar um programa que criei em Python (com alguns pacotes e módulos em cada pacote) em outra máquina (que possui apenas uma versão antiga do python instalada e não tem também as bibliotecas que preciso. Aparentemente existem várias opções para isso como o freeze, o pyinstaller, dentre outros.

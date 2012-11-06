@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
 
 cd ../
-python util/simulations.py
+
+echo "xxxxxxxxxx Running nosetests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+nosetests tests/
+echo "xxxxxxxxxx Done xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

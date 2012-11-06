@@ -19,9 +19,6 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-import sys
-sys.path.append("../")
-
 from util.misc import level2bits, qfunc
 from util.conversion import gray2binary, binary2gray, dB2Linear
 
@@ -451,11 +448,3 @@ if __name__ == '__main__1':
     # testGrayCodeConversion(16)
 
     qam = QAM(16)
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

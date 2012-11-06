@@ -301,58 +301,31 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
-    import itertools
-
-    F = np.zeros(3, dtype=np.ndarray)
-    Ns = [1, 2, 2]
-    F[0] = np.array([[1, 2], [2, 2]])
-    F[1] = np.array([[3, 3, 2], [0, 0, 2], [1, 5, 1]])
-    F[2] = np.array([[4, 3, 2], [4, 4, 4], [3, 1, 3]])
-
-    print leig(F[2], 2)[0]
-
-    g = lambda f, ns: leig(f, ns)[0]
-
-    iterator = itertools.imap(g, F, Ns)
-    print np.array(list(iterator)).shape
-
-
 if __name__ == "__main__":
     # plot_psd_OFDM_symbols()
     unittest.main()
 
-if __name__ == '__main__1':
-    import time
-    from misc import pretty_time
 
-    tic = time.time()
+## Use this if you want to optimize the code on the ia.ia module
+# if __name__ == '__main__':
+#     import time
+#     from misc import pretty_time
 
-    K = 4
-    Nr = np.array([5, 5, 5, 5])
-    Nt = np.array([5, 5, 5, 5])
-    Ns = np.array([2, 2, 2, 2])
-    alt = AlternatingMinIASolver()
-    alt.randomizeH(Nr, Nt, K)
-    alt.randomizeF(Nt, Ns, K)
+#     tic = time.time()
 
-    maxIter = 5000
-    Cost = np.zeros(maxIter)
-    for i in np.arange(maxIter):
-        alt.step()
-        Cost[i] = alt.getCost()
+#     K = 4
+#     Nr = np.array([5, 5, 5, 5])
+#     Nt = np.array([5, 5, 5, 5])
+#     Ns = np.array([2, 2, 2, 2])
+#     alt = AlternatingMinIASolver()
+#     alt.randomizeH(Nr, Nt, K)
+#     alt.randomizeF(Nt, Ns, K)
 
-    toc = time.time()
-    print pretty_time(toc - tic)
+#     maxIter = 5000
+#     Cost = np.zeros(maxIter)
+#     for i in np.arange(maxIter):
+#         alt.step()
+#         Cost[i] = alt.getCost()
 
-    # from pylab import *
-    # semilogy(Cost)
-    # grid(which='minor')
-    # show()
-
-    # 11.9 segundos
-
-        # self.H = np.zeros([self.K, self.K], dtype=np.ndarray)
-        # for rx in np.arange(self.K):
-        #     for tx in np.arange(self.K):
-        #         self.H[rx, tx] = randn_c(Nr[rx], Nt[tx])
+#     toc = time.time()
+#     print pretty_time(toc - tic)

@@ -14,7 +14,6 @@ and mark the SNR parameter to be unpacked and the simulation will be
 performed for each value of SNR with the results aggregated after that.
 """
 
-
 __version__ = "$Revision$"
 
 import pickle

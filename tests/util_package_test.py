@@ -442,14 +442,11 @@ class SimulationParametersTestCase(unittest.TestCase):
             # has no value 'C'
             self.sim_params.get_pack_indexes(fixed_fourth_invalid)
 
-    def test_save_to_file(self):
-        # This method is not implemented yet and for now we only test if it
-        # raises an exception.
-        with self.assertRaises(NotImplementedError):
-            self.sim_params.save_to_file('filename')
+    def test_save_to_and_load_from_file(self):
+        # TODO: Implement-me
+        pass
 
 
-# TODO: Finish the implementation
 class SimulationRunnerTestCase(unittest.TestCase):
     """Unit-tests for the SimulationRunner class in the simulations
     module.
@@ -505,6 +502,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         dummyrunner.progressbar_message = 'Progress'
         dummyrunner.simulate()
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

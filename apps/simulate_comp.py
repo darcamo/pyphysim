@@ -13,13 +13,14 @@ Different scenarios can be simulated such as:
 # TODO: Create the several simulation scenarios
 
 import sys
-sys.path.append('../../')
+sys.path.append('../')
 
 import numpy as np
 
 from util import simulations, conversion, misc
-from comm import modulators, pathloss, channels, blockdiagonalization
 from cell import cell
+from comp import comp
+from comm import pathloss, channels, modulators
 
 
 class CompSimulationRunner(simulations.SimulationRunner):
@@ -183,7 +184,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         symbols = self.modulator.modulate(input_data)
 
         # xxxxxxxxxx Perform the block diagonalization xxxxxxxxxxxxxxxxxxxx
-        (newH, Ms) = blockdiagonalization.block_diagonalize(
+        (newH, Ms) = comp.perform_comp(
             self.multiuser_channel.big_H,
             self.num_cells,
             self.transmit_power,
@@ -206,14 +207,14 @@ class CompSimulationRunner(simulations.SimulationRunner):
         decoded_symbols = self.modulator.demodulate(received_symbols)
 
         # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors = np.sum((decoded_symbols == input_data) == False)
+        num_symbol_errors = np.sum(decoded_symbols != input_data)
         num_symbols = input_data.size
-        SER = float(num_symbol_errors) / float(num_symbols)
+        # SER = float(num_symbol_errors) / float(num_symbols)
 
         # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
         num_bit_errors = np.sum(misc.xor(decoded_symbols, input_data))
         num_bits = num_symbols * np.log2(self.M)
-        BER = float(num_bit_errors) / num_bits
+        # BER = float(num_bit_errors) / num_bits
 
         # xxxxx Return the Simulation results for this iteration xxxxxxxxxx
         ber_result = simulations.Result.create(
@@ -280,6 +281,16 @@ if __name__ == '__main__':
     runner = CompSimulationRunner()
 
     runner.simulate()
+
+    # File name (without extension) for the figure and result files.
+    results_filename = 'comp_results_(comp)'
+
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    # First we add the simulation parameters to the results
+    runner.results.params = runner.params
+    runner.results.save_to_file('{0}.pickle'.format(results_filename))
+
+    # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     SNR, ber, ser = runner.get_data_to_be_plotted()
 
     # Can only plot if we simulated for more then one value of SNR
@@ -297,5 +308,7 @@ if __name__ == '__main__':
 
         plt.grid(True, which='both', axis='both')
         plt.show()
+
+        fig.savefig('{0}.pdf'.format(results_filename))
 
     print "Elapsed Time: {0}".format(runner.elapsed_time)

@@ -7,9 +7,6 @@ import numpy as np
 import collections
 #from scipy.linalg import block_diag
 
-import sys
-sys.path.append("../")
-
 from util.misc import least_right_singular_vectors
 import waterfilling
 
@@ -41,7 +38,7 @@ class BlockDiaginalizer(object):
         self.iPu = iPu
         self.noiseVar = noiseVar
 
-    def block_diagonalize(self, mtChannel):  # , iNStreams=None, Re=None):
+    def block_diagonalize(self, mtChannel):
         """Perform the block diagonalization.
 
         mtChannel is a matrix with the channel from the transmitter to all
@@ -49,8 +46,6 @@ class BlockDiaginalizer(object):
 
         Arguments:
         - `mtChannel`: (numpy array) Channel from the transmitter to all users.
-        - `iNStreams`:
-        - `Re`:
 
         Return:
         - newH: Block diagonalized channel
@@ -186,7 +181,7 @@ class BlockDiaginalizer(object):
         return mt_channel[vtIndexes, :]
 
 
-def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None):
+def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar):
     """Performs the block diagonalization of `mtChannel`.
 
     Arguments:
@@ -194,8 +189,6 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar, iNStreams=None, Re=None
     - `iNUsers`: (int) Number of users
     - `iPu`: (float) Power available for each user
     - `noiseVar`: (float) Noise variance
-    - `iNStreams`: Not used
-    - `Re`: Not used
 
     Return:
     - newH: Block diagonalized channel
