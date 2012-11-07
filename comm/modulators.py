@@ -15,9 +15,14 @@ the calcTheoreticalSER and calcTheoreticalBER methods.
 __version__ = "$Revision: $"
 # $Source$
 
+try:
+    import matplotlib.pyplot as plt
+    _MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    _MATPLOTLIB_AVAILABLE = False
+
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 
 from util.misc import level2bits, qfunc
 from util.conversion import gray2binary, binary2gray, dB2Linear

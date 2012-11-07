@@ -1,5 +1,7 @@
 # Example in http://nedbatchelder.com/code/coverage/cmd.html
 
+# You need to install the python-coverage package (available in the Ubuntu
+# repositories) to run this script.
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # This script run python-coverage on each test file here and append the

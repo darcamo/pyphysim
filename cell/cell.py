@@ -3,7 +3,12 @@
 
 """Module that implements Cell related classes."""
 
-from matplotlib import pylab, patches
+try:
+    from matplotlib import pylab, patches
+    _MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    _MATPLOTLIB_AVAILABLE = False
+
 from collections import Iterable
 import numpy as np
 import itertools

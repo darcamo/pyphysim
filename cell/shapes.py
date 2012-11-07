@@ -6,9 +6,14 @@
 Each shape knows how to plot itself.
 """
 
+try:
+    from matplotlib import pylab
+    from matplotlib import patches
+    _MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    _MATPLOTLIB_AVAILABLE = False
+
 import numpy as np
-from matplotlib import pylab
-from matplotlib import patches
 
 
 class Coordinate(object):
@@ -444,7 +449,7 @@ def from_complex_array_to_real_matrix(a):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     ax = pylab.axes()
     h = Hexagon(2 + 3j, 2, 30)
 

@@ -5,8 +5,9 @@
 
 import numpy as np
 
-
+from subspace.projections import calcOrthogonalProjectionMatrix
 from comm.blockdiagonalization import BlockDiaginalizer
+
 
 
 class Comp(BlockDiaginalizer):
@@ -61,17 +62,31 @@ class CompExtInt(Comp):
         """
         BlockDiaginalizer.__init__(self, iNUsers, iPu, noiseVar)
 
-    def perform_comp(self, mtChannel):
+    def perform_comp(self, mtChannel, Re):
         """Perform the block diagonalization and possible interference handling.
 
         Arguments:
         - `mtChannel`: (numpy array) Channel from the transmitter to all
                        users.
+        - `Re`: (numpy array of matrices) Covariance matrix of the external
+                interference plus noise of each user. `Re` must be a numpy
+                array of dimension (K x 1), where K is the number of users,
+                and each element in `Re` is a numpy bidimensional array of
+                size (Nrk x Nrk), where 'Nrk' is the number of receive
+                antennas of the k-th user.
 
         """
+        Q = np.empty(self.iNUsers, dtype=np.ndarray)
+        for k in range(self.iNUsers):
+            # Calculates a projection matrix to the subspace orthogonal to
+            # the external interference
+            Q[k] = calcOrthogonalProjectionMatrix(Re)
+
+
         return BlockDiaginalizer.block_diagonalize(self, mtChannel)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def perform_comp(mtChannel, iNUsers, iPu, noiseVar):
     """Performs the block diagonalization of `mtChannel`.
 
@@ -100,12 +115,17 @@ def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
     - `iNUsers`: (int) Number of users
     - `iPu`: (float) Power available for each user
     - `noiseVar`: (float) Noise variance
-    - `Re`: (numpy bidimensional array) Covariance matrix of the external
-            interference plus noise.
+    - `Re`: (numpy array of matrices) Covariance matrix of the external
+            interference plus noise of each user. `Re` must be a numpy
+            array of dimension (K x 1), where K is the number of users, and
+            each element in `Re` is a numpy bidimensional array of size
+            (Nrk x Nrk), where 'Nrk' is the number of receive antennas of
+            the k-th user.
 
     Return:
     - newH: Block diagonalized channel
     - Ms_good: Precoding matrix used to block diagonalize the channel
+
     """
     COMP = CompExtInt(iNUsers, iPu, noiseVar)
     results_tuble = COMP.perform_comp(mtChannel)

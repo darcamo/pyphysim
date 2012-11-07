@@ -277,9 +277,14 @@ class CompSimulationRunner(simulations.SimulationRunner):
         return (SNR, ber, ser)
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-    runner = CompSimulationRunner()
+    # Lets import matplotlib if it is available
+    try:
+        from matplotlib import pyplot as plt
+        _MATPLOTLIB_AVAILABLE = True
+    except ImportError:
+        _MATPLOTLIB_AVAILABLE = False
 
+    runner = CompSimulationRunner()
     runner.simulate()
 
     # File name (without extension) for the figure and result files.
@@ -291,24 +296,28 @@ if __name__ == '__main__':
     runner.results.save_to_file('{0}.pickle'.format(results_filename))
 
     # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    SNR, ber, ser = runner.get_data_to_be_plotted()
+    # We can only plot the results if matplotlib is available
+    if _MATPLOTLIB_AVAILABLE is True:
 
-    # Can only plot if we simulated for more then one value of SNR
-    if SNR.size > 1:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        p1 = ax.semilogy(SNR, ber, '--g*', label='BER')
-        ax.hold(True)
-        p2 = ax.semilogy(SNR, ser, '--b*', label='SER')
+        SNR, ber, ser = runner.get_data_to_be_plotted()
 
-        plt.xlabel('SNR')
-        plt.ylabel('Error')
-        ax.set_title('BER and SER for a COmP simulation ({0} modulation)'.format(runner.modulator.name))
-        plt.legend()
+        # Can only plot if we simulated for more then one value of SNR
+        if SNR.size > 1:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            p1 = ax.semilogy(SNR, ber, '--g*', label='BER')
+            ax.hold(True)
+            p2 = ax.semilogy(SNR, ser, '--b*', label='SER')
 
-        plt.grid(True, which='both', axis='both')
-        plt.show()
+            plt.xlabel('SNR')
+            plt.ylabel('Error')
+            ax.set_title('BER and SER for a COmP simulation ({0} modulation)'.format(runner.modulator.name))
+            plt.legend()
 
-        fig.savefig('{0}.pdf'.format(results_filename))
+            plt.grid(True, which='both', axis='both')
+            plt.show()
+
+            fig.savefig('{0}.pdf'.format(results_filename))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print "Elapsed Time: {0}".format(runner.elapsed_time)
