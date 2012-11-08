@@ -224,7 +224,9 @@ def least_right_singular_vectors(A, n):
     Return:
     - `V0`: The right singular vectors corresponding to the `n` least
             significant singular values
-    - `V1`: The remaining right singular vectors
+    - `V1`: The remaining right singular vectors.
+    - `S`: The singular values corresponding to the remaining singular
+           vectors `V1`.
 
     NOTE: Because of the sort operation, if you call
     least_right_singular_vectors(A,ncols_of_A) you will get the all the
