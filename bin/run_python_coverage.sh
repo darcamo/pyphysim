@@ -34,7 +34,7 @@ done
 
 # Generate the report
 echo "xxxxxxxxxx Creating Coverage Report xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-python-coverage -rm --omit "/usr/*,/*apps/*","/*__init__*","/*setup.*"
+python-coverage report -m --omit "/usr/*","/*__init__*","/*setup.*"
 echo "xxxxxxxxxx Done xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 

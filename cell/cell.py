@@ -6,7 +6,7 @@
 try:
     from matplotlib import pylab, patches
     _MATPLOTLIB_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
 from collections import Iterable
@@ -32,7 +32,7 @@ class Node(shapes.Coordinate):
         self.plot_marker = plot_marker
         self.marker_color = marker_color
 
-    def plot_node(self, ax=None):
+    def plot_node(self, ax=None):  # pragma: no cover
         """Plot the node using the matplotlib library.
 
         If an axes 'ax' is specified, then the node is added to that
@@ -200,7 +200,7 @@ class CellBase(Node, shapes.Shape):
         for k in range(num_users):
             self.add_random_user(user_color, min_dist_ratio)
 
-    def _plot_common_part(self, ax):
+    def _plot_common_part(self, ax):  # pragma: no cover
         """Common code for plotting the classes. Each subclass must implement a
         `plot` method in which it calls the command to plot the class shape
         followed by _plot_common_part.
@@ -263,7 +263,7 @@ class Cell(shapes.Hexagon, CellBase):
         """
         CellBase.__init__(self, pos, radius, cell_id, rotation)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """Plot the cell using the matplotlib library.
 
         If an axes 'ax' is specified, then the shape is added to that
@@ -605,7 +605,7 @@ class Cluster(shapes.Shape):
     # _get_vertex_positions.
     vertices = property(_get_vertex_positions)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """Plot the cluster.
 
         Arguments:
@@ -633,7 +633,7 @@ class Cluster(shapes.Shape):
             ax.plot()
             pylab.show()
 
-    def plot_border(self, ax=None):
+    def plot_border(self, ax=None):  # pragma: no cover
         """Plot only the border of the Cluster.
 
         Only workers for cluster sizes that can calculate the cluster
@@ -962,7 +962,7 @@ class Grid(object):
             length = np.sqrt(21) * self._cell_radius
             return length * np.exp(1j * angle)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """Plot the grid of clusters.
 
         Arguments:

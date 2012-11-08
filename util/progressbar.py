@@ -45,7 +45,7 @@ import time
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx DummyProgressbar - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class DummyProgressbar(object):
+class DummyProgressbar(object):  # pragma: no cover
     """Dummy progress bar that don't really do anything."""
 
     def __init__(self, ):
@@ -378,10 +378,3 @@ class ProgressbarMultiProcessText(object):
 
         return toc - self._tic.value
 # xxxxxxxxxx ProgressbarMultiProcessText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

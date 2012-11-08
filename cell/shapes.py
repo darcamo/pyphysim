@@ -10,7 +10,7 @@ try:
     from matplotlib import pylab
     from matplotlib import patches
     _MATPLOTLIB_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
 import numpy as np
@@ -198,7 +198,7 @@ class Shape(Coordinate):
         # shape's central position and the point at the border of the shape
         return (1 - ratio) * self.pos + ratio * point
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """Plot the shape using the matplotlib library.
 
         If an axes 'ax' is specified, then the shape is added to that
@@ -383,7 +383,7 @@ class Circle(Shape):
         """
         return (np.abs(self.pos - point) < self.radius)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """Plot the circle using the Matplotlib library.
 
         If an axes 'ax' is specified, then the circle is added to that
@@ -449,7 +449,7 @@ def from_complex_array_to_real_matrix(a):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     ax = pylab.axes()
     h = Hexagon(2 + 3j, 2, 30)
 
@@ -474,7 +474,7 @@ if __name__ == '__main__1':
     ax.axis('equal')
     pylab.show()
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     from matplotlib import pyplot as plt
     ax = pylab.axes()
 
@@ -500,7 +500,7 @@ if __name__ == '__main__1':
     plt.axis('equal')
     plt.show()
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     ax = pylab.axes()
     c = Circle(2 + 3j, 2)
 

@@ -18,7 +18,7 @@ __version__ = "$Revision: $"
 try:
     import matplotlib.pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
 import numpy as np
@@ -85,7 +85,7 @@ class Modulator(object):
         self.M = symbols.size
         self.symbols = symbols
 
-    def plotConstellation(self):
+    def plotConstellation(self):  # pragma: no cover
         """Plot the constellation (in a scatter plot).
         """
         fig = plt.figure()
@@ -135,7 +135,7 @@ class Modulator(object):
         getClosestSymbol = np.frompyfunc(getClosestSymbol, 1, 1)
         return getClosestSymbol(receivedData).astype(int)
 
-    def calcTheoreticalSER(self, SNR):
+    def calcTheoreticalSER(self, SNR):  # pragma: no cover
         """Calculates the theoretical symbol error rate.
 
         This function should be implemented in the derived classes
@@ -145,7 +145,7 @@ class Modulator(object):
         """
         raise NotImplementedError("calcTheoreticalSER: Not implemented")
 
-    def calcTheoreticalBER(self, SNR):
+    def calcTheoreticalBER(self, SNR):  # pragma: no cover
         """Calculates the theoretical bit error rate.
 
         This function should be implemented in the derived classes
@@ -164,8 +164,6 @@ class PSK(Modulator):
     """PSK Class
     """
     def __init__(self, M, phaseOffset=0):
-        """
-        """
         Modulator.__init__(self)
         # Check if M is a power of 2
         assert 2 ** math.log(M, 2) == M
