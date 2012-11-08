@@ -38,18 +38,41 @@ class BlockDiaginalizer(object):
         self.iPu = iPu
         self.noiseVar = noiseVar
 
-    def block_diagonalize(self, mtChannel):
-        """Perform the block diagonalization.
+    def _calc_BD_matrix_no_power_scaling(self, mtChannel):
+        """Calculates the modulation matrix "M" without any king of power
+        scaling.
 
-        mtChannel is a matrix with the channel from the transmitter to all
-        users, where each `iNUsers` rows correspond to one user.
+        The "modulation matrix" is a matrix that changes the channel to a
+        block diagonal structure and it is the first part in the Block
+        Diagonalization algorithm. The returned modulation matrix is
+        equivalent to Equation (12) of [1] but without the power scaling
+        matrix $\Lambda$. Therefore, for the compelte BD algorithm it is
+        still necessary to perform this power scalling in the output of
+        _calc_BD_matrix.
+
+        The reason why the Block Diagonalization algorithm was broken down
+        into the code here in the _calc_BD_matrix method and the power
+        scaling code is because the power scaling may changing depending
+        on the scenario. For instance, if the transmitter corresponds to a
+        single base station the the power may be distributed into all the
+        dimensions of the Modulation matrix. On the other hand, if the
+        transmitter corresponds to multiple base stations jointly
+        transmitting to multiple users then the power of each base station
+        must be distributed only into the dimensions corresponding to that
+        base station.
 
         Arguments:
-        - `mtChannel`: (numpy array) Channel from the transmitter to all users.
+        - `mtChannel`: (numpy array) Channel from the transmitter to all
+                       users.
+        Returns:
+        - The modulation matrix "M"
+        - The singular values of the equivalent channel when the modulation
+          matrix is applied.
 
-        Return:
-        - newH: Block diagonalized channel
-        - Ms_good: Precoding matrix used to block diagonalize the channel
+        References:
+         [1] "Zero-Forcing Methods for Downlink Spatial Multiplexing for
+              Multiuser MIMO Channels"
+
         """
         (iNr, iNt) = mtChannel.shape
         assert iNr % self.iNUsers == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
@@ -99,22 +122,79 @@ class BlockDiaginalizer(object):
         # This is equivalent to "concatenate(Ms_bad, axis=1)"
         Ms_bad = np.hstack(Ms_bad)
         Sigma = np.array(Sigma)
+        return (Ms_bad, Sigma)
 
+    def _perform_global_waterfilling_power_scaling(self, Ms_bad, Sigma):
+        """Perform the power scaling based on the waterfilling algorithm for
+        all the parallel channel gains in `Sigma`.
+
+        This power scaling method corresponds to maximizing the sum rate
+        when the transmitter is a single base station transmitting to all
+        users. Note that this approach may result in one or two "strong
+        users" taking a dominant share of the available power.
+
+        Arguments:
+        - `Ms_bad`: The previously calculated modulation matrix (without
+                    any powr scaling)
+        - `Sigma`: The singular values of the effective channel when Ms_bad
+                   is applied.
+
+        Returns:
+        - The modulation matrix with the power scaling applied.
+        """
         # Perform water-filling for the parallel channel gains in Sigma
         # (but considering a global power constraint, each element (power)
         # in Sigma comes from all APs)
         total_power = self.iNUsers * self.iPu
-        (vtOptP, mu) = waterfilling.doWF(Sigma ** 2, total_power, self.noiseVar)
+        (vtOptP, mu) = waterfilling.doWF(Sigma ** 2,
+                                         total_power,
+                                         self.noiseVar)
 
-        Ms_good = np.dot(
-            Ms_bad,
-            np.diag(np.sqrt(vtOptP)))
+        Ms_good = np.dot(Ms_bad,
+                         np.diag(np.sqrt(vtOptP)))
+
+        return Ms_good
+
+    def _perform_normalized_waterfilling_power_scaling(self, Ms_bad, Sigma):
+        """Perform the power scaling based on the waterfilling algorithm for
+        all the parallel channel gains in `Sigma`, but normalize the result
+        by the power of the base station transmitting with the highest
+        power.
+
+        When we have a joint transmission where multiple base stations act
+        as a single base station, then performing the waterfilling on all
+        the channels for the total available power may result in some base
+        station transmitting with a higher power then it actually
+        can. Therefore, we normalize the power of the strongest BS so that
+        the power restriction at each BS is satisfied. This is sub-optimal
+        since the other BSs will use less power then available, but it is
+        simple and it works.
+
+        Arguments:
+        - `Ms_bad`: The previously calculated modulation matrix (without
+                    any powr scaling)
+        - `Sigma`: The singular values of the effective channel when Ms_bad
+                   is applied.
+
+        Returns:
+        - The modulation matrix with the power scaling applied.
+
+        """
+        # Number of receive antennas per user
+        #
+        # Note: I think this only works if the number of receive antennas
+        # is equal to the number of transmit antennas
+        iNrU = Sigma.size / float(self.iNUsers)
+
+        # First we perform the global waterfilling
+        Ms_good = self._perform_global_waterfilling_power_scaling(
+            Ms_bad, Sigma)
 
         # Since we used a global power constraint but we have in fact a
         # power constraint for each AP, we need to normalize the allocated
         # powers by the power of the AP with most energy (so that the
         # individual power constraints are satisfied). This will be
-        # sub-optimum for the other bases, but it is what we can do.
+        # sub-optimal for the other bases, but it is what we can do.
         max_sqrt_P = 0
         for user in range(0, self.iNUsers):
             # Calculate the Frobenius norm of the matrix corresponding to
@@ -129,15 +209,36 @@ class BlockDiaginalizer(object):
         # be equal to self.iPu
         Ms_good = Ms_good * np.sqrt(self.iPu) / max_sqrt_P
 
+        return Ms_good
+
+    def block_diagonalize(self, mtChannel):
+        """Perform the block diagonalization.
+
+        mtChannel is a matrix with the channel from the transmitter to all
+        users, where each `iNUsers` rows correspond to one user.
+
+        Arguments:
+        - `mtChannel`: (numpy array) Channel from the transmitter to all
+                       users.
+
+        Return:
+        - newH: Block diagonalized channel
+        - Ms_good: Precoding matrix used to block diagonalize the channel
+
+        """
+        # Calculates the modulation matrix and the singular values of the
+        # effective channel when this modulation matrix is applied.
+        (Ms_bad, Sigma) = self._calc_BD_matrix_no_power_scaling(mtChannel)
+
+        # Scale the power of this modulation assuring the power restriction
+        # is not violated in any of the base stations.
+        Ms_good = self._perform_normalized_waterfilling_power_scaling(Ms_bad,
+                                                                      Sigma)
+
         # Finally calculates the Block diagonal channel
         newH = np.dot(mtChannel, Ms_good)
 
-        # Return block diagonalized channel, the used precoding matrix, and
-        # the power allocated to each parallel channel.
-        #
-        # Note: The power values in vtOptP are before any power
-        # normalization. Maybe vtOptP is not useful to be returned.
-        #return (newH, Ms_good, vtOptP)
+        # Return block diagonalized channel and the used precoding matrix
         return (newH, Ms_good)
 
     def _get_tilde_channel(self, mtChannel, user):
@@ -196,5 +297,5 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar):
 
     """
     BD = BlockDiaginalizer(iNUsers, iPu, noiseVar)
-    results_tuble = BD.block_diagonalize(mtChannel)
-    return results_tuble
+    results_tuple = BD.block_diagonalize(mtChannel)
+    return results_tuple

@@ -17,6 +17,7 @@ sys.path.append(parent_dir)
 import unittest
 import doctest
 import numpy as np
+from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
 from util.misc import randn_c
@@ -658,7 +659,6 @@ class BlastTestCase(unittest.TestCase):
             expected_encoded_data)
 
     def test_decode(self):
-        from util.misc import randn_c
         data = np.r_[0:15]
         encoded_data = self.blast_object.encode(data)
 
@@ -719,7 +719,6 @@ class AlamoutiTestCase(unittest.TestCase):
             expected_encoded_data)
 
     def test_decode(self):
-        from util.misc import randn_c
         data = np.r_[0:16] + np.r_[0:16] * 1j
         encoded_data = self.alamouti_object.encode(data)
         # We will test the deconding with a random channel
@@ -781,7 +780,6 @@ class WaterfillingTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Block Diagonalization Module xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Test the other methods of the BlockDiaginalizer class
 class BlockDiaginalizerTestCase(unittest.TestCase):
     """Unittests for the BlockDiaginalizer class in the blockdiagonalization
     module.
@@ -789,31 +787,128 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
     """
     def setUp(self):
         """Called before each test."""
-        pass
+        self.Pu = 5.  # Power for each user
+        self.noise_var = 1e-6
+        self.num_users = 3
+        self.num_antenas = 2
+
+        self.iNrk = self.num_antenas  # Number of receive antennas per user
+        self.iNtk = self.num_antenas  # Number of transmit antennas per user
+
+        self.iNr = self.iNrk * self.num_users  # Total number of Rx antennas
+        self.iNt = self.iNtk * self.num_users  # Total number of Tx antennas
+
+        self.BD = blockdiagonalization.BlockDiaginalizer(
+            self.num_users,
+            self.Pu,
+            self.noise_var)
+
+    def test_calc_BD_matrix_no_power_scaling(self):
+        channel = randn_c(self.iNr, self.iNt)
+        (Ms_bad, Sigma) = self.BD._calc_BD_matrix_no_power_scaling(channel)
+
+        newH = np.dot(channel, Ms_bad)
+
+        # Because Ms_bad does not have any power scaling and each column of
+        # it comes is a singular vector calculated with the SVD, then the
+        # square of its Frobenius norm is equal to its dimension.
+        self.assertAlmostEqual(np.linalg.norm(Ms_bad, 'fro') ** 2,
+                               Ms_bad.shape[0])
+
+        # Now let's test if newH is really a block diagonal matrix.
+        # First we create a 'mask'
+        A = np.ones([self.iNrk, self.iNtk])
+        mask = linalg.block_diag(A, A, A)
+
+        # With the mask we can create a masked array of the block
+        # diagonalized channel which effectively removes the elements in
+        # the block diagonal
+        masked_newH = np.ma.masked_array(newH, mask)
+
+        # If we sum all the elements in the masked channel (the mask
+        # removes the elements in the block diagonal) it should be equal to
+        # zero
+        self.assertAlmostEqual(0., np.abs(masked_newH).sum())
+
+    def test_perform_global_waterfilling_power_scaling(self):
+        channel = randn_c(self.iNr, self.iNt)
+        (Ms_bad, Sigma) = self.BD._calc_BD_matrix_no_power_scaling(channel)
+
+        Ms_good = self.BD._perform_global_waterfilling_power_scaling(
+            Ms_bad, Sigma)
+
+        # Ms_good must have the same shape as Ms_bad
+        np.testing.assert_array_equal(Ms_bad.shape, Ms_good.shape)
+
+        # The total available power is equal to the power per user times
+        # the number of users
+        total_power = self.Pu * self.num_users
+
+        # The square of the Frobenius norm of Ms_good must be equal to the
+        # total available power
+        self.assertAlmostEqual(linalg.norm(Ms_good, 'fro') ** 2,
+                               total_power)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Ms_good must still be able to block diagonalize the channel
+        A = np.ones([self.iNrk, self.iNtk])
+        mask = linalg.block_diag(A, A, A)
+        newH = np.dot(channel, Ms_good)
+
+        # With the mask we can create a masked array of the block
+        # diagonalized channel
+        masked_newH = np.ma.masked_array(newH, mask)
+        # Now we can sum all elements of this masked array (which
+        # effectively means all elements outside the block diagonal) and
+        # see if it is close to zero.
+        self.assertAlmostEqual(0., np.abs(masked_newH).sum())
+
+    def test_perform_normalized_waterfilling_power_scaling(self):
+        channel = randn_c(self.iNr, self.iNt)
+        (Ms_bad, Sigma) = self.BD._calc_BD_matrix_no_power_scaling(channel)
+
+        Ms_good = self.BD._perform_normalized_waterfilling_power_scaling(
+            Ms_bad, Sigma)
+        # Ms_good = self.BD._perform_global_waterfilling_power_scaling(
+        #     Ms_bad, Sigma)
+
+        # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
+        # Total power restriction
+        total_power = self.Pu * self.num_users
+        self.assertGreaterEqual(total_power,
+                                np.linalg.norm(Ms_good, 'fro') ** 2)
+
+        # xxxxx Test the Individual power restriction of each user xxxxxxxx
+        # Cummulated number of receive antennas
+        cum_Nr = np.cumsum(
+            np.hstack([0, np.ones(self.num_users, dtype=int) * self.num_antenas]))
+
+        individual_powers = []
+        for i in range(self.num_users):
+            # Most likelly only one base station (the one with the worst
+            # channel) will employ a precoder a precoder with total power
+            # of `Pu`, while the other base stations will use less power.
+            individual_powers.append(np.linalg.norm(Ms_good[cum_Nr[i]:cum_Nr[i] + self.num_antenas, :], 'fro') ** 2)
+            self.assertGreaterEqual(self.Pu + 1e-12,
+                                    individual_powers[-1])
 
     def test_block_diagonalize(self):
-        from util.misc import randn_c
-        Pu = 5.
-        noise_var = 0.1
-        num_users = 3
-        num_antenas = 2
-        # Total number of transmit and receive antennas
-        iNr = iNt = num_antenas * num_users
+        Pu = self.Pu
+        noise_var = self.noise_var
+        num_users = self.num_users
+        num_antenas = self.num_antenas
 
-        channel = randn_c(iNr, iNt)
+        channel = randn_c(self.iNr, self.iNt)
         (newH, Ms) = blockdiagonalization.block_diagonalize(
             channel, num_users, Pu, noise_var)
 
         # xxxxx Test if the channel is really block diagonal xxxxxxxxxxxxxx
-        # First we buld a 'mask' to filter out the elements in the block
+        # First we build a 'mask' to filter out the elements in the block
         # diagonal.
-        mask = np.zeros([iNr, iNt])
-        cum_Nr = np.cumsum(
-            np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
-        cum_Nt = cum_Nr
-        for i in range(num_users):
-            mask[cum_Nr[i]:cum_Nr[i] + num_antenas,
-                 cum_Nt[i]:cum_Nt[i] + num_antenas] = 1
+
+        A = np.ones([self.iNrk, self.iNtk])
+        mask = linalg.block_diag(A, A, A)
+
         # With the mask we can create a masked array of the block
         # diagonalized channel
         masked_newH = np.ma.masked_array(newH, mask)
@@ -824,16 +919,23 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
         # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
         # Total power restriction
-        self.assertTrue(np.linalg.norm(Ms, 'fro') ** 2 < num_users * Pu)
-        # Individual power restriction of each class
+        total_power = num_users * Pu
+        self.assertGreaterEqual(total_power,
+                                np.linalg.norm(Ms, 'fro') ** 2)
 
+        # Cummulated number of receive antennas
+        cum_Nr = np.cumsum(
+            np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
+
+        # Individual power restriction of each class
         individual_powers = []
         for i in range(num_users):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(np.linalg.norm(Ms[cum_Nr[i]:cum_Nr[i] + num_antenas, :], 'fro') ** 2)
-            self.assertTrue(individual_powers[-1] <= Pu + 1e-12)
+            self.assertGreaterEqual(Pu + 1e-12,
+                                    individual_powers[-1])
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
