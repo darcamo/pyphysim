@@ -3,6 +3,8 @@
 
 """Module with implementation of channel related classes"""
 
+
+from collections import Iterable
 import numpy as np
 from util.misc import randn_c
 
@@ -11,7 +13,9 @@ from util.misc import randn_c
 # xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MultiUserChannelMatrix(object):
-    """Stores the (fast fading) channel matrix of a multi-user scenario.
+    """Stores the (fast fading) channel matrix of a multi-user scenario. The
+    path-loss from each transmitter to each receiver is also be accounted if
+    the set_pathloss is called to set the path-loss matrix.
 
     This channel matrix can be seem as an concatenation of blocks (of
     non-uniform size) where each block is a channel from one transmitter to
@@ -49,9 +53,10 @@ class MultiUserChannelMatrix(object):
 
     In order to get the channel matrix of a specific user `k` to another
     user `l`, call the `get_channel` method.
+
     """
 
-    def __init__(self, ):
+    def __init__(self):
         # The _big_H variable is an internal variable with all the channels
         # from each transmitter to each receiver represented as a single
         # big matrix.
@@ -140,36 +145,35 @@ class MultiUserChannelMatrix(object):
         return output
 
     @staticmethod
-    def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K):
+    def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
         """Convert from a small matrix to a big matrix by repeating elements
         according to the number of receive and transmit antennas.
+
+        Note: Since a 'user' is a transmit/receive pair then the
+        small_matrix will be a square matrix and Kr must be equal to Kt.
+        However, in the MultiUserChannelMatrixExtInt class we will only
+        have the 'transmitter part' for the external interference
+        sources. That means that small_matrix will have more columns then
+        rows and Kt will be greater then Kr.
 
         Arguments:
         - `small_matrix`:
         - `Nr`: A numpy array with the number of antennas at each receiver.
         - `Nt`: A numpy array with the number of antennas at each transmitter.
-        - `K`: Number of transmit/receive pairs.
+        - `Kr`: Number of receivers to consider.
+        - `Kt`: Number of transmitters to consider (if not provided Kr will
+                be used).
 
-        Ex:
-        >>> small_matrix = np.array([[1, 2], [3, 4]])
-        >>> K=2
-        >>> Nr = np.array([2, 3])
-        >>> Nt = np.array([2, 2])
-        >>> print small_matrix
-        [[1 2]
-         [3 4]]
-        >>> print MultiUserChannelMatrix._from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K)
-        [[1 1 2 2]
-         [1 1 2 2]
-         [3 3 4 4]
-         [3 3 4 4]
-         [3 3 4 4]]
         """
+        if Kt is None:
+            Kt = Kr
+
         cumNr = np.hstack([0, np.cumsum(Nr)])
         cumNt = np.hstack([0, np.cumsum(Nt)])
         big_matrix = np.ones([np.sum(Nr), np.sum(Nt)], dtype=small_matrix.dtype)
-        for rx in range(K):
-            for tx in range(K):
+
+        for rx in range(Kr):
+            for tx in range(Kt):
                 big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]] *= small_matrix[rx, tx]
         return big_matrix
 
@@ -244,11 +248,9 @@ class MultiUserChannelMatrix(object):
         - `l`: Transmitting user.
         - `k`: Receiving user
         """
-        channel = self._H[k, l]
-        # Apply path loss if it was set.
-        if self._pathloss_matrix is not None:
-            channel = channel * np.sqrt(self._pathloss_matrix[k, l])
-        return channel
+        channel = self.H  # This will call the _get_H method, which already
+                          # applies the path loss (of there is any)
+        return channel[k, l]
 
     def corrupt_concatenated_data(self, concatenated_data, noise_var=None):
         """Corrupt data passed through the channel.
@@ -308,8 +310,12 @@ class MultiUserChannelMatrix(object):
     def set_pathloss(self, pathloss_matrix=None):
         """Set the path loss from each transmitter to each receiver.
 
-        The path loss will be accounted when calling the getChannel, the
+        The path loss will be accounted when calling the get_channel, the
         corrupt_concatenated_data and the corrupt_data methods.
+
+        Note that path loss is a power relation, which means that the
+        channel coefficients will be multiplied by the square root of
+        elements in `pathloss_matrix`.
 
         If you want to disable the path loss, set pathloss_matrix to None.
 
@@ -329,6 +335,244 @@ class MultiUserChannelMatrix(object):
             self._pathloss_big_matrix = None
         else:
             self._pathloss_big_matrix = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(pathloss_matrix, self._Nr, self._Nt, self._K)
+
+            # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
+            # in sync by disallowing modification of individual elements in
+            # both of them.
+            self._pathloss_matrix.setflags(write=False)
+            self._pathloss_big_matrix.setflags(write=False)
+
+
+class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
+    """Very similar to the MultiUserChannelMatrix class, but the
+    MultiUserChannelMatrixExtInt also includes the effect of an external
+    interference.
+
+    This channel matrix can be seem as an concatenation of blocks (of
+    non-uniform size) where each block is a channel from one transmitter to
+    one receiver and the block size is equal to the number of receive
+    antennas of the receiver times the number of transmit antennas of the
+    transmitter. The difference compared with the MultiUserChannelMatrix
+    class is that in the MultiUserChannelMatrixExtInt class the
+    interference user counts as one more user, but with zero receive
+    antennas.
+
+    For instance, in a 3-users scenario the block (1,0) corresponds to the
+    channel between the transmit antennas of user 0 and the receive
+    antennas of user 1 (indexing staring at zero). If the number of receive
+    antennas and transmit antennas of the three users are [2, 4, 6] and [2,
+    3, 5], respectively, then the block (1,0) would have a dimension of
+    4x2. The external interference will count as one more block where the
+    number of columns of this block corresponds to the rank of the external
+    interference. If the external interference has a rank 2 then the
+    complete channel matrix would look similar to the block structure
+    below.
+                                                 Ext. Int.
+                +------+---------+---------------+------+
+                |2 x 2 |  2 x 3  |     2 x 5     |2 x 2 |
+                |      |         |               |      |
+                +------+---------+---------------+------+
+                |4 x 2 |  4 x 3  |     4 x 5     |4 x 2 |
+                |      |         |               |      |
+                |      |         |               |      |
+                |      |         |               |      |
+                +------+---------+---------------+------+
+                |6 x 2 |  6 x 3  |     6 x 5     |6 x 2 |
+                |      |         |               |      |
+                |      |         |               |      |
+                |      |         |               |      |
+                |      |         |               |      |
+                |      |         |               |      |
+                +------+---------+---------------+------+
+
+    The methods from the MultiUserChannelMatrix class that makes sense were
+    reimplemented here to include information regarding the external
+    interference.
+
+    """
+
+    def __init__(self):
+        MultiUserChannelMatrix.__init__(self)
+        self._extIntK = 0  # Number of external interference sources
+        self._extIntNt = 0  # Number of transmit antennas of the external
+                            # interference sources.
+
+    # Property to get the number of external interference sources
+    def _get_extIntK(self):
+        return self._extIntK
+    extIntK = property(_get_extIntK)
+
+    # Property to get the number of transmit antennas (or the rank) of the
+    # external interference sources
+    def _get_extIntNt(self):
+        return self._extIntNt
+    extIntNt = property(_get_extIntNt)
+
+    # Property to get the number of receive antennas of all users. We
+    # overwrite the property from the MultiUserChannelMatrix to avoid
+    # account the number of receive antennas of the external interference
+    # sources.
+    def _get_Nr(self):
+        return self._Nr[:-self._extIntK]
+    Nr = property(_get_Nr)
+
+    def _get_Nt(self):
+        return self._Nt[:-self._extIntK]
+    Nt = property(_get_Nt)
+
+    def _get_K(self):
+        return self._K - self._extIntK
+    K = property(_get_K)
+
+    def _get_H(self):
+        # Call the _get_H method from the base class, which will apply the
+        # path loss if any.
+        H = MultiUserChannelMatrix._get_H(self)
+        # Now all we need to do is ignore the last _extIntK "lines" since
+        # they correspond to the receive antennas of the interference
+        # sources 'users' (which are in fact empty)
+        return H[:-self._extIntK]
+    H = property(_get_H)
+
+    # def corrupt_data(self, ):
+    #     """
+    #     """
+    #     pass
+
+    # def corrupt_concatenated_data(self, ):
+    #     """
+    #     """
+    #     pass
+
+    @staticmethod
+    def _prepare_input_parans(Nr, Nt, K, NtE):
+        """Helper method used in the init_from_channel_matrix and randomize
+        method definitions.
+
+        Arguments:
+        - `Nr`: A numpy array with the number of antennas at each receiver.
+        - `Nt`: A numpy array with the number of antennas at each transmitter.
+        - `K`: Number of transmit/receive pairs.
+        - `NtE`: (int, or iterable) Number of transmit antennas of the
+                 external interference source(s). If NtE is an iterable,
+                 the number of external interference sources will be the
+                 len(NtE).
+        Returns:
+        - The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt)
+        """
+        if isinstance(NtE, Iterable):
+            # We have multiple external interference sources
+            extIntK = len(NtE)
+            extIntNt = np.array(NtE)
+        else:
+            # NtE is a scalar number, which means we have a single external
+            # interference source.
+            extIntK = 1
+            extIntNt = np.array([NtE])
+
+        # Number of receive antennas also including the number of receive
+        # antennas of the interference users (which are zeros)
+        full_Nr = np.hstack([Nr, np.zeros(extIntK, dtype=int)])
+        # Number of transmit antennas also including the number of transmit
+        # antennas of the interference users
+        full_Nt = np.hstack([Nt, NtE])
+        # Total number of users including the interference users.
+        full_K = K + extIntK
+
+        return (full_Nr, full_Nt, full_K, extIntK, extIntNt)
+
+    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K, NtE):
+        """Initializes the multiuser channel matrix from the given
+        `channel_matrix`.
+
+        Note that `channel_matrix` must also include the channel terms for
+        the external interference, which must be the last `NtE` columns of
+        `channel_matrix`. The number of rows in `channel_matrix` must be
+        equal to np.sum(Nr), while the number of columns must be
+        np.sum(Nt) + NtE.
+
+        Arguments:
+        - `channel_matrix`: A matrix concatenating the channel of all users
+                            (from each transmitter to each receiver).
+        - `Nr`: A numpy array with the number of antennas at each receiver.
+        - `Nt`: A numpy array with the number of antennas at each transmitter.
+        - `K`: Number of transmit/receive pairs.
+        - `NtE`: (int, or iterable) Number of transmit antennas of the
+                 external interference source(s). If NtE is an iterable,
+                 the number of external interference sources will be the
+                 len(NtE).
+
+        Raises: ValueError if the arguments are invalid.
+
+        """
+        (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
+
+        self._extIntK = extIntK
+        self._extIntNt = extIntNt
+
+        MultiUserChannelMatrix.init_from_channel_matrix(
+            self, channel_matrix, full_Nr, full_Nt, full_K)
+
+    def randomize(self, Nr, Nt, K, NtE):
+        """Generates a random channel matrix for all users as well as for the
+        external interference source(s).
+
+        Arguments:
+        - `K`: (int) Number of users.
+        - `Nr`: (array or int) Number of receive antennas of each user. If
+                an integer is specified, all users will have that number of
+                receive antennas.
+        - `Nt`: (array or int) Number of transmit antennas of each user. If
+                an integer is specified, all users will have that number of
+                receive antennas.
+        - `NtE`: (int, or iterable) Number of transmit antennas of the
+                 external interference source(s). If NtE is an iterable,
+                 the number of external interference sources will be the
+                 len(NtE).
+        """
+        (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
+
+        self._extIntK = extIntK
+        self._extIntNt = extIntNt
+
+        MultiUserChannelMatrix.randomize(self, full_Nr, full_Nt, full_K)
+
+    def set_pathloss(self, pathloss_matrix=None, ext_int_pathloss=None):
+        """Set the path loss from each transmitter to each receiver, as well
+        as the path loss from the external interference source(s) to each
+        receiver.
+
+        The path loss will be accounted when calling the get_channel, the
+        corrupt_concatenated_data and the corrupt_data methods.
+
+        Note that path loss is a power relation, which means that the
+        channel coefficients will be multiplied by the square root of
+        elements in `pathloss_matrix`.
+
+        If you want to disable the path loss, set pathloss_matrix to None.
+
+        Arguments:
+        - `pathloss_matrix`: A matrix with dimension "K x K", where K is
+                             the number of users, with the path loss from
+                             each transmitter (columns) to each receiver
+                             (rows). If you want to disable the path loss
+                             then set it to None.
+        - `ext_int_pathloss`:
+        """
+        # A matrix with the path loss from each transmitter to each
+        # receiver.
+        self._pathloss_matrix = pathloss_matrix
+
+        if pathloss_matrix is None:
+            self._pathloss_matrix = None
+            self._pathloss_big_matrix = None
+        else:
+            pathloss_matrix_with_ext_int = np.hstack([
+                pathloss_matrix,
+                ext_int_pathloss])
+            self._pathloss_matrix = pathloss_matrix_with_ext_int
+
+            self._pathloss_big_matrix = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(pathloss_matrix_with_ext_int, self._Nr, self._Nt, self.K, self._K)
 
             # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
             # in sync by disallowing modification of individual elements in

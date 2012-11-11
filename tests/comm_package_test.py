@@ -378,6 +378,121 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
 
+
+class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.multiH = channels.MultiUserChannelMatrixExtInt()
+        self.H = np.array(
+            [
+                [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+                [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            ]
+        )
+
+        self.K = 3
+        self.Nr = np.array([2, 4, 6])
+        self.Nt = np.array([2, 3, 5])
+        # rank of the external interference. Here we are considering two
+        # external interference sources with one and two antennas,
+        # respectively. Note that we would get the same channel as if we
+        # had considered a single external interference source with three
+        # antennas
+        self.NtE = np.array([1, 2])
+
+        # Big channel matrix from the external interference to each receiver
+        self.extH = 9 * np.ones([12, np.sum(self.NtE)], dtype=int)
+
+    def test_init_from_channel_matrix_and_properties(self):
+        # In order to call the init_from_channel_matrix method we need a
+        # channel matrix that accounts not only the users' channel but also
+        # the external interference sources.
+        big_H = np.hstack([self.H, self.extH])
+
+        self.multiH.init_from_channel_matrix(
+            big_H, self.Nr, self.Nt, self.K, self.NtE)
+
+        # Test the big_H property. It should be exactly equal to the big_H
+        # variable passed to the init_from_channel_matrix method, since we
+        # didn't set any path loss matrix yet.
+        np.testing.assert_array_equal(
+            self.multiH.big_H,
+            big_H)
+
+        # Test the properties
+        np.testing.assert_array_equal(self.multiH.Nr, self.Nr)
+        np.testing.assert_array_equal(self.multiH.Nt, self.Nt)
+        np.testing.assert_array_equal(self.multiH.K, self.K)
+        np.testing.assert_array_equal(self.multiH.extIntK, len(self.NtE))
+        np.testing.assert_array_equal(self.multiH.extIntNt, self.NtE)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now we consider a single external interference source with three
+        # antennas
+        self.multiH.init_from_channel_matrix(
+            big_H, self.Nr, self.Nt, self.K, np.sum(self.NtE))
+
+        # Test the properties
+        np.testing.assert_array_equal(self.multiH.Nr, self.Nr)
+        np.testing.assert_array_equal(self.multiH.Nt, self.Nt)
+        np.testing.assert_array_equal(self.multiH.K, self.K)
+        np.testing.assert_array_equal(self.multiH.extIntK, 1)
+        np.testing.assert_array_equal(self.multiH.extIntNt, np.sum(self.NtE))
+
+        # We won't test the channels here because the code for setting
+        # _big_H and _H was already well tested in the
+        # MultiUserChannelMatrix class.
+
+    def test_randomize(self):
+        self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
+
+        # Test the properties
+        np.testing.assert_array_equal(self.multiH.Nr, self.Nr)
+        np.testing.assert_array_equal(self.multiH.Nt, self.Nt)
+        np.testing.assert_array_equal(self.multiH.K, self.K)
+        np.testing.assert_array_equal(self.multiH.extIntK, len(self.NtE))
+        np.testing.assert_array_equal(self.multiH.extIntNt, self.NtE)
+
+    def test_set_pathloss(self):
+        self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
+        K = self.multiH.K
+        extIntK = self.multiH.extIntK
+
+        pathloss = np.reshape(np.r_[1:K * K + 1], [K, K])
+        pathloss_extint = np.reshape(np.r_[50:K * extIntK + 50], [K, extIntK])
+
+        expected_pathloss = np.hstack([pathloss, pathloss_extint])
+        expected_pathloss_big_matrix = np.array(
+            [
+                [1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 50, 51, 51],
+                [1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 50, 51, 51],
+                [4, 4, 5, 5, 5, 6, 6, 6, 6, 6, 52, 53, 53],
+                [4, 4, 5, 5, 5, 6, 6, 6, 6, 6, 52, 53, 53],
+                [4, 4, 5, 5, 5, 6, 6, 6, 6, 6, 52, 53, 53],
+                [4, 4, 5, 5, 5, 6, 6, 6, 6, 6, 52, 53, 53],
+                [7, 7, 8, 8, 8, 9, 9, 9, 9, 9, 54, 55, 55],
+                [7, 7, 8, 8, 8, 9, 9, 9, 9, 9, 54, 55, 55],
+                [7, 7, 8, 8, 8, 9, 9, 9, 9, 9, 54, 55, 55],
+                [7, 7, 8, 8, 8, 9, 9, 9, 9, 9, 54, 55, 55],
+                [7, 7, 8, 8, 8, 9, 9, 9, 9, 9, 54, 55, 55],
+                [7, 7, 8, 8, 8, 9, 9, 9, 9, 9, 54, 55, 55],
+            ])
+
+        self.multiH.set_pathloss(pathloss, pathloss_extint)
+
+        np.testing.assert_array_equal(expected_pathloss, self.multiH.pathloss)
+        np.testing.assert_array_equal(expected_pathloss_big_matrix,
+                                      self.multiH._pathloss_big_matrix)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
