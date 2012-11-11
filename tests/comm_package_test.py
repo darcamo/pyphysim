@@ -493,6 +493,68 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_equal(expected_pathloss, self.multiH.pathloss)
         np.testing.assert_array_equal(expected_pathloss_big_matrix,
                                       self.multiH._pathloss_big_matrix)
+
+    def test_corrupt_data(self):
+        Nt = np.array([2, 2])
+        Nr = np.array([3, 2])
+        K = len(Nt)
+        NtE = np.array([1, 1])
+
+        # Lets initialize our MultiUserChannelMatrixExtInt object with a
+        # random channel
+        self.multiH.randomize(Nr, Nt, K, NtE)
+
+        # User's data (without the external interference source data)
+        input_data = np.empty(2, dtype=np.ndarray)
+        input_data[0] = randn_c(2, 5)
+        input_data[1] = randn_c(2, 5)
+
+        # External interference data: First lets try with only zeros
+        input_data_extint = np.empty(2, dtype=np.ndarray)
+        input_data_extint[0] = np.zeros([1, 5], dtype=complex)
+        input_data_extint[1] = np.zeros([1, 5], dtype=complex)
+
+        # Initialize a MultiUserChannelMatrix object with the same channel
+        # as self.multiH (disregarding the external interference source
+        # channel
+        multiH_no_ext_int = channels.MultiUserChannelMatrix()
+        multiH_no_ext_int.init_from_channel_matrix(
+            self.multiH.big_H[:, :4],
+            Nr,
+            Nt,
+            K)
+
+        # Test if we receive the same data with and without the external
+        # interference source. Note that the received data must be the same
+        # since the interference zero for now
+        received_data_expected = multiH_no_ext_int.corrupt_data(input_data)
+        received_data = self.multiH.corrupt_data(input_data, input_data_extint)
+
+        self.assertEqual(received_data_expected.shape, received_data.shape)
+        for index in range(received_data.size):
+            np.testing.assert_almost_equal(received_data[index],
+                                           received_data_expected[index])
+
+        # xxxxxxxxxx Now lets test with some external interference
+        input_data_extint2 = np.empty(2, dtype=np.ndarray)
+        input_data_extint2[0] = randn_c(1, 5)
+        input_data_extint2[1] = randn_c(1, 5)
+
+        received_data2_expected = received_data_expected
+
+        received_data2 = self.multiH.corrupt_data(input_data, input_data_extint2)
+
+        # received_data2_expected for now has only the included the user's
+        # signal. Lets add the external interference source's signal.
+        received_data2_expected[0] = received_data2_expected[0] + np.dot(self.multiH.get_channel(0, 2), input_data_extint2[0]) + np.dot(self.multiH.get_channel(0, 3), input_data_extint2[1])
+        received_data2_expected[1] = received_data2_expected[1] + np.dot(self.multiH.get_channel(1, 2), input_data_extint2[0]) + np.dot(self.multiH.get_channel(1, 3), input_data_extint2[1])
+
+        # Now lets test if the received_data2 is correct
+        self.assertEqual(received_data2_expected.shape, received_data2.shape)
+        for index in range(received_data2.size):
+            np.testing.assert_almost_equal(received_data2[index],
+                                           received_data2_expected[index])
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

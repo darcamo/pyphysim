@@ -252,7 +252,7 @@ class MultiUserChannelMatrix(object):
                           # applies the path loss (of there is any)
         return channel[k, l]
 
-    def corrupt_concatenated_data(self, concatenated_data, noise_var=None):
+    def corrupt_concatenated_data(self, data, noise_var=None):
         """Corrupt data passed through the channel.
 
         If the noise_var is supplied then an white noise will also be
@@ -260,7 +260,7 @@ class MultiUserChannelMatrix(object):
 
         Arguments:
         - `data`: A bi-dimensional numpy array with the concatenated data of
-                  all transmitters. The dimension of concatenated_data is
+                  all transmitters. The dimension of data is
                   sum(self._Nt) x NSymb. That is, the number of rows
                   corresponds to the sum of the number of transmit antennas
                   of all users and the number of columns correspond to the
@@ -275,7 +275,7 @@ class MultiUserChannelMatrix(object):
         """
         # Note that self.big_H already accounts the path loss (while
         # self._big_H does not)
-        output = np.dot(self.big_H, concatenated_data)
+        output = np.dot(self.big_H, data)
         if noise_var is not None:
             awgn_noise = (randn_c(*output.shape) * np.sqrt(noise_var))
             output = output + awgn_noise
@@ -295,14 +295,22 @@ class MultiUserChannelMatrix(object):
                   number of transmitted symbols.
         - `noise_var`: Variance of the AWGN noise.
         """
+        # Note that we intentionally use self.K instead of self._K in this
+        # method. In the MultiUserChannelMatrix class they have the same
+        # value. However, in the MultiUserChannelMatrixExtInt subclass the
+        # self._K attribute will correspond to the number of users plus the
+        # number of external interference sources, while the self.K
+        # property will return only the number of users, which is what we
+        # want here.
+
         concatenated_data = np.vstack(data)
         concatenated_output = self.corrupt_concatenated_data(
             concatenated_data, noise_var)
 
-        output = np.zeros(self._K, dtype=np.ndarray)
+        output = np.zeros(self.K, dtype=np.ndarray)
         cumNr = np.hstack([0, np.cumsum(self._Nr)])
 
-        for k in np.arange(self._K):
+        for k in np.arange(self.K):
             output[k] = concatenated_output[cumNr[k]:cumNr[k + 1], :]
 
         return output
@@ -434,15 +442,58 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return H[:-self._extIntK]
     H = property(_get_H)
 
-    # def corrupt_data(self, ):
-    #     """
-    #     """
-    #     pass
+    def corrupt_data(self, data, ext_int_data, noise_var=None):
+        """Corrupt data passed through the channel.
 
-    # def corrupt_concatenated_data(self, ):
-    #     """
-    #     """
-    #     pass
+        If the noise_var is supplied then an white noise will also be
+        added.
+
+        Arguments:
+        - `data`: An array of numpy matrices with the data of the multiple
+                  users. The k-th element in `data` is a numpy array with
+                  dimension Nt_k x NSymbs, where Nt_k is the number of
+                  transmit antennas of the k-th user and NSymbs is the
+                  number of transmitted symbols.
+        - `ext_int_data`: An array of numpy matrices with the data of the
+                          external interference sources. The l-th element
+                          is the data transmitted by the l-th external
+                          interference source, which must have a dimension
+                          of NtEl x NSymbs, where NtEl is the number of
+                          transmit antennas of the l-th external
+                          interference source.
+        - `noise_var`: Variance of the AWGN noise.
+
+        """
+        input_data = np.hstack([data, ext_int_data])
+        return MultiUserChannelMatrix.corrupt_data(self, input_data, noise_var)
+
+    def corrupt_concatenated_data(self, data, noise_var=None):
+        """Corrupt data passed through the channel.
+
+        If the noise_var is supplied then an white noise will also be
+        added.
+
+        Arguments:
+        - `data`: A bi-dimensional numpy array with the concatenated data
+                  of all transmitters as well as the data from all external
+                  interference sources. The dimension of data is
+                  (sum(self._Nt) + sum(self.extIntNt)) x NSymb. That is,
+                  the number of rows corresponds to the sum of the number
+                  of transmit antennas of all users and external
+                  interference sources and the number of columns correspond
+                  to the number of transmitted symbols.
+        - `noise_var`: Variance of the AWGN noise.
+        Output:
+        - A bi-dimension numpy array where the number of rows corresponds
+          to the sum of the number of receive antennas of all users and the
+          number of columns correspond to the number of transmitted
+          symbols.
+
+        """
+
+        return MultiUserChannelMatrix.corrupt_concatenated_data(self,
+                                                                data,
+                                                                noise_var)
 
     @staticmethod
     def _prepare_input_parans(Nr, Nt, K, NtE):
