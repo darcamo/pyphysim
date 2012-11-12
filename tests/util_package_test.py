@@ -308,6 +308,34 @@ class SimulationResultsTestCase(unittest.TestCase):
             self.simresults.get_result_values_list('lili'),
             ['a string'])
 
+    def test_save_to_and_load_from_file(self):
+        filename = 'params.pickle'
+        # Let's make sure the file does not exist
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        # Save to the file
+        self.simresults.save_to_file(filename)
+
+        # Load from the file
+        simresults2 = simulations.SimulationResults.load_from_file(filename)
+
+        self.assertEqual(len(self.simresults), len(simresults2))
+        self.assertEqual(set(self.simresults.get_result_names()),
+                         set(simresults2.get_result_names()))
+
+        self.assertEqual(self.simresults['lala'][0].type_code,
+                         simresults2['lala'][0].type_code)
+        self.assertEqual(self.simresults['lele'][0].type_code,
+                         simresults2['lele'][0].type_code)
+
+        self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
+                               simresults2['lala'][0].get_result(),)
+        self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
+                               simresults2['lele'][0].get_result(),)
+
 
 class SimulationParametersTestCase(unittest.TestCase):
     """Unit-tests for the SimulationParameters class in the simulations
@@ -447,8 +475,29 @@ class SimulationParametersTestCase(unittest.TestCase):
             self.sim_params.get_pack_indexes(fixed_fourth_invalid)
 
     def test_save_to_and_load_from_file(self):
-        # TODO: Implement-me
-        pass
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        filename = 'params.pickle'
+        # Let's make sure the file does not exist
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        # Save to the file
+        self.sim_params.save_to_file(filename)
+
+        # Load from the file
+        sim_params2 = simulations.SimulationParameters.load_from_file(filename)
+
+        self.assertEqual(self.sim_params['first'], sim_params2['first'])
+        self.assertEqual(self.sim_params['second'], sim_params2['second'])
+        self.assertEqual(len(self.sim_params), len(sim_params2))
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(),
+                         sim_params2.get_num_unpacked_variations())
 
 
 class SimulationRunnerTestCase(unittest.TestCase):
@@ -656,8 +705,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
     def test_calc_autocorr(self):
         x = np.array([4, 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
-        expected_autocor = np.array(
-            [1. , -0.025, 0.15 , -0.175, -0.25 , -0.2 , 0.])
+        expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
 
@@ -760,21 +808,21 @@ if __name__ == "__main__":
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def progress_producer2(bar, sleep_time=0.5):
+def progress_producer2(bar, sleep_time=0.5):  # pragma: no cover
     total_count = 20
     for i in range(1, total_count + 1):
         sleep(sleep_time)
         bar.progress(i)
 
 
-def progress_producer(process_id, process_data_list, sleep_time=0.5):
+def progress_producer(process_id, process_data_list, sleep_time=0.5):  # pragma: no cover
     total_count = 20
     for i in range(1, total_count + 1):
         sleep(sleep_time)
         process_data_list[process_id] = i
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     from time import sleep
     import multiprocessing
     from progressbar import ProgressbarMultiProcessText

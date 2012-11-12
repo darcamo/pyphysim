@@ -494,6 +494,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_equal(expected_pathloss_big_matrix,
                                       self.multiH._pathloss_big_matrix)
 
+        # Disable the pathloss
+        self.multiH.set_pathloss()
+        self.assertIsNone(self.multiH.pathloss)
+        self.assertIsNone(self.multiH._pathloss_big_matrix)
+
     def test_corrupt_data(self):
         Nt = np.array([2, 2])
         Nr = np.array([3, 2])
@@ -746,7 +751,7 @@ class OfdmTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Power Specral Density
-def plot_psd_OFDM_symbols():
+def plot_psd_OFDM_symbols():  # pragma: no cover
     """Plot the power spectral density of OFDM modulated symbols.
 
     This function is not used in any unittest, but it is interesting to
@@ -804,14 +809,8 @@ class MimoBaseTestCase(unittest.TestCase):
         """Called before each test."""
         self.mimo_base = mimo.MimoBase()
 
-    # This is here to make code nosetests coverage happy
-    def test_not_implemented_methods(self):
-        with self.assertRaises(NotImplementedError):
-            self.mimo_base.getNumberOfLayers()
-        with self.assertRaises(NotImplementedError):
-            self.mimo_base.encode(None)
-        with self.assertRaises(NotImplementedError):
-            self.mimo_base.decode(None, None)
+    def test_dummy(self):
+        pass
 
 
 class BlastTestCase(unittest.TestCase):

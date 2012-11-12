@@ -33,8 +33,8 @@ class CompSimulationRunner(simulations.SimulationRunner):
         simulations.SimulationRunner.__init__(self)
 
         # xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.cell_radius = 0.5  # Cell radius (in Km)
-        self.min_dist = 0.250   # Minimum allowed distance from a bse
+        self.cell_radius = 1.0  # Cell radius (in Km)
+        #self.min_dist = 0.250   # Minimum allowed distance from a bse
                                 # station and its user (same unit as
                                 # cell_radius)
         #self.users_per_cell = 1  # Number of users in each cell
@@ -330,7 +330,7 @@ if __name__ == '__main__':
     runner.simulate()
 
     # File name (without extension) for the figure and result files.
-    results_filename = 'comp_results_(Pure_BD_symetric_users_with_ext_int)_Pe_minus_10000_dBm'
+    results_filename = 'comp_results_1Km_radius_(Pure_BD_symetric_users_with_ext_int)_Pe_minus_10000_dBm'
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
     # First we add the simulation parameters to the results

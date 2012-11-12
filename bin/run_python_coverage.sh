@@ -25,6 +25,7 @@
 rm .coverage
 
 cd ../tests
+rm .coverage
 for file in *test.py;
 do
     echo "xxxxxxxxxx Running python-coverage on file $file"
@@ -34,7 +35,7 @@ done
 
 # Generate the report
 echo "xxxxxxxxxx Creating Coverage Report xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-python-coverage report -m --omit "/usr/*","/*__init__*","/*setup.*"
+python-coverage report -m --omit "/usr/*","/*__init__*","/*setup.*","/*apps/*"
 echo "xxxxxxxxxx Done xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 

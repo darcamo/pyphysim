@@ -101,11 +101,6 @@ class ShapeTestCase(unittest.TestCase):
         self.S1.rotation = 25
         self.assertAlmostEqual(self.S1.rotation, 25)
 
-    def test_get_vertex_positions(self):
-        # This method must be implemented in subclasses and in the Shape
-        # class it should only raise an exception.
-        self.assertRaises(NotImplementedError, self.S1._get_vertex_positions)
-
     def test_is_point_inside_shape(self):
         # This method uses the _get_vertex_positions method. Therefore, it
         # can only be tested in subclasses of the Shape class.
@@ -373,6 +368,10 @@ class CellTestCase(unittest.TestCase):
                           # Args to self.C1.add_user
                           user5, relative_pos_bool=False)
 
+        # Test if we try to add a 'user' which is not an instance of the
+        # NodeClass
+        self.assertRaises(TypeError, self.C1.add_user, 0 + 3j)
+
         # The cell still has only 3 users
         self.assertEqual(self.C1.num_users, 3)
 
@@ -397,6 +396,20 @@ class CellTestCase(unittest.TestCase):
         self.C1.add_border_user(angles, ratio, user_color='g')
         self.assertAlmostEqual(self.C1.users[0].pos,
                                expected_pos)
+
+        # Test adding a single user without specifying the ration, which
+        # should default to 1.
+        self.C1.delete_all_users()
+        self.C1.add_border_user(angles)
+        expected_pos = self.C1.get_border_point(angles, 1)
+        self.assertAlmostEqual(self.C1.users[0].pos,
+                               expected_pos)
+
+        # Test adding a single user an invalid ratio. This should raise an
+        # exception.
+        self.C1.delete_all_users()
+        self.assertRaises(ValueError, self.C1.add_border_user, angles, 1.1)
+        self.assertRaises(ValueError, self.C1.add_border_user, angles, -0.4)
 
         # xxxxx Test adding multiple users with the same ratio
         angles2 = [30, 45, 60, 90, 120]
@@ -501,18 +514,46 @@ class ClusterTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.C2._calc_cluster_external_radius(),
                                2.6457513110645903 * self.C2.cell_radius)
 
-        self.assertAlmostEqual(self.C3._calc_cluster_external_radius(),
+        # Note that the external_radius property will implicitly call the
+        # _calc_cluster_external_radius method.
+        self.assertAlmostEqual(self.C3.external_radius,
                                4.3588989435406731 * self.C3.cell_radius)
 
     def test_calc_cell_positions(self):
         pass
 
-    def test_get_outer_vertexes(self):
-        pass
-
     def test_get_vertex_positions(self):
-        pass
+        # For a cluster of a single cell, the cluster vertexes are the same
+        # as the cell vertexes
+        C1 = cell.Cluster(cell_radius=1.0, num_cells=1)
+        np.testing.assert_array_almost_equal(C1.vertices, C1._cells[0].vertices)
 
+        # THIS TEST IS NOT COMPLETE
+        #
+        # Except for C1, we are only testing the number of verexes here,
+        # but at least it is something.
+        C3 = cell.Cluster(cell_radius=1.0, num_cells=3)
+        self.assertEqual(len(C3.vertices), 12)
+
+        C6 = cell.Cluster(cell_radius=1.0, num_cells=6)
+        self.assertEqual(len(C6.vertices), 18)
+
+        C7 = cell.Cluster(cell_radius=1.0, num_cells=7)
+        self.assertEqual(len(C7.vertices), 18)
+
+        C13 = cell.Cluster(cell_radius=1.0, num_cells=13)
+        self.assertEqual(len(C13.vertices), 30)
+
+        C15 = cell.Cluster(cell_radius=1.0, num_cells=15)
+        self.assertEqual(len(C15.vertices), 30)
+
+        C19 = cell.Cluster(cell_radius=1.0, num_cells=19)
+        self.assertEqual(len(C19.vertices), 30)
+
+        Cinvalid = cell.Cluster(cell_radius=1.0, num_cells=20)
+        self.assertEqual(len(Cinvalid.vertices), 0)
+
+    # TODO: Implement-me
     def test_add_random_users(self):
         pass
 

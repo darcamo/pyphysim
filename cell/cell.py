@@ -531,7 +531,7 @@ class Cluster(shapes.Shape):
     def _get_outer_vertexes(self, vertexes, central_pos, distance):
         """Filter out vertexes closer to the shape center them `distance`.
 
-        This is a herper method used in the _get_vertex_positions method.
+        This is a helper method used in the _get_vertex_positions method.
 
         Arguments:
         - `vertexes`: A numpy array of vertexes.

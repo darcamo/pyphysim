@@ -87,7 +87,7 @@ class Shape(Coordinate):
     rotation = property(_get_rotation, _set_rotation)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _get_vertex_positions(self):
+    def _get_vertex_positions(self):  # pragma: no cover
         """Calculates the vertex positions ignoring any rotation and considering
         that the shape is at the origin (rotation and translation will be
         added automatically later).

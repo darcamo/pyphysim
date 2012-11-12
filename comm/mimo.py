@@ -31,7 +31,7 @@ class MimoBase(object):
     def __init__(self):
         pass
 
-    def getNumberOfLayers(self):
+    def getNumberOfLayers(self):  # pragma: no cover
         """Get the number of layers of the MIMO scheme."""
         raise NotImplementedError('getNumberOfLayers still needs to be implemented in the {0} class'.format(self.__class__.__name__))
 
@@ -65,14 +65,10 @@ class MimoBase(object):
         W = np.dot(np.linalg.inv(np.dot(H_H, H) + noise_var * np.eye(Nt)), H_H)
         return W
 
-    def encode(self, transmit_data):
-        """
-        """
+    def encode(self, transmit_data):  # pragma: no cover
         raise NotImplementedError('encode still needs to be implemented in the {0} class'.format(self.__class__.__name__))
 
-    def decode(self, received_data, channel):
-        """
-        """
+    def decode(self, received_data, channel):  # pragma: no cover
         raise NotImplementedError('decode still needs to be implemented in the {0} class'.format(self.__class__.__name__))
 
 
