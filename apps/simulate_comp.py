@@ -9,6 +9,9 @@ Different scenarios can be simulated such as:
 # - 'SymmetricFar': User placed at symmetric locations at each cell as far as
 #                   possible. This is shown in the figure below.
 
+The external interference is generated in the
+_prepare_external_interference method.
+
 """
 # TODO: Create the several simulation scenarios
 
@@ -45,7 +48,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # self.AlphaValues = 0.2;
         # self.BetaValues = 0;
         self.path_loss_obj = pathloss.PathLoss3GPP1()
-        self.multiuser_channel = channels.MultiUserChannelMatrix()
+        self.multiuser_channel = channels.MultiUserChannelMatrixExtInt()
 
         # xxxxxxxxxx Modulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.M = 4
@@ -60,6 +63,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
 
+        # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxx
+        self.Pe_dBm = -10000  # transmit power (in dBm) of the ext. interference
+        self.ext_int_rank = 1  # Rank of the external interference
+
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.rep_max = 10000  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
@@ -67,9 +74,9 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         # max_bit_errors is used in the _keep_going method to stop the
         # simulation earlier if possible. We stop the simulation if the
-        # accumulated number of bit errors becomes greater then 1% of the
+        # accumulated number of bit errors becomes greater then 5% of the
         # total number of simulated bits
-        self.max_bit_errors = self.rep_max * self.NSymbs / 100.
+        self.max_bit_errors = self.rep_max * self.NSymbs * 5. / 100.
         self.progressbar_message = "COmP Simulation with {0}-PSK - SNR: {{SNR}}".format(self.M)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -81,21 +88,25 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.cell_grid = cell.Grid()
         self.cell_grid.create_clusters(self.num_clusters, self.num_cells, self.cell_radius)
         self.noise_var = conversion.dBm2Linear(self.N0)
+
+        # External interference power
+        self.pe = conversion.dBm2Linear(self.Pe_dBm)
         # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
         # the scenario specific variables are created by running the
-        # _prepare_scenario method.
+        # _create_users_according_to_scenario method.
         #
-        # Here we set the _prepare_scenario method to be the method to
-        # prepare the RandomUsers scenario.
-        #self._prepare_scenario = self._prepare_random_users_scenario
-        self._prepare_scenario = self._prepare_symmetric_far_away_scenario
+        # Here we set the _create_users_according_to_scenario method to be
+        # one of the methods responsible for the users creation. Each
+        # possible method corresponds to a different scenario.
+        #self._create_users_according_to_scenario = self._create_random_users_scenario
+        self._create_users_according_to_scenario = self._create_symmetric_far_away_users_scenario
 
-    def _prepare_random_users_scenario(self):
+    def _create_random_users_scenario(self):
         """Run this method to set variables specific to the 'RandomUsers'
         scenario.
 
-        The 'RandomUsers' scenario place a user in each cell at a random
-        location.
+        The 'RandomUsers' scenario places a user at a random location in
+        each cell.
 
         """
         cluster0 = self.cell_grid._clusters[0]
@@ -103,16 +114,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         cluster0.remove_all_users()
         cluster0.add_random_users(cell_ids)
 
-        # Distances between each transmitter and each receiver
-        dists = cluster0.calc_dist_all_cells_to_all_users()
-        # Path loss from each base station to each user
-        pathloss = self.path_loss_obj.calc_path_loss(dists)
-
-        # Generate a random channel and set the path loss
-        self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells)
-        self.multiuser_channel.set_pathloss(pathloss)
-
-    def _prepare_symmetric_far_away_scenario(self):
+    def _create_symmetric_far_away_users_scenario(self):
         """Run this method to set variables specific to the 'FarAwayUsers70%'
         scenario.
 
@@ -123,18 +125,41 @@ class CompSimulationRunner(simulations.SimulationRunner):
         """
         cluster0 = self.cell_grid._clusters[0]
         cell_ids = np.arange(1, self.num_cells + 1)
-        angles = np.array([210, 30, 90])
+        angles = np.array([210, -30, 90])
         cluster0.remove_all_users()
         cluster0.add_border_users(cell_ids, angles, 0.7)
 
-        # Distances between each transmitter and each receiver
+    def _create_users_channels(self):
+        """Create the channels of all the users.
+
+        The users must have already been created.
+        """
+        cluster0 = self.cell_grid._clusters[0]
+
+        # xxxxx Distances between each transmitter and each receiver xxxxxx
+        # This `dists` matrix may be indexed as dists[user, cell].
         dists = cluster0.calc_dist_all_cells_to_all_users()
         # Path loss from each base station to each user
         pathloss = self.path_loss_obj.calc_path_loss(dists)
 
+        # xxx Distances between each receiver and the ext. int. source xxxx
+        # Calculates the distance of each user to the cluster center
+        #
+        # Note: Because we are using the cluster0.get_all_users() method
+        # THIS CODE ONLY WORKS when there is a single user at each cell.
+        distance_users_to_cluster_center = np.array(
+            [cluster0.calc_dist(i) for i in cluster0.get_all_users()])
+
+        pathlossInt = self.path_loss_obj.calc_path_loss(
+            cluster0.external_radius - distance_users_to_cluster_center)
+        # The number of rows is equal to the number of receivers, while the
+        # cumber of columns is equal to the number of external interference
+        # sources.
+        pathlossInt.shape = (self.num_cells, 1)
+
         # Generate a random channel and set the path loss
-        self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells)
-        self.multiuser_channel.set_pathloss(pathloss)
+        self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells, self.ext_int_rank)
+        self.multiuser_channel.set_pathloss(pathloss, pathlossInt)
 
     def _on_simulate_current_params_start(self, current_params):
         """This method is called once for each combination of transmit
@@ -175,7 +200,15 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # scenario (random locations or not), calculate the path loss and
         # generate a new random channel (in the self.multiuser_channel
         # variable).
-        self._prepare_scenario()
+        self._create_users_according_to_scenario()
+
+        # This will calculate pathloss and generate random channels from
+        # all transmitters to all receivers as well as from the external
+        # interference sources to all receivers. This method must be called
+        # after the _create_users_according_to_scenario method so that the
+        # users are already created (we need their positions for the
+        # pathloss)
+        self._create_users_channels()
 
         # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
         input_data = np.random.randint(0,
@@ -185,17 +218,26 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         # xxxxxxxxxx Perform the block diagonalization xxxxxxxxxxxxxxxxxxxx
         (newH, Ms) = comp.perform_comp(
-            self.multiuser_channel.big_H,
+            # We only add the first np.sum(self.Nt) columns of big_H
+            # because the remaining columns come from the external
+            # interference sources, which don't participate in the Block
+            # Diagonalization Process.
+            self.multiuser_channel.big_H[:, 0:np.sum(self.Nt)],
             self.num_cells,
             self.transmit_power,
             #self.noise_var
             1e-50
         )
 
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
+        # Prepare the transmit data. That is, the precoded_data as well as
+        # the external interferece sources' data.
         precoded_data = np.dot(Ms, symbols)
+        external_int_data = np.sqrt(self.pe) * misc.randn_c(self.ext_int_rank, self.NSymbs)
+        all_data = np.vstack([precoded_data, external_int_data])
+
+        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
         received_signal = self.multiuser_channel.corrupt_concatenated_data(
-            precoded_data,
+            all_data,
             self.noise_var
         )
 
@@ -288,7 +330,7 @@ if __name__ == '__main__':
     runner.simulate()
 
     # File name (without extension) for the figure and result files.
-    results_filename = 'comp_results_(comp)'
+    results_filename = 'comp_results_(Pure_BD_symetric_users_with_ext_int)_Pe_minus_10000_dBm'
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
     # First we add the simulation parameters to the results
