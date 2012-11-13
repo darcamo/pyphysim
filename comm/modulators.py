@@ -12,9 +12,6 @@ self.setConstellation method in their __init__ method, as well as implement
 the calcTheoreticalSER and calcTheoreticalBER methods.
 """
 
-__version__ = "$Revision: $"
-# $Source$
-
 try:
     import matplotlib.pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
@@ -69,7 +66,7 @@ class Modulator(object):
     def name(self):
         return "{0:d}-{1:s}".format(self.M, self.__class__.__name__)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "{0} object".format(self.name)
 
     def setConstellation(self, symbols):
@@ -112,7 +109,7 @@ class Modulator(object):
 
         plt.show()
 
-    def modulate(self, inputData):
+    def modulate(self, inputData):  # pragma: no cover
         """Modulate the input data (decimal data).
 
         Arguments:
@@ -123,7 +120,7 @@ class Modulator(object):
         except IndexError:
             raise IndexError("Input data must be between 0 and 2^M")
 
-    def demodulate(self, receivedData):
+    def demodulate(self, receivedData):  # pragma: no cover
         """Demodulate the data.
 
         Arguments:
@@ -169,7 +166,7 @@ class PSK(Modulator):
         assert 2 ** math.log(M, 2) == M
 
         # Generates the constellation
-        symbols = self.___createConstellation(M, phaseOffset)
+        symbols = self._createConstellation(M, phaseOffset)
 
         # Change to Gray mapping
         symbols = symbols[gray2binary(np.arange(0, M))]
@@ -177,7 +174,7 @@ class PSK(Modulator):
         self.setConstellation(symbols)
 
     @staticmethod
-    def ___createConstellation(M, phaseOffset):
+    def _createConstellation(M, phaseOffset):
         """Generates the Constellation for the PSK modulation scheme
 
         Arguments:
@@ -199,7 +196,7 @@ class PSK(Modulator):
         Arguments:
         - `phaseOffset`: phase offset (in radians)
         """
-        self.setConstellation(self.__createConstellation(self.M, phaseOffset))
+        self.setConstellation(self._createConstellation(self.M, phaseOffset))
 
     def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation for high M and high
@@ -211,6 +208,8 @@ class PSK(Modulator):
         snr = dB2Linear(SNR)
 
         # $P_s \approx 2Q\left(\sqrt{2\gamma_s}\sin\frac{\pi}{M}\right)$
+        # Alternative formula (same result)
+        # $P_s = erfc \left ( \sqrt{\gamma_s} \sin(\frac{\pi}{M})  \right )$
         ser = 2 * qfunc(np.sqrt(2 * snr) * math.sin(PI / self.M))
         return ser
 
@@ -233,16 +232,14 @@ class PSK(Modulator):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxx QPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class QPSK(PSK):
+class QPSK(PSK):  # pragma: no cover
     """QPSK Class
     """
 
     def __init__(self, ):
-        """
-        """
         PSK.__init__(self, 4, PI / 4)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "QPSK object"
 # xxxxx End of QPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -254,12 +251,10 @@ class BPSK(Modulator):
     """BPSK Class
     """
     def __init__(self, ):
-        """
-        """
         Modulator.__init__(self)
         self.setConstellation(np.array([-1, 1]))
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "BPSK object"
 
     def calcTheoreticalSER(self, SNR):
@@ -271,7 +266,9 @@ class BPSK(Modulator):
         """
         snr = dB2Linear(SNR)
         # $P_b = Q\left(\sqrt{\frac{2E_b}{N_0}}\right)$
-        ser = qfunc(math.sqrt(2 * snr))
+        # Alternative formula (same result)
+        # $P_b = \frac{1}{2}erfc \left ( \sqrt{\frac{E_b}{N_0}} \right )$
+        ser = qfunc(np.sqrt(2 * snr))
         return ser
 
     def calcTheoreticalBER(self, SNR):
@@ -294,25 +291,28 @@ class QAM(Modulator):
     """
 
     def __init__(self, M):
-        """
+        """Initializes the QAM object.
+
+        Raises:
+        - ValueError of M is not a square power of 2.
         """
         Modulator.__init__(self)
 
         # Check if M is an even power of 2
         power = math.log(M, 2)
-        assert power % 2 == 0, "M must be a square power of 2"
-        assert 2 ** power == M, "M must be a square power of 2"
+        if (power % 2 != 0) or (2 ** power != M):
+            raise ValueError("M must be a square power of 2")
 
-        symbols = self.__createConstellation(M)
+        symbols = self._createConstellation(M)
 
         L = int(round(math.sqrt(M)))
-        grayMappingIndexes = self.__calculateGrayMappingIndexQAM(L)
+        grayMappingIndexes = self._calculateGrayMappingIndexQAM(L)
         symbols = symbols[grayMappingIndexes]
 
         # Set the constellation
         self.setConstellation(symbols)
 
-    def __createConstellation(self, M):
+    def _createConstellation(self, M):
         """Generates the Constellation for the (SQUARE) M-QAM modulation
         scheme.
 
@@ -333,9 +333,9 @@ class QAM(Modulator):
         # equal to one.
         return symbols / math.sqrt(average_energy)
 
-    def __calculateGrayMappingIndexQAM(self, L):
+    def _calculateGrayMappingIndexQAM(self, L):
         """Calculates the indexes that should be applied to the
-        constellation created by __createConstellation in order to
+        constellation created by _createConstellation in order to
         correspond to Gray mapping.
 
         Notice that the square M-QAM constellation is a matrix of dimension
@@ -414,9 +414,9 @@ class QAM(Modulator):
         - `SNR`: Signal to noise ration (in dB)
         """
         # For higher SNR values and gray mapping, each symbol error
-        # corresponds to approximately a bit error. The BER is then given
-        # by the probability of error of a single carrier in the QAM system
-        # divided by the number of bits transported in that carrier.
+        # corresponds to approximately a single bit error. The BER is then
+        # given by the probability of error of a single carrier in the QAM
+        # system divided by the number of bits transported in that carrier.
         k = level2bits(self.M)
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
         ber = 2 * Psc / k
@@ -427,14 +427,14 @@ class QAM(Modulator):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxx Tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def testGrayCodeConversion(maxNum=8):
+def testGrayCodeConversion(maxNum=8):  # pragma: no cover
     for i in range(0, maxNum):
         grayNumber = binary2gray(i)
         print ("Normal: ({0:2}) {0:0=4b} | Gray: ({1:2}) {1:0=4b} -> Converted {2:2}").format(i, grayNumber, gray2binary(grayNumber))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__':  # pragma: no cover
     M = 4
     psk = PSK(M)
 
@@ -448,6 +448,6 @@ if __name__ == '__main__1':
     # Calculates the symbol error rate
     SER = 1.0 * sum(inputData != demodulatedData) / inputData.size
 
-    # testGrayCodeConversion(16)
+    testGrayCodeConversion(16)
 
     qam = QAM(16)

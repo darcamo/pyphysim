@@ -1117,8 +1117,181 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Implement-me someday
+# TODO: finish implementation
+class PSKTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.psk_obj = modulators.PSK(4)
+        self.psk_obj2 = modulators.PSK(8)
 
+    def test_constellation(self):
+        np.testing.assert_array_almost_equal(
+            self.psk_obj.symbols,
+            np.array([1. + 0.j, 0. + 1.j, 0. - 1.j, -1. + 0.j]))
+
+        np.testing.assert_array_almost_equal(
+            self.psk_obj2.symbols,
+            np.array([1. + 0.j, 0.70710678 + 0.70710678j,
+                      -0.70710678 + 0.70710678j, 0. + 1.j,
+                      0.70710678 - 0.70710678j, 0. - 1.j,
+                      -1. + 0.j, -0.70710678 - 0.70710678j]))
+
+    def test_set_phase_offset(self):
+        self.psk_obj.setPhaseOffset(np.pi / 4.)
+
+        np.testing.assert_array_almost_equal(
+            self.psk_obj.symbols,
+            np.array([0.70710678 + 0.70710678j, -0.70710678 + 0.70710678j,
+                      -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j]))
+
+    def test_calc_theoretical_SER_and_BER(self):
+        SNR_values = np.array([-5, 0, 5, 10])
+
+        # xxxxxxxxxx Test for the 4-PSK xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        theoretical_ser = np.array([0.57388349, 0.31731051, 0.07535798, 0.0015654])
+        np.testing.assert_array_almost_equal(
+            self.psk_obj.calcTheoreticalSER(SNR_values),
+            theoretical_ser)
+
+        #self.psk_obj.calcTheoreticalBER
+        np.testing.assert_array_almost_equal(
+            self.psk_obj.calcTheoreticalBER(SNR_values),
+            theoretical_ser / 2.)
+
+        # xxxxxxxxxx Test for the 8 PSK xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        theoretical_ser2 = np.array([0.76087121, 0.58837243, 0.33584978, 0.08700502])
+        np.testing.assert_array_almost_equal(
+            self.psk_obj2.calcTheoreticalSER(SNR_values),
+            theoretical_ser2)
+
+        np.testing.assert_array_almost_equal(
+            self.psk_obj2.calcTheoreticalBER(SNR_values),
+            theoretical_ser2 / 3.)
+
+    # TODO: Implement-me
+    def test_modulate_and_demodulate(self):
+        pass
+
+
+# TODO: finish implementation
+class BPSKTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.bpsk_obj = modulators.BPSK()
+
+    def test_constellation(self):
+        np.testing.assert_array_almost_equal(self.bpsk_obj.symbols,
+                                             np.array([-1, 1]))
+
+    def test_calc_theoretical_SER_and_BER(self):
+        SNR_values = np.array([-5, 0, 5, 10])
+
+        theoretical_ser = np.array([2.13228018e-01, 7.86496035e-02,
+                                    5.95386715e-03, 3.87210822e-06])
+        np.testing.assert_array_almost_equal(
+            self.bpsk_obj.calcTheoreticalSER(SNR_values),
+            theoretical_ser)
+
+        # The SER and the BER are equal for BPSK modulation
+        np.testing.assert_array_almost_equal(
+            self.bpsk_obj.calcTheoreticalBER(SNR_values),
+            theoretical_ser)
+
+    # TODO: Implement-me
+    def test_modulate_and_demodulate(self):
+        pass
+
+
+# TODO: finish implementation
+class QAMTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.qam_obj = modulators.QAM(4)
+        self.qam_obj2 = modulators.QAM(16)
+        self.qam_obj3 = modulators.QAM(64)
+
+    def test_invalid_QAM_size(self):
+        with self.assertRaises(ValueError):
+            modulators.QAM(32)
+        with self.assertRaises(ValueError):
+            modulators.QAM(63)
+
+    # TODO: Maybe this constellation here is not correct (the gray mapping
+    # part). If you plot the constellation you can see that neighboor
+    # symbols change more then one bit.
+    def test_constellation(self):
+        np.testing.assert_array_almost_equal(
+            self.qam_obj.symbols,
+            np.array([-0.70710678 + 0.70710678j, 0.70710678 + 0.70710678j,
+                      -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j]))
+
+        np.testing.assert_array_almost_equal(
+            self.qam_obj2.symbols,
+            np.array([-0.94868330 + 0.9486833j, -0.31622777 + 0.9486833j,
+                      0.94868330 + 0.9486833j, 0.31622777 + 0.9486833j,
+                      -0.94868330 + 0.31622777j, -0.31622777 + 0.31622777j,
+                      0.94868330 + 0.31622777j, 0.31622777 + 0.31622777j,
+                      -0.94868330 - 0.9486833j, -0.31622777 - 0.9486833j,
+                      0.94868330 - 0.9486833j, 0.31622777 - 0.9486833j,
+                      -0.94868330 - 0.31622777j, -0.31622777 - 0.31622777j,
+                      0.94868330 - 0.31622777j, 0.31622777 - 0.31622777j]))
+
+        #print self.qam_obj3.symbols
+
+        np.testing.assert_array_almost_equal(
+            self.qam_obj3.symbols,
+            np.array([-1.08012345 + 1.08012345j, -0.77151675 + 1.08012345j,
+                      -0.15430335 + 1.08012345j, -0.46291005 + 1.08012345j,
+                      0.77151675 + 1.08012345j, 1.08012345 + 1.08012345j,
+                      0.46291005 + 1.08012345j, 0.15430335 + 1.08012345j,
+                      -1.08012345 + 0.77151675j, -0.77151675 + 0.77151675j,
+                      -0.15430335 + 0.77151675j, -0.46291005 + 0.77151675j,
+                      0.77151675 + 0.77151675j, 1.08012345 + 0.77151675j,
+                      0.46291005 + 0.77151675j, 0.15430335 + 0.77151675j,
+                      -1.08012345 + 0.15430335j, -0.77151675 + 0.15430335j,
+                      -0.15430335 + 0.15430335j, -0.46291005 + 0.15430335j,
+                      0.77151675 + 0.15430335j, 1.08012345 + 0.15430335j,
+                      0.46291005 + 0.15430335j, 0.15430335 + 0.15430335j,
+                      -1.08012345 + 0.46291005j, -0.77151675 + 0.46291005j,
+                      -0.15430335 + 0.46291005j, -0.46291005 + 0.46291005j,
+                      0.77151675 + 0.46291005j, 1.08012345 + 0.46291005j,
+                      0.46291005 + 0.46291005j, 0.15430335 + 0.46291005j,
+                      -1.08012345 - 0.77151675j, -0.77151675 - 0.77151675j,
+                      -0.15430335 - 0.77151675j, -0.46291005 - 0.77151675j,
+                      0.77151675 - 0.77151675j, 1.08012345 - 0.77151675j,
+                      0.46291005 - 0.77151675j, 0.15430335 - 0.77151675j,
+                      -1.08012345 - 1.08012345j, -0.77151675 - 1.08012345j,
+                      -0.15430335 - 1.08012345j, -0.46291005 - 1.08012345j,
+                      0.77151675 - 1.08012345j, 1.08012345 - 1.08012345j,
+                      0.46291005 - 1.08012345j, 0.15430335 - 1.08012345j,
+                      -1.08012345 - 0.46291005j, -0.77151675 - 0.46291005j,
+                      -0.15430335 - 0.46291005j, -0.46291005 - 0.46291005j,
+                      0.77151675 - 0.46291005j, 1.08012345 - 0.46291005j,
+                      0.46291005 - 0.46291005j, 0.15430335 - 0.46291005j,
+                      -1.08012345 - 0.15430335j, -0.77151675 - 0.15430335j,
+                      -0.15430335 - 0.15430335j, -0.46291005 - 0.15430335j,
+                      0.77151675 - 0.15430335j, 1.08012345 - 0.15430335j,
+                      0.46291005 - 0.15430335j, 0.15430335 - 0.15430335j]))
+
+    # Implement-me
+    def test_calc_theoretical_SER_and_BER(self):
+        SNR_values = np.array([-5, 0, 5, 10])
+
+        # theoretical_ser = np.array([2.13228018e-01, 7.86496035e-02,
+        #                             5.95386715e-03, 3.87210822e-06])
+        # np.testing.assert_array_almost_equal(
+        #     self.bpsk_obj.calcTheoreticalSER(SNR_values),
+        #     theoretical_ser)
+
+        # # The SER and the BER are equal for BPSK modulation
+        # np.testing.assert_array_almost_equal(
+        #     self.bpsk_obj.calcTheoreticalBER(SNR_values),
+        #     theoretical_ser)
+
+
+    # TODO: Implement-me
+    def test_modulate_and_demodulate(self):
+        pass
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
