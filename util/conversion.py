@@ -92,3 +92,37 @@ def gray2binary(num):
     temp = xor(temp, (temp >> 1))
 
     return temp
+
+
+def SNR_dB_to_EbN0_dB(SNR, bits_per_symb):
+    """Convert an SNR value (in dB) to the equivalent Eb/N0 value (also in dB).
+
+    Arguments:
+    - `SNR`: SNR value (in dB)
+    - `bits_per_symb`: Number of bits in a symbol.
+
+    Returns:
+    - Eb/N0 value (in dB)
+
+    """
+    # ebn0 = dB2Linear(SNR) / float(bits_per_symb)
+    # EbN0 = linear2dB(ebn0)
+
+    EbN0 = SNR - 10 * np.log10(bits_per_symb)
+
+    return EbN0
+
+
+def EbN0_dB_to_SNR_dB(EbN0, bits_per_symb):
+    """Convert an Eb/N0 value (in dB) to the equivalent SNR value (also in dB).
+
+    Arguments:
+    - `EbN0`: Eb/N0 value (in dB)
+    - `bits_per_symb`: Number of bits in a symbol.
+
+    Returns:
+    - SNR value (in dB)
+
+    """
+    SNR = EbN0 + 10 * np.log10(bits_per_symb)
+    return SNR

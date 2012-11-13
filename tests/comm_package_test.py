@@ -21,6 +21,7 @@ from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
 from util.misc import randn_c
+from util import conversion
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -1168,9 +1169,25 @@ class PSKTestCase(unittest.TestCase):
             self.psk_obj2.calcTheoreticalBER(SNR_values),
             theoretical_ser2 / 3.)
 
-    # TODO: Implement-me
     def test_modulate_and_demodulate(self):
-        pass
+        noise = randn_c(20,) * 1e-2
+
+        input_data = np.random.random_integers(0, 4 - 1, 20)
+        modulated_data = self.psk_obj.modulate(input_data)
+        demodulated_data = self.psk_obj.demodulate(modulated_data + noise)
+
+        np.testing.assert_array_equal(input_data, demodulated_data)
+
+        input_data2 = np.random.random_integers(0, 8 - 1, 20)
+        modulated_data2 = self.psk_obj2.modulate(input_data2)
+        demodulated_data2 = self.psk_obj2.demodulate(modulated_data2 + noise)
+        np.testing.assert_array_equal(input_data2, demodulated_data2)
+
+        # Test if an exception is raised for invalid arguments
+        with self.assertRaises(ValueError):
+            self.psk_obj.modulate(4)
+        with self.assertRaises(ValueError):
+            self.psk_obj2.modulate(10)
 
 
 # TODO: finish implementation
@@ -1181,7 +1198,7 @@ class BPSKTestCase(unittest.TestCase):
 
     def test_constellation(self):
         np.testing.assert_array_almost_equal(self.bpsk_obj.symbols,
-                                             np.array([-1, 1]))
+                                             np.array([1, -1]))
 
     def test_calc_theoretical_SER_and_BER(self):
         SNR_values = np.array([-5, 0, 5, 10])
@@ -1197,9 +1214,18 @@ class BPSKTestCase(unittest.TestCase):
             self.bpsk_obj.calcTheoreticalBER(SNR_values),
             theoretical_ser)
 
-    # TODO: Implement-me
     def test_modulate_and_demodulate(self):
-        pass
+        input_data = np.random.random_integers(0, 1, 20)
+        modulated_data = self.bpsk_obj.modulate(input_data)
+
+        noise = randn_c(20,) * 1e-2
+
+        demodulated_data = self.bpsk_obj.demodulate(modulated_data + noise)
+        np.testing.assert_array_equal(input_data, demodulated_data)
+
+        # Test if an exception is raised for invalid arguments
+        with self.assertRaises(ValueError):
+            self.bpsk_obj.modulate(2)
 
 
 # TODO: finish implementation
@@ -1273,25 +1299,81 @@ class QAMTestCase(unittest.TestCase):
                       0.77151675 - 0.15430335j, 1.08012345 - 0.15430335j,
                       0.46291005 - 0.15430335j, 0.15430335 - 0.15430335j]))
 
-    # Implement-me
-    def test_calc_theoretical_SER_and_BER(self):
-        SNR_values = np.array([-5, 0, 5, 10])
-
-        # theoretical_ser = np.array([2.13228018e-01, 7.86496035e-02,
-        #                             5.95386715e-03, 3.87210822e-06])
-        # np.testing.assert_array_almost_equal(
-        #     self.bpsk_obj.calcTheoreticalSER(SNR_values),
-        #     theoretical_ser)
-
-        # # The SER and the BER are equal for BPSK modulation
-        # np.testing.assert_array_almost_equal(
-        #     self.bpsk_obj.calcTheoreticalBER(SNR_values),
-        #     theoretical_ser)
-
-
     # TODO: Implement-me
+    def test_calc_theoretical_SER_and_BER(self):
+        SNR_values = np.array([0, 5, 10, 15, 20])
+
+        # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        theoretical_ser = np.array([2.92139018e-01, 7.39382701e-02,
+                                    1.56478964e-03, 1.87220798e-08, 0])
+        np.testing.assert_array_almost_equal(
+            self.qam_obj.calcTheoreticalSER(SNR_values),
+            theoretical_ser)
+
+        theoretical_ber = np.array([1.58655254e-01, 3.76789881e-02,
+                                    7.82701129e-04 , 9.36103999e-09,
+                                    7.61985302e-24])
+        np.testing.assert_array_almost_equal(
+            self.qam_obj.calcTheoreticalBER(SNR_values),
+            theoretical_ber)
+
+        # xxxxxxxxxx Test for 16-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        theoretical_ser2 = np.array([7.40960364e-01, 5.37385132e-01,
+                                     2.22030850e-01, 1.77818422e-02,
+                                     1.16162909e-05])
+        np.testing.assert_array_almost_equal(
+            self.qam_obj2.calcTheoreticalSER(SNR_values),
+            theoretical_ser2)
+
+        theoretical_ber2 = np.array([2.45520317e-01, 1.59921014e-01,
+                                     5.89872026e-02, 4.46540036e-03,
+                                     2.90408116e-06])
+        np.testing.assert_array_almost_equal(
+            self.qam_obj2.calcTheoreticalBER(SNR_values),
+            theoretical_ber2)
+        # xxxxxxxxxx Test for 64-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        theoretical_ser3 = np.array([0.92374224, 0.84846895, 0.67382633,
+                                     0.3476243, 0.05027041])
+        np.testing.assert_array_almost_equal(
+            self.qam_obj3.calcTheoreticalSER(SNR_values),
+            theoretical_ser3)
+
+        theoretical_ber3 = np.array([0.24128398, 0.2035767, 0.14296128,
+                                     0.06410074, 0.00848643])
+        np.testing.assert_array_almost_equal(
+            self.qam_obj3.calcTheoreticalBER(SNR_values),
+            theoretical_ber3)
+
     def test_modulate_and_demodulate(self):
-        pass
+        noise = randn_c(20,) * 1e-2
+
+        # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        input_data = np.random.random_integers(0, 4 - 1, 20)
+        modulated_data = self.qam_obj.modulate(input_data)
+        demodulated_data = self.qam_obj.demodulate(modulated_data + noise)
+        np.testing.assert_array_equal(input_data, demodulated_data)
+
+        # xxxxxxxxxx Test for 16-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        input_data2 = np.random.random_integers(0, 16 - 1, 20)
+        modulated_data2 = self.qam_obj2.modulate(input_data2)
+        demodulated_data2 = self.qam_obj2.demodulate(modulated_data2 + noise)
+        np.testing.assert_array_equal(input_data2, demodulated_data2)
+
+        # xxxxxxxxxx Test for 64-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        input_data3 = np.random.random_integers(0, 64 - 1, 20)
+        modulated_data3 = self.qam_obj3.modulate(input_data3)
+        demodulated_data3 = self.qam_obj3.demodulate(modulated_data3 + noise)
+        np.testing.assert_array_equal(input_data3, demodulated_data3)
+
+        # Test if an exception is raised for invalid arguments
+        with self.assertRaises(ValueError):
+            self.qam_obj.modulate(4)
+
+        with self.assertRaises(ValueError):
+            self.qam_obj2.modulate(16)
+
+        with self.assertRaises(ValueError):
+            self.qam_obj3.modulate(65)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

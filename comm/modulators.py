@@ -109,18 +109,24 @@ class Modulator(object):
 
         plt.show()
 
-    def modulate(self, inputData):  # pragma: no cover
+    def modulate(self, inputData):
         """Modulate the input data (decimal data).
 
         Arguments:
         - `inputData`: Data to be modulated
+
+        Raises:
+        - ValueError: If inputData has any invalid value such as values
+                      greater than self.M - 1. Note that inputData should
+                      not have negative values but no check is done for
+                      this.
         """
         try:
             return self.symbols[inputData]
         except IndexError:
-            raise IndexError("Input data must be between 0 and 2^M")
+            raise ValueError("Input data must be between 0 and 2^M")
 
-    def demodulate(self, receivedData):  # pragma: no cover
+    def demodulate(self, receivedData):
         """Demodulate the data.
 
         Arguments:
@@ -181,7 +187,7 @@ class PSK(Modulator):
         - `M`: Modulation cardinality
         - `phaseOffset`: phase offset (in radians)
         """
-        phases = 2 * PI / M * np.arange(0, M) + phaseOffset
+        phases = 2. * PI / M * np.arange(0, M) + phaseOffset
         realPart = np.cos(phases)
         imagPart = np.sin(phases)
 
@@ -210,7 +216,7 @@ class PSK(Modulator):
         # $P_s \approx 2Q\left(\sqrt{2\gamma_s}\sin\frac{\pi}{M}\right)$
         # Alternative formula (same result)
         # $P_s = erfc \left ( \sqrt{\gamma_s} \sin(\frac{\pi}{M})  \right )$
-        ser = 2 * qfunc(np.sqrt(2 * snr) * math.sin(PI / self.M))
+        ser = 2. * qfunc(np.sqrt(2. * snr) * math.sin(PI / self.M))
         return ser
 
     def calcTheoreticalBER(self, SNR):
@@ -237,7 +243,7 @@ class QPSK(PSK):  # pragma: no cover
     """
 
     def __init__(self, ):
-        PSK.__init__(self, 4, PI / 4)
+        PSK.__init__(self, 4, PI / 4.)
 
     def __repr__(self):  # pragma: no cover
         return "QPSK object"
@@ -252,7 +258,9 @@ class BPSK(Modulator):
     """
     def __init__(self, ):
         Modulator.__init__(self)
-        self.setConstellation(np.array([-1, 1]))
+        # The number "1" will be mapped to "-1" and the number "0" will be
+        # mapped to "1"
+        self.setConstellation(np.array([1, -1]))
 
     def __repr__(self):  # pragma: no cover
         return "BPSK object"
@@ -279,6 +287,30 @@ class BPSK(Modulator):
         - `snr`: Signal to noise ration (in dB)
         """
         return self.calcTheoreticalSER(SNR)
+
+    def modulate(self, inputData):
+        """Modulate the input data (decimal data).
+
+        Arguments:
+        - `inputData`: Data to be modulated
+
+        Raises:
+        - ValueError: If inputData has any invalid value such as values
+                      greater than self.M - 1. Note that inputData should
+                      not have negative values but no check is done for
+                      this.
+        """
+        if np.any(inputData > 1):
+            raise ValueError("Input data can only contains '0's and '1's")
+        return 1 - 2 * inputData
+
+    def demodulate(self, receivedData):
+        """Demodulate the data.
+
+        Arguments:
+        - `receivedData`: Data to be demodulated
+        """
+        return (receivedData < 0).astype(int)
 
 # xxxxx End of BPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -419,7 +451,7 @@ class QAM(Modulator):
         # system divided by the number of bits transported in that carrier.
         k = level2bits(self.M)
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
-        ber = 2 * Psc / k
+        ber = (2. * Psc) / k
         return ber
 # xxxxx End of QAM Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

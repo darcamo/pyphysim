@@ -314,7 +314,6 @@ class ShapesModuleMethodsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# TODO: Implement all the tests for the cell.cell module.
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx CELL module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -326,7 +325,6 @@ class NodeTestCase(unittest.TestCase):
         self.assertEqual(n.marker_color, 'g')
 
 
-# TODO: finish implementation
 class CellTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -385,7 +383,6 @@ class CellTestCase(unittest.TestCase):
         self.C1.delete_all_users()
         self.assertEqual(self.C1.num_users, 0)
 
-    # TODO:Implement-me
     def test_add_border_user(self):
         # xxxxx Test adding a single user
         angles = 30
@@ -448,7 +445,6 @@ class CellTestCase(unittest.TestCase):
             self.assertTrue(self.C1.calc_dist(self.C1.users[index]) > min_dist)
 
 
-# TODO: finish implementation
 class ClusterTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -490,6 +486,19 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(cell.Cluster._get_ii_and_jj(30), (0, 0))
 
     def test_remove_all_users(self):
+        # Remove all users from the second cell
+        self.C1.remove_all_users(2)
+        self.assertEqual(self.C1._cells[0].num_users, 2)
+        self.assertEqual(self.C1._cells[1].num_users, 0)
+        self.assertEqual(self.C1._cells[2].num_users, 5)
+
+        # Remove all users from the second and third cells
+        self.C1.remove_all_users([2, 3])
+        self.assertEqual(self.C1._cells[0].num_users, 2)
+        self.assertEqual(self.C1._cells[1].num_users, 0)
+        self.assertEqual(self.C1._cells[2].num_users, 0)
+
+        # Remove all users from all cells
         self.C1.remove_all_users()
         self.assertEqual(self.C1._cells[0].num_users, 0)
         self.assertEqual(self.C1._cells[1].num_users, 0)
@@ -555,9 +564,32 @@ class ClusterTestCase(unittest.TestCase):
 
     # TODO: Implement-me
     def test_add_random_users(self):
-        pass
+        # Test adding 2 users to the third cell in the cluster
+        self.C2.add_random_users(3, 2, 'aqua')
+        self.assertEqual(self.C2.num_users, 2)
+        self.assertEqual(self.C2._cells[2].num_users, 2)
 
-    # TODO: Finish implementation
+        # Test adding 3 users to 2 different cells
+        self.C2.add_random_users([4, 7], 3, 'g')
+        # 8 users, since we added 2 users to cell 3 before and now we added
+        # 3 users to cells 4 and 7.
+        self.assertEqual(self.C2.num_users, 8)
+        self.assertEqual(self.C2._cells[2].num_users, 2)
+        self.assertEqual(self.C2._cells[3].num_users, 3)
+        self.assertEqual(self.C2._cells[6].num_users, 3)
+
+        # Test adding a different number of users to different cells (cells
+        # 1 and 5)
+        self.C2.add_random_users([1, 5], [2, 5], ['k', 'b'])
+        self.assertEqual(self.C2.num_users, 15)
+        self.assertEqual(self.C2._cells[2].num_users, 2)
+        self.assertEqual(self.C2._cells[3].num_users, 3)
+        self.assertEqual(self.C2._cells[6].num_users, 3)
+        self.assertEqual(self.C2._cells[0].num_users, 2)
+        self.assertEqual(self.C2._cells[4].num_users, 5)
+
+#        self.C2.plot()
+
     def test_add_border_users(self):
         self.C1.remove_all_users()
         cell_ids = [1, 2, 3]
@@ -596,7 +628,20 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_dist_all_cells_to_all_users(self):
-        pass
+        all_dists = self.C1.calc_dist_all_cells_to_all_users()
+        self.assertEqual(all_dists.shape, (10, 3))
+
+        nrows, ncols = all_dists.shape
+        expected_all_dists = np.zeros([nrows, ncols])
+
+        all_cells = self.C1._cells
+        all_users = self.C1.get_all_users()
+
+        for ii in range(nrows):
+            for jj in range(ncols):
+                expected_all_dists[ii, jj] = all_cells[jj].calc_dist(all_users[ii])
+
+        np.testing.assert_array_almost_equal(expected_all_dists, all_dists)
 
     def test_properties(self):
         # Test num_cells property
@@ -612,14 +657,55 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C3.cell_radius, 1.0)
 
 
-# TODO: finish implementation
 class GridTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         pass
 
-    def test_some_method(self):
-        pass
+    def test_create_clusters(self):
+        G1 = cell.Grid()
+
+        # Try to create a grid with invalid number cells per cluster
+        with self.assertRaises(ValueError):
+            G1.create_clusters(7, 4, 0.5)
+
+        # Try to create a grid of more then 2 clusters of 2 cells per
+        # clusters, which is not supported.
+        with self.assertRaises(ValueError):
+            G1.create_clusters(3, 2, 0.5)
+
+        # xxxxx Test creating a grid with 2 clusters of 2 cells xxxxxxxxxxx
+        # Note that for a grid of clusters with 2 cells, only 2 clusters
+        # may be created.
+        G2 = cell.Grid()
+        G2.create_clusters(2, 2, 0.5)
+        cluster2_positions = np.array([c.pos for c in G2._clusters])
+        np.testing.assert_array_almost_equal(
+            cluster2_positions,
+            np.array([0, 0.4330127+0.75j]))
+
+        # xxxxx Test creating a grid with 7 clusters of 3 cells xxxxxxxxxxx
+        G3 = cell.Grid()
+        G3.create_clusters(7, 3, 0.5)
+        self.assertEqual(G3.num_clusters, 7)
+
+        cluster3_positions = np.array([c.pos for c in G3._clusters])
+        np.testing.assert_array_almost_equal(
+            cluster3_positions,
+            np.array([0, 1.29903811+0.75j, 0+1.5j,
+                      -1.29903811+0.75j, -1.29903811-0.75j,
+                      0-1.5j, 1.29903811-0.75j]))
+
+        # xxxxx Test creating a grid with 7 clusters of 7 cells xxxxxxxxxxx
+        G7 = cell.Grid()
+        G7.create_clusters(7, 7, 0.5)
+        cluster7_positions = np.array([c.pos for c in G7._clusters])
+        np.testing.assert_array_almost_equal(
+            cluster7_positions,
+            np.array([0, 2.16506351+0.75j, 0.43301270+2.25j,
+                      -1.73205081+1.5j, -2.16506351-0.75j,
+                      -0.43301270-2.25j, 1.73205081-1.5j]))
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

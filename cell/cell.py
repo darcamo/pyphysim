@@ -688,9 +688,11 @@ class Cluster(shapes.Shape):
                 num_users = itertools.repeat(num_users)
             if isinstance(user_color, str):
                 user_color = itertools.repeat(user_color)
-            else:
-                if not isinstance(user_color, Iterable):
-                    user_color = itertools.repeat(user_color)
+            ## If you ever have problems with user_color, try uncommenting
+            ## the code below
+            # else:
+            #     if not isinstance(user_color, Iterable):
+            #         user_color = itertools.repeat(user_color)
             if not isinstance(min_dist_ratio, Iterable):
                 min_dist_ratio = itertools.repeat(min_dist_ratio)
 
@@ -787,7 +789,7 @@ class Cluster(shapes.Shape):
         """
         if isinstance(cell_id, Iterable):
             for i in cell_id:
-                self._cells[i - 1].users.delete_all_users()
+                self._cells[i - 1].delete_all_users()
         elif cell_id is None:
             for cell in self._cells:
                 cell.delete_all_users()
@@ -890,7 +892,7 @@ class Grid(object):
         self.clear()
 
         if not num_cells in frozenset([2, 3, 7]):
-            raise AttributeError("The Grid class does not implement the case of clusters with {0} cells".format(num_cells))
+            raise ValueError("The Grid class does not implement the case of clusters with {0} cells".format(num_cells))
 
         self._cell_radius = cell_radius
         self._num_cells = num_cells
@@ -929,7 +931,7 @@ class Grid(object):
             length = np.sqrt(3) * self._cell_radius
             return length * np.exp(1j * angle)
         else:
-            RuntimeError("For the two cells per cluster case only two clusters may be used")
+            raise ValueError("For the two cells per cluster case only two clusters may be used")
 
     def _calc_cluster_pos3(self):
         """Calculates the central position of clusters with 3 cells.
@@ -986,7 +988,7 @@ class Grid(object):
 
 
 # xxxxxxxxxx Main methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     c = Cell(3 + 2j, 1, cell_id=3)
     c.fill_face_bool = True
 
@@ -1001,7 +1003,7 @@ if __name__ == '__main__1':
     c.plot()
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     cell_radius = 1
     num_cells = 3
     node_pos = 3 + 15j
@@ -1014,7 +1016,7 @@ if __name__ == '__main__1':
     C.plot()
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     from matplotlib import pyplot as plt
     ax = pylab.axes()
     cell_radius = 1
@@ -1048,7 +1050,7 @@ if __name__ == '__main__1':
     plt.show()
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     from matplotlib import pyplot as plt
     ax = pylab.axes()
     cell_radius = 1
@@ -1071,11 +1073,3 @@ if __name__ == '__main__1':
     ax.plot()
     plt.axis('equal')
     plt.show()
-
-
-# xxxxx Perform the doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # When this module is run as a script the doctests are executed
-    import doctest
-    doctest.testmod()
-    print "{0} executed".format(__file__)

@@ -75,6 +75,44 @@ class ConversionTestCase(unittest.TestCase):
             conversion.gray2binary(conversion.binary2gray(vec)),
             vec)
 
+    def test_SNR_dB_to_EbN0_dB(self):
+        bps_1 = 2
+        bps_2 = 4
+        SNR1 = 10
+        SNR2 = 15
+
+        self.assertAlmostEqual(conversion.SNR_dB_to_EbN0_dB(SNR1, bps_1),
+                               6.98970004336)
+        self.assertAlmostEqual(conversion.SNR_dB_to_EbN0_dB(SNR1, bps_2),
+                               3.97940008672)
+
+        self.assertAlmostEqual(conversion.SNR_dB_to_EbN0_dB(SNR2, bps_1),
+                               11.9897000434)
+        self.assertAlmostEqual(conversion.SNR_dB_to_EbN0_dB(SNR2, bps_2),
+                               8.97940008672)
+
+    def test_EbN0_dB_to_SNR_dB(self):
+        bps_1 = 2
+        bps_2 = 4
+        SNR1 = 10
+        SNR2 = 15
+
+        EbN0_1_1 = conversion.SNR_dB_to_EbN0_dB(SNR1, bps_1)
+        EbN0_1_2 = conversion.SNR_dB_to_EbN0_dB(SNR1, bps_2)
+
+        EbN0_2_1 = conversion.SNR_dB_to_EbN0_dB(SNR2, bps_1)
+        EbN0_2_2 = conversion.SNR_dB_to_EbN0_dB(SNR2, bps_2)
+
+        self.assertAlmostEqual(conversion.EbN0_dB_to_SNR_dB(EbN0_1_1, bps_1),
+                               SNR1)
+        self.assertAlmostEqual(conversion.EbN0_dB_to_SNR_dB(EbN0_1_2, bps_2),
+                               SNR1)
+
+        self.assertAlmostEqual(conversion.EbN0_dB_to_SNR_dB(EbN0_2_1, bps_1),
+                               SNR2)
+        self.assertAlmostEqual(conversion.EbN0_dB_to_SNR_dB(EbN0_2_2, bps_2),
+                               SNR2)
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
