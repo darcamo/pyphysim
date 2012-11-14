@@ -3,17 +3,12 @@
 
 """Implements a waterfilling method.
 
-The doWF performs the waterfilling algorithm.
-
-The genLatexCode returns latex code that can draw the provided solution by
-the waterfilling algorithm, while the drawWF creates a file with this
-code.
+The doWF method performs the waterfilling algorithm.
 """
 
 import numpy as np
 
 
-# TODO: Change comments from portuguese to english
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     """Performs the Waterfilling algorithm and returns the optimum power and water level.
 
@@ -29,13 +24,15 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     vtChannelsSorted = vtChannels[vtChannelsSortIndexes]
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Calcula o waterlevel que toca o pior canal (o mais alto) e
-    # portanto que transmite potencia 0 no pior canal.  Depois disso
-    # calcula a potencia em cada canal (o vetor Ps) para esse
-    # waterlevel.  Se a soma dessas potencias for menor do que a
-    # portencia total entao e so dividir a potencia restante igualmente
-    # entre todos os canais (aumentar o waterlevel). Caso contrario,
-    # removo o pior canal e repito o processo.
+    # Calculates the water level that touches the worst channel (the higher
+    # one) and therefore transmits zero power in this worst channel. After
+    # that, calculates the power in each channel (the vector 'Ps') for this
+    # water level. If the sum of all of these powers in 'Ps' is less then
+    # the total available power, then all we need to do is divide the
+    # remaining power equally among all the channels (increase the water
+    # level). On the other hand, if the sum of all of these powers in 'Ps'
+    # is greater then the total available power then we remove the worst
+    # channel and repeat the process.
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Calculates minimum waterlevel $\mu$ required to use all channels
     dNChannels = vtChannels.size
@@ -53,7 +50,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         Ps = (minMu - float(noiseVar) / (
             Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
-    # Distribui a potencia restante entre todos os canais remanescentes
+    # Distributes the remaining power among the all the remaining channels
     dPdiff = dPt - Ps.sum()
     vtOptPaux = dPdiff / (dNChannels - dRemoveChannels) + Ps
 

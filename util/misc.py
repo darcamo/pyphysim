@@ -185,9 +185,6 @@ def bitCount(n):
         n >>= 1
     return count
 
-# TODO: Because I convert bitCount to a ufunc, any doctest in bitCount is
-# lost. Figure it out how to include a doctest in a ufunc.
-#
 # Make bitCount an ufunc
 bitCount = np.frompyfunc(bitCount, 1, 1, doc=bitCount.__doc__)
 
