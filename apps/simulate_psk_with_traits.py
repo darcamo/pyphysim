@@ -253,7 +253,7 @@ class PskSimulationRunner(SimplePskSimulationRunner):
 
     def get_data_to_be_plotted(self):
         ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ser')
 
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
