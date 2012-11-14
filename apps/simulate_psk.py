@@ -36,14 +36,13 @@ class VerySimplePskSimulationRunner(SimulationRunner):
     def __init__(self, ):
         SimulationRunner.__init__(self)
 
-        #SNR = np.array([5, 10, 15])
-        SNR = np.array([0, 3, 6, 9, 12, 15])
+        SNR = np.array([0, 3, 6, 9, 12])
         M = 4
         self.modulator = modulators.PSK(M)
         self.NSymbs = 500
-        self.max_bit_errors = 200
 
         self.rep_max = 1000
+        self.max_bit_errors = 1./100. * self.NSymbs * self.rep_max
 
         #self.progressbar_message = None
         self.progressbar_message = "{0}-PSK".format(M) + \
@@ -75,9 +74,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noiseVar = 1 / dB2Linear(SNR)
-        noise = ((np.random.randn(NSymbs) + 1j * np.random.randn(NSymbs)) *
-                 np.sqrt(noiseVar / 2))
+        noiseVar = 1. / dB2Linear(SNR)
+        noise = misc.randn_c(NSymbs) * np.sqrt(noiseVar)
         receivedData = modulatedData + noise
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -142,7 +140,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         easily for plot.
         """
         ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ser')
 
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
@@ -151,7 +149,6 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
         theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
         return (SNR, ber, ser, theoretical_ber, theoretical_ser)
-
 
 if __name__ == '__main__':
     from pylab import *
@@ -174,4 +171,6 @@ if __name__ == '__main__':
         grid(True, which='both', axis='both')
         show()
 
+    print "SER: {0}".format(ser)
+    print "BER: {0}".format(ber)
     print sim.elapsed_time

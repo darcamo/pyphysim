@@ -22,6 +22,10 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
     def __init__(self, ):
         VerySimplePskSimulationRunner.__init__(self)
         M = 16
+
+        SNR = np.array([0, 3, 6, 9, 12, 15, 18])
+        self.params.add('SNR', SNR)
+
         self.modulator = modulators.QAM(M)
         self.progressbar_message = "{0}-QAM".format(M) + \
                                    " Simulation - SNR: {SNR}"
