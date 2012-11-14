@@ -1,20 +1,19 @@
-.. py-Physim documentation master file, created by
-   sphinx-quickstart on Wed Jan 11 16:07:43 2012.
+.. PyPhysim documentation master file, created by
+   sphinx-quickstart on Wed Nov 14 13:34:23 2012.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to py-Physim's documentation!
-=====================================
+Welcome to PyPhysim's documentation!
+====================================
 
-Contents:
+The PyPhysim package implements functions, classes and simulators related
+to the physical layer of digital communications.
 
 .. toctree::
-    :maxdepth: 2
+   :maxdepth: 2
 
-    Simulator Modules
 
-    Applications
-    
+
 Indices and tables
 ==================
 
