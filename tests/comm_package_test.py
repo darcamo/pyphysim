@@ -21,7 +21,6 @@ from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
 from util.misc import randn_c
-from util import conversion
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -601,7 +600,6 @@ class OfdmTestCase(unittest.TestCase):
         self.ofdm_object.set_parameters(64, 16)
         self.assertEqual(self.ofdm_object.num_used_subcarriers, 64)
 
-
     def test_prepare_input_signal(self, ):
         input_signal = np.r_[1:53]  # 52 elements -> exactly the number of
                                     # used subcarriers in the OFDM object
@@ -678,9 +676,9 @@ class OfdmTestCase(unittest.TestCase):
 
         input_ifft = self.ofdm_object._prepare_input_signal(input_signal)
         expected_data = np.hstack([
-                np.fft.ifft(input_ifft[0, :]),
-                np.fft.ifft(input_ifft[1, :]),
-                ])
+            np.fft.ifft(input_ifft[0, :]),
+            np.fft.ifft(input_ifft[1, :]),
+        ])
 
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal), expected_data)
@@ -794,7 +792,7 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     plt.plot(
         W,
         10 * np.log10(Pxx)
-        )
+    )
     plt.xlabel('frequency, MHz')
     plt.ylabel('power spectral density')
     plt.title('Transmit spectrum OFDM (based on 802.11a)')
@@ -1056,8 +1054,8 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
                                 np.linalg.norm(Ms_good, 'fro') ** 2)
 
         # xxxxx Test the Individual power restriction of each user xxxxxxxx
-        # Cummulated number of receive antennas
-        cum_Nr = np.cumsum(
+        # Cummulated number of transmit antennas
+        cum_Nt = np.cumsum(
             np.hstack([0, np.ones(self.num_users, dtype=int) * self.num_antenas]))
 
         individual_powers = []
@@ -1065,7 +1063,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
-            individual_powers.append(np.linalg.norm(Ms_good[cum_Nr[i]:cum_Nr[i] + self.num_antenas, :], 'fro') ** 2)
+            individual_powers.append(np.linalg.norm(Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antenas], 'fro') ** 2)
             self.assertGreaterEqual(self.Pu + 1e-12,
                                     individual_powers[-1])
 
@@ -1101,7 +1099,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
                                 np.linalg.norm(Ms, 'fro') ** 2)
 
         # Cummulated number of receive antennas
-        cum_Nr = np.cumsum(
+        cum_Nt = np.cumsum(
             np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
 
         # Individual power restriction of each class
@@ -1110,8 +1108,8 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
-            individual_powers.append(np.linalg.norm(Ms[cum_Nr[i]:cum_Nr[i] + num_antenas, :], 'fro') ** 2)
-            self.assertGreaterEqual(Pu + 1e-12,
+            individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
+            self.assertGreaterEqual(Pu + 1e-8,
                                     individual_powers[-1])
 
 
@@ -1311,7 +1309,7 @@ class QAMTestCase(unittest.TestCase):
             theoretical_ser)
 
         theoretical_ber = np.array([1.58655254e-01, 3.76789881e-02,
-                                    7.82701129e-04 , 9.36103999e-09,
+                                    7.82701129e-04, 9.36103999e-09,
                                     7.61985302e-24])
         np.testing.assert_array_almost_equal(
             self.qam_obj.calcTheoreticalBER(SNR_values),
@@ -1374,6 +1372,7 @@ class QAMTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.qam_obj3.modulate(65)
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

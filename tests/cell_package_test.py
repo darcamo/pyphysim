@@ -198,6 +198,11 @@ class HexagonTestCase(unittest.TestCase):
         # is_point_inside_shape add tests for them here
 
     def test_get_border_point(self):
+        # Test for an angle of 0 degrees
+        point_0_degrees = self.H3.get_border_point(0., 1.)
+        point_0_degrees_expected = self.H3.pos + self.H3.height
+        self.assertAlmostEqual(point_0_degrees, point_0_degrees_expected)
+
         # Test for an angle of 30 degrees (that is one of the vertexes)
         point_30_degrees = self.H3.get_border_point(30., 1.)
         point_30_degrees_expected = self.H3.pos + self.H3.radius * np.exp(1j * np.pi / 6.)

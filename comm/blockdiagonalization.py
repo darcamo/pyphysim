@@ -83,6 +83,7 @@ class BlockDiaginalizer(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Ms_bad = []
         Sigma = []
+
         # Calculates the interfering channels $\tilde{\mat{H}}_j$ as well
         # as $\tilde{\mtV}_j^{(1)}$ and $\tilde{\mtV}_j^{(0)}$.
         # Note that $\tilde{\mat{H}}_j = \tilde{\mtU}_j \tilde{\Sigma}_j [\tilde{\mtV}_j^{(1)} \; \tilde{\mtV}_j^{(0)}]^H$ where $\tilde{\mtV}_j^{(1)}$ holds
@@ -182,9 +183,9 @@ class BlockDiaginalizer(object):
         """
         # Number of receive antennas per user
         #
-        # Note: I think this only works if the number of receive antennas
-        # is equal to the number of transmit antennas
-        iNrU = Sigma.size / float(self.iNUsers)
+        # Note: I think this only works if the number of receive transmit
+        # is equal to the number of receive antennas
+        iNtU = Sigma.size / float(self.iNUsers)
 
         # First we perform the global waterfilling
         Ms_good = self._perform_global_waterfilling_power_scaling(
@@ -199,7 +200,7 @@ class BlockDiaginalizer(object):
         for user in range(0, self.iNUsers):
             # Calculate the Frobenius norm of the matrix corresponding to
             # the transmitter `user`
-            user_matrix = Ms_good[user * iNrU:user * iNrU + iNrU, :]
+            user_matrix = Ms_good[:, user * iNtU:user * iNtU + iNtU]
             # The power is actually the square of cur_sqrt_P
             cur_sqrt_P = np.linalg.norm(user_matrix, 'fro')
             if cur_sqrt_P > max_sqrt_P:

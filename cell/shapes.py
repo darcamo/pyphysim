@@ -148,14 +148,14 @@ class Shape(Coordinate):
         diff = closest_vertices[0] - closest_vertices[1]
 
         # xxxxx Special case for a vertical line xxxxxxxxxxxxxxxxxxxxxxxxxx
-        if np.allclose(diff.real, 0.0, atol=1e-16):
+        if np.allclose(diff.real, 0.0, atol=1e-15):
             # If the the real part of diff is equal to zero, that means
             # that the straight line is actually a vertical
             # line. Therefore, all we need to do to get the border point is
             # to start from the shape's center and go with the desired
-            # angle until the value in the 'x' axis equivalent to
+            # angle until the value in the 'x' axis is equivalent to
             # closest_vertices[0].real.
-            adjacent_side = np.abs(self.pos.real - closest_vertices[0].real)
+            adjacent_side = closest_vertices[0].real - self.pos.real
             side = np.tan(angle_rad) * adjacent_side
             point = self.pos + adjacent_side + 1j * side
             # Now all that is left to do is apply the ratio, which only

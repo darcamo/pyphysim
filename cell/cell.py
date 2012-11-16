@@ -796,7 +796,6 @@ class Cluster(shapes.Shape):
         else:
             self._cells[cell_id - 1].delete_all_users()
 
-    # TODO: Implement a unittest for this method
     def calc_dist_all_cells_to_all_users(self):
         """Returns a matrix with the distance from each cell center to each
         user in each cell.
