@@ -17,7 +17,12 @@ import sys, os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../'))
+parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(parent_dir)
+
+sys.path.append(os.path.join(parent_dir, 'MATLAB'))
+
+#sys.path.insert(0, os.path.abspath('../'))
 
 # -- General configuration -----------------------------------------------------
 
@@ -26,7 +31,22 @@ sys.path.insert(0, os.path.abspath('../'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
+# In the py-physim we use the docstring conventions used in
+# numpy. Therefore, we require the numpydoc extension.
+extensions = ['matplotlib.sphinxext.mathmpl',
+              'matplotlib.sphinxext.only_directives',
+              'matplotlib.sphinxext.plot_directive',
+              # 'matplotlib.sphinxext.ipython_directive',
+              'sphinx.ext.autodoc',
+              'sphinx.ext.todo',
+              #'sphinx.ext.mathjax',
+              #'sphinx.ext.pngmath',
+              'sphinx.ext.viewcode',
+              # 'inheritance_diagram',
+              #'sphinx.ext.extlinks',  # Markup to shorten external links
+              'sphinxcontrib.aafig',
+              'sphinx.ext.autosummary',
+              'numpydoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -85,7 +105,7 @@ exclude_patterns = ['_build']
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+# modindex_common_prefix = ['apps.', 'comm.', 'comm.mimo.', 'comm.modulators.', 'comm.ofdm.', 'comm.pathloss.', 'comp.', 'ia.', 'tests.', 'util.', 'util.conversion', 'subspace.']
 
 
 # -- Options for HTML output ---------------------------------------------------
@@ -241,3 +261,12 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+# Added by darlan
+[extensions]
+# Used by the 'sphinx.ext.todo' extension
+todo_include_todos = True
+# Used by the sphinx.ext.autosummary, if true sphinx will scan all the rst
+# files looking for autosummary directives and will then create stub pages
+# for each summary entry.
+autosummary_generate = True

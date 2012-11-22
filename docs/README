@@ -2,7 +2,9 @@
 *Run make html to generate the documentation (_build/index.html)*
 
 
-Sphinx is used to generate the documentation.
+Sphinx is used to generate the documentation.  Note that we use the numpy
+convention in the docstrings and therefore it is necessary to install the
+"numpydoc" Sphinx extension.
 
 In order to write the documentation you must create .rst files that sphinx
 will then process.

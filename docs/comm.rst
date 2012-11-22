@@ -7,6 +7,7 @@ comm Package
 .. automodule:: comm
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`blockdiagonalization` Module
@@ -15,6 +16,7 @@ comm Package
 .. automodule:: comm.blockdiagonalization
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`channels` Module
@@ -23,6 +25,7 @@ comm Package
 .. automodule:: comm.channels
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`mimo` Module
@@ -31,6 +34,7 @@ comm Package
 .. automodule:: comm.mimo
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`modulators` Module
@@ -39,6 +43,7 @@ comm Package
 .. automodule:: comm.modulators
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`ofdm` Module
@@ -47,6 +52,7 @@ comm Package
 .. automodule:: comm.ofdm
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`pathloss` Module
@@ -55,6 +61,7 @@ comm Package
 .. automodule:: comm.pathloss
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
 :mod:`waterfilling` Module
@@ -63,5 +70,6 @@ comm Package
 .. automodule:: comm.waterfilling
     :members:
     :undoc-members:
+    :private-members:
     :show-inheritance:
 
