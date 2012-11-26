@@ -12,12 +12,24 @@ import numpy as np
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     """Performs the Waterfilling algorithm and returns the optimum power and water level.
 
-    Arguments:
-    - `vtChannels`: Numpy array with the channel POWER gains (power of the
-                    parallel AWGN channels).
-    - `dPt`: Total available power.
-    - `noiseVar`: Noise variance (power in linear scale)
-    - `Es`: Symbol energy (in linear scale)
+    Parameters
+    ----------
+    vtChannels : 1D numpy array
+        Numpy array with the channel POWER gains (power of the parallel
+        AWGN channels).
+    dPt : float
+        Total available power.
+    noiseVar : float
+        Noise variance (power in linear scale).
+    Es : float
+        Symbol energy (in linear scale).
+
+    Returns
+    -------
+    (vtOptP, mu) : tuple
+        A tuple with vtOptP and mu, where vtOptP are the optimum powers,
+        while mu is the water level.
+
     """
     ## Sort Channels (descending order)
     vtChannelsSortIndexes = np.argsort(vtChannels)[::-1]

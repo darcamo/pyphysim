@@ -18,7 +18,7 @@ class AlternatingMinIASolver(object):
     """Implements the "Interference Alignment via Alternating Minimization"
     algorithm from the paper with the same name.
 
-    This algorithm applicable to a "K-user" scenario and it is very
+    This algorithm is applicable to a "K-user" scenario and it is very
     flexible in the sense that you can change the number of transmit
     antennas, receive antennas and streams per user, as well as the number
     of users involved in the IA process. However, note that alignment is
@@ -46,24 +46,44 @@ class AlternatingMinIASolver(object):
     @property
     def K(self):
         """The number of users.
+
+        Returns
+        -------
+        K : int
+            The number of users.
         """
         return self._multiUserChannel._K
 
     @property
     def Nr(self):
         """Number of receive antennas of all users.
+
+        Returns
+        -------
+        Nr : 1D numpy array
+            Number of receive antennas of all users.
         """
         return self._multiUserChannel._Nr
 
     @property
     def Nt(self):
         """Number of transmit antennas of all users.
+
+        Returns
+        -------
+        Nt : 1D numpy array
+            Number of transmit antennas of all users.
         """
         return self._multiUserChannel._Nt
 
     @property
     def Ns(self):
         """Number of streams of all users.
+
+        Returns
+        -------
+        Ns : 1D numpy array
+            Number of streams of all users.
         """
         return self._Ns
 
@@ -72,6 +92,13 @@ class AlternatingMinIASolver(object):
     def getCost(self):
         """Get the Cost of the algorithm for the current iteration of the
         precoder.
+
+        Returns
+        -------
+        cost : float
+            The Cost of the algorithm for the current iteration of the
+            precoder
+
         """
         Cost = 0
         # This will get all combinations of (k,l) without repetition. This
@@ -97,6 +124,15 @@ class AlternatingMinIASolver(object):
 
     def step(self):
         """Step the algorithm
+
+        The step method is usually all you need to call to perform an
+        iteration of the Alternating Minimization algorithm. It will update
+        C, then update F and finally update W.
+
+        See also
+        --------
+        updateC, updateF, updateW
+
         """
         self.updateC()
         self.updateF()
@@ -107,8 +143,17 @@ class AlternatingMinIASolver(object):
 
         Ck contains the orthogonal basis of the interference subspace of
         user k. It corresponds to the Nk-Sk dominant eigenvectors of
-        $\sum_{l \neq k} H_{k,l} F_l F_l^H H_{k,l}^H$
+        :math:`\\sum_{l \\neq k} H_{k,l} F_l F_l^H H_{k,l}^H`.
+
+        Notes
+        -----
+        This method is called in the :meth:`step` method.
+
+        See also
+        --------
+        step
         """
+        # $\sum_{l \neq k} H_{k,l} F_l F_l^H H_{k,l}^H$
         Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
 
         self.C = np.zeros(self.K, dtype=np.ndarray)
@@ -143,8 +188,17 @@ class AlternatingMinIASolver(object):
         Fl, the precoder of the l-th user, tries avoid as much as possible
         to send energy into the desired signal subspace of the other
         users. Fl contains the Sl least dominant eigenvectors of
-        $\sum_{k \neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}$
+        :math:`\\sum_{k \\neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}`
+
+        Notes
+        -----
+        This method is called in the :meth:`step` method.
+
+        See also
+        --------
+        step
         """
+        # $\sum_{k \neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}$
         # xxxxx Calculates the temporary variable Y[k] for all k xxxxxxxxxx
         # Note that $Y[k] = (I - C_k C_k^H)$
         calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
@@ -177,6 +231,14 @@ class AlternatingMinIASolver(object):
         The zero-forcing filter is calculated in the paper "MIMO
         Interference Alignment Over Correlated Channels with Imperfect
         CSI".
+
+        Notes
+        -----
+        This method is called in the :meth:`step` method.
+
+        See also
+        --------
+        step
         """
         newW = np.zeros(self.K, dtype=np.ndarray)
         for k in np.arange(self.K):
@@ -191,10 +253,14 @@ class AlternatingMinIASolver(object):
     def randomizeF(self, Nt, Ns, K):
         """Generates a random precoder for each user.
 
-        Arguments:
-        - `K`: Number of users.
-        - `Nt`: Number of transmit antennas of each user
-        - `Ns`: Number of streams of each user.
+        Parameters
+        ----------
+        K : int
+            Number of users.
+        Nt : int or 1D numpy array
+            Number of transmit antennas of each user.
+        Ns : int or 1D numpy array
+            Number of streams of each user.
         """
         if isinstance(Ns, int):
             Ns = np.ones(K) * Ns
@@ -214,10 +280,14 @@ class AlternatingMinIASolver(object):
     def randomizeH(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
 
-        Arguments:
-        - `K`: (int) Number of users.
-        - `Nr`: (array or int) Number of receive antennas of each user
-        - `Nt`: (array or int) Number of transmit antennas of each user
+        Parameters
+        ----------
+        K : int
+            Number of users.
+        Nr : int or 1D numpy array
+            Number of receive antennas of each user.
+        Nt : int or 1D numpy array
+            Number of transmit antennas of each user.
         """
         self._multiUserChannel.randomize(Nr, Nt, K)
 
@@ -227,14 +297,23 @@ class AlternatingMinIASolver(object):
         """Initializes the multiuser channel matrix from the given
         `channel_matrix`.
 
-        Arguments:
-        - `channel_matrix`: A matrix concatenating the channel of all users
-                            (from each transmitter to each receiver).
-        - `Nr`: An array with the number of receive antennas of each user.
-        - `Nt`: An array with the number of transmit antennas of each user.
-        - `K`: (int) Number of users.
+        Parameters
+        ----------
+        channel_matrix : 2D numpy array
+            A matrix concatenating the channel of all users (from each
+            transmitter to each receiver).
+        Nr : 1D numpy array
+            The number of receive antennas of each user.
+        Nt : 1D numpy array
+            The number of transmit antennas of each user.
+        K : int
+            Number of users.
 
-        Raises: ValueError if the arguments are invalid.
+        Raises
+        ------
+        ValueError
+            If the arguments are invalid.
+
         """
         self._multiUserChannel.init_from_channel_matrix(channel_matrix, Nr,
                                                         Nt, K)
@@ -244,8 +323,16 @@ class AlternatingMinIASolver(object):
     def get_channel(self, k, l):
         """Get the channel from user l to user k.
 
-        Arguments:
-        - `l`: Transmitting user.
-        - `k`: Receiving user
+        Parameters
+        ----------
+        l : int
+            Transmitting user.
+        k : int
+            Receiving user
+
+        Returns
+        -------
+        H : 2D numpy array
+            The channel matrix between transmitter l and receiver k.
         """
         return self._multiUserChannel.get_channel(k, l)

@@ -11,6 +11,9 @@
 6. References
 7. Examples
 
+.. TODO:: Move everything in the blockdiagonalization module to the
+   comp module.
+
 """
 
 # TODO: Move the blockdiagonalization module to the comp package.

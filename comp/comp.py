@@ -3,8 +3,6 @@
 
 """Module with implementation of Coordinated Multipoint (COmP) algorithms
 
-.. todo::
-     Change the documentation to the sphinx format.
 """
 
 import numpy as np
@@ -142,9 +140,10 @@ class CompExtInt(Comp):
     sacrifice streams in directions strongly occupied by the external
     interference.
 
-    Reference:
-      See the `BlockDiaginalizer` class for details about the block
-      diagonalization process.
+    Notes
+    -----
+    See the :class:`BlockDiaginalizer` class for details about the block
+    diagonalization process.
 
     """
 

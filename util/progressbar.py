@@ -426,7 +426,7 @@ class ProgressbarMultiProcessText(object):
         self._tic.value = time.time()
         self._update_process.start()
 
-    def stop_updater(self, ):
+    def stop_updater(self):
         """Stop the process updating the progressbar.
 
         You should always call this function in your main process (the same
@@ -443,6 +443,11 @@ class ProgressbarMultiProcessText(object):
     @property
     def duration(self, ):
         """Duration of the progress.
+
+        Returns
+        -------
+        toc_minus_tic : float
+            The duration passed until the progressbar reaches 100%.
         """
         # The progressbar is still running, calculate the duration since
         # the beginning

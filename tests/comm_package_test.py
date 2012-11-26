@@ -937,7 +937,7 @@ class WaterfillingTestCase(unittest.TestCase):
         channel_power_gains = vtChannels_abs ** 2
 
         # Total power available to be distributed
-        total_power = 8
+        total_power = 8.
         noise_var = 0.181
 
         # Calculates the optimum powers and water level
@@ -1442,15 +1442,22 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.calc_path_loss([1.2, 1.4, 1.6]),
 
     def test_calc_which_distance(self):
+        # Test which_distance and which_distance_dB for a single value.
         self.assertAlmostEqual(self.pl.which_distance(4.88624535312e-10),
                                1.2)
         self.assertAlmostEqual(self.pl.which_distance_dB(93.1102472958),
                                1.2)
 
-    # _calc_deterministic_path_loss_dB
-    # which_distance_dB
+        # Test which_distance and which_distance_dB for an array of values.
+        np.testing.assert_array_almost_equal(
+            self.pl.which_distance_dB(np.array([93.110247295, 91.526622374])),
+            np.array([1.2, 1.0]))
+        np.testing.assert_array_almost_equal(
+            self.pl.which_distance(np.array([4.88624535e-10, 7.0361933e-10])),
+            np.array([1.2, 1.0]))
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
     # plot_psd_OFDM_symbols()
     unittest.main()
