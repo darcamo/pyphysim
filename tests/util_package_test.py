@@ -49,6 +49,86 @@ class UtilDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: finish implementation
 class ConversionTestCase(unittest.TestCase):
+    def test_single_matrix_to_matrix_of_matrices(self):
+        nrows = np.array([2, 4, 6])
+        ncols = np.array([2, 3, 5])
+        single_matrix = np.array(
+            [
+                [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+                [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            ]
+        )
+
+        # xxxxx Convert 'single 2D array' to 2D array of 2D arrays xxxxxxxx
+        matrix_of_matrices = conversion.single_matrix_to_matrix_of_matrices(
+            single_matrix, nrows, ncols)
+        self.assertEqual(matrix_of_matrices.shape, (3, 3))
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[0, 0],
+            np.ones([2, 2]) * 0)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[0, 1],
+            np.ones([2, 3]) * 1)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[0, 2],
+            np.ones([2, 5]) * 2)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[1, 0],
+            np.ones([4, 2]) * 3)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[1, 1],
+            np.ones([4, 3]) * 4)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[1, 2],
+            np.ones([4, 5]) * 5)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[2, 0],
+            np.ones([6, 2]) * 6)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[2, 1],
+            np.ones([6, 3]) * 7)
+
+        np.testing.assert_array_equal(
+            matrix_of_matrices[2, 2],
+            np.ones([6, 5]) * 8)
+
+        # xxxxx Convert 'single 2D array' to 2D array of 2D arrays xxxxxxxx
+        #nrows = np.array([2, 4, 6])
+        expected1 = np.ones(2) * 2
+        expected2 = np.ones(4) * 4
+        expected3 = np.ones(6) * 6
+        single_array = np.hstack([expected1, expected2, expected3])
+        array_of_arrays = conversion.single_matrix_to_matrix_of_matrices(
+            single_array, nrows)
+
+        self.assertEqual(array_of_arrays.shape, (3,))
+        np.testing.assert_array_equal(array_of_arrays[0],
+                                      expected1)
+
+        np.testing.assert_array_equal(array_of_arrays[1],
+                                      expected2)
+
+        np.testing.assert_array_equal(array_of_arrays[2],
+                                      expected3)
+
     def test_dB2Linear(self):
         self.assertAlmostEqual(conversion.dB2Linear(30),
                                1000.0)

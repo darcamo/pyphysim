@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module containing useful functions that I'd like to have in any python
-section.
-
-The folder with this module should be added to the python path, so that I
-can use
-    from misc import *
-and have access to all of these functions.
+"""Module containing useful general functions that don't belong to another
+module.
 
 """
 __version__ = "$Revision$"
@@ -26,15 +21,35 @@ def peig(A, n):
     of `A` (eigenvectors corresponding to the `n` dominant
     eigenvalues).
 
-    NOTE: `A` must be a symmetric matrix so that its eigenvalues are
-    real and positive.
+    Parameters
+    ----------
+    A : 2D numpy array
+        A symmetric matrix (bi-dimensional numpy array).
+    n : int
+        Number of desired dominant eigenvectors.
 
-    Arguments:
-    - `A`: A symmetric matrix (bi-dimensional numpy array)
-    - `n`: An integer
+    Returns
+    -------
+    [V, D] : list
+        A list with two elements where the first element is a 2D numpy
+        array with the desired eigenvectors, while the second element is a
+        1D numpy array with the corresponding eigenvalues.
 
-    Raises:
-    - ValueError: if `n` is greater than the number of columns of `A`.
+    Notes
+    -----
+    `A` must be a symmetric matrix so that its eigenvalues are real and
+    positive.
+
+    Raises
+    ------
+    ValueError
+        If `n` is greater than the number of columns of `A`.
+
+    Examples
+    --------
+    >>> A = np.random.randn(3,3) + 1j*np.random.randn(3,3)
+    >>> V, D = peig(A, 1)
+
     """
     (nrows, ncols) = A.shape
     if n > ncols:
@@ -53,15 +68,35 @@ def leig(A, n):
     eigenvectors of `A` (eigenvectors corresponding to the `n` dominant
     eigenvalues).
 
-    NOTE: `A` must be a symmetric matrix so that its eigenvalues are
-    real and positive.
+    Parameters
+    ----------
+    A : 2D numpy array
+        A symmetric matrix (bi-dimensional numpy array)
+    n : int
+        Number of desired least significant eigenvectors.
 
-    Arguments:
-    - `A`: A symmetric matrix (bi-dimensional numpy array)
-    - `n`: An integer
+    Returns
+    -------
+    [V, D] : list
+        A list with two elements where the first element is a 2D numpy
+        array with the desired eigenvectors, while the second element is a
+        1D numpy array with the corresponding eigenvalues.
 
-    Raises:
-    - ValueError: if `n` is greater than the number of columns of `A`.
+    Notes
+    -----
+    `A` must be a symmetric matrix so that its eigenvalues are real and
+    positive.
+
+    Raises
+    ------
+    ValueError
+        If `n` is greater than the number of columns of `A`.
+
+    Examples
+    --------
+    >>> A = np.random.randn(3,3) + 1j*np.random.randn(3,3)
+    >>> V, D = peig(A, 1)
+
     """
     (nrows, ncols) = A.shape
     if n > ncols:
@@ -77,6 +112,18 @@ def leig(A, n):
 def pretty_time(time_in_seconds):
     """Return the time in a more friendly way.
 
+    Parameters
+    ----------
+    time_in_seconds : float
+        Time in seconds.
+
+    Returns
+    -------
+    time_string : str
+        Pretty time representation as a string.
+
+    Examples
+    --------
     >>> pretty_time(30)
     '30.00s'
     >>> pretty_time(76)
@@ -98,6 +145,7 @@ def pretty_time(time_in_seconds):
     else:
         return "%.2fs" % time_in_seconds
 
+
 def xor(a, b):
     """Calculates the xor operation between a and b.
 
@@ -105,10 +153,20 @@ def xor(a, b):
     operator. This xor function was created so that it can be used in
     either sage or in regular python.
 
-    Arguments:
-    - `a`: first number
-    - `b`: second number
+    Parameters
+    ----------
+    a : int
+        First number.
+    b : int
+        Second number.
 
+    Returns
+    -------
+    result : int
+        The result of the `xor` operation between `a` and `b`.
+
+    Examples
+    --------
     >>> xor(3,7)
     4
     >>> xor(15,6)
@@ -120,16 +178,27 @@ def xor(a, b):
 def randn_c(*args):
     """Generates a random circularly complex gaussian matrix.
 
-    Arguments:
-    - Variable number of arguments specifying the dimensions of the
-      returned array. This is directly passed to the numpy.random.randn
-      function.
+    Parameters
+    ----------
+    params : variable number of ints
+        Variable number of arguments specifying the dimensions of the
+        returned array. This is directly passed to the numpy.random.randn
+        function.
 
+    Returns
+    -------
+    result : N-dimensional numpy array
+        A random N-dimensional numpy array (complex dtype) where the `N` is
+        equal to the number of parameters passed to `randn_c`.
+
+    Examples
+    --------
     >>> a = randn_c(4,3)
     >>> a.shape
     (4, 3)
     >>> a.dtype
     dtype('complex128')
+
     """
     return (1.0 / math.sqrt(2.0)) * (
         np.random.randn(*args) + (1j * np.random.randn(*args)))
@@ -139,9 +208,18 @@ def level2bits(n):
     """Calculates the number of bits needed to represent n different
     values.
 
-    Arguments:
-    - `n`: Number of different levels.
+    Parameters
+    ----------
+    n : int
+        Number of different levels.
 
+    Returns
+    -------
+    num_bits : int
+        Number of bits required to represent `n` levels.
+
+    Examples
+    --------
     >>> map(level2bits,range(1,20))
     [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
     """
@@ -153,9 +231,18 @@ def level2bits(n):
 def int2bits(n):
     """Calculates the number of bits needed to represent an interger n.
 
-    Arguments:
-    - `n`: An Ingerger number
+    Parameters
+    ----------
+    n : int
+        The ingerger number.
 
+    Returns
+    -------
+    num_bits : int
+        The number of bits required to represent the number `n`.
+
+    Examples
+    --------
     >>> map(int2bits, range(0,19))
     [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
     """
@@ -175,8 +262,16 @@ def int2bits(n):
 def bitCount(n):
     """Count the number of bits that are set in an interger number.
 
-    Arguments:
-    - `n`: The number
+    Parameters
+    ----------
+    n : int
+        The interger number.
+
+    Returns
+    -------
+    Number of bits that are equal to 1 in the bit representation of the
+    number `n`.
+
     """
     count = 0
     while n > 0:
@@ -184,7 +279,6 @@ def bitCount(n):
             count += 1
         n >>= 1
     return count
-
 # Make bitCount an ufunc
 bitCount = np.frompyfunc(bitCount, 1, 1, doc=bitCount.__doc__)
 
@@ -192,9 +286,18 @@ bitCount = np.frompyfunc(bitCount, 1, 1, doc=bitCount.__doc__)
 def qfunc(x):
     """Calculates the qfunction of x.
 
-    Arguments:
-    - `x`:
+    Parameters
+    ----------
+    x : float
+        The value to apply the Q function.
 
+    Returns
+    -------
+    result : float
+        Qfunc(x)
+
+    Examples
+    --------
     >>> qfunc(0.0)
     0.5
     >>> round(qfunc(1.0), 9)
@@ -205,8 +308,6 @@ def qfunc(x):
     return 0.5 * erfc(x / math.sqrt(2))
 
 
-# TODO: Isn't this method too similar to leig? See if one of them can be
-# removed.
 def least_right_singular_vectors(A, n):
     """Return the three matrices. The first one is formed by the `n` least
     significative right singular vectors of `A`, the second one is formed
@@ -214,21 +315,32 @@ def least_right_singular_vectors(A, n):
     the singular values of the singular vectors of the second matrix (the
     most significative ones).
 
-    Arguments:
-    - `A`: A matrix (numpy array)
-    - `n`: An interger between 0 and the number of columns of `A`
+    Parameters
+    ----------
+    A : 2D numpy array
+        A 2D numpy array.
+    n : int
+        An interger between 0 and the number of columns of `A`.
 
-    Return:
-    - `V0`: The right singular vectors corresponding to the `n` least
-            significant singular values
-    - `V1`: The remaining right singular vectors.
-    - `S`: The singular values corresponding to the remaining singular
-           vectors `V1`.
+    Returns
+    -------
+    V0 : 2D numpy array
+        The right singular vectors corresponding to the `n` least
+        significant singular values.
+    V1 : 2D numpy array
+        The remaining right singular vectors.
+    S : 1D numpy array
+        The singular values corresponding to the remaining singular vectors
+        `V1`.
 
-    NOTE: Because of the sort operation, if you call
-    least_right_singular_vectors(A,ncols_of_A) you will get the all the
-    right singular vectors of A with the column order reversed.
+    Notes
+    -----
+    Because of the sort operation, if you call
+    least_right_singular_vectors(A, ncols_of_A) you will get all the right
+    singular vectors of A with the column order reversed.
 
+    Examples
+    --------
     >>> A = np.array([1,2,3,6,5,4,2,2,1])
     >>> A.shape = (3,3)
     >>> (min_Vs, remaining_Vs, S) = least_right_singular_vectors(A,1)
@@ -299,16 +411,25 @@ def least_right_singular_vectors(A, n):
 
 
 def calc_unorm_autocorr(x):
-    """Calculates the unormalized autocorrelation of an array x starting
-    from lag 0.
+    """Calculates the unormalized autocorrelation of an array x starting from
+    lag 0.
 
-    Arguments:
-    - `x`: A Numpy array.
+    Parameters
+    ----------
+    x : 1D numpy array
+        A 1D numpy array.
 
-    Ex:
+    Returns
+    -------
+    result : 1D numpy array
+        The unormalized autocorrelation of `x`.
+
+    Examples
+    --------
     >>> x = np.array([4, 2, 1, 3, 7, 3, 8])
     >>> calc_unorm_autocorr(x)
     array([152,  79,  82,  53,  42,  28,  32])
+
     """
     #R = np.convolve(x, x[::-1], 'full')
     R = np.correlate(x, x, 'full')
@@ -321,10 +442,18 @@ def calc_autocorr(x):
     """Calculates the (normalized) autocorrelation of an array x starting
     from lag 0.
 
-    Arguments:
-    - `x`: A Numpy array.
+    Parameters
+    ----------
+    x : 1D numpy array
+        A 1D numpy array.
 
-    Ex:
+    Returns
+    -------
+    result : 1D numpy array
+        The ormalized autocorrelation of `x`.
+
+    Examples
+    --------
     >>> x = np.array([4, 2, 1, 3, 7, 3, 8])
     >>> calc_autocorr(x)
     array([ 1.   , -0.025,  0.15 , -0.175, -0.25 , -0.2  ,  0.   ])
@@ -338,3 +467,7 @@ def calc_autocorr(x):
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

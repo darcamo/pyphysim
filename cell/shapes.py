@@ -25,17 +25,27 @@ class Coordinate(object):
     """
 
     def __init__(self, pos):
-        """
-        Arguments:
-        - `pos`: Coordinate in the grid (A complex number).
+        """Initializes the Coordinate object.
+
+        Parameters
+        ----------
+        pos : complex
+            Coordinate in the complex grid.
         """
         self.pos = pos
 
     def calc_dist(self, other):
         """Calculates the distance to another coordinate.
 
-        Arguments:
-        - `other`: A different coordinate (a complex number).
+        Parameters
+        ----------
+        other : a coordinate object
+            A different coordinate object.
+
+        Returns
+        -------
+        dist : float
+            Distance from self to the other coordinate.
         """
         dist = np.abs(self.pos - other.pos)
         return dist
@@ -49,11 +59,14 @@ class Shape(Coordinate):
     def __init__(self, pos, radius, rotation=0):
         """Initializes the shape.
 
-        Arguments:
-        - `pos`: Coordinate of the shape in the 2D grid (a complex number).
-        - `radius`: Radius of the shape (a positive real number).
-        - `rotation`: Rotation of the shape in degrees (a positive real
-                      number).
+        Parameters
+        ----------
+        pos : complex
+            Coordinate of the shape in the complex grid.
+        radius : float (positive)
+            Radius of the shape.
+        rotation : float
+            Rotation of the shape in degrees.
         """
         Coordinate.__init__(self, pos)
 
@@ -92,8 +105,16 @@ class Shape(Coordinate):
         that the shape is at the origin (rotation and translation will be
         added automatically later).
 
-        Must return a one-dimensional numpy array (complex dtype) with the
-        vertex positions.
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The positions of the vertexes of the shape.
+
+        Notes
+        -----
+        Not implemented. Must be implemented in a subclass and return a
+        one-dimensional numpy array (complex dtype) with the vertex
+        positions.
 
         """
         raise NotImplementedError('get_vertex_positions still needs to be implemented in the {0} class'.format(self.__class__.__name__))
@@ -109,11 +130,17 @@ class Shape(Coordinate):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def is_point_inside_shape(self, point):
-        """Tests is a point is inside the shape.
+        """Test is a point is inside the shape.
 
-        Arguments:
-        - `point`: A single complex number.
+        Parameters
+        ----------
+        point : complex
+            A single complex number.
 
+        Returns
+        -------
+        inside_or_not : bool
+            True if `point` is inside the shape, False otherwise.
         """
         import matplotlib.nxutils as mnx
         # pnpoly returns 1 if point is inside the polygon and 0 otherwise
@@ -124,9 +151,21 @@ class Shape(Coordinate):
         border of the shape if we go from the origin with a given angle
         (in degrees).
 
-        Arguments:
-        - `angle`: Angle (in degrees)
-        - `ratio`: Ratio (between 0 and 1)
+        Parameters
+        ----------
+        angle : floar
+            Angle in degrees.
+        ratio : float (between 0 and 1)
+            The ratio from the cell center to the border where the desired
+            point is located.
+
+        Returns
+        -------
+        point : complex
+            A point in the line between the shape's center and the shape's
+            border with the desired angle. If ratio is equal to one the
+            point will be in the end of the line (touching the shape's
+            border)
 
         """
         angle_rad = np.pi * angle / 180.
@@ -201,12 +240,18 @@ class Shape(Coordinate):
     def plot(self, ax=None):  # pragma: no cover
         """Plot the shape using the matplotlib library.
 
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the shape will be plotted. If not provided, a new
+            figure (and axis) will be created.
+
+        Notes
+        -----
         If an axes 'ax' is specified, then the shape is added to that
         axes. Otherwise a new figure and axes are created and the shape is
         plotted to that.
 
-        Arguments:
-        - `ax`: A matplotlib axes
         """
         stand_alone_plot = False
 
@@ -244,6 +289,17 @@ class Shape(Coordinate):
         """Rotate the complex numbers in the `cur_pos` array by `angle` (in
         degrees)
 
+        Parameters
+        ----------
+        cur_pos : complex or numpy array of complexes
+            The complex number(s) to be rotated.
+        angle: float
+            Angle in degrees to rotate the positions.
+
+        Returns
+        -------
+        rotated_pos : complex or numpy array of complexes
+            The rotate complex number(s).
         """
         angle_rad = angle * np.pi / 180.
         return cur_pos * np.exp(1j * angle_rad)
@@ -258,28 +314,32 @@ class Hexagon(Shape):
     """
 
     def __init__(self, pos, radius, rotation=0):
-        """Initializes the shape.
+        """Initializes the Hexagon object.
 
-        Arguments:
-        - `pos`: Coordinate of the shape in the 2D grid (a complex number).
-        - `radius`: Radius of the shape (a positive real number).
-        - `rotation`: Rotation of the shape in degrees (a positive real
-                      number).
+        Parameters
+        ----------
+        pos : complex
+            Coordinate of the shape in the complex grid.
+        radius : float (positive number)
+            Radius of the hexagon.
+        rotation : float
+            Rotation of the hexagon in degrees.
         """
         Shape.__init__(self, pos, radius, rotation)
 
     def _get_height(self):
         return self._radius * np.sqrt(3.) / 2.0
-
     height = property(_get_height)
 
     def _get_vertex_positions(self):
         """Calculates the vertex positions ignoring any rotation and considering
-        that the shape is at the origin (rotation and translation will be
+        that the hexagon is at the origin (rotation and translation will be
         added automatically later).
 
-        Must return a one-dimensional numpy array (complex dtype) with the
-        vertex positions.
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The positions of the vertexes of the shape.
 
         """
         vertexPositions = np.zeros(6, dtype=complex)
@@ -300,17 +360,19 @@ class Rectangle(Shape):
     """
 
     def __init__(self, A, B, rotation=0):
-        """Initializes the shape.
+        """Initializes the Rectangle object.
 
         The rectangle is initialized from two coordinates as well as from
         the rotation.
 
-        Arguments:
-        - `A`: First coordinate (without rotation).
-        - `B`: Second coordinate (without rotation).
-        - `rotation`: Rotation of the rectangle in degrees (a positive real
-                      number).
-
+        Parameters
+        ----------
+        A : complex
+            First coordinate (without rotation).
+        B : complex
+            Second coordinate (without rotation).
+        rotation : float
+            Rotation of the rectangle in degrees.
         """
         central_pos = (A + B) / 2
         radius = np.abs(B - central_pos)
@@ -320,11 +382,13 @@ class Rectangle(Shape):
 
     def _get_vertex_positions(self):
         """Calculates the vertex positions ignoring any rotation and considering
-        that the shape is at the origin (rotation and translation will be
-        added automatically later).
+        that the rectangle is at the origin (rotation and translation will
+        be added automatically later).
 
-        Must return a one-dimensional numpy array (complex dtype) with the
-        vertex positions.
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The positions of the vertexes of the shape.
 
         """
         vertex_positions = np.zeros(4, dtype=complex)
@@ -342,18 +406,38 @@ class Circle(Shape):
     """
 
     def __init__(self, pos, radius):
-        """Initializes the shape.
+        """Initializes the Circle.
 
         A circle is initialized only from a coordinate and a radius.
 
-        Arguments:
-        - `pos`: Coordinate of the center of the circle.
-        - `radius`: Circle's radius.
+        Parameters
+        ----------
+        pos : complex
+            Coordinate of the center of the circle.
+        radius : floar
+            Circle's radius.
 
         """
         Shape.__init__(self, pos, radius)
 
     def _get_vertex_positions(self):
+        """Calculates the vertex positions considering that the circle is at the
+        origin (translation will be added automatically later).
+
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The positions of the vertexes of the shape.
+
+        Notes
+        -----
+        It does not make much sense to get the vertexes of a circle, since
+        a circle 'has' infinite vertexes. However, for consistence with the
+        Shape's class interface the _get_vertex_positions is implemented
+        such that it returns a subset of the circle vertexes. The number of
+        returned vertexes was arbitrarily chosen as 12.
+
+        """
         num_vertexes = 12
         angles = np.linspace(0,
                              (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
@@ -366,33 +450,54 @@ class Circle(Shape):
         border of the circle if we go from the origin with a given angle
         (in degrees).
 
-        Arguments:
-        - `angle`: Angle (in degrees)
-        - `ratio`: Ratio (between 0 and 1)
+        Parameters
+        ----------
+        angle : float
+            Angle (in degrees)
+        ratio : float (between 0 and 1)
+            The ratio from the cell center to the border where the desired
+            point is located.
 
+        Returns
+        -------
+        point : complex
+            A point in the line between the circle's center and the circle's
+            border with the desired angle. If ratio is equal to one the
+            point will be in the end of the line (touching the circle's
+            border)
         """
         angle_rad = np.pi * angle / 180.
         return self.pos + np.exp(1j * angle_rad) * self.radius * ratio
 
     def is_point_inside_shape(self, point):
-        """Tests is a point is inside the circle
+        """Test is a point is inside the circle
 
-        Arguments:
-        - `point`: A single complex number.
+        Parameters
+        ----------
+        point : complex
+            A single complex number.
 
+        Returns
+        -------
+        inside_or_not : bool
+            True if `point` is inside the circle, False otherwise.
         """
         return (np.abs(self.pos - point) < self.radius)
 
     def plot(self, ax=None):  # pragma: no cover
         """Plot the circle using the Matplotlib library.
 
-        If an axes 'ax' is specified, then the circle is added to that
-        axes. Otherwise a new figure and axes are created and the circle is
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the shape will be plotted. If not provided, a new
+            figure (and axis) will be created.
+
+        Notes
+        -----
+        If an axes 'ax' is specified, then the shape is added to that
+        axes. Otherwise a new figure and axes are created and the shape is
         plotted to that.
-
-        Arguments:
-        - `ax`:  A matplotlib axes
-
         """
         stand_alone_plot = False
 
@@ -429,6 +534,18 @@ class Circle(Shape):
 def from_complex_array_to_real_matrix(a):
     """Convert an array of complex numbers to a matrix of real numbers.
 
+    Parameters
+    ----------
+    a : 1D numpy array (complex dtype)
+        A numpy array of complex numbers with N elements.
+
+    Returns
+    -------
+    converted_a : 2D numpy array (float dtype)
+        The converted array with dimension N x 2.
+
+    Notes
+    -----
     We use complex number to represent coordinates, where the real part is
     the 'x' coordinate and the imaginary part is the 'y' coordinate pf a
     point.
@@ -441,6 +558,13 @@ def from_complex_array_to_real_matrix(a):
     The method from_complex_array_to_real_matrix does exactly this
     conversion.
 
+    Examples
+    --------
+    >>> a = np.array([1+2j, 3-4j, 5+6j])
+    >>> print from_complex_array_to_real_matrix(a)
+    [[ 1.  2.]
+     [ 3. -4.]
+     [ 5.  6.]]
     """
     num_elem = np.size(a)
     a.dtype = a.real.dtype

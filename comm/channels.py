@@ -30,22 +30,24 @@ class MultiUserChannelMatrix(object):
     [2, 3, 5], respectively, then the block (1,0) would have a dimension of
     4x2. Likewise, the channel matrix would look similar to the block
     structure below.
-                +------+---------+---------------+
-                |2 x 2 |  2 x 3  |     2 x 5     |
-                |      |         |               |
-                +------+---------+---------------+
-                |4 x 2 |  4 x 3  |     4 x 5     |
-                |      |         |               |
-                |      |         |               |
-                |      |         |               |
-                +------+---------+---------------+
-                |6 x 2 |  6 x 3  |     6 x 5     |
-                |      |         |               |
-                |      |         |               |
-                |      |         |               |
-                |      |         |               |
-                |      |         |               |
-                +------+---------+---------------+
+
+    .. aafig::
+                +-----+---------+---------------+
+                |2 x 2|  2 x 3  |     2 x 5     |
+                |     |         |               |
+                +-----+---------+---------------+
+                |4 x 2|  4 x 3  |     4 x 5     |
+                |     |         |               |
+                |     |         |               |
+                |     |         |               |
+                +-----+---------+---------------+
+                |6 x 2|  6 x 3  |     6 x 5     |
+                |     |         |               |
+                |     |         |               |
+                |     |         |               |
+                |     |         |               |
+                |     |         |               |
+                +-----+---------+---------------+
 
     It is possible to initialize the channel matrix randomly by calling the
     `randomize` method, or from a given matrix by calling the
@@ -120,17 +122,29 @@ class MultiUserChannelMatrix(object):
         return self._pathloss_matrix
     pathloss = property(_get_pathloss)
 
+    # TODO: Replace this method usage by the
+    # util.conversion.single_matrix_to_matrix_of_matrices function and
+    # erase this method (also its tests).
     @staticmethod
     def _from_big_matrix_to_matrix_of_matrices(big_matrix, Nr, Nt, K):
         """Convert from a big matrix that concatenates the channel of all
         users (from each transmitter to each receiver) to the matrix of
         matrices representation.
 
-        Arguments:
-        - `big_matrix`:
-        - `Nr`: A numpy array with the number of antennas at each receiver.
-        - `Nt`: A numpy array with the number of antennas at each transmitter.
-        - `K`: Number of transmit/receive pairs.
+        Parameters
+        ----------
+        big_matrix : 2D numpy array
+            The big matrix to be converted.
+        Nr : 1D numpy array
+            Number of antennas at each receiver.
+        Nt : 1D numpy array
+            Number of antennas at each transmitter.
+        K : int
+            Number of transmit/receive pairs.
+
+        Returns:
+        M : 2D numpy array of 2D numpy arrays
+            A matrix of matrices.
         """
         cumNr = np.hstack([0, np.cumsum(Nr)])
         cumNt = np.hstack([0, np.cumsum(Nt)])
@@ -149,21 +163,52 @@ class MultiUserChannelMatrix(object):
         """Convert from a small matrix to a big matrix by repeating elements
         according to the number of receive and transmit antennas.
 
-        Note: Since a 'user' is a transmit/receive pair then the
-        small_matrix will be a square matrix and Kr must be equal to Kt.
-        However, in the MultiUserChannelMatrixExtInt class we will only
-        have the 'transmitter part' for the external interference
-        sources. That means that small_matrix will have more columns then
-        rows and Kt will be greater then Kr.
+        Parameters
+        ----------
+        small_matrix : 2D numpy array
+            Any 2D numpy array
+        Nr : 1D numpy array
+            Number of antennas at each receiver.
+        Nt : 1D numpy array
+            Number of antennas at each transmitter.
+        Kr : int
+            Number of receivers to consider.
+        Kt : int, optional (default to the value of Kr)
+            Number of transmitters to consider.
 
-        Arguments:
-        - `small_matrix`:
-        - `Nr`: A numpy array with the number of antennas at each receiver.
-        - `Nt`: A numpy array with the number of antennas at each transmitter.
-        - `Kr`: Number of receivers to consider.
-        - `Kt`: Number of transmitters to consider (if not provided Kr will
-                be used).
+        Returns
+        -------
+        big_matrix : 2D numpy array
+            The converted matrix.
 
+        Notes
+        -----
+        Since a 'user' is a transmit/receive pair then the small_matrix
+        will be a square matrix and `Kr` must be equal to `Kt`.  However, in
+        the :class:`MultiUserChannelMatrixExtInt` class we will only have the
+        'transmitter part' for the external interference sources. That
+        means that small_matrix will have more columns then rows and `Kt`
+        will be greater then `Kr`.
+
+        Examples
+        --------
+        >>> K = 3
+        >>> Nr = np.array([2, 4, 6])
+        >>> Nt = np.array([2, 3, 5])
+        >>> small_matrix = np.array([[1,2,3],[4,5,6],[7,8,9]])
+        >>> MultiUserChannelMatrix._from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K)
+        array([[1, 1, 2, 2, 2, 3, 3, 3, 3, 3],
+               [1, 1, 2, 2, 2, 3, 3, 3, 3, 3],
+               [4, 4, 5, 5, 5, 6, 6, 6, 6, 6],
+               [4, 4, 5, 5, 5, 6, 6, 6, 6, 6],
+               [4, 4, 5, 5, 5, 6, 6, 6, 6, 6],
+               [4, 4, 5, 5, 5, 6, 6, 6, 6, 6],
+               [7, 7, 8, 8, 8, 9, 9, 9, 9, 9],
+               [7, 7, 8, 8, 8, 9, 9, 9, 9, 9],
+               [7, 7, 8, 8, 8, 9, 9, 9, 9, 9],
+               [7, 7, 8, 8, 8, 9, 9, 9, 9, 9],
+               [7, 7, 8, 8, 8, 9, 9, 9, 9, 9],
+               [7, 7, 8, 8, 8, 9, 9, 9, 9, 9]])
         """
         if Kt is None:
             Kt = Kr
@@ -181,14 +226,23 @@ class MultiUserChannelMatrix(object):
         """Initializes the multiuser channel matrix from the given
         `channel_matrix`.
 
-        Arguments:
-        - `channel_matrix`: A matrix concatenating the channel of all users
-                            (from each transmitter to each receiver).
-        - `Nr`: A numpy array with the number of antennas at each receiver.
-        - `Nt`: A numpy array with the number of antennas at each transmitter.
-        - `K`: Number of transmit/receive pairs.
+        Parameters
+        ----------
+        channel_matrix : 2D numpy array
+            A matrix concatenating the channel of all users (from each
+            transmitter to each receiver).
+        Nr : 1D numpy array
+            Number of antennas at each receiver.
+        Nt : 1D numpy array
+            Number of antennas at each transmitter.
+        K : int
+            Number of transmit/receive pairs.
 
-        Raises: ValueError if the arguments are invalid.
+        Raises
+        ------
+        ValueError
+            If the arguments are invalid.
+
         """
         if channel_matrix.shape != (np.sum(Nr), np.sum(Nt)):
             raise ValueError("Shape of the channel_matrix must be equal to the sum or receive antennas of all users times the sum of the receive antennas of all users.")
@@ -215,14 +269,16 @@ class MultiUserChannelMatrix(object):
     def randomize(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
 
-        Arguments:
-        - `K`: (int) Number of users.
-        - `Nr`: (array or int) Number of receive antennas of each user. If
-                an integer is specified, all users will have that number of
-                receive antennas.
-        - `Nt`: (array or int) Number of transmit antennas of each user. If
-                an integer is specified, all users will have that number of
-                receive antennas.
+        Parameters
+        ----------
+        K : int
+            Number of users.
+        Nr : 1D numpy array or integers or a single integer
+            Number of receive antennas of each user. If an integer is
+            specified, all users will have that number of receive antennas.
+        Nt : 1D numpy array or integers or a single integer
+            Number of transmit antennas of each user. If an integer is
+            specified, all users will have that number of receive antennas.
         """
         if isinstance(Nr, int):
             Nr = np.ones(K) * Nr
@@ -242,11 +298,19 @@ class MultiUserChannelMatrix(object):
         self._H.setflags(write=False)
 
     def get_channel(self, k, l):
-        """Get the channel from user l to user k.
+        """Get the channel from user `l` to user `k`.
 
-        Arguments:
-        - `l`: Transmitting user.
-        - `k`: Receiving user
+        Parameters
+        ----------
+        l : int
+            Transmitting user.
+        k : int
+            Receiving user.
+
+        Returns
+        -------
+        channel : 2D numpy array
+            Channel from transmitter `l` to receiver `k`.
         """
         channel = self.H  # This will call the _get_H method, which already
                           # applies the path loss (of there is any)
@@ -255,22 +319,27 @@ class MultiUserChannelMatrix(object):
     def corrupt_concatenated_data(self, data, noise_var=None):
         """Corrupt data passed through the channel.
 
-        If the noise_var is supplied then an white noise will also be
-        added.
+        If the noise_var is supplied then white noise will also be added.
 
-        Arguments:
-        - `data`: A bi-dimensional numpy array with the concatenated data of
-                  all transmitters. The dimension of data is
-                  sum(self._Nt) x NSymb. That is, the number of rows
-                  corresponds to the sum of the number of transmit antennas
-                  of all users and the number of columns correspond to the
-                  number of transmitted symbols.
-        - `noise_var`: Variance of the AWGN noise.
-        Output:
-        - A bi-dimension numpy array where the number of rows corresponds
-          to the sum of the number of receive antennas of all users and the
-          number of columns correspond to the number of transmitted
-          symbols.
+        Parameters
+        ----------
+        data : 2D numpy array
+            A bi-dimensional numpy array with the concatenated data of all
+            transmitters. The dimension of data is sum(self.Nt) x
+            NSymb. That is, the number of rows corresponds to the sum of
+            the number of transmit antennas of all users and the number of
+            columns correspond to the number of transmitted symbols.
+        noise_var : float, optional (default to None)
+            Variance of the AWGN noise. If not provided, no noise will be
+            added.
+
+        Returns
+        -------
+        output : 2D numpy array
+            A bi-dimension numpy array where the number of rows corresponds
+            to the sum of the number of receive antennas of all users and
+            the number of columns correspond to the number of transmitted
+            symbols.
 
         """
         # Note that self.big_H already accounts the path loss (while
@@ -287,13 +356,24 @@ class MultiUserChannelMatrix(object):
         If the noise_var is supplied then an white noise will also be
         added.
 
-        Arguments:
-        - `data`: An array of numpy matrices with the data of the multiple
-                  users. The k-th element in `data` is a numpy array with
-                  dimension Nt_k x NSymbs, where Nt_k is the number of
-                  transmit antennas of the k-th user and NSymbs is the
-                  number of transmitted symbols.
-        - `noise_var`: Variance of the AWGN noise.
+        Parameters
+        ----------
+        data : 2D numpy array
+            An array of numpy matrices with the data of the multiple
+            users. The k-th element in `data` is a numpy array with
+            dimension Nt_k x NSymbs, where Nt_k is the number of transmit
+            antennas of the k-th user and NSymbs is the number of
+            transmitted symbols.
+        noise_var : float, optional (default to None)
+            Variance of the AWGN noise. If not provided, no noise will be
+            added.
+
+        Returns
+        -------
+        output : 1D numpy array of 2D numpy arrays
+            A numpy array where each element contais the received data (a
+            2D numpy array) of a user.
+
         """
         # Note that we intentionally use self.K instead of self._K in this
         # method. In the MultiUserChannelMatrix class they have the same
@@ -321,18 +401,21 @@ class MultiUserChannelMatrix(object):
         The path loss will be accounted when calling the get_channel, the
         corrupt_concatenated_data and the corrupt_data methods.
 
+        If you want to disable the path loss, set `pathloss_matrix` to None.
+
+        Parameters
+        ----------
+        pathloss_matrix : 2D numpy array
+            A matrix with dimension "K x K", where K is the number of
+            users, with the path loss from each transmitter (columns) to
+            each receiver (rows). If you want to disable the path loss then
+            set it to None.
+
+        Notes
+        -----
         Note that path loss is a power relation, which means that the
         channel coefficients will be multiplied by the square root of
         elements in `pathloss_matrix`.
-
-        If you want to disable the path loss, set pathloss_matrix to None.
-
-        Arguments:
-        - `pathloss_matrix`: A matrix with dimension "K x K", where K is
-                             the number of users, with the path loss from
-                             each transmitter (columns) to each receiver
-                             (rows). If you want to disable the path loss
-                             then set it to None.
 
         """
         # A matrix with the path loss from each transmitter to each
@@ -375,23 +458,25 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
     interference. If the external interference has a rank 2 then the
     complete channel matrix would look similar to the block structure
     below.
+
+    .. aafig::
                                                  Ext. Int.
-                +------+---------+---------------+------+
-                |2 x 2 |  2 x 3  |     2 x 5     |2 x 2 |
-                |      |         |               |      |
-                +------+---------+---------------+------+
-                |4 x 2 |  4 x 3  |     4 x 5     |4 x 2 |
-                |      |         |               |      |
-                |      |         |               |      |
-                |      |         |               |      |
-                +------+---------+---------------+------+
-                |6 x 2 |  6 x 3  |     6 x 5     |6 x 2 |
-                |      |         |               |      |
-                |      |         |               |      |
-                |      |         |               |      |
-                |      |         |               |      |
-                |      |         |               |      |
-                +------+---------+---------------+------+
+                +-----+---------+---------------+-----+
+                |2 x 2|  2 x 3  |     2 x 5     |2 x 2|
+                |     |         |               |     |
+                +-----+---------+---------------+-----+
+                |4 x 2|  4 x 3  |     4 x 5     |4 x 2|
+                |     |         |               |     |
+                |     |         |               |     |
+                |     |         |               |     |
+                +-----+---------+---------------+-----+
+                |6 x 2|  6 x 3  |     6 x 5     |6 x 2|
+                |     |         |               |     |
+                |     |         |               |     |
+                |     |         |               |     |
+                |     |         |               |     |
+                |     |         |               |     |
+                +-----+---------+---------------+-----+
 
     The methods from the MultiUserChannelMatrix class that makes sense were
     reimplemented here to include information regarding the external
@@ -448,21 +533,28 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         If the noise_var is supplied then an white noise will also be
         added.
 
-        Arguments:
-        - `data`: An array of numpy matrices with the data of the multiple
-                  users. The k-th element in `data` is a numpy array with
-                  dimension Nt_k x NSymbs, where Nt_k is the number of
-                  transmit antennas of the k-th user and NSymbs is the
-                  number of transmitted symbols.
-        - `ext_int_data`: An array of numpy matrices with the data of the
-                          external interference sources. The l-th element
-                          is the data transmitted by the l-th external
-                          interference source, which must have a dimension
-                          of NtEl x NSymbs, where NtEl is the number of
-                          transmit antennas of the l-th external
-                          interference source.
-        - `noise_var`: Variance of the AWGN noise.
+        Parameters
+        data : 2D numpy array
+            An array of numpy matrices with the data of the multiple
+            users. The k-th element in `data` is a numpy array with
+            dimension Nt_k x NSymbs, where Nt_k is the number of transmit
+            antennas of the k-th user and NSymbs is the number of
+            transmitted symbols.
+        ext_int_data : 1D numpy array of 2D numpy arrays
+            An array of numpy matrices with the data of the external
+            interference sources. The l-th element is the data transmitted
+            by the l-th external interference source, which must have a
+            dimension of NtEl x NSymbs, where NtEl is the number of
+            transmit antennas of the l-th external interference source.
+        noise_var : float, optional (default to None)
+            Variance of the AWGN noise. If not provided, no noise will be
+            added.
 
+        Returns
+        -------
+        output : 1D numpy array of 2D numpy arrays
+            A numpy array where each element contais the received data (a
+            2D numpy array) of a user.
         """
         input_data = np.hstack([data, ext_int_data])
         return MultiUserChannelMatrix.corrupt_data(self, input_data, noise_var)
@@ -473,21 +565,27 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         If the noise_var is supplied then an white noise will also be
         added.
 
-        Arguments:
-        - `data`: A bi-dimensional numpy array with the concatenated data
-                  of all transmitters as well as the data from all external
-                  interference sources. The dimension of data is
-                  (sum(self._Nt) + sum(self.extIntNt)) x NSymb. That is,
-                  the number of rows corresponds to the sum of the number
-                  of transmit antennas of all users and external
-                  interference sources and the number of columns correspond
-                  to the number of transmitted symbols.
-        - `noise_var`: Variance of the AWGN noise.
-        Output:
-        - A bi-dimension numpy array where the number of rows corresponds
-          to the sum of the number of receive antennas of all users and the
-          number of columns correspond to the number of transmitted
-          symbols.
+        Parameters
+        ----------
+        data : 2D numpy array
+            A bi-dimensional numpy array with the concatenated data of all
+            transmitters as well as the data from all external interference
+            sources. The dimension of data is (sum(self._Nt) +
+            sum(self.extIntNt)) x NSymb. That is, the number of rows
+            corresponds to the sum of the number of transmit antennas of
+            all users and external interference sources and the number of
+            columns correspond to the number of transmitted symbols.
+        noise_var : float, optional (default to None)
+            Variance of the AWGN noise. If not provided, no noise will be
+            added.
+
+        Returns
+        -------
+        output : 2D numpy array
+            A bi-dimension numpy array where the number of rows corresponds
+            to the sum of the number of receive antennas of all users and
+            the number of columns correspond to the number of transmitted
+            symbols.
 
         """
 
@@ -500,16 +598,24 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         """Helper method used in the init_from_channel_matrix and randomize
         method definitions.
 
-        Arguments:
-        - `Nr`: A numpy array with the number of antennas at each receiver.
-        - `Nt`: A numpy array with the number of antennas at each transmitter.
-        - `K`: Number of transmit/receive pairs.
-        - `NtE`: (int, or iterable) Number of transmit antennas of the
-                 external interference source(s). If NtE is an iterable,
-                 the number of external interference sources will be the
-                 len(NtE).
-        Returns:
-        - The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt)
+        Parameters
+        ----------
+        Nr : 1D numpy array
+            Number of antennas at each receiver.
+        Nt : 1D numpy array
+            Number of antennas at each transmitter.
+        K : int
+            Number of transmit/receive pairs.
+        NtE : int or iterable
+            Number of transmit antennas of the external interference
+            source(s). If `NtE` is an iterable, the number of external
+            interference sources will be the len(NtE).
+
+        Returns
+        -------
+        output : a tuple
+            The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt)
+
         """
         if isinstance(NtE, Iterable):
             # We have multiple external interference sources
@@ -542,18 +648,26 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         equal to np.sum(Nr), while the number of columns must be
         np.sum(Nt) + NtE.
 
-        Arguments:
-        - `channel_matrix`: A matrix concatenating the channel of all users
-                            (from each transmitter to each receiver).
-        - `Nr`: A numpy array with the number of antennas at each receiver.
-        - `Nt`: A numpy array with the number of antennas at each transmitter.
-        - `K`: Number of transmit/receive pairs.
-        - `NtE`: (int, or iterable) Number of transmit antennas of the
-                 external interference source(s). If NtE is an iterable,
-                 the number of external interference sources will be the
-                 len(NtE).
+        Parameters
+        ----------
+        channel_matrix : 2D numpy array
+            A matrix concatenating the channel of all transmitters
+            (including the external interference sources) to all receivers.
+        Nr : 1D numpy array
+            Number of antennas at each receiver.
+        Nt : 1D numpy array
+            Number of antennas at each transmitter.
+        K : int
+            Number of transmit/receive pairs.
+        NtE : int or iterable
+            Number of transmit antennas of the external interference
+            source(s). If NtE is an iterable, the number of external
+            interference sources will be the len(NtE).
 
-        Raises: ValueError if the arguments are invalid.
+        Raises
+        ------
+        ValueError
+            If the arguments are invalid.
 
         """
         (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
@@ -568,18 +682,21 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         """Generates a random channel matrix for all users as well as for the
         external interference source(s).
 
-        Arguments:
-        - `K`: (int) Number of users.
-        - `Nr`: (array or int) Number of receive antennas of each user. If
-                an integer is specified, all users will have that number of
-                receive antennas.
-        - `Nt`: (array or int) Number of transmit antennas of each user. If
-                an integer is specified, all users will have that number of
-                receive antennas.
-        - `NtE`: (int, or iterable) Number of transmit antennas of the
-                 external interference source(s). If NtE is an iterable,
-                 the number of external interference sources will be the
-                 len(NtE).
+        Parameters
+        ----------
+        K : int
+            Number of users.
+        Nr : 1D array or an int
+            Number of receive antennas of each user. If an integer is
+            specified, all users will have that number of receive antennas.
+        Nt : 1D array or an int
+            Number of transmit antennas of each user. If an integer is
+            specified, all users will have that number of receive antennas.
+        NtE : 1D array or an int
+            Number of transmit antennas of the external interference
+            source(s). If NtE is an iterable, the number of external
+            interference sources will be the len(NtE).
+
         """
         (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
 
@@ -602,13 +719,19 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         If you want to disable the path loss, set pathloss_matrix to None.
 
-        Arguments:
-        - `pathloss_matrix`: A matrix with dimension "K x K", where K is
-                             the number of users, with the path loss from
-                             each transmitter (columns) to each receiver
-                             (rows). If you want to disable the path loss
-                             then set it to None.
-        - `ext_int_pathloss`:
+        Parameters
+        ----------
+        pathloss_matrix : 2D numpy array
+            A matrix with dimension "K x K", where K is the number of
+            users, with the path loss from each transmitter (columns) to
+            each receiver (rows). If you want to disable the path loss then
+            set it to None.
+        ext_int_pathloss : 2D numpy array
+            The path loss from each interference source to each
+            receiver. The number of rows of ext_int_pathloss must be equal
+            to the number of receives, while the number of columns must be
+            equal to the number of external interference sources.
+
         """
         # A matrix with the path loss from each transmitter to each
         # receiver.

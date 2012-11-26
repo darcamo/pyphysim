@@ -1,7 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""module docstring"""
+"""Package with communication related modules such as modulators, channels,
+etc.
+
+1. summary
+2. extended summary
+3. routine listings
+4. see also
+5. notes
+6. references
+7. examples
+
+"""
 
 import blockdiagonalization
 import channels

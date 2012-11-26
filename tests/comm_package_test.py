@@ -827,6 +827,13 @@ class BlastTestCase(unittest.TestCase):
         self.assertEqual(blast2.getNumberOfLayers(), 5)
 
     def test_encode(self):
+        # Test if an exception is raised when the number of input symbols
+        # is not multiple of the number of transmit antennas
+        data = np.r_[0:14]
+        with self.assertRaises(ValueError):
+            self.blast_object.encode(data)
+
+        # Test if the data is encoded correctly
         data = np.r_[0:15]
         expected_encoded_data = data.reshape(3, 5, order='F') / np.sqrt(3)
         np.testing.assert_array_almost_equal(
@@ -1111,6 +1118,21 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
             self.assertGreaterEqual(Pu + 1e-8,
                                     individual_powers[-1])
+
+    def test_calc_receive_filter(self):
+        Pu = self.Pu
+        noise_var = self.noise_var
+        num_users = self.num_users
+        #num_antenas = self.num_antenas
+        channel = randn_c(self.iNr, self.iNt)
+
+        (newH, Ms) = blockdiagonalization.block_diagonalize(
+            channel, num_users, Pu, noise_var)
+
+        W_bd = blockdiagonalization.calc_receive_filter(newH)
+
+        np.testing.assert_array_almost_equal(np.dot(W_bd, newH),
+                                             np.eye(np.sum(self.iNt)))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

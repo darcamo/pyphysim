@@ -1,17 +1,136 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Implements the SimulationRunner class and the associated classes
-SimulationParameters, SimulationResults and Result.
+"""Module containing useful classes to implement Monte Carlo simulations.
 
-The simulation parameters are stored in an object of the
-SimulationParameters class. The SimulationParameters acts as a container
-for the several parameters involved in the simulation. It is also able to
-unpack parameters that should be varied. For instance, you might want to
-simulate a transmission for different values of SNR (but keeping with the
-other parameters unchanged). For this you can pass a vector of SNR values
-and mark the SNR parameter to be unpacked and the simulation will be
-performed for each value of SNR with the results aggregated after that.
+The main class for Monte Carlo simulations is the :class:`SimulationRunner`
+class, but a few other classes are also implemented to handle simulation
+parameters and simulation results.
+
+More specifically, the :mod:`simulations` module implements the classes:
+ - :class:`SimulationRunner`
+ - :class:`SimulationParameters`
+ - :class:`SimulationResults`
+ - :class:`Result`
+
+For a description of how to implement Monte Carlo simulations using the
+clases defined in the :mod: simulations` module see the section below.
+
+Implementing Monte Carlo simulations
+------------------------------------
+
+A Monte Carlo simulation involves performing the same simulation many times
+with random samples to calculate the statistical properties of some
+phenomenon.
+
+The SimulationRunner class makes implementing Monte Carlo simulations
+easier by implementing much of the necessary code while leaving the
+specifics of each simulator to be implemented in a subclass.
+
+In the simplest case, in order to implement a simulator one would subclass
+SimulationRunner, set the simulation parameters in the __init__ method and
+implement the _run_simulation method with the code to simulate a single
+iteration for that specific simulator. The simulation can then be performed
+by calling the "simulate" method of an object of that derived class. After
+the simulation is finished, the 'results' parameter of that object will
+have the simulation results.
+
+The process of implementing a simulator is described in more details in the
+following.
+
+Simulation Parameters
+~~~~~~~~~~~~~~~~~~~~~
+
+The simulation parameters can be set in any way as long as they can be
+accessed in the _run_simulation method. For parameters that won't be
+changed, a simple way that works very well is to store these parameters as
+attributes in the __init__ method.
+
+On the other hand, if you want to run multiple simulations, each one with
+different values for some of the simulation parameters then store these
+parameters in the self.params attribute and set them to be unpacked (See
+docummentation of the SimulationParameters class for more details). The
+simulate method will automatically get all possible combinations of
+parameters and perform a whole Monte Carlo simulation for each of them. The
+simulate method will pass the 'current_parameters' (a SimulationParameters
+object) to _run_simulation from where _run_simulation can get the current
+combination of parameters.
+
+If you want/need to save the simulation parameters for future reference,
+however, then you should store all the simulation parameters in the
+self.params attribute. This will allow you to call its save_to_file method
+to save everything into a file. The simulation parameters can be recovered
+latter from this file by calling the static method
+SimulationParameters.load_from_file.
+
+Simulation Results
+~~~~~~~~~~~~~~~~~~
+
+In the implementation of the _run_simulation method in a subclass of
+SimulationRunner it is necessary to create an object of the
+SimulationResults class, add each desided result to it (using the
+add_result method of the SimulationResults class) and then return this
+object at the end of _run_simulation. Note that each result added to this
+SimulationResults object must itself be an object of the 'Result' class.
+
+After each run of the _run_simulation method the returned SimulationResults
+object is merged with the self.results attribute from where the simulation
+results can be retreived after the simulation finishes. Note that the way
+the results from each _run_simulation run are merged together depend on the
+the Result 'update_type'.
+
+Since you will have the complete simulation results in the self.results
+object you can easily save them to a file calling its save_to_file method.
+
+TIP: create a new 'params' attribute with the simulation parameters in the
+self.results object before calling its save_to_file method. This way you
+will have information about which simulation parameters were used to
+generate the results.
+
+Number of iterations the _run_simulation method is performed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The number of times the _run_simulation method is performed for a given
+parameter combination depend on the self.rep_max attribute. It is set by
+default to '1' and therefore you should set it to the desired value in the
+__init__ method of the SimulationRunner subclass.
+
+Optional methods
+~~~~~~~~~~~~~~~~
+
+A few methods can be implemented in the SimulationRunner subclass for extra
+functionalities. The most useful one is probably the _keep_going method,
+which can speed up the simulation by avoid running unecessary iterations of
+the _run_simulation method.
+
+Basically, after each iteration of the _run_simulation method the
+_keep_going method is called. If it returns True then more iterations of
+_run_simulation will be performed until _keep_going returns False or
+rep_max iterations are performed. When the _keep_going method is called it
+receives a SimulationResults object with the cumulated results from all
+iterations so far, which it can then use to decide it the iterations should
+continue or not.
+
+The other optional methods provide hooks to run code at specific points of
+the simulate method. They are described briefly below:
+
+ - :meth:`SimulationRunner._on_simulate_start`:
+         This method is called once at the beginning of the simulate
+         method.
+ - :meth:`SimulationRunner_on_simulate_finish`:
+         This method is called once at the end of the simulate method.
+ - :meth:`SimulationRunner_on_simulate_current_params_start`:
+         This method is called once for each combination of simulation
+         parameters before any iteration of _run_simulation is
+         performed.
+ - :meth:`SimulationRunner_on_simulate_current_params_finish`:
+         This method is called once for each combination of simulation
+         parameters after all iteration of _run_simulation are
+         performed.
+
+At last, for a working example of a simulator, see the
+:file:`apps/simulate_psk.py` file.
+
 """
 
 __version__ = "$Revision$"
@@ -31,118 +150,6 @@ from progressbar import ProgressbarText
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationRunner(object):
     """Base class to run Monte Carlo simulations.
-
-    A Monte Carlo simulation involves performing the same simulation many
-    times with random samples to calculate the statistical properties of
-    some phenomenon.
-
-    The SimulationRunner class makes implementing Monte Carlo simulations
-    easier by implementing much of the necessary code while leaving the
-    specifics of each simulator to be implemented in a subclass.
-
-    In the simplest case, in order to implement a simulator one would
-    subclass SimulationRunner, set the simulation parameters in the
-    __init__ method and implement the _run_simulation method with the code
-    to simulate a single iteration for that specific simulator. The
-    simulation can then be performed by calling the "simulate" method of an
-    object of that derived class. After the simulation is finished, the
-    'results' parameter of that object will have the simulation results.
-
-    The process of implementing a simulator is described in more details in
-    the following.
-
-    * Simulation Parameters
-
-      The simulation parameters can be set in any way as long as they can
-      be accessed in the _run_simulation method. For parameters that won't
-      be changed, a simple way that works very well is to store these
-      parameters as attributes in the __init__ method.
-
-      On the other hand, if you want to run multiple simulations, each one
-      with different values for some of the simulation parameters then
-      store these parameters in the self.params attribute and set them to
-      be unpacked (See docummentation of the SimulationParameters class for
-      more details). The simulate method will automatically get all
-      possible combinations of parameters and perform a whole Monte Carlo
-      simulation for each of them. The simulate method will pass the
-      'current_parameters' (a SimulationParameters object) to
-      _run_simulation from where _run_simulation can get the current
-      combination of parameters.
-
-      If you want/need to save the simulation parameters for future
-      reference, however, then you should store all the simulation
-      parameters in the self.params attribute. This will allow you to call
-      its save_to_file method to save everything into a file. The
-      simulation parameters can be recovered latter from this file by
-      calling the static method SimulationParameters.load_from_file.
-
-    * Simulation Results
-
-      In the implementation of the _run_simulation method in a subclass of
-      SimulationRunner it is necessary to create an object of the
-      SimulationResults class, add each desided result to it (using the
-      add_result method of the SimulationResults class) and then return
-      this object at the end of _run_simulation. Note that each result
-      added to this SimulationResults object must itself be an object of
-      the 'Result' class.
-
-      After each run of the _run_simulation method the returned
-      SimulationResults object is merged with the self.results attribute
-      from where the simulation results can be retreived after the
-      simulation finishes. Note that the way the results from each
-      _run_simulation run are merged together depend on the the Result
-      'update_type'.
-
-      Since you will have the complete simulation results in the
-      self.results object you can easily save them to a file calling its
-      save_to_file method.
-
-      TIP: create a new 'params' attribute with the simulation parameters
-      in the self.results object before calling its save_to_file
-      method. This way you will have information about which simulation
-      parameters were used to generate the results.
-
-    * Number of iterations the _run_simulation method is performed
-
-      The number of times the _run_simulation method is performed for a
-      given parameter combination depend on the self.rep_max attribute. It
-      is set by default to '1' and therefore you should set it to the
-      desired value in the __init__ method of the SimulationRunner subclass.
-
-    * Optional methods
-
-      A few methods can be implemented in the SimulationRunner subclass for
-      extra functionalities. The most useful one is probably the
-      _keep_going method, which can speed up the simulation by avoid
-      running unecessary iterations of the _run_simulation method.
-
-      Basically, after each iteration of the _run_simulation method the
-      _keep_going method is called. If it returns True then more iterations
-      of _run_simulation will be performed until _keep_going returns False
-      or rep_max iterations are performed. When the _keep_going method is
-      called it receives a SimulationResults object with the cumulated
-      results from all iterations so far, which it can then use to decide
-      it the iterations should continue or not.
-
-      The other optional methods provide hooks to run code at specific
-      points of the simulate method. They are described briefly below:
-      => _on_simulate_start:
-             This method is called once at the beginning of the simulate
-             method.
-      => _on_simulate_finish:
-             This method is called once at the end of the simulate method.
-      => _on_simulate_current_params_start:
-             This method is called once for each combination of simulation
-             parameters before any iteration of _run_simulation is
-             performed.
-      => _on_simulate_current_params_finish:
-             This method is called once for each combination of simulation
-             parameters after all iteration of _run_simulation are
-             performed.
-
-    At last, for a working example of a simulator, see
-    apps/simulate_psk.py.
-
     """
     def __init__(self):
         self.rep_max = 1
@@ -174,7 +181,6 @@ class SimulationRunner(object):
         the results from multiple repetitions will be merged.
 
         Arguments:
-
         - `current_parameters`: SimulationParameters object with the
                                 parameters for the simulation. The
                                 self.params variable is not used
@@ -593,8 +599,10 @@ class SimulationParameters(object):
     def save_to_file(self, filename):
         """Save the SimulationParameters object to the file `filename`.
 
-        Arguments:
-        - `filename`: Name of the file to save the parameters.
+        Parameters
+        ----------
+        filename : str
+            Name of the file to save the parameters.
         """
         with open(filename, 'w') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
@@ -603,9 +611,9 @@ class SimulationParameters(object):
     def load_from_file(filename):
         """Load the SimulationParameters from the file 'filename'.
 
-        Arguments:
-        - `filename`: Name of the file from where the results will be
-                       loaded.
+        Parameters
+        filename : src
+            Name of the file from where the results will be loaded.
         """
         with open(filename, 'r') as input:
             obj = pickle.load(input)
@@ -739,8 +747,10 @@ class SimulationResults(object):
     def save_to_file(self, filename):
         """Save the SimulationResults to the file `filename`.
 
-        Arguments:
-        - `filename`: Name of the file to save the results.
+        Parameters
+        ----------
+        filename : src
+            Name of the file to save the results.
 
         """
         with open(filename, 'w') as output:
@@ -750,9 +760,10 @@ class SimulationResults(object):
     def load_from_file(filename):
         """Load the SimulationResults from the file `filename`.
 
-        Arguments:
-        - `filename`: Name of the file from where the results will be
-                      loaded.
+        Parameters
+        ----------
+        filename : src
+            Name of the file from where the results will be loaded.
 
         """
         with open(filename, 'r') as input:

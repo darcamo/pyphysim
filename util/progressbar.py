@@ -74,7 +74,8 @@ class ProgressbarText(object):
     progress. Note that the number of printed characters correspond is
     equivalent to the progress minus what was already printed.
 
-    Example:
+    Examples
+    --------
     >>> pb = ProgressbarText(100, 'o', "Hello Simulation")
     <BLANKLINE>
     ---------------- Hello Simulation ---------------1
@@ -90,6 +91,20 @@ class ProgressbarText(object):
     ooooooooooooooooooooooooo
     """
     def __init__(self, finalcount, progresschar='*', message=''):
+        """Initializes the ProgressbarText object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        progresschar : str, optional (default to '*')
+            The character used to represent progress.
+        message : str, optional
+            A message to be shown in the top of the progressbar.
+        """
         import sys
         self.finalcount = finalcount
         self.blockcount = 0
@@ -105,7 +120,7 @@ class ProgressbarText(object):
         if not self.finalcount:
             return
         if(len(message) != 0):
-            bartitle = '\n{0}\n'.format(self.center_message(message, 50, '-', '', '1'))
+            bartitle = '\n{0}\n'.format(ProgressbarText.center_message(message, 50, '-', '', '1'))
         else:
             bartitle = '\n------------------ % Progress -------------------1\n'
 
@@ -117,8 +132,15 @@ class ProgressbarText(object):
     def progress(self, count):
         """Updates the progress bar.
 
-        Arguments:
-        - `count`: The current percentage of completeness.
+        The value of `count` will be added to the current amount and a
+        number of characters used to represent progress will be printed.
+
+        Parameters
+        ----------
+        count : int
+            The new amount of progress. The actual percentage of progress
+            is equal to count/finalcount.
+
         """
         #
         # Make sure I don't try to go off the end (e.g. >100%)
@@ -154,22 +176,33 @@ class ProgressbarText(object):
         if percentcomplete == 100:
             self.f.write("\n")
 
-    @classmethod
-    def center_message(cls, message, length=50, fill_char=' ', left='', right=''):
+    @staticmethod
+    def center_message(message, length=50, fill_char=' ', left='', right=''):
         """Return a string with `message` centralized and surrounded by
-        fill_char.
+        `fill_char`.
 
-        Arguments:
-        - `cls`: This Class. This is required because this method was
-                 marked as a classmethod
-        - `message`: The message to be centered
-        - `length`: Total length of the centered message (original + any fill)
-        - `fill_char`:
-        - `left`:
-        - `right`:
+        Parameters
+        ----------
+        message: str
+            The message to be centered.
+        length : int
+            Total length of the centered message (original + any fill).
+        fill_char : str
+            Filling character.
+        left : str
+            Left part of the filling.
+        right : str
+           Right part of the filling.
 
-        >>> print ProgressbarText.center_message("Hello Progress", 50, '-', 'Left', 'Right')
-        Left------------- Hello Progress ------------Right
+        Returns
+        -------
+        cent_message : str
+            The centralized message.
+
+        Examples
+        --------
+        >>> print ProgressbarText.center_message("Hello World", 50, '-', 'Left', 'Right')
+        Left-------------- Hello World --------------Right
         """
         message_size = len(message)
         left_size = len(left)
@@ -194,46 +227,80 @@ class ProgressbarMultiProcessText(object):
     """Class that prints a representation of the current progress of
     multiple process as text.
 
-    While the ProgressbarText only tracks the progress of a single process,
-    the ProgressbarMultiProcessText class can track the joint progress of
-    multiple processes. This is used when you parallelize some task using
-    the multiprocessing module.
+    While the :class:`ProgressbarText` class only tracks the progress of a
+    single process, the :class:`ProgressbarMultiProcessText` class can
+    track the joint progress of multiple processes. This may be used, for
+    instance, when you parallelize some task using the multiprocessing
+    module.
 
-    The usage requires a little more work than ProgressbarText and is
-    described as follows:
-      - First you create the ProgressbarMultiProcessText as usual (although
-        it does not receive the value equivalent to the full progress yet).
-      - Then, for each process, call the
-        register_function_and_get_proxy_progressbar function passing the
-        number equivalent to full progress for that process. This function
-        returns a "proxy progressbar" that must be passed as argument to
-        that process. Each process will call the "progress" method of that
-        proxy as if it was a ProgressbarText object.
-      - Start all the processes and call the start_updater method of
+    Using the ProgressbarMultiProcessText class requires a little more work
+    than using the ProgressbarText class, as it is described in the
+    following:
+
+     1. First you create an object of the ProgressbarMultiProcessText class
+        as usual. However, differently from the ProgressbarText class you
+        don't pass the `finalcount` value to the progressbar yet.
+     2. After that, for each process to be tracked, call the
+        :meth:`register_function_and_get_proxy_progressbar` method passing
+        the number equivalent to full progress for **that process**. This
+        function returns a "proxy progressbar" that behaves like a regular
+        ProgressbarText. Pass that proxy progressbar as an argument to that
+        process so that it can call its "progress" method. Each process
+        that calls the "progress" method of the received proxy progressbar
+        will actually update the progress of the main
+        ProgressbarMultiProcessText object.
+     3. Start all the processes and call the start_updater method of
         ProgressbarMultiProcessText object so that the bar is updated by
         the different processes.
-      - After joining all the process (all work is finished) call the
+     4. After joining all the process (all work is finished) call the
         stop_updater method of the ProgressbarMultiProcessText object.
 
-    Ex:
-    TODO: Write an example here. See the find_codebook.py application.
+    Examples
+    --------
+
+    .. code-block:: python
+
+       import multiprocessing
+       # Create a ProgressbarMultiProcessText object
+       pb = ProgressbarMultiProcessText(message="some message")
+       # Creates a proxy progressbar for one process passing the value
+       # corresponding to 100% progress for the first process
+       proxybar1 = pb.register_function_and_get_proxy_progressbar(60)
+       # Creates a proxy progressbar for another process
+       proxybar2 = pb.register_function_and_get_proxy_progressbar(80)
+       # Create the first process passing the first proxy progressbar as
+       # an argument
+       p1 = multiprocessing.Process(target=some_function, args=[proxybar1])
+       # Creates another process
+       p2 = multiprocessing.Process(target=some_function, args=[proxybar2])
+       # Start both processes
+       p1.start()
+       p2.start()
+       # Call the start_updater method of the ProgressbarMultiProcessText
+       pb.start_updater()
+       # Joint the process and then call the stop_updater method of the
+       # ProgressbarMultiProcessText
+       p1.join()
+       p2.join()
+       pb.stop_updater()
+
     """
 
     def __init__(self,
                  progresschar='*',
                  message='',
                  sleep_time=1):
-        """
-        Arguments:
-        - `progress_queue`: Queue where the multiple processes will put
-                            their progress. This must be a
-                            multiprocessing.Manager.Queue object. The
-                            multiprocessing.Queue version will break
-                            things.
-        - `total_final_count`: Total count of all progress.
-        - `progresschar`: Character used in the progressbar.
-        - `message`: Message writen in the progressbar
-        - `sleep_time`: Time between progressbar updates
+        """Initializes the ProgressbarMultiProcessText object.
+
+        Parameters
+        ----------
+        progresschar : str
+            Character used in the progressbar.
+        message : str
+            Message writen in the progressbar.
+        sleep_time : float
+            Time between progressbar updates (in seconds).
+
         """
         # total_final_count will be updated each time the register_*
         # function is called
@@ -271,15 +338,21 @@ class ProgressbarMultiProcessText(object):
         passed as arguments to the function that will run in another
         process.
 
-        Arguments:
-        - `total_count`: Total count that will be equivalent to 100% for
-                         function.
+        Parameters
+        ----------
+        total_count : int
+            Total count that will be equivalent to 100% progress for the
+            function.
 
-        Returns:
-        - Tuple with the `process_id` and the process_data_list. The
-          function whose process is tracked by the
-          ProgressbarMultiProcessText must update the element `process_id`
-          of the list `process_data_list` with the current count.
+        Returns
+        -------
+        (process_id, process_data_list) : tuple
+            A tuple with the process_id and the process_data_list. The
+            function whose process is tracked by the
+            ProgressbarMultiProcessText must update the element
+            `process_id` of the list `process_data_list` with the current
+            count.
+
         """
         # update self._total_final_count
         self._total_final_count += total_count
@@ -294,7 +367,7 @@ class ProgressbarMultiProcessText(object):
         return (process_id, self._process_data_list)
 
     def register_function_and_get_proxy_progressbar(self, total_count):
-        """Similar to the register_function method, but returns a
+        """Similar to the `register_function` method, but returns a
         ProgressbarMultiProcessProxy object.
 
         The function whose process is tracked by the
@@ -303,11 +376,16 @@ class ProgressbarMultiProcessText(object):
         count. This is a little less intrusive regarding the tracked
         function.
 
-        Arguments:
-        - `total_count`: Total count that will be equivalent to 100% for
-                         function.
+        Parameters
+        ----------
+        total_count : int
+            Total count that will be equivalent to 100% for function.
 
-        Returns: ProgressbarMultiProcessProxy object
+        Returns
+        -------
+        obj : ProgressbarMultiProcessProxy object
+            The proxy progressbar.
+
         """
         # xxxxx Inline class definition - Start xxxxxxxxxxxxxxxxxxxxxxxxxxx
         class ProgressbarMultiProcessProxy:
@@ -320,9 +398,9 @@ class ProgressbarMultiProcessText(object):
         # xxxxx Inline class definition - End xxxxxxxxxxxxxxxxxxxxxxxxxxx
         return ProgressbarMultiProcessProxy(*self.register_function(total_count))
 
-    def progress(self):
-        """This function should not be called."""
-        print "ProgressbarMultiProcessText.progress: This function should not be called directly. Call the register_function_and_get_proxy_progressbar function to get a proxy object for the progressbar and call the progress method of that proxy."
+    # def progress(self):
+    #     """This function should not be called."""
+    #     print "ProgressbarMultiProcessText.progress: This function should not be called directly. Call the register_function_and_get_proxy_progressbar function to get a proxy object for the progressbar and call the progress method of that proxy."
 
     def _update_progress(self):
         bar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
@@ -344,10 +422,6 @@ class ProgressbarMultiProcessText(object):
 
     def start_updater(self):
         """Start the process that updates the progressbar.
-
-        Returns:
-         - Process that updates the bar. Call the join method of the
-           returned value at the end of your program.
         """
         self._tic.value = time.time()
         self._update_process.start()
@@ -359,6 +433,7 @@ class ProgressbarMultiProcessText(object):
         that created the progressbar) after joining all the processes that
         update the progressbar. This guarantees that the progressbar
         updated any pending change and exited clearly.
+
         """
         self.running.clear()
         self._toc.value = time.time()

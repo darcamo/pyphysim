@@ -124,8 +124,11 @@ class CodebookFinder(object):
         Nt and Ns are the number of rows and columns, respectively, of each
         precoder.
 
-        Arguments:
-        - `codebook`: A 3-dimensional (K x Nt x Ns) complex numpy array
+        Parameters
+        ----------
+        codebook : A 3-dimensional (K x Nt x Ns) complex numpy array
+            The codebook for which the monimum chordal distance should be
+            calculated.
 
         """
         K = codebook.shape[0]

@@ -31,7 +31,7 @@ sys.path.append(os.path.join(parent_dir, 'MATLAB'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-# In the py-physim we use the docstring conventions used in
+# In the PyPhysim we use the docstring conventions used in
 # numpy. Therefore, we require the numpydoc extension.
 extensions = ['matplotlib.sphinxext.mathmpl',
               'matplotlib.sphinxext.only_directives',
@@ -85,7 +85,8 @@ release = '0.1'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', 'apps*', 'plot*',  'tests*', 'subspace*', 'ia*', 'comp*', 'comm*', 'MATLAB*']  # , 'util*'
+#exclude_patterns = ['_build', 'apps*', 'cell*', 'comm*', 'ia*', 'plot*', 'MATLAB*', 'subspace*', 'tests*', 'util*']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

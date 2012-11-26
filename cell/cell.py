@@ -23,10 +23,12 @@ class Node(shapes.Coordinate):
     """Class representing a node in the network.
     """
     def __init__(self, pos, plot_marker='*', marker_color='r'):
-        """
+        """Initializes the Node object.
 
-        Arguments:
-        - `pos`: The position of the node (a complex number)
+        Parameters
+        ----------
+        pos : complex
+            The position of the node in the complex grid.
         """
         shapes.Coordinate.__init__(self, pos)
         self.plot_marker = plot_marker
@@ -39,8 +41,11 @@ class Node(shapes.Coordinate):
         axes. Otherwise a new figure and axes are created and the node is
         plotted to that.
 
-        Arguments:
-        - `ax`: A matplotlib axes
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the node will be plotted. If not provided, a new
+            figure (and axis) will be created.
 
         """
         stand_alone_plot = False
@@ -72,7 +77,19 @@ class CellBase(Node, shapes.Shape):
     """
 
     def __init__(self, pos, radius, cell_id=None, rotation=0):
-        """
+        """Initializes the CellBase object.
+
+        Parameters
+        ----------
+        pos : complex
+            The central position of the cell in the complex grid.
+        radius : float
+            The cell radius.
+        cell_id : int, optional
+            The cell ID. If not provided the cell won't have an ID and its
+            plot will shown a symbol in cell center instead of the cell ID.
+        rotation : float, optional (default to 0)
+            The rotation of the cell (regarding the cell center).
         """
         Node.__init__(self, pos)
         shapes.Shape.__init__(self, pos, radius, rotation)
@@ -90,7 +107,7 @@ class CellBase(Node, shapes.Shape):
         return self._users
     users = property(_get_users)
 
-    def delete_all_users(self, ):
+    def delete_all_users(self):
         """Delete all users from the cell.
         """
         self._users = []
@@ -98,10 +115,18 @@ class CellBase(Node, shapes.Shape):
     def add_user(self, new_user, relative_pos_bool=True):
         """Adds a new user to the cell.
 
-        Arguments:
-        - `new_user`: New user to be added to the cell.
-        - `relative_pos_bool`: Indicates if the 'pos' attribute of the user
-                               is relative to the center of the cell or not
+        Parameters
+        ----------
+        new_user : An object of the Node class
+            The new user to be added to the cell.
+        relative_pos_bool : bool, optional (default to True)
+            Indicates if the 'pos' attribute of the `new_user` is relative
+            to the center of the cell or not.
+
+        Raises
+        ------
+        ValueError
+            If the user position is outside the cell (the user won't be added).
 
         """
         if isinstance(new_user, Node):
@@ -127,13 +152,23 @@ class CellBase(Node, shapes.Shape):
         also be iterables with the same length of `angles` in order to
         specify individual ratio and user_color for each angle.
 
-        Arguments:
-        - `angles`: Angles for which users will be added (may be a single
-                    number or an iterable)
-        - `ratio`: The ration (relative distance from cell center) for
-                   which users will be added (may be a single number or an
-                   iterable)
-        - `user_color`: Color of the user's marker.
+        Parameters
+        ----------
+        angles : float or an iterable of floats
+            Angle(s) for which users will be added (may be a single number or
+            an iterable).
+        ratio : float or an iterable of floats, optional
+            The ration (relative distance from cell center) for which users
+            will be added (may be a single number or an iterable). If not
+            specified the users will be added to the cell's border at the
+            angles specified in `angles`.
+        user_color : srt or an iterable of srt
+            Color of the user's marker.
+
+        Raises
+        ------
+        ValueError
+            If the ratio is invalid (negative or greater than 1).
 
         """
         # Assures that angle is an iterable
@@ -166,11 +201,13 @@ class CellBase(Node, shapes.Shape):
         friends can understand. If not specified the default value of the
         node class will be used.
 
-        Arguments:
-        - `user_color`: Color of the user's marker.
-        - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
-                            cell center and the generated random user. The
-                            value must be between 0 and 0.7.
+        Parameters
+        ----------
+        user_color : srt
+            Color of the user's marker.
+        min_dist_ratio : float
+            Minimum allowed (relative) distance between the cell center and
+            the generated random user. The value must be between 0 and 0.7.
 
         """
         # Creates a new user. Note that this user can be invalid (outside
@@ -190,12 +227,16 @@ class CellBase(Node, shapes.Shape):
     def add_random_users(self, num_users, user_color=None, min_dist_ratio=0):
         """Add `num_users` users randomly located in the cell.
 
-        Arguments:
-        - `num_users`: Number of users to be added to the cell.
-        - `user_color`:
-        - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
-                            cell center and the generated random user. The
-                            value must be between 0 and 0.7.
+        Parameters
+        ----------
+        num_users : int
+            Number of users to be added to the cell.
+        user_color : srt
+            Color of the user's marker.
+        min_dist_ratio : float
+            Minimum allowed (relative) distance between the cell center and
+            the generated random user. The value must be between 0 and 0.7.
+
         """
         for k in range(num_users):
             self.add_random_user(user_color, min_dist_ratio)
@@ -205,8 +246,10 @@ class CellBase(Node, shapes.Shape):
         `plot` method in which it calls the command to plot the class shape
         followed by _plot_common_part.
 
-        Arguments:
-        - `ax`: A matplotlib axes
+        Parameters
+        ----------
+        ax : A matplotlib axis
+            The axis where the cell will be plotted.
         """
         # If self.id is None, plot a single marker at the center of the
         # cell
@@ -234,11 +277,21 @@ class CellBase(Node, shapes.Shape):
         This is a herper method used in the add_border_user method
         implementation.
 
-        Arguments:
-        - `ratio`: An scalar.
+        Parameters
+        ----------
+        ratio : float
+            The ratio (a number between 0 and 1).
 
-        Throws:
-        - ValueError: If `ratio` is not between 0 and 1.
+        Returns
+        -------
+        ratio : float
+            The valid ratio. If ratio parameter was 'None' then 1.0 will be
+            returned.
+
+        Raises
+        ------
+        ValueError
+            If `ratio` is not between 0 and 1.
 
         """
         # If ratio is None then it was not specified and we assume it to be
@@ -259,7 +312,19 @@ class Cell(shapes.Hexagon, CellBase):
     """
 
     def __init__(self, pos, radius, cell_id=None, rotation=0):
-        """
+        """Initializes the Cell object.
+
+        Parameters
+        ----------
+        pos : complex
+            The central position of the cell in the complex grid.
+        radius : float
+            The cell radius.
+        cell_id : int, optional
+            The cell ID. If not provided the cell won't have an ID and its
+            plot will shown a symbol in cell center instead of the cell ID.
+        rotation : float, optional (default to 0)
+            The rotation of the cell (regarding the cell center).
         """
         CellBase.__init__(self, pos, radius, cell_id, rotation)
 
@@ -267,11 +332,15 @@ class Cell(shapes.Hexagon, CellBase):
         """Plot the cell using the matplotlib library.
 
         If an axes 'ax' is specified, then the shape is added to that
-        axes. Otherwise a new figure and axes are created and the shape is
+        axis. Otherwise a new figure and axis are created and the shape is
         plotted to that.
 
-        Arguments:
-        - `ax`: A matplotlib axes
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cell will be plotted. If not provided, a new
+            figure (and axis) will be created.
+
         """
 
         stand_alone_plot = False
@@ -301,17 +370,21 @@ class Cluster(shapes.Shape):
     """Class representing a cluster of Hexagonal cells.
 
     Valid cluster sizes are given by the formula
-       N = i^2+i*j+j^2
+       :math:`N = i^2+i*j+j^2`
     where i and j are interger numbers. The allowed values in the Clusterm
     class are sumarized below with the corresponding values of i and j.
-    | i,j |  N |
-    |-----+----|
-    | 1,0 |  1 |
-    | 1,1 |  3 |
-    | 2,0 |  4 |
-    | 2,1 |  7 |
-    | 3,1 | 13 |
-    | 3,2 | 19 |
+
+    .. aafig::
+        +-----+----+
+        | i,j |  N |
+        +-----+----+
+        | 1,0 | 01 |
+        | 1,1 | 03 |
+        | 2,0 | 04 |
+        | 2,1 | 07 |
+        | 3,1 | 13 |
+        | 3,2 | 19 |
+        +-----+----+
 
     """
     _ii_and_jj = {1: (1, 0),
@@ -328,13 +401,18 @@ class Cluster(shapes.Shape):
     radius = property(shapes.Shape._get_radius)
 
     def __init__(self, cell_radius, num_cells, pos=0 + 0j, cluster_id=None):
-        """
+        """Initializes the Cluster object.
 
-        Arguments:
-        - `cell_radius`: Radius of the cells in the cluster.
-        - `num_cells`: Number of cells in the cluster
-        - `pos`: Central Position of the Cluster
-        - `cluster_id`: ID of the cluster
+        Parameters
+        ----------
+        cell_radius : float
+            Radius of the cells in the cluster.
+        num_cells : int
+            Number of cells in the cluster.
+        pos : complex
+            Central Position of the Cluster in the complex grid.
+        cluster_id : int
+            ID of the cluster.
         """
         shapes.Shape.__init__(self, pos, radius=0, rotation=0)
 
@@ -394,6 +472,11 @@ class Cluster(shapes.Shape):
 
     def get_all_users(self):
         """Return all users in the cluster.
+
+        Returns
+        -------
+        all_users : list
+            A list with all users in the cluster.
         """
         all_users = []
         for cell in self._cells:
@@ -403,25 +486,39 @@ class Cluster(shapes.Shape):
     @staticmethod
     def _get_ii_and_jj(num_cells):
         """Valid cluster sizes are given by the formula
-                N = i^2+i*j+j^2
+                :math:`N = i^2+i*j+j^2`
 
         where i and j are integer numbers and "N" is the number of cells in
         the cluster. This static function returns the values "i" and "j"
         for a given "N". The values are summarized below.
+
+        .. aafig::
+            +-----+----+
             | i,j |  N |
-            |-----+----|
-            | 1,0 |  1 |
-            | 1,1 |  3 |
-            | 2,0 |  4 |
-            | 2,1 |  7 |
+            +-----+----+
+            | 1,0 | 01 |
+            | 1,1 | 03 |
+            | 2,0 | 04 |
+            | 2,1 | 07 |
             | 3,1 | 13 |
             | 3,2 | 19 |
+            +-----+----+
 
-        NOTE: If num_cells is not in the table above then (0, 0) will be
+        Parameters
+        ----------
+        num_cells : int
+            Number of cells in the cluster.
+
+        Returns
+        -------
+        ii and jj : tuple of ints
+            The ii and jj values corresponding to number of cells
+            'num_cells'.
+
+        Notes
+        -----
+        If `num_cells` is not in the table above then (0, 0) will be
         returned.
-
-        Arguments:
-        - `num_cells`: Number of cells in the cluster.
 
         """
         return Cluster._ii_and_jj.get(num_cells, (0, 0))
@@ -434,9 +531,18 @@ class Cluster(shapes.Shape):
         rotation) of the 'num_cells' different cells, each with radius
         equal to 'cell_radius', so that they properly fit in the cluster.
 
-        Arguments:
-        - `cell_radius`: Radius of each cell in the cluster.
-        - `num_cells`: Number of cells in the cluster.
+        Parameters
+        ----------
+        cell_radius : float
+            Radius of each cell in the cluster.
+        num_cells : int
+            Number of cells in the cluster.
+
+        Returns
+        -------
+        cell_positions : 1D numpy array
+            Positions of the cells in a cluster with `num_cells` cells with
+            radius `cell_radius`.
 
         """
         # The first column in cell_positions has the cell positions
@@ -492,9 +598,23 @@ class Cluster(shapes.Shape):
         cells, each cell with radius equal to "cell_radius". The cluster
         "radius" is equivalent to half the distance between two clusters.
 
-        Arguments:
-        - `num_cells`: Number of cells in the cluster.
-        - `cell_radius`: Radius of each cell in the cluster.
+        Parameters
+        ----------
+        num_cells : int
+            Number of cells in the cluster.
+        cell_radius : float
+            Radius of each cell in the cluster.
+
+        Returns
+        -------
+        cluster_radius : float
+            The radius of a cluster with `num_cells` cells with radius
+            `cell_radius`.
+
+        Notes
+        -----
+        The cluster "radius" is equivalent to half the distance between two
+        clusters.
 
         """
         cell_height = cell_radius * np.sqrt(3.0) / 2.0
@@ -517,11 +637,20 @@ class Cluster(shapes.Shape):
         return radius
 
     def _calc_cluster_external_radius(self):
-        """Calculates the radius of the smallest circle that can completely
-        hold the cluster inside of it. This circle should touch only the
-        most external vertexes of the cells in the cluster.
+        """Calculates the cluster external radius.
 
-        Get the vertex positions of the last cell
+        The cluster external radius is equal to the radius of the smallest
+        circle (located at the center of the cluster) that contains the
+        cluster. This circle should touch only the most external vertexes
+        of the cells in the cluster.
+
+        Get the vertex positions of the last cell.
+
+        Returns
+        -------
+        external_radius : float
+            The cluster external radius.
+
         """
         vertex_positions = self._cells[-1].vertices
         dists = vertex_positions - self.pos
@@ -533,12 +662,20 @@ class Cluster(shapes.Shape):
 
         This is a helper method used in the _get_vertex_positions method.
 
-        Arguments:
-        - `vertexes`: A numpy array of vertexes.
-        - `central_pos`: Central position of the shape.
-        - `distance`: A minimum distance. Any vertex that is closer to the
-                      shape center then this distance will be removed.
+        Parameters
+        ----------
+        vertexes : numpy array
+            The outer vertexes of the cluster.
+        central_pos : complex
+            Central position of the shape.
+        distance : float
+            A minimum distance. Any vertex that is closer to the shape
+            center then this distance will be removed.
 
+        Returns
+        -------
+        outer_vertexes : 1D numpy array
+            The cluster outer vertexes.
         """
         # Filter function. Returns True for vertexes which are closer to
         # the shape center then distance.
@@ -562,6 +699,13 @@ class Cluster(shapes.Shape):
     def _get_vertex_positions(self):
         """Get the vertex positions of the cluster borders.
 
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The vertex positions of the cluster borders.
+
+        Notes
+        -----
         This is only valid for cluster sizes from 1 to 19.
 
         """
@@ -608,8 +752,11 @@ class Cluster(shapes.Shape):
     def plot(self, ax=None):  # pragma: no cover
         """Plot the cluster.
 
-        Arguments:
-        - `ax`:  A matplotlib axes
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cluster will be plotted. If not provided, a new
+            figure (and axis) will be created.
         """
         stand_alone_plot = False
         if (ax is None):
@@ -636,11 +783,14 @@ class Cluster(shapes.Shape):
     def plot_border(self, ax=None):  # pragma: no cover
         """Plot only the border of the Cluster.
 
-        Only workers for cluster sizes that can calculate the cluster
+        Only work's for cluster sizes that can calculate the cluster
         vertices, such as cluster with 1, 7 or 19 cells.
 
-        Arguments:
-        - `ax`: A matplotlib axes
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cluster will be plotted. If not provided, a new
+            figure (and axis) will be created.
 
         """
         if len(self.vertices) != 0:
@@ -666,27 +816,33 @@ class Cluster(shapes.Shape):
         """Adds one or more users to the Cells with the specified cell IDs (the
         first cell has an ID equal to 1.).
 
-        Note: If `cell_ids` is an iterable then the other atributes
-        (num_users, user_color and min_dist_ratio) may also be iterable
-        with the same length of cell_ids in order to specifying individual
-        values for each cell ID.
+        Parameters
+        ----------
+        cell_ids : int or iterable
+            IDs of the cells in the Cluster for which users will be
+            added. The first cell has an ID equal to 1 and `cell_ids` may
+            be an iterable with the IDs of several cells.
+        num_users : int
+            Number of users to be added to each cell.
+        user_color : str
+            Color of the user's marker.
+        min_dist_ratio : float
+            Minimum allowed (relative) distance between the cell center and
+            the generated random user. See Cell.add_random_user method for
+            details.
 
-        Arguments:
-        - `cell_ids`: IDs of the cells in the Cluster for which users will
-                      be added. The first cell has an ID equal to 1 and
-                      `cell_ids` may be an iterable with the IDs of several
-                      cells.
-        - `num_users`: Number of users to be added to each cell.
-        - `user_color`: Color of the user's marker.
-        - `min_dist_ratio`: Minimum allowed (relative) distance betweem the
-                            cell center and the generated random user. See
-                            Cell.add_random_user method for details.
+        Notes
+        -----
+        If `cell_ids` is an iterable then the other attributes (num_users,
+        user_color and min_dist_ratio) may also be iterable with the same
+        length of cell_ids in order to specifying individual values for
+        each cell ID.
 
         """
         if isinstance(cell_ids, Iterable):
             if not isinstance(num_users, Iterable):
                 num_users = itertools.repeat(num_users)
-            if isinstance(user_color, str):
+            if isinstance(user_color, str) or user_color is None:
                 user_color = itertools.repeat(user_color)
             ## If you ever have problems with user_color, try uncommenting
             ## the code below
@@ -709,34 +865,39 @@ class Cluster(shapes.Shape):
         specified angle(s) (in degrees) and ratio (relative distance from
         the center to the border of the cell.
 
-        Arguments:
-        - `cell_ids`: IDs of the cells in the Cluster for which users will
-                      be added. The first cell has an ID equal to 1 and
-                      `cell_ids` may be an iterable with the IDs of several
-                      cells.
-        - `angles`: Angles (in degrees)
-        - `ratios`: Ratios (from 0 to 1)
-        - `user_color`: Color of the user's marker.
+        Parameters
+        ----------
+        cell_ids : int or Iterable
+            IDs of the cells in the Cluster for which users will be
+            added. The first cell has an ID equal to 1 and `cell_ids` may
+            be an iterable with the IDs of several cells.
+        angles : float or iterable
+            Angles (in degrees)
+        ratios : float or iterable
+            Ratios (from 0 to 1)
+        user_color : str or iterable of str
+            Color of the user's marker.
 
-        Ex:
+        Examples
+        --------
         >>> cluster = Cluster(cell_radius=1.0, num_cells=3)
-
-        # Add a single user in the angle of 30 degrees with a ration of 0.9
-        # to the first cell in the cluster
+        >>> # Add a single user in the angle of 30 degrees with a ration of 0.9
+        >>> # to the first cell in the cluster
         >>> cluster.add_border_users(1, 30, 0.9)
-
-        # Add 3 users at the angles of 0, 95 and 185 degrees to the second
-        # cell of the cluster
+        >>>
+        >>> # Add 3 users at the angles of 0, 95 and 185 degrees to the second
+        >>> # cell of the cluster
         >>> cluster.add_border_users(2, [0, 95, 185], 0.9, 'b')
-
-        # Add one user in each cell at the angle of 10 degrees
+        >>>
+        >>> # Add one user in each cell at the angle of 10 degrees
         >>> cluster.add_border_users([1, 2, 3], 10, 0.9, 'g')
-
-        # Add a user in each cell at different angles per cell
+        >>>
+        >>> # Add a user in each cell at different angles per cell
         >>> cluster.add_border_users([1, 2, 3], [90, 150, 190], 0.9, 'y')
-
-        # Add multiple users to multiple cells at different angles
+        >>>
+        >>> # Add multiple users to multiple cells at different angles
         >>> cluster.add_border_users([1, 2, 3], [[180, 270], [-30], [60, 120]], 0.9, 'k')
+
         """
         # If cell_ids is not an iterable, that is, cell_ids is a single
         # number, then we are simply calling the add_border_users method of
@@ -781,10 +942,11 @@ class Cluster(shapes.Shape):
         `None` or not specified, then the users of all cells will be
         removed.
 
-        Arguments:
-        - `cell_id`: ID(s) of the cells from which users will be
-                     removed. If equal to None, all the users from all
-                     cells will be removed.
+        Parameters
+        ----------
+        cell_id : int or iterable, optional
+            ID(s) of the cells from which users will be removed. If equal
+            to None, all the users from all cells will be removed.
 
         """
         if isinstance(cell_id, Iterable):
@@ -808,7 +970,14 @@ class Cluster(shapes.Shape):
         corresponds to a different base station and each row corresponds to
         a different mobile station.
 
-        Note that there is no explicit indication from which cell each user
+        Returns
+        -------
+        all_dists : 2D numpy array
+            Distance from each cell center to each user.
+
+        Notes
+        -----
+        There is no explicit indication from which cell each user
         is. However, in a case, for instance, where there are 3 cells in
         the cluster with 2, 2 and 3 users in each of them, respectively,
         then the first 2 rows correspond to the users in the first cell,
@@ -839,17 +1008,21 @@ class Grid(object):
     its surrounding cells.
 
     Valid cluster sizes are given by the formula
-          $N = i^2+i*j+j^2$
+          :math:`N = i^2+i*j+j^2`
     where i and j are integer numbers. The values allowed in the Cluster
     are summarized below with the corresponding values of i and j.
-    | i,j |  N |
-    |-----+----|
-    | 1,0 |  1 |
-    | 1,1 |  3 |
-    | 2,0 |  4 |
-    | 2,1 |  7 |
-    | 3,1 | 13 |
-    | 3,2 | 19 |
+
+    .. aafig::
+       +-----+----+
+       | i,j |  N |
+       +-----+----+
+       | 1,0 | 01 |
+       | 1,1 | 03 |
+       | 2,0 | 04 |
+       | 2,1 | 07 |
+       | 3,1 | 13 |
+       | 3,2 | 19 |
+       +-----+----+
 
     """
     # Available colors for the clusters. These colos must be understook by
@@ -857,7 +1030,7 @@ class Grid(object):
     _colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
 
     def __init__(self):
-        """
+        """Initializes the grid object.
         """
         self._cell_radius = 0
         self._num_cells = 0
@@ -883,10 +1056,14 @@ class Grid(object):
     def create_clusters(self, num_clusters, num_cells, cell_radius):
         """Create the clusters in the grid.
 
-        Arguments:
-        - `num_clusters`: Number of clusters to be created in the grid.
-        - `num_cells`: Number of cells per clusters.
-        - `cell_radius`: The radius of each cell.
+        Parameters
+        ----------
+        num_clusters : int
+            Number of clusters to be created in the grid.
+        num_cells : int
+            Number of cells per clusters.
+        cell_radius : float
+            The radius of each cell.
         """
         self.clear()
 
@@ -918,8 +1095,15 @@ class Grid(object):
     def _calc_cluster_pos2(self):
         """Calculates the central position of clusters with 2 cells.
 
-        Note that the returned central position will depend on how many
-        clusters were already added to the grid.
+        Returns
+        -------
+        central_pos : complex
+            Central position of the next cluster to be added to the Grid.
+
+        Notes
+        -----
+        The returned central position will depend on how many clusters were
+        already added to the grid.
 
         """
         cluster_index = self.num_clusters + 1
@@ -935,8 +1119,15 @@ class Grid(object):
     def _calc_cluster_pos3(self):
         """Calculates the central position of clusters with 3 cells.
 
-        Note that the returned central position will depend on how many
-        clusters were already added to the grid.
+        Returns
+        -------
+        central_pos : complex
+            Central position of the next cluster to be added to the Grid.
+
+        Notes
+        -----
+        The returned central position will depend on how many clusters were
+        already added to the grid.
 
         """
         cluster_index = self.num_clusters + 1
@@ -950,8 +1141,15 @@ class Grid(object):
     def _calc_cluster_pos7(self):
         """Calculates the central position of clusters with 7 cells.
 
-        Note that the returned central position will depend on how many
-        clusters were already added to the grid.
+        Returns
+        -------
+        central_pos : complex
+            Central position of the next cluster to be added to the Grid.
+
+        Notes
+        -----
+        The returned central position will depend on how many clusters were
+        already added to the grid.
 
         """
         cluster_index = self.num_clusters + 1
@@ -966,8 +1164,11 @@ class Grid(object):
     def plot(self, ax=None):  # pragma: no cover
         """Plot the grid of clusters.
 
-        Arguments:
-        - `ax`:  A matplotlib axes
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the grid will be plotted. If not provided, a new
+            figure (and axis) will be created.
         """
         stand_alone_plot = False
         if (ax is None):
@@ -1009,7 +1210,7 @@ if __name__ == '__main__1':  # pragma: no cover
     cluster_id = None
     C = Cluster(cell_radius, num_cells, node_pos, cluster_id)
     C.fill_face_bool = True
-    C.add_random_users(range(1, num_cells + 1))
+    C.add_random_users(np.arange(1, num_cells + 1))
     dists = C.calc_dist_all_cells_to_all_users()
     print dists
     C.plot()

@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""module docstring"""
+"""Block Diagonalization module documentation.
+
+1. Summary
+2. Extended summary
+3. Routine listings
+4. See also
+5. Notes
+6. References
+7. Examples
+
+"""
+
+# TODO: Move the blockdiagonalization module to the comp package.
 
 import numpy as np
 import collections
@@ -22,17 +34,31 @@ class BlockDiaginalizer(object):
     base station all powers will be normalized to respect the power
     restriction.
 
-    Reference:
-      "Zero-Forcing Methods for Downlink Spatial Multiplexing in Multiuser
-      MIMO Channels"
+    Notes
+    -----
+    The block diagonalization algorithm is described in [1]_, where
+    different power allocations are illustrated. The :class:`BlockDiaginalizer`
+    class implement two power allocation methods, a global power
+    allocation, and a 'per transmitter' power allocation.
+
+    .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
+       "Zero-Forcing Methods for Downlink Spatial Multiplexing
+       in Multiuser MIMO Channels," IEEE Transactions on Signal
+       Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
 
     """
 
     def __init__(self, iNUsers, iPu, noiseVar):
-        """
-        - `iNUsers`: Number of users.
-        - `iPu`: Power available for EACH user.
-        - `noiseVar`: Noise variance (power in linear scale).
+        """Initialize the BlockDiaginalizer object.
+
+        Parameters
+        ----------
+        iNUsers : int
+            Number of users.
+        iPu : float
+            Power available for EACH user.
+        noiseVar : float
+            Noise variance (power in linear scale).
         """
         self.iNUsers = iNUsers
         self.iPu = iPu
@@ -45,7 +71,7 @@ class BlockDiaginalizer(object):
         The "modulation matrix" is a matrix that changes the channel to a
         block diagonal structure and it is the first part in the Block
         Diagonalization algorithm. The returned modulation matrix is
-        equivalent to Equation (12) of [1] but without the power scaling
+        equivalent to Equation (12) of [1]_ but without the power scaling
         matrix $\Lambda$. Therefore, for the compelte BD algorithm it is
         still necessary to perform this power scalling in the output of
         _calc_BD_matrix.
@@ -61,18 +87,19 @@ class BlockDiaginalizer(object):
         must be distributed only into the dimensions corresponding to that
         base station.
 
-        Arguments:
-        - `mtChannel`: (numpy array) Channel from the transmitter to all
-                       users.
-        Returns:
-        - The modulation matrix "M"
-        - The singular values of the equivalent channel when the modulation
-          matrix is applied.
+        Parameters
+        ----------
+        mtChannel : 2D numpy array
+            Channel from the transmitter to all users.
 
-        References:
-         [1] "Zero-Forcing Methods for Downlink Spatial Multiplexing for
-              Multiuser MIMO Channels"
-
+        Returns
+        -------
+        (Ms_bad, Sigma) : A tuple of numpy arrays
+            The modulation matrix "Ms_bad" is a precoder that block
+            diagonalizes the channel. The singular values of the equivalent
+            channel when the modulation matrix is applied correspond to
+            Sigma. Therefore, Sigma can be used latter in the power
+            allocation process.
         """
         (iNr, iNt) = mtChannel.shape
         assert iNr % self.iNUsers == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
@@ -134,14 +161,20 @@ class BlockDiaginalizer(object):
         users. Note that this approach may result in one or two "strong
         users" taking a dominant share of the available power.
 
-        Arguments:
-        - `Ms_bad`: The previously calculated modulation matrix (without
-                    any powr scaling)
-        - `Sigma`: The singular values of the effective channel when Ms_bad
-                   is applied.
+        Parameters
+        ----------
+        Ms_bad : 2D numpy array
+            The previously calculated modulation matrix (without any powr
+            scaling)
+        Sigma : 1D numpy array of positive floats
+            The singular values of the effective channel when Ms_bad is
+            applied.
 
-        Returns:
-        - The modulation matrix with the power scaling applied.
+        Returns
+        -------
+        Ms_good : 2D numpy array
+            The modulation matrix with the global power scaling applied.
+
         """
         # Perform water-filling for the parallel channel gains in Sigma
         # (but considering a global power constraint, each element (power)
@@ -171,14 +204,19 @@ class BlockDiaginalizer(object):
         since the other BSs will use less power then available, but it is
         simple and it works.
 
-        Arguments:
-        - `Ms_bad`: The previously calculated modulation matrix (without
-                    any powr scaling)
-        - `Sigma`: The singular values of the effective channel when Ms_bad
-                   is applied.
+        Parameters
+        ----------
+        Ms_bad : 2D numpy array
+            The previously calculated modulation matrix (without any powr
+            scaling)
+        Sigma : 1D numpy array of positive floats
+            The singular values of the effective channel when Ms_bad is
+            applied.
 
-        Returns:
-        - The modulation matrix with the power scaling applied.
+        Returns
+        -------
+        Ms_good : 2D numpy array
+            The modulation matrix with the normalized power scaling applied.
 
         """
         # Number of receive antennas per user
@@ -218,13 +256,18 @@ class BlockDiaginalizer(object):
         mtChannel is a matrix with the channel from the transmitter to all
         users, where each `iNUsers` rows correspond to one user.
 
-        Arguments:
-        - `mtChannel`: (numpy array) Channel from the transmitter to all
-                       users.
+        Parameters
+        ----------
+        mtChannel : 2D numpy array
+            Channel from the transmitter to all users.
 
-        Return:
-        - newH: Block diagonalized channel
-        - Ms_good: Precoding matrix used to block diagonalize the channel
+        Returns
+        -------
+        (newH, Ms_good) : A tuple of numpy arrays
+            newH is a 2D numpy array corresponding to the Block
+            diagonalized channel, while Ms_good is a 2D numpy array
+            corresponding to the precoder matrix used to block diagonalize
+            the channel.
 
         """
         # Calculates the modulation matrix and the singular values of the
@@ -242,8 +285,27 @@ class BlockDiaginalizer(object):
         # Return block diagonalized channel and the used precoding matrix
         return (newH, Ms_good)
 
+    @staticmethod
+    def calc_receive_filter(newH):
+        """Calculates the Zero-Forcing receive filter.
+
+        Parameters
+        ----------
+        newH : 2D numpy array
+            The block diagonalized channel.
+
+        Returns
+        -------
+        W_bd : 2D numpy array
+            The zero-forcing matrix to separate each stream of each user.
+        """
+        W_bd = np.linalg.pinv(newH)
+        return W_bd
+
     def _get_tilde_channel(self, mtChannel, user):
-        """Return the combined channel of all users except `user`."""
+        """Return the combined channel of all users except `user` .
+
+        """
         vtAllUserIndexes = np.arange(0, self.iNUsers)
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
         return self._getSubChannel(mtChannel, desiredUsers)
@@ -251,15 +313,25 @@ class BlockDiaginalizer(object):
     def _getSubChannel(self, mt_channel, vtDesiredUsers):
         """Get a subchannel according to the vtDesiredUsers vector.
 
-        Arguments:
-        - `mt_channel`: Channel of all users
-        - `vtDesiredUsers`: An iterable with the indexes of the desired users
-                            or an integer.
-        Return:
-        - mtSubmatrix - Submatrix of the desired users
+        Parameters
+        ----------
+        mt_channel : 2D numpy array
+            Channel of all users
+        vtDesiredUsers : iterable of integers
+            An iterable with the indexes of the desired users or an
+            integer.
 
-        Channel for 3 receivers, each with 2 receive antennas, where the
-        transmitter has 6 transmit antennas.
+        Returns
+        -------
+        mtSubmatrix : 2D numpy array
+           Submatrix of the desired users
+
+        Notes
+        -------
+        As an example, let's consider the case with a channel for 3
+        receivers, each with 2 receive antennas, where the transmitter has
+        6 transmit antennas.
+
         >>> BD = BlockDiaginalizer(3, 0, 0)
         >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]), 3 * np.ones([2, 6])])
         >>> BD._getSubChannel(channel, [0,2])
@@ -270,6 +342,7 @@ class BlockDiaginalizer(object):
         >>> BD._getSubChannel(channel, 0)
         array([[ 1.,  1.,  1.,  1.,  1.,  1.],
                [ 1.,  1.,  1.,  1.,  1.,  1.]])
+
         """
         (rows, cols) = mt_channel.shape
         iNrU = rows / self.iNUsers  # Number of receive antennas per user
@@ -284,19 +357,44 @@ class BlockDiaginalizer(object):
 
 
 def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar):
-    """Performs the block diagonalization of `mtChannel`.
+    """Performs the block diagonalization of :attr:`mtChannel`.
 
-    Arguments:
-    - `mtChannel`: (numpy bidimensional array) Global channel matrix
-    - `iNUsers`: (int) Number of users
-    - `iPu`: (float) Power available for each user
-    - `noiseVar`: (float) Noise variance
+    Parameters
+    ----------
+    mtChannel : 2D numpy array
+        Global channel matrix
+    iNUsers : int
+        Number of users
+    iPu : float
+        Power available for each user
+    noiseVar : float
+        Noise variance
 
-    Return:
-    - newH: Block diagonalized channel
-    - Ms_good: Precoding matrix used to block diagonalize the channel
+    Returns
+    -------
+    (newH, Ms_good) : A tuple of numpy arrays
+        newH is a 2D numpy array corresponding to the Block
+        diagonalized channel, while Ms_good is a 2D numpy array
+        corresponding to the precoder matrix used to block diagonalize
+        the channel.
 
     """
     BD = BlockDiaginalizer(iNUsers, iPu, noiseVar)
     results_tuple = BD.block_diagonalize(mtChannel)
     return results_tuple
+
+
+def calc_receive_filter(newH):
+    """Calculates the Zero-Forcing receive filter.
+
+    Parameters
+    ----------
+    newH : 2D numpy array
+        The block diagonalized channel.
+
+    Returns
+    -------
+    W_bd : 2D numpy array
+        The zero-forcing matrix to separate each stream of each user.
+    """
+    return BlockDiaginalizer.calc_receive_filter(newH)

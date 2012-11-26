@@ -533,6 +533,7 @@ class ClusterTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.C3.external_radius,
                                4.3588989435406731 * self.C3.cell_radius)
 
+    # TODO: Implement-me
     def test_calc_cell_positions(self):
         pass
 
@@ -593,7 +594,14 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C2._cells[0].num_users, 2)
         self.assertEqual(self.C2._cells[4].num_users, 5)
 
-#        self.C2.plot()
+        # Test adding user with no user color (the default should be used)
+
+        self.C2.add_random_users([2, 6], [8, 3], ['k', None])
+        self.C2.add_random_users(2, 4, None)
+        self.assertEqual(self.C2._cells[1].num_users, 12)
+        self.assertEqual(self.C2._cells[5].num_users, 3)
+
+        #self.C2.plot()
 
     def test_add_border_users(self):
         self.C1.remove_all_users()

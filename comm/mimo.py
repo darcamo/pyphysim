@@ -19,20 +19,28 @@ class MimoBase(object):
 
     All subclasses must implement the following methods:
 
-    - getNumberOfLayers: Should return the number of layers of that
-                         specific MIMO scheme
-    - encode: The encode method must perform everything performed at the
-              transmitter for that specific MIMO scheme. This also include
-              the power division among the transmit antennas.
-    - decode: Analogous to the encode method, the decode method must
-              perform everything performed at the receiver.
+    - :meth:`getNumberOfLayers`:
+      Should return the number of layers of that specific MIMO scheme
+    - :meth:`encode`:
+      The encode method must perform everything executed at the transmitter
+      for that specific MIMO scheme. This also include the power division
+      among the transmit antennas.
+    - :meth:`decode`:
+      Analogous to the encode method, the decode method must perform
+      everything performed at the receiver.
+
     """
 
     def __init__(self):
         pass
 
     def getNumberOfLayers(self):  # pragma: no cover
-        """Get the number of layers of the MIMO scheme."""
+        """Get the number of layers of the MIMO scheme.
+
+        Notes
+        -----
+        This method must be implemented in each subclass of `MimoBase`.
+        """
         raise NotImplementedError('getNumberOfLayers still needs to be implemented in the {0} class'.format(self.__class__.__name__))
 
     @staticmethod
@@ -40,25 +48,40 @@ class MimoBase(object):
         """Calculates the Zero-Force filter to cancel the inter-stream
         interference.
 
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        W : 2D numpy array
+            The Zero-Forcing receive filter.
+
+        Notes
+        -----
         The Zero-Force filter basically corresponds to the pseudo-inverse
         of the channel matrix.
 
-        Arguments:
-        - `channel`: MIMO channel matrix
         """
-        # print "Zero-Force used"
         return np.linalg.pinv(channel)
 
     @staticmethod
     def _calcMMSEFilter(channel, noise_var):
-        """Calculates the MMSE filter to cancel the inter-stream
-        interference.
+        """Calculates the MMSE filter to cancel the inter-stream interference.
 
-        Arguments:
-        - `channel`: MIMO channel matrix
-        - `noise_var`: Noise variance
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            Noise variance.
+
+        Returns
+        -------
+        W : 2D numpy array
+            The MMSE receive filter.
         """
-        # print "MMSE used"
         H = channel
         H_H = H.transpose().conjugate()
         Nr, Nt = H.shape
@@ -79,10 +102,21 @@ class Blast(MimoBase):
     """MIMO class for the BLAST scheme.
 
     The number of streams need to be specified during object creation.
+
+    The receive filter used will depend on the noise variance (see the
+    :meth:`set_noise_var` method). Of the noise variance is positive the
+    MMSE filter will be used, otherwise noise variance will be ignored and
+    the Zero-Forcing filter will be used.
+
     """
 
     def __init__(self, nStreams):
-        """
+        """Initialized the Blast object.
+
+        Parameters
+        ----------
+        nStreams : int
+            The number of transmit streams.
         """
         MimoBase.__init__(self)
         # Function to calculate the receive filter
@@ -90,8 +124,13 @@ class Blast(MimoBase):
         self.noise_var = 0
         self.nStreams = nStreams
 
-    def getNumberOfLayers(self, ):
-        """Get the number of layers of the MIMO scheme.
+    def getNumberOfLayers(self):
+        """Get the number of layers of the Blast scheme.
+
+        Returns
+        -------
+        Nl : int
+            Number of layers of the MIMO scheme.
         """
         return self.nStreams
 
@@ -101,8 +140,13 @@ class Blast(MimoBase):
         If noise_var is non-positive then the Zero-Force filter will be
         used instead.
 
-        Arguments:
-        - `noise_var`: Noise variance.
+        Parameters
+        ----------
+        noise_var : float
+            Noise variance for the MMSE filter (if `noise_var` is
+            positive). If `noise_var` is negative then the Zero-Forcing
+            filter will be used and `noise_var` will be ignored.
+
         """
         self.noise_var = noise_var
         if noise_var > 0:
@@ -112,43 +156,88 @@ class Blast(MimoBase):
 
     def _encode(self, transmit_data):
         """Encode the transmit data array to be transmitted using the BLAST
-        scheme, but without dividing the power among the transmit antennas.
+        scheme, but **WITHOUT** dividing the power among the transmit antennas.
 
         The idea is that the encode method will call _encode and perform
         the power division. This separation allows better code reuse.
 
-        Arguments:
-        - `transmit_data`: A numpy array with a number of elements which is
-                           a multiple of the number of transmit
-                           antennas.
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            A numpy array with a number of elements which is a multiple of
+            the number of transmit antennas.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data` (without dividing the power among
+            transmit antennas).
+
+        Raises
+        ------
+        ValueError
+            If the number of elements in `transmit_data` is not multiple of
+            the number of transmit antennas.
+
+        See also
+        --------
+        encode
+
         """
         num_elements = transmit_data.size
-        assert num_elements % self.nStreams == 0, "Input array number of elements must be a multiple of the number of transmit antennas"
+        if num_elements % self.nStreams != 0:
+            raise ValueError("Input array number of elements must be a multiple of the number of transmit antennas")
+
         return transmit_data.reshape(self.nStreams, num_elements / self.nStreams, order='F')
 
     def encode(self, transmit_data):
         """Encode the transmit data array to be transmitted using the BLAST
         scheme.
 
-        Arguments:
-        - `transmit_data`: A numpy array with a number of elements which is
-                           a multiple of the number of transmit
-                           antennas.
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            A numpy array with a number of elements which is a multiple of
+            the number of transmit antennas.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data`.
+
+        Raises
+        ------
+        ValueError
+            If the number of elements in `transmit_data` is not multiple of
+            the number of transmit antennas.
         """
         return self._encode(transmit_data) / np.sqrt(self.nStreams)
 
     def _decode(self, received_data, channel):
-        """Decode the received data array, but does not compensate for the
-        power division among transmit antennas.
+        """Decode the received data array, but does not compensate for the power
+        division among transmit antennas.
 
         The idea is that the decode method will call _decode and perform
         the power compensation. This separation allows better code reuse.
 
-        Arguments:
-        - `received_data`: Received data, which was encoded with the
-                           Blast scheme and corrupted by the channel
-                           `channel`.
-        - `channel`: MIMO channel matrix.
+        Parameters
+        ----------
+        received_data : 2D received data
+            Received data, which was encoded with the Blast scheme and
+            corrupted by the channel `channel`.
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data (without power compensating the power division
+            performed during transmission).
+
+        See also
+        --------
+        decode
+
         """
         (Nr, Ns) = received_data.shape
         W = self.calc_filter(channel)
@@ -158,9 +247,18 @@ class Blast(MimoBase):
     def decode(self, received_data, channel):
         """Decode the received data array.
 
-        Arguments:
-        - `received_data`:
-        - `channel`: MIMO channel matrix
+        Parameters
+        ----------
+        received_data : 2D received data
+            Received data, which was encoded with the Blast scheme and
+            corrupted by the channel `channel`.
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data.
         """
         return self._decode(received_data, channel) * np.sqrt(self.nStreams)
 
@@ -173,15 +271,21 @@ class Alamouti(MimoBase):
     """
 
     def __init__(self, ):
-        """
+        """Initialized the Alamouti object.
         """
         MimoBase.__init__(self)
 
-    def getNumberOfLayers(self, ):
-        """Get the number of layers of the MIMO scheme.
+    def getNumberOfLayers(self):
+        """Get the number of layers of the Alamouti scheme.
 
         The number of layers in the Alamouti scheme is always equal to
         one.
+
+        Returns
+        -------
+        Nl : int
+            Number of layers of the Alamouti scheme, which is always one.
+
         """
         return 1
 
@@ -192,8 +296,20 @@ class Alamouti(MimoBase):
         The idea is that the encode method will call _encode and perform
         the power division. This separation allows better code reuse.
 
-        Arguments:
-        - `transmit_data`: Data to be encoded by the Alamouit scheme.
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            Data to be encoded by the Alamouit scheme.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data` (without dividing the power among
+            transmit antennas).
+
+        See also
+        --------
+        encode
         """
         Ns = transmit_data.size
         encoded_data = np.empty((2, Ns), dtype=complex)
@@ -207,49 +323,17 @@ class Alamouti(MimoBase):
     def encode(self, transmit_data):
         """Perform the Alamouiti encoding.
 
-        Arguments:
-        - `transmit_data`: Data to be encoded by the Alamouit scheme.
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            Data to be encoded by the Alamouit scheme.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data`.
         """
         return self._encode(transmit_data) / np.sqrt(2)
-
-    # # Remove this method later. It is slower then "_encode".
-    # def _encode2(self, transmit_data):
-    #     """Perform the Alamouti encoding, but without dividing the power
-    #     among the transmit antennas.
-
-    #     The idea is that the encode method will call _encode and perform
-    #     the power division. This separation allows better code reuse.
-
-    #     Arguments:
-    #     - `transmit_data`: Data to be encoded by the Alamouit scheme.
-    #     """
-    #     # transmit_data will have symbols $s_1, s_2, s_3, s_4, \ldots$
-
-    #     # Number of symbols
-    #     Ns = transmit_data.size
-
-    #     # aux is the conjugate of transmit_data and the signal of the first
-    #     # of each two symbols will also be changed
-    #     aux = transmit_data.conjugate()
-    #     aux[np.arange(0, Ns) % 2 == 1] = -aux[np.arange(0, Ns) % 2 == 1]
-
-    #     # Then we use some clever reshaping
-    #     transmit_data = transmit_data.reshape(2, Ns / 2, order='F')
-    #     aux = aux.reshape(2, Ns / 2, order='F')
-
-    #     # Swap the two rows of aux
-    #     aux[0], aux[1] = aux[1].copy(), aux[0].copy()
-
-    #     # Column i of transmit_data corresponds to the first column of the
-    #     # i-th codeword, while column i of aux corresponds to the second
-    #     # column of the i-th codeword.
-    #     encoded_data = np.empty((2, Ns), dtype=complex)
-    #     encoded_data[:, np.arange(0, Ns) % 2 == 0] = transmit_data
-    #     encoded_data[:, np.arange(0, Ns) % 2 == 1] = aux
-
-    #     # encoded_data will then have the form
-    #     # $\begin{bmatrix} s_1 & -s_2^* & s_3 & -s_4^* \\ s_2 & s_1^* & s_4 & s_3^*\end{bmatrix} \ldots$
-    #     return encoded_data
 
     def _decode(self, received_data, channel):
         """Perform the decoding of the received_data for the Alamouit
@@ -259,11 +343,24 @@ class Alamouti(MimoBase):
         The idea is that the decode method will call _decode and perform
         the power compensation. This separation allows better code reuse.
 
-        Arguments:
-        - `received_data`: Received data, which was encoded with the
-                           Alamouit scheme and corrupted by the channel
-                           `channel`.
-        - `channel`: MIMO channel matrix.
+        Parameters
+        ----------
+        received_data`: 2D numpy array
+            Received data, which was encoded with the Alamouit scheme and
+            corrupted by the channel `channel`.
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data (without power compensating the power division
+            performed during transmission).
+
+        See also
+        --------
+        decode
+
         """
         Nr, Ns = received_data.shape
         # Number of Alamouti codewords
@@ -293,11 +390,18 @@ class Alamouti(MimoBase):
         """Perform the decoding of the received_data for the Alamouit
         scheme with the channel `channel`.
 
-        Arguments:
-        - `received_data`: Received data, which was encoded with the
-                           Alamouit scheme and corrupted by the channel
-                           `channel`.
-        - `channel`: MIMO channel matrix.
+        Parameters
+        ----------
+        received_data`: 2D numpy array
+            Received data, which was encoded with the Alamouit scheme and
+            corrupted by the channel `channel`.
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data.
         """
         return self._decode(received_data, channel) * np.sqrt(2)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

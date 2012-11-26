@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Package with cell related modules and classes"""
+"""Package with cell and shapes related modules."""
 
 import shapes
 import cell

@@ -37,6 +37,8 @@ class Modulator(object):
     constellation in their constructors as well as implement
     calcTheoreticalSER and calcTheoreticalBER.
 
+    Examples
+    --------
     >>> constellation = np.array([1+1j, -1+1j, -1-1j, 1-1j])
     >>> m=Modulator()
     >>> m.setConstellation(constellation)
@@ -75,8 +77,10 @@ class Modulator(object):
         This function should be called in the constructor of the derived
         classes.
 
-        Arguments:
-        - `symbols`: A an numpy array with the symbol table
+        Parameters
+        ----------
+        symbols : numpy array
+            A an numpy array with the symbol table.
 
         """
         self.M = symbols.size
@@ -112,14 +116,23 @@ class Modulator(object):
     def modulate(self, inputData):
         """Modulate the input data (decimal data).
 
-        Arguments:
-        - `inputData`: Data to be modulated
+        Parameters
+        ----------
+        inputData : Numpy array
+            Data to be modulated.
 
-        Raises:
-        - ValueError: If inputData has any invalid value such as values
-                      greater than self.M - 1. Note that inputData should
-                      not have negative values but no check is done for
-                      this.
+        Returns
+        -------
+        modulated_data : numpy array
+            The modulated data
+
+        Raises
+        ------
+        ValueError
+            If inputData has any invalid value such as values greater than
+            self.M - 1. Note that inputData should not have negative values
+            but no check is done for this.
+
         """
         try:
             return self.symbols[inputData]
@@ -129,32 +142,89 @@ class Modulator(object):
     def demodulate(self, receivedData):
         """Demodulate the data.
 
-        Arguments:
-        - `receivedData`: Data to be demodulated
+        Parameters
+        ----------
+        receivedData : numpy array
+            Data to be demodulated.
+
+        Returns
+        -------
+        demodulated_data : numpy array
+            The demodulated data.
         """
-        def getClosestSymbol(symb):
-            closestSymbolIndex = abs(self.symbols - symb).argmin()
-            return closestSymbolIndex
-        getClosestSymbol = np.frompyfunc(getClosestSymbol, 1, 1)
-        return getClosestSymbol(receivedData).astype(int)
+        ### First Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # def getClosestSymbol(symb):
+        #     closestSymbolIndex = np.abs(self.symbols - symb).argmin()
+        #     return closestSymbolIndex
+        # getClosestSymbol = np.frompyfunc(getClosestSymbol, 1, 1)
+        # return getClosestSymbol(receivedData).astype(int)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # ### Second Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # This versions is a little faster then the first version
+        # shape = receivedData.shape
+        # num_symbols = receivedData.size
+        # output = np.empty(num_symbols, dtype=int)
+        # reshaped_received_data = receivedData.flatten()
+
+        # # import pudb
+        # # pudb.set_trace()
+        # for ii in xrange(num_symbols):
+        #     output[ii] = np.abs(self.symbols - reshaped_received_data[ii]).argmin()
+        # output.shape = shape
+        # return output
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        ### Third Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # This version uses more memory because of the numpy broadcasting,
+        # but it is much faster.
+        shape = receivedData.shape
+        num_symbols = receivedData.size
+        output = np.empty(num_symbols, dtype=int)
+        reshaped_received_data = receivedData.flatten()
+
+        constellation = np.reshape(self.symbols, [self.symbols.size, 1])
+        output = np.abs(constellation - reshaped_received_data).argmin(axis=0)
+        output.shape = shape
+
+        return output
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def calcTheoreticalSER(self, SNR):  # pragma: no cover
         """Calculates the theoretical symbol error rate.
 
-        This function should be implemented in the derived classes
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
 
-        Arguments:
-        - `SNR`: Signal-to-noise-value (in dB)
+        Returns
+        -------
+        SER : float or array like
+            The theoretical symbol error rate.
+
+        Notes
+        -----
+        This function should be implemented in the derived classes
         """
         raise NotImplementedError("calcTheoreticalSER: Not implemented")
 
     def calcTheoreticalBER(self, SNR):  # pragma: no cover
         """Calculates the theoretical bit error rate.
 
-        This function should be implemented in the derived classes
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
 
-        Arguments:
-        - `SNR`: Signal-to-noise-value (in dB)
+        Returns
+        -------
+        BER : float or array like
+            The theoretical bit error rate.
+
+        Notes
+        -----
+        This function should be implemented in the derived classes
         """
         raise NotImplementedError("calcTheoreticalBER: Not implemented")
 # xxxxx End of Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -167,6 +237,17 @@ class PSK(Modulator):
     """PSK Class
     """
     def __init__(self, M, phaseOffset=0):
+        """Initializes the PSK object.
+
+        Parameters
+        ----------
+        M : int
+            The modulation cardinality
+        phaseOffset: float, optional (default to 0)
+            A phase offset (in radians) to be applied to the PSK
+            constellation.
+
+        """
         Modulator.__init__(self)
         # Check if M is a power of 2
         assert 2 ** math.log(M, 2) == M
@@ -181,11 +262,22 @@ class PSK(Modulator):
 
     @staticmethod
     def _createConstellation(M, phaseOffset):
-        """Generates the Constellation for the PSK modulation scheme
+        """Generates the Constellation for the PSK modulation scheme.
 
-        Arguments:
-        - `M`: Modulation cardinality
-        - `phaseOffset`: phase offset (in radians)
+        Parameters
+        ----------
+        M : int
+            The modulation cardinality
+        phaseOffset: float
+            A phase offset (in radians) to be applied to the PSK
+            constellation.
+
+        Returns
+        -------
+        symbols : numpy array
+            The PSK constellation with the desired cardinality and phase
+            offset.
+
         """
         phases = 2. * PI / M * np.arange(0, M) + phaseOffset
         realPart = np.cos(phases)
@@ -199,8 +291,11 @@ class PSK(Modulator):
     def setPhaseOffset(self, phaseOffset):
         """Set a new phase offset for the constellation
 
-        Arguments:
-        - `phaseOffset`: phase offset (in radians)
+        Parameters
+        ----------
+        phaseOffset: float
+            A phase offset (in radians) to be applied to the PSK
+            constellation.
         """
         self.setConstellation(self._createConstellation(self.M, phaseOffset))
 
@@ -208,8 +303,15 @@ class PSK(Modulator):
         """Calculates the theoretical (approximation for high M and high
         SNR) symbol error rate for the M-PSK scheme.
 
-        Arguments:
-        - `SNR`: Signal-to-noise-value (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        SER : float or array like
+            The theoretical symbol error rate.
         """
         snr = dB2Linear(SNR)
 
@@ -223,8 +325,15 @@ class PSK(Modulator):
         """Calculates the theoretical (approximation) bit error rate for
         the M-PSK scheme using Gray coding.
 
-        Arguments:
-        - `SNR`: Signal to noise ration (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        BER : float or array like
+            The theoretical bit error rate.
         """
         # $P_b = \frac{1}{k}P_s$
         # Number of bits per symbol
@@ -242,7 +351,7 @@ class QPSK(PSK):  # pragma: no cover
     """QPSK Class
     """
 
-    def __init__(self, ):
+    def __init__(self):
         PSK.__init__(self, 4, PI / 4.)
 
     def __repr__(self):  # pragma: no cover
@@ -256,7 +365,7 @@ class QPSK(PSK):  # pragma: no cover
 class BPSK(Modulator):
     """BPSK Class
     """
-    def __init__(self, ):
+    def __init__(self):
         Modulator.__init__(self)
         # The number "1" will be mapped to "-1" and the number "0" will be
         # mapped to "1"
@@ -269,8 +378,15 @@ class BPSK(Modulator):
         """Calculates the theoretical (approximation) symbol error rate for
         the BPSK scheme.
 
-        Arguments:
-        - `snr`: Signal to noise ration (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        SER : float or array like
+            The theoretical symbol error rate.
         """
         snr = dB2Linear(SNR)
         # $P_b = Q\left(\sqrt{\frac{2E_b}{N_0}}\right)$
@@ -283,22 +399,38 @@ class BPSK(Modulator):
         """Calculates the theoretical (approximation) bit error rate for
         the BPSK scheme.
 
-        Arguments:
-        - `snr`: Signal to noise ration (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        BER : float or array like
+            The theoretical bit error rate.
         """
         return self.calcTheoreticalSER(SNR)
 
     def modulate(self, inputData):
         """Modulate the input data (decimal data).
 
-        Arguments:
-        - `inputData`: Data to be modulated
+        Parameters
+        ----------
+        inputData : Numpy array
+            Data to be modulated.
 
-        Raises:
-        - ValueError: If inputData has any invalid value such as values
-                      greater than self.M - 1. Note that inputData should
-                      not have negative values but no check is done for
-                      this.
+        Returns
+        -------
+        modulated_data : numpy array
+            The modulated data
+
+        Raises
+        ------
+        ValueError
+            If inputData has any invalid value such as values greater than
+            self.M - 1. Note that inputData should not have negative values
+            but no check is done for this.
+
         """
         if np.any(inputData > 1):
             raise ValueError("Input data can only contains '0's and '1's")
@@ -307,8 +439,15 @@ class BPSK(Modulator):
     def demodulate(self, receivedData):
         """Demodulate the data.
 
-        Arguments:
-        - `receivedData`: Data to be demodulated
+        Parameters
+        ----------
+        receivedData : numpy array
+            Data to be demodulated.
+
+        Returns
+        -------
+        demodulated_data : numpy array
+            The demodulated data.
         """
         return (receivedData < 0).astype(int)
 
@@ -325,8 +464,15 @@ class QAM(Modulator):
     def __init__(self, M):
         """Initializes the QAM object.
 
-        Raises:
-        - ValueError of M is not a square power of 2.
+        Parameters
+        ----------
+        M : int
+            The modulation cardinality
+
+        Raises
+        ------
+        ValueError
+            If M is not a square power of 2.
         """
         Modulator.__init__(self)
 
@@ -348,8 +494,15 @@ class QAM(Modulator):
         """Generates the Constellation for the (SQUARE) M-QAM modulation
         scheme.
 
-        Arguments:
-        - `M`: Modulation cardinality
+        Parameters
+        ----------
+        M : int
+            The modulation cardinality
+
+        Returns
+        -------
+        symbols : numpy array
+            The QAM constellation with the desired cardinality.
         """
         # Size of the square. The square root is exact
         symbols = np.empty(M, dtype=complex)
@@ -375,23 +528,34 @@ class QAM(Modulator):
         generated without taking into account the Gray mapping, then we
         need to reorder the generated constellation and this function
         calculates the indexes that can be applied to the original
-        constellation in order to do this.
+        constellation in order to do exactly that.
 
         As an example, for the 16-QAM modulation the indexes can be
         organized (row order) in the matrix below
+
+        .. aafig::
                   00     01     11     10
-               |------+------+------+------|
+               +------+------+------+------+
             00 | 0000 | 0001 | 0011 | 0010 |
             01 | 0100 | 0101 | 0111 | 0110 |
             11 | 1100 | 1101 | 1111 | 1110 |
             10 | 1000 | 1001 | 1011 | 1010 |
-               |------+------+------+------|
+               +------+------+------+------+
+
         This is equivalent to concatenate a Gray mapping for the row with a
         Gray mapping for the column, and the corresponding indexes are
         [0, 1, 3, 2, 4, 5, 7, 6, 12, 13, 15, 14, 8, 9, 11, 10]
 
-        Arguments:
-        - `L`: Square root of the modulation cardinality (must be an integer)
+        Parameters
+        ----------
+        L : int
+            Square root of the modulation cardinality (must be an integer).
+
+        Returns
+        -------
+        indexes : numpy array of integers
+            indexes that should be applied to the constellation created by
+            _createConstellation in order to correspond to Gray mapping
 
         """
         # Row vector with the column variation (second half of the index in
@@ -415,8 +579,25 @@ class QAM(Modulator):
         """Calculates the theoretical (approximation) error rate of a
         single carrier in the QAM system (QAM has two carriers).
 
-        Arguments:
-        - `SNR`: Signal to noise ration (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        Psc : float or array like
+            The theoretical single carrier error rate.
+
+        Notes
+        -----
+        This method is used in the :meth:`calcTheoreticalSER`
+        implementation.
+
+        See also
+        --------
+        calcTheoreticalSER
+
         """
         snr = dB2Linear(SNR)
         # Probability of error of each carrier in a square QAM
@@ -429,8 +610,15 @@ class QAM(Modulator):
         """Calculates the theoretical (approximation) symbol error rate for
         the QAM scheme.
 
-        Arguments:
-        - `SNR`: Signal to noise ration (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        SER : float or array like
+            The theoretical symbol error rate.
         """
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
         # The SER is then given by
@@ -442,8 +630,15 @@ class QAM(Modulator):
         """Calculates the theoretical (approximation) bit error rate for
         the QAM scheme.
 
-        Arguments:
-        - `SNR`: Signal to noise ration (in dB)
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+
+        Returns
+        -------
+        BER : float or array like
+            The theoretical bit error rate.
         """
         # For higher SNR values and gray mapping, each symbol error
         # corresponds to approximately a single bit error. The BER is then
