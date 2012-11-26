@@ -8,14 +8,15 @@ import numpy as np
 
 class Projection(object):
     """Class to calculate the projection, orthogonal projection and
-    reflection of a given matrix in a Subspace S spanned by the columns of
-    a matrix A.
+    reflection of a given matrix in a Subspace `S` spanned by the columns of
+    a matrix `A`.
 
     The matrix A is provied in the constructor and after that the functions
     `project`, `oProject` and `reflect` can be called with M as an
     argument.
 
-    Example:
+    Examples
+    --------
     >>> A = np.array([[1+1j, 2-2j], [3-2j, 0], [-1-1j, 2-3j]])
     >>> v = np.array([1,2,3])
     >>> P = Projection(A)
@@ -31,9 +32,14 @@ class Projection(object):
     """
 
     def __init__(self, A):
-        """
-        Arguments:
-        - `A`:
+        """Initializes the Projection object.
+
+        Parameters
+        ----------
+        A : 2D numpy array
+            The matrix whose columns form a basis for the projected
+            subspace.
+
         """
         self._A = A
         self.Q = Projection.calcProjectionMatrix(A)
@@ -45,11 +51,15 @@ class Projection(object):
     def project(self, M):
         """Project the matrix (or vector) M in the desired subspace.
 
-        Arguments:
-        - `M`: Matrix to be projected
+        Parameters
+        ----------
+        M : 2D numpy array
+            The matrix to be projected.
 
-        Return:
-        - Projection of M in the desired subspace
+        Returns
+        -------
+        proj_M : 2D numpy array
+            The projection of `M` in the desired subspace.
         """
         return self.Q.dot(M)
 
@@ -57,33 +67,50 @@ class Projection(object):
         """Project the matrix (or vector) M the subspace ORTHOGONAL to the
         subspace projected with `project`.
 
-        Arguments:
-        - `M`: Matrix to be projected
+        Parameters
+        ----------
+        M : 2D numpy array
+            The matrix to be projected.
 
-        Return:
-        - Projection of M in the orthogonal subspace
+        Returns
+        -------
+        ort_proj_M : 2D numpy array
+            The projection of `M` in the orthogonal subspace.
         """
         return self.oQ.dot(M)
 
     def reflect(self, M):
         """Find the reflection of the matrix in the subspace spanned by the
-        columns of A
+        columns of `A`
 
-        Arguments:
-        - `M`: Matrix to be reflected.
+        Parameters
+        ----------
+        M : 2D numpy array
+            The matrix to be projected.
 
-        Return:
-        - The reflection of M with the subspace
+        Returns
+        -------
+        ref : 2D numpy array
+            The reflection of `M` in the subspace.
         """
         return (np.eye(self.Q.shape[0]) - 2 * self.Q).dot(M)
 
     @staticmethod
     def calcProjectionMatrix(A):
         """Calculates the projection matrix that projects a vector (or a
-        matrix) into the sinal space spanned by the columns of A.
+        matrix) into the sinal space spanned by the columns of `A`.
 
-        Arguments:
-        - `A`:
+        Parameters
+        ----------
+        A : 2D numpy array
+            A matrix whose columns form a basis for the desired subspace.
+
+        Returns
+        -------
+        proj_matrix : 2D numpy array
+            The projection matrix that can be used to project a vector or a
+            matrix into the subspace spanned by the columns of `A`
+
         """
         # MATLAB version: A/(A'*A)*A';
         A_H = A.conjugate().transpose()
@@ -95,8 +122,18 @@ class Projection(object):
         matrix) into the signal space orthogonal to the signal space
         spanned by the columns of M.
 
-        Arguments:
-        - `A`:
+        Parameters
+        ----------
+        A : 2D numpy array
+            A matrix whose columns form a basis for the "desired subspace".
+
+        Returns
+        -------
+        ort_proj_matrix : 2D numpy array
+            The projection matrix that can be used to project a vector or a
+            matrix into the subspace orthogonal to the subspace spanned by
+            the columns of `A`
+
         """
         Q = Projection.calcProjectionMatrix(A)
         return np.eye(Q.shape[0]) - Q

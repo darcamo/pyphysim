@@ -6,7 +6,9 @@ import numpy as np
 import itertools
 
 import sys
-sys.path.append("../")
+import os
+parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(parent_dir)
 
 from ia import ia
 

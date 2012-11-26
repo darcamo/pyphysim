@@ -14,11 +14,19 @@ from projections import calcProjectionMatrix
 # principal angles does not work when matrix1 and matrix2 have different
 # shapes.
 def calcPrincipalAngles(matrix1, matrix2):
-    """Calculates the principal angles between matrix1 and matrix2.
+    """Calculates the principal angles between `matrix1` and `matrix2`.
 
-    Arguments:
-    - `matrix1`: bi-dimensional numpy array
-    - `matrix2`: bi-dimensional numpy array
+    Parameters
+    ----------
+    matrix1 : 2D numpy array
+        A 2D numpy array.
+    matrix2 : 2D numpy array
+        A 2D numpy array.
+
+    Returns
+    -------
+    princ_angles : 1D numpy array
+        The principal angles between `matrix1` and `matrix2`.
     """
     # Primeiro preciso achar as matrizes de base ortonormal para matrix1 e
     # matrix2, o que consigo com a decomposicao QR. Note que se matrix1
@@ -52,8 +60,15 @@ def calcChordalDistanceFromPrincipalAngles(principalAngles):
     It is given by the square root of the sum of the squares of the sin of
     the principal angles.
 
-    Arguments:
-    - `principalAngles`: Numpy array with the principal angles.
+    Parameters
+    ----------
+    principalAngles : 1D numpy array
+        Numpy array with the principal angles.
+
+    Returns
+    -------
+    chord_dist : int
+        The chordan distance.
     """
     return np.sqrt(np.sum(np.sin(principalAngles) ** 2))
 
@@ -61,10 +76,17 @@ def calcChordalDistanceFromPrincipalAngles(principalAngles):
 def calcChordalDistance(matrix1, matrix2):
     """Calculates the chordal distance between the two matrices
 
-    Arguments:
-    - `matrix1`: bi-dimensional numpy array
-    - `matrix2`: bi-dimensional numpy array
+    Parameters
+    ----------
+    matrix1 : 2D numpy array
+        A 2D numpy array.
+    matrix2 : 2D numpy array
+        A 2D numpy array.
 
+    Returns
+    -------
+    chord_dist : int
+        The chordan distance.
     """
     (Q1, R1) = np.linalg.qr(matrix1)
     (Q2, R2) = np.linalg.qr(matrix2)
@@ -82,9 +104,17 @@ def calcChordalDistance(matrix1, matrix2):
 def calcChordalDistance2(matrix1, matrix2):
     """Calculates the chordal distance between the two matrices
 
-    Arguments:
-    - `matrix1`: bi-dimensional numpy array
-    - `matrix2`: bi-dimensional numpy array
+    Parameters
+    ----------
+    matrix1 : 2D numpy array
+        A 2D numpy array.
+    matrix2 : 2D numpy array
+        A 2D numpy array.
+
+    Returns
+    -------
+    chord_dist : int
+        The chordan distance.
 
     """
     return np.linalg.norm(calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') / math.sqrt(2)

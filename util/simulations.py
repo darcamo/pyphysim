@@ -180,13 +180,20 @@ class SimulationRunner(object):
         reimplementing the _keep_going function in the derived class) and
         the results from multiple repetitions will be merged.
 
-        Arguments:
-        - `current_parameters`: SimulationParameters object with the
-                                parameters for the simulation. The
-                                self.params variable is not used
-                                directly. It is first unpacked in the
-                                simulate function which then calls
-                                _run_simulation for each combination.
+        Parameters
+        ----------
+        current_parameters : SimulationParameters object
+            SimulationParameters object with the parameters for the
+            simulation. The self.params variable is not used directly. It
+            is first unpacked in the simulate function which then calls
+            _run_simulation for each combination of unpacked parameters.
+
+        Returns
+        -------
+        simulation_results : SimulationResults object
+            A SimulationResults object containing the simulation results of
+            the run iteration.
+
         """
         raise NotImplementedError("This function must be implemented in a subclass")
 
@@ -199,10 +206,17 @@ class SimulationRunner(object):
         then passed to _keep_going, which is then in charge of deciding if
         the simulation should stop or not.
 
-        Arguments:
-        - `current_sim_results`: SimulationResults object from the last
-                                 iteration (merged with all the previous
-                                 results)
+        Parameters
+        ----------
+        current_sim_results : SimulationResults object
+            SimulationResults object from the last iteration (merged with
+            all the previous results)
+
+        Returns
+        -------
+        result : bool
+            True if the simulation should continue or False otherwise.
+
         """
         # If this function is not reimplemented in a subclass it always
         # returns True. Therefore, the simulation will only stop when the
@@ -216,9 +230,17 @@ class SimulationRunner(object):
         The returned function accepts a single argument, corresponding to
         the number of iterations executed so far.
 
-        Arguments:
-         - `message`: The message to be written in the progressbar, if
-                      it is used.
+        Parameters
+        ----------
+        message : str
+            The message to be written in the progressbar, if it is used.
+
+        Returns
+        -------
+        func : function that accepts a single integer argument
+            Function that accepts a single integer argument and can be
+            called to update the progressbar.
+
         """
         # The returned function will update the bar
         self.bar = ProgressbarText(self.rep_max, '*', message)
@@ -237,14 +259,15 @@ class SimulationRunner(object):
 
     def simulate(self):
         """Implements the general code for every simulation. Any code
-        specific to a single simulator must be implemented in the
+        specific to a single simulation iteration must be implemented in the
         _run_simulation method of a subclass of SimulationRunner.
 
         The main idea behind the SimulationRunner class is that the general
         code in every simulator is implemented in the SimulationRunner
         class, more specifically in the `simulate` method, while the
-        specific code is implemented in the _run_simulation method in a
-        subclass.
+        specific code of a single iteration is implemented in the
+        _run_simulation method in a subclass.
+
         """
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
@@ -316,35 +339,41 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _on_simulate_start(self):
-        """This method is called only once, in the beginning of the the simulate
-        method.
+        """This method is called only once, in the beginning of the the
+        simulate method.
+
         """
         pass
 
     def _on_simulate_finish(self):
         """This method is called only once at the end of the simulate method.
+
         """
         pass
 
     def _on_simulate_current_params_start(self, current_params):
-        """This method is called once for each simulation parameters combination
-        before any iteration of _run_simulation is performed (for that
-        combination of simulation parameters).
+        """This method is called once for each simulation parameters
+        combination before any iteration of _run_simulation is performed
+        (for that combination of simulation parameters).
 
-        Arguments:
-        - `current_params`: The current combination of simulation
-                            parameters
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            The current combination of simulation parameters.
+
         """
         pass
 
     def _on_simulate_current_params_finish(self, current_params):
-        """This method is called once for each simulation parameters combination
-        after all iterations of _run_simulation are performed (for that
-        combination of simulation parameters).
+        """This method is called once for each simulation parameters
+        combination after all iterations of _run_simulation are performed
+        (for that combination of simulation parameters).
 
-        Arguments:
-        - `current_params`: The current combination of simulation
-                            parameters
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            The current combination of simulation parameters.
+
         """
         pass
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -389,9 +418,17 @@ class SimulationParameters(object):
         SimulationParameters object, already containing the parameters in
         the `params_dict` dictionary.
 
-        Arguments:
-        - `params_dict`: Dictionary containing the parameters. Each
-                         dictionary key corresponds to a parameter.
+        Parameters
+        ----------
+        params_dict : dict
+            Dictionary containing the parameters. Each dictionary key
+            corresponds to a parameter's name, while the dictionary value
+            corresponds to the actual parameter value..
+
+        Returns
+        -------
+        sim_params : SimulationParameters object
+            The corresponding SimulationParameters object.
         """
         sim_params = SimulationParameters()
         sim_params.parameters = copy.deepcopy(params_dict)
@@ -403,9 +440,12 @@ class SimulationParameters(object):
         If there is already a parameter with the same name it will be
         replaced.
 
-        Arguments:
-        - `name`: Name of the parameter
-        - `value`: Value of the parameter
+        Parameters
+        ----------
+        name : str
+            Name of the parameter.
+        value : anything
+            Value of the parameter.
         """
         self.parameters[name] = value
 
@@ -415,13 +455,19 @@ class SimulationParameters(object):
         The parameter `name` must be already added to the
         SimulationParameters object and be an iterable.
 
-        This is used in the SimulationRunner.
-        Arguments:
-        - `name`: Name of the parameter to be unpacked
-        - `unpack_bool`: True activates unpacking for `name`, False
-                         deactivates it
-        Raises:
-        - ValueError: if `name` is not in parameters or is not iterable.
+        This is used in the SimulationRunner class.
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter to be unpacked.
+        unpack_bool : bool, optional (default to True)
+            True activates unpacking for `name`, False deactivates it.
+
+        Raises
+        ------
+        ValueError
+            If `name` is not in parameters or is not iterable.
         """
         if name in self.parameters.keys():
             if isinstance(self.parameters[name], Iterable):
@@ -436,8 +482,15 @@ class SimulationParameters(object):
 
         Easy access to a given parameter using the brackets syntax.
 
-        Arguments:
-        - `name`: Name of the desired parameter
+        Parameters
+        ----------
+        name : str
+            Name of the desired parameter.
+
+        Returns
+        -------
+        desired_param : anything
+            The value of the parameter with name `name`.
         """
         return self.parameters[name]
 
@@ -456,11 +509,22 @@ class SimulationParameters(object):
         """Get the number of different parameters stored in the
         SimulationParameters object.
 
+        Returns
+        -------
+        length : int
+            The number of different parameters stored in the
+            SimulationParameters object
+
         """
         return len(self.parameters)
 
     def get_num_unpacked_variations(self):
         """Get the number of variations when the parameters are unpacked.
+
+        Returns
+        -------
+        num : int
+            The number of variations when the parameters are unpacked.
         """
         # Generator for the lengths of the parameters set to be unpacked
         gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
@@ -475,12 +539,21 @@ class SimulationParameters(object):
         one, and returns the indexes of the list returned by
         get_unpacked_params_list that you want.
 
-        Arguments:
-        - `fixed_params_dict`: A ditionary with the name of the fixed
-                               parameters as keys and the fixed value as
-                               value.
+        Parameters
+        ----------
+        fixed_params_dict : dict
+            A ditionary with the name of the fixed parameters as keys and
+            the fixed value as value.
 
-        Ex: Suppose we have
+        Returns
+        -------
+        indexes : 1D numpy array
+            The desired indexes.
+
+        Examples
+        --------
+        Suppose we have
+
         >>> p={'p1':[1,2,3], 'p2':['a','b'],'p3':15}
         >>> params=SimulationParameters.create(p)
         >>> params.set_unpack_parameter('p1')
@@ -489,6 +562,7 @@ class SimulationParameters(object):
         If we call params.get_unpacked_params_list we will get a list of
         SimulationParameters objects, one for each combination of the
         values of p1 and p2. That is,
+
         >>> params.get_unpacked_params_list()
         [{'p2': a, 'p3': 15, 'p1': 1}, {'p2': a, 'p3': 15, 'p1': 2}, {'p2': a, 'p3': 15, 'p1': 3}, {'p2': b, 'p3': 15, 'p1': 1}, {'p2': b, 'p3': 15, 'p1': 2}, {'p2': b, 'p3': 15, 'p1': 3}]
 
@@ -502,6 +576,7 @@ class SimulationParameters(object):
         call get_pack_indexes with this dictionary. You will get an array
         of indexes that can be used in the results list to get the desired
         results. For instance
+
         >>> fixed={'p1':3,'p3':15}
         >>> params.get_pack_indexes(fixed)
         array([2, 5])
@@ -543,16 +618,42 @@ class SimulationParameters(object):
         """Get a list of SimulationParameters objects, each one
         corresponding to a possible combination of (unpacked) parameters.
 
+        Returns
+        -------
+        unpacked_parans : list
+           A list of SimulationParameters objecs.
+
+        Examples
+        --------
         Supose you have a SimulationParameters object with the parameters
-        a=1, b=2, c=[3,4] and d=[5,6]
-        and the parameters `c` and `d` were set to be unpacked.  Then
-        get_unpacked_params_list would return a list of four
-        SimulationParameters objects with parameters (the order
-        may be different)
-        {'a': 1, 'c': 3, 'b': 2, 'd': 5}
-        {'a': 1, 'c': 3, 'b': 2, 'd': 6}
-        {'a': 1, 'c': 4, 'b': 2, 'd': 5}
-        {'a': 1, 'c': 4, 'b': 2, 'd': 6}
+        'a', 'b', 'c' and 'd' as below
+
+        >>> simparams = SimulationParameters()
+        >>> simparams.add('a', 1)
+        >>> simparams.add('b', 2)
+        >>> simparams.add('c', [3, 4])
+        >>> simparams.add('d', [5, 6])
+
+        and the parameters 'c' and 'd' were set to be unpacked.
+
+        >>> simparams.set_unpack_parameter('c')
+        >>> simparams.set_unpack_parameter('d')
+
+        Then get_unpacked_params_list would return a list of four
+        SimulationParameters objects as below (the order may be different)
+
+        >>> simparams.get_unpacked_params_list()
+        [{'a': 1, 'c': 3, 'b': 2, 'd': 5}, {'a': 1, 'c': 3, 'b': 2, 'd': 6}, {'a': 1, 'c': 4, 'b': 2, 'd': 5}, {'a': 1, 'c': 4, 'b': 2, 'd': 6}]
+
+        That is
+
+        .. code-block:: python
+
+           [{'a': 1, 'c': 3, 'b': 2, 'd': 5},
+            {'a': 1, 'c': 3, 'b': 2, 'd': 6},
+            {'a': 1, 'c': 4, 'b': 2, 'd': 5},
+            {'a': 1, 'c': 4, 'b': 2, 'd': 6}]
+
         """
         # If unpacked_parameters is empty, return self
         if not self._unpacked_parameters_set:
@@ -612,6 +713,7 @@ class SimulationParameters(object):
         """Load the SimulationParameters from the file 'filename'.
 
         Parameters
+        ----------
         filename : src
             Name of the file from where the results will be loaded.
         """
@@ -647,8 +749,10 @@ class SimulationResults(object):
         """Add a new result to the SimulationResults object. If there is
         already a result stored with the same name, this will replace it.
 
-        Arguments:
-        - `result`: Must be an object of the Result class.
+        Parameters
+        ----------
+        result : An object of the :class:`Result` class
+            Must be an object of the Result class.
         """
         # Added as a list with a single element
         self._results[result.name] = [result]
@@ -661,12 +765,19 @@ class SimulationResults(object):
         simulation_results_object['BER'] will return a list with the Result
         objects for each value.
 
-        Note that if multiple values for some Result are stored, then only
-        the last value can be updated with merge_all_results.
+        Parameters
+        ----------
+        result : An object of the :class:`Result` class
+            Must be an object of the Result class.
 
-        Arguments:
-        - `result`: A Result object
+        Notes
+        -----
+        If multiple values for some Result are stored, then only the last
+        value can be updated with :meth:`merge_all_results`.
 
+        See also
+        --------
+        append_all_results, merge_all_results
         """
         if result.name in self._results.keys():
             self._results[result.name].append(result)
@@ -677,9 +788,14 @@ class SimulationResults(object):
         """Append all the results of the other SimulationResults object
         with self.
 
-        Arguments:
-        - `other`: Another SimulationResults object
+        Parameters
+        ----------
+        other : An object of the :class:`SimulationResults` class.
+            Another SimulationResults object
 
+        See also
+        --------
+        append_result, merge_all_results
         """
         for results in other:
             # There can be more then one value for the same result name
@@ -692,11 +808,17 @@ class SimulationResults(object):
 
         When there is more then one result with the same name stored in
         self (for instance two bit error rates) then only the last one will
-        be merged with the one in "other". That also means that only one
-        result for that name should be stored in "other".
+        be merged with the one in `other`. That also means that only one
+        result for that name should be stored in `other`.
 
-        Arguments:
-        - `other`: Another SimulationResults object
+        Parameters
+        ----------
+        other : An object of the :class:`SimulationResults` class.
+            Another SimulationResults object
+
+        See also
+        --------
+        append_result, append_all_results
 
         """
         # If the current SimulationResults object is empty, we basically
@@ -711,19 +833,49 @@ class SimulationResults(object):
                 self._results[item][-1].merge(other[item][-1])
 
     def get_result_names(self):
+        """Get the names of all results stored in the SimulationResults
+        object.
+
+        Returns
+        -------
+        names : list
+            The names of the results stored in the SimulationResults object.
+        """
         return self._results.keys()
 
     def get_result_values_list(self, result_name):
-        """Get the values for the results with name "result_name"
+        """Get the values for the results with name `result_name`.
 
         Returns a list with the values.
 
-        Arguments:
-        - `result_name`: A string
+        Parameters
+        ----------
+        result_name : str
+            The name of the desired result.
+
+        Returns
+        -------
+        result_list : list
+            A list with the stored values for the result with name
+            `result_name`
+
         """
         return [i.get_result() for i in self[result_name]]
 
     def __getitem__(self, key):
+        """Get the value of the desired result
+
+        Parameters
+        ----------
+        key : str
+            Name of the desired result.
+
+        Returns
+        -------
+        value :
+            The desired result.
+        """
+
         # if key in self._results.keys():
         return self._results[key]
         # else:
@@ -731,6 +883,11 @@ class SimulationResults(object):
 
     def __len__(self):
         """Get the number of results stored in self.
+
+        Returns
+        -------
+        length : int
+            Number of results stored in self.
         """
         return len(self._results)
 
@@ -765,6 +922,10 @@ class SimulationResults(object):
         filename : src
             Name of the file from where the results will be loaded.
 
+        Returns
+        -------
+        simresults : A SimulationResults object
+            The SimulationResults object loaded from the file `filename`.
         """
         with open(filename, 'r') as input:
             obj = pickle.load(input)
@@ -802,45 +963,55 @@ class Result(object):
     The `MISCTYPE` type can store anything and the update will simple
     replace the stored value with the current value.
 
-    Example of usage:
-    >>> result1 = Result("name", Result.SUMTYPE)
-    >>> result1.update(13)
-    >>> result1.update(4)
-    >>> result1.get_result()
-    17
-    >>> result1.num_updates
-    2
-    >>> result1
-    Result -> name: 17
-    >>> result1.type_name
-    'SUMTYPE'
-    >>> result1.type_code
-    0
+    Examples
+    --------
+    - Example of the SUMTYPE result.
 
-    >>> result2 = Result("name2", Result.RATIOTYPE)
-    >>> result2.update(4,10)
-    >>> result2.update(3,4)
-    >>> result2.get_result()
-    0.5
-    >>> result2.type_name
-    'RATIOTYPE'
-    >>> result2.type_code
-    1
-    >>> result2_other = Result("name2", Result.RATIOTYPE)
-    >>> result2_other.update(3,11)
-    >>> result2_other.merge(result2)
-    >>> result2_other.get_result()
-    0.4
-    >>> result2_other.num_updates
-    3
-    >>> result2_other._value
-    10
-    >>> result2_other._total
-    25
-    >>> result2.get_result()
-    0.5
-    >>> print result2_other
-    Result -> name2: 10/25 -> 0.4
+      >>> result1 = Result("name", Result.SUMTYPE)
+      >>> result1.update(13)
+      >>> result1.update(4)
+      >>> result1.get_result()
+      17
+      >>> result1.num_updates
+      2
+      >>> result1
+      Result -> name: 17
+      >>> result1.type_name
+      'SUMTYPE'
+      >>> result1.type_code
+      0
+
+    - Example of the RATIOTYPE result.
+
+      >>> result2 = Result("name2", Result.RATIOTYPE)
+      >>> result2.update(4,10)
+      >>> result2.update(3,4)
+      >>> result2.get_result()
+      0.5
+      >>> result2.type_name
+      'RATIOTYPE'
+      >>> result2.type_code
+      1
+      >>> result2_other = Result("name2", Result.RATIOTYPE)
+      >>> result2_other.update(3,11)
+      >>> result2_other.merge(result2)
+      >>> result2_other.get_result()
+      0.4
+      >>> result2_other.num_updates
+      3
+      >>> result2_other._value
+      10
+      >>> result2_other._total
+      25
+      >>> result2.get_result()
+      0.5
+      >>> print result2_other
+      Result -> name2: 10/25 -> 0.4
+
+    - Example of the MISCTYPE result.
+
+      The MISCTYPE result 'merge' process in fact simple replaces the
+      current stored value with the new value.
 
     """
     # Like an Enumeration for the type of results.
@@ -864,14 +1035,29 @@ class Result(object):
         """Create a Result object and update it with `value` and `total` at
         the same time.
 
-        Equivalent to creating the object and then call its update
-        function.
+        Equivalent to creating the object and then calling its
+        :meth:`update` method.
 
-        Arguments:
-        - `name`: Name of the Result.
-        - `update_type`: Type of the result (SUMTYPE, RATIOTYPE or MISCTYPE)
-        - `value`: Value of the result.
-        - `total`: Total value of the result (used only for the RATIOTYPE).
+        Parameters
+        ----------
+        name : str
+            Name of the Result.
+        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE}
+            Type of the result (SUMTYPE, RATIOTYPE or MISCTYPE).
+        value : anything, but usually a number
+            Value of the result.
+        total : same type as `value`
+            Total value of the result (used only for the RATIOTYPE and
+            ignored for the other types).
+
+        Returns
+        -------
+        result : A Result object.
+            The new Result object.
+
+        See also
+        --------
+        update
         """
         result = Result(name, update_type)
         result.update(value, total)
@@ -879,15 +1065,25 @@ class Result(object):
 
     @property
     def type_name(self):
-        """Get the Result type name."""
+        """Get the Result type name.
+
+        Returns
+        -------
+        type_name : str
+            The result type string (SUMTYPE, RATIOTYPE or MISCTYPE).
+        """
         return Result._all_types[self._update_type_code]
 
     @property
     def type_code(self):
         """Get the Result type.
 
-        The returned value is a number corresponding to one of the types
-        SUMTYPE, RATIOTYPE or MISCTYPE.
+        Returns
+        -------
+        type_code : int
+            The returned value is a number corresponding to one of the
+            types SUMTYPE, RATIOTYPE or MISCTYPE.
+
         """
         return self._update_type_code
 
@@ -907,15 +1103,28 @@ class Result(object):
     def update(self, value, total=None):
         """Update the current value.
 
-        Arguments:
-        - `value`: Value to be added to (or replaced) the current value
-        - `total`: Value to be added to (if applied) the current total
-          (only useful for the RATIOTYPE update type)
+        Parameters
+        ----------
+        value : anything, but usually a number
+            Value to be added to (or replaced) the current value
 
-        How the update is performed for each Result type
+        total : same type as `value`
+            Value to be added to the current total (only useful for the
+            RATIOTYPE update type)
+
+        Notes
+        -----
+        The way how this update process depends on the Result type and is
+        described below
+
         - RATIOTYPE: Add "value" to current value and "total" to current total
         - SUMTYPE: Add "value" to current value. "total" is ignored.
         - MISCTYPE: Replace the current value with "value".
+
+        See also
+        --------
+        create
+
         """
         self.num_updates += 1
 
@@ -959,8 +1168,10 @@ class Result(object):
     def merge(self, other):
         """Merge the result from other with self.
 
-        Arguments:
-        - `other`: Another Result object.
+        Parameters
+        ----------
+        other : Result object
+            Another Result object.
         """
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
@@ -973,6 +1184,16 @@ class Result(object):
         self._total += other._total
 
     def get_result(self):
+        """Get the result stored in the Result object.
+
+        Returns
+        -------
+        results : anything, but usually a number
+            For the RATIOTYPE type get_result will return the
+            `value/total`, while for the other types it will return
+            `value`.
+
+        """
         if self.num_updates == 0:
             return "Nothing yet".format(self.name)
         else:

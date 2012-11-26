@@ -9,13 +9,34 @@ import numpy as np
 def mmat(x, format='%+.12e'):
     """Display the ndarray 'x' in a format suitable for pasting to MATLAB
 
-    mmat - a function to format arrays of arbitrary dimension for easy copy
-    and paste to an interactive matlab session
+    The mmat function formats numpy arrays of arbitrary dimension in a way
+    which can easily copied and pasted into an interactive MATLAB session
 
+    Parameters
+    ----------
+    format : str, optional
+        The format string for the conversion.
+
+    Returns
+    -------
+    converted_string : str
+        A string that represents the converted numpy array. You can copy
+        this string and past it into a MATLAB session.
+
+    Examples
+    --------
     >>> a=np.arange(1,10)
     >>> a.shape=(3,3)
+    >>> # Print as a numpy matrix
+    >>> print a
+    [[1 2 3]
+     [4 5 6]
+     [7 8 9]]
+    >>> # Call mmat(a) to print the string representation of the converted
+    >>> # matrix
     >>> mmat(a)
     [ +1.000000000000e+00 +2.000000000000e+00 +3.000000000000e+00 ;   +4.000000000000e+00 +5.000000000000e+00 +6.000000000000e+00 ;   +7.000000000000e+00 +8.000000000000e+00 +9.000000000000e+00 ]
+
     """
 
     def print_row(row, format):

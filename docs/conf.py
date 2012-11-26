@@ -85,7 +85,7 @@ release = '0.1'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', 'apps*', 'plot*',  'tests*', 'subspace*', 'ia*', 'comp*', 'comm*', 'MATLAB*']  # , 'util*'
+exclude_patterns = ['_build', 'apps*', 'plot*',  'tests*', 'ia*', 'comp*', 'comm*']  # , 'util*', 'subspace*', 'MATLAB*'
 #exclude_patterns = ['_build', 'apps*', 'cell*', 'comm*', 'ia*', 'plot*', 'MATLAB*', 'subspace*', 'tests*', 'util*']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
