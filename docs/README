@@ -1,4 +1,17 @@
 
+Requirements:
+ - python sphinx
+ - sphinx aafig extension
+   The aafig extension can be downloaded at
+   http://pypi.python.org/pypi/sphinxcontrib-aafig/
+ - sphinx numpydoc extension
+
+   The numpydoc extension is available as a python package and can be
+   installed with pip. That is, if you have pip installed run the command
+   bellow (as root or preceded by sudo) to install the numpydoc extension
+   : pip install numpydoc
+   
+
 *Run make html to generate the documentation (_build/index.html)*
 
 
@@ -11,25 +24,3 @@ will then process.
 
 Using some directives such as ".. automodule:: " sphinx will automatically
 create documentation from the python code.
-
-
-Tip: See http://stackoverflow.com/a/4690279 for tips on how write good
-docstrings. Basically, The docstrings are split into several sections and
-look like this:
---8<---------------cut here---------------start------------->8---
-    Compute the sum of the elements of a list.
-
-    Parameters
-    ----------
-    foo: sequence of ints
-       The list of integers to sum up.
-
-    Returns
-    -------
-    res: int
-       sum of elements of foo
-
-    See also
-    --------
-    cumsum:  compute cumulative sum of elemenents
---8<---------------cut here---------------end--------------->8---
