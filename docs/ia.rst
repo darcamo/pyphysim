@@ -1,19 +1,14 @@
 ia Package
 ==========
 
-:mod:`ia` Package
------------------
-
 .. automodule:: ia
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
 
-:mod:`ia` Module
-----------------
+Modules in the ia package
+------------------------
 
-.. automodule:: ia.ia
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autosummary::
+   :toctree: autosummary_folder
+   :template: module_template.txt
 
+   ia.ia
