@@ -1,43 +1,17 @@
 util Package
 ============
 
-:mod:`util` Package
--------------------
-
 .. automodule:: util
     :members:
-    :undoc-members:
-    :show-inheritance:
 
-:mod:`conversion` Module
-------------------------
+Modules in the util package
+---------------------------
 
-.. automodule:: util.conversion
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autosummary::
+   :toctree: autosummary_folder
+   :template: module_template.txt
 
-:mod:`misc` Module
-------------------
-
-.. automodule:: util.misc
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`progressbar` Module
--------------------------
-
-.. automodule:: util.progressbar
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`simulations` Module
--------------------------
-
-.. automodule:: util.simulations
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+   conversion
+   misc
+   progressbar
+   simulations

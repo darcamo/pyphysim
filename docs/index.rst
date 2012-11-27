@@ -22,6 +22,7 @@ Table of Contents
    description
    simulators
    writing_documentation
+   writing_unittests
    
 Indices and tables
 ==================

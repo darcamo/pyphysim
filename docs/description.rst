@@ -20,15 +20,10 @@ A summary of the available packages in PyPhysim is shown below.
 .. toctree::
    :maxdepth: 1
 
-   apps
    cell
    comm
    comp
    ia
    MATLAB
-   plot
    subspace
-   tests
    util
-   
-   

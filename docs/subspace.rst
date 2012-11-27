@@ -1,27 +1,15 @@
 subspace Package
 ================
 
-:mod:`subspace` Package
------------------------
-
 .. automodule:: subspace
     :members:
-    :undoc-members:
-    :show-inheritance:
 
-:mod:`metrics` Module
----------------------
+Modules in the subspace package
+-------------------------------
 
-.. automodule:: subspace.metrics
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autosummary::
+   :toctree: autosummary_folder
+   :template: module_template.txt
 
-:mod:`projections` Module
--------------------------
-
-.. automodule:: subspace.projections
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+   metrics
+   projections

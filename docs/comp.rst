@@ -1,19 +1,14 @@
 comp Package
 ============
 
-:mod:`comp` Package
--------------------
-
 .. automodule:: comp
     :members:
-    :undoc-members:
-    :show-inheritance:
 
-:mod:`comp` Module
-------------------
+Modules in the comp package
+---------------------------
 
-.. automodule:: comp.comp
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autosummary::
+   :toctree: autosummary_folder
+   :template: module_template.txt
 
+   comp

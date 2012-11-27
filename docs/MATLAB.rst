@@ -1,15 +1,12 @@
 MATLAB Package
 ==============
 
-:mod:`MATLAB` Package
----------------------
-
 .. automodule:: MATLAB
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`python2MATLAB` Module
+Functions in the :mod:`python2MATLAB` Module
 ---------------------------
 
 .. automodule:: MATLAB.python2MATLAB

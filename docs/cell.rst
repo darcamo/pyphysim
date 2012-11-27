@@ -1,27 +1,15 @@
 cell Package
 ============
 
-:mod:`cell` Package
--------------------
-
 .. automodule:: cell
     :members:
-    :undoc-members:
-    :show-inheritance:
 
-:mod:`cell` Module
-------------------
+Modules in the cell package
+---------------------------
 
-.. automodule:: cell.cell
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. autosummary::
+   :toctree: autosummary_folder
+   :template: module_template.txt
 
-:mod:`shapes` Module
---------------------
-
-.. automodule:: cell.shapes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+   shapes
+   cell
