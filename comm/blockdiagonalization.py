@@ -28,14 +28,21 @@ import waterfilling
 
 class BlockDiaginalizer(object):
     """Class to perform the block diagonalization algorithm in a joint
-    transmission scenario. That is, multiple base stations act as a single
-    transmitter to send data to the users.
+    transmission scenario.
+
+    In the block diagonalization algorithm either a single base station
+    with more antennas transmits for multiple users at the same time or a
+    group of base stations acts as a single transmitter to send data to the
+    multiple users at the same time. In both cases the block
+    diagonalization algorithm assures that each receiver does not see
+    interference from the other receivers.
 
     The waterfilling algorithm is also applied to optimally distribute the
-    power. However, since we have multiple base stations, each one with a
-    power restriction, then after the power is optimally allocated at each
-    base station all powers will be normalized to respect the power
-    restriction.
+    power. However, in the case with multiple base stations, the power
+    restriction in each base station must be respected. Therefore, after
+    the power is optimally allocated at each base station all powers will
+    be normalized to respect the power restriction of the base transmitting
+    the highest energy.
 
     Notes
     -----
