@@ -81,10 +81,12 @@ class Shape(Coordinate):
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Property to get the shape radius.
     def _set_radius(self, value):
+        """Set method for the radius property"""
         self._radius = value
 
     # Property to set the shape radius
     def _get_radius(self):
+        """Set method for the radius property"""
         return self._radius
 
     radius = property(_get_radius, _set_radius)
@@ -92,18 +94,20 @@ class Shape(Coordinate):
 
     # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def _set_rotation(self, value):
+        """Set method for the rotation property."""
         self._rotation = value
 
     def _get_rotation(self):
+        """Get method for the rotation property."""
         return self._rotation
 
     rotation = property(_get_rotation, _set_rotation)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_vertex_positions(self):  # pragma: no cover
-        """Calculates the vertex positions ignoring any rotation and considering
-        that the shape is at the origin (rotation and translation will be
-        added automatically later).
+        """Calculates the vertex positions ignoring any rotation and
+        considering that the shape is at the origin (rotation and
+        translation will be added automatically later).
 
         Returns
         -------
@@ -121,6 +125,7 @@ class Shape(Coordinate):
 
     # xxxxx vertex property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def _get_vertices(self):
+        """Get method for the vertices property."""
         vertex_positions = self._get_vertex_positions()
         vertex_positions = self.pos + Shape._rotate(
             vertex_positions, self._rotation)
@@ -242,9 +247,9 @@ class Shape(Coordinate):
 
         Parameters
         ----------
-        ax : A matplotlib axis, optional
-            The axis where the shape will be plotted. If not provided, a new
-            figure (and axis) will be created.
+        ax : A matplotlib ax, optional
+            The ax where the shape will be plotted. If not provided, a new
+            figure (and ax) will be created.
 
         Notes
         -----
@@ -328,6 +333,7 @@ class Hexagon(Shape):
         Shape.__init__(self, pos, radius, rotation)
 
     def _get_height(self):
+        """Get method for the height property."""
         return self._radius * np.sqrt(3.) / 2.0
     height = property(_get_height)
 
@@ -342,13 +348,13 @@ class Hexagon(Shape):
             The positions of the vertexes of the shape.
 
         """
-        vertexPositions = np.zeros(6, dtype=complex)
-        vertexPositions[0] = complex(-self._radius / 2., -self.height)
+        vertex_positions = np.zeros(6, dtype=complex)
+        vertex_positions[0] = complex(-self._radius / 2., -self.height)
         angles = np.linspace(0, 240, 5) * np.pi / 180.
 
         for k in range(5):
-            vertexPositions[k + 1] = vertexPositions[k] + self._radius * np.exp(angles[k] * 1j)
-        return vertexPositions
+            vertex_positions[k + 1] = vertex_positions[k] + self._radius * np.exp(angles[k] * 1j)
+        return vertex_positions
 
 
 # TODO: Implement a is_point_inside_shape method. The method from the Shape
@@ -580,17 +586,17 @@ if __name__ == '__main__1':  # pragma: no cover
     #print "Border Point is: {0}".format(point)
     h.plot(ax)
 
-    point1 = h.get_border_point(90, 0.9)
-    ax.plot(point1.real, point1.imag, 'ro')
+    POINT1 = h.get_border_point(90, 0.9)
+    ax.plot(POINT1.real, POINT1.imag, 'ro')
 
-    point2 = h.get_border_point(10, 0.9)
-    ax.plot(point2.real, point2.imag, 'go')
+    POINT2 = h.get_border_point(10, 0.9)
+    ax.plot(POINT2.real, POINT2.imag, 'go')
 
-    point3 = h.get_border_point(30, 0.9)
-    ax.plot(point3.real, point3.imag, 'bo')
+    POINT3 = h.get_border_point(30, 0.9)
+    ax.plot(POINT3.real, POINT3.imag, 'bo')
 
-    point4 = h.get_border_point(107, 1)
-    ax.plot(point4.real, point4.imag, 'bo')
+    POINT4 = h.get_border_point(107, 1)
+    ax.plot(POINT4.real, POINT4.imag, 'bo')
 
     ax.plot(h.pos.real, h.pos.imag, 'ro')
 

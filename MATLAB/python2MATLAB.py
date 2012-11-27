@@ -42,17 +42,21 @@ def to_mat_str(x, format_string='+.12e'):
     [+1.000000000000e+00, +2.000000000000e+00, +3.000000000000e+00; +4.000000000000e+00, +5.000000000000e+00, +6.000000000000e+00; +7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
 
     """
-    def convert_row_or_col(row, format_string, separator=', '):
+    def convert_row_or_col(numpy_array, format_string, separator=', '):
+        """Convert a one-dimensional numpy array to its MATLAB
+        representation
+
+        """
         # {0:+.12e}
         # +.12e
         output = []
-        if row.dtype == 'complex':
+        if numpy_array.dtype == 'complex':
             format_string = "{{0:{0}}}{{1:{0}}}j".format(format_string, format_string)
-            for i in row:
+            for i in numpy_array:
                 output.append(format_string.format(i.real, i.imag))
         else:
             format_string = '{{0:{0}}}'.format(format_string)
-            for i in row:
+            for i in numpy_array:
                 output.append(format_string.format(i))
         return separator.join(output)
 

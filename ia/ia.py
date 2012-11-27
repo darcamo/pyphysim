@@ -52,7 +52,7 @@ class AlternatingMinIASolver(object):
         K : int
             The number of users.
         """
-        return self._multiUserChannel._K
+        return self._multiUserChannel.K
 
     @property
     def Nr(self):
@@ -63,7 +63,7 @@ class AlternatingMinIASolver(object):
         Nr : 1D numpy array
             Number of receive antennas of all users.
         """
-        return self._multiUserChannel._Nr
+        return self._multiUserChannel.Nr
 
     @property
     def Nt(self):

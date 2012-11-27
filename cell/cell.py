@@ -100,10 +100,12 @@ class CellBase(Node, shapes.Shape):
         self._users = []
 
     def _get_num_users(self):
+        """Get method for the num_users property."""
         return len(self._users)
     num_users = property(_get_num_users)
 
     def _get_users(self):
+        """Get method for the users property."""
         return self._users
     users = property(_get_users)
 
@@ -326,6 +328,7 @@ class Cell(shapes.Hexagon, CellBase):
         rotation : float, optional (default to 0)
             The rotation of the cell (regarding the cell center).
         """
+        shapes.Hexagon.__init__(self, pos, radius, rotation)
         CellBase.__init__(self, pos, radius, cell_id, rotation)
 
     def plot(self, ax=None):  # pragma: no cover
@@ -450,22 +453,26 @@ class Cluster(shapes.Shape):
     # corresponds to the radius of the smallest circle that can completely
     # hold the cluster inside of it.
     def _get_external_radius(self):
+        """Get method for the external_radius property."""
         return self._external_radius
     external_radius = property(_get_external_radius)
 
     # Property to get the number of users in the cluster.
     def _get_num_users(self):
+        """Get method for the num_users property."""
         num_users = [cell.num_users for cell in self._cells]
         return np.sum(num_users)
     num_users = property(_get_num_users)
 
     # property to get the number of _cells in the cluster
     def _get_num_cells(self):
+        """Get method for the num_cells property."""
         return len(self._cells)
 
     num_cells = property(_get_num_cells)
 
     def _get_cell_radius(self):
+        """Get method for the cell_radius property."""
         return self._cell_radius
     # Property to get the radius of the cells in the cluster.
     cell_radius = property(_get_cell_radius)
@@ -1041,6 +1048,7 @@ class Grid(object):
         self._surrounding_cells = []
 
     def _get_num_clusters(self):
+        """Get method for the num_clusters property."""
         return len(self._clusters)
     # Property to get the number of clusters in the grid
     num_clusters = property(_get_num_clusters)
