@@ -13,7 +13,8 @@ At last, there is also a `bin` directory containing a few scripts. One
 useful script to be run while developing PyPhysim is the
 **run_python_corerage** script, which will run the python-coverage program
 in all the test files in the tests folder. This will give a good estimate
-of the test coverage in PyPhysim.
+of the test coverage in PyPhysim (see :doc:`writing_unittests` for details
+about writting unittests for PyPhysim).
 
 A summary of the available packages in PyPhysim is shown below.
 
@@ -27,3 +28,4 @@ A summary of the available packages in PyPhysim is shown below.
    MATLAB
    subspace
    util
+

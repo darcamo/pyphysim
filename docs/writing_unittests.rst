@@ -30,3 +30,15 @@ not run by any unittest (thus finding untested code). The `bin` folder
 contains a script called **run_python_coverage.sh** that will do exactly
 that.
 
+
+Code Quality
+------------
+
+A good way to ensure code quality, besides implementing unittests, is to
+employ code analisys tools such as pylint, pep8, pychecker, etc.
+
+For the quality of PyPhysim as a package, see the cheesecake_index tool.
+ - http://pycheesecake.org/
+ - http://infinitemonkeycorps.net/docs/pph/
+
+.. todo:: Run pylint on the files in PyPhysim.
