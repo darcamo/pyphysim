@@ -370,7 +370,7 @@ class Cluster(shapes.Shape):
     """Class representing a cluster of Hexagonal cells.
 
     Valid cluster sizes are given by the formula
-       :math:`N = i^2+i*j+j^2`
+    :math:`N = i^2+i*j+j^2`
     where i and j are interger numbers. The allowed values in the Clusterm
     class are sumarized below with the corresponding values of i and j.
 
@@ -1008,7 +1008,7 @@ class Grid(object):
     its surrounding cells.
 
     Valid cluster sizes are given by the formula
-          :math:`N = i^2+i*j+j^2`
+    :math:`N = i^2+i*j+j^2`
     where i and j are integer numbers. The values allowed in the Cluster
     are summarized below with the corresponding values of i and j.
 
