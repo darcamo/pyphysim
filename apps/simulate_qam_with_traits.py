@@ -4,8 +4,12 @@
 """Perform the simulation of the transmission of QAM symbols through an
 awgn channel."""
 
+# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
-sys.path.append('../')
+import os
+parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(parent_dir)
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import simulate_psk_with_traits
 from simulate_psk_with_traits import PskSimulationRunner

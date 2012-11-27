@@ -8,9 +8,14 @@ the waterfilling algorithm, while the drawWF creates a file with this
 code.
 """
 
+# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
+import sys
+import os
+parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(parent_dir)
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
-
 from comm import waterfilling
 
 
@@ -18,12 +23,19 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
     """Generates latex code to draw (using Tikz) the waterfilling
     representation.
 
-    Arguments:
-    - `vtChannels`: Numpy array with the channel gains of the parallel AWGN
-                    channels.
-    - `waterLevel`: Water level
-    - `channelLength`: Length (in cm) of the representation of each channel
-                       in the X axis.
+    Parameters
+    ----------
+    vtChannels : 1D numpy array
+        Channel gains of the parallel AWGN channels.
+    waterLevel : float
+        Water level.
+    channelLength : float
+        Length (in cm) of the representation of each channel in the X axis.
+
+    Returns
+    -------
+    newTexCode : str
+        LaTex code to draw the waterfilling solution.
     """
 
     # Draw Parameters
@@ -126,9 +138,19 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
 
 
 def drawWF(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
-    """
-    Creates a file with the latex code to draw (using Tikz) the
+    """Creates a file with the latex code to draw (using Tikz) the
     waterfilling representation.
+
+    Parameters
+    ----------
+    vtChannels : 1D numpy array
+        Channel gains of the parallel AWGN channels.
+    waterLevel : float
+        Water level.
+    noiseVar : float
+        Noise variance.
+    channelLength : float
+        Length (in cm) of the representation of each channel in the X axis.
     """
     texCode = genLatexCode(vtChannels, waterLevel, noiseVar, channelLength)
     fId = file("texCode.tex", 'w')
@@ -154,12 +176,12 @@ def _test_drawwf():
     os.system("rm texCode.log texCode.aux texCode.tex")
 
 
-
-if __name__ == '__main__':
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':  # pragma: no cover
     _test_drawwf()
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__1':  # pragma: no cover
     #vtChannels = np.abs(randn_c(4,1))
     vtChannels = np.array([0.49702888, 0.59012981, 0.43485267, 0.6692608])
     Power = 4

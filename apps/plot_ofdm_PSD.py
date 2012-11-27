@@ -3,8 +3,12 @@
 
 """Plot the Power Spectral Density of OFDM modulated data"""
 
+# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
-sys.path.append('../')
+import os
+parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(parent_dir)
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
 from matplotlib import pylab
