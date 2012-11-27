@@ -6,16 +6,20 @@
 import numpy as np
 
 
-def mmat(x, format='%+.12e'):
-    """Display the ndarray 'x' in a format suitable for pasting to MATLAB
+def to_mat_str(x, format_string='+.12e'):
+    """Convert the ndarray 'x' to a string corresponding to the MATLAB
+    representation of `x`.
 
-    The mmat function formats numpy arrays of arbitrary dimension in a way
-    which can easily copied and pasted into an interactive MATLAB session
+    The to_mat_str function formats numpy arrays of arbitrary dimension in
+    a way which can easily copied and pasted into an interactive MATLAB
+    session
 
     Parameters
     ----------
-    format : str, optional
-        The format string for the conversion.
+    x : numpy array
+        The numpy array to be represented as a MATLAB type.
+    format_string : str, optional
+        The format_string string to convert each element in `x`.
 
     Returns
     -------
@@ -32,59 +36,59 @@ def mmat(x, format='%+.12e'):
     [[1 2 3]
      [4 5 6]
      [7 8 9]]
-    >>> # Call mmat(a) to print the string representation of the converted
-    >>> # matrix
-    >>> mmat(a)
-    [ +1.000000000000e+00 +2.000000000000e+00 +3.000000000000e+00 ;   +4.000000000000e+00 +5.000000000000e+00 +6.000000000000e+00 ;   +7.000000000000e+00 +8.000000000000e+00 +9.000000000000e+00 ]
+    >>> # Call to_mat_str(a) to print the string representation of the
+    >>> # converted matrix
+    >>> print to_mat_str(a)
+    [+1.000000000000e+00, +2.000000000000e+00, +3.000000000000e+00; +4.000000000000e+00, +5.000000000000e+00, +6.000000000000e+00; +7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
 
     """
-
-    def print_row(row, format):
+    def convert_row_or_col(row, format_string, separator=', '):
+        # {0:+.12e}
+        # +.12e
+        output = []
         if row.dtype == 'complex':
+            format_string = "{{0:{0}}}{{1:{0}}}j".format(format_string, format_string)
             for i in row:
-                format_string = "%s%sj" % (format, format)
-                print format_string % (i.real, i.imag)
+                output.append(format_string.format(i.real, i.imag))
         else:
+            format_string = '{{0:{0}}}'.format(format_string)
             for i in row:
-                print format % i,
-
-    # if x.dtype=='complex':
-    #     raise Exception ("conversion invalid for complex type")
+                output.append(format_string.format(i))
+        return separator.join(output)
 
     if x.ndim == 1:
         # 1d input
-        print "[",
-        print_row(x, format)
-        print "]"
-        print ""
+        output = '[{0}]'.format(convert_row_or_col(x, format_string))
+        return output
 
     if x.ndim == 2:
-        print "[",
-        print_row(x[0], format)
-        if x.shape[0] > 1:
-            print ';',
-        for row in x[1:-1]:
-            print " ",
-            print_row(row, format)
-            print ";",
-        if x.shape[0] > 1:
-            print " ",
-            print_row(x[-1], format)
-        print "]",
+        if x.shape[1] == 1:
+            # This is a Column vector
+            output = '[{0}]'.format(convert_row_or_col(np.reshape(x, x.size),
+                                                       format_string,
+                                                       separator='; '))
+        else:
+            # This is not a column vector
+            output = []
+            for row in x:
+                output.append(convert_row_or_col(row, format_string))
+            output = '[{0}]'.format('; '.join(output))
+        return output
 
-    if x.ndim > 2:
-        d_to_loop = x.shape[2:]
-        sls = [slice(None, None)] * 2
-        print "reshape([ ",
-        # loop over flat index
-        for i in range(np.prod(d_to_loop)):
-            # reverse order for matlab
-            # tricky double reversal to get first index to vary fastest
-            ind_tuple = np.unravel_index(i, d_to_loop[::-1])[::-1]
-            ind = sls + list(ind_tuple)
-            mmat(x[ind], format)
+    if x.ndim > 2:  # pragma: no cover
+        raise NotImplementedError('This case is not implemented')
+        # d_to_loop = x.shape[2:]
+        # sls = [slice(None, None)] * 2
+        # print "reshape([ ",
+        # # loop over flat index
+        # for i in range(np.prod(d_to_loop)):
+        #     # reverse order for matlab
+        #     # tricky double reversal to get first index to vary fastest
+        #     ind_tuple = np.unravel_index(i, d_to_loop[::-1])[::-1]
+        #     ind = sls + list(ind_tuple)
+        #     mmat(tx[ind], format_string)
 
-        print '],[',
-        for i in x.shape:
-            print '%d' % i,
-        print '])'
+        # print '],[',
+        # for i in x.shape:
+        #     print '%d' % i,
+        # print '])'
