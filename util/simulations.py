@@ -14,7 +14,9 @@ More specifically, the :mod:`simulations` module implements the classes:
  - :class:`Result`
 
 For a description of how to implement Monte Carlo simulations using the
-clases defined in the :mod: simulations` module see the section below.
+clases defined in the :mod:`simulations` module see the section below.
+
+.. _implementing_monte_carlo_simulations:
 
 Implementing Monte Carlo simulations
 ------------------------------------

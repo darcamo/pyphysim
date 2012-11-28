@@ -7,7 +7,7 @@ MATLAB Package
     :show-inheritance:
 
 Functions in the :mod:`python2MATLAB` Module
----------------------------
+--------------------------------------------
 
 .. automodule:: MATLAB.python2MATLAB
     :members:
