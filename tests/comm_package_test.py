@@ -254,6 +254,50 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_channel(2, 2),
             np.sqrt(self.multiH.pathloss[2, 2]) * np.ones([6, 5]) * 8)
 
+    def test_get_channel_all_transmitters_to_single_receiver(self):
+        H = self.H
+        K = self.K
+        Nr = self.Nr
+        Nt = self.Nt
+        self.multiH.init_from_channel_matrix(H, Nr, Nt, K)
+
+        expected_H1 = self.multiH.big_H[0:2, :]
+        expected_H2 = self.multiH.big_H[2:6, :]
+        expected_H3 = self.multiH.big_H[6:, :]
+
+        # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            expected_H1
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            expected_H2
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            expected_H3
+        )
+
+        # xxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        pathloss = np.abs(np.random.randn(self.K, self.K))
+        self.multiH.set_pathloss(pathloss)
+        expected_H1 = self.multiH.big_H[0:2, :]
+        expected_H2 = self.multiH.big_H[2:6, :]
+        expected_H3 = self.multiH.big_H[6:, :]
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            expected_H1
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            expected_H2
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            expected_H3
+        )
+
     def test_H_and_big_H_properties(self):
         H = self.H
         K = self.K
@@ -519,6 +563,61 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         for index in range(received_data2.size):
             np.testing.assert_almost_equal(received_data2[index],
                                            received_data2_expected[index])
+
+    def test_get_channel_all_transmitters_to_single_receiver(self):
+        big_H = np.hstack([self.H, self.extH])
+        K = self.K
+        extIntK = self.NtE.size
+        Nr = self.Nr
+        Nt = self.Nt
+        NtE = self.NtE
+
+        self.multiH.init_from_channel_matrix(big_H, Nr, Nt, K, NtE)
+
+        # print
+        # print self.multiH.big_H
+
+        expected_H1 = self.multiH.big_H[0:2, :np.sum(Nt)]
+        expected_H2 = self.multiH.big_H[2:6, :np.sum(Nt)]
+        expected_H3 = self.multiH.big_H[6:, :np.sum(Nt)]
+
+        # print
+        # print expected_H1
+
+        # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            expected_H1
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            expected_H2
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            expected_H3
+        )
+
+        # xxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        pathloss = np.abs(np.random.randn(K, K))
+        pathloss_extint = np.abs(np.random.randn(K, extIntK))
+        self.multiH.set_pathloss(pathloss, pathloss_extint)
+        expected_H1 = self.multiH.big_H[0:2, :np.sum(Nt)]
+        expected_H2 = self.multiH.big_H[2:6, :np.sum(Nt)]
+        expected_H3 = self.multiH.big_H[6:, :np.sum(Nt)]
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            expected_H1
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            expected_H2
+        )
+        np.testing.assert_array_equal(
+            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            expected_H3
+        )
+
     def test_calc_cov_matrix_extint_plus_noise(self):
         self.K = 3
         self.Nr = np.array([2, 4, 6])

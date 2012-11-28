@@ -287,6 +287,22 @@ class MultiUserChannelMatrix(object):
                           # applies the path loss (of there is any)
         return channel[k, l]
 
+    def get_channel_all_transmitters_to_single_receiver(self, k):
+        """Get the channel from all transmitters to receiver `k`.
+
+        Parameters
+        ----------
+        k : int
+            Receiving user.
+
+        Returns
+        -------
+        channel_k : 2D numpy array
+            Channel from all transmitters to receiver `k`.
+        """
+        receive_channels = single_matrix_to_matrix_of_matrices(self.big_H, self.Nr)
+        return receive_channels[k]
+
     def corrupt_concatenated_data(self, data, noise_var=None):
         """Corrupt data passed through the channel.
 
@@ -569,6 +585,45 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return MultiUserChannelMatrix.corrupt_concatenated_data(self,
                                                                 data,
                                                                 noise_var)
+
+    def get_channel_all_transmitters_to_single_receiver(self, k):
+        """Get the channel from all transmitters (without including the
+        external interference sources) to receiver `k`.
+
+        Parameters
+        ----------
+        k : int
+            Receiving user.
+
+        Returns
+        -------
+        channel_k : 2D numpy array
+            Channel from all transmitters to receiver `k`.
+
+        """
+        receive_channels = single_matrix_to_matrix_of_matrices(
+            self.big_H[:, :np.sum(self.Nt)], self.Nr)
+        return receive_channels[k]
+
+    # This is exactly the same as the
+    # get_channel_all_transmitters_to_single_receiver method from the
+    # MultiUserChannelMatrix class. therefore, we don't need to test it.
+    def get_channel_all_transmitters_with_extint_to_single_receiver(self, k):
+        """Get the channel from all transmitters (including the external
+        interference sources) to receiver `k`.
+
+        Parameters
+        ----------
+        k : int
+            Receiving user.
+
+        Returns
+        -------
+        channel_k : 2D numpy array
+            Channel from all transmitters to receiver `k`.
+
+        """
+        return MultiUserChannelMatrix.get_channel_all_transmitters_to_single_receiver(self, k)  # pragma: no cover
 
     @staticmethod
     def _prepare_input_parans(Nr, Nt, K, NtE):
