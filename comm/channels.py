@@ -282,6 +282,29 @@ class MultiUserChannelMatrix(object):
         -------
         channel : 2D numpy array
             Channel from transmitter `l` to receiver `k`.
+
+        See also
+        --------
+        get_channel_all_transmitters_to_single_receiver
+
+        Examples
+        --------
+        >>> multiH = MultiUserChannelMatrix()
+        >>> H = np.reshape(np.r_[0:16], [4,4])
+        >>> Nt = np.array([2, 2])
+        >>> Nr = np.array([2, 2])
+        >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2)
+        >>> print multiH.big_H
+        [[ 0  1  2  3]
+         [ 4  5  6  7]
+         [ 8  9 10 11]
+         [12 13 14 15]]
+        >>> print multiH.get_channel(0, 0)
+        [[0 1]
+         [4 5]]
+        >>> print multiH.get_channel(1, 0)
+        [[ 8  9]
+         [12 13]]
         """
         channel = self.H  # This will call the _get_H method, which already
                           # applies the path loss (of there is any)
@@ -299,6 +322,29 @@ class MultiUserChannelMatrix(object):
         -------
         channel_k : 2D numpy array
             Channel from all transmitters to receiver `k`.
+
+        See also
+        --------
+        get_channel
+
+        Examples
+        --------
+        >>> multiH = MultiUserChannelMatrix()
+        >>> H = np.reshape(np.r_[0:16], [4,4])
+        >>> Nt = np.array([2, 2])
+        >>> Nr = np.array([2, 2])
+        >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2)
+        >>> print multiH.big_H
+        [[ 0  1  2  3]
+         [ 4  5  6  7]
+         [ 8  9 10 11]
+         [12 13 14 15]]
+        >>> print multiH.get_channel_all_transmitters_to_single_receiver(0)
+        [[0 1 2 3]
+         [4 5 6 7]]
+        >>> print multiH.get_channel_all_transmitters_to_single_receiver(1)
+        [[ 8  9 10 11]
+         [12 13 14 15]]
         """
         receive_channels = single_matrix_to_matrix_of_matrices(self.big_H, self.Nr)
         return receive_channels[k]
@@ -600,6 +646,33 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         channel_k : 2D numpy array
             Channel from all transmitters to receiver `k`.
 
+        See also
+        --------
+        get_channel,
+        get_channel_all_transmitters_with_extint_to_single_receiver
+
+        Examples
+        --------
+        >>> multiH = MultiUserChannelMatrixExtInt()
+        >>> H = np.reshape(np.r_[0:20], [4,5])
+        >>> Nt = np.array([2, 2])
+        >>> Nr = np.array([2, 2])
+        >>> NextInt = np.array([1])
+        >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2, 1)
+        >>> # Note that the last column of multiH.big_H corresponds to the
+        >>> # external interference source
+        >>> print multiH.big_H
+        [[ 0  1  2  3  4]
+         [ 5  6  7  8  9]
+         [10 11 12 13 14]
+         [15 16 17 18 19]]
+        >>> print multiH.get_channel_all_transmitters_to_single_receiver(0)
+        [[0 1 2 3]
+         [5 6 7 8]]
+        >>> print multiH.get_channel_all_transmitters_to_single_receiver(1)
+        [[10 11 12 13]
+         [15 16 17 18]]
+
         """
         receive_channels = single_matrix_to_matrix_of_matrices(
             self.big_H[:, :np.sum(self.Nt)], self.Nr)
@@ -621,6 +694,33 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         -------
         channel_k : 2D numpy array
             Channel from all transmitters to receiver `k`.
+
+        See also
+        --------
+        get_channel,
+        get_channel_all_transmitters_to_single_receiver
+
+        Examples
+        --------
+        >>> multiH = MultiUserChannelMatrixExtInt()
+        >>> H = np.reshape(np.r_[0:20], [4,5])
+        >>> Nt = np.array([2, 2])
+        >>> Nr = np.array([2, 2])
+        >>> NextInt = np.array([1])
+        >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2, 1)
+        >>> # Note that the last column of multiH.big_H corresponds to the
+        >>> # external interference source
+        >>> print multiH.big_H
+        [[ 0  1  2  3  4]
+         [ 5  6  7  8  9]
+         [10 11 12 13 14]
+         [15 16 17 18 19]]
+        >>> print multiH.get_channel_all_transmitters_with_extint_to_single_receiver(0)
+        [[0 1 2 3 4]
+         [5 6 7 8 9]]
+        >>> print multiH.get_channel_all_transmitters_with_extint_to_single_receiver(1)
+        [[10 11 12 13 14]
+         [15 16 17 18 19]]
 
         """
         return MultiUserChannelMatrix.get_channel_all_transmitters_to_single_receiver(self, k)  # pragma: no cover
