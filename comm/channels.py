@@ -3,7 +3,6 @@
 
 """Module with implementation of channel related classes"""
 
-
 from collections import Iterable
 import numpy as np
 from util.misc import randn_c
@@ -78,22 +77,26 @@ class MultiUserChannelMatrix(object):
 
     # Property to get the number of receive antennas
     def _get_Nr(self):
+        """Get method for the Nr property."""
         return self._Nr
     Nr = property(_get_Nr)
 
     # Property to get the number of transmit antennas
     def _get_Nt(self):
+        """Get method for the Nt property."""
         return self._Nt
     Nt = property(_get_Nt)
 
     # Property to get the number of users
     def _get_K(self):
+        """Get method for the K property."""
         return self._K
     K = property(_get_K)
 
     # Property to get the matrix of channel matrices (with pass loss
     # applied if any)
     def _get_H(self):
+        """Get method for the H property."""
         if self._pathloss_matrix is None:
             # No path loss
             return self._H
@@ -106,6 +109,7 @@ class MultiUserChannelMatrix(object):
 
     # Property to get the big channel matrix (with pass loss applied if any)
     def _get_big_H(self):
+        """Get method for the big_H property."""
         if self._pathloss_matrix is None:
             # No path loss
             return self._big_H
@@ -119,6 +123,7 @@ class MultiUserChannelMatrix(object):
     # Property to get the pathloss. Use the "set_pathloss" method to set
     # the pathloss.
     def _get_pathloss(self):
+        """Get method for the pathloss property."""
         return self._pathloss_matrix
     pathloss = property(_get_pathloss)
 
@@ -492,12 +497,14 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
     # Property to get the number of external interference sources
     def _get_extIntK(self):
+        """Get method for the extIntK property."""
         return self._extIntK
     extIntK = property(_get_extIntK)
 
     # Property to get the number of transmit antennas (or the rank) of the
     # external interference sources
     def _get_extIntNt(self):
+        """Get method for the extIntNt property."""
         return self._extIntNt
     extIntNt = property(_get_extIntNt)
 
@@ -506,18 +513,22 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
     # account the number of receive antennas of the external interference
     # sources.
     def _get_Nr(self):
+        """Get method for the Nr property."""
         return self._Nr[:-self._extIntK]
     Nr = property(_get_Nr)
 
     def _get_Nt(self):
+        """Get method for the Nt property."""
         return self._Nt[:-self._extIntK]
     Nt = property(_get_Nt)
 
     def _get_K(self):
+        """Get method for the K property."""
         return self._K - self._extIntK
     K = property(_get_K)
 
     def _get_H(self):
+        """Get method for the H property."""
         # Call the _get_H method from the base class, which will apply the
         # path loss if any.
         H = MultiUserChannelMatrix._get_H(self)
