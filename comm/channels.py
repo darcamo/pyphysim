@@ -5,6 +5,7 @@
 
 from collections import Iterable
 import numpy as np
+from util.conversion import single_matrix_to_matrix_of_matrices
 from util.misc import randn_c
 
 
@@ -127,42 +128,6 @@ class MultiUserChannelMatrix(object):
         return self._pathloss_matrix
     pathloss = property(_get_pathloss)
 
-    # TODO: Replace this method usage by the
-    # util.conversion.single_matrix_to_matrix_of_matrices function and
-    # erase this method (also its tests).
-    @staticmethod
-    def _from_big_matrix_to_matrix_of_matrices(big_matrix, Nr, Nt, K):
-        """Convert from a big matrix that concatenates the channel of all
-        users (from each transmitter to each receiver) to the matrix of
-        matrices representation.
-
-        Parameters
-        ----------
-        big_matrix : 2D numpy array
-            The big matrix to be converted.
-        Nr : 1D numpy array
-            Number of antennas at each receiver.
-        Nt : 1D numpy array
-            Number of antennas at each transmitter.
-        K : int
-            Number of transmit/receive pairs.
-
-        Returns:
-        M : 2D numpy array of 2D numpy arrays
-            A matrix of matrices.
-        """
-        cumNr = np.hstack([0, np.cumsum(Nr)])
-        cumNt = np.hstack([0, np.cumsum(Nt)])
-
-        output = np.zeros([K, K], dtype=np.ndarray)
-
-        for rx in np.arange(K):
-            for tx in np.arange(K):
-                output[rx, tx] = big_matrix[
-                    cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]]
-
-        return output
-
     @staticmethod
     def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
         """Convert from a small matrix to a big matrix by repeating elements
@@ -264,7 +229,7 @@ class MultiUserChannelMatrix(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
-        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(channel_matrix, Nr, Nt, K)
+        self._H = single_matrix_to_matrix_of_matrices(channel_matrix, Nr, Nt)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
@@ -295,7 +260,8 @@ class MultiUserChannelMatrix(object):
         self._K = K
 
         self._big_H = randn_c(np.sum(self._Nr), np.sum(self._Nt))
-        self._H = MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(self._big_H, Nr, Nt, K)
+
+        self._H = single_matrix_to_matrix_of_matrices(self._big_H, Nr, Nt)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
@@ -764,3 +730,30 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             # both of them.
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
+
+    def calc_cov_matrix_extint_plus_noise(self, noise_var=0):
+        """Calculates the covariance matrix of the external interference
+        plus noise.
+
+        Parameters
+        ----------
+        noise_var : float, optional [default=0]
+            Noise variance. If not specified, then only the covariance
+            matrix of the external interference will be returned.
+
+        Returns
+        -------
+        R : 1D array of numpy matrices
+            Return a numpy array, where each element is the covariance
+            matrix of the external interference plus noise at one receiver.
+
+        """
+        R = np.empty(self.Nr.size, dtype=np.ndarray)
+        cum_Nr = np.hstack([0, np.cumsum(self.Nr)])
+
+        # import pudb
+        # pudb.set_trace()
+        for ii in range(self.Nr.size):
+            extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
+            R[ii] = np.dot(extH, extH.transpose().conjugate()) + np.eye(self.Nr[ii]) * noise_var
+        return R

@@ -35,50 +35,53 @@ class CompDoctestsTestCase(unittest.TestCase):
 
 
 class CompModuleFunctionsTestCase(unittest.TestCase):
-    def test_calc_cov_matrix_extint_plus_noise(self):
-        int_channel = util.misc.randn_c(6, 1)
-        Nr = np.array([2, 2, 2])
-        noise_var = 0.001
+    # def test_calc_cov_matrix_extint_plus_noise(self):
+    #     int_channel = util.misc.randn_c(6, 1)
+    #     Nr = np.array([2, 2, 2])
+    #     noise_var = 0.001
 
-        H1 = int_channel[0:2, :]
-        H2 = int_channel[2:4, :]
-        H3 = int_channel[4:6, :]
-        noise_cov = np.eye(2) * noise_var
+    #     H1 = int_channel[0:2, :]
+    #     H2 = int_channel[2:4, :]
+    #     H3 = int_channel[4:6, :]
+    #     noise_cov = np.eye(2) * noise_var
 
-        expected_cov_int = np.empty(3, dtype=np.ndarray)
-        expected_cov_int_plus_noise = np.empty(3, dtype=np.ndarray)
+    #     expected_cov_int = np.empty(3, dtype=np.ndarray)
+    #     expected_cov_int_plus_noise = np.empty(3, dtype=np.ndarray)
 
-        expected_cov_int[0] = np.dot(H1, H1.conjugate().transpose())
-        expected_cov_int[1] = np.dot(H2, H2.conjugate().transpose())
-        expected_cov_int[2] = np.dot(H3, H3.conjugate().transpose())
+    #     expected_cov_int[0] = np.dot(H1, H1.conjugate().transpose())
+    #     expected_cov_int[1] = np.dot(H2, H2.conjugate().transpose())
+    #     expected_cov_int[2] = np.dot(H3, H3.conjugate().transpose())
 
-        expected_cov_int_plus_noise[0] = expected_cov_int[0] + noise_cov
-        expected_cov_int_plus_noise[1] = expected_cov_int[1] + noise_cov
-        expected_cov_int_plus_noise[2] = expected_cov_int[2] + noise_cov
+    #     expected_cov_int_plus_noise[0] = expected_cov_int[0] + noise_cov
+    #     expected_cov_int_plus_noise[1] = expected_cov_int[1] + noise_cov
+    #     expected_cov_int_plus_noise[2] = expected_cov_int[2] + noise_cov
 
-        cov_int = comp.calc_cov_matrix_extint_plus_noise(int_channel, Nr)
-        cov_int_plus_noise = comp.calc_cov_matrix_extint_plus_noise(
-            int_channel,
-            Nr,
-            noise_var)
+    #     cov_int = comp.calc_cov_matrix_extint_plus_noise(int_channel, Nr)
+    #     cov_int_plus_noise = comp.calc_cov_matrix_extint_plus_noise(
+    #         int_channel,
+    #         Nr,
+    #         noise_var)
 
-        self.assertEqual(cov_int.size, expected_cov_int.size)
-        np.testing.assert_array_almost_equal(cov_int[0], expected_cov_int[0])
-        np.testing.assert_array_almost_equal(cov_int[1], expected_cov_int[1])
-        np.testing.assert_array_almost_equal(cov_int[2], expected_cov_int[2])
+    #     self.assertEqual(cov_int.size, expected_cov_int.size)
+    #     np.testing.assert_array_almost_equal(cov_int[0], expected_cov_int[0])
+    #     np.testing.assert_array_almost_equal(cov_int[1], expected_cov_int[1])
+    #     np.testing.assert_array_almost_equal(cov_int[2], expected_cov_int[2])
 
-        self.assertEqual(cov_int_plus_noise.size,
-                         expected_cov_int_plus_noise.size)
+    #     self.assertEqual(cov_int_plus_noise.size,
+    #                      expected_cov_int_plus_noise.size)
 
-        np.testing.assert_array_almost_equal(cov_int_plus_noise[0],
-                                             expected_cov_int_plus_noise[0])
-        np.testing.assert_array_almost_equal(cov_int_plus_noise[1],
-                                             expected_cov_int_plus_noise[1])
-        np.testing.assert_array_almost_equal(cov_int_plus_noise[2],
-                                             expected_cov_int_plus_noise[2])
+    #     np.testing.assert_array_almost_equal(cov_int_plus_noise[0],
+    #                                          expected_cov_int_plus_noise[0])
+    #     np.testing.assert_array_almost_equal(cov_int_plus_noise[1],
+    #                                          expected_cov_int_plus_noise[1])
+    #     np.testing.assert_array_almost_equal(cov_int_plus_noise[2],
+    #                                          expected_cov_int_plus_noise[2])
+
 
     def test_calc_stream_reduction_matrix(self):
         pass
+
+
         # Re_k = util.misc.randn_c(3,2)
         # Re_k = np.dot(Re_k, Re_k.transpose().conjugate())
 
@@ -110,11 +113,11 @@ class CompExtInt(unittest.TestCase):
         """Called before each test."""
         pass
 
-    def test_calc_receive_filter(self):
-        pass
+    # def test_calc_receive_filter(self):
+    #     pass
 
-    def test_calc_SNRs(self):
-        pass
+    # def test_calc_SNRs(self):
+    #     pass
 
     def test_perform_comp(self):
         Nr = np.array([2, 2])
@@ -124,15 +127,16 @@ class CompExtInt(unittest.TestCase):
         iPu = 0.8  # Power for each user
         noise_var = 1e-50
 
-        full_channel = util.misc.randn_c(np.sum(Nr), np.sum(Nt) + Nti)
-        Re = comp.calc_cov_matrix_extint_plus_noise(
-            full_channel[:, np.sum(Nt):],
-            Nr)
+        multiUserChannel = channels.MultiUserChannelMatrixExtInt()
+        multiUserChannel.randomize(Nr, Nt, K, Nti)
+
+        #full_channel = util.misc.randn_c(np.sum(Nr), np.sum(Nt) + Nti)
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise()
 
         # multiuser_channel = channels.MultiUserChannelMatrixExtInt()
         # multiuser_channel.randomize(Nr, Nt, K, Nti)
 
-        users_channel = full_channel[:, 0:np.sum(Nt)]
+        users_channel = multiUserChannel.big_H[:, 0:np.sum(Nt)]
 
         # Create the comp object
         comp_obj = comp.CompExtInt(K, iPu, noise_var)

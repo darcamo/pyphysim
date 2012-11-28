@@ -22,43 +22,6 @@ from comm import channels
 from util.misc import least_right_singular_vectors
 
 
-# TODO: the power of the external interference must be accounted. Is it
-# already accounted in the concatenated_extint_channel???
-def calc_cov_matrix_extint_plus_noise(concatenated_extint_channel, Nr, noise_var=0):
-    """Calculates the covariance matrix of the external interference plus
-    noise.
-
-    Parameters
-    ----------
-    concatenated_extint_channel : 2D Array of complex numbers
-        The channel from all external interference sources to all the
-        receivers, where the rows correspond to the receivers antennas and
-        the columns to the external interference sources.
-    Nr : 1D Array of integers
-        An array with the number of receive antennas of each receiver. If,
-        for instance, the array is [2, 3], then
-        :py:attr:`concatenated_extint_channel` must have 5 rows, where the
-        first two correspond to the first receiver while the last three
-        correspond to the second receiver.
-    noise_var : float, optional [default=0]
-        Noise variance. If not specified, then only the covariance matrix
-        of the external interference will be returned.
-
-    Returns
-    -------
-    R : 1D array of numpy matrices
-        Return a numpy array, where each element is the covariance matrix
-        of the external interference plus noise at one receiver.
-    """
-    R = np.empty(Nr.size, dtype=np.ndarray)
-    cum_Nr = np.hstack([0, np.cumsum(Nr)])
-
-    for ii in range(Nr.size):
-        H = concatenated_extint_channel[cum_Nr[ii]:cum_Nr[ii + 1], :]
-        R[ii] = np.dot(H, H.transpose().conjugate()) + np.eye(Nr[ii]) * noise_var
-    return R
-
-
 # TODO: Test-me
 def _calc_stream_reduction_matrix(Re_k, num_red):
     """Calculates the `P` matrix that performs the stream reducion.

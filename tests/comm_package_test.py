@@ -84,46 +84,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.Nr = np.array([2, 4, 6])
         self.Nt = np.array([2, 3, 5])
 
-    def test_from_big_matrix(self):
-        """Test the _from_big_matrix_to_matrix_of_matrices method."""
-        newH = channels.MultiUserChannelMatrix._from_big_matrix_to_matrix_of_matrices(self.H, self.Nr, self.Nt, self.K)
-
-        np.testing.assert_array_equal(
-            newH[0, 0],
-            np.ones([2, 2]) * 0)
-
-        np.testing.assert_array_equal(
-            newH[0, 1],
-            np.ones([2, 3]) * 1)
-
-        np.testing.assert_array_equal(
-            newH[0, 2],
-            np.ones([2, 5]) * 2)
-
-        np.testing.assert_array_equal(
-            newH[1, 0],
-            np.ones([4, 2]) * 3)
-
-        np.testing.assert_array_equal(
-            newH[1, 1],
-            np.ones([4, 3]) * 4)
-
-        np.testing.assert_array_equal(
-            newH[1, 2],
-            np.ones([4, 5]) * 5)
-
-        np.testing.assert_array_equal(
-            newH[2, 0],
-            np.ones([6, 2]) * 6)
-
-        np.testing.assert_array_equal(
-            newH[2, 1],
-            np.ones([6, 3]) * 7)
-
-        np.testing.assert_array_equal(
-            newH[2, 2],
-            np.ones([6, 5]) * 8)
-
     def test_from_small_matrix_to_big_matrix(self):
         K = 3
         Nr = np.array([2, 4, 6])
@@ -559,7 +519,49 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         for index in range(received_data2.size):
             np.testing.assert_almost_equal(received_data2[index],
                                            received_data2_expected[index])
+    def test_calc_cov_matrix_extint_plus_noise(self):
+        self.K = 3
+        self.Nr = np.array([2, 4, 6])
+        # self.Nt = np.array([2, 3, 5])
+        # self.NtE = np.array([1, 2])
+        noise_var = 0.01
+        self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
+        H1 = self.multiH.big_H[0:2, 10:]
+        H2 = self.multiH.big_H[2:6, 10:]
+        H3 = self.multiH.big_H[6:12, 10:]
+        noise_cov1 = np.eye(self.Nr[0]) * noise_var
+        noise_cov2 = np.eye(self.Nr[1]) * noise_var
+        noise_cov3 = np.eye(self.Nr[2]) * noise_var
 
+        expected_cov_int = np.empty(3, dtype=np.ndarray)
+        expected_cov_int_plus_noise = np.empty(3, dtype=np.ndarray)
+
+        expected_cov_int[0] = np.dot(H1, H1.conjugate().transpose())
+        expected_cov_int[1] = np.dot(H2, H2.conjugate().transpose())
+        expected_cov_int[2] = np.dot(H3, H3.conjugate().transpose())
+
+        expected_cov_int_plus_noise[0] = expected_cov_int[0] + noise_cov1
+        expected_cov_int_plus_noise[1] = expected_cov_int[1] + noise_cov2
+        expected_cov_int_plus_noise[2] = expected_cov_int[2] + noise_cov3
+
+        cov_int = self.multiH.calc_cov_matrix_extint_plus_noise()
+        cov_int_plus_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var)
+
+        self.assertEqual(cov_int.size, expected_cov_int.size)
+        np.testing.assert_array_almost_equal(cov_int[0], expected_cov_int[0])
+        np.testing.assert_array_almost_equal(cov_int[1], expected_cov_int[1])
+        np.testing.assert_array_almost_equal(cov_int[2], expected_cov_int[2])
+
+        self.assertEqual(cov_int_plus_noise.size,
+                         expected_cov_int_plus_noise.size)
+
+        np.testing.assert_array_almost_equal(cov_int_plus_noise[0],
+                                             expected_cov_int_plus_noise[0])
+        np.testing.assert_array_almost_equal(cov_int_plus_noise[1],
+                                             expected_cov_int_plus_noise[1])
+        np.testing.assert_array_almost_equal(cov_int_plus_noise[2],
+                                             expected_cov_int_plus_noise[2])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

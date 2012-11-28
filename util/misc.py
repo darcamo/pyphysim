@@ -468,6 +468,6 @@ def calc_autocorr(x):
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: nocover
     import doctest
     doctest.testmod()
