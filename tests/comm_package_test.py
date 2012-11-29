@@ -267,15 +267,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            self.multiH.get_channel_all_tx_to_rx_k(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            self.multiH.get_channel_all_tx_to_rx_k(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            self.multiH.get_channel_all_tx_to_rx_k(2),
             expected_H3
         )
 
@@ -286,15 +286,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         expected_H2 = self.multiH.big_H[2:6, :]
         expected_H3 = self.multiH.big_H[6:, :]
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            self.multiH.get_channel_all_tx_to_rx_k(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            self.multiH.get_channel_all_tx_to_rx_k(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            self.multiH.get_channel_all_tx_to_rx_k(2),
             expected_H3
         )
 
@@ -586,15 +586,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            self.multiH.get_channel_all_tx_to_rx_k(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            self.multiH.get_channel_all_tx_to_rx_k(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            self.multiH.get_channel_all_tx_to_rx_k(2),
             expected_H3
         )
 
@@ -606,15 +606,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_H2 = self.multiH.big_H[2:6, :np.sum(Nt)]
         expected_H3 = self.multiH.big_H[6:, :np.sum(Nt)]
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(0),
+            self.multiH.get_channel_all_tx_to_rx_k(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(1),
+            self.multiH.get_channel_all_tx_to_rx_k(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_transmitters_to_single_receiver(2),
+            self.multiH.get_channel_all_tx_to_rx_k(2),
             expected_H3
         )
 

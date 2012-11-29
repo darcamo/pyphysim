@@ -285,7 +285,7 @@ class MultiUserChannelMatrix(object):
 
         See also
         --------
-        get_channel_all_transmitters_to_single_receiver
+        get_channel_all_tx_to_rx_k
 
         Examples
         --------
@@ -310,7 +310,7 @@ class MultiUserChannelMatrix(object):
                           # applies the path loss (of there is any)
         return channel[k, l]
 
-    def get_channel_all_transmitters_to_single_receiver(self, k):
+    def get_channel_all_tx_to_rx_k(self, k):
         """Get the channel from all transmitters to receiver `k`.
 
         Parameters
@@ -339,10 +339,10 @@ class MultiUserChannelMatrix(object):
          [ 4  5  6  7]
          [ 8  9 10 11]
          [12 13 14 15]]
-        >>> print multiH.get_channel_all_transmitters_to_single_receiver(0)
+        >>> print multiH.get_channel_all_tx_to_rx_k(0)
         [[0 1 2 3]
          [4 5 6 7]]
-        >>> print multiH.get_channel_all_transmitters_to_single_receiver(1)
+        >>> print multiH.get_channel_all_tx_to_rx_k(1)
         [[ 8  9 10 11]
          [12 13 14 15]]
         """
@@ -632,7 +632,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
                                                                 data,
                                                                 noise_var)
 
-    def get_channel_all_transmitters_to_single_receiver(self, k):
+    def get_channel_all_tx_to_rx_k(self, k):
         """Get the channel from all transmitters (without including the
         external interference sources) to receiver `k`.
 
@@ -649,7 +649,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         See also
         --------
         get_channel,
-        get_channel_all_transmitters_with_extint_to_single_receiver
+        get_channel_all_tx_with_extint_to_rx_k
 
         Examples
         --------
@@ -666,10 +666,10 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
          [ 5  6  7  8  9]
          [10 11 12 13 14]
          [15 16 17 18 19]]
-        >>> print multiH.get_channel_all_transmitters_to_single_receiver(0)
+        >>> print multiH.get_channel_all_tx_to_rx_k(0)
         [[0 1 2 3]
          [5 6 7 8]]
-        >>> print multiH.get_channel_all_transmitters_to_single_receiver(1)
+        >>> print multiH.get_channel_all_tx_to_rx_k(1)
         [[10 11 12 13]
          [15 16 17 18]]
 
@@ -679,9 +679,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return receive_channels[k]
 
     # This is exactly the same as the
-    # get_channel_all_transmitters_to_single_receiver method from the
+    # get_channel_all_tx_to_rx_k method from the
     # MultiUserChannelMatrix class. therefore, we don't need to test it.
-    def get_channel_all_transmitters_with_extint_to_single_receiver(self, k):
+    def get_channel_all_tx_with_extint_to_rx_k(self, k):
         """Get the channel from all transmitters (including the external
         interference sources) to receiver `k`.
 
@@ -698,7 +698,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         See also
         --------
         get_channel,
-        get_channel_all_transmitters_to_single_receiver
+        get_channel_all_tx_to_rx_k
 
         Examples
         --------
@@ -715,15 +715,15 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
          [ 5  6  7  8  9]
          [10 11 12 13 14]
          [15 16 17 18 19]]
-        >>> print multiH.get_channel_all_transmitters_with_extint_to_single_receiver(0)
+        >>> print multiH.get_channel_all_tx_with_extint_to_rx_k(0)
         [[0 1 2 3 4]
          [5 6 7 8 9]]
-        >>> print multiH.get_channel_all_transmitters_with_extint_to_single_receiver(1)
+        >>> print multiH.get_channel_all_tx_with_extint_to_rx_k(1)
         [[10 11 12 13 14]
          [15 16 17 18 19]]
 
         """
-        return MultiUserChannelMatrix.get_channel_all_transmitters_to_single_receiver(self, k)  # pragma: no cover
+        return MultiUserChannelMatrix.get_channel_all_tx_to_rx_k(self, k)  # pragma: no cover
 
     @staticmethod
     def _prepare_input_parans(Nr, Nt, K, NtE):
