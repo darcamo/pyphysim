@@ -6,7 +6,6 @@
 """
 
 import numpy as np
-import scipy.linalg as spl
 
 # xxxxxxxxxx Remove latter xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import sys
@@ -173,20 +172,18 @@ class CompExtInt(Comp):
         return W
 
     @staticmethod
-    def _calc_SNRs(H_ieq, W, Re):
+    def _calc_SNRs(Heq_k_red, Wk, Re_k):
         """Calculates the effective SNRs of each channel with the applied
         precoder matrix `precoder`.
 
         Parameters
         ----------
-        H_ieq : 2D numpy array
-            Equivalent channel matrix of all users after all precoding is
-            applied.
-        W : 2D numpy array
-            Global receive filter for all users. This should actually a
-            block diagonal matrix where each block corresponds to the
-            receive filter at one receiver.
-        Re : 1D numpy array of 2D numpy arrays.
+        Heq_k_red : 2D numpy array
+            Equivalent channel matrix of user `k` including the block
+            diagonalization and any stream reduction applied.
+        Wk : 2D numpy array
+            Receive filter for user `k`.
+        Re_k : 1D numpy array of 2D numpy arrays.
             A numpy array where each element is the covariance matrix of
             the external interference plus noise seen by a user.
 
@@ -196,18 +193,20 @@ class CompExtInt(Comp):
             SNR (in linear scale) of all the parallel channels of all users.
 
         """
-        #K = Re.size  # Number of users
+        #K = Re_k.size  # Number of users
+        import pudb
+        pudb.set_trace()
 
-        mtP = np.dot(W, H_ieq)
+        mtP = np.dot(Wk, Heq_k_red)
         desired_power = np.abs(np.diagonal(mtP)) ** 2
         internalInterference = np.sum(np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
 
-        block_diag_Re = spl.block_diag(*Re)
-
-        W_H = W.transpose().conjugate()
-        # Note that the noise is already accounted in the covariance matrix Re
+        Wk_H = Wk.transpose().conjugate()
+        # Note that the noise is already accounted in the covariance matrix
+        # Re_k
         external_interference_plus_noise = np.diagonal(
-            np.dot(W, np.dot(block_diag_Re, W_H))).real
+            np.dot(Wk, np.dot(Re_k, Wk_H))
+        ).real
 
         sinr = desired_power / (internalInterference + external_interference_plus_noise)
         return sinr
@@ -270,8 +269,10 @@ class CompExtInt(Comp):
                 # matrix)
                 W_k = self.calc_receive_filter_user_k(Heq_k, Pk)
 
-                #SNRs_k =
-                #
+                SNRs_k = self._calc_SNRs(Heq_k_red, W_k, Rek)
+                print SNRs_k
+
+            print
                 # DARLAN: CONTINUE AQUI
         return 0
 
@@ -363,7 +364,7 @@ def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
     return results_tuble
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     Pu = 5.
     noise_var = 0.1
     num_users = 3
