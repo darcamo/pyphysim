@@ -9,13 +9,16 @@ Welcome to PyPhysim's documentation!
 PyPhysim is a python library implementing functions, classes and simulators
 related to the physical layer of digital communications systems.
 
-The library organization is described in :doc:`description`, where a
-summary of the several packages in PyPhysim is shown.
 
+List of Documentation Articles
+==============================
 
-Table of Contents
-=================
-  
+PyPhysim organization is described in :doc:`description`, where a summary
+of the several packages in PyPhysim is shown. For instructions on how to
+implement new simulations with PyPhysim see :doc:`simulators`.
+
+The complete list of articles in the PyPhysim documentation is shown below.
+
 .. toctree::
    :maxdepth: 1
 

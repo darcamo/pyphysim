@@ -27,6 +27,17 @@ def calcPrincipalAngles(matrix1, matrix2):
     -------
     princ_angles : 1D numpy array
         The principal angles between `matrix1` and `matrix2`.
+
+    See also
+    --------
+    calcChordalDistanceFromPrincipalAngles
+
+    Examples
+    --------
+    >>> A = np.array([[1, 2], [3, 4], [5, 6]])
+    >>> B = np.array([[1, 5], [3, 7], [5, -1]])
+    >>> print calcPrincipalAngles(A, B)
+    [ 0.          0.54312217]
     """
     # Primeiro preciso achar as matrizes de base ortonormal para matrix1 e
     # matrix2, o que consigo com a decomposicao QR. Note que se matrix1
@@ -68,7 +79,22 @@ def calcChordalDistanceFromPrincipalAngles(principalAngles):
     Returns
     -------
     chord_dist : int
-        The chordan distance.
+        The chordal distance.
+
+    See also
+    --------
+    calcPrincipalAngles,
+    calcChordalDistance,
+    calcChordalDistance2
+
+    Examples
+    --------
+    >>> A = np.arange(1, 9.)
+    >>> A.shape = (4, 2)
+    >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
+    >>> princ_angles = calcPrincipalAngles(A, B)
+    >>> print calcChordalDistanceFromPrincipalAngles(princ_angles)
+    0.473867859572
     """
     return np.sqrt(np.sum(np.sin(principalAngles) ** 2))
 
@@ -86,7 +112,24 @@ def calcChordalDistance(matrix1, matrix2):
     Returns
     -------
     chord_dist : int
-        The chordan distance.
+        The chordal distance.
+
+    Notes
+    -----
+    Same as :func:`calcChordalDistance2`, but implemented differently.
+
+    See also
+    --------
+    calcChordalDistance2,
+    calcChordalDistanceFromPrincipalAngles
+
+    Examples
+    --------
+    >>> A = np.arange(1, 9.)
+    >>> A.shape = (4, 2)
+    >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
+    >>> print calcChordalDistance(A, B)
+    0.473867859572
     """
     (Q1, R1) = np.linalg.qr(matrix1)
     (Q2, R2) = np.linalg.qr(matrix2)
@@ -114,7 +157,23 @@ def calcChordalDistance2(matrix1, matrix2):
     Returns
     -------
     chord_dist : int
-        The chordan distance.
+        The chordal distance.
 
+    Notes
+    -----
+    Same as :func:`calcChordalDistance`, but implemented differently.
+
+    See also
+    --------
+    calcChordalDistance,
+    calcChordalDistanceFromPrincipalAngles
+
+    Examples
+    --------
+    >>> A = np.arange(1, 9.)
+    >>> A.shape = (4, 2)
+    >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
+    >>> print calcChordalDistance2(A, B)
+    0.473867859572
     """
     return np.linalg.norm(calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') / math.sqrt(2)

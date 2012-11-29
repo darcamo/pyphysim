@@ -24,7 +24,9 @@ from util.conversion import single_matrix_to_matrix_of_matrices
 
 
 def _calc_stream_reduction_matrix(Re_k, kept_streams):
-    """Calculates the `P` matrix that performs the stream reducion.
+    """Calculates the `P` matrix that performs the stream reduction such
+    that the subspace of the remaining streams span the dimensions with the
+    lowest interference.
 
     Parameters
     ----------
@@ -38,8 +40,9 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
     Returns
     -------
     Pk : 2D numpy array
-        A matrix whose columns corresponding to the `num_red` least
-        significant singular vectors of Re_k.
+        A matrix whose columns corresponding to the `kept_streams` least
+        significant right singular vectors of Re_k.
+
     """
     (min_Vs, remaining_Vs, S) = least_right_singular_vectors(Re_k, kept_streams)
     return min_Vs
@@ -123,15 +126,17 @@ class CompExtInt(Comp):
         Comp.__init__(self, iNUsers, iPu, noiseVar)
 
     @staticmethod
-    def calc_receive_filter(newH, P=None):
-        """Calculates the Zero-Forcing receive filter.
+    def calc_receive_filter_user_k(Heq_k, P=None):
+        """Calculates the Zero-Forcing receive filter of a single user `k`
+        with or without the stream reduction.
 
         Parameters
         ----------
-        newH : 2D numpy array
-            The block diagonalized channel AFTER also applying any stream
-            sacrificing.
-        P : 1D numpy array of 2D numpy arrays
+        Heq_k : 2D numpy array
+            The equivalent channel of user `k` after the block
+            diagonalization process, but without including the stream
+            reduction.
+        P : 2D numpy array
             P has the most significant singular vectors of the external
             interference plus noise covariance matrix for each
             receiver. Note that if one element of P is an empty array that
@@ -141,20 +146,29 @@ class CompExtInt(Comp):
 
         Returns
         -------
-        W : 1D array of 2D numpy arrays
-            The zero-forcing matrix to separate each stream of each user.
+        W : 2D numpy array
+            The receive filter of user `k`.
+
+        Notes
+        -----
+        If `P` is not None then the number of transmit streams will be
+        equal to the number of columns in `P`. Also, the receive filter `W`
+        includes a projection into the subspace spanned by the columns of
+        `P`. Since `P` was calculated to be in the directions with weaker
+        (or no) external interference then the receive filter `W` will
+        mitigate external interference.
 
         """
         if P is None:
-            W = np.linalg.pinv(newH)
-
-        # K = P.size
-        # W_bd = np.empty(K)
-
-        # for idx, p in enumerate(P):
-        #     calcProjectionMatrix(p)
-        #     H_ieq =
-        #     W_bd[idx]
+            W = np.linalg.pinv(Heq_k)
+        else:
+            overbar_P = calcProjectionMatrix(P)
+            # Calculate the equivalent channel including the stream
+            # reduction
+            Heq_k_red = np.dot(Heq_k, P)
+            W = np.dot(
+                np.linalg.pinv(np.dot(overbar_P, Heq_k_red)),
+                overbar_P)
 
         return W
 
@@ -235,6 +249,11 @@ class CompExtInt(Comp):
             Rek = Re[userindex]
             Hk = H_all_ks[userindex]
             Msk = Ms_bad_ks[userindex]
+
+            # Equivalent channel of user k after the block diagonalization
+            # process, but without any stream reduction
+            Heq_k = np.dot(Hk, Msk)
+
             # We can have from a single stream to all streams (the number
             # of transmit antennas). This loop varies the number of
             # transmit streams of user k.
@@ -242,9 +261,17 @@ class CompExtInt(Comp):
                 # Find Pk
                 Pk = _calc_stream_reduction_matrix(Rek, Ns_k)
 
-                # Find H_ieq_k
-                H_ieq_k = np.dot(Hk, np.dot(Msk, Pk))
+                # Equivalent channel with stream reduction
+                Heq_k_red = np.dot(Heq_k, Pk)
 
+                # Calculates the receive filter W_k (note
+                # calc_receive_filter_user_k receives the channel without
+                # stream reduction as an argument and the stream reduction
+                # matrix)
+                W_k = self.calc_receive_filter_user_k(Heq_k, Pk)
+
+                #SNRs_k =
+                #
                 # DARLAN: CONTINUE AQUI
         return 0
 

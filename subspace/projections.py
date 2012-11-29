@@ -111,6 +111,20 @@ class Projection(object):
             The projection matrix that can be used to project a vector or a
             matrix into the subspace spanned by the columns of `A`
 
+        See also
+        --------
+        calcOrthogonalProjectionMatrix
+
+        Examples
+        --------
+        >>> A = np.array([[1 + 1j, 2 - 2j], [3 - 2j, 0], [-1 - 1j, 2 - 3j]])
+        >>> # Matrix that projects into the subspace spanned by the columns
+        >>> # of A
+        >>> Q = calcProjectionMatrix(A)
+        >>> print Q.round(4)
+        [[ 0.5239-0.j      0.0366+0.3296j  0.3662+0.0732j]
+         [ 0.0366-0.3296j  0.7690+0.j     -0.0789+0.2479j]
+         [ 0.3662-0.0732j -0.0789-0.2479j  0.7070-0.j    ]]
         """
         # MATLAB version: A/(A'*A)*A';
         A_H = A.conjugate().transpose()
@@ -134,6 +148,20 @@ class Projection(object):
             matrix into the subspace orthogonal to the subspace spanned by
             the columns of `A`
 
+        See also
+        --------
+        calcProjectionMatrix
+
+        Examples
+        --------
+        >>> A = np.array([[1, 2], [2, 2], [4, 3]])
+        >>> # Matrix that projects into the subspace orthognal to the
+        >>> # subspace spanned by the columns of A
+        >>> oQ = calcOrthogonalProjectionMatrix(A)
+        >>> print oQ
+        [[ 0.12121212 -0.3030303   0.12121212]
+         [-0.3030303   0.75757576 -0.3030303 ]
+         [ 0.12121212 -0.3030303   0.12121212]]
         """
         Q = Projection.calcProjectionMatrix(A)
         return np.eye(Q.shape[0]) - Q

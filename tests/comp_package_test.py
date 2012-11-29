@@ -20,8 +20,8 @@ import numpy as np
 
 from comm import channels
 from comp import comp
-import util
-from util.misc import least_right_singular_vectors
+from util.misc import least_right_singular_vectors, randn_c
+from subspace.projections import calcProjectionMatrix
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -37,7 +37,7 @@ class CompDoctestsTestCase(unittest.TestCase):
 
 class CompModuleFunctionsTestCase(unittest.TestCase):
     def test_calc_stream_reduction_matrix(self):
-        Re_k = util.misc.randn_c(3, 2)
+        Re_k = randn_c(3, 2)
         Re_k = np.dot(Re_k, Re_k.transpose().conjugate())
 
         P1 = comp._calc_stream_reduction_matrix(Re_k, 1)
@@ -63,11 +63,45 @@ class CompExtInt(unittest.TestCase):
         """Called before each test."""
         pass
 
-    # def test_calc_receive_filter(self):
-    #     pass
+    def test_calc_receive_filter(self):
+        # Equivalent channel without including stream reduction
+        Heq_k = randn_c(3, 3)
+        Re_k = randn_c(3, 2)
+        Re_k = np.dot(Re_k, Re_k.transpose().conjugate())
 
-    # def test_calc_SNRs(self):
-    #     pass
+        P1 = comp._calc_stream_reduction_matrix(Re_k, 1)
+        P2 = comp._calc_stream_reduction_matrix(Re_k, 2)
+        P3 = comp._calc_stream_reduction_matrix(Re_k, 3)
+
+        W1 = comp.CompExtInt.calc_receive_filter_user_k(Heq_k, P1)
+        W2 = comp.CompExtInt.calc_receive_filter_user_k(Heq_k, P2)
+        W3 = comp.CompExtInt.calc_receive_filter_user_k(Heq_k, P3)
+        # Note that since P3 is actually including all streams, then the
+        # performance is the same as if we don't reduce streams. However W3
+        # and W_full are different matrices, since W3 has to compensate the
+        # right multiplication of the equivalent channel by P3 and W_full
+        # does not. The performance is the same because no energy is lost
+        # due to stream reduction and the Frobenius norms of W3 and W_full
+        # are equal.
+        W_full = comp.CompExtInt.calc_receive_filter_user_k(Heq_k)
+
+        np.testing.assert_array_almost_equal(np.dot(W1, np.dot(Heq_k, P1)),
+                                             np.eye(1))
+        np.testing.assert_array_almost_equal(np.dot(W2, np.dot(Heq_k, P2)),
+                                             np.eye(2))
+        np.testing.assert_array_almost_equal(np.dot(W3, np.dot(Heq_k, P3)),
+                                             np.eye(3))
+        np.testing.assert_array_almost_equal(np.dot(W_full, Heq_k),
+                                             np.eye(3))
+
+        overbar_P2 = calcProjectionMatrix(P2)
+        expected_W2 = np.dot(
+            np.linalg.pinv(np.dot(overbar_P2, np.dot(Heq_k, P2))),
+            overbar_P2)
+        np.testing.assert_array_almost_equal(expected_W2, W2)
+
+    def test_calc_SNRs(self):
+        pass
 
     def test_perform_comp(self):
         Nr = np.array([2, 2])
@@ -84,6 +118,8 @@ class CompExtInt(unittest.TestCase):
         comp_obj = comp.CompExtInt(K, iPu, noise_var)
         comp_obj.perform_comp(multiUserChannel, noise_var)
 
+        # TODO: Finish the implementation
+        pass
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
