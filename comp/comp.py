@@ -20,10 +20,10 @@ from comm.blockdiagonalization import BlockDiaginalizer
 from comm import blockdiagonalization
 from comm import channels
 from util.misc import least_right_singular_vectors
+from util.conversion import single_matrix_to_matrix_of_matrices
 
 
-# TODO: Test-me
-def _calc_stream_reduction_matrix(Re_k, num_red):
+def _calc_stream_reduction_matrix(Re_k, kept_streams):
     """Calculates the `P` matrix that performs the stream reducion.
 
     Parameters
@@ -31,19 +31,17 @@ def _calc_stream_reduction_matrix(Re_k, num_red):
     Re_k : 2D numpy array
         The external interference plus noise covariance matrix at a SINGLE
         receiver.
-    num_red : int
-        Number of streams to be sacrificed in order to mitigate the
-        external interference
+    kept_streams : int
+        Number of streams that will be kept. This will be equal to the
+        number of columns of the returned matrix.
 
     Returns
     -------
-    P : 2D numpy array
+    Pk : 2D numpy array
         A matrix whose columns corresponding to the `num_red` least
-        significant singular vectors of Re_k
-
+        significant singular vectors of Re_k.
     """
-    Nr, Nr = Re_k.shape
-    (min_Vs, remaining_Vs, S) = least_right_singular_vectors(Re_k, num_red)
+    (min_Vs, remaining_Vs, S) = least_right_singular_vectors(Re_k, kept_streams)
     return min_Vs
 
 
@@ -200,42 +198,67 @@ class CompExtInt(Comp):
         sinr = desired_power / (internalInterference + external_interference_plus_noise)
         return sinr
 
-    def perform_comp(self, mtChannel, Re):
-        """Perform the block diagonalization of `mtChannel` taking the external
+    def perform_comp(self, mu_channel, noise_var):
+        """Perform the block diagonalization of `mu_channel` taking the external
         interference into account.
 
         Parameters
         ----------
-        mtChannel : 2D numpy array
-            Channel from all the transmitters (not including the external
-            interference sources) to all the receivers.
-        Re : 1D numpy array of 2D numpy arrays
-            Covariance matrix of the external interference plus noise of
-            each user. `Re` must be a numpy array of dimension (K x 1),
-            where K is the number of users, and each element in `Re` is a
-            numpy 2D array of size (Nrk x Nrk), where 'Nrk' is the number
-            of receive antennas of the k-th user.
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as th
+            external interference.
+        noise_var : float
+            Noise variance.
 
         Returns
         -------
         TODO: write me
 
         """
-        Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(mtChannel)
+        K = mu_channel.K
+        Nr = mu_channel.Nr
+        Nt = mu_channel.Nt
+        H_matrix = mu_channel.big_H_no_ext_int
+        Re = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var)
 
-        # xxxxx SINRs with no stream reduction xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Since there is no projection
-        Ms_good = self._perform_normalized_waterfilling_power_scaling(Ms_bad,
-                                                                      Sigma)
-        newH = np.dot(mtChannel, Ms_good)
-        W = self.calc_receive_filter(newH)
+        Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
 
-        SNRs = self._calc_SNRs(newH, W, Re)
-        print SNRs
+        # The k-th 'element' in Ms_bad_ks is a matrix containing the
+        # columns of Ms_bad of the k-th user.
+        Ms_bad_ks = single_matrix_to_matrix_of_matrices(Ms_bad, None, Nt)
+        H_all_ks = single_matrix_to_matrix_of_matrices(H_matrix, Nr)
 
-        #U, S, V_h = np.linalg
+        # Loop for the users
+        for userindex in range(K):
+            Ntk = Nt[userindex]
+            Rek = Re[userindex]
+            Hk = H_all_ks[userindex]
+            Msk = Ms_bad_ks[userindex]
+            # We can have from a single stream to all streams (the number
+            # of transmit antennas). This loop varies the number of
+            # transmit streams of user k.
+            for Ns_k in range(1, Ntk + 1):
+                # Find Pk
+                Pk = _calc_stream_reduction_matrix(Rek, Ns_k)
 
+                # Find H_ieq_k
+                H_ieq_k = np.dot(Hk, np.dot(Msk, Pk))
 
+                # DARLAN: CONTINUE AQUI
+        return 0
+
+        # # xxxxx SINRs with no stream reduction xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Since there is no projection
+        # Ms_good = self._perform_normalized_waterfilling_power_scaling(Ms_bad,
+        #                                                               Sigma)
+        # newH = np.dot(channel_matrix, Ms_good)
+        # W = self.calc_receive_filter(newH)
+
+        # SNRs = self._calc_SNRs(newH, W, Re)
+        # print SNRs
+
+        # #U, S, V_h = np.linalg
 
         # Q = np.empty(self.iNUsers, dtype=np.ndarray)
         # for k in range(self.iNUsers):
@@ -243,11 +266,11 @@ class CompExtInt(Comp):
         #     # the external interference
         #     Q[k] = calcOrthogonalProjectionMatrix(Re)
 
-        (newH, Ms_good) = BlockDiaginalizer.block_diagonalize(self, mtChannel)
+        #(newH, Ms_good) = BlockDiaginalizer.block_diagonalize(self, H_matrix)
 
         # xxxxxxxxxx Calculates the SINR with only BD xxxxxxxxxxxxxxxxxxxxx
 
-        return (newH, Ms_good)
+        #return (newH, Ms_good)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -285,6 +308,7 @@ def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
     interference into account.
 
     Parameters
+    ----------
     mtChannel : 2D numpy array
         Channel from all the transmitters (not including the external
         interference sources) to all the receivers.
@@ -303,7 +327,8 @@ def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
 
     Returns
     -------
-    TODO: write me
+    output : lalala
+        Write me
 
     """
     COMP = CompExtInt(iNUsers, iPu, noiseVar)

@@ -111,6 +111,50 @@ class ConversionTestCase(unittest.TestCase):
             np.ones([6, 5]) * 8)
 
         # xxxxx Convert 'single 2D array' to 2D array of 2D arrays xxxxxxxx
+        # In this case we break the channel into packs of lines
+        matrix_of_matrices2 = conversion.single_matrix_to_matrix_of_matrices(
+            single_matrix, nrows)
+        self.assertEqual(matrix_of_matrices2.shape, (3,))
+
+        expected1 = np.array([[0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+                              [0, 0, 1, 1, 1, 2, 2, 2, 2, 2]])
+        expected2 = np.array([[3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                              [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                              [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+                              [3, 3, 4, 4, 4, 5, 5, 5, 5, 5]])
+        expected3 = np.array([[6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                              [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                              [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                              [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                              [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+                              [6, 6, 7, 7, 7, 8, 8, 8, 8, 8]])
+
+        np.testing.assert_array_equal(expected1, matrix_of_matrices2[0])
+        np.testing.assert_array_equal(expected2, matrix_of_matrices2[1])
+        np.testing.assert_array_equal(expected3, matrix_of_matrices2[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Convert 'single 2D array' to 2D array of 2D arrays xxxxxxxx
+        # In this case we break the channel into packs of columns
+        matrix_of_matrices3 = conversion.single_matrix_to_matrix_of_matrices(
+            single_matrix, None, ncols)
+        self.assertEqual(matrix_of_matrices3.shape, (3,))
+
+        expected1 = np.array([[0, 0], [0, 0], [3, 3], [3, 3], [3, 3], [3, 3],
+                              [6, 6], [6, 6], [6, 6], [6, 6], [6, 6], [6, 6]])
+        expected2 = np.array([[1, 1, 1], [1, 1, 1], [4, 4, 4], [4, 4, 4],
+                              [4, 4, 4], [4, 4, 4], [7, 7, 7], [7, 7, 7],
+                              [7, 7, 7], [7, 7, 7], [7, 7, 7], [7, 7, 7]])
+        expected3 = np.array([[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [5, 5, 5, 5, 5],
+                              [5, 5, 5, 5, 5], [5, 5, 5, 5, 5], [5, 5, 5, 5, 5],
+                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
+                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8]])
+        np.testing.assert_array_equal(expected1, matrix_of_matrices3[0])
+        np.testing.assert_array_equal(expected2, matrix_of_matrices3[1])
+        np.testing.assert_array_equal(expected3, matrix_of_matrices3[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Convert 'single 1D array' to 1D array of 1D arrays xxxxxxxx
         #nrows = np.array([2, 4, 6])
         expected1 = np.ones(2) * 2
         expected2 = np.ones(4) * 4

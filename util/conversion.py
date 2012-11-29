@@ -9,7 +9,7 @@ import numpy as np
 from misc import xor
 
 
-def single_matrix_to_matrix_of_matrices(single_matrix, nrows, ncols=None):
+def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     """Converts a single numpy array to a numpy array of numpy arrays.
 
     For instance, a 6x6 numpy array may be converted to a 3x3 numpy array
@@ -20,9 +20,9 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows, ncols=None):
     single_matrix : 1D numpy array or 2D numpy array
         The single numpy array.
     nrows : 1D numpy array of ints
-        The number of rows of each submatrix, or the number of elements in
-        each subarray.
-    ncols : 1D numpy array of ints
+        The number of rows of each submatrix (if single_matrix is 2D), or
+        the number of elements in each subarray (if single_matrix is 1D).
+    ncols : 1D numpy array of ints, optional
         The number of rows of each submatrix. If `single_matrix` is a 1D
         array then ncols should be None (default)
 
@@ -31,17 +31,67 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows, ncols=None):
     array_of_arrays : 1D or 2D numpy array
         The converted array (1D or 2D) of arrays (1D or 2D).
 
+    Notes
+    -----
+    The parameters `ncols` and `nrows` cannot both be equal to None.
+
     Examples
     --------
+    >>> # Case where we have a single array
     >>> single_array = np.array([2, 2, 4, 5, 6, 8, 8, 8, 8])
     >>> sizes = np.array([2, 3, 4])
     >>> print single_matrix_to_matrix_of_matrices(single_array, sizes)
     [[2 2] [4 5 6] [8 8 8 8]]
+    >>>
+    >>> # Case where we have a matrix to break in packs of rows
+    >>> single_matrix = np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+    >>> rows = np.array([1, 2])
+    >>> multi_M =single_matrix_to_matrix_of_matrices(single_matrix, rows)
+    >>> print multi_M[0]
+    [[1 1 1]]
+    >>> print multi_M[1]
+    [[2 2 2]
+     [3 3 3]]
+    >>>
+    >>> # Case where we have a matrix to break in packs of columns
+    >>> rows = None
+    >>> cols = np.array([1, 2])
+    >>> multi_M=single_matrix_to_matrix_of_matrices(single_matrix, rows, cols)
+    >>> print multi_M[0]
+    [[1]
+     [2]
+     [3]]
+    >>> print multi_M[1]
+    [[1 1]
+     [2 2]
+     [3 3]]
+    >>>
+    >>> # Case where we break into multiple matrices
+    >>> rows = np.array([2, 1])
+    >>> cols = np.array([1, 2])
+    >>> multi_M=single_matrix_to_matrix_of_matrices(single_matrix, rows, cols)
+    >>> print multi_M[0, 0]
+    [[1]
+     [2]]
+    >>> print multi_M[0, 1]
+    [[1 1]
+     [2 2]]
     """
-    cumNrows = np.hstack([0, np.cumsum(nrows)])
+    if nrows is None:
+        # This is the case where we break the matrix into packs of columns
+        K = ncols.size
+        cumNcols = np.hstack([0, np.cumsum(ncols)])
+        output = np.zeros(K, dtype=np.ndarray)
+
+        for tx in np.arange(K):
+            output[tx] = single_matrix[:, cumNcols[tx]:cumNcols[tx + 1]]
+        return output
+
     K = nrows.size
     if ncols is not None:
+        # 2D array of 2D arrays case
         cumNcols = np.hstack([0, np.cumsum(ncols)])
+        cumNrows = np.hstack([0, np.cumsum(nrows)])
         output = np.zeros([K, K], dtype=np.ndarray)
 
         for rx in np.arange(K):
@@ -51,6 +101,10 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows, ncols=None):
                     cumNcols[tx]:cumNcols[tx + 1]]
         return output
     else:
+        # When ncols is None, we are either in the 1D Array of 1D arrays
+        # case or in the 2D array case that we want to break into packs of
+        # lines
+        cumNrows = np.hstack([0, np.cumsum(nrows)])
         output = np.zeros(K, dtype=np.ndarray)
 
         for rx in np.arange(K):

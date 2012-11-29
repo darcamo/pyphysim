@@ -5,7 +5,7 @@ comm Package
     :members:
 
 Modules in the comm package
-------------------------
+---------------------------
 
 .. autosummary::
    :toctree: autosummary_folder

@@ -467,6 +467,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.multiH.extIntK, len(self.NtE))
         np.testing.assert_array_equal(self.multiH.extIntNt, self.NtE)
 
+    def test_big_H_no_ext_int_property(self):
+        self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
+        np.testing.assert_array_almost_equal(self.multiH.big_H_no_ext_int,
+                                             self.multiH.big_H[:, :-2])
+
     def test_set_pathloss(self):
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
         K = self.multiH.K

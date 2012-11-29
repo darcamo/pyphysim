@@ -24,9 +24,9 @@ class AlternatingMinIASolver(object):
     of users involved in the IA process. However, note that alignment is
     only feasible for some cases configurations.
 
-    Example of a common exenario:
-    - 3 pair or transmitter/receiver with 2 antennas in each node and 1
-      stream transmitted per node.
+    An example of a common exenario is a scenario with 3 pairs or
+    transmitter/receiver with 2 antennas in each node and 1 stream
+    transmitted per node.
 
     You can determine the scenario of an AlternatingMinIASolver object by
     infering the variables K, Nt, Nr and Ns.

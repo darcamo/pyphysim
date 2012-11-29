@@ -5,7 +5,7 @@ ia Package
    :members:
 
 Modules in the ia package
-------------------------
+-------------------------
 
 .. autosummary::
    :toctree: autosummary_folder

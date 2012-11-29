@@ -555,6 +555,16 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return self._K - self._extIntK
     K = property(_get_K)
 
+    def _get_big_H_no_ext_int(self):
+        """Get method for the big_H_no_est_int property.
+
+        big_H_no_est_int is similar to big_H, but does not include the last
+        column(s) corresponding to the external interference channel.
+
+        """
+        return self.big_H[:, :np.sum(self.Nt)]
+    big_H_no_ext_int = property(_get_big_H_no_ext_int)
+
     def _get_H(self):
         """Get method for the H property."""
         # Call the _get_H method from the base class, which will apply the
@@ -573,6 +583,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         added.
 
         Parameters
+        ----------
         data : 2D numpy array
             An array of numpy matrices with the data of the multiple
             users. The k-th element in `data` is a numpy array with
