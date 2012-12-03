@@ -46,12 +46,31 @@ import time
 # xxxxxxxxxxxxxxx DummyProgressbar - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class DummyProgressbar(object):  # pragma: no cover
-    """Dummy progress bar that don't really do anything."""
+    """Dummy progress bar that don't really do anything.
+
+    The idea is that it can be used in place of the
+    :class:`ProgressbarText` class, but without actually doing anything.
+
+    See also
+    --------
+    ProgressbarText
+    """
 
     def __init__(self, ):
+        """Initializes the DummyProgressbar object."""
         pass
 
     def progress(self, count):
+        """This `progress` method has the same signature from the one in the
+        :class:`ProgressbarText` class.
+
+        Nothing happens when this method is called.
+
+        Parameters
+        ----------
+        count : int
+            Ignored
+        """
         pass
 # xxxxxxxxxx DummyProgressbar - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -73,6 +92,10 @@ class ProgressbarText(object):
     function is called a number of characters will be printed to show the
     progress. Note that the number of printed characters correspond is
     equivalent to the progress minus what was already printed.
+
+    See also
+    --------
+    DummyProgressbar
 
     Examples
     --------
@@ -166,7 +189,7 @@ class ProgressbarText(object):
             # printed in a previous call to the `progress`
             # function. Therefore, we only need to print the remaining
             # characters until we reach `blockcount`.
-            for i in range(self.blockcount, blockcount):
+            for i in range(self.blockcount, blockcount):  # pylint:disable=W0612
                 self.f.write(self.block)
                 self.f.flush()
             # Update self.blockcount
@@ -309,7 +332,7 @@ class ProgressbarMultiProcessText(object):
         self._message = message
 
         self._manager = multiprocessing.Manager()
-        self._process_data_list = self._manager.list()
+        self._process_data_list = self._manager.list()  # pylint: disable=E1101
 
         self._sleep_time = sleep_time
         self._last_id = -1
@@ -389,27 +412,40 @@ class ProgressbarMultiProcessText(object):
         """
         # xxxxx Inline class definition - Start xxxxxxxxxxxxxxxxxxxxxxxxxxx
         class ProgressbarMultiProcessProxy:
+            """Proxy progressbar that behaves like a ProgressbarText object,
+            but is actually updating a ProgressbarMultiProcessText progressbar.
+
+            """
             def __init__(self, process_id, process_data_list):
+                """Initializes the ProgressbarMultiProcessProxy object."""
                 self.process_id = process_id
                 self._process_data_list = process_data_list
 
             def progress(self, count):
+                """Updates the proxy progress bar.
+
+                Parameters
+                ----------
+                count : int
+                    The new amount of progress.
+
+                """
                 self._process_data_list[self.process_id] = count
         # xxxxx Inline class definition - End xxxxxxxxxxxxxxxxxxxxxxxxxxx
         return ProgressbarMultiProcessProxy(*self.register_function(total_count))
 
-    # def progress(self):
-    #     """This function should not be called."""
-    #     print "ProgressbarMultiProcessText.progress: This function should not be called directly. Call the register_function_and_get_proxy_progressbar function to get a proxy object for the progressbar and call the progress method of that proxy."
-
     def _update_progress(self):
-        bar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
+        """Collects the progress from each registered proxy progressbar and
+        updates the actual visible progressbar.
+
+        """
+        pbar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
         self.running.set()
         count = 0
         while count < self._total_final_count and self.running.is_set():
             time.sleep(self._sleep_time)
             count = sum(self._process_data_list)
-            bar.progress(count)
+            pbar.progress(count)
 
         # It may exit the while loop in two situations: if count reached
         # the maximum allowed value, in which case the progressbar is full,

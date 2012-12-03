@@ -11,9 +11,9 @@ import math
 import numpy as np
 from scipy.special import erfc
 #import math.erf
-# erf tb pode ser encontrada la biblioteca scipy.special
-# erf tb pode ser encontrada la biblioteca math  -> python 2.7 ou superior
-# erf tb pode ser encontrada la biblioteca mpmath
+# erf can also be found in the scipy.special library
+# erf can also be found in the math library -> python 2.7 ou above
+# erf can also be found in the mpmath library
 
 
 def peig(A, n):
@@ -51,8 +51,8 @@ def peig(A, n):
     >>> V, D = peig(A, 1)
 
     """
-    (nrows, ncols) = A.shape
-    if n > ncols:
+    (_, ncols) = A.shape
+    if n > ncols:  # Since A is symmetric we could get either nrows or ncols
         raise ValueError("`n` must be lower then the number of columns in `A`")
 
     [D, V] = np.linalg.eig(A)
@@ -98,8 +98,8 @@ def leig(A, n):
     >>> V, D = peig(A, 1)
 
     """
-    (nrows, ncols) = A.shape
-    if n > ncols:
+    (_, ncols) = A.shape
+    if n > ncols:  # Since A is symmetric we could get either nrows or ncols
         raise ValueError("`n` must be lower then the number of columns in `A`")
 
     [D, V] = np.linalg.eig(A)
@@ -357,7 +357,7 @@ def least_right_singular_vectors(A, n):
 
     """
     # Note that numpy.linalg.svd returns the hermitian of V
-    [U, S, V_H] = np.linalg.svd(A, full_matrices=True)
+    [_, S, V_H] = np.linalg.svd(A, full_matrices=True)
 
     V = V_H.conjugate().transpose()
 
@@ -372,7 +372,7 @@ def least_right_singular_vectors(A, n):
     # values
     V0 = V[:, sort_indexes[0:n]]
 
-    (nrows, ncols) = V.shape
+    #(nrows, ncols) = V.shape
     V1 = V[:, sort_indexes[n:]]
 
     return (V0, V1, S[sort_indexes[n:]])

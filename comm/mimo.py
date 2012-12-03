@@ -10,6 +10,10 @@ __version__ = "$Revision$"
 
 import numpy as np
 
+# TODO: maybe you can use the weave module (inline or blitz methods) from
+# scipy to spped up things here.
+# See http://docs.scipy.org/doc/scipy/reference/tutorial/weave.html
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MimoBase Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -84,7 +88,7 @@ class MimoBase(object):
         """
         H = channel
         H_H = H.transpose().conjugate()
-        Nr, Nt = H.shape
+        Nt = H.shape[1]
         W = np.dot(np.linalg.inv(np.dot(H_H, H) + noise_var * np.eye(Nt)), H_H)
         return W
 
@@ -239,7 +243,7 @@ class Blast(MimoBase):
         decode
 
         """
-        (Nr, Ns) = received_data.shape
+        Ns = received_data.shape[1]
         W = self.calc_filter(channel)
         decoded_data = W.dot(received_data).reshape(self.nStreams * Ns, order='F')
         return decoded_data
@@ -362,7 +366,7 @@ class Alamouti(MimoBase):
         decode
 
         """
-        Nr, Ns = received_data.shape
+        Ns = received_data.shape[1]
         # Number of Alamouti codewords
         number_of_blocks = Ns / 2
         decoded_data = np.empty(Ns, dtype=complex)

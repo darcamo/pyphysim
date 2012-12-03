@@ -897,7 +897,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
-    def calc_cov_matrix_extint_plus_noise(self, noise_var=0):
+    def calc_cov_matrix_extint_plus_noise(self, noise_var=0, pe=1):
         """Calculates the covariance matrix of the external interference
         plus noise.
 
@@ -906,6 +906,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         noise_var : float, optional [default=0]
             Noise variance. If not specified, then only the covariance
             matrix of the external interference will be returned.
+        pe : float, optional [default=1]
+            External interference power (in linear scale)
 
         Returns
         -------
@@ -921,5 +923,5 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         # pudb.set_trace()
         for ii in range(self.Nr.size):
             extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
-            R[ii] = np.dot(extH, extH.transpose().conjugate()) + np.eye(self.Nr[ii]) * noise_var
+            R[ii] = pe * np.dot(extH, extH.transpose().conjugate()) + np.eye(self.Nr[ii]) * noise_var
         return R

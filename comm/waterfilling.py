@@ -63,7 +63,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
             Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     # Distributes the remaining power among the all the remaining channels
-    dPdiff = dPt - Ps.sum()
+    dPdiff = dPt - np.sum(Ps)
     vtOptPaux = dPdiff / (dNChannels - dRemoveChannels) + Ps
 
     # Put optimum power in the original channel order

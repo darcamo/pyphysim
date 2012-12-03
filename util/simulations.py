@@ -143,13 +143,14 @@ import itertools
 import copy
 import numpy as np
 
-from misc import pretty_time
-from progressbar import ProgressbarText
+from util.misc import pretty_time
+from util.progressbar import ProgressbarText
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# pylint: disable=R0921
 class SimulationRunner(object):
     """Base class to run Monte Carlo simulations.
     """
@@ -168,6 +169,9 @@ class SimulationRunner(object):
         # If, on the other hand, progressbar_message is None, then the
         # progressbar will be disabled.
         self.progressbar_message = 'Progress'
+        self.pbar = None  # This variable will be used later to store the
+                          # progressbar when it is created in the
+                          # _get_update_progress_function method
 
     def _run_simulation(self, current_parameters):
         """Performs one iteration of the simulation.
@@ -199,6 +203,7 @@ class SimulationRunner(object):
         """
         raise NotImplementedError("This function must be implemented in a subclass")
 
+    # pylint: disable=W0613,R0201
     def _keep_going(self, current_sim_results):
         """Check if the simulation should continue or stop.
 
@@ -245,8 +250,8 @@ class SimulationRunner(object):
 
         """
         # The returned function will update the bar
-        self.bar = ProgressbarText(self.rep_max, '*', message)
-        return lambda value: self.bar.progress(value)
+        self.pbar = ProgressbarText(self.rep_max, '*', message)
+        return self.pbar.progress
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     @property
@@ -257,6 +262,7 @@ class SimulationRunner(object):
 
     @property
     def runned_reps(self):
+        """Get method for the runned_reps property."""
         return self._runned_reps
 
     def simulate(self):
@@ -473,7 +479,10 @@ class SimulationParameters(object):
         """
         if name in self.parameters.keys():
             if isinstance(self.parameters[name], Iterable):
-                self._unpacked_parameters_set.add(name)
+                if unpack_bool is True:
+                    self._unpacked_parameters_set.add(name)
+                else:
+                    self._unpacked_parameters_set.remove(name)
             else:
                 raise ValueError("Parameter {0} is not iterable".format(name))
         else:
@@ -719,8 +728,8 @@ class SimulationParameters(object):
         filename : src
             Name of the file from where the results will be loaded.
         """
-        with open(filename, 'r') as input:
-            obj = pickle.load(input)
+        with open(filename, 'r') as inputfile:
+            obj = pickle.load(inputfile)
         return obj
 
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -744,8 +753,8 @@ class SimulationResults(object):
 
     def __repr__(self):
         lista = [i for i in self._results.keys()]
-        repr = "SimulationResults: %s" % lista
-        return repr
+        repr_string = "SimulationResults: %s" % lista
+        return repr_string
 
     def add_result(self, result):
         """Add a new result to the SimulationResults object. If there is
@@ -929,8 +938,8 @@ class SimulationResults(object):
         simresults : A SimulationResults object
             The SimulationResults object loaded from the file `filename`.
         """
-        with open(filename, 'r') as input:
-            obj = pickle.load(input)
+        with open(filename, 'r') as inputfile:
+            obj = pickle.load(inputfile)
         return obj
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1135,14 +1144,28 @@ class Result(object):
         # the equivalent of a switch statement.
         # First we define a function for each possibility.
         def __default_update(dummy1, dummy2):
+            """Default update method.
+
+            This will only be called when the update type is not one of the
+            available types. Thus, an exception will be raised.
+
+            """
             raise ValueError("Can't update a Result object of type '{0}'".format(self._update_type_code))
             # print("Warning: update not performed for unknown type %s" %
             #       self._update_type_code)
 
         def __update_SUMTYPE_value(value, dummy):
+            """Update the Result object when its type is SUMTYPE."""
             self._value += value
 
         def __update_RATIOTYPE_value(value, total):
+            """Update the Result object when its type is RATIOTYPE.
+
+            Raises
+            ------
+            ValueError
+                If the `total` parameter is None (not provided).
+            """
             if total is None:
                 raise ValueError("A 'value' and a 'total' are required when updating a Result object of the RATIOTYPE type.")
 
@@ -1152,6 +1175,7 @@ class Result(object):
             self._total += total
 
         def __update_by_replacing_current_value(value, dummy):
+            """Update the Result object when its type is MISCTYPE."""
             self._value = value
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1175,6 +1199,7 @@ class Result(object):
         other : Result object
             Another Result object.
         """
+        # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
         assert self._update_type_code != Result.MISCTYPE, (
@@ -1182,8 +1207,8 @@ class Result(object):
         assert self.name == other.name, (
             "Can only merge two objects with the same name and type")
         self.num_updates += other.num_updates
-        self._value += other._value
-        self._total += other._total
+        self._value += other._value  # pylint: disable=W0212
+        self._total += other._total  # pylint: disable=W0212
 
     def get_result(self):
         """Get the result stored in the Result object.

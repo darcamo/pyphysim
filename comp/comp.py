@@ -43,7 +43,7 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
         significant right singular vectors of Re_k.
 
     """
-    (min_Vs, remaining_Vs, S) = least_right_singular_vectors(Re_k, kept_streams)
+    min_Vs = least_right_singular_vectors(Re_k, kept_streams)[0]
     return min_Vs
 
 
@@ -110,7 +110,7 @@ class CompExtInt(Comp):
 
     """
 
-    def __init__(self, iNUsers, iPu, noiseVar):
+    def __init__(self, iNUsers, iPu, noiseVar, pe):
         """Initializes the CompExtInt object.
 
         Parameters
@@ -118,11 +118,14 @@ class CompExtInt(Comp):
         iNUsers : int
             Number of users.
         iPu : float
-            Power available for EACH user.
+            Power available for EACH user (in linear scale).
         noiseVar : float
             Noise variance (power in linear scale).
+        pe : float
+            Power of the external interference source (in linear scale)
         """
         Comp.__init__(self, iNUsers, iPu, noiseVar)
+        self.pe = pe
 
     @staticmethod
     def calc_receive_filter_user_k(Heq_k, P=None):
@@ -172,8 +175,8 @@ class CompExtInt(Comp):
         return W
 
     @staticmethod
-    def _calc_SNRs(Heq_k_red, Wk, Re_k):
-        """Calculates the effective SNRs of each channel with the applied
+    def _calc_linear_SINRs(Heq_k_red, Wk, Re_k):
+        """Calculates the effective SINRs of each channel with the applied
         precoder matrix `precoder`.
 
         Parameters
@@ -185,35 +188,60 @@ class CompExtInt(Comp):
             Receive filter for user `k`.
         Re_k : 1D numpy array of 2D numpy arrays.
             A numpy array where each element is the covariance matrix of
-            the external interference plus noise seen by a user.
+            the external interference PLUS noise seen by a user.
 
         Returns
         -------
-        SNRs : 1D numpy array
-            SNR (in linear scale) of all the parallel channels of all users.
+        sinrs : 1D numpy array
+            SINR (in linear scale) of all the parallel channels of all users.
 
         """
         #K = Re_k.size  # Number of users
-        import pudb
-        pudb.set_trace()
-
         mtP = np.dot(Wk, Heq_k_red)
         desired_power = np.abs(np.diagonal(mtP)) ** 2
         internalInterference = np.sum(np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
 
         Wk_H = Wk.transpose().conjugate()
+
         # Note that the noise is already accounted in the covariance matrix
         # Re_k
         external_interference_plus_noise = np.diagonal(
             np.dot(Wk, np.dot(Re_k, Wk_H))
         ).real
 
-        sinr = desired_power / (internalInterference + external_interference_plus_noise)
+        sinr = desired_power / (internalInterference + np.abs(external_interference_plus_noise))
         return sinr
 
-    def perform_comp(self, mu_channel, noise_var):
+    @staticmethod
+    def _calc_shannon_sum_capacity(sinrs):
+        """Calculate the sum of the Shannon capacity of the values in `sinrs`
+
+        Parameters
+        ----------
+        sinrs : 1D numpy array or float
+            SINR values (in linear scale).
+
+        Returns
+        -------
+        sum_capacity : floar
+            Sum capacity.
+
+        Examples
+        --------
+        >>> sinrs_linear = np.array([11.4, 20.3])
+        >>> print CompExtInt._calc_shannon_sum_capacity(sinrs_linear)
+        8.04504974084
+        """
+        sum_capacity = np.sum(np.log2(1 + sinrs))
+
+        return sum_capacity
+
+    def perform_comp(self, mu_channel):
         """Perform the block diagonalization of `mu_channel` taking the external
         interference into account.
+
+        Two important parameters used here are the `noise_var` (noise
+        variance) and the `pe` (external interference power) attributes.
 
         Parameters
         ----------
@@ -221,8 +249,6 @@ class CompExtInt(Comp):
             A MultiUserChannelMatrixExtInt object, which has the channel
             from all the transmitters to all the receivers, as well as th
             external interference.
-        noise_var : float
-            Noise variance.
 
         Returns
         -------
@@ -233,7 +259,7 @@ class CompExtInt(Comp):
         Nr = mu_channel.Nr
         Nt = mu_channel.Nt
         H_matrix = mu_channel.big_H_no_ext_int
-        Re = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var)
+        Re = mu_channel.calc_cov_matrix_extint_plus_noise(self.noise_var, self.pe)
 
         Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
 
@@ -243,7 +269,9 @@ class CompExtInt(Comp):
         H_all_ks = single_matrix_to_matrix_of_matrices(H_matrix, Nr)
 
         # Loop for the users
+        MsPk_all_users = np.empty(K, dtype=np.ndarray)
         for userindex in range(K):
+            #print 'User: {0}'.format(userindex)
             Ntk = Nt[userindex]
             Rek = Re[userindex]
             Hk = H_all_ks[userindex]
@@ -253,15 +281,27 @@ class CompExtInt(Comp):
             # process, but without any stream reduction
             Heq_k = np.dot(Hk, Msk)
 
+            # DARLAN CONTINUE AQUI
+
             # We can have from a single stream to all streams (the number
             # of transmit antennas). This loop varies the number of
             # transmit streams of user k.
-            for Ns_k in range(1, Ntk + 1):
+            sum_capacity_k = np.empty(Ntk)
+            Pk_all = np.empty(Ntk, dtype=np.ndarray)
+            norm_term_all = np.empty(Ntk)
+            for index in range(Ntk):
+                Ns_k = index + 1
                 # Find Pk
                 Pk = _calc_stream_reduction_matrix(Rek, Ns_k)
+                Pk_all[index] = Pk  # Save for later
+
+                # Normalization term for the combined BD matrix Msk and stream
+                # reduction matrix Pk
+                norm_term = np.linalg.norm(np.dot(Msk, Pk), 'fro') / np.sqrt(self.iPu)
+                norm_term_all[index] = norm_term  # Save for later
 
                 # Equivalent channel with stream reduction
-                Heq_k_red = np.dot(Heq_k, Pk)
+                Heq_k_red = np.dot(Heq_k, Pk / norm_term)
 
                 # Calculates the receive filter W_k (note
                 # calc_receive_filter_user_k receives the channel without
@@ -269,36 +309,20 @@ class CompExtInt(Comp):
                 # matrix)
                 W_k = self.calc_receive_filter_user_k(Heq_k, Pk)
 
-                SNRs_k = self._calc_SNRs(Heq_k_red, W_k, Rek)
-                print SNRs_k
+                # SINR (in linear scale) of all streams of user k.
+                sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
+
+                sum_capacity_k[index] = self._calc_shannon_sum_capacity(sinrs_k)
+                #print 'SumCapacity: {0}'.format(sum_capacity_k[index])
 
             print
-                # DARLAN: CONTINUE AQUI
-        return 0
+            # The index with the highest metric value. This is equivalent
+            # to the number of transmit streams which yields the highest
+            # value of the metric.
+            best_index = np.argmax(sum_capacity_k)
+            MsPk_all_users[userindex] = np.dot(Msk, Pk_all[best_index]) / norm_term_all[best_index]
 
-        # # xxxxx SINRs with no stream reduction xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # # Since there is no projection
-        # Ms_good = self._perform_normalized_waterfilling_power_scaling(Ms_bad,
-        #                                                               Sigma)
-        # newH = np.dot(channel_matrix, Ms_good)
-        # W = self.calc_receive_filter(newH)
-
-        # SNRs = self._calc_SNRs(newH, W, Re)
-        # print SNRs
-
-        # #U, S, V_h = np.linalg
-
-        # Q = np.empty(self.iNUsers, dtype=np.ndarray)
-        # for k in range(self.iNUsers):
-        #     # Calculates a projection matrix to the subspace orthogonal to
-        #     # the external interference
-        #     Q[k] = calcOrthogonalProjectionMatrix(Re)
-
-        #(newH, Ms_good) = BlockDiaginalizer.block_diagonalize(self, H_matrix)
-
-        # xxxxxxxxxx Calculates the SINR with only BD xxxxxxxxxxxxxxxxxxxxx
-
-        #return (newH, Ms_good)
+        return MsPk_all_users
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

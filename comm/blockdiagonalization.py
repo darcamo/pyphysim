@@ -23,7 +23,7 @@ import collections
 #from scipy.linalg import block_diag
 
 from util.misc import least_right_singular_vectors
-import waterfilling
+from comm import waterfilling
 
 
 class BlockDiaginalizer(object):
@@ -58,21 +58,21 @@ class BlockDiaginalizer(object):
 
     """
 
-    def __init__(self, iNUsers, iPu, noiseVar):
+    def __init__(self, num_users, iPu, noise_var):
         """Initialize the BlockDiaginalizer object.
 
         Parameters
         ----------
-        iNUsers : int
+        num_users : int
             Number of users.
         iPu : float
             Power available for EACH user.
-        noiseVar : float
+        noise_var : float
             Noise variance (power in linear scale).
         """
-        self.iNUsers = iNUsers
+        self.num_users = num_users
         self.iPu = iPu
-        self.noiseVar = noiseVar
+        self.noise_var = noise_var
 
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
         """Calculates the modulation matrix "M" without any king of power
@@ -111,11 +111,11 @@ class BlockDiaginalizer(object):
             Sigma. Therefore, Sigma can be used latter in the power
             allocation process.
         """
-        (iNr, iNt) = mtChannel.shape
-        assert iNr % self.iNUsers == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
+        iNr = mtChannel.shape[0]
+        assert iNr % self.num_users == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
 
         # Number of antennas per user
-        iNrU = iNr / self.iNUsers
+        iNrU = iNr / self.num_users
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Ms_bad = []
@@ -126,7 +126,7 @@ class BlockDiaginalizer(object):
         # Note that $\tilde{\mat{H}}_j = \tilde{\mtU}_j \tilde{\Sigma}_j [\tilde{\mtV}_j^{(1)} \; \tilde{\mtV}_j^{(0)}]^H$ where $\tilde{\mtV}_j^{(1)}$ holds
         # the first $\tilde{L}_j$ right singular vectors and $\tilde{\mtV}_j^{(0)}$ holds the
         # last $(n_T - \tilde{L}_j)$ right singular values
-        for user in range(0, self.iNUsers):
+        for user in range(0, self.num_users):
             # channel of all users except the current user
             tilde_H_cur_user = self._get_tilde_channel(mtChannel, user)
 
@@ -134,9 +134,9 @@ class BlockDiaginalizer(object):
             # total number of receive antennas minus the rank of
             # tilde_H_cur_user
             nStreams = iNr - np.linalg.matrix_rank(tilde_H_cur_user)
-            (tilde_V0, tilde_V1, tilde_S) = least_right_singular_vectors(
+            tilde_V0 = least_right_singular_vectors(
                 tilde_H_cur_user,
-                nStreams)
+                nStreams)[0]
 
             # The equivalent channel of the current user corresponds to
             # $\mtH_j \tilde{\mtV}_j^{(0)}$
@@ -145,7 +145,7 @@ class BlockDiaginalizer(object):
             H_cur_user = self._getSubChannel(mtChannel, user)
 
             # Now we get the right singular value of the equivalent channel
-            (V0, V1, S) = least_right_singular_vectors(
+            (_, V1, S) = least_right_singular_vectors(
                 np.dot(H_cur_user, tilde_V0),
                 # Number of receive antennas minus number of desired
                 # streams
@@ -189,10 +189,10 @@ class BlockDiaginalizer(object):
         # Perform water-filling for the parallel channel gains in Sigma
         # (but considering a global power constraint, each element (power)
         # in Sigma comes from all APs)
-        total_power = self.iNUsers * self.iPu
-        (vtOptP, mu) = waterfilling.doWF(Sigma ** 2,
-                                         total_power,
-                                         self.noiseVar)
+        total_power = self.num_users * self.iPu
+        vtOptP = waterfilling.doWF(Sigma ** 2,
+                                   total_power,
+                                   self.noise_var)[0]
 
         Ms_good = np.dot(Ms_bad,
                          np.diag(np.sqrt(vtOptP)))
@@ -233,7 +233,7 @@ class BlockDiaginalizer(object):
         #
         # Note: I think this only works if the number of receive transmit
         # is equal to the number of receive antennas
-        iNtU = Sigma.size / float(self.iNUsers)
+        iNtU = Sigma.size / float(self.num_users)
 
         # First we perform the global waterfilling
         Ms_good = self._perform_global_waterfilling_power_scaling(
@@ -245,7 +245,7 @@ class BlockDiaginalizer(object):
         # individual power constraints are satisfied). This will be
         # sub-optimal for the other bases, but it is what we can do.
         max_sqrt_P = 0
-        for user in range(0, self.iNUsers):
+        for user in range(0, self.num_users):
             # Calculate the Frobenius norm of the matrix corresponding to
             # the transmitter `user`
             user_matrix = Ms_good[:, user * iNtU:user * iNtU + iNtU]
@@ -316,18 +316,18 @@ class BlockDiaginalizer(object):
         """Return the combined channel of all users except `user` .
 
         """
-        vtAllUserIndexes = np.arange(0, self.iNUsers)
+        vtAllUserIndexes = np.arange(0, self.num_users)
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
         return self._getSubChannel(mtChannel, desiredUsers)
 
-    def _getSubChannel(self, mt_channel, vtDesiredUsers):
-        """Get a subchannel according to the vtDesiredUsers vector.
+    def _getSubChannel(self, mt_channel, desired_users):
+        """Get a subchannel according to the desired_users vector.
 
         Parameters
         ----------
         mt_channel : 2D numpy array
             Channel of all users
-        vtDesiredUsers : iterable of integers
+        desired_users : iterable of integers
             An iterable with the indexes of the desired users or an
             integer.
 
@@ -354,30 +354,30 @@ class BlockDiaginalizer(object):
                [ 1.,  1.,  1.,  1.,  1.,  1.]])
 
         """
-        (rows, cols) = mt_channel.shape
-        iNrU = rows / self.iNUsers  # Number of receive antennas per user
+        nrows = mt_channel.shape[0]
+        iNrU = nrows / self.num_users  # Number of receive antennas per user
 
-        if isinstance(vtDesiredUsers, collections.Iterable):
+        if isinstance(desired_users, collections.Iterable):
             vtIndexes = []
-            for index in vtDesiredUsers:
+            for index in desired_users:
                 vtIndexes.extend(range(iNrU * index, (index + 1) * iNrU))
         else:
-            vtIndexes = range(iNrU * vtDesiredUsers, (vtDesiredUsers + 1) * iNrU)
+            vtIndexes = range(iNrU * desired_users, (desired_users + 1) * iNrU)
         return mt_channel[vtIndexes, :]
 
 
-def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar):
+def block_diagonalize(mtChannel, num_users, iPu, noise_var):
     """Performs the block diagonalization of :attr:`mtChannel`.
 
     Parameters
     ----------
     mtChannel : 2D numpy array
         Global channel matrix
-    iNUsers : int
+    num_users : int
         Number of users
     iPu : float
         Power available for each user
-    noiseVar : float
+    noise_var : float
         Noise variance
 
     Returns
@@ -388,8 +388,19 @@ def block_diagonalize(mtChannel, iNUsers, iPu, noiseVar):
         corresponding to the precoder matrix used to block diagonalize
         the channel.
 
+    Notes
+    -----
+    The block diagonalization algorithm is described in [1]_, where
+    different power allocations are illustrated. The :class:`BlockDiaginalizer`
+    class implement two power allocation methods, a global power
+    allocation, and a 'per transmitter' power allocation.
+
+    .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
+       "Zero-Forcing Methods for Downlink Spatial Multiplexing
+       in Multiuser MIMO Channels," IEEE Transactions on Signal
+       Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
     """
-    BD = BlockDiaginalizer(iNUsers, iPu, noiseVar)
+    BD = BlockDiaginalizer(num_users, iPu, noise_var)
     results_tuple = BD.block_diagonalize(mtChannel)
     return results_tuple
 

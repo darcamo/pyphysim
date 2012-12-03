@@ -28,6 +28,10 @@ class OFDM(object):
         ValueError
             If the any of the parameters are invalid.
         """
+        self.fft_size = 0
+        self.cp_size = 0
+        self.num_used_subcarriers = 0
+
         self.set_parameters(fft_size, cp_size, num_used_subcarriers)
 
     def set_parameters(self, fft_size, cp_size, num_used_subcarriers=None):
@@ -226,7 +230,7 @@ class OFDM(object):
         num_symbs = input_signal.size
         # Calculates how many zeros need to be added as well as the number
         # of equivalent OFDM symbols.
-        zeropad, num_ofdm_symbols = self._calc_zeropad(num_symbs)
+        num_ofdm_symbols = self._calc_zeropad(num_symbs)[1]
 
         # Finally add the zeros to the input data
         input_signal = np.hstack([input_signal, np.zeros(self.num_used_subcarriers * num_ofdm_symbols - num_symbs)])

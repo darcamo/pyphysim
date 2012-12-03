@@ -6,7 +6,7 @@
 import numpy as np
 import math
 
-from projections import calcProjectionMatrix
+from subspace.projections import calcProjectionMatrix
 
 
 # TODO: I think calcPrincipalAngles is not correct when matrix1 e matrix2
@@ -43,8 +43,8 @@ def calcPrincipalAngles(matrix1, matrix2):
     # matrix2, o que consigo com a decomposicao QR. Note que se matrix1
     # possui `n` colunas então sua base orthogonal é formada pelas `n`
     # primeiras colunas de Q1
-    (Q1, R1) = np.linalg.qr(matrix1)
-    (Q2, R2) = np.linalg.qr(matrix2)
+    Q1 = np.linalg.qr(matrix1)[0]
+    Q2 = np.linalg.qr(matrix2)[0]
 
     # TODO: Teste quem tem mais colunas que quem. Q1 deve ter dimensao
     # maior ou igual que Q2 para que a SVD seja calculada nessa ordem
@@ -52,7 +52,8 @@ def calcPrincipalAngles(matrix1, matrix2):
     #
     # Veja um algoritmo em
     # http://sensblogs.wordpress.com/2011/09/07/matlab-codes-for-principal-angles-also-termed-as-canonical-correlation-between-any-arbitrary-subspaces-redirected-from-jen-mei-changs-dissertation/
-    (U, S, V_H) = np.linalg.svd(Q1.conjugate().transpose().dot(Q2), full_matrices=False)
+    S = np.linalg.svd(
+        Q1.conjugate().transpose().dot(Q2), full_matrices=False)[1]
 
     # Os valores singulares em S variam entre 0 e 1, mas devido a
     # imprecisões computacionais pode ter algum valor acima de um (por um
@@ -131,8 +132,8 @@ def calcChordalDistance(matrix1, matrix2):
     >>> print calcChordalDistance(A, B)
     0.473867859572
     """
-    (Q1, R1) = np.linalg.qr(matrix1)
-    (Q2, R2) = np.linalg.qr(matrix2)
+    Q1 = np.linalg.qr(matrix1)[0]
+    Q2 = np.linalg.qr(matrix2)[0]
 
     #ncols = matrix1.shape[1]  # Deve ser igual a matrix2.shape[1].
 

@@ -26,6 +26,7 @@ The complete list of articles in the PyPhysim documentation is shown below.
    simulators
    writing_documentation
    writing_unittests
+   speedup
    
 Indices and tables
 ==================

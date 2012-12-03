@@ -554,6 +554,14 @@ class SimulationParametersTestCase(unittest.TestCase):
         # appended to their name.
         self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
 
+        # Test if we can unset a parameter that was previously set to be
+        # unpacked.
+        self.sim_params.set_unpack_parameter('fourth', False)
+        print self.sim_params.unpacked_parameters
+        self.assertEqual(
+            set(self.sim_params.unpacked_parameters),
+            set(['third']))
+
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])

@@ -100,26 +100,59 @@ class CompExtInt(unittest.TestCase):
             overbar_P2)
         np.testing.assert_array_almost_equal(expected_W2, W2)
 
+    # TODO: Implement-me
     def test_calc_SNRs(self):
         pass
+
+    def test_calc_shannon_sum_capacity(self):
+        sinrs_linear = np.array([11.4, 20.3])
+        expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
+        self.assertAlmostEqual(
+            expected_sum_capacity,
+            comp.CompExtInt._calc_shannon_sum_capacity(sinrs_linear))
 
     def test_perform_comp(self):
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size
         Nti = 1
-        iPu = 0.8  # Power for each user
-        noise_var = 1e-50
+        iPu = 1e-3  # Power for each user (linear scale)
+        pe = 1e-5  # External interference power (in linear scale)
+        noise_var = 1e-4
 
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
         multiUserChannel.randomize(Nr, Nt, K, Nti)
 
         # Create the comp object
-        comp_obj = comp.CompExtInt(K, iPu, noise_var)
-        comp_obj.perform_comp(multiUserChannel, noise_var)
+        comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
+        # import pudb
+        # pudb.set_trace()
+        MsPk_all = comp_obj.perform_comp(multiUserChannel)
+
+        print
+
+        MsPk_0 = MsPk_all[0]
+        MsPk_1 = MsPk_all[1]
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_0, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
+
+        print MsPk_0.round(4)
+        print
+        print MsPk_1.round(4)
+        print
+        MsPk = np.hstack(MsPk_all)
+        print MsPk.round(4)
 
         # TODO: Finish the implementation
-        pass
+        print multiUserChannel.big_H_no_ext_int.shape
+        newH = np.dot(multiUserChannel.big_H_no_ext_int, MsPk)
+        print newH.round(4)
+
+        print "Darlan"
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
