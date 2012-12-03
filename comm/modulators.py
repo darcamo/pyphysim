@@ -322,7 +322,7 @@ class Modulator(object):
         error rate (PER) for the given SNR and packet_length 'L', such that
 
         .. math::
-           se = K * PER
+           se = K * (1 - PER)
 
         Parameters
         ----------
@@ -345,9 +345,9 @@ class Modulator(object):
 
         """
         if packet_length is None:
-            se = self.calcTheoreticalBER(SNR) * self.K
+            se = self.K * (1 - self.calcTheoreticalBER(SNR))
         else:
-            se = self.calcTheoreticalPER(SNR, packet_length) * self.K
+            se = self.K * (1 - self.calcTheoreticalPER(SNR, packet_length))
         return se
 
 # xxxxx End of Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
