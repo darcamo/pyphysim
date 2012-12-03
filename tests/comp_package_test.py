@@ -18,7 +18,7 @@ import doctest
 
 import numpy as np
 
-from comm import channels
+from comm import channels, modulators
 from comp import comp
 from util.misc import least_right_singular_vectors, randn_c
 from subspace.projections import calcProjectionMatrix
@@ -64,8 +64,49 @@ class CompExtInt(unittest.TestCase):
         pass
 
     def test_set_ext_int_handling_metric(self):
-        # TODO: implement-me
-        pass
+        K = 3
+        iPu = 1e-3  # Power for each user (linear scale)
+        noise_var = 1e-4
+        pe = 0
+
+        # Create the comp object
+        comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
+
+        # xxxxx Test if an assert is raised for invalid arguments xxxxxxxxx
+        with self.assertRaises(AttributeError):
+            comp_obj.set_ext_int_handling_metric('lala')
+
+        with self.assertRaises(AttributeError):
+            # If we set the metric to effective_throughput but not provide
+            # the modulator and package_length attributes.
+            comp_obj.set_ext_int_handling_metric('effective_throughput')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
+        psk_obj = modulators.PSK(4)
+        comp_obj.set_ext_int_handling_metric('effective_throughput',
+                                             modulator=psk_obj,
+                                             package_length=120)
+        self.assertEqual(comp_obj._metric_func,
+                         comp_obj._calc_effective_throughput)
+        self.assertEqual(comp_obj._modulator, psk_obj)
+        self.assertEqual(comp_obj._package_length, 120)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
+        comp_obj.set_ext_int_handling_metric('capacity')
+        self.assertEqual(comp_obj._metric_func,
+                         comp_obj._calc_shannon_sum_capacity)
+        self.assertIsNone(comp_obj._modulator)
+        self.assertIsNone(comp_obj._package_length)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to None xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        comp_obj.set_ext_int_handling_metric(None)
+        self.assertIsNone(comp_obj._metric_func)
+        self.assertIsNone(comp_obj._modulator)
+        self.assertIsNone(comp_obj._package_length)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_receive_filter(self):
         # Equivalent channel without including stream reduction

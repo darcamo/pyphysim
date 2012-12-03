@@ -135,7 +135,6 @@ class CompExtInt(Comp):
         self._modulator = None
         self._package_length = None
 
-    # TODO: Implement a unittest for this method
     def set_ext_int_handling_metric(self, metric,
                                     modulator=None, package_length=None):
         """Set the metric used to decide how many streams to sacrifice for
@@ -186,13 +185,13 @@ class CompExtInt(Comp):
             self._modulator = None
             self._package_length = None
 
-        if metric == 'capacity':
-            self._metric_func = CompExtInt._calc_shannon_sum_capacity
+        elif metric == 'capacity':
+            self._metric_func = self._calc_shannon_sum_capacity
             self._modulator = None
             self._package_length = None
 
-        if metric == 'effective_throughput':
-            self._metric_func = CompExtInt._calc_effective_throughput
+        elif metric == 'effective_throughput':
+            self._metric_func = self._calc_effective_throughput
             if (modulator is None) or (package_length is None):
                 raise AttributeError("The modulator and package_length attributes must be provided for the 'effective_throughput' metric.")
             self._modulator = modulator

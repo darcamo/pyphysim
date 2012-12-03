@@ -46,6 +46,8 @@ class Modulator(object):
     array([ 1.+1.j, -1.+1.j, -1.-1.j,  1.-1.j])
     >>> m.M
     4
+    >>> m.K
+    2.0
     >>> m
     4-Modulator object
     >>> m.modulate(np.array([0, 0, 3, 3, 1, 3, 3, 3, 2, 2]))
@@ -58,15 +60,33 @@ class Modulator(object):
     """
 
     def __init__(self):
+        """Initializes the Modulator object.
         """
-        """
-        # This should be set in a subclass of the Modulator Class.
-        self.M = 0
+        # This should be set in a subclass of the Modulator Class by
+        # calling the setConstellation method..
+        self._M = 0  # Constellation size (modulation cardinality)
+        self._K = 0  # Number of bits represented by each symbol in the
+                     # constellation
         self.symbols = np.array([])
 
     @property
     def name(self):
-        return "{0:d}-{1:s}".format(self.M, self.__class__.__name__)
+        return "{0:d}-{1:s}".format(self._M, self.__class__.__name__)
+
+    def _get_M(self):
+        """Get method for the M property."""
+        return self._M
+    M = property(_get_M)
+
+    def _get_K(self):
+        """Get method for the K property.
+
+        The `K` property corresponds to the number of bits represented by
+        each symbol in the constellation. It is equal to log2(M), where `M`
+        is the constellation size.
+        """
+        return self._K
+    K = property(_get_K)
 
     def __repr__(self):  # pragma: no cover
         return "{0} object".format(self.name)
@@ -83,7 +103,9 @@ class Modulator(object):
             A an numpy array with the symbol table.
 
         """
-        self.M = symbols.size
+        M = symbols.size
+        self._M = M
+        self._K = np.log2(M)
         self.symbols = symbols
 
     def plotConstellation(self):  # pragma: no cover
@@ -99,7 +121,7 @@ class Modulator(object):
         ax.axis('equal')
         ax.grid()
 
-        formatString = "{0:0=" + str(level2bits(self.M)) + "b} ({0})"
+        formatString = "{0:0=" + str(level2bits(self._M)) + "b} ({0})"
 
         index = 0
         for symbol in self.symbols:
@@ -130,7 +152,7 @@ class Modulator(object):
         ------
         ValueError
             If inputData has any invalid value such as values greater than
-            self.M - 1. Note that inputData should not have negative values
+            self._M - 1. Note that inputData should not have negative values
             but no check is done for this.
 
         """
@@ -227,6 +249,42 @@ class Modulator(object):
         This function should be implemented in the derived classes
         """
         raise NotImplementedError("calcTheoreticalBER: Not implemented")
+
+    def calcTheoreticalPER(self, SNR, packet_length):
+        """Calculates the theoretical package error rate.
+
+        A package is a group of bits, where if a single bit is in error
+        then the whole package is considered to be in error.
+
+        The package error rate (PER) is a direct mapping of the bit error
+        rate (BER), such that
+
+        .. math::
+           PER = 1 - (1 - BER)^{L}
+
+        where :math:`L` is the package_length.
+
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+        packet_length : int
+            The package length. That is, the number of bits in each
+            package.
+
+        Returns
+        -------
+        PER : float
+            The theoretical package error rate.
+
+        See also
+        --------
+        calcTheoreticalBER
+        """
+        BER = self.calcTheoreticalBER(SNR)
+        PER = 1 - ((1 - BER) ** packet_length)
+        return PER
+
 # xxxxx End of Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -297,7 +355,7 @@ class PSK(Modulator):
             A phase offset (in radians) to be applied to the PSK
             constellation.
         """
-        self.setConstellation(self._createConstellation(self.M, phaseOffset))
+        self.setConstellation(self._createConstellation(self._M, phaseOffset))
 
     def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation for high M and high
@@ -318,7 +376,7 @@ class PSK(Modulator):
         # $P_s \approx 2Q\left(\sqrt{2\gamma_s}\sin\frac{\pi}{M}\right)$
         # Alternative formula (same result)
         # $P_s = erfc \left ( \sqrt{\gamma_s} \sin(\frac{\pi}{M})  \right )$
-        ser = 2. * qfunc(np.sqrt(2. * snr) * math.sin(PI / self.M))
+        ser = 2. * qfunc(np.sqrt(2. * snr) * math.sin(PI / self._M))
         return ser
 
     def calcTheoreticalBER(self, SNR):
@@ -337,7 +395,7 @@ class PSK(Modulator):
         """
         # $P_b = \frac{1}{k}P_s$
         # Number of bits per symbol
-        k = level2bits(self.M)
+        k = level2bits(self._M)
         return 1.0 / k * self.calcTheoreticalSER(SNR)
 
 
@@ -428,7 +486,7 @@ class BPSK(Modulator):
         ------
         ValueError
             If inputData has any invalid value such as values greater than
-            self.M - 1. Note that inputData should not have negative values
+            self._M - 1. Note that inputData should not have negative values
             but no check is done for this.
 
         """
@@ -602,8 +660,8 @@ class QAM(Modulator):
         snr = dB2Linear(SNR)
         # Probability of error of each carrier in a square QAM
         # $P_{sc} = 2\left(1 - \frac{1}{\sqrt M}\right)Q\left(\sqrt{\frac{3}{M-1}\frac{E_s}{N_0}}\right)$
-        sqrtM = np.sqrt(self.M)
-        Psc = 2. * (1. - (1. / sqrtM)) * qfunc(np.sqrt(snr * 3. / (self.M - 1.)))
+        sqrtM = np.sqrt(self._M)
+        Psc = 2. * (1. - (1. / sqrtM)) * qfunc(np.sqrt(snr * 3. / (self._M - 1.)))
         return Psc
 
     def calcTheoreticalSER(self, SNR):
@@ -644,7 +702,7 @@ class QAM(Modulator):
         # corresponds to approximately a single bit error. The BER is then
         # given by the probability of error of a single carrier in the QAM
         # system divided by the number of bits transported in that carrier.
-        k = level2bits(self.M)
+        k = level2bits(self._M)
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
         ber = (2. * Psc) / k
         return ber

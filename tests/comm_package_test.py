@@ -908,7 +908,6 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: finish implementation
 class MimoBaseTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1244,7 +1243,6 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: finish implementation
 class PSKTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1252,10 +1250,14 @@ class PSKTestCase(unittest.TestCase):
         self.psk_obj2 = modulators.PSK(8)
 
     def test_constellation(self):
+        self.assertEqual(self.psk_obj.M, 4)
+        self.assertAlmostEqual(self.psk_obj.K, 2)
         np.testing.assert_array_almost_equal(
             self.psk_obj.symbols,
             np.array([1. + 0.j, 0. + 1.j, 0. - 1.j, -1. + 0.j]))
 
+        self.assertEqual(self.psk_obj2.M, 8)
+        self.assertAlmostEqual(self.psk_obj2.K, 3)
         np.testing.assert_array_almost_equal(
             self.psk_obj2.symbols,
             np.array([1. + 0.j, 0.70710678 + 0.70710678j,
@@ -1295,6 +1297,29 @@ class PSKTestCase(unittest.TestCase):
             self.psk_obj2.calcTheoreticalBER(SNR_values),
             theoretical_ser2 / 3.)
 
+    # The calcTheoreticalPER method is defined in the Modulatros class, but
+    # can only be tested in a subclass, since it depends on the
+    # calcTheoreticalBER method. Therefore, we chose to test it here.
+    def test_calc_theoretical_PER(self):
+        L1 = 50
+        L2 = 120
+        SNRs = np.array([10, 13])
+        # The BER for SNR values of 10 and 13 are 7.82701129e-04 and
+        # 3.96924840e-06, respectively
+        BER = self.psk_obj.calcTheoreticalBER(SNRs)
+
+        expected_PER1 = (1 - BER) ** L1
+        expected_PER1 = 1 - expected_PER1
+
+        expected_PER2 = (1 - BER) ** L2
+        expected_PER2 = 1 - expected_PER2
+
+        PER1 = self.psk_obj.calcTheoreticalPER(SNRs, L1)
+        PER2 = self.psk_obj.calcTheoreticalPER(SNRs, L2)
+
+        np.testing.assert_array_almost_equal(PER1, expected_PER1)
+        np.testing.assert_array_almost_equal(PER2, expected_PER2)
+
     def test_modulate_and_demodulate(self):
         noise = randn_c(20,) * 1e-2
 
@@ -1316,13 +1341,14 @@ class PSKTestCase(unittest.TestCase):
             self.psk_obj2.modulate(10)
 
 
-# TODO: finish implementation
 class BPSKTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.bpsk_obj = modulators.BPSK()
 
     def test_constellation(self):
+        self.assertEqual(self.bpsk_obj.M, 2)
+        self.assertAlmostEqual(self.bpsk_obj.K, 1)
         np.testing.assert_array_almost_equal(self.bpsk_obj.symbols,
                                              np.array([1, -1]))
 
@@ -1354,7 +1380,6 @@ class BPSKTestCase(unittest.TestCase):
             self.bpsk_obj.modulate(2)
 
 
-# TODO: finish implementation
 class QAMTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1368,15 +1393,16 @@ class QAMTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             modulators.QAM(63)
 
-    # TODO: Maybe this constellation here is not correct (the gray mapping
-    # part). If you plot the constellation you can see that neighboor
-    # symbols change more then one bit.
     def test_constellation(self):
+        self.assertEqual(self.qam_obj.M, 4)
+        self.assertAlmostEqual(self.qam_obj.K, 2)
         np.testing.assert_array_almost_equal(
             self.qam_obj.symbols,
             np.array([-0.70710678 + 0.70710678j, 0.70710678 + 0.70710678j,
                       -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j]))
 
+        self.assertEqual(self.qam_obj2.M, 16)
+        self.assertAlmostEqual(self.qam_obj2.K, 4)
         np.testing.assert_array_almost_equal(
             self.qam_obj2.symbols,
             np.array([-0.94868330 + 0.9486833j, -0.31622777 + 0.9486833j,
@@ -1388,8 +1414,8 @@ class QAMTestCase(unittest.TestCase):
                       -0.94868330 - 0.31622777j, -0.31622777 - 0.31622777j,
                       0.94868330 - 0.31622777j, 0.31622777 - 0.31622777j]))
 
-        #print self.qam_obj3.symbols
-
+        self.assertEqual(self.qam_obj3.M, 64)
+        self.assertAlmostEqual(self.qam_obj3.K, 6)
         np.testing.assert_array_almost_equal(
             self.qam_obj3.symbols,
             np.array([-1.08012345 + 1.08012345j, -0.77151675 + 1.08012345j,
@@ -1425,7 +1451,6 @@ class QAMTestCase(unittest.TestCase):
                       0.77151675 - 0.15430335j, 1.08012345 - 0.15430335j,
                       0.46291005 - 0.15430335j, 0.15430335 - 0.15430335j]))
 
-    # TODO: Implement-me
     def test_calc_theoretical_SER_and_BER(self):
         SNR_values = np.array([0, 5, 10, 15, 20])
 
@@ -1505,7 +1530,6 @@ class QAMTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: finish implementation
 class PathLossBaseTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1519,7 +1543,6 @@ class PathLossBaseTestCase(unittest.TestCase):
             self.pl._calc_deterministic_path_loss_dB(None)
 
 
-# TODO: finish implementation
 class PathLossFreeSpaceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
