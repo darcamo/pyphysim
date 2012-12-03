@@ -63,6 +63,10 @@ class CompExtInt(unittest.TestCase):
         """Called before each test."""
         pass
 
+    def test_set_ext_int_handling_metric(self):
+        # TODO: implement-me
+        pass
+
     def test_calc_receive_filter(self):
         # Equivalent channel without including stream reduction
         Heq_k = randn_c(3, 3)

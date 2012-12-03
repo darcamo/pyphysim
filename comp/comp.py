@@ -127,6 +127,79 @@ class CompExtInt(Comp):
         Comp.__init__(self, iNUsers, iPu, noiseVar)
         self.pe = pe
 
+        # Function used to decide how many streams will be sacrificed to
+        # mitigate external interference. This is set in the
+        # set_ext_int_handling_metric method (as well as the _modulator and
+        # _package_length attributes)
+        self._metric_func = None  # The default metric will be None
+        self._modulator = None
+        self._package_length = None
+
+    # TODO: Implement a unittest for this method
+    def set_ext_int_handling_metric(self, metric,
+                                    modulator=None, package_length=None):
+        """Set the metric used to decide how many streams to sacrifice for
+        external interference handling.
+
+        - If `metric` is None, then no streams will be sacrificed and the
+          external interference won't be mitigated.
+
+        - If `metric` is 'capacity', then the the sum capacity will be used
+          to decide how many streams to sacrifice. That is, the
+          _calc_shannon_sum_capacity method will be used in perform_comp to
+          map the calculated sinrs into a sum capacity and the number of
+          sacrificed streams will be the one with the highest sum capacity.
+
+        - If `metric` is 'effective_throughput' then the effective
+          throughput will be used to decide how many streams to
+          sacrifice. That is, the _calc_effective_throughput method will be
+          used in perform_comp to map the calculated sinrs into an
+          effective throughput and the number of sacrificed streams will be
+          the one with the highest sum capacity.
+
+        Notes
+        -----
+        If `metric` is 'effective_throughput' then the modulator and
+        package_length arguments must be provided. For the other metric
+        options they will be ignored if provided.
+
+        Parameters
+        ----------
+        metric : str, {None, 'capacity', 'effective_throughput'}
+            The metric name. Must be one of the available metrics.
+        modulator : comm.modulators.Modulator object
+            The modulator object used in the simulation. It will be used to
+            calculate the theoretical BER and (with the package length,
+            the theoretical PER)
+        package_length : int
+            The package length used in the simulation.
+
+        Raises
+        ------
+        AttributeError
+            If the metric is not one of {None, 'capacity',
+            'effective_throughput'}
+
+        """
+        if metric is None:
+            self._metric_func = None
+            self._modulator = None
+            self._package_length = None
+
+        if metric == 'capacity':
+            self._metric_func = CompExtInt._calc_shannon_sum_capacity
+            self._modulator = None
+            self._package_length = None
+
+        if metric == 'effective_throughput':
+            self._metric_func = CompExtInt._calc_effective_throughput
+            if (modulator is None) or (package_length is None):
+                raise AttributeError("The modulator and package_length attributes must be provided for the 'effective_throughput' metric.")
+            self._modulator = modulator
+            self._package_length = package_length
+        else:
+            raise AttributeError("The `metric` attribute can only be one of {None, 'capacity', 'effective_throughput'}")
+
     @staticmethod
     def calc_receive_filter_user_k(Heq_k, P=None):
         """Calculates the Zero-Forcing receive filter of a single user `k`
@@ -212,6 +285,8 @@ class CompExtInt(Comp):
         sinr = desired_power / (internalInterference + np.abs(external_interference_plus_noise))
         return sinr
 
+    # Since only `sinrs` is required and it is passed as an argument, then
+    # this method is a static method.
     @staticmethod
     def _calc_shannon_sum_capacity(sinrs):
         """Calculate the sum of the Shannon capacity of the values in `sinrs`
@@ -223,7 +298,7 @@ class CompExtInt(Comp):
 
         Returns
         -------
-        sum_capacity : floar
+        sum_capacity : float
             Sum capacity.
 
         Examples
@@ -235,6 +310,29 @@ class CompExtInt(Comp):
         sum_capacity = np.sum(np.log2(1 + sinrs))
 
         return sum_capacity
+
+    # TODO: implement-me
+    def _calc_effective_throughput(self, sinrs):
+        """Calculates the effective throughput of the values in `sinrs`.
+
+        The effective throughput is equivalent to the package error for a
+        specific package error rate and package length, times the nominal
+        throughput.
+
+        Parameters
+        ----------
+        sinrs : 1D numpy array or float
+            SINR values (in linear scale).
+
+        Returns
+        -------
+        effective_throughput : float
+            Effective throughput that can be obtained.
+
+        """
+        # self._modulator
+        # self._package_length
+        pass
 
     def perform_comp(self, mu_channel):
         """Perform the block diagonalization of `mu_channel` taking the external
