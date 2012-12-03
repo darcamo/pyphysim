@@ -1320,6 +1320,28 @@ class PSKTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(PER1, expected_PER1)
         np.testing.assert_array_almost_equal(PER2, expected_PER2)
 
+        # Sanity check
+        PER = self.psk_obj.calcTheoreticalPER(SNRs, 1)
+        np.testing.assert_array_almost_equal(BER, PER)
+
+    def test_calc_theoretical_spectral_efficiency(self):
+        L1 = 50
+        L2 = 120
+        SNRs = np.array([10, 13])
+
+        se = self.psk_obj.calcTheoreticalSpectralEfficiency(SNRs)
+        se1 = self.psk_obj.calcTheoreticalSpectralEfficiency(SNRs, L1)
+        se2 = self.psk_obj.calcTheoreticalSpectralEfficiency(SNRs, L2)
+
+        K = self.psk_obj.K
+        expected_se = K * self.psk_obj.calcTheoreticalPER(SNRs, 1)
+        expected_se1 = K * self.psk_obj.calcTheoreticalPER(SNRs, L1)
+        expected_se2 = K * self.psk_obj.calcTheoreticalPER(SNRs, L2)
+
+        np.testing.assert_array_almost_equal(se, expected_se)
+        np.testing.assert_array_almost_equal(se1, expected_se1)
+        np.testing.assert_array_almost_equal(se2, expected_se2)
+
     def test_modulate_and_demodulate(self):
         noise = randn_c(20,) * 1e-2
 

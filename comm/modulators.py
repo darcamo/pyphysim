@@ -74,7 +74,15 @@ class Modulator(object):
         return "{0:d}-{1:s}".format(self._M, self.__class__.__name__)
 
     def _get_M(self):
-        """Get method for the M property."""
+        """Get method for the M property.
+
+        The `M` property corresponds to the number of symbols in the
+        constellation.
+
+        See also
+        --------
+        K
+        """
         return self._M
     M = property(_get_M)
 
@@ -84,6 +92,10 @@ class Modulator(object):
         The `K` property corresponds to the number of bits represented by
         each symbol in the constellation. It is equal to log2(M), where `M`
         is the constellation size.
+
+        See also
+        --------
+        M
         """
         return self._K
     K = property(_get_K)
@@ -225,6 +237,11 @@ class Modulator(object):
         SER : float or array like
             The theoretical symbol error rate.
 
+        See also
+        --------
+        calcTheoreticalBER,
+        calcTheoreticalPER
+
         Notes
         -----
         This function should be implemented in the derived classes
@@ -243,6 +260,11 @@ class Modulator(object):
         -------
         BER : float or array like
             The theoretical bit error rate.
+
+        See also
+        --------
+        calcTheoreticalSER,
+        calcTheoreticalPER
 
         Notes
         -----
@@ -279,11 +301,54 @@ class Modulator(object):
 
         See also
         --------
-        calcTheoreticalBER
+        calcTheoreticalBER,
+        calcTheoreticalSER
+        calcTheoreticalSpectralEfficiency
         """
         BER = self.calcTheoreticalBER(SNR)
         PER = 1 - ((1 - BER) ** packet_length)
         return PER
+
+    def calcTheoreticalSpectralEfficiency(self, SNR, packet_length=None):
+        """Calculates the theoretical spectral efficiency.
+
+        If there was no error in the transmission, the spectral efficiency
+        would be equal to the `K` property, that is, equal to the number of
+        bits represented by each symbol in the constellation. However, due
+        to bit errors the effective spectral efficiency will be lower.
+
+        The calcTheoreticalSpectralEfficiency method calculates the
+        effective spectral efficiency from the `K` property and the package
+        error rate (PER) for the given SNR and packet_length 'L', such that
+
+        .. math::
+           se = K * PER
+
+        Parameters
+        ----------
+        SNR : float or array like
+            Signal-to-noise-value (in dB).
+        packet_length : int
+            The package length. That is, the number of bits in each
+            package.
+
+        Returns
+        -------
+        se : float of array like (same as the SNR attribute)
+            The theoretical spectral efficiency.
+
+        See also
+        --------
+        calcTheoreticalBER,
+        calcTheoreticalPER,
+        K
+
+        """
+        if packet_length is None:
+            se = self.calcTheoreticalBER(SNR) * self.K
+        else:
+            se = self.calcTheoreticalPER(SNR, packet_length) * self.K
+        return se
 
 # xxxxx End of Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
