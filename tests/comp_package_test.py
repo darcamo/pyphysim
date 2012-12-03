@@ -21,6 +21,7 @@ import numpy as np
 from comm import channels, modulators
 from comp import comp
 from util.misc import least_right_singular_vectors, randn_c
+from util.conversion import dB2Linear
 from subspace.projections import calcProjectionMatrix
 
 
@@ -156,6 +157,30 @@ class CompExtInt(unittest.TestCase):
             expected_sum_capacity,
             comp.CompExtInt._calc_shannon_sum_capacity(sinrs_linear))
 
+    def test_calc_effective_throughput(self):
+        iPu = 1e-3  # Power for each user (linear scale)
+        pe = 1e-5  # External interference power (in linear scale)
+        noise_var = 1e-4
+        K = 3
+
+        psk_obj = modulators.PSK(8)
+        packet_length = 60
+
+        comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
+        comp_obj.set_ext_int_handling_metric('effective_throughput',
+                                             psk_obj,
+                                             packet_length)
+        SINRs_dB = np.array([11.4, 20.3])
+        sinrs_linear = dB2Linear(SINRs_dB)
+
+        expected_spectral_efficiency = np.sum(
+            psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
+
+        spectral_efficiency = comp_obj._calc_effective_throughput(sinrs_linear)
+
+        np.testing.assert_array_almost_equal(spectral_efficiency,
+                                             expected_spectral_efficiency)
+
     def test_perform_comp(self):
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
@@ -168,35 +193,73 @@ class CompExtInt(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
         multiUserChannel.randomize(Nr, Nt, K, Nti)
 
+        # Channel from all transmitters to the first receiver
+        H1 = multiUserChannel.get_channel_all_tx_to_rx_k(0)
+        # Channel from all transmitters to the second receiver
+        H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
+
         # Create the comp object
         comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
-        # import pudb
-        # pudb.set_trace()
-        MsPk_all = comp_obj.perform_comp(multiUserChannel)
+
+        #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
+        comp_obj.set_ext_int_handling_metric(None)
+        Ms_all = comp_obj.perform_comp(multiUserChannel)
+        # Most likelly only one base station (the one with the worst
+        # channel) will employ a precoder with total power of `Pu`,
+        # while the other base stations will use less power.
+        self.assertGreaterEqual(iPu + 1e-12,
+                                np.linalg.norm(Ms_all[0], 'fro') ** 2)
+        # 1e-12 is included to avoid false test fails due to small
+        # precision errors
+        self.assertGreaterEqual(iPu + 1e-12,
+                                np.linalg.norm(Ms_all[1], 'fro') ** 2)
+
+        # Test if the precoder really block diagonalizes the channel
+        print
+        print "Frobenius norms"
+        print np.linalg.norm(np.dot(H1, Ms_all[0]), 'fro') ** 2
+        print np.linalg.norm(np.dot(H1, Ms_all[1]), 'fro') ** 2
+        print np.linalg.norm(np.dot(H2, Ms_all[0]), 'fro') ** 2
+        print np.linalg.norm(np.dot(H2, Ms_all[1]), 'fro') ** 2
 
         print
 
-        MsPk_0 = MsPk_all[0]
-        MsPk_1 = MsPk_all[1]
+        print "SVDs"
+        print np.linalg.svd(np.dot(H1, Ms_all[0]))[1] ** 2
+        print np.linalg.svd(np.dot(H1, Ms_all[1]))[1] ** 2
+        print np.linalg.svd(np.dot(H2, Ms_all[0]))[1] ** 2
+        print np.linalg.svd(np.dot(H2, Ms_all[1]))[1] ** 2
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Test if the square of the Frobenius norm of the precoder of each
-        # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_0, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
 
-        print MsPk_0.round(4)
-        print
-        print MsPk_1.round(4)
-        print
-        MsPk = np.hstack(MsPk_all)
-        print MsPk.round(4)
+        # # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # comp_obj.set_ext_int_handling_metric('capacity')
 
-        # TODO: Finish the implementation
-        print multiUserChannel.big_H_no_ext_int.shape
-        newH = np.dot(multiUserChannel.big_H_no_ext_int, MsPk)
-        print newH.round(4)
+        # # import pudb
+        # # pudb.set_trace()
+        # MsPk_all = comp_obj.perform_comp(multiUserChannel)
 
-        print "Darlan"
+        # MsPk_0 = MsPk_all[0]
+        # MsPk_1 = MsPk_all[1]
+
+        # # Test if the square of the Frobenius norm of the precoder of each
+        # # user is equal to the power available to that user.
+        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_0, 'fro') ** 2)
+        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
+
+        # print "MsPk_0:\n{0}".format(MsPk_0.round(4))
+        # print
+        # print "MsPk_1:\n{0}".format(MsPk_1.round(4))
+        # print
+        # MsPk = np.hstack(MsPk_all)
+        # print "MsPk:\n{0}".format(MsPk.round(4))
+
+        # # TODO: Finish the implementation
+        # print "channel_shape: {0}".format(multiUserChannel.big_H_no_ext_int.shape)
+        # newH = np.dot(multiUserChannel.big_H_no_ext_int, MsPk)
+        # print "newH: {0}".format(newH.round(4))
+
+        # print "Darlan"
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

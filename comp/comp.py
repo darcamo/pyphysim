@@ -19,7 +19,7 @@ from comm.blockdiagonalization import BlockDiaginalizer
 from comm import blockdiagonalization
 from comm import channels
 from util.misc import least_right_singular_vectors
-from util.conversion import single_matrix_to_matrix_of_matrices
+from util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 
 
 def _calc_stream_reduction_matrix(Re_k, kept_streams):
@@ -47,7 +47,9 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
     return min_Vs
 
 
-class Comp(BlockDiaginalizer):
+# TODO: remove this class, since CompExtInt does everything this class
+# does.
+class Comp(BlockDiaginalizer):  # pragma: no cover
     """Performs the Coordinated Multipoint transmission.
 
     This class basically performs the Block Diagonalization in a joint
@@ -310,7 +312,6 @@ class CompExtInt(Comp):
 
         return sum_capacity
 
-    # TODO: implement-me
     def _calc_effective_throughput(self, sinrs):
         """Calculates the effective throughput of the values in `sinrs`.
 
@@ -329,13 +330,15 @@ class CompExtInt(Comp):
             Effective throughput that can be obtained.
 
         """
-        # self._modulator
-        # self._package_length
-        pass
+        SINRs = linear2dB(sinrs)
+        se = self._modulator.calcTheoreticalSpectralEfficiency(SINRs, self._package_length)
+        total_se = np.sum(se)
+
+        return total_se
 
     def perform_comp(self, mu_channel):
-        """Perform the block diagonalization of `mu_channel` taking the external
-        interference into account.
+        """Perform the block diagonalization of `mu_channel` taking the
+        external interference into account.
 
         Two important parameters used here are the `noise_var` (noise
         variance) and the `pe` (external interference power) attributes.
@@ -349,15 +352,29 @@ class CompExtInt(Comp):
 
         Returns
         -------
-        TODO: write me
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the precoder
+            for a user.
 
         """
         K = mu_channel.K
         Nr = mu_channel.Nr
         Nt = mu_channel.Nt
         H_matrix = mu_channel.big_H_no_ext_int
-        Re = mu_channel.calc_cov_matrix_extint_plus_noise(self.noise_var, self.pe)
+        Re = mu_channel.calc_cov_matrix_extint_plus_noise(
+            self.noise_var, self.pe)
 
+        if self._metric_func is None:
+            # If _metric_func is None then we are not handling external
+            # interference. Therefore, we simple call the perform_comp
+            # method of the Comp class.
+            (newH, Ms_good) = BlockDiaginalizer.block_diagonalize(self, mu_channel.big_H_no_ext_int)
+            MsPk_all_users = single_matrix_to_matrix_of_matrices(Ms_good, None, Nt)
+            return MsPk_all_users
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # If we are here, then _metric_func is not None, which means that
+        # we are handling the external interference.
         Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
 
         # The k-th 'element' in Ms_bad_ks is a matrix containing the
@@ -386,6 +403,7 @@ class CompExtInt(Comp):
             sum_capacity_k = np.empty(Ntk)
             Pk_all = np.empty(Ntk, dtype=np.ndarray)
             norm_term_all = np.empty(Ntk)
+
             for index in range(Ntk):
                 Ns_k = index + 1
                 # Find Pk
@@ -409,10 +427,11 @@ class CompExtInt(Comp):
                 # SINR (in linear scale) of all streams of user k.
                 sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
 
-                sum_capacity_k[index] = self._calc_shannon_sum_capacity(sinrs_k)
+                #sum_capacity_k[index] = self._calc_shannon_sum_capacity(sinrs_k)
+                sum_capacity_k[index] = self._metric_func(sinrs_k)
+
                 #print 'SumCapacity: {0}'.format(sum_capacity_k[index])
 
-            print
             # The index with the highest metric value. This is equivalent
             # to the number of transmit streams which yields the highest
             # value of the metric.

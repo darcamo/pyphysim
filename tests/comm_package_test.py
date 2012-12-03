@@ -1173,9 +1173,11 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         individual_powers = []
         for i in range(self.num_users):
             # Most likelly only one base station (the one with the worst
-            # channel) will employ a precoder a precoder with total power
-            # of `Pu`, while the other base stations will use less power.
+            # channel) will employ a precoder with total power of `Pu`,
+            # while the other base stations will use less power.
             individual_powers.append(np.linalg.norm(Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antenas], 'fro') ** 2)
+            # 1e-12 is included to avoid false test fails due to small
+            # precision errors
             self.assertGreaterEqual(self.Pu + 1e-12,
                                     individual_powers[-1])
 
