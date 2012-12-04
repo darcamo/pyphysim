@@ -79,7 +79,7 @@ class CompExtInt(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             # If we set the metric to effective_throughput but not provide
-            # the modulator and package_length attributes.
+            # the modulator and packet_length attributes.
             comp_obj.set_ext_int_handling_metric('effective_throughput')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -87,11 +87,11 @@ class CompExtInt(unittest.TestCase):
         psk_obj = modulators.PSK(4)
         comp_obj.set_ext_int_handling_metric('effective_throughput',
                                              modulator=psk_obj,
-                                             package_length=120)
+                                             packet_length=120)
         self.assertEqual(comp_obj._metric_func,
                          comp_obj._calc_effective_throughput)
         self.assertEqual(comp_obj._modulator, psk_obj)
-        self.assertEqual(comp_obj._package_length, 120)
+        self.assertEqual(comp_obj._packet_length, 120)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
@@ -99,14 +99,14 @@ class CompExtInt(unittest.TestCase):
         self.assertEqual(comp_obj._metric_func,
                          comp_obj._calc_shannon_sum_capacity)
         self.assertIsNone(comp_obj._modulator)
-        self.assertIsNone(comp_obj._package_length)
+        self.assertIsNone(comp_obj._packet_length)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to None xxxxxxxxxxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
         self.assertIsNone(comp_obj._metric_func)
         self.assertIsNone(comp_obj._modulator)
-        self.assertIsNone(comp_obj._package_length)
+        self.assertIsNone(comp_obj._packet_length)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_receive_filter(self):
@@ -187,7 +187,7 @@ class CompExtInt(unittest.TestCase):
         K = Nt.size
         Nti = 1
         iPu = 1e-3  # Power for each user (linear scale)
-        pe = 1e-5  # External interference power (in linear scale)
+        pe = 1e-2  # External interference power (in linear scale)
         noise_var = 1e-4
 
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
@@ -204,63 +204,84 @@ class CompExtInt(unittest.TestCase):
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
         Ms_all = comp_obj.perform_comp(multiUserChannel)
+        Ms1 = Ms_all[0]
+        Ms2 = Ms_all[1]
+
         # Most likelly only one base station (the one with the worst
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
         self.assertGreaterEqual(iPu + 1e-12,
-                                np.linalg.norm(Ms_all[0], 'fro') ** 2)
+                                np.linalg.norm(Ms1, 'fro') ** 2)
         # 1e-12 is included to avoid false test fails due to small
         # precision errors
         self.assertGreaterEqual(iPu + 1e-12,
-                                np.linalg.norm(Ms_all[1], 'fro') ** 2)
+                                np.linalg.norm(Ms2, 'fro') ** 2)
 
-        # Test if the precoder really block diagonalizes the channel
-        print
-        print "Frobenius norms"
-        print np.linalg.norm(np.dot(H1, Ms_all[0]), 'fro') ** 2
-        print np.linalg.norm(np.dot(H1, Ms_all[1]), 'fro') ** 2
-        print np.linalg.norm(np.dot(H2, Ms_all[0]), 'fro') ** 2
-        print np.linalg.norm(np.dot(H2, Ms_all[1]), 'fro') ** 2
-
-        print
-
-        print "SVDs"
-        print np.linalg.svd(np.dot(H1, Ms_all[0]))[1] ** 2
-        print np.linalg.svd(np.dot(H1, Ms_all[1]))[1] ** 2
-        print np.linalg.svd(np.dot(H2, Ms_all[0]))[1] ** 2
-        print np.linalg.svd(np.dot(H2, Ms_all[1]))[1] ** 2
+        # Test if the precoder block diagonalizes the channel
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, Ms1), 'fro'),
+                                  0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, Ms2), 'fro'),
+                                  0)
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, Ms2), 'fro'),
+                                  0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, Ms1), 'fro'),
+                                  0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Handling external interference using the capacity metric
+        comp_obj.set_ext_int_handling_metric('capacity')
+        MsPk_all = comp_obj.perform_comp(multiUserChannel)
+        MsPk_1 = MsPk_all[0]
+        MsPk_2 = MsPk_all[1]
 
-        # # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # comp_obj.set_ext_int_handling_metric('capacity')
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_2, 'fro') ** 2)
 
-        # # import pudb
-        # # pudb.set_trace()
-        # MsPk_all = comp_obj.perform_comp(multiUserChannel)
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_2), 'fro'), 0)
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_1), 'fro'), 0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # MsPk_0 = MsPk_all[0]
-        # MsPk_1 = MsPk_all[1]
+        # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Handling external interference using the effective_throughput metric
+        psk_obj = modulators.PSK(4)
+        packet_length = 60
+        comp_obj.set_ext_int_handling_metric('effective_throughput',
+                                             psk_obj,
+                                             packet_length)
+        MsPk_effec_all = comp_obj.perform_comp(multiUserChannel)
+        MsPk_effec_1 = MsPk_effec_all[0]
+        MsPk_effec_2 = MsPk_effec_all[1]
 
-        # # Test if the square of the Frobenius norm of the precoder of each
-        # # user is equal to the power available to that user.
-        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_0, 'fro') ** 2)
-        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_2, 'fro') ** 2)
 
-        # print "MsPk_0:\n{0}".format(MsPk_0.round(4))
-        # print
-        # print "MsPk_1:\n{0}".format(MsPk_1.round(4))
-        # print
-        # MsPk = np.hstack(MsPk_all)
-        # print "MsPk:\n{0}".format(MsPk.round(4))
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_effec_1), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_effec_2), 'fro'),
+            0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_effec_2), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_effec_1), 'fro'),
+            0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # # TODO: Finish the implementation
-        # print "channel_shape: {0}".format(multiUserChannel.big_H_no_ext_int.shape)
-        # newH = np.dot(multiUserChannel.big_H_no_ext_int, MsPk)
-        # print "newH: {0}".format(newH.round(4))
-
-        # print "Darlan"
-
+        # TODO: Finishe-me
+        # Test if the effective_throughput obtains a better troughput then
+        # the capacity metric, and if the capacity obtains a better
+        # troughput then not handling the external interference.
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

@@ -132,13 +132,13 @@ class CompExtInt(Comp):
         # Function used to decide how many streams will be sacrificed to
         # mitigate external interference. This is set in the
         # set_ext_int_handling_metric method (as well as the _modulator and
-        # _package_length attributes)
+        # _packet_length attributes)
         self._metric_func = None  # The default metric will be None
         self._modulator = None
-        self._package_length = None
+        self._packet_length = None
 
     def set_ext_int_handling_metric(self, metric,
-                                    modulator=None, package_length=None):
+                                    modulator=None, packet_length=None):
         """Set the metric used to decide how many streams to sacrifice for
         external interference handling.
 
@@ -161,7 +161,7 @@ class CompExtInt(Comp):
         Notes
         -----
         If `metric` is 'effective_throughput' then the modulator and
-        package_length arguments must be provided. For the other metric
+        packet_length arguments must be provided. For the other metric
         options they will be ignored if provided.
 
         Parameters
@@ -170,10 +170,10 @@ class CompExtInt(Comp):
             The metric name. Must be one of the available metrics.
         modulator : comm.modulators.Modulator object
             The modulator object used in the simulation. It will be used to
-            calculate the theoretical BER and (with the package length,
+            calculate the theoretical BER and (with the packet length,
             the theoretical PER)
-        package_length : int
-            The package length used in the simulation.
+        packet_length : int
+            The packet length used in the simulation.
 
         Raises
         ------
@@ -185,19 +185,19 @@ class CompExtInt(Comp):
         if metric is None:
             self._metric_func = None
             self._modulator = None
-            self._package_length = None
+            self._packet_length = None
 
         elif metric == 'capacity':
             self._metric_func = self._calc_shannon_sum_capacity
             self._modulator = None
-            self._package_length = None
+            self._packet_length = None
 
         elif metric == 'effective_throughput':
             self._metric_func = self._calc_effective_throughput
-            if (modulator is None) or (package_length is None):
-                raise AttributeError("The modulator and package_length attributes must be provided for the 'effective_throughput' metric.")
+            if (modulator is None) or (packet_length is None):
+                raise AttributeError("The modulator and packet_length attributes must be provided for the 'effective_throughput' metric.")
             self._modulator = modulator
-            self._package_length = package_length
+            self._packet_length = packet_length
         else:
             raise AttributeError("The `metric` attribute can only be one of {None, 'capacity', 'effective_throughput'}")
 
@@ -315,8 +315,8 @@ class CompExtInt(Comp):
     def _calc_effective_throughput(self, sinrs):
         """Calculates the effective throughput of the values in `sinrs`.
 
-        The effective throughput is equivalent to the package error for a
-        specific package error rate and package length, times the nominal
+        The effective throughput is equivalent to the packet error for a
+        specific packet error rate and packet length, times the nominal
         throughput.
 
         Parameters
@@ -331,7 +331,7 @@ class CompExtInt(Comp):
 
         """
         SINRs = linear2dB(sinrs)
-        se = self._modulator.calcTheoreticalSpectralEfficiency(SINRs, self._package_length)
+        se = self._modulator.calcTheoreticalSpectralEfficiency(SINRs, self._packet_length)
         total_se = np.sum(se)
 
         return total_se
@@ -385,7 +385,6 @@ class CompExtInt(Comp):
         # Loop for the users
         MsPk_all_users = np.empty(K, dtype=np.ndarray)
         for userindex in range(K):
-            #print 'User: {0}'.format(userindex)
             Ntk = Nt[userindex]
             Rek = Re[userindex]
             Hk = H_all_ks[userindex]
@@ -395,15 +394,15 @@ class CompExtInt(Comp):
             # process, but without any stream reduction
             Heq_k = np.dot(Hk, Msk)
 
-            # DARLAN CONTINUE AQUI
-
             # We can have from a single stream to all streams (the number
             # of transmit antennas). This loop varies the number of
             # transmit streams of user k.
-            sum_capacity_k = np.empty(Ntk)
+            #
+            # The metric that will be calculated and used to determine how
+            # many streams to sacrifice.
+            metric_value_for_user_k = np.empty(Ntk)
             Pk_all = np.empty(Ntk, dtype=np.ndarray)
             norm_term_all = np.empty(Ntk)
-
             for index in range(Ntk):
                 Ns_k = index + 1
                 # Find Pk
@@ -427,15 +426,13 @@ class CompExtInt(Comp):
                 # SINR (in linear scale) of all streams of user k.
                 sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
 
-                #sum_capacity_k[index] = self._calc_shannon_sum_capacity(sinrs_k)
-                sum_capacity_k[index] = self._metric_func(sinrs_k)
-
-                #print 'SumCapacity: {0}'.format(sum_capacity_k[index])
+                #metric_value_for_user_k[index] = self._calc_shannon_sum_capacity(sinrs_k)
+                metric_value_for_user_k[index] = self._metric_func(sinrs_k)
 
             # The index with the highest metric value. This is equivalent
             # to the number of transmit streams which yields the highest
             # value of the metric.
-            best_index = np.argmax(sum_capacity_k)
+            best_index = np.argmax(metric_value_for_user_k)
             MsPk_all_users[userindex] = np.dot(Msk, Pk_all[best_index]) / norm_term_all[best_index]
 
         return MsPk_all_users
