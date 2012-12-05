@@ -5,7 +5,7 @@
 module.
 
 """
-__version__ = "$Revision$"
+__revision__ = "$Revision$"
 
 import math
 import numpy as np

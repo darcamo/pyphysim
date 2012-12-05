@@ -4,6 +4,8 @@
 """Define classes to plot the results in the apps folder using the chaco
 plot library"""
 
+__revision__ = "$Revision$"
+
 # Some Code to tell the traits framework to use Qt4, instead of
 # Wxwidgets
 # import os

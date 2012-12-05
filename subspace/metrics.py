@@ -3,6 +3,8 @@
 
 """Implement several metrics for subspaces."""
 
+__revision__ = "$Revision$"
+
 import numpy as np
 import math
 

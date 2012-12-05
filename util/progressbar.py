@@ -35,8 +35,7 @@ not the progressbar such that the task code can always call the progress
 method and you only change the progressbar object.
 """
 
-__version__ = "$Revision$"
-# $Source$
+__revision__ = "$Revision$"
 
 import multiprocessing
 import time

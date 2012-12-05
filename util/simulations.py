@@ -135,7 +135,7 @@ At last, for a working example of a simulator, see the
 
 """
 
-__version__ = "$Revision$"
+__revision__ = "$Revision$"
 
 import pickle
 from collections import OrderedDict, Iterable

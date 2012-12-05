@@ -4,6 +4,8 @@
 
 """Module with implementation of Interference Alignment algorithms"""
 
+__revision__ = "$Revision$"
+
 import numpy as np
 import itertools
 

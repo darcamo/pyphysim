@@ -3,6 +3,8 @@
 
 """Module with functions to easily moving data from python to MATLAB."""
 
+__revision__ = "$Revision$"
+
 import numpy as np
 
 

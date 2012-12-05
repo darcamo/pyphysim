@@ -3,6 +3,8 @@
 
 """module docstring"""
 
+__revision__ = "$Revision$"
+
 import numpy as np
 
 

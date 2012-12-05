@@ -5,6 +5,8 @@
 linear to dB, binary to gray code, as well as the inverse of them.
 """
 
+__revision__ = "$Revision$"
+
 import numpy as np
 from util.misc import xor
 
