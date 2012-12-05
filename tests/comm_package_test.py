@@ -7,6 +7,8 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
+__revision__ = "$Revision$"
+
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os

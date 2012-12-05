@@ -8,6 +8,8 @@ defined here.
 
 """
 
+__revision__ = "$Revision$"
+
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
