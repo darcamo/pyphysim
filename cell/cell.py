@@ -3,6 +3,8 @@
 
 """Module that implements Cell related classes."""
 
+__revision__ = "$Revision$"
+
 try:
     from matplotlib import pylab, patches
     _MATPLOTLIB_AVAILABLE = True
