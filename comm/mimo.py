@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module with several MIMO related classes, such as classes for the BLAST
-and Alamouti MIMO schemes.
+"""Module implementing different MIMO schemes.
+
+Each MIMO scheme is implemented as a class inheriting from
+:class:`MimoBase` and implements at least the methods `encode`, `decode`
+and `getNumberOfLayers`.
+
 """
 
-__version__ = "$Revision$"
-# $Source$
+__revision__ = "$Revision$"
 
 import numpy as np
+
+__all__ = ['MimoBase', 'Blast', 'Alamouti']
 
 # TODO: maybe you can use the weave module (inline or blitz methods) from
 # scipy to spped up things here.
