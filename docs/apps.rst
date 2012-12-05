@@ -8,7 +8,7 @@ Applications in PyPhysim
 ------------------------
 
 .. autosummary::
-   :toctree: autosummary_folder
+   :toctree: autosummary_folder/apps
 
    find_codebook
    simulate_alamouti

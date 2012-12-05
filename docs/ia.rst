@@ -8,7 +8,7 @@ Modules in the ia package
 -------------------------
 
 .. autosummary::
-   :toctree: autosummary_folder
+   :toctree: autosummary_folder/ia
    :template: module_template.txt
 
    ia.ia

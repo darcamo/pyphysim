@@ -1,5 +1,5 @@
-{{ fullname }}
-{{ underline }}
+{{ fullname }} Class
+{{ underline }}======
 
 .. currentmodule:: {{ module }}
 
@@ -24,7 +24,7 @@
    .. rubric:: Attributes
 
    .. autosummary::
-      :toctree: class_attributes_folder
+      :toctree: {{ name }}/attributes
    {% for item in attributes %}
       ~{{ name }}.{{ item }}
    {%- endfor %}

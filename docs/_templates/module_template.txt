@@ -1,5 +1,7 @@
-{{ fullname }}
-{{ underline }}
+{{ fullname }} Module
+{{ underline }}=======
+
+.. rubric:: Module Description
 
 .. automodule:: {{ fullname }}
 
@@ -8,7 +10,7 @@
    .. rubric:: Functions
 
    .. autosummary::
-      :toctree: module_functions_folder
+      :toctree: {{ name }}/functions
    {% for item in functions %}
       {{ item }}
    {%- endfor %}
@@ -20,7 +22,7 @@
    .. rubric:: Classes
 
    .. autosummary::
-      :toctree: classes_folder
+      :toctree: {{ name }}/classes
       :template: class_template.txt
    {% for item in classes %}
       {{ item }}
