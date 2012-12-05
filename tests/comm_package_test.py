@@ -1228,6 +1228,49 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             self.assertGreaterEqual(Pu + 1e-8,
                                     individual_powers[-1])
 
+    def test_block_diagonalize_no_waterfilling(self):
+        Pu = self.Pu
+        num_users = self.num_users
+        num_antenas = self.num_antenas
+
+        channel = randn_c(self.iNr, self.iNt)
+        (newH, Ms) = self.BD.block_diagonalize_no_waterfilling(channel)
+
+        # xxxxx Test if the channel is really block diagonal xxxxxxxxxxxxxx
+        # First we build a 'mask' to filter out the elements in the block
+        # diagonal.
+
+        A = np.ones([self.iNrk, self.iNtk])
+        mask = linalg.block_diag(A, A, A)
+
+        # With the mask we can create a masked array of the block
+        # diagonalized channel
+        masked_newH = np.ma.masked_array(newH, mask)
+        # Now we can sum all elements of this masked array (which
+        # effectively means all elements outside the block diagonal) and
+        # see if it is close to zero.
+        self.assertAlmostEqual(0., np.abs(masked_newH).sum())
+
+        # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
+        # Total power restriction
+        total_power = num_users * Pu
+        self.assertGreaterEqual(total_power + 1e-10,
+                                np.linalg.norm(Ms, 'fro') ** 2)
+
+        # Cummulated number of receive antennas
+        cum_Nt = np.cumsum(
+            np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
+
+        # Individual power restriction of each class
+        individual_powers = []
+        for i in range(num_users):
+            # Most likelly only one base station (the one with the worst
+            # channel) will employ a precoder a precoder with total power
+            # of `Pu`, while the other base stations will use less power.
+            individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
+            self.assertGreaterEqual(Pu + 1e-8,
+                                    individual_powers[-1])
+
     def test_calc_receive_filter(self):
         Pu = self.Pu
         noise_var = self.noise_var

@@ -1,20 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Block Diagonalization module documentation.
-
-1. Summary
-2. Extended summary
-3. Routine listings
-4. See also
-5. Notes
-6. References
-7. Examples
+"""Module implementing the block diagonalization algorithm.
 
 .. TODO:: Move everything in the blockdiagonalization module to the
    comp module.
 
 """
+
+__revision__ = "$Revision$"
 
 # TODO: Move the blockdiagonalization module to the comp package.
 
@@ -42,7 +36,52 @@ class BlockDiaginalizer(object):
     restriction in each base station must be respected. Therefore, after
     the power is optimally allocated at each base station all powers will
     be normalized to respect the power restriction of the base transmitting
-    the highest energy.
+    the highest energy. This is what is done in the
+    :meth:`block_diagonalize` method.
+
+    If the power should not be optimally allocated with the waterfilling
+    algorithm, use the :meth:`block_diagonalize_no_waterfilling` method
+    instead. The power restriction in each base station will still be
+    respected, but the base station will equally divide its power among the
+    available dimensions. Note that the result will be similar to
+    :meth:`block_diagonalize` in the high SNR regime.
+
+    Examples
+    --------
+
+    Consider the case where we have 3 base station (BSs) jointly
+    transmitting to 3 users, where each base station has a power of 1.5, the
+    number of antennas (at each BS and at each receiver) is 2, and the
+    noise variance is 1e-4. The channel can be block diagonalized for this
+    scenario with
+
+    >>> bs_power = 1.5
+    >>> noise_var = 1e-4
+    >>> num_users = 2
+    >>> Ntx = 2  # Number of transmit antennas (per BS)
+    >>> Nrx = 2  # Number of receive antennas (per user)
+    >>> # Create the BlockDiaginalizer object
+    >>> bd = BlockDiaginalizer(num_users, bs_power, noise_var)
+    >>> channel = np.array([[-0.9834-0.0123j,  0.6503-0.3189j,  0.5484+1.7049j, -1.0891-0.1025j], [-0.5911-0.3055j, -0.6205+0.3375j, -0.7995+0.3723j,  0.7412-1.2537j], [-0.2732+0.475j , -0.4191+0.4019j,  0.1047-0.5592j,  0.7548-1.0214j], [ 0.5377-0.208j , -0.1480-1.0527j, -0.6373+0.4081j, -0.5854-0.8135j]])
+    >>> (newH, Ms) = bd.block_diagonalize(channel)
+
+    We can see that the equivalent channel (after applying the Ms
+    modulation matrix) is really block diagonalized.
+
+    >>> print newH.round(4)
+    [[ 0.0916+0.0135j -1.7449-0.4328j  0.0000-0.j     -0.0000-0.j    ]
+     [-0.0114-0.146j   0.0213-1.1366j -0.0000-0.j      0.0000+0.j    ]
+     [-0.0000+0.j      0.0000+0.j      0.0868+0.1565j -0.3673+0.2289j]
+     [-0.0000+0.j      0.0000-0.j     -0.0396+0.0407j  1.0240+0.8997j]]
+
+    Notice how the power restriction of each BS is respected (although only
+    one BS will transmit with its maximum power).
+
+    >>> print (np.linalg.norm(Ms[:,0:Ntx])**2).round(4)
+    1.4997
+    >>> print (np.linalg.norm(Ms[:,Ntx:])**2).round(4)
+    1.5
+
 
     Notes
     -----
@@ -75,27 +114,16 @@ class BlockDiaginalizer(object):
         self.noise_var = noise_var
 
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
-        """Calculates the modulation matrix "M" without any king of power
-        scaling.
+        """Calculates the modulation matrix "M" that block diagonalizes the
+        channel `mtChannel`, but without any king of power scaling.
 
         The "modulation matrix" is a matrix that changes the channel to a
         block diagonal structure and it is the first part in the Block
         Diagonalization algorithm. The returned modulation matrix is
         equivalent to Equation (12) of [1]_ but without the power scaling
-        matrix $\Lambda$. Therefore, for the compelte BD algorithm it is
+        matrix $\Lambda$. Therefore, for the complete BD algorithm it is
         still necessary to perform this power scalling in the output of
-        _calc_BD_matrix.
-
-        The reason why the Block Diagonalization algorithm was broken down
-        into the code here in the _calc_BD_matrix method and the power
-        scaling code is because the power scaling may changing depending
-        on the scenario. For instance, if the transmitter corresponds to a
-        single base station the the power may be distributed into all the
-        dimensions of the Modulation matrix. On the other hand, if the
-        transmitter corresponds to multiple base stations jointly
-        transmitting to multiple users then the power of each base station
-        must be distributed only into the dimensions corresponding to that
-        base station.
+        _calc_BD_matrix_no_power_scaling.
 
         Parameters
         ----------
@@ -110,6 +138,18 @@ class BlockDiaginalizer(object):
             channel when the modulation matrix is applied correspond to
             Sigma. Therefore, Sigma can be used latter in the power
             allocation process.
+
+        Notes
+        -----
+        The reason why the Block Diagonalization algorithm was broken down
+        into the code here and the power scaling code is because the power
+        scaling may changing depending on the scenario. For instance, if
+        the transmitter corresponds to a single base station the the power
+        may be distributed into all the dimensions of the Modulation
+        matrix. On the other hand, if the transmitter corresponds to
+        multiple base stations jointly transmitting to multiple users then
+        the power of each base station must be distributed only into the
+        dimensions corresponding to that base station.
         """
         iNr = mtChannel.shape[0]
         assert iNr % self.num_users == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
@@ -193,6 +233,9 @@ class BlockDiaginalizer(object):
         vtOptP = waterfilling.doWF(Sigma ** 2,
                                    total_power,
                                    self.noise_var)[0]
+        # print "Darlan"
+        # print vtOptP
+        # print "Cav"
 
         Ms_good = np.dot(Ms_bad,
                          np.diag(np.sqrt(vtOptP)))
@@ -266,10 +309,13 @@ class BlockDiaginalizer(object):
         mtChannel is a matrix with the channel from the transmitter to all
         users, where each `iNUsers` rows correspond to one user.
 
+        For an example, see the documentation of the
+        :class:`BlockDiaginalizer` class.
+
         Parameters
         ----------
         mtChannel : 2D numpy array
-            Channel from the transmitter to all users.
+            Channel from (all) the transmitter(s) to all users.
 
         Returns
         -------
@@ -278,6 +324,10 @@ class BlockDiaginalizer(object):
             diagonalized channel, while Ms_good is a 2D numpy array
             corresponding to the precoder matrix used to block diagonalize
             the channel.
+
+        See also
+        --------
+        block_diagonalize_no_waterfilling
 
         """
         # Calculates the modulation matrix and the singular values of the
@@ -288,6 +338,60 @@ class BlockDiaginalizer(object):
         # is not violated in any of the base stations.
         Ms_good = self._perform_normalized_waterfilling_power_scaling(Ms_bad,
                                                                       Sigma)
+
+        # Finally calculates the Block diagonal channel
+        newH = np.dot(mtChannel, Ms_good)
+
+        # Return block diagonalized channel and the used precoding matrix
+        return (newH, Ms_good)
+
+    def block_diagonalize_no_waterfilling(self, mtChannel):
+        """Performs the block diagonalization, but without applying the
+        waterfilling algorithm.
+
+        The power of each base station is equally divided such that the
+        square of the Frobenius norm or the columns of Ms_good
+        corresponding to that base station is equal to its power.
+
+        Parameters
+        ----------
+        mtChannel : 2D numpy array
+            Channel from (all) the transmitter(s) to all users.
+
+        Returns
+        -------
+        (newH, Ms_good) : A tuple of numpy arrays
+            newH is a 2D numpy array corresponding to the Block
+            diagonalized channel, while Ms_good is a 2D numpy array
+            corresponding to the precoder matrix used to block diagonalize
+            the channel.
+
+        See also
+        --------
+        block_diagonalize
+
+        """
+        # This only works of the number of transmit antennas is the same
+        # for all transmitters.
+        iNtU = mtChannel.shape[1] / self.num_users
+
+        # Calculates the modulation matrix and the singular values of the
+        # effective channel when this modulation matrix is applied.
+        (Ms_bad, Sigma) = self._calc_BD_matrix_no_power_scaling(mtChannel)
+
+        # Scale the power of this modulation assuring the power restriction
+        # is not violated in any of the base stations.
+        Ms_good = np.empty(Ms_bad.shape, dtype=complex)
+        for user in range(0, self.num_users):
+            # Calculate the Frobenius norm of the matrix corresponding to
+            # the transmitter `user`
+            user_matrix = Ms_bad[:, user * iNtU:user * iNtU + iNtU]
+            # The power is actually the square of cur_sqrt_P
+            cur_sqrt_P = np.linalg.norm(user_matrix, 'fro')
+            Ms_good[:, user * iNtU:user * iNtU + iNtU] = user_matrix * np.sqrt(self.iPu) / cur_sqrt_P
+
+        # Ms_good = self._perform_normalized_power_scaling(Ms_bad,
+        #                                                  Sigma)
 
         # Finally calculates the Block diagonal channel
         newH = np.dot(mtChannel, Ms_good)
