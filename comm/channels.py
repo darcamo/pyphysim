@@ -3,6 +3,8 @@
 
 """Module with implementation of channel related classes"""
 
+__revision__ = "$Revision$"
+
 from collections import Iterable
 import numpy as np
 from util.conversion import single_matrix_to_matrix_of_matrices
