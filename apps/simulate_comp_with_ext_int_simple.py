@@ -110,7 +110,7 @@ for rep in range(rep_max):
     # Calculate the covariance matrix of the external interference plus noise
     R_extint_plus_noise = pe * np.dot(H_extInt, H_extInt.transpose().conjugate()) + np.eye(np.sum(Nr)) * noise_var
 
-    (newH, Ms) = comp.perform_comp_with_ext_int(
+    (newH, Ms) = comp.perform_comp_with_ext_int_no_waterfilling(
         # We only add the first np.sum(Nt) columns of big_H
         # because the remaining columns come from the external
         # interference sources, which don't participate in the Block

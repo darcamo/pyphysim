@@ -105,7 +105,7 @@ for rep in range(rep_max):
     symbols = modulator.modulate(input_data)
 
     # Perform the Block Diagonalization of the channel
-    (newH, Ms) = comp.perform_comp(
+    (newH, Ms) = comp.perform_comp_no_waterfilling(
         # We only add the first np.sum(Nt) columns of big_H
         # because the remaining columns come from the external
         # interference sources, which don't participate in the Block

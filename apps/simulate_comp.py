@@ -221,7 +221,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         symbols = self.modulator.modulate(input_data)
 
         # xxxxxxxxxx Perform the block diagonalization xxxxxxxxxxxxxxxxxxxx
-        (newH, Ms) = comp.perform_comp(
+        (newH, Ms) = comp.perform_comp_no_waterfilling(
             # We only add the first np.sum(self.Nt) columns of big_H
             # because the remaining columns come from the external
             # interference sources, which don't participate in the Block

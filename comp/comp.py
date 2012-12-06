@@ -60,21 +60,21 @@ class Comp(BlockDiaginalizer):  # pragma: no cover
 
     """
 
-    def __init__(self, iNUsers, iPu, noiseVar):
+    def __init__(self, num_users, iPu, noise_var):
         """Initializes the Comp object.
 
         Parameters
         ----------
-        iNUsers : int
+        num_users : int
             Number of users.
         iPu : float
             Power available for EACH user.
-        noiseVar : float
+        noise_var : float
             Noise variance (power in linear scale).
         """
-        BlockDiaginalizer.__init__(self, iNUsers, iPu, noiseVar)
+        BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
 
-    def perform_comp(self, mtChannel):
+    def perform_comp_no_waterfilling(self, mtChannel):
         """Perform the block diagonalization of `mtChannel`.
 
         Parameters
@@ -90,7 +90,7 @@ class Comp(BlockDiaginalizer):  # pragma: no cover
               corresponding to the precoder matrix used to block diagonalize
               the channel.
         """
-        return BlockDiaginalizer.block_diagonalize(self, mtChannel)
+        return BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mtChannel)
 
 
 class CompExtInt(Comp):
@@ -114,21 +114,21 @@ class CompExtInt(Comp):
 
     """
 
-    def __init__(self, iNUsers, iPu, noiseVar, pe):
+    def __init__(self, num_users, iPu, noise_var, pe):
         """Initializes the CompExtInt object.
 
         Parameters
         ----------
-        iNUsers : int
+        num_users : int
             Number of users.
         iPu : float
             Power available for EACH user (in linear scale).
-        noiseVar : float
+        noise_var : float
             Noise variance (power in linear scale).
         pe : float
             Power of the external interference source (in linear scale)
         """
-        Comp.__init__(self, iNUsers, iPu, noiseVar)
+        Comp.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
         # Function used to decide how many streams will be sacrificed to
@@ -149,14 +149,14 @@ class CompExtInt(Comp):
 
         - If `metric` is 'capacity', then the the sum capacity will be used
           to decide how many streams to sacrifice. That is, the
-          _calc_shannon_sum_capacity method will be used in perform_comp to
+          _calc_shannon_sum_capacity method will be used in perform_comp_no_waterfilling to
           map the calculated sinrs into a sum capacity and the number of
           sacrificed streams will be the one with the highest sum capacity.
 
         - If `metric` is 'effective_throughput' then the effective
           throughput will be used to decide how many streams to
           sacrifice. That is, the _calc_effective_throughput method will be
-          used in perform_comp to map the calculated sinrs into an
+          used in perform_comp_no_waterfilling to map the calculated sinrs into an
           effective throughput and the number of sacrificed streams will be
           the one with the highest sum capacity.
 
@@ -204,23 +204,19 @@ class CompExtInt(Comp):
             raise AttributeError("The `metric` attribute can only be one of {None, 'capacity', 'effective_throughput'}")
 
     @staticmethod
-    def calc_receive_filter_user_k(Heq_k, P=None):
+    def calc_receive_filter_user_k(Heq_k_P, P=None):
         """Calculates the Zero-Forcing receive filter of a single user `k`
         with or without the stream reduction.
 
         Parameters
         ----------
-        Heq_k : 2D numpy array
+        Heq_k_P : 2D numpy array
             The equivalent channel of user `k` after the block
-            diagonalization process, but without including the stream
-            reduction.
+            diagonalization process and any stream reduction.
         P : 2D numpy array
             P has the most significant singular vectors of the external
             interference plus noise covariance matrix for each
-            receiver. Note that if one element of P is an empty array that
-            means that there won't be any stream reduction for that user
-            and therefore the receive filter fill be the same as the
-            regular Block Diagonalization.
+            receiver.
 
         Returns
         -------
@@ -234,18 +230,19 @@ class CompExtInt(Comp):
         includes a projection into the subspace spanned by the columns of
         `P`. Since `P` was calculated to be in the directions with weaker
         (or no) external interference then the receive filter `W` will
-        mitigate external interference.
+        mitigate the external interference.
 
         """
         if P is None:
-            W = np.linalg.pinv(Heq_k)
+            W = np.linalg.pinv(Heq_k_P)
         else:
             overbar_P = calcProjectionMatrix(P)
+
             # Calculate the equivalent channel including the stream
             # reduction
-            Heq_k_red = np.dot(Heq_k, P)
+            #Heq_k_red = np.dot(Heq_k, P)
             W = np.dot(
-                np.linalg.pinv(np.dot(overbar_P, Heq_k_red)),
+                np.linalg.pinv(np.dot(overbar_P, Heq_k_P)),
                 overbar_P)
 
         return W
@@ -338,7 +335,7 @@ class CompExtInt(Comp):
 
         return total_se
 
-    def perform_comp(self, mu_channel):
+    def perform_comp_no_waterfilling(self, mu_channel):
         """Perform the block diagonalization of `mu_channel` taking the
         external interference into account.
 
@@ -372,15 +369,15 @@ class CompExtInt(Comp):
 
         if self._metric_func is None:
             # If _metric_func is None then we are not handling external
-            # interference. Therefore, we simple call the perform_comp
+            # interference. Therefore, we simple call the perform_comp_no_waterfilling
             # method of the Comp class.
-            (newH, Ms_good) = BlockDiaginalizer.block_diagonalize(self, mu_channel.big_H_no_ext_int)
+            (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mu_channel.big_H_no_ext_int)
 
             MsPk_all_users = single_matrix_to_matrix_of_matrices(Ms_good, None, Nt)
             newH_all_k = single_matrix_to_matrix_of_matrices(newH, Nr, Nt)
             for userindex in range(K):
                 Wk_all_users[userindex] = self.calc_receive_filter_user_k(
-                    newH_all_k[userindex, userindex])
+                    newH_all_k[userindex, userindex], None)
 
             return (MsPk_all_users, Wk_all_users)
 
@@ -411,7 +408,7 @@ class CompExtInt(Comp):
             #
             # The metric that will be calculated and used to determine how
             # many streams to sacrifice.
-            metric_value_for_user_k = np.empty(Ntk)
+            metric_value_for_user_k = np.zeros(Ntk)
             Pk_all = np.empty(Ntk, dtype=np.ndarray)
             norm_term_all = np.empty(Ntk)
             Wk_all = np.empty(Ntk, dtype=np.ndarray)
@@ -433,7 +430,7 @@ class CompExtInt(Comp):
                 # calc_receive_filter_user_k receives the channel without
                 # stream reduction as an argument and the stream reduction
                 # matrix)
-                W_k = self.calc_receive_filter_user_k(Heq_k, Pk)
+                W_k = self.calc_receive_filter_user_k(Heq_k_red, Pk)
                 Wk_all[index] = W_k
 
                 # SINR (in linear scale) of all streams of user k.
@@ -454,18 +451,18 @@ class CompExtInt(Comp):
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def perform_comp(mtChannel, iNUsers, iPu, noiseVar):
+def perform_comp_no_waterfilling(mtChannel, num_users, iPu, noise_var):
     """Performs the block diagonalization of `mtChannel`.
 
     Parameters
     ----------
     mtChannel : 2D numpy array
             Channel from the transmitter to all users.
-    iNUsers : int
+    num_users : int
         Number of users
     iPu : float
         Power available for each user
-    noiseVar : float
+    noise_var : float
         Noise variance
 
     Returns
@@ -477,12 +474,12 @@ def perform_comp(mtChannel, iNUsers, iPu, noiseVar):
         the channel.
 
     """
-    COMP = Comp(iNUsers, iPu, noiseVar)
-    results_tuble = COMP.perform_comp(mtChannel)
+    COMP = Comp(num_users, iPu, noise_var)
+    results_tuble = COMP.perform_comp_no_waterfilling(mtChannel)
     return results_tuble
 
 
-def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
+def perform_comp_with_ext_int_no_waterfilling(mtChannel, num_users, iPu, noise_var, Re):
     """Perform the block diagonalization of `mtChannel` taking the external
     interference into account.
 
@@ -491,11 +488,11 @@ def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
     mtChannel : 2D numpy array
         Channel from all the transmitters (not including the external
         interference sources) to all the receivers.
-    iNUsers : int
+    num_users : int
         Number of users
     iPu : float
         Power available for each user
-    noiseVar : float
+    noise_var : float
         Noise variance
     Re : 1D numpy array of 2D numpy arrays
         Covariance matrix of the external interference plus noise of each
@@ -510,8 +507,8 @@ def perform_comp_with_ext_int(mtChannel, iNUsers, iPu, noiseVar, Re):
         Write me
 
     """
-    COMP = CompExtInt(iNUsers, iPu, noiseVar)
-    results_tuble = COMP.perform_comp(mtChannel, Re)
+    COMP = CompExtInt(num_users, iPu, noise_var)
+    results_tuble = COMP.perform_comp_no_waterfilling(mtChannel, Re)
     return results_tuble
 
 
@@ -537,7 +534,7 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     for userindex in range(num_users):
-        # Code here will be moved to the CompExtInt.perform_comp method later
+        # Code here will be moved to the CompExtInt.perform_comp_no_waterfilling method later
         mtW_bd = np.linalg.pinv(newH)
         mtP = np.dot(mtW_bd, newH)
 
