@@ -5,6 +5,8 @@
 
 """
 
+__revision__ = "$Revision$"
+
 import numpy as np
 
 # xxxxxxxxxx Remove latter xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -364,13 +366,23 @@ class CompExtInt(Comp):
         Re = mu_channel.calc_cov_matrix_extint_plus_noise(
             self.noise_var, self.pe)
 
+        # Output variables
+        MsPk_all_users = np.empty(K, dtype=np.ndarray)
+        Wk_all_users = np.empty(K, dtype=np.ndarray)
+
         if self._metric_func is None:
             # If _metric_func is None then we are not handling external
             # interference. Therefore, we simple call the perform_comp
             # method of the Comp class.
             (newH, Ms_good) = BlockDiaginalizer.block_diagonalize(self, mu_channel.big_H_no_ext_int)
+
             MsPk_all_users = single_matrix_to_matrix_of_matrices(Ms_good, None, Nt)
-            return MsPk_all_users
+            newH_all_k = single_matrix_to_matrix_of_matrices(newH, Nr, Nt)
+            for userindex in range(K):
+                Wk_all_users[userindex] = self.calc_receive_filter_user_k(
+                    newH_all_k[userindex, userindex])
+
+            return (MsPk_all_users, Wk_all_users)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # If we are here, then _metric_func is not None, which means that
@@ -383,7 +395,6 @@ class CompExtInt(Comp):
         H_all_ks = single_matrix_to_matrix_of_matrices(H_matrix, Nr)
 
         # Loop for the users
-        MsPk_all_users = np.empty(K, dtype=np.ndarray)
         for userindex in range(K):
             Ntk = Nt[userindex]
             Rek = Re[userindex]
@@ -403,6 +414,7 @@ class CompExtInt(Comp):
             metric_value_for_user_k = np.empty(Ntk)
             Pk_all = np.empty(Ntk, dtype=np.ndarray)
             norm_term_all = np.empty(Ntk)
+            Wk_all = np.empty(Ntk, dtype=np.ndarray)
             for index in range(Ntk):
                 Ns_k = index + 1
                 # Find Pk
@@ -422,6 +434,7 @@ class CompExtInt(Comp):
                 # stream reduction as an argument and the stream reduction
                 # matrix)
                 W_k = self.calc_receive_filter_user_k(Heq_k, Pk)
+                Wk_all[index] = W_k
 
                 # SINR (in linear scale) of all streams of user k.
                 sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
@@ -434,8 +447,9 @@ class CompExtInt(Comp):
             # value of the metric.
             best_index = np.argmax(metric_value_for_user_k)
             MsPk_all_users[userindex] = np.dot(Msk, Pk_all[best_index]) / norm_term_all[best_index]
+            Wk_all_users[userindex] = Wk_all[best_index]
 
-        return MsPk_all_users
+        return (MsPk_all_users, Wk_all_users)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

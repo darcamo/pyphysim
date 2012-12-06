@@ -7,6 +7,8 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
+__revision__ = "$Revision$"
+
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
@@ -21,7 +23,7 @@ import numpy as np
 from comm import channels, modulators
 from comp import comp
 from util.misc import least_right_singular_vectors, randn_c
-from util.conversion import dB2Linear
+from util.conversion import dB2Linear, linear2dB
 from subspace.projections import calcProjectionMatrix
 
 
@@ -181,14 +183,20 @@ class CompExtInt(unittest.TestCase):
         np.testing.assert_array_almost_equal(spectral_efficiency,
                                              expected_spectral_efficiency)
 
+    # TODO: Finish the implementation
     def test_perform_comp(self):
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size
         Nti = 1
         iPu = 1e-3  # Power for each user (linear scale)
-        pe = 1e-2  # External interference power (in linear scale)
+        pe = 1e-10  # External interference power (in linear scale)
         noise_var = 1e-4
+
+        # The modulator and packet_length are required in the
+        # effective_throughput metric case
+        psk_obj = modulators.PSK(4)
+        packet_length = 60
 
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
         multiUserChannel.randomize(Nr, Nt, K, Nti)
@@ -203,7 +211,7 @@ class CompExtInt(unittest.TestCase):
 
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
-        Ms_all = comp_obj.perform_comp(multiUserChannel)
+        (Ms_all, Wk_all) = comp_obj.perform_comp(multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -226,57 +234,74 @@ class CompExtInt(unittest.TestCase):
                                   0)
         self.assertAlmostEqual(np.linalg.norm(np.dot(H2, Ms1), 'fro'),
                                   0)
+
+        # Equivalent sinrs (in linear scale)
+        noise_cov_matrix1 = np.eye(Nr[0]) * noise_var
+        noise_cov_matrix2 = np.eye(Nr[1]) * noise_var
+        sinrs = np.empty(K, dtype=np.ndarray)
+        sinrs[0] = comp.CompExtInt._calc_linear_SINRs(np.dot(H1, Ms1),
+                                                      Wk_all[0],
+                                                      noise_cov_matrix1)
+        sinrs[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, Ms2),
+                                                      Wk_all[1],
+                                                      noise_cov_matrix2)
+        se = (psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs[0]),
+            packet_length)
+            +
+            psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs[1]),
+                packet_length))
+        print se
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Handling external interference using the capacity metric
-        comp_obj.set_ext_int_handling_metric('capacity')
-        MsPk_all = comp_obj.perform_comp(multiUserChannel)
-        MsPk_1 = MsPk_all[0]
-        MsPk_2 = MsPk_all[1]
+        # # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Handling external interference using the capacity metric
+        # comp_obj.set_ext_int_handling_metric('capacity')
+        # (MsPk_all, Wk_cap_all) = comp_obj.perform_comp(multiUserChannel)
+        # MsPk_1 = MsPk_all[0]
+        # MsPk_2 = MsPk_all[1]
 
-        # Test if the square of the Frobenius norm of the precoder of each
-        # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_2, 'fro') ** 2)
+        # # Test if the square of the Frobenius norm of the precoder of each
+        # # user is equal to the power available to that user.
+        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
+        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_2, 'fro') ** 2)
 
-        # Test if MsPk really block diagonalizes the channel
-        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_1), 'fro'), 0)
-        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_2), 'fro'), 0)
-        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_2), 'fro'), 0)
-        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_1), 'fro'), 0)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Test if MsPk really block diagonalizes the channel
+        # self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_1), 'fro'), 0)
+        # self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_2), 'fro'), 0)
+        # self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_2), 'fro'), 0)
+        # self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_1), 'fro'), 0)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Handling external interference using the effective_throughput metric
-        psk_obj = modulators.PSK(4)
-        packet_length = 60
-        comp_obj.set_ext_int_handling_metric('effective_throughput',
-                                             psk_obj,
-                                             packet_length)
-        MsPk_effec_all = comp_obj.perform_comp(multiUserChannel)
-        MsPk_effec_1 = MsPk_effec_all[0]
-        MsPk_effec_2 = MsPk_effec_all[1]
+        # # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Handling external interference using the effective_throughput metric
+        # comp_obj.set_ext_int_handling_metric('effective_throughput',
+        #                                      psk_obj,
+        #                                      packet_length)
+        # (MsPk_effec_all, Wk_effec_all) = comp_obj.perform_comp(multiUserChannel)
+        # MsPk_effec_1 = MsPk_effec_all[0]
+        # MsPk_effec_2 = MsPk_effec_all[1]
 
-        # Test if the square of the Frobenius norm of the precoder of each
-        # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_2, 'fro') ** 2)
+        # # Test if the square of the Frobenius norm of the precoder of each
+        # # user is equal to the power available to that user.
+        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_1, 'fro') ** 2)
+        # self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_2, 'fro') ** 2)
 
-        # Test if MsPk really block diagonalizes the channel
-        self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_effec_1), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_effec_2), 'fro'),
-            0)
-        self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_effec_2), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_effec_1), 'fro'),
-            0)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Test if MsPk really block diagonalizes the channel
+        # self.assertNotAlmostEqual(
+        #     np.linalg.norm(np.dot(H1, MsPk_effec_1), 'fro'),
+        #     0)
+        # self.assertAlmostEqual(
+        #     np.linalg.norm(np.dot(H1, MsPk_effec_2), 'fro'),
+        #     0)
+        # self.assertNotAlmostEqual(
+        #     np.linalg.norm(np.dot(H2, MsPk_effec_2), 'fro'),
+        #     0)
+        # self.assertAlmostEqual(
+        #     np.linalg.norm(np.dot(H2, MsPk_effec_1), 'fro'),
+        #     0)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # TODO: Finishe-me
         # Test if the effective_throughput obtains a better troughput then
