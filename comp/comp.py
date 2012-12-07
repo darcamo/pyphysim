@@ -49,51 +49,7 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
     return min_Vs
 
 
-# TODO: remove this class, since CompExtInt does everything this class
-# does.
-class Comp(BlockDiaginalizer):  # pragma: no cover
-    """Performs the Coordinated Multipoint transmission.
-
-    This class basically performs the Block Diagonalization in a joint
-    transmission assuring that the Power restriction of each Base Station
-    is not violated.
-
-    """
-
-    def __init__(self, num_users, iPu, noise_var):
-        """Initializes the Comp object.
-
-        Parameters
-        ----------
-        num_users : int
-            Number of users.
-        iPu : float
-            Power available for EACH user.
-        noise_var : float
-            Noise variance (power in linear scale).
-        """
-        BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
-
-    def perform_comp_no_waterfilling(self, mtChannel):
-        """Perform the block diagonalization of `mtChannel`.
-
-        Parameters
-        ----------
-        mtChannel : 2D numpy array
-            Channel from the transmitter to all users.
-
-        Returns
-        -------
-          (newH, Ms_good) : A tuple of numpy arrays
-              newH is a 2D numpy array corresponding to the Block
-              diagonalized channel, while Ms_good is a 2D numpy array
-              corresponding to the precoder matrix used to block diagonalize
-              the channel.
-        """
-        return BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mtChannel)
-
-
-class CompExtInt(Comp):
+class CompExtInt(BlockDiaginalizer):
     """Performs the Coordinated Multipoint transmission also taking into
     account the external interference.
 
@@ -128,7 +84,7 @@ class CompExtInt(Comp):
         pe : float
             Power of the external interference source (in linear scale)
         """
-        Comp.__init__(self, num_users, iPu, noise_var)
+        BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
         # Function used to decide how many streams will be sacrificed to
@@ -354,6 +310,9 @@ class CompExtInt(Comp):
         MsPk_all_users : 1D numpy array of 2D numpy arrays
             A 1D numpy array where each element corresponds to the precoder
             for a user.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
 
         """
         K = mu_channel.K
@@ -449,70 +408,67 @@ class CompExtInt(Comp):
         return (MsPk_all_users, Wk_all_users)
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def perform_comp_no_waterfilling(mtChannel, num_users, iPu, noise_var):
-    """Performs the block diagonalization of `mtChannel`.
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# def perform_comp_no_waterfilling(mtChannel, num_users, iPu, noise_var):
+#     """Performs the block diagonalization of `mtChannel`.
 
-    Parameters
-    ----------
-    mtChannel : 2D numpy array
-            Channel from the transmitter to all users.
-    num_users : int
-        Number of users
-    iPu : float
-        Power available for each user
-    noise_var : float
-        Noise variance
+#     Parameters
+#     ----------
+#     mtChannel : 2D numpy array
+#             Channel from the transmitter to all users.
+#     num_users : int
+#         Number of users
+#     iPu : float
+#         Power available for each user
+#     noise_var : float
+#         Noise variance
 
-    Returns
-    -------
-    (newH, Ms_good) : A tuple of numpy arrays
-        newH is a 2D numpy array corresponding to the Block
-        diagonalized channel, while Ms_good is a 2D numpy array
-        corresponding to the precoder matrix used to block diagonalize
-        the channel.
+#     Returns
+#     -------
+#     (newH, Ms_good) : A tuple of numpy arrays
+#         newH is a 2D numpy array corresponding to the Block
+#         diagonalized channel, while Ms_good is a 2D numpy array
+#         corresponding to the precoder matrix used to block diagonalize
+#         the channel.
 
-    """
-    COMP = Comp(num_users, iPu, noise_var)
-    results_tuble = COMP.perform_comp_no_waterfilling(mtChannel)
-    return results_tuble
-
-
-def perform_comp_with_ext_int_no_waterfilling(mtChannel, num_users, iPu, noise_var, Re):
-    """Perform the block diagonalization of `mtChannel` taking the external
-    interference into account.
-
-    Parameters
-    ----------
-    mtChannel : 2D numpy array
-        Channel from all the transmitters (not including the external
-        interference sources) to all the receivers.
-    num_users : int
-        Number of users
-    iPu : float
-        Power available for each user
-    noise_var : float
-        Noise variance
-    Re : 1D numpy array of 2D numpy arrays
-        Covariance matrix of the external interference plus noise of each
-        user. `Re` must be a numpy array of dimension (K x 1), where K is
-        the number of users, and each element in `Re` is a numpy 2D array
-        of size (Nrk x Nrk), where 'Nrk' is the number of receive antennas
-        of the k-th user.
-
-    Returns
-    -------
-    output : lalala
-        Write me
-
-    """
-    COMP = CompExtInt(num_users, iPu, noise_var)
-    results_tuble = COMP.perform_comp_no_waterfilling(mtChannel, Re)
-    return results_tuble
+#     """
+#     COMP = Comp(num_users, iPu, noise_var)
+#     results_tuble = COMP.perform_comp_no_waterfilling(mtChannel)
+#     return results_tuble
 
 
-if __name__ == '__main__1':
+# def perform_comp_with_ext_int_no_waterfilling(mu_channel, num_users, iPu, noise_var, pe):
+#     """Perform the block diagonalization of `mtChannel` taking the external
+#     interference into account.
+
+#     Parameters
+#     ----------
+#     mu_channel : MultiUserChannelMatrixExtInt object.
+#         A MultiUserChannelMatrixExtInt object, which has the channel from
+#         all the transmitters to all the receivers, as well as th external
+#         interference.
+#     num_users : int
+#         Number of users
+#     iPu : float
+#         Power available for each user
+#     noise_var : float
+#         Noise variance
+#     pe : float
+#         Interference source power.
+
+#     Returns
+#     -------
+#     output : lalala
+#         Write me
+
+#     """
+#     COMP = CompExtInt(num_users, iPu, noise_var, pe)
+#     results_tuble = COMP.perform_comp_no_waterfilling(mu_channel)
+#     return results_tuble
+
+
+if __name__ == '__main__1':  # pragma: no cover
     Pu = 5.
     noise_var = 0.1
     num_users = 3

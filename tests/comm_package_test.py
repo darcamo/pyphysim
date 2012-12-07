@@ -1180,7 +1180,8 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             individual_powers.append(np.linalg.norm(Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antenas], 'fro') ** 2)
             # 1e-12 is included to avoid false test fails due to small
             # precision errors
-            self.assertGreaterEqual(self.Pu + 1e-12,
+            tol = 1e-12
+            self.assertGreaterEqual(self.Pu + tol,
                                     individual_powers[-1])
 
     def test_block_diagonalize(self):
@@ -1220,12 +1221,13 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
         # Individual power restriction of each class
         individual_powers = []
+        tol = 1e-12  # Tolerance for the GreaterEqual test
         for i in range(num_users):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
-            self.assertGreaterEqual(Pu + 1e-8,
+            self.assertGreaterEqual(Pu + tol,
                                     individual_powers[-1])
 
     def test_block_diagonalize_no_waterfilling(self):
@@ -1252,9 +1254,10 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.assertAlmostEqual(0., np.abs(masked_newH).sum())
 
         # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
+        tol = 1e-12  # Tolerance for the GreaterEqual test
         # Total power restriction
         total_power = num_users * Pu
-        self.assertGreaterEqual(total_power + 1e-10,
+        self.assertGreaterEqual(total_power + tol,
                                 np.linalg.norm(Ms, 'fro') ** 2)
 
         # Cummulated number of receive antennas
@@ -1268,7 +1271,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
-            self.assertGreaterEqual(Pu + 1e-8,
+            self.assertGreaterEqual(Pu + tol,
                                     individual_powers[-1])
 
     def test_calc_receive_filter(self):

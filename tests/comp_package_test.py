@@ -189,20 +189,6 @@ class CompExtInt(unittest.TestCase):
                                              expected_spectral_efficiency)
 
     def test_perform_comp_no_waterfilling(self):
-        # channel_matrix = np.array(
-        #     [[-0.35432471 + 0.43567908j, 0.74665304 + 1.06258946j,
-        #       -0.31580252 - 1.95052431j, -0.80717902 + 1.51925361j,
-        #       0.00165704 - 0.24678081j],
-        #      [-0.05390497 - 0.81111426j, 0.16947509 + 0.66365601j,
-        #       0.18382905 + 0.37290935j, -0.24783987 - 0.34857926j,
-        #       -0.43963568 - 1.00526178j],
-        #      [-0.82323941 + 0.08671908j, 0.33548707 + 0.92658572j,
-        #       0.34132873 + 0.57969812j, 0.33616273 + 0.21665489j,
-        #       0.54917040 - 0.57241709j],
-        #      [0.82681849 + 0.54087929j, 0.33493573 + 0.52013058j,
-        #       -0.95342113 + 0.17200025j, -0.53274656 + 0.75087803j,
-        #       0.10650993 + 0.62296333j]])
-
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size
@@ -218,7 +204,6 @@ class CompExtInt(unittest.TestCase):
 
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
         multiUserChannel.randomize(Nr, Nt, K, Nti)
-        #multiUserChannel.init_from_channel_matrix(channel_matrix, Nr, Nt, 2, 1)
 
         # Channel from all transmitters to the first receiver
         H1 = multiUserChannel.get_channel_all_tx_to_rx_k(0)
@@ -239,11 +224,12 @@ class CompExtInt(unittest.TestCase):
         # Most likelly only one base station (the one with the worst
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
-        self.assertGreaterEqual(iPu + 1e-12,
+        tol = 1e-12
+        self.assertGreaterEqual(iPu + tol,
                                 np.linalg.norm(Ms1, 'fro') ** 2)
         # 1e-12 is included to avoid false test fails due to small
         # precision errors
-        self.assertGreaterEqual(iPu + 1e-12,
+        self.assertGreaterEqual(iPu + tol,
                                 np.linalg.norm(Ms2, 'fro') ** 2)
 
         # Test if the precoder block diagonalizes the channel
@@ -260,6 +246,7 @@ class CompExtInt(unittest.TestCase):
         sinrs[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, Ms2),
                                                       Wk_all[1],
                                                       noise_plus_int_cov_matrix[1])
+        # Spectral efficiency
         se = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
             linear2dB(sinrs[0]),
             packet_length))
@@ -267,7 +254,6 @@ class CompExtInt(unittest.TestCase):
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs[1]),
                 packet_length)))
-        print se
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -295,6 +281,7 @@ class CompExtInt(unittest.TestCase):
         sinrs2[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, MsPk_2),
                                                        Wk_cap_all[1],
                                                        noise_plus_int_cov_matrix[1])
+        # Spectral efficiency
         se2 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
             linear2dB(sinrs2[0]),
             packet_length))
@@ -302,7 +289,6 @@ class CompExtInt(unittest.TestCase):
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs2[1]),
                 packet_length)))
-        print se2
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -310,7 +296,7 @@ class CompExtInt(unittest.TestCase):
         comp_obj.set_ext_int_handling_metric('effective_throughput',
                                              psk_obj,
                                              packet_length)
-        #import pudb; pudb.set_trace()  ## DEBUG ##
+
         (MsPk_effec_all, Wk_effec_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
@@ -341,6 +327,7 @@ class CompExtInt(unittest.TestCase):
         sinrs3[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, MsPk_effec_2),
                                                        Wk_effec_all[1],
                                                        noise_plus_int_cov_matrix[1])
+        # Spectral efficiency
         se3 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
             linear2dB(sinrs3[0]),
             packet_length))
@@ -348,19 +335,19 @@ class CompExtInt(unittest.TestCase):
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs3[1]),
                 packet_length)))
-        print se3
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        sum_se2 = np.sum(se2)
-        sum_se3 = np.sum(se3)
-        if sum_se2 > sum_se3:
-            import pudb; pudb.set_trace()  ## DEBUG ##
-            print "Não deveria estar aqui"
+        # Test if the effective_throughput obtains a better spectral
+        # efficiency then the capacity and not handling interference.
+        self.assertGreater(se3 + tol, se2)
+        self.assertGreater(se3 + tol, se)
 
-        # TODO: Finishe-me
-        # Test if the effective_throughput obtains a better troughput then
-        # the capacity metric, and if the capacity obtains a better
-        # troughput then not handling the external interference.
+        # Note that almost always the capacity criterion will achieve a
+        # better spectral efficiency then not handling
+        # interference. However, sometimes it can get a worse spectral
+        # efficiency. We are not testing this here.
+
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
