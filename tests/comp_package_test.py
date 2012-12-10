@@ -217,9 +217,12 @@ class CompExtInt(unittest.TestCase):
 
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
-        (Ms_all, Wk_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (Ms_all, Wk_all, Ns_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
+
+        self.assertEqual(Ms1.shape[1], Ns_all[0])
+        self.assertEqual(Ms2.shape[1], Ns_all[1])
 
         # Most likelly only one base station (the one with the worst
         # channel) will employ a precoder with total power of `Pu`,
@@ -259,9 +262,12 @@ class CompExtInt(unittest.TestCase):
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the capacity metric
         comp_obj.set_ext_int_handling_metric('capacity')
-        (MsPk_all, Wk_cap_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
         MsPk_1 = MsPk_all[0]
         MsPk_2 = MsPk_all[1]
+
+        self.assertEqual(MsPk_1.shape[1], Ns_cap_all[0])
+        self.assertEqual(MsPk_2.shape[1], Ns_cap_all[1])
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.
@@ -297,9 +303,12 @@ class CompExtInt(unittest.TestCase):
                                              psk_obj,
                                              packet_length)
 
-        (MsPk_effec_all, Wk_effec_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
+
+        self.assertEqual(MsPk_effec_1.shape[1], Ns_effec_all[0])
+        self.assertEqual(MsPk_effec_2.shape[1], Ns_effec_all[1])
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.

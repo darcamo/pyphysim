@@ -3,14 +3,16 @@
 
 """Module implementing the block diagonalization algorithm.
 
-.. TODO:: Move everything in the blockdiagonalization module to the
-   comp module.
+There are two ways to use this module. You can either use the
+:class:`BlockDiaginalizer` class, or you can use the
+:meth:`block_diagonalize` and the :meth:`calc_receive_filter` functions
+(which use the BlockDiaginalizer class in their implementation).
 
 """
 
-__revision__ = "$Revision$"
+__all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
 
-# TODO: Move the blockdiagonalization module to the comp package.
+__revision__ = "$Revision$"
 
 import numpy as np
 import collections
@@ -86,9 +88,10 @@ class BlockDiaginalizer(object):
     Notes
     -----
     The block diagonalization algorithm is described in [1]_, where
-    different power allocations are illustrated. The :class:`BlockDiaginalizer`
-    class implement two power allocation methods, a global power
-    allocation, and a 'per transmitter' power allocation.
+    different power allocations are illustrated. The
+    :class:`BlockDiaginalizer` class implement two power allocation
+    methods, a global power allocation, and a 'per transmitter' power
+    allocation.
 
     .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
        "Zero-Forcing Methods for Downlink Spatial Multiplexing
@@ -182,7 +185,7 @@ class BlockDiaginalizer(object):
             # $\mtH_j \tilde{\mtV}_j^{(0)}$
 
             # First we get $\mtH_j$
-            H_cur_user = self._getSubChannel(mtChannel, user)
+            H_cur_user = self._get_sub_channel(mtChannel, user)
 
             # Now we get the right singular value of the equivalent channel
             (_, V1, S) = least_right_singular_vectors(
@@ -422,9 +425,9 @@ class BlockDiaginalizer(object):
         """
         vtAllUserIndexes = np.arange(0, self.num_users)
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
-        return self._getSubChannel(mtChannel, desiredUsers)
+        return self._get_sub_channel(mtChannel, desiredUsers)
 
-    def _getSubChannel(self, mt_channel, desired_users):
+    def _get_sub_channel(self, mt_channel, desired_users):
         """Get a subchannel according to the desired_users vector.
 
         Parameters
@@ -448,12 +451,12 @@ class BlockDiaginalizer(object):
 
         >>> BD = BlockDiaginalizer(3, 0, 0)
         >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]), 3 * np.ones([2, 6])])
-        >>> BD._getSubChannel(channel, [0,2])
+        >>> BD._get_sub_channel(channel, [0,2])
         array([[ 1.,  1.,  1.,  1.,  1.,  1.],
                [ 1.,  1.,  1.,  1.,  1.,  1.],
                [ 3.,  3.,  3.,  3.,  3.,  3.],
                [ 3.,  3.,  3.,  3.,  3.,  3.]])
-        >>> BD._getSubChannel(channel, 0)
+        >>> BD._get_sub_channel(channel, 0)
         array([[ 1.,  1.,  1.,  1.,  1.,  1.],
                [ 1.,  1.,  1.,  1.,  1.,  1.]])
 

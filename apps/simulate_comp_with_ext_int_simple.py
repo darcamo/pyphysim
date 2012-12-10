@@ -37,6 +37,7 @@ multiuser_channel = channels.MultiUserChannelMatrixExtInt()
 # Modulation Parameters
 M = 4
 modulator = modulators.PSK(M)
+packet_length = 60
 
 # Transmission Parameters
 NSymbs = 500  # Number of symbols (per stream per user simulated at each
@@ -45,11 +46,11 @@ SNR_dB = 15.
 N0_dBm = -116.4  # Noise power (in dBm)
 
 # External Interference Parameters
-Pe_dBm = -10000  # transmit power (in dBm) of the ext. interference
+Pe_dBm = 35  # transmit power (in dBm) of the ext. interference
 ext_int_rank = 1  # Rank of the external interference
 
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-rep_max = 10000   # Maximum number of repetitions for each
+rep_max = 1   # Maximum number of repetitions for each
 
 pbar = progressbar.ProgressbarText(rep_max, message="Simulating for SNR: {0}".format(SNR_dB))
 
@@ -100,72 +101,93 @@ for rep in range(rep_max):
     multiuser_channel.randomize(Nr, Nt, num_cells, ext_int_rank)
     multiuser_channel.set_pathloss(pathloss, pathlossInt)
 
-    # Generate input data and modulate it
-    input_data = np.random.randint(0, M, [np.sum(Ns_BD), NSymbs])
-    symbols = modulator.modulate(input_data)
+    # # Perform the Block Diagonalization of the channel
+    # H = multiuser_channel.big_H[:, 0:np.sum(Nt)]
+    # H_extInt = multiuser_channel.big_H[:, np.sum(Nt):]
+    # # Calculate the covariance matrix of the external interference plus noise
+    # R_extint_plus_noise = pe * np.dot(H_extInt, H_extInt.transpose().conjugate()) + np.eye(np.sum(Nr)) * noise_var
 
-    # Perform the Block Diagonalization of the channel
-    H = multiuser_channel.big_H[:, 0:np.sum(Nt)]
-    H_extInt = multiuser_channel.big_H[:, np.sum(Nt):]
-    # Calculate the covariance matrix of the external interference plus noise
-    R_extint_plus_noise = pe * np.dot(H_extInt, H_extInt.transpose().conjugate()) + np.eye(np.sum(Nr)) * noise_var
-
-    (newH, Ms) = comp.perform_comp_with_ext_int_no_waterfilling(
+    (MsPk_all_users, Wk_all_users, Ns_all_users) = comp.perform_comp_with_ext_int_no_waterfilling(
         # We only add the first np.sum(Nt) columns of big_H
         # because the remaining columns come from the external
         # interference sources, which don't participate in the Block
         # Diagonalization Process.
-        multiuser_channel.big_H[:, 0:np.sum(Nt)],
+        multiuser_channel,
         num_cells,
         transmit_power,
         #noise_var
         1e-50,
-        R_extint_plus_noise
+        pe
     )
 
-    # Prepare the transmit data.
-    precoded_data = np.dot(Ms, symbols)
-    external_int_data = np.sqrt(pe) * misc.randn_c(ext_int_rank, NSymbs)
-    all_data = np.vstack([precoded_data, external_int_data])
+    MskPk_1 = MsPk_all_users[0]
+    MskPk_2 = MsPk_all_users[1]
+    print MskPk_1.shape
+    print MskPk_2.shape
+    print Wk_all_users[0].shape
+    print Wk_all_users[1].shape
 
-    # Pass the precoded data through the channel
-    received_signal = multiuser_channel.corrupt_concatenated_data(
-        all_data,
-        noise_var
-    )
+    # # Performs the actual transmission for each user
+    # input_data_all_users = np.empty(num_cells, dtype=complex)
+    # for userindex in range(num_cells):
+    #     Hk = multiuser_channel.get_channel_all_tx_to_rx_k(userindex)
+    #     Msk = MsPk_all_users[userindex]
+    #     Wk = Wk_all_users[userindex]
+    #     Nsk = Msk.shape[1]
+    #     Heq_k = np.dot(Hk, Msk)
 
-    # Filter the received data
-    receive_filter = np.linalg.pinv(newH)
-    received_symbols = np.dot(receive_filter, received_signal)
+    #     # Generate input data and modulate it
+    #     input_data = np.random.randint(0, M, [Nsk, NSymbs])
+    #     symbols = modulator.modulate(input_data)
 
-    # Demodulate the filtered symbols
-    decoded_symbols = modulator.demodulate(received_symbols)
+    #     # Prepare the transmit data.
+    #     precoded_data = np.dot(Msk, symbols)
+    #     external_int_data = np.sqrt(pe) * misc.randn_c(ext_int_rank, NSymbs)
+    #     all_data = np.vstack([precoded_data, external_int_data])
 
-    # Calculates the number of symbol errors
-    num_symbol_errors += np.sum(decoded_symbols != input_data)
-    num_symbols += input_data.size
+    #     # Pass the precoded data through the channel
+    #     received_signal = multiuser_channel.corrupt_concatenated_data(
+    #         all_data,
+    #         noise_var
+    #     )
 
-    # Calculates the number of bit errors
-    aux = misc.xor(input_data, decoded_symbols)
-    # Count the number of bits in aux
-    num_bit_errors += np.sum(misc.bitCount(aux))
-    num_bits += input_data.size * modulators.level2bits(M)
+    #     # Filter the received data
+    #     print Wk.shape
+    #     print received_signal.shape
+    #     received_symbols = np.dot(Wk, received_signal)
 
-    # symbolErrors = sum(inputData != demodulatedData)
-    # aux = misc.xor(inputData, demodulatedData)
-    # # Count the number of bits in aux
-    # bitErrors = sum(misc.bitCount(aux))
-    # numSymbols = inputData.size
-    # numBits = inputData.size * modulators.level2bits(M)
+    #     # Demodulate the filtered symbols
+    #     decoded_symbols = modulator.demodulate(received_symbols)
 
-    pbar.progress(rep + 1)
 
-# Calculate the Symbol Error Rate
-print
-print num_symbol_errors
-print num_symbols
-print "SER: {0}".format(float(num_symbol_errors) / float(num_symbols))
-print "BER: {0}".format(float(num_bit_errors) / float(num_bits))
+
+
+
+#     # Calculates the number of symbol errors
+#     num_symbol_errors += np.sum(decoded_symbols != input_data)
+#     num_symbols += input_data.size
+
+#     # Calculates the number of bit errors
+#     aux = misc.xor(input_data, decoded_symbols)
+#     # Count the number of bits in aux
+#     num_bit_errors += np.sum(misc.bitCount(aux))
+#     num_bits += input_data.size * modulators.level2bits(M)
+
+#     # symbolErrors = sum(inputData != demodulatedData)
+#     # aux = misc.xor(inputData, demodulatedData)
+#     # # Count the number of bits in aux
+#     # bitErrors = sum(misc.bitCount(aux))
+#     # numSymbols = inputData.size
+#     # numBits = inputData.size * modulators.level2bits(M)
+
+#     pbar.progress(rep + 1)
+
+# # Calculate the Symbol Error Rate
+# print
+# print num_symbol_errors
+# print num_symbols
+# print "SER: {0}".format(float(num_symbol_errors) / float(num_symbols))
+# print "BER: {0}".format(float(num_bit_errors) / float(num_bits))
 
 # xxxxxxxxxx Finished xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 toc = time()

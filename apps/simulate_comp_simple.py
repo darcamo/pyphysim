@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""module docstring"""
+"""Simple script to simpulate a COmP transmission which consists of a
+simple block diagonalization of the channel."""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -15,8 +16,7 @@ from time import time
 
 from util import conversion, misc, progressbar
 from cell import cell
-from comp import comp
-from comm import pathloss, channels, modulators
+from comm import pathloss, channels, modulators, blockdiagonalization
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -45,7 +45,7 @@ SNR_dB = 15.
 N0_dBm = -116.4  # Noise power (in dBm)
 
 # External Interference Parameters
-Pe_dBm = 0  # transmit power (in dBm) of the ext. interference
+Pe_dBm = -10000  # transmit power (in dBm) of the ext. interference
 ext_int_rank = 1  # Rank of the external interference
 
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -105,7 +105,7 @@ for rep in range(rep_max):
     symbols = modulator.modulate(input_data)
 
     # Perform the Block Diagonalization of the channel
-    (newH, Ms) = comp.perform_comp_no_waterfilling(
+    (newH, Ms) = blockdiagonalization.block_diagonalize(
         # We only add the first np.sum(Nt) columns of big_H
         # because the remaining columns come from the external
         # interference sources, which don't participate in the Block

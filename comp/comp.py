@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module with implementation of Coordinated Multipoint (COmP) algorithms
+"""Module with implementation of Coordinated Multipoint (COmP) algorithms.
+
+In gerenal, the COmP algorithm is applied to an MIMO Interference Channel
+(MIMO-IC) scenario, where we have pairs of transmitters and receivers, each
+transmitter sending information only to its intending receiver, but
+interfering with the other receivers. Alternativelly, an external
+interference source may also be presented, which will interfere with all
+receivers. In order to model the MIMO-IC one can use the
+:class:`.channels.MultiUserChannelMatrix` and
+:class:`.channels.MultiUserChannelMatrixExtInt` classes.
+
+The COmP algorithm may or may not take the external interference source
+into consideration.
 
 """
 
@@ -313,7 +325,8 @@ class CompExtInt(BlockDiaginalizer):
         Wk_all_users : 1D numpy array of 2D numpy arrays
             A 1D numpy array where each element corresponds to the receive
             filter for a user.
-
+        Ns_all_users: 1D numpy array of ints
+            Number of streams of each user.
         """
         K = mu_channel.K
         Nr = mu_channel.Nr
@@ -322,23 +335,30 @@ class CompExtInt(BlockDiaginalizer):
         Re = mu_channel.calc_cov_matrix_extint_plus_noise(
             self.noise_var, self.pe)
 
-        # Output variables
+        # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         MsPk_all_users = np.empty(K, dtype=np.ndarray)
         Wk_all_users = np.empty(K, dtype=np.ndarray)
+        Ns_all_users = np.empty(K, dtype=int)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         if self._metric_func is None:
             # If _metric_func is None then we are not handling external
-            # interference. Therefore, we simple call the perform_comp_no_waterfilling
-            # method of the Comp class.
+            # interference. Therefore, we simple call the
+            # block_diagonalize_no_waterfilling method from the
+            # BlockDiaginalizer class.
             (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mu_channel.big_H_no_ext_int)
 
+            # Since there is no stream reduction, the number of streams of
+            # each user is equal to the number of transmit antennas of that
+            # user
+            Ns_all_users = Nt
             MsPk_all_users = single_matrix_to_matrix_of_matrices(Ms_good, None, Nt)
             newH_all_k = single_matrix_to_matrix_of_matrices(newH, Nr, Nt)
             for userindex in range(K):
                 Wk_all_users[userindex] = self.calc_receive_filter_user_k(
                     newH_all_k[userindex, userindex], None)
 
-            return (MsPk_all_users, Wk_all_users)
+            return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # If we are here, then _metric_func is not None, which means that
@@ -404,8 +424,9 @@ class CompExtInt(BlockDiaginalizer):
             best_index = np.argmax(metric_value_for_user_k)
             MsPk_all_users[userindex] = np.dot(Msk, Pk_all[best_index]) / norm_term_all[best_index]
             Wk_all_users[userindex] = Wk_all[best_index]
+            Ns_all_users[userindex] = Pk_all[best_index].shape[1]
 
-        return (MsPk_all_users, Wk_all_users)
+        return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
 
 # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
