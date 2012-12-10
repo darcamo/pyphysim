@@ -559,7 +559,6 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Test if we can unset a parameter that was previously set to be
         # unpacked.
         self.sim_params.set_unpack_parameter('fourth', False)
-        print self.sim_params.unpacked_parameters
         self.assertEqual(
             set(self.sim_params.unpacked_parameters),
             set(['third']))
