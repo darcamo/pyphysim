@@ -18,7 +18,7 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 import numpy
 
-bla = Extension("bla", ["lib/bla.pyx"],
+misc_c = Extension("misc_c", ["util/misc_c.pyx"],
                 include_dirs=[numpy.get_include()])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -147,7 +147,7 @@ setup(
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    ext_modules=[bla],
+    ext_modules=[misc_c],
     cmdclass={'build_ext': build_ext}
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 )
