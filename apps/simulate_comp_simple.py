@@ -142,13 +142,13 @@ for rep in range(rep_max):
     # Calculates the number of bit errors
     aux = misc.xor(input_data, decoded_symbols)
     # Count the number of bits in aux
-    num_bit_errors += np.sum(misc.bitCount(aux))
+    num_bit_errors += np.sum(misc.count_bits(aux))
     num_bits += input_data.size * modulators.level2bits(M)
 
     # symbolErrors = sum(inputData != demodulatedData)
     # aux = misc.xor(inputData, demodulatedData)
     # # Count the number of bits in aux
-    # bitErrors = sum(misc.bitCount(aux))
+    # bitErrors = sum(misc.count_bits(aux))
     # numSymbols = inputData.size
     # numBits = inputData.size * modulators.level2bits(M)
 

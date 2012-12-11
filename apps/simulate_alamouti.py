@@ -88,7 +88,7 @@ class AlamoutiSimulationRunner(SimulationRunner):
         symbolErrors = sum(inputData != demodulatedData)
         aux = misc.xor(inputData, demodulatedData)
         # Count the number of bits in aux
-        bitErrors = sum(misc.bitCount(aux))
+        bitErrors = sum(misc.count_bits(aux))
         numSymbols = inputData.size
         numBits = inputData.size * modulators.level2bits(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

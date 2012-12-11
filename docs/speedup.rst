@@ -13,8 +13,9 @@ There a re a number of alternatives to speed-up python code.
   http://code.google.com/p/numexpr/
 - You could try Numba
   http://jakevdp.github.com/blog/2012/08/24/numba-vs-cython/
-- Use smart numpy broadcast tricks to avoid loops
-  This is fast, but uses more memory. See :meth:`.Modulator.demodulate`
+- Use smart numpy broadcast tricks to avoid loops This is fast, but uses
+  more memory. See the source code of the :meth:`.Modulator.demodulate`
+  method.
 
 
 Profiling the Code
@@ -41,4 +42,11 @@ showing runsnakerun in action.
    :scale: 80%
    
 .. _runsnakerun: http://www.vrplumber.com/programming/runsnakerun/
+
+
+Using Cython to speed functions
+-------------------------------
+
+See the code of the :meth:`.count_bits` function in the :mod:`util.misc`
+module.
 

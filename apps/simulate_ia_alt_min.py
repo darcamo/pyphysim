@@ -124,7 +124,7 @@ class AlternatingSimulationRunner(SimulationRunner):
         symbolErrors = np.sum(inputData != demodulated_data)
         aux = misc.xor(inputData, demodulated_data)
         # Count the number of bits in aux
-        bitErrors = np.sum(misc.bitCount(aux))
+        bitErrors = np.sum(misc.count_bits(aux))
         numSymbols = inputData.size
         numBits = inputData.size * modulators.level2bits(M)
         ia_cost = self.ia_solver.getCost()

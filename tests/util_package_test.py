@@ -829,17 +829,17 @@ class MiscFunctionsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             misc.int2bits(-1)
 
-    def test_bitCount(self):
-        self.assertEqual(misc.bitCount(0), 0)
-        self.assertEqual(misc.bitCount(1), 1)
-        self.assertEqual(misc.bitCount(2), 1)
-        self.assertEqual(misc.bitCount(3), 2)
-        self.assertEqual(misc.bitCount(4), 1)
-        self.assertEqual(misc.bitCount(5), 2)
-        self.assertEqual(misc.bitCount(6), 2)
-        self.assertEqual(misc.bitCount(7), 3)
-        self.assertEqual(misc.bitCount(8), 1)
-        self.assertEqual(misc.bitCount(15), 4)
+    def test_count_bits(self):
+        self.assertEqual(misc.count_bits(0), 0)
+        self.assertEqual(misc.count_bits(1), 1)
+        self.assertEqual(misc.count_bits(2), 1)
+        self.assertEqual(misc.count_bits(3), 2)
+        self.assertEqual(misc.count_bits(4), 1)
+        self.assertEqual(misc.count_bits(5), 2)
+        self.assertEqual(misc.count_bits(6), 2)
+        self.assertEqual(misc.count_bits(7), 3)
+        self.assertEqual(misc.count_bits(8), 1)
+        self.assertEqual(misc.count_bits(15), 4)
 
     def test_qfunc(self):
         self.assertAlmostEqual(misc.qfunc(0.0), 0.5)

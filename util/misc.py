@@ -259,7 +259,7 @@ def int2bits(n):
     return bits
 
 
-def bitCount(n):
+def _count_bits_single_element(n):
     """Count the number of bits that are set in an interger number.
 
     Parameters
@@ -279,8 +279,11 @@ def bitCount(n):
             count += 1
         n >>= 1
     return count
-# Make bitCount an ufunc
-bitCount = np.frompyfunc(bitCount, 1, 1, doc=bitCount.__doc__)
+# Make count_bits an ufunc
+# count_bits = np.frompyfunc(_count_bits_single_element, 1, 1,
+#                            doc=_count_bits_single_element.__doc__)
+
+count_bits = np.vectorize(_count_bits_single_element)
 
 
 def qfunc(x):

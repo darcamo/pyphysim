@@ -9,7 +9,18 @@
 
 from setuptools import find_packages
 from cx_Freeze import setup, Executable
+
+
 import os
+
+# xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+from distutils.extension import Extension
+from Cython.Distutils import build_ext
+import numpy
+
+bla = Extension("bla", ["lib/bla.pyx"],
+                include_dirs=[numpy.get_include()])
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxx Get a listof the packages in the project xxxxxxxxxxxxxxxxxxxxx
@@ -133,6 +144,11 @@ setup(
             'path': path,
         }},
     executables=[simulate_comp],
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ext_modules=[bla],
+    cmdclass={'build_ext': build_ext}
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 )
 
