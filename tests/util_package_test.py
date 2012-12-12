@@ -830,16 +830,20 @@ class MiscFunctionsTestCase(unittest.TestCase):
             misc.int2bits(-1)
 
     def test_count_bits(self):
-        self.assertEqual(misc.count_bits(0), 0)
-        self.assertEqual(misc.count_bits(1), 1)
-        self.assertEqual(misc.count_bits(2), 1)
-        self.assertEqual(misc.count_bits(3), 2)
-        self.assertEqual(misc.count_bits(4), 1)
-        self.assertEqual(misc.count_bits(5), 2)
-        self.assertEqual(misc.count_bits(6), 2)
-        self.assertEqual(misc.count_bits(7), 3)
-        self.assertEqual(misc.count_bits(8), 1)
-        self.assertEqual(misc.count_bits(15), 4)
+        n = np.r_[0:9, 15]
+        expected_num_bits = np.array([0, 1, 1, 2, 1, 2, 2, 3, 1, 4])
+        np.testing.assert_array_equal(misc.count_bits(n), expected_num_bits)
+
+        # self.assertEqual(misc.count_bits(0), 0)
+        # self.assertEqual(misc.count_bits(1), 1)
+        # self.assertEqual(misc.count_bits(2), 1)
+        # self.assertEqual(misc.count_bits(3), 2)
+        # self.assertEqual(misc.count_bits(4), 1)
+        # self.assertEqual(misc.count_bits(5), 2)
+        # self.assertEqual(misc.count_bits(6), 2)
+        # self.assertEqual(misc.count_bits(7), 3)
+        # self.assertEqual(misc.count_bits(8), 1)
+        # self.assertEqual(misc.count_bits(15), 4)
 
     def test_qfunc(self):
         self.assertAlmostEqual(misc.qfunc(0.0), 0.5)

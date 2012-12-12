@@ -471,6 +471,17 @@ def calc_autocorr(x):
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+# xxxxx Load Cython reimplementation of functions here xxxxxxxxxxxxxxxxxxxx
+try:
+    # If the misc_c.so extension was compiled then any method defined there
+    # will replace the corresponding method defined here.
+    from c_extensions.misc_c import *
+except Exception:
+    pass
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 if __name__ == '__main__':  # pragma: nocover
     import doctest
     doctest.testmod()
