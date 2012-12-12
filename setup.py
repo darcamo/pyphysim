@@ -18,8 +18,8 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 import numpy
 
-misc_c = Extension("misc_c", ["util/misc_c.pyx"],
-                include_dirs=[numpy.get_include()])
+misc_c = Extension(name="misc_c", sources=["util/misc_c.pyx"],
+                   include_dirs=[numpy.get_include()])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -151,15 +151,3 @@ setup(
     cmdclass={'build_ext': build_ext}
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 )
-
-
-
-
-
-
-
-# Mensagem para escrever no Fórum
-
-# Como construir um pacote Python para rodar em outra máquina?
-
-# Preciso de uma maneira de rodar um programa que criei em Python (com alguns pacotes e módulos em cada pacote) em outra máquina (que possui apenas uma versão antiga do python instalada e não tem também as bibliotecas que preciso. Aparentemente existem várias opções para isso como o freeze, o pyinstaller, dentre outros.
