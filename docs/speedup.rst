@@ -122,6 +122,55 @@ pure python versions, them compile the Cython extensions and run the
 unittests again to test the Cython extensions.
 
 
+Profiling Cython Code
+~~~~~~~~~~~~~~~~~~~~~
+
+See http://docs.cython.org/src/tutorial/profiling_tutorial.html
+
+You can enable profiling for a Cython source file by putting
+
+.. code-block:: python
+
+   # cython: profile=True
+
+in that source file.
+
+
+.. todo::
+   
+   Verify is this is really necessary when the code is compiled into an
+   extension of only if we had used the pyximport.
+
+
+Once enabled, your Cython code will behave just like Python code when
+called from the cProfile module. This means you can just profile your
+Cython code together with your Python code using the same tools as for
+Python code alone.
+
+.. note::
+   
+   If your profiling is messed up because of the call overhead to some
+   small functions that you rather do not want to see in your profile -
+   either because you plan to inline them anyway or because you are sure
+   that you can't make them any faster - you can use a special decorator to
+   disable profiling for one function only:
+
+   .. code-block:: python
+
+      cimport cython
+
+      @cython.profile(False)
+      def my_often_called_function():
+          pass
+
+   This is important because once my_often_called_function is optimized
+   enough you might want to optimize its calling function and the overhead
+   from profiling my_often_called_function not added to
+   my_often_called_function but to its calling function. Therefore,
+   disabling profiling for my_often_called_function will give you more
+   reliable information when optimizing its calling function.
+
+   
 Other Alternatives to speed-up python code
 ------------------------------------------
 
