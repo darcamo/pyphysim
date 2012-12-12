@@ -189,3 +189,5 @@ There are a number of alternatives to speed-up python code.
 - Use smart numpy broadcast tricks to avoid loops This is fast, but uses
   more memory. See the source code of the :meth:`.Modulator.demodulate`
   method.
+- General tips
+  http://scipy-lectures.github.com/advanced/optimizing/index.html#line-profiler

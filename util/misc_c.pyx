@@ -29,7 +29,35 @@ cdef int _count_bits_single_element(int n):
     return count
 
 
-def count_bits(np.ndarray[np.int_t, ndim=1] n):
+def count_bits_1D_array(np.ndarray[np.int_t, ndim=1] n):
+    """Count the number of bits that are set.
+
+    Parameters
+    ----------
+    n : 1D numpy array of ints
+        An integer number or a numpy array of integer numbers.
+
+    Returns
+    -------
+    num_bits : 1D numpy array of ints
+        1D numpy array with the number of bits that are set for each
+        element in `n`
+
+    """
+    assert n.dtype == np.int
+
+    cdef int num_el = len(n)
+    cdef Py_ssize_t index  # Since we will use index for indexing 'n', then
+                           # using Py_ssize_t as the type for index give
+                           # faster results then using a simple int.
+    cdef np.ndarray[np.int_t, ndim=1] num_bits = np.empty(num_el, dtype=np.int)
+    for index in range(num_el):
+        num_bits[index] = _count_bits_single_element(n[index])
+
+    return num_bits
+
+
+def count_bits(n):
     """Count the number of bits that are set.
 
     Parameters
@@ -44,18 +72,24 @@ def count_bits(np.ndarray[np.int_t, ndim=1] n):
         `num_bits` will also be a numpy array with the number of bits that
         are set for each element in `n`
     """
-    assert n.dtype == np.int
+    if not isinstance(n, np.ndarray):
+        # If the input is not a numpy array we assume it to be an integer
+        # and we call _count_bits_single_element directly
+        return _count_bits_single_element(n)
 
-    cdef int num_el = len(n)
+    assert n.dtype == np.int
+    cdef np.ndarray[np.int_t, ndim=1] flattened_input = n.flatten()
+
+    cdef int num_el = len(flattened_input)
     cdef Py_ssize_t index  # Since we will use index for indexing 'n', then
                            # using Py_ssize_t as the type for index give
                            # faster results then using a simple int.
-    cdef np.ndarray[np.int_t, ndim=1] num_bits = np.empty(num_el, dtype=np.int)
+    cdef np.ndarray[np.int_t, ndim=1] num_bits_flat = np.empty(num_el, dtype=np.int)
     for index in range(num_el):
-        num_bits[index] = _count_bits_single_element(n[index])
+        num_bits_flat[index] = _count_bits_single_element(
+            flattened_input[index])
 
-    return num_bits
-
+    return np.reshape(num_bits_flat, n.shape)
 
 # np.import_array()
 
