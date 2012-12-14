@@ -1,3 +1,8 @@
+In the docs folder, run the command
+ : make html
+to generate the HTML documentation.
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 See http://infinitemonkeycorps.net/docs/pph/#id9
 for info on how to create a python project
 

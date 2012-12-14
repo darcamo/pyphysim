@@ -117,9 +117,10 @@ class CompExtInt(BlockDiaginalizer):
 
         - If `metric` is 'capacity', then the the sum capacity will be used
           to decide how many streams to sacrifice. That is, the
-          _calc_shannon_sum_capacity method will be used in perform_comp_no_waterfilling to
-          map the calculated sinrs into a sum capacity and the number of
-          sacrificed streams will be the one with the highest sum capacity.
+          _calc_shannon_sum_capacity method will be used in
+          perform_comp_no_waterfilling to map the calculated sinrs into a
+          sum capacity and the number of sacrificed streams will be the one
+          with the highest sum capacity.
 
         - If `metric` is 'effective_throughput' then the effective
           throughput will be used to decide how many streams to
@@ -152,7 +153,7 @@ class CompExtInt(BlockDiaginalizer):
             'effective_throughput'}
 
         """
-        if metric is None:
+        if metric is None or metric == 'None':
             self._metric_func = None
             self._modulator = None
             self._packet_length = None

@@ -24,56 +24,69 @@ tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Simulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Cell and Grid Parameters
+
+# xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 cell_radius = 1.0  # Cell radius (in Km)
 num_cells = 3
 num_clusters = 1
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Channel Parameters
+# xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Nr = np.ones(num_cells, dtype=int) * 2  # Number of receive antennas
 Nt = np.ones(num_cells, dtype=int) * 2  # Number of transmit antennas
-Ns_BD = Nt  # Number of streams (per user) in the BD algorithm
+#Ns_BD = Nt  # Number of streams (per user) in the BD algorithm
 path_loss_obj = pathloss.PathLoss3GPP1()
 multiuser_channel = channels.MultiUserChannelMatrixExtInt()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Modulation Parameters
+# xxxxxxxxxx Modulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 M = 4
 modulator = modulators.PSK(M)
 packet_length = 60
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Transmission Parameters
+# xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 NSymbs = 500  # Number of symbols (per stream per user simulated at each
               # iteration
 SNR_dB = 15.
 N0_dBm = -116.4  # Noise power (in dBm)
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# External Interference Parameters
+# xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Pe_dBm = 35  # transmit power (in dBm) of the ext. interference
 ext_int_rank = 1  # Rank of the external interference
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 rep_max = 20000   # Maximum number of repetitions for each
 
-pbar = progressbar.ProgressbarText(rep_max, message="Simulating for SNR: {0}".format(SNR_dB))
+pbar = progressbar.ProgressbarText(rep_max, message="Simulating for SNR: {0}, Pe_dBm: {1}".format(SNR_dB, Pe_dBm))
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Path loss (in linear scale) from the cell center to
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# xxxxxxxxxx Path loss (in linear scale) from the cell center to xxxxxxxxxx
 path_loss_border = path_loss_obj.calc_path_loss(cell_radius)
 noise_var = conversion.dBm2Linear(N0_dBm)
 snr = conversion.dB2Linear(SNR_dB)
 transmit_power = snr * noise_var / path_loss_border
 # External interference power
 pe = conversion.dBm2Linear(Pe_dBm)
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Cell Grid
+# xxxxxxxxxx Cell Grid xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 cell_grid = cell.Grid()
 cell_grid.create_clusters(num_clusters, num_cells, cell_radius)
 cluster0 = cell_grid._clusters[0]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxx Create the scenario xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 cell_ids = np.arange(1, num_cells + 1)

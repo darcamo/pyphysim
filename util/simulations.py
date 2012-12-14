@@ -322,8 +322,10 @@ class SimulationRunner(object):
 
             # Implement the _on_simulate_current_params_finish method in a
             # subclass if you need to run code after all _run_simulation
-            # iterations for each combination of simulation parameters.
-            self._on_simulate_current_params_finish(current_params)
+            # iterations for each combination of simulation parameters
+            # finishes.
+            self._on_simulate_current_params_finish(current_params,
+                                                    current_sim_results)
 
             # If the while loop ended before rep_max repetitions (because
             # _keep_going returned false) then set the progressbar to full.
@@ -372,7 +374,8 @@ class SimulationRunner(object):
         """
         pass
 
-    def _on_simulate_current_params_finish(self, current_params):
+    def _on_simulate_current_params_finish(self, current_params,
+                                           current_params_sim_results):
         """This method is called once for each simulation parameters
         combination after all iterations of _run_simulation are performed
         (for that combination of simulation parameters).
@@ -381,6 +384,9 @@ class SimulationRunner(object):
         ----------
         current_params : SimulationParameters object
             The current combination of simulation parameters.
+        current_params_sim_results : SimulationResults object
+            SimulationResults object with the results for the finished
+            simulation with the parameters in current_params.
 
         """
         pass
