@@ -31,11 +31,11 @@ specifics of each simulator to be implemented in a subclass.
 
 In the simplest case, in order to implement a simulator one would subclass
 SimulationRunner, set the simulation parameters in the __init__ method and
-implement the _run_simulation method with the code to simulate a single
-iteration for that specific simulator. The simulation can then be performed
-by calling the "simulate" method of an object of that derived class. After
-the simulation is finished, the 'results' parameter of that object will
-have the simulation results.
+implement the :meth:`._run_simulation` method with the code to simulate a
+single iteration for that specific simulator. The simulation can then be
+performed by calling the :meth:`.simulate` method of an object of that
+derived class. After the simulation is finished, the 'results' parameter of
+that object will have the simulation results.
 
 The process of implementing a simulator is described in more details in the
 following.
@@ -44,19 +44,19 @@ Simulation Parameters
 ~~~~~~~~~~~~~~~~~~~~~
 
 The simulation parameters can be set in any way as long as they can be
-accessed in the _run_simulation method. For parameters that won't be
-changed, a simple way that works very well is to store these parameters as
+accessed in the :meth:`._run_simulation` method. For parameters that won't
+be changed, a simple way that works is to store these parameters as
 attributes in the __init__ method.
 
 On the other hand, if you want to run multiple simulations, each one with
 different values for some of the simulation parameters then store these
 parameters in the self.params attribute and set them to be unpacked (See
 docummentation of the SimulationParameters class for more details). The
-simulate method will automatically get all possible combinations of
-parameters and perform a whole Monte Carlo simulation for each of them. The
-simulate method will pass the 'current_parameters' (a SimulationParameters
-object) to _run_simulation from where _run_simulation can get the current
-combination of parameters.
+:meth:`.simulate` method will automatically get all possible combinations
+of parameters and perform a whole Monte Carlo simulation for each of
+them. The :meth:`.simulate` method will pass the 'current_parameters' (a
+SimulationParameters object) to :meth:`._run_simulation` from where
+:meth:`._run_simulation` can get the current combination of parameters.
 
 If you want/need to save the simulation parameters for future reference,
 however, then you should store all the simulation parameters in the
@@ -68,18 +68,19 @@ SimulationParameters.load_from_file.
 Simulation Results
 ~~~~~~~~~~~~~~~~~~
 
-In the implementation of the _run_simulation method in a subclass of
-SimulationRunner it is necessary to create an object of the
+In the implementation of the :meth:`._run_simulation` method in a subclass
+of SimulationRunner it is necessary to create an object of the
 SimulationResults class, add each desided result to it (using the
 add_result method of the SimulationResults class) and then return this
-object at the end of _run_simulation. Note that each result added to this
-SimulationResults object must itself be an object of the 'Result' class.
+object at the end of :meth:`._run_simulation`. Note that each result added
+to this SimulationResults object must itself be an object of the 'Result'
+class.
 
-After each run of the _run_simulation method the returned SimulationResults
-object is merged with the self.results attribute from where the simulation
-results can be retreived after the simulation finishes. Note that the way
-the results from each _run_simulation run are merged together depend on the
-the Result 'update_type'.
+After each run of the :meth:`._run_simulation` method the returned
+SimulationResults object is merged with the self.results attribute from
+where the simulation results can be retreived after the simulation
+finishes. Note that the way the results from each :meth:`._run_simulation`
+run are merged together depend on the the Result 'update_type'.
 
 Since you will have the complete simulation results in the self.results
 object you can easily save them to a file calling its save_to_file method.
@@ -89,32 +90,33 @@ self.results object before calling its save_to_file method. This way you
 will have information about which simulation parameters were used to
 generate the results.
 
-Number of iterations the _run_simulation method is performed
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Number of iterations the :meth:`._run_simulation` method is performed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The number of times the _run_simulation method is performed for a given
-parameter combination depend on the self.rep_max attribute. It is set by
-default to '1' and therefore you should set it to the desired value in the
-__init__ method of the SimulationRunner subclass.
+The number of times the :meth:`._run_simulation` method is performed for a
+given parameter combination depend on the self.rep_max attribute. It is set
+by default to '1' and therefore you should set it to the desired value in
+the __init__ method of the SimulationRunner subclass.
 
 Optional methods
 ~~~~~~~~~~~~~~~~
 
 A few methods can be implemented in the SimulationRunner subclass for extra
-functionalities. The most useful one is probably the _keep_going method,
-which can speed up the simulation by avoid running unecessary iterations of
-the _run_simulation method.
+functionalities. The most useful one is probably the :meth:`._keep_going`
+method, which can speed up the simulation by avoid running unecessary
+iterations of the :meth:`._run_simulation` method.
 
-Basically, after each iteration of the _run_simulation method the
-_keep_going method is called. If it returns True then more iterations of
-_run_simulation will be performed until _keep_going returns False or
-rep_max iterations are performed. When the _keep_going method is called it
-receives a SimulationResults object with the cumulated results from all
-iterations so far, which it can then use to decide it the iterations should
-continue or not.
+Basically, after each iteration of the :meth:`._run_simulation` method the
+:meth:`._keep_going` method is called. If it returns True then more
+iterations of :meth:`._run_simulation` will be performed until
+:meth:`._keep_going` returns False or rep_max iterations are
+performed. When the :meth:`._keep_going` method is called it receives a
+SimulationResults object with the cumulated results from all iterations so
+far, which it can then use to decide it the iterations should continue or
+not.
 
 The other optional methods provide hooks to run code at specific points of
-the simulate method. They are described briefly below:
+the :meth:`.simulate` method. They are described briefly below:
 
  - :meth:`SimulationRunner._on_simulate_start`:
          This method is called once at the beginning of the simulate
@@ -282,6 +284,12 @@ class SimulationRunner(object):
         tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # Store the Simulation parameters in the SimulationResults object.
+        # With this, the simulation parameters will be available for
+        # someone that has the SimulationResults object (loaded from a
+        # file, for instance).
+        self.results.params = self.params
+
         # Implement the _on_simulate_start method in a subclass if you need
         # to run code at the start of the simulate method.
         self._on_simulate_start()
@@ -341,6 +349,9 @@ class SimulationRunner(object):
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         toc = time()
         self._elapsed_time = toc - tic
+
+        # Also save the elapsed time in the SimulationResults object
+        self.results.elapsed_time = self._elapsed_time
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Implement the _on_simulate_finish method in a subclass if you
