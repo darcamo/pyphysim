@@ -180,9 +180,7 @@ class SimplePskSimulationRunner(SimulationRunner, HasTraits):
 
         # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
         symbolErrors = sum(inputData != demodulatedData)
-        aux = misc.xor(inputData, demodulatedData)
-        # Count the number of bits in aux
-        bitErrors = sum(misc.count_bits(aux))
+        bitErrors = misc.count_bit_errors(inputData, demodulatedData)
         numSymbols = inputData.size
         numBits = inputData.size * mod.level2bits(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

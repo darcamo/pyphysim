@@ -259,18 +259,28 @@ def int2bits(n):
     return bits
 
 
+# Note: This method works only for an integer `n` and returns an
+# integer. However, we are writing the documentation as if it were a numpy
+# ufunc because we will create the count_bits ufunc with it using
+# numpy.vectorize and count_bits will inherit the documentation.
 def _count_bits_single_element(n):
-    """Count the number of bits that are set in an interger number.
+    """Count the number of bits that are set in `n`.
 
     Parameters
     ----------
-    n : int
-        The interger number.
+    n : int or numpy array of ints
+        An integer number or a numpy array of integer numbers.
 
     Returns
     -------
     Number of bits that are equal to 1 in the bit representation of the
     number `n`.
+
+    Exaples
+    -------
+    >>> a = np.array([3, 0, 2])
+    >>> print count_bits(a)
+    [2 0 1]
 
     """
     count = 0
@@ -279,11 +289,49 @@ def _count_bits_single_element(n):
             count += 1
         n >>= 1
     return count
+
 # Make count_bits an ufunc
+count_bits = np.vectorize(_count_bits_single_element)
 # count_bits = np.frompyfunc(_count_bits_single_element, 1, 1,
 #                            doc=_count_bits_single_element.__doc__)
 
-count_bits = np.vectorize(_count_bits_single_element)
+
+def count_bit_errors(first, second):
+    """Compare `first` and `second` and count the number of equivalent bit
+    errors.
+
+    The two arguments are assumed to have the index of transmitted and
+    decoded symbols. The count_bit_errors function will compare each
+    element in `first` with the corresponding element in `second`,
+    determine how many bits changed and then return the total number of
+    changes bits. For instance, if we compare the numbers 3 and 0, we see
+    that 2 bits have changed, since 3 corresponds to '11', while 0
+    corresponds to '00'.
+
+    Parameters
+    ----------
+    first : int or numpy array of ints
+        The decoded symbols.
+    second : int or numpy array of ints
+        The transmited symbols.
+
+    Returns
+    -------
+    bit_errors : int
+        The total number of bit errors.
+
+    Examples
+    --------
+    >>> first = np.array([2, 3, 3, 0, 1, 3, 1])
+    >>> second = np.array([0, 3, 2, 0, 2, 0, 1])
+    >>> # The number of changed bits in each element is equal to
+    >>> # array([1, 0, 1, 0, 2, 2, 0])
+    >>> count_bit_errors(first, second)
+    6
+
+    """
+    different_bits = xor(first, second)
+    return np.sum(count_bits(different_bits))
 
 
 def qfunc(x):

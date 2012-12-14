@@ -23,6 +23,7 @@ sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
+from scipy import linalg as sp_linalg
 
 from util import simulations, conversion, misc
 from cell import cell
@@ -46,9 +47,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.num_clusters = 1
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.Nr = np.ones(self.num_cells) * 2  # Number of receive antennas
-        self.Nt = np.ones(self.num_cells) * 2  # Number of transmit antennas
-        self.Ns_BD = self.Nt  # Number of streams (per user) in the BD algorithm
+        self.Nr = np.ones(self.num_cells, dtype=int) * 2  # N. of Rx antennas
+        self.Nt = np.ones(self.num_cells, dtype=int) * 2  # N. of Tx antennas
+
+        self.Ns_BD = self.Nt  # Number of streams (per user) in the BD alg.
         # self.AlphaValues = 0.2;
         # self.BetaValues = 0;
         self.path_loss_obj = pathloss.PathLoss3GPP1()
@@ -57,22 +59,34 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxx Modulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.M = 4
         self.modulator = modulators.PSK(self.M)
+        self.packet_length = 60
 
         # xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Number of symbols (per stream per user simulated at each
         # iteration of _run_simulation
         self.NSymbs = 500
         SNR = np.linspace(0, 30, 7)
+        #SNR = np.array([0, 5, 10])
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxx
-        self.Pe_dBm = -10000  # transmit power (in dBm) of the ext. interference
+        # transmit power (in dBm) of the ext. interference
+        #Pe_dBm = np.array([-10000, 0, 10, 20])
+        Pe_dBm = np.array([20])
+        self.params.add('Pe_dBm', Pe_dBm)
+        self.params.set_unpack_parameter('Pe_dBm')
         self.ext_int_rank = 1  # Rank of the external interference
 
+        # Metric used for the stream reduction decision used by the
+        # CompExtInt class to mitigate external interference.
+        ext_int_comp_metric = [None, 'capacity', 'effective_throughput']
+        self.params.add('metric', ext_int_comp_metric)
+        self.params.set_unpack_parameter('metric')
+
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 10000  # Maximum number of repetitions for each
+        self.rep_max = 20000  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -81,11 +95,15 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # accumulated number of bit errors becomes greater then 5% of the
         # total number of simulated bits
         self.max_bit_errors = self.rep_max * self.NSymbs * 5. / 100.
-        self.progressbar_message = "COmP Simulation with {0}-PSK - SNR: {{SNR}}".format(self.M)
+        self.progressbar_message = "Metric: {{metric}}, SNR: {{SNR}}, Pe_dBm: {{Pe_dBm}}".format(self.M)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # These two will be set in the _on_simulate_current_params_start
+        # method
+        self.pe = 0
+
         # Path loss (in linear scale) from the cell center to
         self.path_loss_border = self.path_loss_obj.calc_path_loss(self.cell_radius)
         # Cell Grid
@@ -93,8 +111,6 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.cell_grid.create_clusters(self.num_clusters, self.num_cells, self.cell_radius)
         self.noise_var = conversion.dBm2Linear(self.N0)
 
-        # External interference power
-        self.pe = conversion.dBm2Linear(self.Pe_dBm)
         # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
         # the scenario specific variables are created by running the
         # _create_users_according_to_scenario method.
@@ -175,11 +191,22 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # _run_simulation, but only when the parameters change the
         # calculation is performed here in the
         # _on_simulate_current_params_start.
-        self.transmit_power = CompSimulationRunner._calc_transmit_power(
+        transmit_power = CompSimulationRunner._calc_transmit_power(
             current_params['SNR'],
             self.N0,
             self.cell_radius,
             self.path_loss_obj)
+
+        # External interference power
+        self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
+
+        # Create the COmP object
+        self.comp_obj = comp.CompExtInt(self.num_cells,
+                                        transmit_power,
+                                        self.noise_var,
+                                        self.pe)
+        self.comp_obj.set_ext_int_handling_metric(
+            'effective_throughput', self.modulator, self.packet_length)
 
     def _run_simulation(self, current_parameters):
         """The _run_simulation method is where the actual code to simulate
@@ -213,30 +240,25 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # users are already created (we need their positions for the
         # pathloss)
         self._create_users_channels()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Perform the block diagonalization xxxxxxxxxxxxxxxxxxxx
+        (MsPk_all_users,
+         Wk_all_users,
+         Ns_all_users) = self.comp_obj.perform_comp_no_waterfilling(
+             self.multiuser_channel)
 
         # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
         input_data = np.random.randint(0,
                                        self.M,
-                                       [np.sum(self.Ns_BD), self.NSymbs])
+                                       [np.sum(Ns_all_users), self.NSymbs])
         symbols = self.modulator.modulate(input_data)
-
-        # xxxxxxxxxx Perform the block diagonalization xxxxxxxxxxxxxxxxxxxx
-        (newH, Ms) = comp.perform_comp_no_waterfilling(
-            # We only add the first np.sum(self.Nt) columns of big_H
-            # because the remaining columns come from the external
-            # interference sources, which don't participate in the Block
-            # Diagonalization Process.
-            self.multiuser_channel.big_H[:, 0:np.sum(self.Nt)],
-            self.num_cells,
-            self.transmit_power,
-            #self.noise_var
-            1e-50
-        )
 
         # Prepare the transmit data. That is, the precoded_data as well as
         # the external interferece sources' data.
-        precoded_data = np.dot(Ms, symbols)
-        external_int_data = np.sqrt(self.pe) * misc.randn_c(self.ext_int_rank, self.NSymbs)
+        precoded_data = np.dot(np.hstack(MsPk_all_users), symbols)
+        external_int_data = np.sqrt(self.pe) * misc.randn_c(
+            self.ext_int_rank, self.NSymbs)
         all_data = np.vstack([precoded_data, external_int_data])
 
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
@@ -246,8 +268,8 @@ class CompSimulationRunner(simulations.SimulationRunner):
         )
 
         # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        receive_filter = np.linalg.pinv(newH)
-        received_symbols = np.dot(receive_filter, received_signal)
+        Wk = sp_linalg.block_diag(*Wk_all_users)
+        received_symbols = np.dot(Wk, received_signal)
 
         # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
         decoded_symbols = self.modulator.demodulate(received_symbols)
@@ -258,7 +280,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # SER = float(num_symbol_errors) / float(num_symbols)
 
         # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
-        num_bit_errors = np.sum(misc.xor(decoded_symbols, input_data))
+        num_bit_errors = misc.count_bit_errors(decoded_symbols, input_data)
         num_bits = num_symbols * np.log2(self.M)
         # BER = float(num_bit_errors) / num_bits
 
@@ -286,6 +308,24 @@ class CompSimulationRunner(simulations.SimulationRunner):
         num_bit_errors = ber_result._value
         return num_bit_errors < self.max_bit_errors
 
+    def _on_simulate_current_params_finish(self, current_params, current_params_sim_results):
+        """Calculates the package error rate from the simulated BER."""
+        ber = current_params_sim_results['ber'][-1].get_result()
+        per = 1 - ((1 - ber) ** self.packet_length)
+
+        # Package Error Rate result calculated from the BER
+        per_result = simulations.Result.create('per',
+                                               simulations.Result.MISCTYPE,
+                                               per)
+        # Spectral Efficiency result
+        se = self.modulator.K * (1 - per)
+        se_result = simulations.Result.create('spec_effic',
+                                              simulations.Result.MISCTYPE,
+                                              se)
+
+        self.results.append_result(per_result)
+        self.results.append_result(se_result)
+
     @staticmethod
     def _calc_transmit_power(SNR_dB, N0_dBm, cell_radius, path_loss_obj):
         """Calculates the required transmit power (in linear scale) to
@@ -307,21 +347,153 @@ class CompSimulationRunner(simulations.SimulationRunner):
         snr = conversion.dB2Linear(SNR_dB)
         pt = snr * conversion.dBm2Linear(N0_dBm) / path_loss_border
         return pt
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def get_data_to_be_plotted(self):
-        """The get_data_to_be_plotted is not part of the simulation, but it is
-        useful after the simulation is finished to get the results easily
-        for plot.
 
-        """
-        ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ser')
+def plot_error_results_fixed_Pe_metric(results, Pe_dBm, metric):
+    """Plot the results for a specified Pe_dBm and metric.
 
-        # Get the SNR from the simulation parameters
-        SNR = np.array(self.params['SNR'])
+    Parameters
+    ----------
+    results : SimulationResults object
+        The simulation results.
+    Pe_dBm : float
+        The desired external interference power in dB. Must be one of the
+        values specified in `results.params`
+    metric : str
+        The metric used for external interference handling. Must be one of
+        the values specified in `results.params`
 
-        return (SNR, ber, ser)
+    Returns
+    -------
+    fig : A Matplotlib figure
 
+        A Matplotlib figure with the plot of the error rates. You can call
+        the 'save' method of `fig` to save the figure to a file.
+
+    fig2 : A Matplotlib figure
+        Matplotlib figure with the plot of the Spectral Efficiency. You can
+        call the 'save' method of `fig` to save the figure to a file.
+
+    """
+    params = results.params
+    SNR = params['SNR']
+
+    ber_all = np.array(results.get_result_values_list('ber'))
+    ser_all = np.array(results.get_result_values_list('ser'))
+    per_all = np.array(results.get_result_values_list('per'))
+    se_all = np.array(results.get_result_values_list('spec_effic'))
+
+    result_indexes = params.get_pack_indexes(
+        {'Pe_dBm': Pe_dBm, 'metric': metric})
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Plot the Error rates (SER, BER and PER)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    # Plot the Symbol Error Rate
+    ser_plot = ax.semilogy(SNR, ser_all[result_indexes],
+                           'g-*', label='SER')
+    ax.hold(True)
+
+    # Plot the Bit Error Rate
+    ber_plot = ax.semilogy(SNR, ber_all[result_indexes],
+                           'b-*', label='BER')
+
+    # Plot the Package Error Rate
+    per_plot = ax.semilogy(SNR, per_all[result_indexes],
+                           'k-*', label='PER')
+
+    plt.xlabel('SNR')
+    plt.ylabel('Error Rate')
+    ax.set_title('COmP simulation ({0}, Pe_dBm: {1}, metric: {2})'.format(
+        '4-PSK',
+        Pe_dBm,
+        metric))
+    plt.legend()
+
+    plt.grid(True, which='both', axis='both')
+    plt.show()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Plot The Spectral Efficiency
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111)
+
+    # Plot the Symbol Error Rate
+    se_plot = ax2.plot(SNR, se_all[result_indexes],
+                           'g-*', label='Spectral Efficiency')
+
+    plt.xlabel('SNR')
+    plt.ylabel('Spectral Efficiency')
+    ax2.set_title('COmP simulation ({0}, Pe_dBm: {1}, metric: {2})'.format(
+        '4-PSK',
+        Pe_dBm,
+        metric))
+    #plt.legend()
+
+    plt.grid(True, which='both', axis='both')
+    plt.show()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    #fig.savefig('{0}.pdf'.format(results_filename))
+    return (fig, fig2)
+
+
+def plot_spectral_efficience(sim_results, Pe_dBm):
+    params = results.params
+    SNR = params['SNR']
+
+    ber_all = np.array(results.get_result_values_list('ber'))
+    ser_all = np.array(results.get_result_values_list('ser'))
+    per_all = np.array(results.get_result_values_list('per'))
+    se_all = np.array(results.get_result_values_list('spec_effic'))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    # xxxxx Plot The Spectral Efficiency with no stream reduction xxxxxxxxx
+    metric = None
+    result_indexes = params.get_pack_indexes(
+        {'Pe_dBm': Pe_dBm, 'metric': metric})
+
+    se_plot_metric_None = ax.plot(SNR, se_all[result_indexes],
+                                  'g-*', label='No Stream Reduction')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Plot The Spectral Efficiency with capacity metric xxxxxxxxxxxxx
+    metric = 'capacity'
+    result_indexes = params.get_pack_indexes(
+        {'Pe_dBm': Pe_dBm, 'metric': metric})
+    se_plot_metric_capacity = ax.plot(SNR, se_all[result_indexes],
+                                      'b-*', label='Capacity Metric')
+
+    # xxxxx Plot the Spec. Effic. with effective_throughput metric xxxxxxxx
+    metric = 'effective_throughput'
+    result_indexes = params.get_pack_indexes(
+        {'Pe_dBm': Pe_dBm, 'metric': metric})
+    se_plot_metric_effec = ax.plot(SNR, se_all[result_indexes],
+                                   'k-*', label='Effective Throughput Metric')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    plt.xlabel('SNR')
+    plt.ylabel('Spectral Efficiency')
+    ax.set_title('COmP simulation ({0}, Pe_dBm: {1})'.format(
+        '4-PSK',
+        Pe_dBm,
+        metric))
+    plt.legend()
+
+    plt.grid(True, which='both', axis='both')
+    plt.show()
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     # Lets import matplotlib if it is available
     try:
@@ -330,40 +502,34 @@ if __name__ == '__main__':
     except ImportError:
         _MATPLOTLIB_AVAILABLE = False
 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # File name (without extension) for the figure and result files.
+    results_filename = 'comp_results'
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
     runner = CompSimulationRunner()
     runner.simulate()
-
-    # File name (without extension) for the figure and result files.
-    results_filename = 'comp_results_1Km_radius_(Pure_BD_symetric_users_with_ext_int)_Pe_minus_10000_dBm'
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
     # First we add the simulation parameters to the results
     runner.results.params = runner.params
     runner.results.save_to_file('{0}.pickle'.format(results_filename))
-
-    # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # We can only plot the results if matplotlib is available
-    if _MATPLOTLIB_AVAILABLE is True:
-
-        SNR, ber, ser = runner.get_data_to_be_plotted()
-
-        # Can only plot if we simulated for more then one value of SNR
-        if SNR.size > 1:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            p1 = ax.semilogy(SNR, ber, '--g*', label='BER')
-            ax.hold(True)
-            p2 = ax.semilogy(SNR, ser, '--b*', label='SER')
-
-            plt.xlabel('SNR')
-            plt.ylabel('Error')
-            ax.set_title('BER and SER for a COmP simulation ({0} modulation)'.format(runner.modulator.name))
-            plt.legend()
-
-            plt.grid(True, which='both', axis='both')
-            plt.show()
-
-            fig.savefig('{0}.pdf'.format(results_filename))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    #
+    #
     print "Elapsed Time: {0}".format(runner.elapsed_time)
+
+    #
+    # Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # results_filename = 'comp_results_darlan'
+    # results = simulations.SimulationResults.load_from_file(
+    #     '{0}{1}'.format(results_filename, '.pickle'))
+
+    # SNR = results.params['SNR']
+    # if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
+    #     #fig, fig2 = plot_error_results_fixed_Pe_metric(results, -10000, None)
+    #     plot_spectral_efficience(results, 20)
+
+    #fig.savefig('{0}.pdf'.format(results_filename))

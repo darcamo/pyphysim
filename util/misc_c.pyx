@@ -58,7 +58,7 @@ def count_bits_1D_array(np.ndarray[np.int_t, ndim=1] n):
 
 
 def count_bits(n):
-    """Count the number of bits that are set.
+    """Count the number of bits that are set in `n`.
 
     Parameters
     ----------
