@@ -280,6 +280,8 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result2._value, 12)
         self.assertEqual(self.result2._total, 40)
         self.assertEqual(self.result2.get_result(), 0.3)
+        self.result2.update(12, 8)
+        self.assertEqual(self.result2.get_result(), 0.5)
 
         # Test the update function of the MISCTYPE. Note how we can store
         # anything.

@@ -66,15 +66,15 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # iteration of _run_simulation
         self.NSymbs = 500
         SNR = np.linspace(0, 30, 7)
-        #SNR = np.array([0, 5, 10])
+        #SNR = np.array([20])
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxx
         # transmit power (in dBm) of the ext. interference
-        #Pe_dBm = np.array([-10000, 0, 10, 20])
-        Pe_dBm = np.array([20])
+        Pe_dBm = np.array([-10000, 0, 10, 20])
+        #Pe_dBm = np.array([0])
         self.params.add('Pe_dBm', Pe_dBm)
         self.params.set_unpack_parameter('Pe_dBm')
         self.ext_int_rank = 1  # Rank of the external interference
@@ -82,6 +82,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # Metric used for the stream reduction decision used by the
         # CompExtInt class to mitigate external interference.
         ext_int_comp_metric = [None, 'capacity', 'effective_throughput']
+        #ext_int_comp_metric = ['effective_throughput']
         self.params.add('metric', ext_int_comp_metric)
         self.params.set_unpack_parameter('metric')
 
@@ -284,6 +285,16 @@ class CompSimulationRunner(simulations.SimulationRunner):
         num_bits = num_symbols * np.log2(self.M)
         # BER = float(num_bit_errors) / num_bits
 
+        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
+        ber = float(num_bit_errors) / num_bits
+        per = 1. - ((1. - ber) ** self.packet_length)
+        num_packages = float(num_bits) / self.packet_length
+        num_package_errors = per * num_packages
+
+        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
+        nominal_throughput = self.modulator.K * np.sum(Ns_all_users)
+        effective_throughput = (1 - per) * nominal_throughput
+
         # xxxxx Return the Simulation results for this iteration xxxxxxxxxx
         ber_result = simulations.Result.create(
             'ber',
@@ -296,9 +307,23 @@ class CompSimulationRunner(simulations.SimulationRunner):
             num_symbol_errors,
             num_symbols)
 
+        per_result = simulations.Result.create(
+            'per',
+            simulations.Result.RATIOTYPE,
+            num_package_errors,
+            num_packages)
+
+        throughput_result = simulations.Result.create(
+            'throughput',
+            simulations.Result.RATIOTYPE,
+            effective_throughput,
+            1)
+
         simResults = simulations.SimulationResults()
         simResults.add_result(ber_result)
         simResults.add_result(ser_result)
+        simResults.add_result(per_result)
+        simResults.add_result(throughput_result)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
@@ -308,23 +333,23 @@ class CompSimulationRunner(simulations.SimulationRunner):
         num_bit_errors = ber_result._value
         return num_bit_errors < self.max_bit_errors
 
-    def _on_simulate_current_params_finish(self, current_params, current_params_sim_results):
-        """Calculates the package error rate from the simulated BER."""
-        ber = current_params_sim_results['ber'][-1].get_result()
-        per = 1 - ((1 - ber) ** self.packet_length)
+    # def _on_simulate_current_params_finish(self, current_params, current_params_sim_results):
+    #     """Calculates the package error rate from the simulated BER."""
+    #     ber = current_params_sim_results['ber'][-1].get_result()
+    #     per = 1 - ((1 - ber) ** self.packet_length)
 
-        # Package Error Rate result calculated from the BER
-        per_result = simulations.Result.create('per',
-                                               simulations.Result.MISCTYPE,
-                                               per)
-        # Spectral Efficiency result
-        se = self.modulator.K * (1 - per)
-        se_result = simulations.Result.create('spec_effic',
-                                              simulations.Result.MISCTYPE,
-                                              se)
+    #     # Package Error Rate result calculated from the BER
+    #     per_result = simulations.Result.create('per',
+    #                                            simulations.Result.MISCTYPE,
+    #                                            per)
+    #     # Spectral Efficiency result
+    #     se = self.modulator.K * (1 - per)
+    #     se_result = simulations.Result.create('spec_effic',
+    #                                           simulations.Result.MISCTYPE,
+    #                                           se)
 
-        self.results.append_result(per_result)
-        self.results.append_result(se_result)
+    #     self.results.append_result(per_result)
+    #     self.results.append_result(se_result)
 
     @staticmethod
     def _calc_transmit_power(SNR_dB, N0_dBm, cell_radius, path_loss_obj):

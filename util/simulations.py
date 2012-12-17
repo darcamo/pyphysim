@@ -1186,8 +1186,6 @@ class Result(object):
             if total is None:
                 raise ValueError("A 'value' and a 'total' are required when updating a Result object of the RATIOTYPE type.")
 
-            assert value <= total, ("__update_RATIOTYPE_value: "
-                                    "'value cannot be greater then total'")
             self._value += value
             self._total += total
 

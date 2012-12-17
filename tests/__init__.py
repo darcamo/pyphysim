@@ -7,4 +7,4 @@ There should be a python file for each package in PyPhysim.
 
 """
 
-from tests import *
+#from tests import *
