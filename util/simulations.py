@@ -284,6 +284,10 @@ class SimulationRunner(object):
         tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Store extra parameters in the self.params variable xxxxxxxx
+        self.params.add('rep_max', self.rep_max)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # Store the Simulation parameters in the SimulationResults object.
         # With this, the simulation parameters will be available for
         # someone that has the SimulationResults object (loaded from a
@@ -545,6 +549,12 @@ class SimulationParameters(object):
 
         """
         return len(self.parameters)
+
+    def __iter__(self):
+        """Get an iterator to the parameters in the SimulationParameters
+        object.
+        """
+        return iter(self.parameters)
 
     def get_num_unpacked_variations(self):
         """Get the number of variations when the parameters are unpacked.
