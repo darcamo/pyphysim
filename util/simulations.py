@@ -144,6 +144,7 @@ from collections import OrderedDict, Iterable
 import itertools
 import copy
 import numpy as np
+from itertools import repeat
 
 from util.misc import pretty_time
 from util.progressbar import ProgressbarText
@@ -288,19 +289,42 @@ class SimulationRunner(object):
         self.params.add('rep_max', self.rep_max)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Store the Simulation parameters in the SimulationResults object.
         # With this, the simulation parameters will be available for
         # someone that has the SimulationResults object (loaded from a
         # file, for instance).
         self.results.params = self.params
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Implement the _on_simulate_start method in a subclass if you need
         # to run code at the start of the simulate method.
         self._on_simulate_start()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        def _print_variation_iter(num_variations):
+            if self.progressbar_message is None:
+                for i in repeat(''):
+                    yield 0
+            else:
+                for i in range(1, num_variations + 1):
+                    message = ProgressbarText.center_message(
+                        "Current Variation: {0}/{1}".format(i,
+                                                            num_variations),
+                        fill_char='-')
+                    print message
+                    yield i
+        var_print_iter = _print_variation_iter(self.params.get_num_unpacked_variations())
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Loop through all the parameters combinations
+        num_unpacked_variations = self.params.get_num_unpacked_variations()
         for current_params in self.params.get_unpacked_params_list():
+            var_print_iter.next()
+
             # Get the update_progress_func function
             if self.progressbar_message is None:
                 # If self.progressbar_message is None then
@@ -348,6 +372,10 @@ class SimulationRunner(object):
             self._runned_reps.append(current_rep)
             # Lets append the simulation results for the current parameters
             self.results.append_all_results(current_sim_results)
+
+            # This will add a blank line between the simulations for
+            # different unpacked variations
+            print ""
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -559,15 +587,21 @@ class SimulationParameters(object):
     def get_num_unpacked_variations(self):
         """Get the number of variations when the parameters are unpacked.
 
+        If no parameter was marked to be unpacked, then return 1.
+
         Returns
         -------
         num : int
             The number of variations when the parameters are unpacked.
+
         """
-        # Generator for the lengths of the parameters set to be unpacked
-        gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
-        # Just multiply all the lengths
-        return reduce(lambda x, y: x * y, gen_values)
+        if len(self._unpacked_parameters_set) == 0:
+            return 1
+        else:
+            # Generator for the lengths of the parameters set to be unpacked
+            gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
+            # Just multiply all the lengths
+            return reduce(lambda x, y: x * y, gen_values)
 
     def get_pack_indexes(self, fixed_params_dict=dict()):
         """When you call the function get_unpacked_params_list you get a

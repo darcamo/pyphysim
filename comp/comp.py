@@ -21,11 +21,6 @@ __revision__ = "$Revision$"
 
 import numpy as np
 
-# xxxxxxxxxx Remove latter xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-import sys
-sys.path.append("../")
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 from subspace.projections import calcProjectionMatrix
 from comm.blockdiagonalization import BlockDiaginalizer
 

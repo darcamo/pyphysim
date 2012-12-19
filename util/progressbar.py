@@ -99,7 +99,6 @@ class ProgressbarText(object):
     Examples
     --------
     >>> pb = ProgressbarText(100, 'o', "Hello Simulation")
-    <BLANKLINE>
     ---------------- Hello Simulation ---------------1
         1    2    3    4    5    6    7    8    9    0
     ----0----0----0----0----0----0----0----0----0----0
@@ -142,7 +141,7 @@ class ProgressbarText(object):
         if not self.finalcount:
             return
         if(len(message) != 0):
-            bartitle = '\n{0}\n'.format(ProgressbarText.center_message(message, 50, '-', '', '1'))
+            bartitle = '{0}\n'.format(ProgressbarText.center_message(message, 50, '-', '', '1'))
         else:
             bartitle = '\n------------------ % Progress -------------------1\n'
 

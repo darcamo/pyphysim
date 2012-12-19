@@ -526,6 +526,7 @@ class SimulationParametersTestCase(unittest.TestCase):
     def test_unpacking_parameters(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
         self.sim_params.set_unpack_parameter('third')
         self.sim_params.set_unpack_parameter('fourth')
 
