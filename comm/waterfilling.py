@@ -10,6 +10,8 @@ __revision__ = "$Revision$"
 
 import numpy as np
 
+__all__ = ['doWF']
+
 
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     """Performs the Waterfilling algorithm and returns the optimum power and water level.

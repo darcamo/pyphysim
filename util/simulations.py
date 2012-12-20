@@ -18,6 +18,7 @@ clases defined in the :mod:`simulations` module see the section below.
 
 .. _implementing_monte_carlo_simulations:
 
+
 Implementing Monte Carlo simulations
 ------------------------------------
 
@@ -40,6 +41,7 @@ that object will have the simulation results.
 The process of implementing a simulator is described in more details in the
 following.
 
+
 Simulation Parameters
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -50,7 +52,7 @@ attributes in the __init__ method.
 
 On the other hand, if you want to run multiple simulations, each one with
 different values for some of the simulation parameters then store these
-parameters in the self.params attribute and set them to be unpacked (See
+parameters in the `self.params` attribute and set them to be unpacked (See
 docummentation of the SimulationParameters class for more details). The
 :meth:`.simulate` method will automatically get all possible combinations
 of parameters and perform a whole Monte Carlo simulation for each of
@@ -60,10 +62,11 @@ SimulationParameters object) to :meth:`._run_simulation` from where
 
 If you want/need to save the simulation parameters for future reference,
 however, then you should store all the simulation parameters in the
-self.params attribute. This will allow you to call its save_to_file method
-to save everything into a file. The simulation parameters can be recovered
-latter from this file by calling the static method
-SimulationParameters.load_from_file.
+`self.params` attribute. This will allow you to call the method
+:meth:`.SimulationParameters.save_to_file` to save everything into a
+file. The simulation parameters can be recovered latter from this file by
+calling the static method :meth:`SimulationParameters.load_from_file`.
+
 
 Simulation Results
 ~~~~~~~~~~~~~~~~~~
@@ -71,32 +74,38 @@ Simulation Results
 In the implementation of the :meth:`._run_simulation` method in a subclass
 of SimulationRunner it is necessary to create an object of the
 SimulationResults class, add each desided result to it (using the
-add_result method of the SimulationResults class) and then return this
-object at the end of :meth:`._run_simulation`. Note that each result added
-to this SimulationResults object must itself be an object of the 'Result'
-class.
+:meth:`.add_result` method of the :class:`SimulationResults` class) and
+then return this object at the end of :meth:`._run_simulation`. Note that
+each result added to this :class:`SimulationResults` object must itself be
+an object of the :class:`Result` class.
 
 After each run of the :meth:`._run_simulation` method the returned
-SimulationResults object is merged with the self.results attribute from
-where the simulation results can be retreived after the simulation
-finishes. Note that the way the results from each :meth:`._run_simulation`
-run are merged together depend on the the Result 'update_type'.
+:class:`SimulationResults` object is merged with the `self.results`
+attribute from where the simulation results can be retreived after the
+simulation finishes. Note that the way the results from each
+:meth:`._run_simulation` run are merged together depend on the
+`update_type` attribute of the :class:`Result` object.
 
 Since you will have the complete simulation results in the self.results
-object you can easily save them to a file calling its save_to_file method.
+object you can easily save them to a file calling its
+:class:`SimulationResults.save_to_file` method.
 
-TIP: create a new 'params' attribute with the simulation parameters in the
-self.results object before calling its save_to_file method. This way you
-will have information about which simulation parameters were used to
-generate the results.
+.. note::
+
+   Call the :meth:`SimulationResults.set_parameters` method to set the
+   simulation parameters in the self.results object before calling its
+   save_to_file method. This way you will have information about which
+   simulation parameters were used to generate the results.
+
 
 Number of iterations the :meth:`._run_simulation` method is performed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The number of times the :meth:`._run_simulation` method is performed for a
-given parameter combination depend on the self.rep_max attribute. It is set
-by default to '1' and therefore you should set it to the desired value in
-the __init__ method of the SimulationRunner subclass.
+given parameter combination depend on the `self.rep_max` attribute. It is
+set by default to '1' and therefore you should set it to the desired value
+in the __init__ method of the SimulationRunner subclass.
+
 
 Optional methods
 ~~~~~~~~~~~~~~~~
@@ -144,10 +153,11 @@ from collections import OrderedDict, Iterable
 import itertools
 import copy
 import numpy as np
-from itertools import repeat
 
 from util.misc import pretty_time
 from util.progressbar import ProgressbarText
+
+__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -294,7 +304,7 @@ class SimulationRunner(object):
         # With this, the simulation parameters will be available for
         # someone that has the SimulationResults object (loaded from a
         # file, for instance).
-        self.results.params = self.params
+        self.results.set_parameters(self.params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -303,10 +313,10 @@ class SimulationRunner(object):
         self._on_simulate_start()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Iterator to print the current variation xxxxxxxxxxxxxx
         def _print_variation_iter(num_variations):
             if self.progressbar_message is None:
-                for i in repeat(''):
+                for i in itertools.repeat(''):
                     yield 0
             else:
                 for i in range(1, num_variations + 1):
@@ -316,12 +326,15 @@ class SimulationRunner(object):
                         fill_char='-')
                     print message
                     yield i
+        # Each time the 'next' method of var_print_iter is called it will
+        # print something like
+        # ------------- Current Variation: 4/84 ------------
+        # which means the variation 4 of 84 variations.
         var_print_iter = _print_variation_iter(self.params.get_num_unpacked_variations())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Loop through all the parameters combinations
-        num_unpacked_variations = self.params.get_num_unpacked_variations()
         for current_params in self.params.get_unpacked_params_list():
             var_print_iter.next()
 
@@ -815,9 +828,32 @@ class SimulationResults(object):
     def __init__(self):
         self._results = dict()
 
+        # This will store the simulation parameters used in the simulation
+        # that resulted in the results. This should be set by calling the
+        # set_parameters method.
+        self._params = None
+
+    def _get_params(self):
+        """Get method for the params property."""
+        return self._params
+    params = property(_get_params)
+
+    def set_parameters(self, params):
+        """Set the parameters of the simulation used to generate the
+        simulation results stored in the SimulationResults object.
+
+        Parameters
+        ----------
+        params : SimulationParameters
+            A SimulationParameters object containing the simulation
+            parameters.
+
+        """
+        self._params = params
+
     def __repr__(self):
-        lista = [i for i in self._results.keys()]
-        repr_string = "SimulationResults: %s" % lista
+        list_of_names = self._results.keys()
+        repr_string = "SimulationResults: %s" % list_of_names
         return repr_string
 
     def add_result(self, result):

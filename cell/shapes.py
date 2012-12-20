@@ -17,6 +17,8 @@ except ImportError:  # pragma: no cover
 
 import numpy as np
 
+__all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
+
 
 class Coordinate(object):
     """Base class for a coordinate in a grid.

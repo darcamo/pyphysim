@@ -30,6 +30,8 @@ from comm import channels
 from util.misc import least_right_singular_vectors
 from util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 
+__all__ = ['CompExtInt']
+
 
 def _calc_stream_reduction_matrix(Re_k, kept_streams):
     """Calculates the `P` matrix that performs the stream reduction such

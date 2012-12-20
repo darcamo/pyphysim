@@ -12,6 +12,8 @@ import itertools
 from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
+__all__ = ['AlternatingMinIASolver']
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx AlternatingMinIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

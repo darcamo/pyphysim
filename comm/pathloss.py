@@ -21,6 +21,8 @@ from util import conversion
 import numpy as np
 from collections import Iterable
 
+__all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1']
+
 
 class PathLossBase(object):
     """Base class for the different Path Loss models.
@@ -153,7 +155,6 @@ class PathLossBase(object):
         """
         d = self.which_distance_dB(-conversion.linear2dB(pl))
         return d
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class PathLossFreeSpace(PathLossBase):

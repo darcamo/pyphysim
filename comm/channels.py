@@ -23,6 +23,8 @@ import numpy as np
 from util.conversion import single_matrix_to_matrix_of_matrices
 from util.misc import randn_c
 
+__all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt']
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

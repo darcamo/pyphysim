@@ -40,6 +40,8 @@ __revision__ = "$Revision$"
 import multiprocessing
 import time
 
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarMultiProcessText']
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx DummyProgressbar - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -7,6 +7,8 @@ __revision__ = "$Revision$"
 
 import numpy as np
 
+__all__ = ['OFDM']
+
 
 class OFDM(object):
     """OFDM class.
