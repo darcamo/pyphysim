@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module with implementation of Coordinated Multipoint (COmP) algorithms.
+"""Module with implementation of Coordinated Multipoint (CoMP) algorithms.
 
-In gerenal, the COmP algorithm is applied to an MIMO Interference Channel
+In gerenal, the CoMP algorithm is applied to an MIMO Interference Channel
 (MIMO-IC) scenario, where we have pairs of transmitters and receivers, each
 transmitter sending information only to its intending receiver, but
 interfering with the other receivers. Alternativelly, an external
@@ -12,7 +12,7 @@ receivers. In order to model the MIMO-IC one can use the
 :class:`.channels.MultiUserChannelMatrix` and
 :class:`.channels.MultiUserChannelMatrixExtInt` classes.
 
-The COmP algorithm may or may not take the external interference source
+The CoMP algorithm may or may not take the external interference source
 into consideration.
 
 """

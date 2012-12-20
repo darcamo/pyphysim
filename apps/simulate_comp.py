@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Perform the simulation of COmP transmission (using the BD algorithm).
+"""Perform the simulation of CoMP transmission (using the BD algorithm).
 
 Different scenarios can be simulated such as:
 - 'RandomUsers': One user at each cell and users are placed at a random
@@ -32,7 +32,7 @@ from comm import pathloss, channels, modulators
 
 
 class CompSimulationRunner(simulations.SimulationRunner):
-    """Implements a simulation runner for a COmP transmission."""
+    """Implements a simulation runner for a CoMP transmission."""
 
     def __init__(self, ):
         simulations.SimulationRunner.__init__(self)
@@ -201,7 +201,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # External interference power
         self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
 
-        # Create the COmP object
+        # Create the CoMP object
         self.comp_obj = comp.CompExtInt(self.num_cells,
                                         transmit_power,
                                         self.noise_var,
@@ -475,7 +475,7 @@ def plot_error_results_fixed_Pe_metric(results, Pe_dBm, metric):
 
     plt.xlabel('SNR')
     plt.ylabel('Error Rate')
-    ax.set_title('COmP simulation ({0}, Pe_dBm: {1}, metric: {2})'.format(
+    ax.set_title('CoMP simulation ({0}, Pe_dBm: {1}, metric: {2})'.format(
         '4-PSK',
         Pe_dBm,
         metric))
@@ -502,7 +502,7 @@ def plot_spec_effic(results, Pe_dBm, metric):
 
     plt.xlabel('SNR')
     plt.ylabel('Spectral Efficiency')
-    ax2.set_title('COmP simulation ({0}, Pe_dBm: {1}, metric: {2})'.format(
+    ax2.set_title('CoMP simulation ({0}, Pe_dBm: {1}, metric: {2})'.format(
         '4-PSK',
         Pe_dBm,
         metric))
@@ -553,7 +553,7 @@ def plot_spectral_efficience(sim_results, Pe_dBm):
 
     plt.xlabel('SNR')
     plt.ylabel('Spectral Efficiency')
-    ax.set_title('COmP simulation ({0}, Pe_dBm: {1})'.format(
+    ax.set_title('CoMP simulation ({0}, Pe_dBm: {1})'.format(
         '4-PSK',
         Pe_dBm,
         metric))

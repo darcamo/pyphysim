@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Package with Coordinated Multipoint (COmP) algorithms."""
+"""Package with Coordinated Multipoint (CoMP) algorithms."""
 
 import comp

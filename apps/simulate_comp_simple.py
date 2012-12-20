@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Simple script to simpulate a COmP transmission which consists of a
+"""Simple script to simpulate a CoMP transmission which consists of a
 simple block diagonalization of the channel."""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
