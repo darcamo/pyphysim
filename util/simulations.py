@@ -285,8 +285,8 @@ class SimulationRunner(object):
         tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Store extra parameters in the self.params variable xxxxxxxx
-        self.params.add('rep_max', self.rep_max)
+        # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
+        self.results.rep_max = self.rep_max
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -389,6 +389,9 @@ class SimulationRunner(object):
         # Implement the _on_simulate_finish method in a subclass if you
         # need to run code at the end of the simulate method.
         self._on_simulate_finish()
+
+        # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
+        self.results.runned_reps = self._runned_reps
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _on_simulate_start(self):
