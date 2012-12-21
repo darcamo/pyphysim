@@ -144,6 +144,12 @@ the :meth:`.simulate` method. They are described briefly below:
 At last, for a working example of a simulator, see the
 :file:`apps/simulate_psk.py` file.
 
+Example of Implementation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the documentation of the :class:`SimulationRunner` class for a pseudo
+implementation of a subclass of the :class:`SimulationRunner`.
+
 """
 
 __revision__ = "$Revision$"
@@ -166,6 +172,58 @@ __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Res
 # pylint: disable=R0921
 class SimulationRunner(object):
     """Base class to run Monte Carlo simulations.
+
+    The main idea of the :class:`SimulationRunner` class is that in order
+    to implement a Monte Carlo simulation one would subclass
+    :class:`SimulationRunner` and implement the :meth:`_run_simulation`
+    method (as well as any of the optional methods). This complete is
+    described in the documentation of the :mod:`simulations` module.
+
+    The code below illustrates the minimum pseudo code to implement a
+    subclass of :class:`SimulationRunner`.
+
+    .. code-block:: python
+
+       class SomeSimulator(SimulationRunner):
+       def __init__(self):
+           SimulationRunner.__init__(self)
+           # Do whatever you need/want
+
+           # Add the simulation parameters to the `params` attribute.
+           self.params.add('par1', par1value)
+           ...
+           self.params.add('parN', parNvalue)
+           # Optionally set some parameter(s) to be unpacked
+           self.params.set_unpack_parameter('name_of_a_parameter')
+
+       def _run_simulation(self, current_parameters):
+           # Get the simulation parameters from the current_parameters
+           # object. If no parameter was marked to be unpacked, then
+           # current_parameters will be equivalent to self.params.
+           par1 = current_parameters['par1']
+           ...
+           parN = current_parameters['parN']
+
+           # Do the simulation of one iteration using the parameters
+           # par1,...parN from the current_parameters object.
+           ...
+
+           # Save the results of this iteration to a SimulationResults
+           # object and return it
+           simResults = SimulationResults()
+           simResults.add_new_result(...)  # Each result is some metric of interest
+           simResults.add_new_result(...)
+           return simResults
+
+    With that, all there is left to run the simulation is to create a
+    SomeSimulator object and call its :meth:`simulate` method.
+
+    See Also
+    --------
+    SimulationResults : Class to store simulation results.
+    SimulationParameters : Class to store the simulation parameters.
+    Result : Class to store a single simulation result.
+
     """
     def __init__(self):
         self.rep_max = 1
@@ -459,14 +517,55 @@ class SimulationParameters(object):
     """Class to store the simulation parameters.
 
     A SimulationParameters object acts as a container for all simulation
-    parameters. To add a new parameter to the object just call the `add`
-    method passing the name and the value of the parameter. The value can
-    be anything as long as the _run_simulation function can understand it.
+    parameters. To add a new parameter to the object just call the
+    :meth:`add` method passing the name and the value of the parameter. The
+    value can be anything as long as the
+    :meth:`.SimulationRunner._run_simulation` method can understand it.
+
+    Alternatively, you can create a SimulationParameters object with all
+    the parameters with the static method :meth:`create`, which receives a
+    dictionary with the parameter names as keys.
 
     Parameters can be marked to be "unpacked", as long as they are
-    iterable, by calling the set_unpack_parameter function. Different
+    iterable, by calling the :meth:`set_unpack_parameter` method. Different
     simulations will be performed for every combination of parameters
     marked to be unpacked, with the other parameters kept constant.
+
+    Examples
+    --------
+
+    - Create a new empty SimulationParameters object and add the individual
+      parameters to it by calling its :meth:`add` method.
+
+      .. code-block:: python
+
+         params = SimulationParameters()
+         params.add('p1', [1,2,3])
+         params.add('p2', ['a','b'])
+         params.add('p3', 15)
+
+    - Creating a new SimulationParameters object with the static
+      :meth:`create` function.
+
+      .. code-block:: python
+
+         p = {'p1':[1,2,3], 'p2':['a','b'],'p3':15}
+         params=SimulationParameters.create(p)
+         params.set_unpack_parameter('p1')
+         params.set_unpack_parameter('p2')
+
+    - We can then set some of the parameters to be unpacked with
+
+      .. code-block:: python
+
+         params.set_unpack_parameter('p1')
+
+
+    See also
+    --------
+    SimulationResults : Class to store simulation results.
+    SimulationRunner : Base class to implement Monte Carlo simulations.
+
     """
     def __init__(self):
         # Dictionary that will store the parameters. The key is the
@@ -820,9 +919,74 @@ class SimulationResults(object):
 
     This class is used in the SimulationRunner class in order to store
     results from a simulation. It is able to combine the results from
-    multiple iterations (of the _run_simulation method in the
-    SimulationRunner class) as well as append results for different
-    simulation parameters configurations.
+    multiple iterations (of the :meth:`.SimulationRunner._run_simulation`
+    method in the :class:`SimulationRunner` class) as well as append
+    results for different simulation parameters configurations.
+
+    .. note::
+
+       Each result stored in the :class:`SimulationResults` object is in
+       fact an object of the :class:`Result` class. This is required so
+       that multiple :class:`SimulationResults` objects can be merged
+       together, since the logic to merge each individual result is in the
+       the :class:`Result` class.
+
+    Examples
+    --------
+    - Creating a SimulationResults onject and adding a few results to it
+
+      .. code-block:: python
+
+         result1 = Result.create(...)  # See the Result class for details
+         result2 = Result.create(...)
+         result3 = Result.create(...)
+         simresults = SimulationResults()
+         simresults.add_result(result1)
+         simresults.add_result(result2)
+         simresults.add_result(result3)
+
+      Instead of explicitly create a Result object and add it to the
+      SimulationResults object, we can also create the Result object
+      on-the-fly when adding it to the SimulationResults object by using
+      the :meth:`add_new_result` method.
+
+      That is
+
+      .. code-block:: python
+
+         simresults = SimulationResults()
+         simresults.add_new_result(...)
+         simresults.add_new_result(...)
+         simresults.add_new_result(...)
+
+    - Merging multiple SimulationResults objects
+
+      .. code-block:: python
+
+         # First SimulationResults object
+         simresults = SimulationResults()
+         # Create a Result object
+         result = Result.create('some_name', Result.SUMTYPE, 4)
+         # and add it to the SimulationResults object.
+         simresults.add_result(result)
+
+         # Second SimulationResults object
+         simresults2 = SimulationResults()
+         # We can also create the Result object on-the-fly when adding it
+         # to the SimulationResults object to save one line.
+         simresults2.add_new_result('some_name', Result.SUMTYPE, 6)
+
+         # We can merge the results in the second SimulationResults object.
+         # Since the update type of the single result stored is SUMTYPE,
+         # then the simresults will now have a single Result of SUMTYPE
+         # type with a value of 10.
+         simresults.merge_all_results(simresults)
+
+    See Also
+    --------
+    SimulationRunner : Base class to implement Monte Carlo simulations.
+    SimulationParameters : Class to store the simulation parameters.
+    Result : Class to store a single simulation result.
 
     """
     def __init__(self):
@@ -857,16 +1021,53 @@ class SimulationResults(object):
         return repr_string
 
     def add_result(self, result):
-        """Add a new result to the SimulationResults object. If there is
-        already a result stored with the same name, this will replace it.
+        """Add a result object to the SimulationResults object.
+
+        .. note::
+
+           If there is already a result stored with the same name, this
+           will replace it.
 
         Parameters
         ----------
         result : An object of the :class:`Result` class
             Must be an object of the Result class.
+
         """
         # Added as a list with a single element
         self._results[result.name] = [result]
+
+    # TODO: Test-me
+    def add_new_result(self, name, update_type, value, total=0):
+        """Create a new Result object on the fly and add it to the
+        SimulationResults object.
+
+        .. note::
+
+           This is Equivalent to the code below,
+
+           .. code-block:: python
+
+              result = Result.create(name, update_type, value, total)
+              self.add_result(result)
+
+           which in fact is exactly how this method is implemented.
+
+        Parameters
+        ----------
+        name : str
+            Name of the Result.
+        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE}
+            Type of the result (SUMTYPE, RATIOTYPE or MISCTYPE).
+        value : anything, but usually a number
+            Value of the result.
+        total : same type as `value`
+            Total value of the result (used only for the RATIOTYPE and
+            ignored for the other types).
+
+        """
+        result = Result.create(name, update_type, value, total)
+        self.add_result(result)
 
     def append_result(self, result):
         """Append a result to the SimulationResults object. This

@@ -13,7 +13,6 @@ The external interference is generated in the
 _prepare_external_interference method.
 
 """
-# TODO: Create the several simulation scenarios
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -216,15 +215,13 @@ class CompSimulationRunner(simulations.SimulationRunner):
         The implementation of this method is required by every subclass of
         SimulationRunner.
 
-        Arguments:
-
-        - `current_parameters`: SimulationParameters object with the
-                                parameters for the simulation. The
-                                self.params variable is not used
-                                directly. It is first unpacked (in the
-                                SimulationRunner.simulate method which then
-                                calls _run_simulation) for each
-                                combination.
+        Parameters
+        ----------
+        current_parameters : SimulationParameters object
+            SimulationParameters object with the parameters for the
+            simulation. The self.params variable is not used directly. It
+            is first unpacked (in the SimulationRunner.simulate method
+            which then calls _run_simulation) for each combination.
 
         """
         # xxxxxxxxxx Prepare the scenario for this iteration. xxxxxxxxxxxxx
