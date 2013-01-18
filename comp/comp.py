@@ -13,7 +13,43 @@ receivers. In order to model the MIMO-IC one can use the
 :class:`.channels.MultiUserChannelMatrixExtInt` classes.
 
 The CoMP algorithm may or may not take the external interference source
-into consideration.
+into consideration. The CoMP algorithm is implemented here as the
+:class:`CompExtInt` class and the different external interference handling
+metrics are described in the following section.
+
+
+External Interference Hangling Metrics
+--------------------------------------
+
+The way the external interference is treated in the CompExtInt class
+basically consists of sacrificing streams to avoid dimensions strongly
+occupied by external interference. In other words, instead of using all
+available spatial dimensions only a subset (containing less or no external
+interference) of these dimensions is used. One has to decised how many (if
+any) dimensions will be sacrificed and for that difference metrics can be
+used.
+
+The different metrics implemented in the CompExtInt class are:
+
+- None: No stream reduction and this external interference handling is
+  performed.
+- capacity: The Shannon capacity is used.
+- effective_throughput: The expected throughput is used. The effective
+  throughput consists of the nominal data rate (considering a modulator and
+  number of used streams) times 1 minus the package error rate. Sacrificing
+  streams will reduce the nominal data rate but the gained interference
+  reduction also means better SIRN values and thus a lower package error
+  rate.
+
+The usage of the CompExtInt class is described in the following section.
+
+
+CompExtInt usage
+----------------
+
+1. First create a CompExtInt object.
+2. Set the desired external interference handling metric by calling the :meth:`.set_ext_int_handling_metric` method.
+3. Call the :meth:`.perform_comp_no_waterfilling` method.
 
 """
 
@@ -34,9 +70,10 @@ __all__ = ['CompExtInt']
 
 
 def _calc_stream_reduction_matrix(Re_k, kept_streams):
-    """Calculates the `P` matrix that performs the stream reduction such
-    that the subspace of the remaining streams span the dimensions with the
-    lowest interference.
+    """Calculates the `P` matrix that performs the stream reduction such that
+    the subspace of the remaining streams span the dimensions with the
+    lowest interference (according to the external interference plus noise
+    covariance matrix Re_k).
 
     Parameters
     ----------
@@ -213,10 +250,10 @@ class CompExtInt(BlockDiaginalizer):
 
         return W
 
+    # NOTE: PROBABLY, THIS IS ONLY VALID FOR SPATIAL MULTIPLEXING.
     @staticmethod
     def _calc_linear_SINRs(Heq_k_red, Wk, Re_k):
-        """Calculates the effective SINRs of each channel with the applied
-        precoder matrix `precoder`.
+        """Calculates the effective SINRs of each parallel channel.
 
         Parameters
         ----------
@@ -305,8 +342,10 @@ class CompExtInt(BlockDiaginalizer):
         """Perform the block diagonalization of `mu_channel` taking the
         external interference into account.
 
-        Two important parameters used here are the `noise_var` (noise
-        variance) and the `pe` (external interference power) attributes.
+        This is the main method calculating the CoMP algorithm. Two
+        important parameters used here are the noise variance (an attribute
+        of the `mu_channel` object) and the external interference power
+        (the `pe` attribute) attributes.
 
         Parameters
         ----------
@@ -325,6 +364,7 @@ class CompExtInt(BlockDiaginalizer):
             filter for a user.
         Ns_all_users: 1D numpy array of ints
             Number of streams of each user.
+
         """
         K = mu_channel.K
         Nr = mu_channel.Nr

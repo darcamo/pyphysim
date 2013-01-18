@@ -154,7 +154,14 @@ class CompExtInt(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_W2, W2)
 
     # TODO: Implement-me
-    def test_calc_SNRs(self):
+    def test_calc_linear_SINRs(self):
+        # Heq_k_red = np.array([[2, 2], [1, 2]])
+        # # Usually this will be the inverse of Heq_k_red, but for testing
+        # # purposes we can specify a different Wk
+        # Wk = np.array([[1, 1], [1.5, 0.5]])
+        # Rk = np.array([[0.5, 0.2], [0.25, 0.1]])
+        # SINRs = comp.CompExtInt._calc_linear_SINRs(Heq_k_red, Wk, Rk)
+        # print SINRs
         pass
 
     def test_calc_shannon_sum_capacity(self):
