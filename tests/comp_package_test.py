@@ -88,27 +88,33 @@ class CompExtInt(unittest.TestCase):
         # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
         psk_obj = modulators.PSK(4)
         comp_obj.set_ext_int_handling_metric('effective_throughput',
-                                             modulator=psk_obj,
-                                             packet_length=120)
+                                             {'modulator': psk_obj,
+                                              'packet_length': 120})
         self.assertEqual(comp_obj._metric_func,
                          comp_obj._calc_effective_throughput)
-        self.assertEqual(comp_obj._modulator, psk_obj)
-        self.assertEqual(comp_obj._packet_length, 120)
+
+        metric_func_extra_args = comp_obj._metric_func_extra_args
+        self.assertEqual(metric_func_extra_args['modulator'], psk_obj)
+        self.assertEqual(metric_func_extra_args['packet_length'], 120)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric('capacity')
         self.assertEqual(comp_obj._metric_func,
                          comp_obj._calc_shannon_sum_capacity)
-        self.assertIsNone(comp_obj._modulator)
-        self.assertIsNone(comp_obj._packet_length)
+
+        # metric_func_extra_args is an empty dictionary for the capacity
+        # metric
+        self.assertEqual(comp_obj._metric_func_extra_args, {})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to None xxxxxxxxxxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
         self.assertIsNone(comp_obj._metric_func)
-        self.assertIsNone(comp_obj._modulator)
-        self.assertIsNone(comp_obj._packet_length)
+
+        # metric_func_extra_args is an empty dictionary for the None metric
+        self.assertEqual(comp_obj._metric_func_extra_args, {})
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_receive_filter(self):
@@ -172,25 +178,17 @@ class CompExtInt(unittest.TestCase):
             comp.CompExtInt._calc_shannon_sum_capacity(sinrs_linear))
 
     def test_calc_effective_throughput(self):
-        iPu = 1e-3  # Power for each user (linear scale)
-        pe = 1e-5  # External interference power (in linear scale)
-        noise_var = 1e-4
-        K = 3
-
         psk_obj = modulators.PSK(8)
         packet_length = 60
 
-        comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
-        comp_obj.set_ext_int_handling_metric('effective_throughput',
-                                             psk_obj,
-                                             packet_length)
         SINRs_dB = np.array([11.4, 20.3])
         sinrs_linear = dB2Linear(SINRs_dB)
 
         expected_spectral_efficiency = np.sum(
             psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
 
-        spectral_efficiency = comp_obj._calc_effective_throughput(sinrs_linear)
+        spectral_efficiency = comp.CompExtInt._calc_effective_throughput(
+            sinrs_linear, psk_obj, packet_length)
 
         np.testing.assert_array_almost_equal(spectral_efficiency,
                                              expected_spectral_efficiency)
@@ -306,9 +304,10 @@ class CompExtInt(unittest.TestCase):
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the effective_throughput metric
-        comp_obj.set_ext_int_handling_metric('effective_throughput',
-                                             psk_obj,
-                                             packet_length)
+        comp_obj.set_ext_int_handling_metric(
+            'effective_throughput',
+            {'modulator': psk_obj,
+             'packet_length': packet_length})
 
         (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]

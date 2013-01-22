@@ -138,13 +138,16 @@ class CompExtInt(BlockDiaginalizer):
         # set_ext_int_handling_metric method (as well as the _modulator and
         # _packet_length attributes)
         self._metric_func = None  # The default metric will be None
-        self._modulator = None
-        self._packet_length = None
+
+        # Extra arguments that will be passed to the self._metric_func when
+        # it is called.
+        self._metric_func_extra_args = {}
 
     def set_ext_int_handling_metric(self, metric,
-                                    modulator=None, packet_length=None):
+                                    metric_func_extra_args_dict={}):
         """Set the metric used to decide how many streams to sacrifice for
-        external interference handling.
+        external interference handling. The available options are 'None'
+        (python None), "capacity" or "effective_throughput".
 
         - If `metric` is None, then no streams will be sacrificed and the
           external interference won't be mitigated.
@@ -165,20 +168,20 @@ class CompExtInt(BlockDiaginalizer):
 
         Notes
         -----
-        If `metric` is 'effective_throughput' then the modulator and
-        packet_length arguments must be provided. For the other metric
-        options they will be ignored if provided.
+        If `metric` is 'effective_throughput' then
+        metric_func_extra_args_dict must be a dictionary containing the
+        'modulator' and 'packet_length' keys with their respective values.
+
+        For the other metric options metric_func_extra_args_dict should be
+        an empty dictionary (default value).
 
         Parameters
         ----------
         metric : str, {None, 'capacity', 'effective_throughput'}
             The metric name. Must be one of the available metrics.
-        modulator : comm.modulators.Modulator object
-            The modulator object used in the simulation. It will be used to
-            calculate the theoretical BER and (with the packet length,
-            the theoretical PER)
-        packet_length : int
-            The packet length used in the simulation.
+        metric_func_extra_args_dict : dict
+            A dictionary containing the extra arguments that must be passed
+            to the metric function.
 
         Raises
         ------
@@ -189,20 +192,19 @@ class CompExtInt(BlockDiaginalizer):
         """
         if metric is None or metric == 'None':
             self._metric_func = None
-            self._modulator = None
-            self._packet_length = None
+            self._metric_func_extra_args = {}
 
         elif metric == 'capacity':
             self._metric_func = self._calc_shannon_sum_capacity
-            self._modulator = None
-            self._packet_length = None
+            self._metric_func_extra_args = {}
 
         elif metric == 'effective_throughput':
             self._metric_func = self._calc_effective_throughput
-            if (modulator is None) or (packet_length is None):
-                raise AttributeError("The modulator and packet_length attributes must be provided for the 'effective_throughput' metric.")
-            self._modulator = modulator
-            self._packet_length = packet_length
+            keys = metric_func_extra_args_dict.keys()
+            if ('modulator' not in keys) or ('packet_length' not in keys):
+                raise AttributeError("The 'effective_throughput' metric requires that metric_func_extra_args_dict is provided and has the 'modulator' and package_length' keys")
+
+            self._metric_func_extra_args = metric_func_extra_args_dict
         else:
             raise AttributeError("The `metric` attribute can only be one of {None, 'capacity', 'effective_throughput'}")
 
@@ -288,8 +290,6 @@ class CompExtInt(BlockDiaginalizer):
         sinr = desired_power / (internalInterference + np.abs(external_interference_plus_noise))
         return sinr
 
-    # Since only `sinrs` is required and it is passed as an argument, then
-    # this method is a static method.
     @staticmethod
     def _calc_shannon_sum_capacity(sinrs):
         """Calculate the sum of the Shannon capacity of the values in `sinrs`
@@ -314,8 +314,10 @@ class CompExtInt(BlockDiaginalizer):
 
         return sum_capacity
 
-    def _calc_effective_throughput(self, sinrs):
-        """Calculates the effective throughput of the values in `sinrs`.
+    @staticmethod
+    def _calc_effective_throughput(sinrs, modulator, packet_length):
+        """Calculates the effective throughput of the values in `sinrs` considering
+        the given modulator and packet_length.
 
         The effective throughput is equivalent to the packet error for a
         specific packet error rate and packet length, times the nominal
@@ -325,6 +327,12 @@ class CompExtInt(BlockDiaginalizer):
         ----------
         sinrs : 1D numpy array or float
             SINR values (in linear scale).
+        modulator : A modulator object.
+            A modulator object such as M-PSK, M-QAM, etc. See the
+            :mod:`.modulators` module.
+        packet_length: int
+            The package length. That is, the number of bits in each
+            package.
 
         Returns
         -------
@@ -333,9 +341,8 @@ class CompExtInt(BlockDiaginalizer):
 
         """
         SINRs = linear2dB(sinrs)
-        se = self._modulator.calcTheoreticalSpectralEfficiency(SINRs, self._packet_length)
+        se = modulator.calcTheoreticalSpectralEfficiency(SINRs, packet_length)
         total_se = np.sum(se)
-
         return total_se
 
     def perform_comp_no_waterfilling(self, mu_channel):
@@ -453,8 +460,12 @@ class CompExtInt(BlockDiaginalizer):
                 # SINR (in linear scale) of all streams of user k.
                 sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
 
-                #metric_value_for_user_k[index] = self._calc_shannon_sum_capacity(sinrs_k)
-                metric_value_for_user_k[index] = self._metric_func(sinrs_k)
+                metric_value_for_user_k[index] = self._metric_func(
+                    sinrs_k,
+                    # Use use the '**' magic to pass the values in the
+                    # self._metric_func_extra_args dictionary as the
+                    # arguments of the metric function.
+                    ** self._metric_func_extra_args)
 
             # The index with the highest metric value. This is equivalent
             # to the number of transmit streams which yields the highest
