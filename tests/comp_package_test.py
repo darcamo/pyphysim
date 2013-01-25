@@ -83,6 +83,9 @@ class CompExtInt(unittest.TestCase):
             # If we set the metric to effective_throughput but not provide
             # the modulator and packet_length attributes.
             comp_obj.set_ext_int_handling_metric('effective_throughput')
+
+        with self.assertRaises(AttributeError):
+            comp_obj.set_ext_int_handling_metric('naive')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
@@ -92,6 +95,7 @@ class CompExtInt(unittest.TestCase):
                                               'packet_length': 120})
         self.assertEqual(comp_obj._metric_func,
                          comp_obj._calc_effective_throughput)
+        self.assertEqual(comp_obj.metric_name, "effective_throughput")
 
         metric_func_extra_args = comp_obj._metric_func_extra_args
         self.assertEqual(metric_func_extra_args['modulator'], psk_obj)
@@ -102,7 +106,7 @@ class CompExtInt(unittest.TestCase):
         comp_obj.set_ext_int_handling_metric('capacity')
         self.assertEqual(comp_obj._metric_func,
                          comp_obj._calc_shannon_sum_capacity)
-
+        self.assertEqual(comp_obj.metric_name, "capacity")
         # metric_func_extra_args is an empty dictionary for the capacity
         # metric
         self.assertEqual(comp_obj._metric_func_extra_args, {})
@@ -111,10 +115,21 @@ class CompExtInt(unittest.TestCase):
         # xxxxx Test setting the metric to None xxxxxxxxxxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
         self.assertIsNone(comp_obj._metric_func)
+        self.assertEqual(comp_obj.metric_name, "None")
 
         # metric_func_extra_args is an empty dictionary for the None metric
         self.assertEqual(comp_obj._metric_func_extra_args, {})
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to naive xxxxxxxxxxxxxxxxxxxxxxxxxx
+        comp_obj.set_ext_int_handling_metric('naive',
+                                             {'num_streams': 2})
+        self.assertIsNone(comp_obj._metric_func)
+        self.assertEqual(comp_obj.metric_name, "naive")
+
+        metric_func_extra_args = comp_obj._metric_func_extra_args
+        self.assertEqual(metric_func_extra_args['num_streams'], 2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_receive_filter(self):
@@ -199,8 +214,8 @@ class CompExtInt(unittest.TestCase):
         K = Nt.size
         Nti = 1
         iPu = 1e-1  # Power for each user (linear scale)
-        pe = 1e-1  # External interference power (in linear scale)
-        noise_var = 1e-3
+        pe = 1e-3  # External interference power (in linear scale)
+        noise_var = 1e-4
 
         # The modulator and packet_length are required in the
         # effective_throughput metric case
@@ -232,7 +247,7 @@ class CompExtInt(unittest.TestCase):
         # Most likelly only one base station (the one with the worst
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
-        tol = 1e-12
+        tol = 1e-10
         self.assertGreaterEqual(iPu + tol,
                                 np.linalg.norm(Ms1, 'fro') ** 2)
         # 1e-12 is included to avoid false test fails due to small
@@ -264,34 +279,149 @@ class CompExtInt(unittest.TestCase):
                 packet_length)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Now with the Naive Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
+        num_streams = 1
+        comp_obj.set_ext_int_handling_metric(
+            'naive',
+            {'num_streams': num_streams})
+
+        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        MsPk_naive_1 = MsPk_naive_all[0]
+        MsPk_naive_2 = MsPk_naive_all[1]
+
+        self.assertEqual(MsPk_naive_1.shape[1], Ns_naive_all[0])
+        self.assertEqual(MsPk_naive_2.shape[1], Ns_naive_all[1])
+        self.assertEqual(Ns_naive_all[0], num_streams)
+        self.assertEqual(Ns_naive_all[1], num_streams)
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_2, 'fro') ** 2)
+
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_naive_1), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_naive_2), 'fro'),
+            0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_naive_2), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_naive_1), 'fro'),
+            0)
+
+        sinrs4 = np.empty(K, dtype=np.ndarray)
+        sinrs4[0] = comp.CompExtInt._calc_linear_SINRs(
+            np.dot(H1, MsPk_naive_1),
+            Wk_naive_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs4[1] = comp.CompExtInt._calc_linear_SINRs(
+            np.dot(H2, MsPk_naive_2),
+            Wk_naive_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se4 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs4[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs4[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Now with the Fixed Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
+        num_streams = 1
+        comp_obj.set_ext_int_handling_metric(
+            'fixed',
+            {'num_streams': num_streams})
+
+        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        MsPk_fixed_1 = MsPk_fixed_all[0]
+        MsPk_fixed_2 = MsPk_fixed_all[1]
+
+        self.assertEqual(MsPk_fixed_1.shape[1], Ns_fixed_all[0])
+        self.assertEqual(MsPk_fixed_2.shape[1], Ns_fixed_all[1])
+        self.assertEqual(Ns_fixed_all[0], num_streams)
+        self.assertEqual(Ns_fixed_all[1], num_streams)
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_2, 'fro') ** 2)
+
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_fixed_1), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_fixed_2), 'fro'),
+            0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_fixed_2), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_fixed_1), 'fro'),
+            0)
+
+        sinrs5 = np.empty(K, dtype=np.ndarray)
+        sinrs5[0] = comp.CompExtInt._calc_linear_SINRs(
+            np.dot(H1, MsPk_fixed_1),
+            Wk_fixed_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs5[1] = comp.CompExtInt._calc_linear_SINRs(
+            np.dot(H2, MsPk_fixed_2),
+            Wk_fixed_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se5 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs5[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs5[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the capacity metric
         comp_obj.set_ext_int_handling_metric('capacity')
         (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
-        MsPk_1 = MsPk_all[0]
-        MsPk_2 = MsPk_all[1]
+        MsPk_cap_1 = MsPk_all[0]
+        MsPk_cap_2 = MsPk_all[1]
 
-        self.assertEqual(MsPk_1.shape[1], Ns_cap_all[0])
-        self.assertEqual(MsPk_2.shape[1], Ns_cap_all[1])
+        self.assertEqual(MsPk_cap_1.shape[1], Ns_cap_all[0])
+        self.assertEqual(MsPk_cap_2.shape[1], Ns_cap_all[1])
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_2, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_2, 'fro') ** 2)
 
         # Test if MsPk really block diagonalizes the channel
-        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_1), 'fro'), 0)
-        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_2), 'fro'), 0)
-        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_2), 'fro'), 0)
-        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_1), 'fro'), 0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_cap_1), 'fro'), 0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_cap_2), 'fro'), 0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_cap_2), 'fro'), 0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'), 0)
 
         sinrs2 = np.empty(K, dtype=np.ndarray)
-        sinrs2[0] = comp.CompExtInt._calc_linear_SINRs(np.dot(H1, MsPk_1),
-                                                       Wk_cap_all[0],
-                                                       noise_plus_int_cov_matrix[0])
-        sinrs2[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, MsPk_2),
-                                                       Wk_cap_all[1],
-                                                       noise_plus_int_cov_matrix[1])
+        sinrs2[0] = comp.CompExtInt._calc_linear_SINRs(
+            np.dot(H1, MsPk_cap_1),
+            Wk_cap_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs2[1] = comp.CompExtInt._calc_linear_SINRs(
+            np.dot(H2, MsPk_cap_2),
+            Wk_cap_all[1],
+            noise_plus_int_cov_matrix[1])
+
         # Spectral efficiency
         se2 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
             linear2dB(sinrs2[0]),
@@ -361,8 +491,6 @@ class CompExtInt(unittest.TestCase):
         # better spectral efficiency then not handling
         # interference. However, sometimes it can get a worse spectral
         # efficiency. We are not testing this here.
-
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

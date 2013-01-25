@@ -146,34 +146,64 @@ class CompExtInt(BlockDiaginalizer):
     def set_ext_int_handling_metric(self, metric,
                                     metric_func_extra_args_dict={}):
         """Set the metric used to decide how many streams to sacrifice for
-        external interference handling. The available options are 'None'
-        (python None), "capacity" or "effective_throughput".
+        external interference handling.
 
-        - If `metric` is None, then no streams will be sacrificed and the
-          external interference won't be mitigated.
+        The modification to the standard Block Diagonalization algorithm
+        performed in this class consists in avoid transmit data in the
+        subspace strongly occupied by the external interference source.
 
-        - If `metric` is 'capacity', then the the sum capacity will be used
-          to decide how many streams to sacrifice. That is, the
-          _calc_shannon_sum_capacity method will be used in
-          perform_comp_no_waterfilling to map the calculated sinrs into a
-          sum capacity and the number of sacrificed streams will be the one
-          with the highest sum capacity.
+        This sacrificing (not transmitting) of streams may or may not be
+        worth it and different metrics can be used to decide this.
 
-        - If `metric` is 'effective_throughput' then the effective
-          throughput will be used to decide how many streams to
-          sacrifice. That is, the _calc_effective_throughput method will be
-          used in perform_comp_no_waterfilling to map the calculated sinrs into an
-          effective throughput and the number of sacrificed streams will be
-          the one with the highest sum capacity.
+        The valid values for the `metric` argument are 'None' (python None
+        object), "fixed", "naive", "capacity" and "effective_throughput".
+        Each of these values will impact on how the number of transmit
+        streams is chosen and which subspace is actually used for the
+        desired signal.
 
-        Notes
-        -----
-        If `metric` is 'effective_throughput' then
-        metric_func_extra_args_dict must be a dictionary containing the
-        'modulator' and 'packet_length' keys with their respective values.
+        For the "fixed" and "naive" metrics, the number of transmit streams
+        is determined by the value of the 'num_streams' key in the
+        metric_func_extra_args_dict. The difference between them is how the
+        subspace where the useful data is determined (for the given number
+        of sacrificed streams).
 
-        For the other metric options metric_func_extra_args_dict should be
-        an empty dictionary (default value).
+        For the "naive" metric, the stream reduction is performed by
+        multiplying the usual block diagonalizing matrix M by a subset of
+        the identity matrix. For the "fixed" metric the subspace containing
+        the lowest remaining external interference energy is chosen by
+        multiplying the block diagonalizing matrix M by the singular vectors
+        of the external interference covariance matrix corresponding to the
+        lowest singular values. The same procedure is used for the other
+        metrics.
+
+        Differently from the "naive" and "fixed" metrics, the "capacity"
+        and "effective_throughput" metrics try to determine this best
+        number of sacrificed streams.
+
+
+
+        - If `metric` is None, then all streams will be used. That is, no
+          streams will be sacrificed and the external interference won't be
+          mitigated.
+
+        - If metric is "None" or "naive" then the specified number of
+          streams will be used.
+
+        - If `metric` is 'capacity', then the metric used to decide how
+          many streams to sacrifice will be the sum capacity. The function
+          :meth:`._calc_shannon_sum_capacity` will be used to calculate the
+          sum capacity metric, and since it only uses the SINR values, no
+          extra arguments are required in the metric_func_extra_args_dict
+          dictionary.
+
+        - If `metric` is 'effective_throughput' then the metric used to
+          decide how many streams to sacrifice will be the effective
+          throughput that can be obtained. The function
+          :meth:`._calc_effective_throughput` will be used to calculate the
+          effective throughput. Since it requires the a modulator and a
+          packet length you should set the metric_func_extra_args_dict so
+          that it has the keys 'modulator' and 'packet_length' with the
+          correct values (a modulator object and an integer, respectively)
 
         Parameters
         ----------
@@ -181,32 +211,78 @@ class CompExtInt(BlockDiaginalizer):
             The metric name. Must be one of the available metrics.
         metric_func_extra_args_dict : dict
             A dictionary containing the extra arguments that must be passed
-            to the metric function.
+            to the metric function. For the "naive" and "fixed" metrics,
+            this dictionary must contain the "num_streams" keyword with the
+            desired number of transmit streams. For the
+            "effective_throughput" metric this dictionary mst contain the
+            "modulatro" and "packet_length" keywords with a modulator
+            object and an integer, respectivelly. For the other metrics
+            metric_func_extra_args_dict will be ignored.
 
         Raises
         ------
         AttributeError
-            If the metric is not one of {None, 'capacity',
-            'effective_throughput'}
+            If the metric is not one of the available metrics or if the
+            metric_func_extra_args_dict does not contain the required
+            keywords.
 
         """
         if metric is None or metric == 'None':
+            self._metric_func_name = 'None'
             self._metric_func = None
             self._metric_func_extra_args = {}
 
         elif metric == 'capacity':
+            self._metric_func_name = 'capacity'
             self._metric_func = self._calc_shannon_sum_capacity
             self._metric_func_extra_args = {}
 
+        elif metric == 'naive':
+            self._metric_func_name = 'naive'
+            self._metric_func = None
+            if 'num_streams' not in metric_func_extra_args_dict.keys():
+                raise AttributeError("The 'naive' metric requires that metric_func_extra_args_dict is provided and has the 'num_streams' key")
+
+            # Set self._metric_func_extra_args as a dictionary containing
+            # the 'num_stream' key (and value) in
+            # metric_func_extra_args_dict
+            self._metric_func_extra_args = {k: metric_func_extra_args_dict[k]
+                                            for k in ('num_streams',)}
+            self._metric_func_extra_args = metric_func_extra_args_dict
+
+        elif metric == 'fixed':
+            self._metric_func_name = 'fixed'
+            self._metric_func = None
+            if 'num_streams' not in metric_func_extra_args_dict.keys():
+                raise AttributeError("The 'fixed' metric requires that metric_func_extra_args_dict is provided and has the 'num_streams' key")
+
+            # Set self._metric_func_extra_args as a dictionary containing
+            # the 'num_stream' key (and value) in
+            # metric_func_extra_args_dict
+            self._metric_func_extra_args = {k: metric_func_extra_args_dict[k]
+                                            for k in ('num_streams',)}
+
         elif metric == 'effective_throughput':
+            self._metric_func_name = 'effective_throughput'
             self._metric_func = self._calc_effective_throughput
             keys = metric_func_extra_args_dict.keys()
             if ('modulator' not in keys) or ('packet_length' not in keys):
                 raise AttributeError("The 'effective_throughput' metric requires that metric_func_extra_args_dict is provided and has the 'modulator' and package_length' keys")
 
-            self._metric_func_extra_args = metric_func_extra_args_dict
+            # Set self._metric_func_extra_args as a dictionary containing
+            # the 'modulator' and 'packet_length' keys (and values) in
+            # metric_func_extra_args_dict
+            self._metric_func_extra_args = {k: metric_func_extra_args_dict[k]
+                                            for k in ('modulator', 'packet_length')}
         else:
             raise AttributeError("The `metric` attribute can only be one of {None, 'capacity', 'effective_throughput'}")
+
+    def _get_metric_name(self):
+        """Get name of the method used to decide how many streams to
+        sacrifice.
+        """
+        return self._metric_func_name
+    metric_name = property(_get_metric_name)
 
     @staticmethod
     def calc_receive_filter_user_k(Heq_k_P, P=None):
@@ -345,69 +421,137 @@ class CompExtInt(BlockDiaginalizer):
         total_se = np.sum(se)
         return total_se
 
-    def perform_comp_no_waterfilling(self, mu_channel):
-        """Perform the block diagonalization of `mu_channel` taking the
-        external interference into account.
-
-        This is the main method calculating the CoMP algorithm. Two
-        important parameters used here are the noise variance (an attribute
-        of the `mu_channel` object) and the external interference power
-        (the `pe` attribute) attributes.
-
-        Parameters
-        ----------
-        mu_channel : MultiUserChannelMatrixExtInt object.
-            A MultiUserChannelMatrixExtInt object, which has the channel
-            from all the transmitters to all the receivers, as well as th
-            external interference.
-
-        Returns
-        -------
-        MsPk_all_users : 1D numpy array of 2D numpy arrays
-            A 1D numpy array where each element corresponds to the precoder
-            for a user.
-        Wk_all_users : 1D numpy array of 2D numpy arrays
-            A 1D numpy array where each element corresponds to the receive
-            filter for a user.
-        Ns_all_users: 1D numpy array of ints
-            Number of streams of each user.
+    def _perform_comp_no_waterfilling_no_stream_reduction(self, mu_channel):
+        """Function called inside perform_comp_no_waterfilling when no stream
+        reduction should be performed.
 
         """
+        # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        K = mu_channel.K
+        Nr = mu_channel.Nr
+        Nt = mu_channel.Nt
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # No matter which metric is used, these variables should be set and
+        # returned
+        MsPk_all_users = np.empty(K, dtype=np.ndarray)
+        Wk_all_users = np.empty(K, dtype=np.ndarray)
+        Ns_all_users = np.empty(K, dtype=int)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Since we are not handling external interference, we simple call
+        # the block_diagonalize_no_waterfilling method from the
+        # BlockDiaginalizer class.
+        (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mu_channel.big_H_no_ext_int)
+
+        # Since there is no stream reduction, the number of streams of each
+        # user will transmit is equal to the number of transmit antennas of
+        # that user
+        Ns_all_users = Nt
+        MsPk_all_users = single_matrix_to_matrix_of_matrices(Ms_good, None, Nt)
+        newH_all_k = single_matrix_to_matrix_of_matrices(newH, Nr, Nt)
+        for userindex in range(K):
+            Wk_all_users[userindex] = self.calc_receive_filter_user_k(
+                newH_all_k[userindex, userindex], None)
+
+        return (MsPk_all_users, Wk_all_users, Ns_all_users)
+
+    def _perform_comp_no_waterfilling_fixed_or_naive_reduction(self, mu_channel):
+        """Function called inside perform_comp_no_waterfilling when the naive or
+        the fixed stream reduction should be performed.
+
+        For the naive or the fixed stream reduction cases the number of
+        transmitted streams is always equal to
+        self._metric_func_extra_args['num_streams']. That is, the number of
+        sacrificed streams is equal to the number of transmit antennas
+        minus num_streams.
+
+        The only difference between the naive and the fixed cases is that
+        in the fixed case the reduction matrix P is chosen so that it gets
+        as orthogonal to the external interference as possible, while the
+        naive case simple chooses P as a submatrix of the diagonal matrix.
+
+        """
+        # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         K = mu_channel.K
         Nr = mu_channel.Nr
         Nt = mu_channel.Nt
         H_matrix = mu_channel.big_H_no_ext_int
         Re = mu_channel.calc_cov_matrix_extint_plus_noise(
             self.noise_var, self.pe)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # No matter which metric is used, these variables should be set and
+        # returned
         MsPk_all_users = np.empty(K, dtype=np.ndarray)
         Wk_all_users = np.empty(K, dtype=np.ndarray)
         Ns_all_users = np.empty(K, dtype=int)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if self._metric_func is None:
-            # If _metric_func is None then we are not handling external
-            # interference. Therefore, we simple call the
-            # block_diagonalize_no_waterfilling method from the
-            # BlockDiaginalizer class.
-            (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mu_channel.big_H_no_ext_int)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
+        Ms_bad_ks = single_matrix_to_matrix_of_matrices(Ms_bad, None, Nt)
+        H_all_ks = single_matrix_to_matrix_of_matrices(H_matrix, Nr)
 
-            # Since there is no stream reduction, the number of streams of
-            # each user is equal to the number of transmit antennas of that
-            # user
-            Ns_all_users = Nt
-            MsPk_all_users = single_matrix_to_matrix_of_matrices(Ms_good, None, Nt)
-            newH_all_k = single_matrix_to_matrix_of_matrices(newH, Nr, Nt)
-            for userindex in range(K):
-                Wk_all_users[userindex] = self.calc_receive_filter_user_k(
-                    newH_all_k[userindex, userindex], None)
+        # Number of streams (per user) that will be transmitted. This
+        # should be greater than 0 and lower than the number of transmit
+        # antennas of each user
+        num_streams = self._metric_func_extra_args['num_streams']
+        # Loop for the users
+        for userindex in range(K):
+            Ntk = Nt[userindex]
+            Hk = H_all_ks[userindex]
+            Msk = Ms_bad_ks[userindex]
+            Re_k = Re[userindex]
 
-            return (MsPk_all_users, Wk_all_users, Ns_all_users)
+            # Equivalent channel of user k after the block diagonalization
+            # process, but without any stream reduction
+            Heq_k = np.dot(Hk, Msk)
+
+            if self.metric_name == 'naive':
+                Pk = np.eye(Ntk)[:, 0:num_streams]
+            if self.metric_name == 'fixed':
+                Pk = _calc_stream_reduction_matrix(Re_k, num_streams)
+
+            norm_term = np.linalg.norm(np.dot(Msk, Pk), 'fro') / np.sqrt(self.iPu)
+            # Equivalent channel with stream reduction
+            Heq_k_red = np.dot(Heq_k, Pk / norm_term)
+
+            W_k = self.calc_receive_filter_user_k(Heq_k_red, Pk)
+
+            # Save results
+            MsPk_all_users[userindex] = np.dot(Msk, Pk) / norm_term
+            Wk_all_users[userindex] = W_k
+            Ns_all_users[userindex] = num_streams
+
+        return (MsPk_all_users, Wk_all_users, Ns_all_users)
+
+    def _perform_comp_no_waterfilling_decide_number_streams(self, mu_channel):
+        """Function called inside perform_comp_no_waterfilling when the stream
+        reduction is performed and the number of sacrificed streams depend
+        on the metric used (the function set as self._metric_func)
+
+        """
+        # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        K = mu_channel.K
+        Nr = mu_channel.Nr
+        Nt = mu_channel.Nt
+        H_matrix = mu_channel.big_H_no_ext_int
+        Re = mu_channel.calc_cov_matrix_extint_plus_noise(
+            self.noise_var, self.pe)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # No matter which metric is used, these variables should be set and
+        # returned
+        MsPk_all_users = np.empty(K, dtype=np.ndarray)
+        Wk_all_users = np.empty(K, dtype=np.ndarray)
+        Ns_all_users = np.empty(K, dtype=int)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # If we are here, then _metric_func is not None, which means that
-        # we are handling the external interference.
         Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
 
         # The k-th 'element' in Ms_bad_ks is a matrix containing the
@@ -477,67 +621,63 @@ class CompExtInt(BlockDiaginalizer):
 
         return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
+    def perform_comp_no_waterfilling(self, mu_channel):
+        """Perform the block diagonalization of `mu_channel` taking the
+        external interference into account.
 
-# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# def perform_comp_no_waterfilling(mtChannel, num_users, iPu, noise_var):
-#     """Performs the block diagonalization of `mtChannel`.
+        This is the main method calculating the CoMP algorithm. Two
+        important parameters used here are the noise variance (an attribute
+        of the `mu_channel` object) and the external interference power
+        (the `pe` attribute) attributes.
 
-#     Parameters
-#     ----------
-#     mtChannel : 2D numpy array
-#             Channel from the transmitter to all users.
-#     num_users : int
-#         Number of users
-#     iPu : float
-#         Power available for each user
-#     noise_var : float
-#         Noise variance
+        Parameters
+        ----------
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as th
+            external interference.
 
-#     Returns
-#     -------
-#     (newH, Ms_good) : A tuple of numpy arrays
-#         newH is a 2D numpy array corresponding to the Block
-#         diagonalized channel, while Ms_good is a 2D numpy array
-#         corresponding to the precoder matrix used to block diagonalize
-#         the channel.
+        Returns
+        -------
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the precoder
+            for a user.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
+        Ns_all_users: 1D numpy array of ints
+            Number of streams of each user.
 
-#     """
-#     COMP = Comp(num_users, iPu, noise_var)
-#     results_tuble = COMP.perform_comp_no_waterfilling(mtChannel)
-#     return results_tuble
+        """
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case where no stream reduction is performed xxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # The value of self._metric_func_extra_args is not used for this
+        # case
+        if self._metric_func_name == "None":
+            return self._perform_comp_no_waterfilling_no_stream_reduction(
+                mu_channel)
 
-
-# def perform_comp_with_ext_int_no_waterfilling(mu_channel, num_users, iPu, noise_var, pe):
-#     """Perform the block diagonalization of `mtChannel` taking the external
-#     interference into account.
-
-#     Parameters
-#     ----------
-#     mu_channel : MultiUserChannelMatrixExtInt object.
-#         A MultiUserChannelMatrixExtInt object, which has the channel from
-#         all the transmitters to all the receivers, as well as th external
-#         interference.
-#     num_users : int
-#         Number of users
-#     iPu : float
-#         Power available for each user
-#     noise_var : float
-#         Noise variance
-#     pe : float
-#         Interference source power.
-
-#     Returns
-#     -------
-#     output : lalala
-#         Write me
-
-#     """
-#     COMP = CompExtInt(num_users, iPu, noise_var, pe)
-#     results_tuble = COMP.perform_comp_no_waterfilling(mu_channel)
-#     return results_tuble
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Case where the naive stream reduction is performed xxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        if (self._metric_func_name == "naive" or
+            self._metric_func_name == "fixed"):
+            return self._perform_comp_no_waterfilling_fixed_or_naive_reduction(
+                mu_channel)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case where self._metric_func is used xxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # In this case the number of sacrified streams is automatically
+        # determined according to the self._metric_func function. This
+        # function is set in the set_ext_int_handling_metric method, where
+        # any extra arguments (besides sinr) that should be passed to this
+        # function are set in the _metric_func_extra_args dictionary.
+        return self._perform_comp_no_waterfilling_decide_number_streams(mu_channel)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':  # pragma: no cover
     Pu = 5.
     noise_var = 0.1

@@ -78,15 +78,18 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.params.set_unpack_parameter('Pe_dBm')
         self.ext_int_rank = 1  # Rank of the external interference
 
+        # xxxxx Metric used for the stream reduction xxxxxxxxxxxxxxxxxxxxxx
         # Metric used for the stream reduction decision used by the
         # CompExtInt class to mitigate external interference.
-        ext_int_comp_metric = [None, 'capacity', 'effective_throughput']
+
+        #ext_int_comp_metric = [None, 'capacity', 'effective_throughput']
+        ext_int_comp_metric = [None, 'naive', 'fixed', 'capacity', 'effective_throughput']
         #ext_int_comp_metric = ['effective_throughput']
         self.params.add('metric', ext_int_comp_metric)
         self.params.set_unpack_parameter('metric')
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 5000  # Maximum number of repetitions for each
+        self.rep_max = 100  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -206,7 +209,9 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                         self.noise_var,
                                         self.pe)
         self.comp_obj.set_ext_int_handling_metric(
-            current_params['metric'], self.modulator, self.packet_length)
+            current_params['metric'], {'modulator': self.modulator,
+                                       'packet_length': self.packet_length,
+                                       'num_streams': 1})
 
     def _run_simulation(self, current_parameters):
         """The _run_simulation method is where the actual code to simulate
@@ -401,8 +406,10 @@ def get_result_data(results, Pe_dBm, metric):
     SER = ser_all[result_indexes]
     PER = per_all[result_indexes]
     Spec_Effic = spec_effic_all[result_indexes]
+    reps = results.runned_reps
 
-    return (SNR, BER, SER, PER, Spec_Effic)
+    # SNR, BER, SER, PER, Spectral Efficiency, number of simulated repetitions
+    return (SNR, BER, SER, PER, Spec_Effic, reps)
 
 
 def plot_error_results_fixed_Pe_metric(results, Pe_dBm, metric):
@@ -426,33 +433,29 @@ def plot_error_results_fixed_Pe_metric(results, Pe_dBm, metric):
         A Matplotlib figure with the plot of the error rates. You can call
         the 'save' method of `fig` to save the figure to a file.
 
-    fig2 : A Matplotlib figure
-        Matplotlib figure with the plot of the Spectral Efficiency. You can
-        call the 'save' method of `fig` to save the figure to a file.
+    fig_data : A tuple
+        A tuple with the data used to plot the figure.
 
     """
     from matplotlib import pyplot as plt
 
-    (SNR, BER, SER, PER, Spec_Effic) = get_result_data(results,
-                                                       Pe_dBm,
-                                                       metric)
+    (SNR, BER, SER, PER, Spec_Effic, reps) = get_result_data(results,
+                                                             Pe_dBm,
+                                                             metric)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Plot the Error rates (SER, BER and PER)
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     # Plot the Symbol Error Rate
-    ser_plot = ax.semilogy(SNR, SER,
-                           'g-*', label='SER')
+    ax.semilogy(SNR, SER, 'g-*', label='SER')
     ax.hold(True)
 
     # Plot the Bit Error Rate
-    ber_plot = ax.semilogy(SNR, BER,
-                           'b-*', label='BER')
+    ax.semilogy(SNR, BER, 'b-*', label='BER')
 
     # Plot the Package Error Rate
-    per_plot = ax.semilogy(SNR, PER,
-                           'k-*', label='PER')
+    ax.semilogy(SNR, PER, 'k-*', label='PER')
 
     plt.xlabel('SNR')
     plt.ylabel('Error Rate')
@@ -464,24 +467,23 @@ def plot_error_results_fixed_Pe_metric(results, Pe_dBm, metric):
 
     plt.grid(True, which='both', axis='both')
 
-    return fig
+    return fig, (SNR, BER, SER, PER, Spec_Effic, reps)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 def plot_spec_effic(results, Pe_dBm, metric):
     from matplotlib import pyplot as plt
 
-    (SNR, BER, SER, PER, Spec_Effic) = get_result_data(results,
-                                                       Pe_dBm,
-                                                       metric)
+    (SNR, BER, SER, PER, Spec_Effic, reps) = get_result_data(results,
+                                                             Pe_dBm,
+                                                             metric)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Plot The Spectral Efficiency
     fig = plt.figure()
     ax2 = fig.add_subplot(111)
 
     # Plot the Symbol Error Rate
-    spec_effic_plot = ax2.plot(SNR, Spec_Effic,
-                               'g-*', label='Spectral Efficiency')
+    ax2.plot(SNR, Spec_Effic, 'g-*', label='Spectral Efficiency')
 
     plt.xlabel('SNR')
     plt.ylabel('Spectral Efficiency')
@@ -494,7 +496,6 @@ def plot_spec_effic(results, Pe_dBm, metric):
     plt.grid(True, which='both', axis='both')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #fig.savefig('{0}.pdf'.format(results_filename))
     return fig
 
 
@@ -503,10 +504,6 @@ def plot_spectral_efficience(results, Pe_dBm):
 
     params = results.params
     SNR = params['SNR']
-
-    ber_all = np.array(results.get_result_values_list('ber'))
-    ser_all = np.array(results.get_result_values_list('ser'))
-    per_all = np.array(results.get_result_values_list('per'))
     spec_effic_all = np.array(results.get_result_values_list('spec_effic'))
 
     fig = plt.figure()
@@ -517,23 +514,39 @@ def plot_spectral_efficience(results, Pe_dBm):
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm, 'metric': metric})
 
-    spec_effic_plot_None = ax.plot(SNR, spec_effic_all[result_indexes],
-                                   'g-*', label='No Stream Reduction')
+    ax.plot(SNR, spec_effic_all[result_indexes],
+            'g-*', label='No Stream Reduction')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot The Spectral Efficiency with capacity metric xxxxxxxxxxxxx
     metric = 'capacity'
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm, 'metric': metric})
-    spec_effic_plot_capacity = ax.plot(SNR, spec_effic_all[result_indexes],
-                                       'b-*', label='Capacity Metric')
+    ax.plot(SNR, spec_effic_all[result_indexes],
+            'b-*', label='Capacity Metric')
 
-    # xxxxx Plot the Spec. Effic. with effective_spec_effic metric xxxxxxxx
+    # xxxxx Plot the Spec. Effic. with effective_throughput metric xxxxxxxx
     metric = 'effective_throughput'
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm, 'metric': metric})
-    spec_effic_plot_effec = ax.plot(SNR, spec_effic_all[result_indexes],
-                                    'k-*', label='Effective Spec_Effic Metric')
+    ax.plot(SNR, spec_effic_all[result_indexes],
+            'k-*', label='Effective Throughput Metric')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Plot the Spec. Effic. with naive metric xxxxxxxxxxxxxxxxxxxxxxx
+    metric = 'naive'
+    result_indexes = params.get_pack_indexes(
+        {'Pe_dBm': Pe_dBm, 'metric': metric})
+    ax.plot(SNR, spec_effic_all[result_indexes],
+            'm-*', label='Naive Case')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Plot the Spec. Effic. with fixed metric xxxxxxxxxxxxxxxxxxxxxxx
+    metric = 'fixed'
+    result_indexes = params.get_pack_indexes(
+        {'Pe_dBm': Pe_dBm, 'metric': metric})
+    ax.plot(SNR, spec_effic_all[result_indexes],
+            'r-*', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.xlabel('SNR')
@@ -556,42 +569,48 @@ if __name__ == '__main__':
     except ImportError:
         _MATPLOTLIB_AVAILABLE = False
 
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # # File name (without extension) for the figure and result files.
-    # results_filename = 'comp_results'
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # runner = CompSimulationRunner()
-    # runner.simulate()
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
-    # runner.results.save_to_file('{0}.pickle'.format(results_filename))
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # #
-    # #
-    # print "Elapsed Time: {0}".format(runner.elapsed_time)
-    #
-    #
-    #
-    #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # File name (without extension) for the figure and result files.
     results_filename = 'comp_results'
-    results = simulations.SimulationResults.load_from_file(
-        '{0}{1}'.format(results_filename, '.pickle'))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    SNR = results.params['SNR']
-    if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
-        plot_error_results_fixed_Pe_metric(results, -10000, None)
-        plot_error_results_fixed_Pe_metric(results, -10000, 'capacity')
-        plot_error_results_fixed_Pe_metric(results, -10000, 'effective_throughput')
-        #fig2 = plot_spec_effic(results, 10, None)
+    # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    runner = CompSimulationRunner()
+    runner.simulate()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # plot_spec_effic(results, 10, None)
-        # plot_spec_effic(results, 10, 'capacity')
-        # plot_spec_effic(results, 10, 'effective_spec_effic')
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    runner.results.save_to_file('{0}.pickle'.format(results_filename))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #
+    #
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
+    #
+    #
+    #
+    # #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # results_filename = 'comp_results'
+    # results = simulations.SimulationResults.load_from_file(
+    #     '{0}{1}'.format(results_filename, '.pickle'))
 
-        plot_spectral_efficience(results, -10000)
+    # SNR = results.params['SNR']
+    # if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
+    #     Pe_dBm = 10
 
-        plt.show()
-        # fig.savefig('{0}.pdf'.format(results_filename))
+    #     # plot_error_results_fixed_Pe_metric(results, Pe_dBm, None)
+    #     # plot_error_results_fixed_Pe_metric(results, Pe_dBm, 'capacity')
+    #     # plot_error_results_fixed_Pe_metric(results, Pe_dBm, 'fixed')
+    #     # plot_error_results_fixed_Pe_metric(results, Pe_dBm, 'naive')
+    #     # plot_error_results_fixed_Pe_metric(results, Pe_dBm, 'effective_throughput')
+
+    #     #fig2 = plot_spec_effic(results, 10, None)
+    #     ### fig2.savefig('{0}.pdf'.format(results_filename))
+
+    #     # plot_spec_effic(results, 10, None)
+    #     # plot_spec_effic(results, 10, 'capacity')
+    #     # plot_spec_effic(results, 10, 'effective_spec_effic')
+
+    #     plot_spectral_efficience(results, Pe_dBm)
+
+    #     plt.show()
+    #     # fig.savefig('{0}.pdf'.format(results_filename))

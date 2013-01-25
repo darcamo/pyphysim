@@ -786,22 +786,3 @@ def testGrayCodeConversion(maxNum=8):  # pragma: no cover
         grayNumber = binary2gray(i)
         print ("Normal: ({0:2}) {0:0=4b} | Gray: ({1:2}) {1:0=4b} -> Converted {2:2}").format(i, grayNumber, gray2binary(grayNumber))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-if __name__ == '__main__':  # pragma: no cover
-    M = 4
-    psk = PSK(M)
-
-    inputData = np.random.randint(0, M, 20)
-    modulatedData = psk.modulate(inputData)
-
-    receivedData = (modulatedData + 1e-4 * np.random.randn(20) +
-                    1e-4 * 1j * np.random.randn())
-    demodulatedData = psk.demodulate(receivedData)
-
-    # Calculates the symbol error rate
-    SER = 1.0 * sum(inputData != demodulatedData) / inputData.size
-
-    testGrayCodeConversion(16)
-
-    qam = QAM(16)
