@@ -53,12 +53,12 @@ N0_dBm = -116.4  # Noise power (in dBm)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Pe_dBm = 35  # transmit power (in dBm) of the ext. interference
+Pe_dBm = 10  # transmit power (in dBm) of the ext. interference
 ext_int_rank = 1  # Rank of the external interference
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-rep_max = 20000   # Maximum number of repetitions for each
+rep_max = 10000   # Maximum number of repetitions for each
 
 pbar = progressbar.ProgressbarText(rep_max, message="Simulating for SNR: {0}, Pe_dBm: {1}".format(SNR_dB, Pe_dBm))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -119,7 +119,9 @@ for rep in range(rep_max):
     # Create the comp_obj
     comp_obj = comp.CompExtInt(num_cells, transmit_power, noise_var, pe)
     #comp_obj.set_ext_int_handling_metric('capacity')
-    comp_obj.set_ext_int_handling_metric('effective_throughput', modulator, packet_length)
+    comp_obj.set_ext_int_handling_metric('effective_throughput',
+                                         {'modulator': modulator,
+                                          'packet_length': packet_length})
 
     (MsPk_all_users,
      Wk_all_users,
@@ -172,8 +174,6 @@ print "SER: {0}".format(SER)
 print "BER: {0}".format(BER)
 print "PER: {0}".format(PER)
 print "SpectralEfficiency: {0}".format(SE)
-
-
 
 # xxxxxxxxxx Finished xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 toc = time()
