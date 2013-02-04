@@ -180,7 +180,7 @@ def randn_c(*args):
 
     Parameters
     ----------
-    params : variable number of ints
+    *args : variable number of ints
         Variable number of arguments specifying the dimensions of the
         returned array. This is directly passed to the numpy.random.randn
         function.
@@ -202,6 +202,37 @@ def randn_c(*args):
     """
     return (1.0 / math.sqrt(2.0)) * (
         np.random.randn(*args) + (1j * np.random.randn(*args)))
+
+
+def randn_c_RS(RS, *args):
+    """Generates a random circularly complex gaussian matrix.
+
+    This is essentially the same as the the randn_c function. The only
+    difference is that the randn_c function uses the global RandomState
+    object in numpy, while randn_c_RS use the provided RandomState
+    object. This allow us greatter control.
+
+    Parameters
+    ----------
+    RS : A numpy.random.RandomState object.
+        The RandomState object used to generate the random values.
+    *args : variable number of ints
+        Variable number of arguments specifying the dimensions of the
+        returned array. This is directly passed to the
+        numpy.random.randn function.
+
+    Returns
+    -------
+    result : N-dimensional numpy array
+        A random N-dimensional numpy array (complex dtype) where the
+        `N` is equal to the number of parameters passed to `randn_c`.
+
+    """
+    if RS is None:
+        return randn_c(*args)
+    else:
+        return (1.0 / math.sqrt(2.0)) * (
+            RS.randn(*args) + (1j * RS.randn(*args)))
 
 
 def level2bits(n):
@@ -296,7 +327,7 @@ count_bits = np.vectorize(_count_bits_single_element)
 #                            doc=_count_bits_single_element.__doc__)
 
 
-def count_bit_errors(first, second):
+def count_bit_errors(first, second, axis=None):
     """Compare `first` and `second` and count the number of equivalent bit
     errors.
 
@@ -314,6 +345,12 @@ def count_bit_errors(first, second):
         The decoded symbols.
     second : int or numpy array of ints
         The transmited symbols.
+    axis : int or None (default is None)
+        Since first and second can be numpy arrays, when axis is not
+        provided (that is, it is None) then the total number of bit errors
+        of all the elements of the 'difference array' is returned. If axis
+        is provided, then an array of bit errors is returned where the
+        number of bit errors summed along the provided axis is returned.
 
     Returns
     -------
@@ -322,16 +359,19 @@ def count_bit_errors(first, second):
 
     Examples
     --------
-    >>> first = np.array([2, 3, 3, 0, 1, 3, 1])
-    >>> second = np.array([0, 3, 2, 0, 2, 0, 1])
+    >>> first = np.array([[2, 3, 3, 0], [1, 3, 1, 2]])
+    >>> second = np.array([[0, 3, 2, 0], [2, 0, 1, 2]])
     >>> # The number of changed bits in each element is equal to
     >>> # array([1, 0, 1, 0, 2, 2, 0])
     >>> count_bit_errors(first, second)
     6
-
+    >>> count_bit_errors(first, second, 0)
+    array([3, 2, 1, 0])
+    >>> count_bit_errors(first, second, 1)
+    array([2, 4])
     """
     different_bits = xor(first, second)
-    return np.sum(count_bits(different_bits))
+    return np.sum(count_bits(different_bits), axis)
 
 
 def qfunc(x):

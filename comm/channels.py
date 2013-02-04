@@ -21,7 +21,7 @@ __revision__ = "$Revision$"
 from collections import Iterable
 import numpy as np
 from util.conversion import single_matrix_to_matrix_of_matrices
-from util.misc import randn_c
+from util.misc import randn_c_RS
 
 __all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt']
 
@@ -92,6 +92,61 @@ class MultiUserChannelMatrix(object):
         # _pathloss_big_matrix should not be set directly. It is set when
         # _pathloss_matrix is set in the set_pathloss method.
         self._pathloss_big_matrix = None
+        self._RS_channel = np.random.RandomState()
+        self._RS_noise = np.random.RandomState()
+
+    def set_channel_seed(self, seed):
+        """Set the seed of the RandomState object used to generate the random
+        elements of the channel (when self.randomize is called).
+
+        Parameters
+        ----------
+        seed : Int or array like
+            Random seed initializing the pseudo-random number
+            generator. See np.random.RandomState help for more info.
+
+        """
+        self._RS_channel.seed(seed)
+
+    def set_noise_seed(self, seed):
+        """Set the seed of the RandomState object used to generate the random
+        noise elements (when the corrupt data function is called).
+
+        Parameters
+        ----------
+        seed : Int or array like
+            Random seed initializing the pseudo-random number
+            generator. See np.random.RandomState help for more info.
+
+        """
+        self._RS_noise.seed(seed)
+
+    # def randn_c(self, RS, *args):
+    #     """Generates a random circularly complex gaussian matrix.
+
+    #     This is essentially the same as the the randn_c function from the
+    #     util.misc module. The only difference is that the randn_c function in
+    #     util.misc uses the global RandomState object in numpy, while the
+    #     method here used the randn method from a local RandomState
+    #     object. This allow us greatter control.
+
+    #     Parameters
+    #     ----------
+    #     RS : A numpy.random.RandomState object.
+    #         The RandomState object used to generate the random values.
+    #     *args : variable number of ints
+    #         Variable number of arguments specifying the dimensions of the
+    #         returned array. This is directly passed to the
+    #         numpy.random.randn function.
+
+    #     Returns
+    #     -------
+    #     result : N-dimensional numpy array
+    #         A random N-dimensional numpy array (complex dtype) where the
+    #         `N` is equal to the number of parameters passed to `randn_c`.
+    #     """
+    #     return (1.0 / math.sqrt(2.0)) * (
+    #         RS.randn(*args) + (1j * RS.randn(*args)))
 
     # Property to get the number of receive antennas
     def _get_Nr(self):
@@ -276,7 +331,8 @@ class MultiUserChannelMatrix(object):
         self._Nt = Nt
         self._K = K
 
-        self._big_H = randn_c(np.sum(self._Nr), np.sum(self._Nt))
+        self._big_H = randn_c_RS(self._RS_channel,
+                                   np.sum(self._Nr), np.sum(self._Nt))
 
         self._H = single_matrix_to_matrix_of_matrices(self._big_H, Nr, Nt)
 
@@ -394,9 +450,11 @@ class MultiUserChannelMatrix(object):
         """
         # Note that self.big_H already accounts the path loss (while
         # self._big_H does not)
+
         output = np.dot(self.big_H, data)
         if noise_var is not None:
-            awgn_noise = (randn_c(*output.shape) * np.sqrt(noise_var))
+            awgn_noise = (
+                randn_c_RS(self._RS_noise, *output.shape) * np.sqrt(noise_var))
             output = output + awgn_noise
         return output
 
@@ -655,7 +713,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             symbols.
 
         """
-
         return MultiUserChannelMatrix.corrupt_concatenated_data(self,
                                                                 data,
                                                                 noise_var)

@@ -834,21 +834,24 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
     def test_count_bits(self):
         n = np.r_[0:9, 15]
+
+        # First we test for the scalar input values
+        self.assertEqual(misc.count_bits(0), 0)
+        self.assertEqual(misc.count_bits(1), 1)
+        self.assertEqual(misc.count_bits(2), 1)
+        self.assertEqual(misc.count_bits(3), 2)
+        self.assertEqual(misc.count_bits(4), 1)
+        self.assertEqual(misc.count_bits(5), 2)
+        self.assertEqual(misc.count_bits(6), 2)
+        self.assertEqual(misc.count_bits(7), 3)
+        self.assertEqual(misc.count_bits(8), 1)
+        self.assertEqual(misc.count_bits(15), 4)
+
+        # Now we test for a numpy array
         expected_num_bits = np.array([0, 1, 1, 2, 1, 2, 2, 3, 1, 4])
         np.testing.assert_array_equal(misc.count_bits(n), expected_num_bits)
 
-        # self.assertEqual(misc.count_bits(0), 0)
-        # self.assertEqual(misc.count_bits(1), 1)
-        # self.assertEqual(misc.count_bits(2), 1)
-        # self.assertEqual(misc.count_bits(3), 2)
-        # self.assertEqual(misc.count_bits(4), 1)
-        # self.assertEqual(misc.count_bits(5), 2)
-        # self.assertEqual(misc.count_bits(6), 2)
-        # self.assertEqual(misc.count_bits(7), 3)
-        # self.assertEqual(misc.count_bits(8), 1)
-        # self.assertEqual(misc.count_bits(15), 4)
-
-    def test_count_bits(self):
+    def test_count_bit_errors(self):
         a = np.random.randint(0, 16, 20)
         b = np.random.randint(0, 16, 20)
         expected_bit_count = np.sum(misc.count_bits(misc.xor(a, b)))
