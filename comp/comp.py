@@ -582,8 +582,18 @@ class CompExtInt(BlockDiaginalizer):
             Wk_all = np.empty(Ntk, dtype=np.ndarray)
             for index in range(Ntk):
                 Ns_k = index + 1
-                # Find Pk
-                Pk = _calc_stream_reduction_matrix(Rek, Ns_k)
+                # xxxxx Find Pk xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # Note that if index is equal to Ntk - 1 that means that no
+                # stream reduction will be performed. In that case, we set
+                # Pk as the identity matrix, since setting it as the
+                # singular vectors of the external interference covariance
+                # matrix with _calc_stream_reduction_matrix won't help (may
+                # even get worse results)
+                if index == Ntk - 1:
+                    Pk = np.eye(Ntk)
+                else:
+                    Pk = _calc_stream_reduction_matrix(Rek, Ns_k)
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                 Pk_all[index] = Pk  # Save for later
 
                 # Normalization term for the combined BD matrix Msk and stream

@@ -100,13 +100,13 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         # xxxxxxxxxx RandomState objects seeds xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # This is only useful to reproduce a simulation for debugging purposed
-        channel_seed = None  # 123422  # None  # 22522
-        noise_seed = None  # 4445
+        channel_seed = None  # 22522
+        self.noise_seed = None  # 4445
         self.data_gen_seed = np.random.randint(10000)  # 2105
         ext_data_gen_seed = None  # 6114
         #
         self.multiuser_channel.set_channel_seed(channel_seed)
-        self.multiuser_channel.set_noise_seed(noise_seed)
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
         self.data_RS = np.random.RandomState(self.data_gen_seed)
         self.ext_data_RS = np.random.RandomState(ext_data_gen_seed)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -120,16 +120,18 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # Number of symbols (per stream per user simulated at each
         # iteration of _run_simulation
         self.NSymbs = 500
-        #SNR = np.linspace(0, 30, 16)
-        SNR = np.array([40])
+        #SNR = np.linspace(0, 30, 7)
+        SNR = np.linspace(0, 30, 16)
+        #SNR = np.array([5])
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxx
         # transmit power (in dBm) of the ext. interference
-        Pe_dBm = np.array([-10000, -10, 0, 10, 20])
-        #Pe_dBm = np.array([10])
+        #Pe_dBm = np.array([-10000, -10, 0, 10, 20])
+        Pe_dBm = np.array([-10, 0, 10])
+        #Pe_dBm = np.array([-10])
         self.params.add('Pe_dBm', Pe_dBm)
         self.params.set_unpack_parameter('Pe_dBm')
         self.ext_int_rank = 1  # Rank of the external interference
@@ -145,7 +147,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         #self.params.set_unpack_parameter('metric')
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 20000  # Maximum number of repetitions for each
+        self.rep_max = 50  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -400,13 +402,12 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # the external interferece sources' data.
         precoded_data_None = np.dot(np.hstack(MsPk_all_users_None),
                                         symbols_None)
-        external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c(
-            self.ext_int_rank, self.NSymbs)
+        external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
         all_data_None = np.vstack([precoded_data_None,
                                        external_int_data_all_metrics])
 
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        #self.multiuser_channel.set_noise_seed(4445)
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal_None = self.multiuser_channel.corrupt_concatenated_data(
             all_data_None,
             self.noise_var
@@ -476,7 +477,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                        external_int_data_all_metrics])
 
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        #self.multiuser_channel.set_noise_seed(4445)
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal_naive = self.multiuser_channel.corrupt_concatenated_data(
             all_data_naive,
             self.noise_var
@@ -546,7 +547,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                        external_int_data_all_metrics])
 
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        #self.multiuser_channel.set_noise_seed(4445)
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal_fixed = self.multiuser_channel.corrupt_concatenated_data(
             all_data_fixed,
             self.noise_var
@@ -617,7 +618,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                        external_int_data_all_metrics])
 
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        #self.multiuser_channel.set_noise_seed(4445)
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal_capacity = self.multiuser_channel.corrupt_concatenated_data(
             all_data_capacity,
             self.noise_var
@@ -687,7 +688,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                        external_int_data_all_metrics])
 
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        #self.multiuser_channel.set_noise_seed(4445)
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal_effec_throughput = self.multiuser_channel.corrupt_concatenated_data(
             all_data_effec_throughput,
             self.noise_var
@@ -907,9 +908,9 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # print
         # print "Ns_all_users_None: {0}".format(Ns_all_users_None)
         # print "Ns_all_users_naive: {0}".format(Ns_all_users_naive)
+        # print "Ns_all_users_effec_throughput: {0}".format(Ns_all_users_effec_throughput)
         # print "Ns_all_users_fixed: {0}".format(Ns_all_users_fixed)
         # print "Ns_all_users_capacity: {0}".format(Ns_all_users_capacity)
-        # print "Ns_all_users_effec_throughput: {0}".format(Ns_all_users_effec_throughput)
 
         # print
         # print ber_capacity
@@ -1197,22 +1198,22 @@ if __name__ == '__main__':
     except ImportError:
         _MATPLOTLIB_AVAILABLE = False
 
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # # File name (without extension) for the figure and result files.
-    # results_filename = 'comp_results'
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # File name (without extension) for the figure and result files.
+    results_filename = 'comp_results'
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # runner = CompSimulationRunner()
-    # runner.simulate()
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    runner = CompSimulationRunner()
+    runner.simulate()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
-    # runner.results.save_to_file('{0}.pickle'.format(results_filename))
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # #
-    # #
-    # print "Elapsed Time: {0}".format(runner.elapsed_time)
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    runner.results.save_to_file('{0}.pickle'.format(results_filename))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #
+    #
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
     #
     #
     #
