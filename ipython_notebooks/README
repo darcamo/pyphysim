@@ -1,0 +1,7 @@
+
+The files in this folder are IPython notebooks.
+(See http://ipython.org/ipython-doc/dev/interactive/htmlnotebook.html)
+
+In order see and edit them, open a terminal in this folder and type
+"ipython notebook". The browser will be opened and you can select which
+notebook file to open.
