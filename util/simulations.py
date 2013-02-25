@@ -244,6 +244,20 @@ class SimulationRunner(object):
                           # progressbar when it is created in the
                           # _get_update_progress_function method
 
+    def clear(self, ):
+        """Clear the SimulationRunner.
+
+        This will erase any results from previous simulations as well as
+        other internal variables. The SimulationRunner object will then be
+        as if it was just created, except that the simulation parameters
+        will be kept.
+
+        """
+        self._elapsed_time = 0.0
+        self._runned_reps = []  # Number of iterations performed by
+                                # simulation when it finished
+        self.results = SimulationResults()
+
     def _run_simulation(self, current_parameters):
         """Performs one iteration of the simulation.
 

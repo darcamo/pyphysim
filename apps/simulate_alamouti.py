@@ -13,6 +13,8 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+import numpy as np
+
 from util.simulations import *
 from comm import modulators, mimo
 from util import misc
@@ -33,15 +35,16 @@ class AlamoutiSimulationRunner(SimulationRunner):
         SNR = np.array([0., 5, 10, 15, 20])
         M = 16
         self.alamouti = mimo.Alamouti()
-        self.NSymbs = 1000
+        self.NSymbs = 200
         self.modulator = modulators.QAM(M)
         self.Nr = 2
         # Note that Nt is equal to 2 for the Alamouti scheme
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
-        self.rep_max = 5000
-        self.progressbar_message = "Alamouti with {0}-QAM - SNR: {{SNR}}".format(M)
+        self.rep_max = 1000
+        self.progressbar_message = "Alamouti with {0} - SNR: {{SNR}}".format(
+            self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # We need to add the parameters to the self.param variable.
@@ -129,7 +132,7 @@ class AlamoutiSimulationRunner(SimulationRunner):
         easily for plot.
         """
         ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ser')
 
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])

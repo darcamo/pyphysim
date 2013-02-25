@@ -498,6 +498,10 @@ class BPSK(Modulator):
         # mapped to "1"
         self.setConstellation(np.array([1, -1]))
 
+    @property
+    def name(self):
+        return "{0:s}".format(self.__class__.__name__)
+
     def __repr__(self):  # pragma: no cover
         return "BPSK object"
 
