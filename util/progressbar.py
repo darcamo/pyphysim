@@ -35,12 +35,15 @@ not the progressbar such that the task code can always call the progress
 method and you only change the progressbar object.
 """
 
+from __future__ import print_function
+
 __revision__ = "$Revision$"
 
+import sys
 import multiprocessing
 import time
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarMultiProcessText']
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarMultiProcessText']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -113,7 +116,7 @@ class ProgressbarText(object):
     >>> pb.progress(100)
     ooooooooooooooooooooooooo
     """
-    def __init__(self, finalcount, progresschar='*', message=''):
+    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
         """Initializes the ProgressbarText object.
 
         Parameters
@@ -128,15 +131,15 @@ class ProgressbarText(object):
         message : str, optional
             A message to be shown in the top of the progressbar.
         """
-        import sys
         self.finalcount = finalcount
-        self.blockcount = 0
-        self.block = progresschar
+        self.blockcount = 0  # stores how many characters where already
+                             # printed in a previous call to the `progress`
+                             # function
+        self.block = progresschar  # The character printed to indicate progress
         #
-        # Get pointer to sys.stdout so I can use the write/flush
-        # methods to display the progress bar.
-        #
-        self.f = sys.stdout
+        # By default, self.output points to sys.stdout so I can use the
+        # write/flush methods to display the progress bar.
+        self.output = output
         #
         # If the final count is zero, don't start the progress gauge
         #
@@ -147,9 +150,9 @@ class ProgressbarText(object):
         else:
             bartitle = '\n------------------ % Progress -------------------1\n'
 
-        self.f.write(bartitle)
-        self.f.write('    1    2    3    4    5    6    7    8    9    0\n')
-        self.f.write('----0----0----0----0----0----0----0----0----0----0\n')
+        self.output.write(bartitle)
+        self.output.write('    1    2    3    4    5    6    7    8    9    0\n')
+        self.output.write('----0----0----0----0----0----0----0----0----0----0\n')
         return
 
     def progress(self, count):
@@ -190,14 +193,14 @@ class ProgressbarText(object):
             # function. Therefore, we only need to print the remaining
             # characters until we reach `blockcount`.
             for i in range(self.blockcount, blockcount):  # pylint:disable=W0612
-                self.f.write(self.block)
-                self.f.flush()
+                self.output.write(self.block)
+                self.output.flush()
             # Update self.blockcount
             self.blockcount = blockcount
 
         # If we completed the bar, print a newline
         if percentcomplete == 100:
-            self.f.write("\n")
+            self.output.write("\n")
 
     @staticmethod
     def center_message(message, length=50, fill_char=' ', left='', right=''):
@@ -224,7 +227,7 @@ class ProgressbarText(object):
 
         Examples
         --------
-        >>> print ProgressbarText.center_message("Hello World", 50, '-', 'Left', 'Right')
+        >>> print(ProgressbarText.center_message("Hello World", 50, '-', 'Left', 'Right'))
         Left-------------- Hello World --------------Right
         """
         message_size = len(message)
@@ -234,13 +237,59 @@ class ProgressbarText(object):
         left_fill_size = fill_size // 2 + (fill_size % 2)
         right_fill_size = (fill_size // 2)
 
-        new_message = "{0}{1} {2} {3}{4}".format(left,
-                                               fill_char * left_fill_size,
-                                               message,
-                                               fill_char * right_fill_size,
-                                               right)
+        new_message = "{0}{1} {2} {3}{4}".format(
+            left,
+            fill_char * left_fill_size,
+            message,
+            fill_char * right_fill_size,
+            right)
         return new_message
 # xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarText2 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# The original Code is in
+# http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/examples/notebooks/Progress%20Bars.ipynb
+# but it was modified to make it more similar to the ProgressbarText class
+class ProgressbarText2:
+    def __init__(self, finalcount, progresschar='*', message=''):
+        self.finalcount = finalcount
+        self.prog_bar = '[]'
+        self.progresschar = progresschar
+        self.width = 50
+        self._update_amount(0)
+        self._message = message
+
+    def progress(self, iter):
+        self._update_iteration(iter)
+        print('\r', self, end='')
+        sys.stdout.flush()
+
+    def _update_iteration(self, elapsed_iter):
+        # Note that self._update_amount will change self.prog_bar
+        self._update_amount((elapsed_iter / float(self.finalcount)) * 100.0)
+
+        if(len(self._message) != 0):
+            self.prog_bar += "  {0}".format(self._message)
+        else:
+            self.prog_bar += '  %d of %s complete' % (elapsed_iter, self.finalcount)
+
+    def _update_amount(self, new_amount):
+        percent_done = int(round((new_amount / 100.0) * 100.0))
+        all_full = self.width - 2
+        num_hashes = int(round((percent_done / 100.0) * all_full))
+        self.prog_bar = '[' + self.progresschar * num_hashes + ' ' * (all_full - num_hashes) + ']'
+        pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
+        pct_string = '%d%%' % percent_done
+        self.prog_bar = self.prog_bar[0:pct_place] + \
+            (pct_string + self.prog_bar[pct_place + len(pct_string):])
+
+    def __str__(self):
+        return str(self.prog_bar)
+
+# xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

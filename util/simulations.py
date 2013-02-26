@@ -161,7 +161,7 @@ import copy
 import numpy as np
 
 from util.misc import pretty_time
-from util.progressbar import ProgressbarText
+from util.progressbar import ProgressbarText, ProgressbarText2
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -233,16 +233,20 @@ class SimulationRunner(object):
         self.params = SimulationParameters()
         self.results = SimulationResults()
 
-        # Message passed to the _get_update_progress_function function. The
-        # message can contain "{SomeParameterName}" which will be replaced
-        # with the parameter value.
+        self._pbar = None  # This variable will be used later to store the
+                           # progressbar object when it is created in the
+                           # _get_update_progress_function method
+
+        # Sets the style of the used progressbar. The allowed values are 'text1', 'text2' or None.
+        self.progressbar_style = 'text1'
+
+        # Additional message printed in the progressbar. The message can
+        # contain "{SomeParameterName}" which will be replaced with the
+        # parameter value.
         #
-        # If, on the other hand, progressbar_message is None, then the
-        # progressbar will be disabled.
+        # Note that if the progressbar_style is None, then no message will
+        # be printed either.
         self.progressbar_message = 'Progress'
-        self.pbar = None  # This variable will be used later to store the
-                          # progressbar when it is created in the
-                          # _get_update_progress_function method
 
     def clear(self, ):
         """Clear the SimulationRunner.
@@ -315,17 +319,23 @@ class SimulationRunner(object):
         # maximum number of allowed iterations is reached.
         return True
 
-    def _get_update_progress_function(self, message=''):
+    def _get_update_progress_function(self, current_params):
         """Return a function that should be called to update the
-        progressbar.
+        progressbar for the simulation of the current parameters.
 
         The returned function accepts a single argument, corresponding to
         the number of iterations executed so far.
 
+        The progressbar used to get the returned function depend on the
+        value of the self.progressbar_style attribute.
+
         Parameters
         ----------
-        message : str
-            The message to be written in the progressbar, if it is used.
+        current_params : SimulationParameters object
+            The current combination of simulation parameters. This should
+            be used to perform any replacement in the
+            self.progressbar_message string that will be written in the
+            progressbar.
 
         Returns
         -------
@@ -334,9 +344,26 @@ class SimulationRunner(object):
             called to update the progressbar.
 
         """
-        # The returned function will update the bar
-        self.pbar = ProgressbarText(self.rep_max, '*', message)
-        return self.pbar.progress
+        # If the progressbar_message has any string replacements in the
+        # form {some_param} where 'some_param' is a parameter in
+        # current_params then it will be replaced by the current value of
+        # 'some_param'.
+        message = self.progressbar_message.format(**current_params.parameters)
+        # By default, the returned function is a dummy function that does
+        # nothing
+        update_progress_func = lambda value: None
+
+        # If the self.progressbar_style attribute matches one of the
+        # available styles, then update_progress_func will be appropriately
+        # set.
+        if self.progressbar_style == 'text1':
+            self._pbar = ProgressbarText(self.rep_max, '*', message)
+            update_progress_func = self._pbar.progress
+        elif self.progressbar_style == 'text2':
+            self._pbar = ProgressbarText2(self.rep_max, '*', message)
+            update_progress_func = self._pbar.progress
+
+        return update_progress_func
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     @property
@@ -410,18 +437,7 @@ class SimulationRunner(object):
         for current_params in self.params.get_unpacked_params_list():
             var_print_iter.next()
 
-            # Get the update_progress_func function
-            if self.progressbar_message is None:
-                # If self.progressbar_message is None then
-                # update_progress_func does nothing
-                update_progress_func = lambda value: None
-            else:
-                update_progress_func = self._get_update_progress_function(
-                    # If the progressbar_message has any string
-                    # replacements in the form {some_param} where
-                    # 'some_param' is a parameter in current_params then it
-                    # will be replace by the current value of 'some_param'.
-                    self.progressbar_message.format(**current_params.parameters))
+            update_progress_func = self._get_update_progress_function(current_params)
 
             # Implement the _on_simulate_current_params_start method in a
             # subclass if you need to run code before the _run_simulation
