@@ -237,15 +237,23 @@ class SimulationRunner(object):
                            # progressbar object when it is created in the
                            # _get_update_progress_function method
 
-        # Sets the style of the used progressbar. The allowed values are 'text1', 'text2' or None.
-        self.progressbar_style = 'text1'
+        # Sets the style of the used progressbar. The allowed values are
+        # 'text1', 'text2', None, or a callable object.
+        # - If it is 'text1' then the ProgressbarText class will be used.
+        # - If it is 'text2' then the ProgressbarText2 class will be used.
+        # - If it is None, then no progressbar will be used.
+        # - If it is a callable, then that calable object must receive two
+        #   arguments, the rep_max and the message values, and return a
+        #   function that receives a single argument (the custom
+        #   parameters).
+        self.update_progress_function_style = 'text1'
 
         # Additional message printed in the progressbar. The message can
         # contain "{SomeParameterName}" which will be replaced with the
         # parameter value.
         #
-        # Note that if the progressbar_style is None, then no message will
-        # be printed either.
+        # Note that if the update_progress_function_style is None, then no
+        # message will be printed either.
         self.progressbar_message = 'Progress'
 
     def clear(self, ):
@@ -327,7 +335,7 @@ class SimulationRunner(object):
         the number of iterations executed so far.
 
         The progressbar used to get the returned function depend on the
-        value of the self.progressbar_style attribute.
+        value of the self.update_progress_function_style attribute.
 
         Parameters
         ----------
@@ -353,15 +361,23 @@ class SimulationRunner(object):
         # nothing
         update_progress_func = lambda value: None
 
-        # If the self.progressbar_style attribute matches one of the
+        # If the self.update_progress_function_style attribute matches one of the
         # available styles, then update_progress_func will be appropriately
         # set.
-        if self.progressbar_style == 'text1':
+        if self.update_progress_function_style == 'text1':
+            # We will use the ProgressbarText class
             self._pbar = ProgressbarText(self.rep_max, '*', message)
             update_progress_func = self._pbar.progress
-        elif self.progressbar_style == 'text2':
+        elif self.update_progress_function_style == 'text2':
+            # We will use the ProgressbarText2 class
             self._pbar = ProgressbarText2(self.rep_max, '*', message)
             update_progress_func = self._pbar.progress
+        elif callable(self.update_progress_function_style) is True:
+            # We will use a custom function to update the progress. Note
+            # that we call self.update_progress_function_style to return the actual
+            # function that will be used to update the progress.
+            update_progress_func = self.update_progress_function_style(
+                self.rep_max, self.progressbar_message)
 
         return update_progress_func
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
