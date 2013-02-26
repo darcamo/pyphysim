@@ -11,6 +11,7 @@ __revision__ = "$Revision$"
 try:
     from matplotlib import pylab
     from matplotlib import patches
+    from matplotlib.path import Path
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
@@ -138,6 +139,18 @@ class Shape(Coordinate):
     vertices = property(_get_vertices)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxx Shape's Path xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # A Matplotlib "Path" corresponding to the shape
+    def _get_path(self):
+        """Get method for the path property.
+
+        The `path` property returns a Matplotlib Path for the shape.
+        """
+        return Path(from_complex_array_to_real_matrix(self.vertices))
+
+    path = property(_get_path)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def is_point_inside_shape(self, point):
         """Test is a point is inside the shape.
 
@@ -151,9 +164,17 @@ class Shape(Coordinate):
         inside_or_not : bool
             True if `point` is inside the shape, False otherwise.
         """
-        import matplotlib.nxutils as mnx
-        # pnpoly returns 1 if point is inside the polygon and 0 otherwise
-        return mnx.pnpoly(point.real, point.imag, from_complex_array_to_real_matrix(self.vertices)) == 1
+        # This code is used with Matplotlib version 1.2 or higher.
+        return self.path.contains_point([point.real, point.imag])
+
+        # xxxxx Code for Matplotlib version 1.1 xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # The code below was used for Matplotlib lower then version
+        # 1.2. However, since Matplotlib version 1.2 the pnpoly function is
+        # deprecated
+
+        ## pnpoly returns 1 if point is inside the polygon and 0 otherwise
+        # import matplotlib.nxutils as mnx
+        # return mnx.pnpoly(point.real, point.imag, from_complex_array_to_real_matrix(self.vertices)) == 1
 
     def get_border_point(self, angle, ratio):
         """Calculates the coordinate of the point that intercepts the
