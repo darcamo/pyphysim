@@ -140,20 +140,9 @@ class ProgressbarText(object):
         # By default, self.output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
         self.output = output
-        #
-        # If the final count is zero, don't start the progress gauge
-        #
-        if not self.finalcount:
-            return
-        if(len(message) != 0):
-            bartitle = '{0}\n'.format(ProgressbarText.center_message(message, 50, '-', '', '1'))
-        else:
-            bartitle = '\n------------------ % Progress -------------------1\n'
 
-        self.output.write(bartitle)
-        self.output.write('    1    2    3    4    5    6    7    8    9    0\n')
-        self.output.write('----0----0----0----0----0----0----0----0----0----0\n')
-        return
+        self._initialized = False
+        self._message = message
 
     def progress(self, count):
         """Updates the progress bar.
@@ -168,6 +157,22 @@ class ProgressbarText(object):
             is equal to count/finalcount.
 
         """
+        if self._initialized is False:
+            # # If the final count is zero, don't start the progress gauge
+            # if not self.finalcount:
+            #     return
+            if(len(self._message) != 0):
+                bartitle = '{0}\n'.format(ProgressbarText.center_message(
+                    self._message, 50, '-', '', '1'))
+            else:
+                bartitle = '\n------------------ % Progress -------------------1\n'
+
+            self.output.write(bartitle)
+            self.output.write('    1    2    3    4    5    6    7    8    9    0\n')
+            self.output.write('----0----0----0----0----0----0----0----0----0----0\n')
+
+            self._initialized = True
+
         #
         # Make sure I don't try to go off the end (e.g. >100%)
         #
