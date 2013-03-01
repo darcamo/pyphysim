@@ -374,8 +374,11 @@ class SimulationRunner(object):
             update_progress_func = self._pbar.progress
         elif callable(self.update_progress_function_style) is True:
             # We will use a custom function to update the progress. Note
-            # that we call self.update_progress_function_style to return the actual
-            # function that will be used to update the progress.
+            # that we call self.update_progress_function_style to return
+            # the actual function that will be used to update the
+            # progress. That is, the function stored in
+            # self.update_progress_function_style should basically do what
+            # _get_update_progress_function is supposed to do.
             update_progress_func = self.update_progress_function_style(
                 self.rep_max, self.progressbar_message)
 
@@ -453,12 +456,12 @@ class SimulationRunner(object):
         for current_params in self.params.get_unpacked_params_list():
             var_print_iter.next()
 
-            update_progress_func = self._get_update_progress_function(current_params)
-
             # Implement the _on_simulate_current_params_start method in a
             # subclass if you need to run code before the _run_simulation
             # iterations for each combination of simulation parameters.
             self._on_simulate_current_params_start(current_params)
+
+            update_progress_func = self._get_update_progress_function(current_params)
 
             # Perform the first iteration of _run_simulation
             current_sim_results = self._run_simulation(current_params)
@@ -473,16 +476,16 @@ class SimulationRunner(object):
                 update_progress_func(current_rep + 1)
                 current_rep += 1
 
+            # If the while loop ended before rep_max repetitions (because
+            # _keep_going returned false) then set the progressbar to full.
+            update_progress_func(self.rep_max)
+
             # Implement the _on_simulate_current_params_finish method in a
             # subclass if you need to run code after all _run_simulation
             # iterations for each combination of simulation parameters
             # finishes.
             self._on_simulate_current_params_finish(current_params,
                                                     current_sim_results)
-
-            # If the while loop ended before rep_max repetitions (because
-            # _keep_going returned false) then set the progressbar to full.
-            update_progress_func(self.rep_max)
 
             # Store the number of repetitions actually ran for the current
             # parameters combination
