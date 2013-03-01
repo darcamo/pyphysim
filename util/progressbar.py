@@ -265,6 +265,10 @@ class ProgressbarText2:
     def progress(self, iter):
         self._update_iteration(iter)
         print('\r', self, end='')
+        if iter == self.finalcount:
+            # Print an empty line after the last iteration to be consistent
+            # with the ProgressbarText class
+            print('\n')
         sys.stdout.flush()
 
     def _update_iteration(self, elapsed_iter):
