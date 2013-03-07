@@ -408,6 +408,31 @@ class SimulationRunner(object):
         _run_simulation method in a subclass.
 
         """
+        # xxxxxxxxxx Iterator to print the current variation xxxxxxxxxxxxxx
+        # This local function returns an iterator that prints the current
+        # variation each time its "next" method is called.
+        def _print_variation_iter(num_variations):
+            if self.update_progress_function_style is None:
+                for i in itertools.repeat(''):
+                    yield 0
+            else:
+                for i in range(1, num_variations + 1):
+                    message = ProgressbarText.center_message(
+                        "Current Variation: {0}/{1}".format(i,
+                                                            num_variations),
+                        fill_char='-')
+                    print message
+                    yield i
+
+        # Create the var_print_iter Iterator
+        # Each time the 'next' method of var_print_iter is called it will
+        # print something like
+        # ------------- Current Variation: 4/84 ------------
+        # which means the variation 4 of 84 variations.
+        var_print_iter = _print_variation_iter(
+            self.params.get_num_unpacked_variations())
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
         tic = time()
@@ -429,26 +454,6 @@ class SimulationRunner(object):
         # Implement the _on_simulate_start method in a subclass if you need
         # to run code at the start of the simulate method.
         self._on_simulate_start()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Iterator to print the current variation xxxxxxxxxxxxxx
-        def _print_variation_iter(num_variations):
-            if self.progressbar_message is None:
-                for i in itertools.repeat(''):
-                    yield 0
-            else:
-                for i in range(1, num_variations + 1):
-                    message = ProgressbarText.center_message(
-                        "Current Variation: {0}/{1}".format(i,
-                                                            num_variations),
-                        fill_char='-')
-                    print message
-                    yield i
-        # Each time the 'next' method of var_print_iter is called it will
-        # print something like
-        # ------------- Current Variation: 4/84 ------------
-        # which means the variation 4 of 84 variations.
-        var_print_iter = _print_variation_iter(self.params.get_num_unpacked_variations())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
