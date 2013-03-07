@@ -1127,8 +1127,8 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
             'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    plt.xlabel('SNR')
-    plt.ylabel('Spectral Efficiency')
+    plt.xlabel('SNR (dB)')
+    plt.ylabel('Spectral Efficiency (bits/channel use)')
     ax.set_title('Enhanced BD simulation: Spectral Efficiency')
     plt.legend(loc=0)
 
@@ -1179,7 +1179,7 @@ def plot_per_all_metrics(results, Pe_dBm):
             'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    plt.xlabel('SNR')
+    plt.xlabel('SNR (dB)')
     plt.ylabel('Packet Error Rate')
     ax.set_title('Enhanced BD simulation: Packet Error Rate')
     plt.legend(loc=0)
@@ -1224,7 +1224,7 @@ if __name__ == '__main__':
 
     SNR = results.params['SNR']
     if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
-        Pe_dBm = -10
+        Pe_dBm = 10
 
         # error_None_fig = plot_error_results_fixed_Pe_metric(
         #     results, Pe_dBm, 'None')
@@ -1245,9 +1245,13 @@ if __name__ == '__main__':
 
         # Save the Spectral Efficiency curve for the given Pe_dBm
         spec_fig = plot_spectral_efficience_all_metrics(results, Pe_dBm)
+        # spec_fig.tight_layout()
+        spec_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
         spec_fig.savefig('{0}_Pe_{1}_spec_effic.pgf'.format(results_filename, Pe_dBm))
 
         per_all_fig = plot_per_all_metrics(results, Pe_dBm)
+        # per_all_fig.tight_layout()
+        per_all_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
         per_all_fig.savefig('{0}_Pe_{1}_per_all.pgf'.format(results_filename, Pe_dBm))
 
 
