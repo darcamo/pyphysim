@@ -26,38 +26,52 @@ class AlamoutiSimulationRunner(SimulationRunner):
     MIMO scheme.
 
     """
+    # Alamouti object to encode and decode data with the Alamouti MIMO scheme
+    alamouti = mimo.Alamouti()
+
     def __init__(self):
         SimulationRunner.__init__(self)
 
         # The _keep_going method will stop the simulation earlier when
         # max_bit_errors are achieved.
-        self.max_bit_errors = 2000
-        SNR = np.array([0., 5, 10, 15, 20])
+        max_bit_errors = 2000
+        self.params.add('max_bit_errors', max_bit_errors)
+        SNR = np.array([0., 5, 10, 15, 20, 25])
         M = 16
-        self.alamouti = mimo.Alamouti()
-        self.NSymbs = 200
-        self.modulator = modulators.QAM(M)
-        self.Nr = 2
+        #self.alamouti = mimo.Alamouti()
+        NSymbs = 400
+        modulator = modulators.QAM(M)
+        Nr = 2
         # Note that Nt is equal to 2 for the Alamouti scheme
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
-        self.rep_max = 1000
+        self.rep_max = 3000
         self.progressbar_message = "Alamouti with {0} - SNR: {{SNR}}".format(
-            self.modulator.name)
+            modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # We need to add the parameters to the self.param variable.
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
+        self.params.add('modulator', modulator)
+        self.params.add('NSymbs', NSymbs)
+        self.params.add('Nr', Nr)
 
-    def _run_simulation(self, current_parameters):
+    @staticmethod
+    def _run_simulation(current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
-        #K = self.K
-        M = self.modulator.M
-        NSymbs = self.NSymbs
-        Nr = self.Nr
+        NSymbs = current_parameters['NSymbs']
+        modulator = current_parameters['modulator']
+        M = modulator.M
         SNR = current_parameters["SNR"]
+        Nr = current_parameters["Nr"]
+
+        #K = self.K
+        # M = modulator.M
+        # NSymbs = self.NSymbs
+        # Nr = self.Nr
+        # SNR = current_parameters["SNR"]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -65,11 +79,12 @@ class AlamoutiSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        modulatedData = self.modulator.modulate(inputData)
+        modulatedData = modulator.modulate(inputData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Encode with Alamouti xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        transmit_signal = self.alamouti.encode(modulatedData)
+        transmit_signal = AlamoutiSimulationRunner.alamouti.encode(
+            modulatedData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -80,11 +95,12 @@ class AlamoutiSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Decode Alamouti xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        alamouti_decoded_data = self.alamouti.decode(received_signal, channel)
+        alamouti_decoded_data = AlamoutiSimulationRunner.alamouti.decode(
+            received_signal, channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        demodulatedData = self.modulator.demodulate(alamouti_decoded_data)
+        demodulatedData = modulator.demodulate(alamouti_decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
@@ -121,10 +137,12 @@ class AlamoutiSimulationRunner(SimulationRunner):
 
         return simResults
 
-    def _keep_going(self, simulation_results):
+    @staticmethod
+    def _keep_going(current_params, simulation_results):
         #return True
         cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
-        return cumulated_bit_errors < self.max_bit_errors
+        max_bit_errors = current_params['max_bit_errors']
+        return cumulated_bit_errors < max_bit_errors
 
     def get_data_to_be_plotted(self):
         """The get_data_to_be_plotted is not part of the simulation, but it
@@ -140,8 +158,10 @@ class AlamoutiSimulationRunner(SimulationRunner):
         return (SNR, ber, ser)
 
 
-if __name__ == '__main__':
+# Serial Version
+if __name__ == '__main__1':
     from pylab import *
+    from apps.simulate_alamouti import AlamoutiSimulationRunner
 
     #write_config_file_template()
 
@@ -150,13 +170,61 @@ if __name__ == '__main__':
 
     SNR, ber, ser = sim.get_data_to_be_plotted()
 
+    modulator_obj = sim.params['modulator']
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
         semilogy(SNR, ber, '--g*', label='BER')
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('BER and SER for {0} modulation with Alamouti'.format(sim.modulator.name))
+        title('BER and SER for {0} modulation with Alamouti'.format(
+            modulator_obj.name))
+        legend()
+
+        grid(True, which='both', axis='both')
+        show()
+
+    print sim.elapsed_time
+
+
+# Parallel version
+if __name__ == '__main__':
+    # Since we are using the parallel capabilities provided by IPython, we
+    # need to create a client and then a view of the IPython engines that
+    # will be used.
+    from IPython.parallel import Client
+    cl = Client()
+    dview = cl.direct_view()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # NOTE: Before running the code above, initialize the ipython
+    # engines. One easy way to do that is to call the "ipcluster start"
+    # command in a terminal.
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # Add the folder containing PyPhysim to the python path in all the
+    # engines
+    dview.execute('import sys')
+    dview.execute('sys.path.append("{0}")'.format(parent_dir))
+
+    from pylab import *
+    from apps.simulate_alamouti import AlamoutiSimulationRunner
+
+    #write_config_file_template()
+
+    sim = AlamoutiSimulationRunner()
+    sim.simulate_in_parallel(dview)
+
+    SNR, ber, ser = sim.get_data_to_be_plotted()
+
+    modulator_obj = sim.params['modulator']
+    # Can only plot if we simulated for more then one value of SNR
+    if SNR.size > 1:
+        semilogy(SNR, ber, '--g*', label='BER')
+        semilogy(SNR, ser, '--b*', label='SER')
+        xlabel('SNR')
+        ylabel('Error')
+        title('BER and SER for {0} modulation with Alamouti'.format(modulator_obj.name))
         legend()
 
         grid(True, which='both', axis='both')

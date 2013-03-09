@@ -14,6 +14,7 @@ sys.path.append(parent_dir)
 
 from simulate_psk import VerySimplePskSimulationRunner
 from comm import modulators
+import numpy as np
 
 
 class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
@@ -36,6 +37,8 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
 
 if __name__ == '__main__':
     from pylab import *
+    from apps.simulate_bpsk import VerySimpleBpskSimulationRunner
+
     sim = VerySimpleBpskSimulationRunner()
     sim.simulate()
     SNR, ber, ser, theoretical_ber, theoretical_ser = sim.get_data_to_be_plotted()

@@ -4,6 +4,10 @@
 """Perform the simulation of the transmission of PSK symbols through an
 awgn channel.
 
+This performs the same simulation "in serial" and "in parallel" as an
+example of the diferences between both methods in a SimulationRunner
+subclass.
+
 """
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -29,13 +33,17 @@ class VerySimplePskSimulationRunner(SimulationRunner):
     the optional _keep_going method to allow an earlier termination of the
     simulation when a maximum number of bit errors is achieved.
 
-    The simulation parameters can be directly set as regular attributes in
+    The simulation parameters must be added to the self.params object (this
+    can be done, for instance, in the __init__ method)
+
+    can be directly set as regular attributes in
     the __init__ method, since they can be accessed in the _run_simulation
     method this way. The only exception is the SNR parameter, which is
     instead added to a SimulationParameters object (which is a regular
     attribute). The reason for this is because we want pass a vector with
     SNR values and employ the "unpack" functionality of the
     SimulationParameters class.
+
     """
 
     def __init__(self, ):
@@ -43,11 +51,16 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
         SNR = np.array([0, 3, 6, 9, 12])
         M = 4
-        self.modulator = modulators.PSK(M)
-        self.NSymbs = 500
+        modulator = modulators.PSK(M)
+        NSymbs = 500
+
+        self.params.add('modulator', modulator)
+        self.params.add('NSymbs', NSymbs)
 
         self.rep_max = 1000
-        self.max_bit_errors = 1. / 100. * self.NSymbs * self.rep_max
+        #self.max_bit_errors = 1. / 100. * NSymbs * self.rep_max
+        max_bit_errors = 1. / 100. * NSymbs * self.rep_max
+        self.params.add('max_bit_errors', max_bit_errors)
 
         #self.progressbar_message = None
         self.progressbar_message = "{0}-PSK".format(M) + \
@@ -57,7 +70,12 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
 
-    def _run_simulation(self, current_parameters):
+        # IPython Parallel view of the prepared engines to use parallel
+        # processing
+        #self._engine_view = None
+
+    @staticmethod
+    def _run_simulation(current_parameters):
         """The _run_simulation method is where the actual code to simulate
         the system is.
 
@@ -65,8 +83,9 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         SimulationRunner.
         """
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
-        NSymbs = self.NSymbs
-        M = self.modulator.M
+        NSymbs = current_parameters['NSymbs']
+        modulator = current_parameters['modulator']
+        M = modulator.M
         SNR = current_parameters["SNR"]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -75,7 +94,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        modulatedData = self.modulator.modulate(inputData)
+        modulatedData = modulator.modulate(inputData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -85,7 +104,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        demodulatedData = self.modulator.demodulate(receivedData)
+        demodulatedData = modulator.demodulate(receivedData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
@@ -122,7 +141,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
         return simResults
 
-    def _keep_going(self, current_parameters, simulation_results):
+    @staticmethod
+    def _keep_going(current_params, simulation_results):
         """The _keep_going method is not really required, but it can speed
         up the simulation.
 
@@ -135,13 +155,16 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors
         cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
-        return cumulated_bit_errors < self.max_bit_errors
+        max_bit_errors = current_params['max_bit_errors']
+        return cumulated_bit_errors < max_bit_errors
 
     def get_data_to_be_plotted(self):
         """The get_data_to_be_plotted is not part of the simulation, but it
         is useful after the simulation is finished to get the results
         easily for plot.
         """
+        modulator = self.params['modulator']
+
         ber = self.results.get_result_values_list('ber')
         ser = self.results.get_result_values_list('ser')
 
@@ -149,31 +172,102 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         SNR = np.array(self.params['SNR'])
 
         # Calculates the Theoretical SER and BER
-        theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
-        theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
+        theoretical_ser = modulator.calcTheoreticalSER(SNR)
+        theoretical_ber = modulator.calcTheoreticalBER(SNR)
         return (SNR, ber, ser, theoretical_ber, theoretical_ser)
 
+
 if __name__ == '__main__':
-    from pylab import *
-    sim = VerySimplePskSimulationRunner()
-    sim.simulate()
-    SNR, ber, ser, theoretical_ber, theoretical_ser = sim.get_data_to_be_plotted()
+    # Since we are using the parallel capabilities provided by IPython, we
+    # need to create a client and then a view of the IPython engines that
+    # will be used.
+    from IPython.parallel import Client
+    cl = Client()
+    dview = cl.direct_view()
 
-    # Can only plot if we simulated for more then one value of SNR
-    if SNR.size > 1:
-        semilogy(SNR, ber, '--g*', label='BER')
-        semilogy(SNR, ser, '--b*', label='SER')
-        semilogy(SNR, theoretical_ber, '-g+', label='Theoretical BER')
-        semilogy(SNR, theoretical_ser, '-b+', label='theoretical SER')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # NOTE: Before running the code above, initialize the ipython
+    # engines. One easy way to do that is to call the "ipcluster start"
+    # command in a terminal.
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        xlabel('SNR')
-        ylabel('Error')
-        title('BER and SER for {0} modulation in AWGN channel'.format(sim.modulator.name))
-        legend()
+    # Add the folder containing PyPhysim to the python path in all the
+    # engines
+    dview.execute('import sys')
+    dview.execute('sys.path.append("{0}")'.format(parent_dir))
 
-        grid(True, which='both', axis='both')
-        show()
+    #from pylab import *
+    from matplotlib import pyplot as plt
+    from apps.simulate_parallel_psk import VerySimplePskSimulationRunner
 
-    print "SER: {0}".format(ser)
-    print "BER: {0}".format(ber)
-    print sim.elapsed_time
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Parallel Simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    sim_p = VerySimplePskSimulationRunner()
+    sim_p.simulate_in_parallel(dview)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Serial Simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    sim_s = VerySimplePskSimulationRunner()
+    sim_s.simulate()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Print the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    SNR_p, ber_p, ser_p, theoretical_ber_p, theoretical_ser_p = sim_p.get_data_to_be_plotted()
+    print "SER_P: {0}".format(ser_p)
+    print "BER_P: {0}".format(ber_p)
+    print sim_p.elapsed_time
+
+    SNR_s, ber_s, ser_s, theoretical_ber_s, theoretical_ser_s = sim_s.get_data_to_be_plotted()
+    print "SER_s: {0}".format(ser_s)
+    print "BER_s: {0}".format(ber_s)
+    print sim_s.elapsed_time
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Can only plot if we simulated for more then one value of SNR_p
+    if SNR_p.size > 1:
+        f = plt.figure(figsize=(12, 4.5))
+        ax1 = plt.subplot(121)
+
+        ax1.semilogy(SNR_p, ber_p, '--g*', label='BER_P')
+        ax1.semilogy(SNR_p, ser_p, '--b*', label='SER_P')
+        ax1.semilogy(SNR_p, theoretical_ber_p, '-g+',
+                     label='Theoretical BER_P')
+        ax1.semilogy(SNR_p, theoretical_ser_p, '-b+',
+                     label='theoretical SER_P')
+
+        modulator_obj = sim_p.params['modulator']
+
+        ax1.set_xlabel('SNR')
+        ax1.set_ylabel('Error')
+        ax1.set_title('{0} modulation (Parallel SImulation)'.format(modulator_obj.name))
+        ax1.legend()
+
+        ax1.grid(True, which='both', axis='both')
+        #plt.show()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Can onl plot if we simulated for more then one value of SNR_s
+    if SNR_s.size > 1:
+        ax2 = plt.subplot(122)
+        ax2.semilogy(SNR_s, ber_s, '--g*', label='BER_s')
+        ax2.semilogy(SNR_s, ser_s, '--b*', label='SER_s')
+        ax2.semilogy(SNR_s, theoretical_ber_s, '-g+',
+                     label='Theoretical BER_s')
+        ax2.semilogy(SNR_s, theoretical_ser_s, '-b+',
+                     label='theoretical SER_s')
+
+        modulator_obj = sim_s.params['modulator']
+
+        ax2.set_xlabel('SNR')
+        ax2.set_ylabel('Error')
+        ax2.set_title('{0} modulation (Serial Simulation)'.format(modulator_obj.name))
+        ax2.legend()
+
+        ax2.grid(True, which='both', axis='both')
+        plt.show()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

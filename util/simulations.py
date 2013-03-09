@@ -161,7 +161,7 @@ import copy
 import numpy as np
 
 from util.misc import pretty_time
-from util.progressbar import ProgressbarText, ProgressbarText2
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, center_message
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -256,6 +256,10 @@ class SimulationRunner(object):
         # message will be printed either.
         self.progressbar_message = 'Progress'
 
+        # Parallel view. Set this to a IPython parallel view of the engines
+        # to use the parallel processing capabilities of IPython
+        self._engine_view = None
+
     def clear(self, ):
         """Clear the SimulationRunner.
 
@@ -301,7 +305,8 @@ class SimulationRunner(object):
         raise NotImplementedError("This function must be implemented in a subclass")
 
     # pylint: disable=W0613,R0201
-    def _keep_going(self, current_sim_results):
+    @staticmethod
+    def _keep_going(current_params, current_sim_results):
         """Check if the simulation should continue or stop.
 
         This function may be reimplemented in the derived class if a stop
@@ -416,12 +421,13 @@ class SimulationRunner(object):
                 for i in itertools.repeat(''):
                     yield 0
             else:
+                variation_pbar = ProgressbarText3(
+                    num_variations,
+                    progresschar='-',
+                    message="Current Variation:")
+
                 for i in range(1, num_variations + 1):
-                    message = ProgressbarText.center_message(
-                        "Current Variation: {0}/{1}".format(i,
-                                                            num_variations),
-                        fill_char='-')
-                    print message
+                    variation_pbar.progress(i)
                     yield i
 
         # Create the var_print_iter Iterator
@@ -473,7 +479,7 @@ class SimulationRunner(object):
             current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
-            while (self._keep_going(current_sim_results)
+            while (self._keep_going(current_params, current_sim_results)
                    and
                    current_rep < self.rep_max):
                 current_sim_results.merge_all_results(
@@ -503,6 +509,91 @@ class SimulationRunner(object):
             print ""
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        toc = time()
+        self._elapsed_time = toc - tic
+
+        # Also save the elapsed time in the SimulationResults object
+        self.results.elapsed_time = self._elapsed_time
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Implement the _on_simulate_finish method in a subclass if you
+        # need to run code at the end of the simulate method.
+        self._on_simulate_finish()
+
+        # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
+        self.results.runned_reps = self._runned_reps
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def simulate_in_parallel(self, view):
+        """Same as the simulate method, but the different parameters
+        configurations are simulated in parallel.
+
+        Parameters
+        ----------
+        view : A view of the IPython engines.
+            A DirectView of the available IPython engines. The parallel
+            processing will happen by calling the 'map' method of the
+            provided view to simulate in parallel the different
+            configurations of transmission parameters.
+
+        """
+        # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        from time import time
+        tic = time()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
+        self.results.rep_max = self.rep_max
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Store the Simulation parameters in the SimulationResults object.
+        # With this, the simulation parameters will be available for
+        # someone that has the SimulationResults object (loaded from a
+        # file, for instance).
+        self.results.set_parameters(self.params)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Implement the _on_simulate_start method in a subclass if you need
+        # to run code at the start of the simulate method.
+        self._on_simulate_start()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        def simulate_for_current_params(obj, current_params):
+            # Perform the first iteration of _run_simulation
+            current_sim_results = obj._run_simulation(current_params)
+            current_rep = 1
+
+            # Run more iterations until one of the stop criteria is reached
+            while (obj._keep_going(current_params, current_sim_results)
+                   and
+                   current_rep < obj.rep_max):
+                current_sim_results.merge_all_results(
+                    obj._run_simulation(current_params))
+                current_rep += 1
+
+            return (current_rep, current_sim_results)
+
+        # Loop through all the parameters combinations
+        num_variations = self.params.get_num_unpacked_variations()
+        results = view.map_sync(simulate_for_current_params,
+                                [self] * num_variations,
+                                self.params.get_unpacked_params_list())
+        for reps, r in results:
+            self._runned_reps.append(reps)
+            self.results.append_all_results(r)
+
+        # for current_params in self.params.get_unpacked_params_list():
+        #     current_rep, current_sim_results = simulate_for_current_params(
+        #         self, current_params)
+
+        #     self._runned_reps.append(current_rep)
+        #     self.results.append_all_results(current_sim_results)
+
+        #
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         toc = time()
         self._elapsed_time = toc - tic

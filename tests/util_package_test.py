@@ -704,7 +704,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     def test_keep_going(self):
         # the _keep_going method in the SimulationRunner class should
         # return True
-        self.assertTrue(self.runner._keep_going(None))
+        self.assertTrue(self.runner._keep_going(None, None))
 
     def test_simulate(self):
         # First we need to create a dummy subclass of SimulationRunner that
@@ -715,11 +715,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
                 # Set the progress bar message to None to avoid print the
                 # progressbar in these testes.
                 self.rep_max = 2
-                self.progressbar_message = None
+                self.update_progress_function_style = None
                 # Now we add a dummy parameter to our runner object
                 self.params.add('dummy_increment', 1)
 
-            def _run_simulation(self, current_params):
+            @staticmethod
+            def _run_simulation(current_params):
                 return SimulationResults()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now we create an instance of DummyRunner

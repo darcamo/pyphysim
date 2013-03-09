@@ -43,7 +43,50 @@ import sys
 import multiprocessing
 import time
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarMultiProcessText']
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarMultiProcessText', 'center_message']
+
+
+def center_message(message, length=50, fill_char=' ', left='', right=''):
+    """Return a string with `message` centralized and surrounded by
+    `fill_char`.
+
+    Parameters
+    ----------
+    message: str
+        The message to be centered.
+    length : int
+        Total length of the centered message (original + any fill).
+    fill_char : str
+        Filling character.
+    left : str
+        Left part of the filling.
+    right : str
+       Right part of the filling.
+
+    Returns
+    -------
+    cent_message : str
+        The centralized message.
+
+    Examples
+    --------
+    >>> print(center_message("Hello World", 50, '-', 'Left', 'Right'))
+    Left-------------- Hello World --------------Right
+    """
+    message_size = len(message)
+    left_size = len(left)
+    right_size = len(right)
+    fill_size = (length - (message_size + 2) - left_size - right_size)
+    left_fill_size = fill_size // 2 + (fill_size % 2)
+    right_fill_size = (fill_size // 2)
+
+    new_message = "{0}{1} {2} {3}{4}".format(
+        left,
+        fill_char * left_fill_size,
+        message,
+        fill_char * right_fill_size,
+        right)
+    return new_message
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -162,7 +205,7 @@ class ProgressbarText(object):
             # if not self.finalcount:
             #     return
             if(len(self._message) != 0):
-                bartitle = '{0}\n'.format(ProgressbarText.center_message(
+                bartitle = '{0}\n'.format(center_message(
                     self._message, 50, '-', '', '1'))
             else:
                 bartitle = '\n------------------ % Progress -------------------1\n'
@@ -206,49 +249,6 @@ class ProgressbarText(object):
         # If we completed the bar, print a newline
         if percentcomplete == 100:
             self.output.write("\n")
-
-    @staticmethod
-    def center_message(message, length=50, fill_char=' ', left='', right=''):
-        """Return a string with `message` centralized and surrounded by
-        `fill_char`.
-
-        Parameters
-        ----------
-        message: str
-            The message to be centered.
-        length : int
-            Total length of the centered message (original + any fill).
-        fill_char : str
-            Filling character.
-        left : str
-            Left part of the filling.
-        right : str
-           Right part of the filling.
-
-        Returns
-        -------
-        cent_message : str
-            The centralized message.
-
-        Examples
-        --------
-        >>> print(ProgressbarText.center_message("Hello World", 50, '-', 'Left', 'Right'))
-        Left-------------- Hello World --------------Right
-        """
-        message_size = len(message)
-        left_size = len(left)
-        right_size = len(right)
-        fill_size = (length - (message_size + 2) - left_size - right_size)
-        left_fill_size = fill_size // 2 + (fill_size % 2)
-        right_fill_size = (fill_size // 2)
-
-        new_message = "{0}{1} {2} {3}{4}".format(
-            left,
-            fill_char * left_fill_size,
-            message,
-            fill_char * right_fill_size,
-            right)
-        return new_message
 # xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -267,10 +267,10 @@ class ProgressbarText2:
         self._update_amount(0)
         self._message = message
 
-    def progress(self, iter):
-        self._update_iteration(iter)
+    def progress(self, count):
+        self._update_iteration(count)
         print('\r', self, end='')
-        if iter == self.finalcount:
+        if count == self.finalcount:
             # Print an empty line after the last iteration to be consistent
             # with the ProgressbarText class
             print('\n')
@@ -297,8 +297,36 @@ class ProgressbarText2:
 
     def __str__(self):
         return str(self.prog_bar)
-
 # xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarText3 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ProgressbarText3(object):
+    def __init__(self, finalcount, progresschar=' ', message=''):
+        self.finalcount = finalcount
+        self.prog_bar = ""
+        self.progresschar = progresschar
+        self.width = 50
+        self._message = message  # THIS WILL BE IGNORED
+
+    def progress(self, count):
+        self._update_iteration(count)
+        progress_string = center_message(str(self), fill_char=self.progresschar)
+        print('\r', progress_string, sep='', end='\n')
+
+    def _update_iteration(self, elapsed_iter):
+        full_count = "{0}/{1}".format(elapsed_iter, self.finalcount)
+
+        if len(self._message) != 0:
+            self.prog_bar = "{0} {1}".format(self._message, full_count)
+        else:
+            self.prog_bar = full_count
+
+    def __str__(self):
+        return str(self.prog_bar)
+# xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

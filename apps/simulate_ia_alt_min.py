@@ -17,6 +17,7 @@ from comm import modulators
 from util.conversion import dB2Linear
 from util import misc
 from ia import ia
+import numpy as np
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -36,7 +37,7 @@ class AlternatingSimulationRunner(SimulationRunner):
         SNR = np.array([0., 5, 10, 15, 20, 25, 30])
         #SNR = np.array([50])
         M = 16
-        self.NSymbs = 50
+        self.NSymbs = 200
         self.modulator = modulators.PSK(M)
         self.K = 3
         self.Nr = np.ones(self.K) * 2
@@ -159,7 +160,7 @@ class AlternatingSimulationRunner(SimulationRunner):
 
         return simResults
 
-    def _keep_going(self, simulation_results):
+    def _keep_going(self, current_parameters, simulation_results):
         #return True
         cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
         return cumulated_bit_errors < self.max_bit_errors
@@ -186,6 +187,52 @@ if __name__ == '__main__':
 
     sim = AlternatingSimulationRunner()
     sim.simulate()
+
+    SNR, ber, ser = sim.get_data_to_be_plotted()
+
+    # Can only plot if we simulated for more then one value of SNR
+    if SNR.size > 1:
+        semilogy(SNR, ber, '--g*', label='BER')
+        semilogy(SNR, ser, '--b*', label='SER')
+        xlabel('SNR')
+        ylabel('Error')
+        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        legend()
+
+        grid(True, which='both', axis='both')
+        show()
+
+    print "Runned iterations: {0}".format(sim.runned_reps)
+    print sim.elapsed_time
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Run the AlternatingSimulationRunner and plot the results
+if __name__ == '__main__1':
+    # Since we are using the parallel capabilities provided by IPython, we
+    # need to create a client and then a view of the IPython engines that
+    # will be used.
+    from IPython.parallel import Client
+    cl = Client()
+    dview = cl.direct_view()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # NOTE: Before running the code above, initialize the ipython
+    # engines. One easy way to do that is to call the "ipcluster start"
+    # command in a terminal.
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # Add the folder containing PyPhysim to the python path in all the
+    # engines
+    dview.execute('import sys')
+    dview.execute('sys.path.append("{0}")'.format(parent_dir))
+
+    from pylab import *
+    from apps.simulate_ia_alt_min import AlternatingSimulationRunner
+
+    sim = AlternatingSimulationRunner()
+    sim.simulate_in_parallel(dview)
 
     SNR, ber, ser = sim.get_data_to_be_plotted()
 
