@@ -43,10 +43,9 @@ class AlternatingSimulationRunner(SimulationRunner):
         self.Nr = np.ones(self.K) * 2
         self.Nt = np.ones(self.K) * 2
         self.Ns = np.ones(self.K) * 1
-        # Iterations of the AlternatingMinIASolver algorithm.
-        self.alternating_iterations = 50
-
         self.ia_solver = ia.AlternatingMinIASolver()
+        # Iterations of the AlternatingMinIASolver algorithm.
+        self.ia_solver.max_iterations = 50
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
@@ -91,8 +90,7 @@ class AlternatingSimulationRunner(SimulationRunner):
 
         self.ia_solver.randomizeH(Nr, Nt, K)
         self.ia_solver.randomizeF(Nt, Ns, K)
-        for i in range(self.alternating_iterations):
-            self.ia_solver.step()
+        self.ia_solver.solve()
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

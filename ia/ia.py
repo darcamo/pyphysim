@@ -16,35 +16,35 @@ __all__ = ['AlternatingMinIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx AlternatingMinIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Base Class for IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class AlternatingMinIASolver(object):
-    """Implements the "Interference Alignment via Alternating Minimization"
-    algorithm from the paper with the same name.
-
-    This algorithm is applicable to a "K-user" scenario and it is very
-    flexible in the sense that you can change the number of transmit
-    antennas, receive antennas and streams per user, as well as the number
-    of users involved in the IA process. However, note that alignment is
-    only feasible for some cases configurations.
-
-    An example of a common exenario is a scenario with 3 pairs or
-    transmitter/receiver with 2 antennas in each node and 1 stream
-    transmitted per node.
-
-    You can determine the scenario of an AlternatingMinIASolver object by
-    infering the variables K, Nt, Nr and Ns.
-
+class IASolverBaseClass(object):
+    """Base class for Interference Alignment Algorithms.
     """
+
     def __init__(self):
+        """Initialize the variables that every IA solver will have.
+        """
         # The F and W variables will be numpy arrays OF numpy arrays.
         self.F = np.array([])  # Precoder: One precoder for each user
         self.W = np.array([])  # Receive filter: One for each user
-        self._multiUserChannel = MultiUserChannelMatrix()  # Channel of all users
-        self.C = []    # Basis of the interference subspace for each user
 
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
-        self._Ns = 0    # Number of streams per user
+        # Number of streams per user
+        self._Ns = np.array([])
+        # Channel of all users
+        self._multiUserChannel = MultiUserChannelMatrix()
+
+    @property
+    def Ns(self):
+        """Number of streams of all users.
+
+        Returns
+        -------
+        Ns : 1D numpy array
+            Number of streams of all users.
+        """
+        return self._Ns
 
     # xxxxx Properties to read the channel related variables xxxxxxxxxxxxxx
     @property
@@ -80,16 +80,132 @@ class AlternatingMinIASolver(object):
         """
         return self._multiUserChannel._Nt
 
-    @property
-    def Ns(self):
-        """Number of streams of all users.
+    def randomizeF(self, Nt, Ns, K):
+        """Generates a random precoder for each user.
+
+        Parameters
+        ----------
+        K : int
+            Number of users.
+        Nt : int or 1D numpy array
+            Number of transmit antennas of each user.
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        """
+        if isinstance(Ns, int):
+            Ns = np.ones(K) * Ns
+        if isinstance(Nt, int):
+            Nt = np.ones(K) * Nt
+
+        # Lambda function that returns a normalized version of the input
+        # numpy array
+        normalized = lambda A: A / np.linalg.norm(A, 'fro')
+
+        self.F = np.zeros(K, dtype=np.ndarray)
+        for k in range(K):
+            self.F[k] = normalized(randn_c(Nt[k], Ns[k]))
+        #self.F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
+        self._Ns = Ns
+
+    def randomizeH(self, Nr, Nt, K):
+        """Generates a random channel matrix for all users.
+
+        Parameters
+        ----------
+        K : int
+            Number of users.
+        Nr : int or 1D numpy array
+            Number of receive antennas of each user.
+        Nt : int or 1D numpy array
+            Number of transmit antennas of each user.
+        """
+        self._multiUserChannel.randomize(Nr, Nt, K)
+
+    # This method does not need testing, since the logic is implemented in
+    # the MultiUserChannelMatrix class and it is already tested.
+    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
+        """Initializes the multiuser channel matrix from the given
+        `channel_matrix`.
+
+        Parameters
+        ----------
+        channel_matrix : 2D numpy array
+            A matrix concatenating the channel of all users (from each
+            transmitter to each receiver).
+        Nr : 1D numpy array
+            The number of receive antennas of each user.
+        Nt : 1D numpy array
+            The number of transmit antennas of each user.
+        K : int
+            Number of users.
+
+        Raises
+        ------
+        ValueError
+            If the arguments are invalid.
+
+        """
+        self._multiUserChannel.init_from_channel_matrix(channel_matrix, Nr,
+                                                        Nt, K)
+
+    # This method does not need testing, since the logic is implemented in
+    # the MultiUserChannelMatrix class and it is already tested.
+    def get_channel(self, k, l):
+        """Get the channel from user l to user k.
+
+        Parameters
+        ----------
+        l : int
+            Transmitting user.
+        k : int
+            Receiving user
 
         Returns
         -------
-        Ns : 1D numpy array
-            Number of streams of all users.
+        H : 2D numpy array
+            The channel matrix between transmitter l and receiver k.
         """
-        return self._Ns
+        return self._multiUserChannel.get_channel(k, l)
+
+    def solve(self):
+        """Find the IA solution.
+
+        This method does not return anythin, but instead updates the 'F'
+        and 'W' member variables.
+
+        Notes
+        -----
+        This function should be implemented in the derived classes
+        """
+        raise NotImplementedError("solve: Not implemented")
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx AlternatingMinIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class AlternatingMinIASolver(IASolverBaseClass):
+    """Implements the "Interference Alignment via Alternating Minimization"
+    algorithm from the paper with the same name.
+
+    This algorithm is applicable to a "K-user" scenario and it is very
+    flexible in the sense that you can change the number of transmit
+    antennas, receive antennas and streams per user, as well as the number
+    of users involved in the IA process. However, note that alignment is
+    only feasible for some cases configurations.
+
+    An example of a common exenario is a scenario with 3 pairs or
+    transmitter/receiver with 2 antennas in each node and 1 stream
+    transmitted per node.
+
+    You can determine the scenario of an AlternatingMinIASolver object by
+    infering the variables K, Nt, Nr and Ns.
+
+    """
+    def __init__(self):
+        IASolverBaseClass.__init__(self)
+
+        self.C = []    # Basis of the interference subspace for each user
+        self.max_iterations = 50
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -254,89 +370,11 @@ class AlternatingMinIASolver(object):
             newW[k] = newW[k][0:self.Ns[k]]
         self.W = newW
 
-    def randomizeF(self, Nt, Ns, K):
-        """Generates a random precoder for each user.
+    def solve(self):
+        """Find the IA solution with the Alternating Minimizations algorithm.
 
-        Parameters
-        ----------
-        K : int
-            Number of users.
-        Nt : int or 1D numpy array
-            Number of transmit antennas of each user.
-        Ns : int or 1D numpy array
-            Number of streams of each user.
+        The number of iterations of the algorithm must be specified in the
+        max_iterations member variable.
         """
-        if isinstance(Ns, int):
-            Ns = np.ones(K) * Ns
-        if isinstance(Nt, int):
-            Nt = np.ones(K) * Nt
-
-        # Lambda function that returns a normalized version of the input
-        # numpy array
-        normalized = lambda A: A / np.linalg.norm(A, 'fro')
-
-        self.F = np.zeros(K, dtype=np.ndarray)
-        for k in range(K):
-            self.F[k] = normalized(randn_c(Nt[k], Ns[k]))
-        #self.F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
-        self._Ns = Ns
-
-    def randomizeH(self, Nr, Nt, K):
-        """Generates a random channel matrix for all users.
-
-        Parameters
-        ----------
-        K : int
-            Number of users.
-        Nr : int or 1D numpy array
-            Number of receive antennas of each user.
-        Nt : int or 1D numpy array
-            Number of transmit antennas of each user.
-        """
-        self._multiUserChannel.randomize(Nr, Nt, K)
-
-    # This method does not need testing, since the logic is implemented in
-    # the MultiUserChannelMatrix class and it is already tested.
-    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
-        """Initializes the multiuser channel matrix from the given
-        `channel_matrix`.
-
-        Parameters
-        ----------
-        channel_matrix : 2D numpy array
-            A matrix concatenating the channel of all users (from each
-            transmitter to each receiver).
-        Nr : 1D numpy array
-            The number of receive antennas of each user.
-        Nt : 1D numpy array
-            The number of transmit antennas of each user.
-        K : int
-            Number of users.
-
-        Raises
-        ------
-        ValueError
-            If the arguments are invalid.
-
-        """
-        self._multiUserChannel.init_from_channel_matrix(channel_matrix, Nr,
-                                                        Nt, K)
-
-    # This method does not need testing, since the logic is implemented in
-    # the MultiUserChannelMatrix class and it is already tested.
-    def get_channel(self, k, l):
-        """Get the channel from user l to user k.
-
-        Parameters
-        ----------
-        l : int
-            Transmitting user.
-        k : int
-            Receiving user
-
-        Returns
-        -------
-        H : 2D numpy array
-            The channel matrix between transmitter l and receiver k.
-        """
-        return self._multiUserChannel.get_channel(k, l)
+        for i in range(self.max_iterations):
+            self.step()
