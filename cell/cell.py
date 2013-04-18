@@ -380,7 +380,7 @@ class Cluster(shapes.Shape):
 
     Valid cluster sizes are given by the formula
     :math:`N = i^2+i*j+j^2`
-    where i and j are interger numbers. The allowed values in the Clusterm
+    where i and j are interger numbers. The allowed values in the Cluster
     class are sumarized below with the corresponding values of i and j.
 
     .. aafig::
@@ -482,6 +482,10 @@ class Cluster(shapes.Shape):
         return self._cell_radius
     # Property to get the radius of the cells in the cluster.
     cell_radius = property(_get_cell_radius)
+
+    def __iter__(self):
+        """Iterator for the cells in the cluster"""
+        return iter(self._cells)
 
     def get_all_users(self):
         """Return all users in the cluster.
@@ -1058,6 +1062,11 @@ class Grid(object):
         return len(self._clusters)
     # Property to get the number of clusters in the grid
     num_clusters = property(_get_num_clusters)
+
+    def __iter__(self):
+        """Iterator for the clusters in the Grid
+        """
+        return iter(self._clusters)
 
     def clear(self):
         """Clear everything in the grid.
