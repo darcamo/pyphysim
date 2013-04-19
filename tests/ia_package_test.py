@@ -21,7 +21,7 @@ import doctest
 import numpy as np
 
 import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver
+from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolverIASolver
 from util.misc import peig, leig, randn_c
 
 
@@ -38,55 +38,65 @@ class IaDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx IA Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class AlternatingMinIASolverTestCase(unittest.TestCase):
-    """Unittests for the AlternatingMinIASolver class in the ia module."""
+class IASolverBaseClassTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.alt = AlternatingMinIASolver()
+        self.iasolver = IASolverBaseClass()
 
     def test_properties(self):
         K = 3
         Nr = np.array([2, 4, 6])
         Nt = np.array([2, 3, 5])
         Ns = np.array([1, 2, 3])
-        self.alt.randomizeH(Nr, Nt, K)
-        self.alt.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+        self.iasolver.randomizeF(Nt, Ns, K)
 
         # Test the properties
-        self.assertEqual(self.alt.K, K)
-        np.testing.assert_array_equal(self.alt.Nr, Nr)
-        np.testing.assert_array_equal(self.alt.Nt, Nt)
-        np.testing.assert_array_equal(self.alt.Ns, Ns)
+        self.assertEqual(self.iasolver.K, K)
+        np.testing.assert_array_equal(self.iasolver.Nr, Nr)
+        np.testing.assert_array_equal(self.iasolver.Nt, Nt)
+        np.testing.assert_array_equal(self.iasolver.Ns, Ns)
 
     def test_randomizeF(self):
         K = 3
         Nt = np.array([2, 3, 5])
         Ns = np.array([1, 2, 3])
-        self.alt.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeF(Nt, Ns, K)
 
         # The shape of the precoder is the number of users
-        self.assertEqual(self.alt.F.shape, (K,))
+        self.assertEqual(self.iasolver.F.shape, (K,))
 
         # The shape of the precoder of each user is Nt[user] x Ns[user]
-        self.assertEqual(self.alt.F[0].shape, (Nt[0], Ns[0]))
-        self.assertEqual(self.alt.F[1].shape, (Nt[1], Ns[1]))
-        self.assertEqual(self.alt.F[2].shape, (Nt[2], Ns[2]))
+        self.assertEqual(self.iasolver.F[0].shape, (Nt[0], Ns[0]))
+        self.assertEqual(self.iasolver.F[1].shape, (Nt[1], Ns[1]))
+        self.assertEqual(self.iasolver.F[2].shape, (Nt[2], Ns[2]))
 
         # Test if the generated precoder of each user has a Frobenius norm
         # equal to one.
-        self.assertAlmostEqual(np.linalg.norm(self.alt.F[0], 'fro'), 1.)
-        self.assertAlmostEqual(np.linalg.norm(self.alt.F[1], 'fro'), 1.)
-        self.assertAlmostEqual(np.linalg.norm(self.alt.F[2], 'fro'), 1.)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[0], 'fro'), 1.)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[1], 'fro'), 1.)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[2], 'fro'), 1.)
 
         # Test when the number of streams and transmit antennas is an
         # scalar (the same value will be used for all users)
         Nt = 3
         Ns = 2
-        self.alt.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeF(Nt, Ns, K)
         # The shape of the precoder of each user is Nt[user] x Ns[user]
-        self.assertEqual(self.alt.F[0].shape, (Nt, Ns))
-        self.assertEqual(self.alt.F[1].shape, (Nt, Ns))
-        self.assertEqual(self.alt.F[2].shape, (Nt, Ns))
+        self.assertEqual(self.iasolver.F[0].shape, (Nt, Ns))
+        self.assertEqual(self.iasolver.F[1].shape, (Nt, Ns))
+        self.assertEqual(self.iasolver.F[2].shape, (Nt, Ns))
+
+    def test_solve(self):
+        with self.assertRaises(NotImplementedError):
+            self.iasolver.solve()
+
+
+class AlternatingMinIASolverTestCase(unittest.TestCase):
+    """Unittests for the AlternatingMinIASolver class in the ia module."""
+    def setUp(self):
+        """Called before each test."""
+        self.alt = AlternatingMinIASolver()
 
     def test_updateC(self):
         K = 3
@@ -303,6 +313,56 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             ), 'fro') ** 2
 
         self.assertAlmostEqual(self.alt.getCost(), Cost)
+
+    def test_solve(self):
+        self.alt.max_iterations = 1
+        # We are only testing if this does not thrown an exception. That's
+        # why there is no assert clause here
+        self.alt.solve()
+
+
+# TODO: finish implementation
+class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.iasolver = MaxSinrIASolverIASolver()
+
+    def test_calc_Bkl_cov_matrix(self):
+        K = 3
+        Nt = np.ones(K, dtype=int) * 2
+        Nr = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+
+        #expected_Bkl = np.array(K, dtype=np.ndarray)
+        # for k in range(K):
+        #     for l in range(Ns[k]):
+        #         for k2 in range(K):
+        #             pass
+
+        k = 0
+        # Calculates for k=0
+
+        aux1 = 0.0
+        for j in range(K):
+            # P/d = ??? (power factor)
+            aux2 = 0.0  # Variable to store the result from
+                        # $\sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger}$
+            for d in range(Ns[k]):
+                Hkj = self.iasolver.get_channel(k, j)
+                Vjd = self.iasolver.F[k][:, d]
+                aux2 = aux2 + np.dot(
+                    np.dot(Hkj, np.dot(Vjd, Vjd.conjugate().transpose())),
+                    Hkj.conjugate().transpose())
+
+            aux1 = aux1 + aux2  # Should be "aux2* power_term"
+
+        # print
+        # print aux1.round(4)
+
+        # TODO: Finish the implementation
+        pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

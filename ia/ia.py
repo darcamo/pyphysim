@@ -12,7 +12,7 @@ import itertools
 from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
-__all__ = ['AlternatingMinIASolver']
+__all__ = ['IASolverBaseClass', 'AlternatingMinIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -107,6 +107,8 @@ class IASolverBaseClass(object):
         #self.F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
         self._Ns = Ns
 
+    # This method does not need testing, since the logic is implemented in
+    # the MultiUserChannelMatrix class and it is already tested.
     def randomizeH(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
 
@@ -375,6 +377,81 @@ class AlternatingMinIASolver(IASolverBaseClass):
 
         The number of iterations of the algorithm must be specified in the
         max_iterations member variable.
+
+        Notes
+        -----
+
+        You need to call :meth:`randomizeF` at least once before calling
+        :meth:`solve` as well as initialize the channel either calling the
+        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+
         """
         for i in range(self.max_iterations):
             self.step()
+
+
+# TODO: Finish the implementation
+class MaxSinrIASolverIASolver(IASolverBaseClass):
+    """Implements the "Interference Alignment via Max SINR" algorithm.
+
+    This algorithm is applicable to a "K-user" scenario and it is
+    described in [1].
+
+    An example of a common exenario is a scenario with 3 pairs or
+    transmitter/receiver with 2 antennas in each node and 1 stream
+    transmitted per node.
+
+    You can determine the scenario of an AlternatingMinIASolver object by
+    infering the variables K, Nt, Nr and Ns.
+
+    References
+    ----------
+
+    [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
+    Capacity of Wireless Networks through Distributed Interference
+    Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global Telecommunications
+    Conference, 2008, pp. 1-6.
+
+    """
+
+    def __init__(self, ):
+        """
+        """
+        IASolverBaseClass.__init__(self)
+
+    def calc_Bkl_cov_matrix(self, k, l):
+        """Calculates the interference-plus-noise covariance matrix for stream
+        $l$ at receiver $k$ according to eqaution (28) in [1].
+
+        Equation (28) in [1] is reproduced below
+
+          $$B^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}}
+        \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} -
+        \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]}
+        \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} +
+        \mtI_{N^{[k]}}$$
+
+        where $P^{[k]}$ is the transmit power of transmitter $k$, $d^{[k]}$
+        is the number of degrees of freedom of user $k$, $\mtH^{[kj]}$ is
+        the channel between transmitter $j$ and receiver $k$,
+        $\mtV_{\star l}$ is the $l$-th column of the precoder of user $k$
+        and $\mtI_{N^{k}}$ is an identity matrix with size equal to the
+        number of receive antennas of receiver $k$.
+
+
+        Returns
+        -------
+        Bkl : 1D numpy array of numpy arrays
+            Covariance matrix of all users.
+
+        References
+        ----------
+
+        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
+        Capacity of Wireless Networks through Distributed Interference
+        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
+        Telecommunications Conference, 2008, pp. 1-6.
+
+        """
+
+        pass
