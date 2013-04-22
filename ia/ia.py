@@ -419,7 +419,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         """
         IASolverBaseClass.__init__(self)
 
-    def _calc_Bkl_cov_matrix_first_part(self, k):
+    def _calc_Bkl_cov_matrix_first_part(self, k, P=None):
         """Calculates the first part in the equation of the Blk covariance
         matrix in equation (28) of [1].
 
@@ -433,6 +433,9 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         ----------
         k : int
             Index of the desired user.
+        P : 1D numpy array
+            Transmit power of all users. If not provided, a transmit power
+            equal to 1.0 will be used for each user.
 
         Returns
         -------
@@ -446,7 +449,11 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         Capacity of Wireless Networks through Distributed Interference
         Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
         Telecommunications Conference, 2008, pp. 1-6.
+
         """
+        if P is None:
+            P = np.ones(self.K)
+
         first_part = 0.0
         for j in range(self.K):
             Hkj = self.get_channel(k, j)
@@ -454,13 +461,16 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             Vj = self.F[j]
             Vj_H = Vj.conjugate().transpose()
 
-            first_part = first_part + np.dot(Hkj,
-                                             np.dot(
-                                                 np.dot(Vj, Vj_H),
-                                                 Hkj_H))
-        return first_part * 1.0 / self._Ns[k]
+            first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
+                Hkj,
+                np.dot(
+                    np.dot(Vj,
+                           Vj_H),
+                    Hkj_H))
 
-    def _calc_Bkl_cov_matrix_second_part(self, k, l):
+        return first_part
+
+    def _calc_Bkl_cov_matrix_second_part(self, k, l, P=None):
         """Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [1].
 
@@ -474,12 +484,18 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             Index of the desired user.
         l : int
             Index of the desired stream.
+        P : 1D numpy array
+            Transmit power of all users. If not provided, a transmit power
+            equal to 1.0 will be used for each user.
 
         Returns
         -------
         second_part : 2D numpy complex array.
             Second part in equation (28) of [1].
         """
+        if P is None:
+            P = np.ones(self.K)
+
         Hkk = self.get_channel(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
@@ -488,9 +504,10 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         second_part = np.dot(Hkk,
                              np.dot(np.dot(Vkl, Vkl_H),
                                     Hkk_H))
-        return second_part * 1.0 / self._Ns[k]
 
-    def calc_Bkl_cov_matrix_all_l(self, k):
+        return second_part * (float(P[k]) / self._Ns[k])
+
+    def calc_Bkl_cov_matrix_all_l(self, k, P=None):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver $k$ according to equation (28) in [1].
 
@@ -515,6 +532,9 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         ----------
         k : int
             Index of the desired user.
+        P : 1D numpy array
+            Transmit power of all users. If not provided, a transmit power
+            equal to 1.0 will be used for each user.
 
         Returns
         -------
@@ -543,9 +563,9 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         """
         Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(k)
+        first_part = self._calc_Bkl_cov_matrix_first_part(k, P)
         for l in range(self._Ns[k]):
-            second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
+            second_part = self._calc_Bkl_cov_matrix_second_part(k, l, P)
             Bkl_all_l[l] = first_part - second_part + np.eye(self.Nr[k])
 
         return Bkl_all_l

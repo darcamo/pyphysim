@@ -333,6 +333,9 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
         Nr = np.ones(K, dtype=int) * 3
         Ns = np.ones(K, dtype=int) * 2
 
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.random.seed(42)  # Used in the generation of teh random precoder
         self.iasolver._multiUserChannel.set_channel_seed(324)
@@ -360,11 +363,11 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
                     Vjd_H = Vjd.conjugate().transpose()
                     aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
-                first_part = first_part + (1.0 / Ns[k]) * aux
+                first_part = first_part + (P[j] / Ns[j]) * aux
 
             np.testing.assert_array_almost_equal(
                 first_part,
-                self.iasolver._calc_Bkl_cov_matrix_first_part(k)
+                self.iasolver._calc_Bkl_cov_matrix_first_part(k, P)
             )
 
             # xxxxx Calculates the Second Part xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -378,15 +381,14 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
                 Vkl = self.iasolver.F[k][:, l:l+1]
                 Vkl_H = Vkl.transpose().conjugate()
                 second_part = np.dot(Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
-                second_part = (1.0 / Ns[k]) * second_part
-
+                second_part = (P[k] / Ns[k]) * second_part
                 expected_Bkl[l] = first_part - second_part + np.eye(Nr[k])
 
                 np.testing.assert_array_almost_equal(
                     second_part,
-                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
+                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l, P))
 
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
 
             np.testing.assert_array_almost_equal(expected_Bkl[0],
                                                  Bkl_all_l[0])
