@@ -419,11 +419,84 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         """
         IASolverBaseClass.__init__(self)
 
-    def calc_Bkl_cov_matrix(self, k, l):
-        """Calculates the interference-plus-noise covariance matrix for stream
-        $l$ at receiver $k$ according to eqaution (28) in [1].
+    def _calc_Bkl_cov_matrix_first_part(self, k):
+        """Calculates the first part in the equation of the Blk covariance
+        matrix in equation (28) of [1].
 
-        Equation (28) in [1] is reproduced below
+        The first part is given by
+        $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}}
+        \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger}$$
+
+        Note that it only depends on the value of $k$.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        Bkl_first_part : 2D numpy complex array
+            First part in equation (28) of [1].
+
+        References
+        ----------
+
+        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
+        Capacity of Wireless Networks through Distributed Interference
+        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
+        Telecommunications Conference, 2008, pp. 1-6.
+        """
+        first_part = 0.0
+        for j in range(self.K):
+            Hkj = self.get_channel(k, j)
+            Hkj_H = Hkj.conjugate().transpose()
+            Vj = self.F[j]
+            Vj_H = Vj.conjugate().transpose()
+
+            first_part = first_part + np.dot(Hkj,
+                                             np.dot(
+                                                 np.dot(Vj, Vj_H),
+                                                 Hkj_H))
+        return first_part * 1.0 / self._Ns[k]
+
+    def _calc_Bkl_cov_matrix_second_part(self, k, l):
+        """Calculates the second part in the equation of the Blk covariance
+        matrix in equation (28) of [1].
+
+        The second part is given by
+        $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]}
+        \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+        l : int
+            Index of the desired stream.
+
+        Returns
+        -------
+        second_part : 2D numpy complex array.
+            Second part in equation (28) of [1].
+        """
+        Hkk = self.get_channel(k, k)
+        Hkk_H = Hkk.transpose().conjugate()
+
+        Vkl = self.F[k][:, l:l + 1]
+        Vkl_H = Vkl.transpose().conjugate()
+        second_part = np.dot(Hkk,
+                             np.dot(np.dot(Vkl, Vkl_H),
+                                    Hkk_H))
+        return second_part * 1.0 / self._Ns[k]
+
+    def calc_Bkl_cov_matrix_all_l(self, k):
+        """Calculates the interference-plus-noise covariance matrix for all
+        streams at receiver $k$ according to equation (28) in [1].
+
+        The interference-plus-noise covariance matrix for stream $l$ of
+        user $k$ is given by Equation (28) in [1], which is reproduced
+        below
 
           $$B^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}}
         \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} -
@@ -438,11 +511,27 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         and $\mtI_{N^{k}}$ is an identity matrix with size equal to the
         number of receive antennas of receiver $k$.
 
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
 
         Returns
         -------
         Bkl : 1D numpy array of numpy arrays
-            Covariance matrix of all users.
+            Covariance matrix of all streams of user k. Each element of the
+            returned 1D numpy array is a 2D numpy complex array
+            corresponding to the covariance matrix of one stream of user k.
+
+        Notes
+        -----
+        To be simple, a function that returns the covariance matrix of only
+        a single stream "l" of the desired user "k" could be implemented,
+        but in the order to calculate the max SINR algorithm we need the
+        covariance matrix of all streams and returning them in single
+        function as is done here allows us to calculate the first part in
+        equation (28) of [1] only once, since it is the same for all
+        streams.
 
         References
         ----------
@@ -453,5 +542,10 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         Telecommunications Conference, 2008, pp. 1-6.
 
         """
+        Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
+        first_part = self._calc_Bkl_cov_matrix_first_part(k)
+        for l in range(self._Ns[k]):
+            second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
+            Bkl_all_l[l] = first_part - second_part + np.eye(self.Nr[k])
 
-        pass
+        return Bkl_all_l

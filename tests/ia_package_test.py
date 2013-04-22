@@ -329,40 +329,69 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
 
     def test_calc_Bkl_cov_matrix(self):
         K = 3
-        Nt = np.ones(K, dtype=int) * 2
-        Nr = np.ones(K, dtype=int) * 2
-        Ns = np.ones(K, dtype=int) * 1
+        Nt = np.ones(K, dtype=int) * 3
+        Nr = np.ones(K, dtype=int) * 3
+        Ns = np.ones(K, dtype=int) * 2
+
+        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.random.seed(42)  # Used in the generation of teh random precoder
+        self.iasolver._multiUserChannel.set_channel_seed(324)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         self.iasolver.randomizeF(Nt, Ns, K)
         self.iasolver.randomizeH(Nr, Nt, K)
 
-        #expected_Bkl = np.array(K, dtype=np.ndarray)
-        # for k in range(K):
-        #     for l in range(Ns[k]):
-        #         for k2 in range(K):
-        #             pass
+        # Calculates Bkl for all streams (l index) of all users (k index)
+        for k in range(K):  # range(K) <-------
 
-        k = 0
-        # Calculates for k=0
+            first_part = 0.0  # First part in the equation of Bkl (the double
+                              # summation)
 
-        aux1 = 0.0
-        for j in range(K):
-            # P/d = ??? (power factor)
-            aux2 = 0.0  # Variable to store the result from
-                        # $\sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger}$
-            for d in range(Ns[k]):
+            # The outer for loop will calculate
+            # first_part = $\sum_{j=1}^{K} \frac{1.0}{Ns[k]} \text{aux}$
+            for j in range(K):
+                aux = 0.0  # The inner for loop will calculate
+                            # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
                 Hkj = self.iasolver.get_channel(k, j)
-                Vjd = self.iasolver.F[k][:, d]
-                aux2 = aux2 + np.dot(
-                    np.dot(Hkj, np.dot(Vjd, Vjd.conjugate().transpose())),
-                    Hkj.conjugate().transpose())
+                Hkj_H = Hkj.conjugate().transpose()
 
-            aux1 = aux1 + aux2  # Should be "aux2* power_term"
+                for d in range(Ns[k]):
+                    Vjd = self.iasolver.F[j][:, d:d + 1]
+                    Vjd_H = Vjd.conjugate().transpose()
+                    aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
-        # print
-        # print aux1.round(4)
+                first_part = first_part + (1.0 / Ns[k]) * aux
 
-        # TODO: Finish the implementation
-        pass
+            np.testing.assert_array_almost_equal(
+                first_part,
+                self.iasolver._calc_Bkl_cov_matrix_first_part(k)
+            )
+
+            # xxxxx Calculates the Second Part xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            expected_Bkl = np.empty(Ns[k], dtype=np.ndarray)
+            Hkk = self.iasolver.get_channel(k, k)
+            Hkk_H = Hkk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{1.0}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = self.iasolver.F[k][:, l:l+1]
+                Vkl_H = Vkl.transpose().conjugate()
+                second_part = np.dot(Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                second_part = (1.0 / Ns[k]) * second_part
+
+                expected_Bkl[l] = first_part - second_part + np.eye(Nr[k])
+
+                np.testing.assert_array_almost_equal(
+                    second_part,
+                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
+
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+
+            np.testing.assert_array_almost_equal(expected_Bkl[0],
+                                                 Bkl_all_l[0])
+            np.testing.assert_array_almost_equal(expected_Bkl[1],
+                                                 Bkl_all_l[1])
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
