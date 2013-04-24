@@ -492,6 +492,14 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         -------
         second_part : 2D numpy complex array.
             Second part in equation (28) of [1].
+
+        References
+        ----------
+
+        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
+        Capacity of Wireless Networks through Distributed Interference
+        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
+        Telecommunications Conference, 2008, pp. 1-6.
         """
         if P is None:
             P = np.ones(self.K)
@@ -569,3 +577,55 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             Bkl_all_l[l] = first_part - second_part + np.eye(self.Nr[k])
 
         return Bkl_all_l
+
+    def calc_Ukl(self, Bkl, k, l):
+        """Calculates the Ukl matrix in equation (29) of [1].
+
+        Parameters
+        ----------
+        Bkl : 2D numpy complex array
+            The previously calculates Bkl matrix in equation (28) of [1]
+        k : int
+            Index of the desired user
+        l : int
+            Index of the desired stream
+
+        Returns
+        -------
+        Ukl : 2Dnumpy array
+            The calculated Ukl matrix.
+
+        References
+        ----------
+
+        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
+        Capacity of Wireless Networks through Distributed Interference
+        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
+        Telecommunications Conference, 2008, pp. 1-6.
+
+        """
+        Hkk = self.get_channel(k, k)
+        Vl = self.F[l]
+        invBkl = np.linalg.inv(Bkl)
+        Ukl = np.dot(invBkl,
+                     np.dot(Hkk, Vl))
+        Ukl = Ukl / np.linalg.norm(Ukl, 'fro')
+        return Ukl
+
+    def calc_SINR_k(self, Bkl_all_l, Ukl_all_l, k):
+        """Calculates the SINR of all streams of user 'k'.
+
+        Parameters
+        ----------
+        Bkl_all_l : A sequence of 2D numpy arrays.
+            A sequence (1D numpy array, a list, etc) of 2D numpy arrays
+            corresponding to the Bkl matrices for all 'l's.
+        Ukl_all_l: A sequence of 2D numpy arrays.
+            A sequence (1D numpy array, a list, etc) of 2D numpy arrays
+            corresponding to the Ukl matrices for all 'l's.
+        k : int
+            Index of the desired user.
+
+        """
+        # TODO: Finish implementation
+        pass

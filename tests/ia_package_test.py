@@ -395,6 +395,39 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_Bkl[1],
                                                  Bkl_all_l[1])
 
+    def test_calc_Ukl(self):
+        K = 3
+        Nt = np.ones(K, dtype=int) * 3
+        Nr = np.ones(K, dtype=int) * 3
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.random.seed(42)  # Used in the generation of teh random precoder
+        self.iasolver._multiUserChannel.set_channel_seed(324)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+
+        # xxxxxxxxxx Calculates for k=0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        for k in range(K):
+            Hkk = self.iasolver.get_channel(k, k)
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
+            for l in range(Ns[k]):
+                expected_Uk0 = np.dot(
+                    np.linalg.inv(Bkl_all_l[l]),
+                    np.dot(Hkk, self.iasolver.F[l]))
+                expected_Uk0 = expected_Uk0 / np.linalg.norm(expected_Uk0, 'fro')
+                Uk0 = self.iasolver.calc_Ukl(Bkl_all_l[l], k, l)
+                np.testing.assert_array_almost_equal(expected_Uk0, Uk0)
+
+    def test_calc_SINR_k(self):
+        # TODO: Finish implementation
+        pass
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
