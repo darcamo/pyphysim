@@ -87,6 +87,78 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.assertEqual(self.iasolver.F[1].shape, (Nt, Ns))
         self.assertEqual(self.iasolver.F[2].shape, (Nt, Ns))
 
+    def test_calc_Q(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([2, 2, 2])
+        Ns = np.array([1, 1, 1])
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+
+        # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
+        k = 0
+        H01_F1 = np.dot(
+            self.iasolver.get_channel(k, 1),
+            self.iasolver.F[1]
+        )
+        H02_F2 = np.dot(
+            self.iasolver.get_channel(k, 2),
+            self.iasolver.F[2]
+        )
+        expected_Q0 = np.dot(P[1] * H01_F1,
+                             H01_F1.transpose().conjugate()) + \
+                      np.dot(P[2] * H02_F2,
+                             H02_F2.transpose().conjugate())
+
+        Qk = self.iasolver.calc_Q(k, P)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
+        k = 1
+        H10_F0 = np.dot(
+            self.iasolver.get_channel(k, 0),
+            self.iasolver.F[0]
+        )
+        H12_F2 = np.dot(
+            self.iasolver.get_channel(k, 2),
+            self.iasolver.F[2]
+        )
+        expected_Q1 = np.dot(P[0] * H10_F0,
+                             H10_F0.transpose().conjugate()) + \
+                      np.dot(P[2] * H12_F2,
+                             H12_F2.transpose().conjugate())
+
+        Qk = self.iasolver.calc_Q(k, P)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
+        k = 2
+        H20_F0 = np.dot(
+            self.iasolver.get_channel(k, 0),
+            self.iasolver.F[0]
+        )
+        H21_F1 = np.dot(
+            self.iasolver.get_channel(k, 1),
+            self.iasolver.F[1]
+        )
+        expected_Q2 = np.dot(P[0] * H20_F0,
+                             H20_F0.transpose().conjugate()) + \
+                      np.dot(P[1] * H21_F1,
+                             H21_F1.transpose().conjugate())
+
+        Qk = self.iasolver.calc_Q(k, P)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_solve(self):
         with self.assertRaises(NotImplementedError):
             self.iasolver.solve()

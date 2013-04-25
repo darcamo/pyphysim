@@ -177,7 +177,7 @@ class IASolverBaseClass(object):
         The interference covariance matrix at the :math:`k`-th receiver,
         :math:`\mtQ k`, is given by
 
-            :math:`\\mtQ k = \\sum_{j=1}^{j \\neq k} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
+            :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
 
         where :math:`P_j` is the transmit power of transmitter :math:`j`,
         and :math:`Ns_j` is the number of streams for user :math:`j`.
@@ -188,17 +188,29 @@ class IASolverBaseClass(object):
             Index of the desired receiver.
         P : 1D numpy array
             Transmit power of all users. If not provided, a transmit power
-            equal to 1.0 will be used for each user.
+            equal to 1.0 will be used for each user. Note that `P` has the
+            power of all users to be consistent with other methods in this
+            module that require the power of the users, but the power of
+            the :math:`k`-th user in `P` will be ignored.
 
         Returns
         -------
         Qk : 2D numpy complex array.
             The interference covariance matrix at receiver :math:`k`.
-        """
-        # $$\mtQ k = \sum_{j=1}^{j \neq k} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
 
-        # TODO: Implement-me
-        pass
+        """
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
+
+        interfering_users = set(range(self.K)) - set([k])
+        Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
+
+        for l in interfering_users:
+            Hkl_F = np.dot(
+                self.get_channel(k, l),
+                self.F[l])
+            Qk = Qk + np.dot(P[l] * Hkl_F, Hkl_F.transpose().conjugate())
+
+        return Qk
 
     def solve(self):
         """Find the IA solution.
