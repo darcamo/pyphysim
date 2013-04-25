@@ -25,7 +25,7 @@ from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolverIASo
 from util.misc import peig, leig, randn_c
 
 
-# UPDATE THIS CLASS if another module is added to the comm package
+# UPDATE THIS CLASS if another module is added to the ia package
 class IaDoctestsTestCase(unittest.TestCase):
     """Teste case that run all the doctests in the modules of the ia
     package."""

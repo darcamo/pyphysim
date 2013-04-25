@@ -170,6 +170,36 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel.get_channel(k, l)
 
+    def calc_Q(self, k, P):
+        """Calculates the interference covariance matrix at the :math:`k`-th
+        receiver.
+
+        The interference covariance matrix at the :math:`k`-th receiver,
+        :math:`\mtQ k`, is given by
+
+            :math:`\\mtQ k = \\sum_{j=1}^{j \\neq k} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
+
+        where :math:`P_j` is the transmit power of transmitter :math:`j`,
+        and :math:`Ns_j` is the number of streams for user :math:`j`.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired receiver.
+        P : 1D numpy array
+            Transmit power of all users. If not provided, a transmit power
+            equal to 1.0 will be used for each user.
+
+        Returns
+        -------
+        Qk : 2D numpy complex array.
+            The interference covariance matrix at receiver :math:`k`.
+        """
+        # $$\mtQ k = \sum_{j=1}^{j \neq k} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
+
+        # TODO: Implement-me
+        pass
+
     def solve(self):
         """Find the IA solution.
 
@@ -266,7 +296,8 @@ class AlternatingMinIASolver(IASolverBaseClass):
 
         Ck contains the orthogonal basis of the interference subspace of
         user k. It corresponds to the Nk-Sk dominant eigenvectors of
-        :math:`\\sum_{l \\neq k} H_{k,l} F_l F_l^H H_{k,l}^H`.
+
+            :math:`\\sum_{l \\neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H`.
 
         Notes
         -----
@@ -276,7 +307,7 @@ class AlternatingMinIASolver(IASolverBaseClass):
         --------
         step
         """
-        # $\sum_{l \neq k} H_{k,l} F_l F_l^H H_{k,l}^H$
+        # $$\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$$
         Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
 
         self.C = np.zeros(self.K, dtype=np.ndarray)
@@ -286,9 +317,8 @@ class AlternatingMinIASolver(IASolverBaseClass):
         all_kl_indexes = itertools.permutations(range(self.K), 2)
 
         # This code will store in self.C[k] the equivalent of
-        # $\sum_{l \neq k} H_{k,l} F_l F_l^H H_{k,l}^H$
-        for kl in all_kl_indexes:
-            (k, l) = kl
+        # $\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$
+        for k, l in all_kl_indexes:
             Hkl_F = np.dot(
                 self.get_channel(k, l),
                 self.F[l])
@@ -321,9 +351,9 @@ class AlternatingMinIASolver(IASolverBaseClass):
         --------
         step
         """
-        # $\sum_{k \neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}$
+        # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)\mtH_{k,l}$
         # xxxxx Calculates the temporary variable Y[k] for all k xxxxxxxxxx
-        # Note that $Y[k] = (I - C_k C_k^H)$
+        # Note that $\mtY[k] = (\mtI - \mtC_k \mtC_k^H)$
         calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
             np.dot(C, C.conjugate().transpose())
         Y = map(calc_Y, self.Nr, self.C)
@@ -335,7 +365,7 @@ class AlternatingMinIASolver(IASolverBaseClass):
         all_lk_indexes = itertools.permutations(range(self.K), 2)
 
         # This code will store in newF[l] the equivalent of
-        # $\sum_{k \neq l} H_{k,l}^H (I - C_k C_k^H)H_{k,l}$
+        # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)H_{k,l}$
         for lk in all_lk_indexes:
             (l, k) = lk
             lH = self.get_channel(k, l)
@@ -396,7 +426,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
     """Implements the "Interference Alignment via Max SINR" algorithm.
 
     This algorithm is applicable to a "K-user" scenario and it is
-    described in [1].
+    described in [Cadambe2008]_.
 
     An example of a common exenario is a scenario with 3 pairs or
     transmitter/receiver with 2 antennas in each node and 1 stream
@@ -405,13 +435,13 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
     You can determine the scenario of an AlternatingMinIASolver object by
     infering the variables K, Nt, Nr and Ns.
 
-    References
-    ----------
+    Notes
+    -----
 
-    [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
-    Capacity of Wireless Networks through Distributed Interference
-    Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global Telecommunications
-    Conference, 2008, pp. 1-6.
+    .. [Cadambe2008] K. Gomadam, V. R. Cadambe, and S. A. Jafar,
+       "Approaching the Capacity of Wireless Networks through Distributed
+       Interference Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
+       Telecommunications Conference, 2008, pp. 1-6.
 
     """
 
@@ -422,13 +452,13 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
     def _calc_Bkl_cov_matrix_first_part(self, k, P=None):
         """Calculates the first part in the equation of the Blk covariance
-        matrix in equation (28) of [1].
+        matrix in equation (28) of [Cadambe2008]_.
 
         The first part is given by
-        $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}}
-        \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger}$$
 
-        Note that it only depends on the value of $k$.
+            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
+
+        Note that it only depends on the value of :math:`k`.
 
         Parameters
         ----------
@@ -441,17 +471,9 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         Returns
         -------
         Bkl_first_part : 2D numpy complex array
-            First part in equation (28) of [1].
-
-        References
-        ----------
-
-        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
-        Capacity of Wireless Networks through Distributed Interference
-        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
-        Telecommunications Conference, 2008, pp. 1-6.
-
+            First part in equation (28) of [Cadambe2008]_.
         """
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger}$$
         if P is None:
             P = np.ones(self.K)
 
@@ -473,11 +495,11 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
     def _calc_Bkl_cov_matrix_second_part(self, k, l, P=None):
         """Calculates the second part in the equation of the Blk covariance
-        matrix in equation (28) of [1].
+        matrix in equation (28) of [Cadambe2008]_.
 
         The second part is given by
-        $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]}
-        \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
+
+            :math:`\\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger}`
 
         Parameters
         ----------
@@ -492,16 +514,10 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         Returns
         -------
         second_part : 2D numpy complex array.
-            Second part in equation (28) of [1].
+            Second part in equation (28) of [Cadambe2008]_.
 
-        References
-        ----------
-
-        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
-        Capacity of Wireless Networks through Distributed Interference
-        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
-        Telecommunications Conference, 2008, pp. 1-6.
         """
+        # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
         if P is None:
             P = np.ones(self.K)
 
@@ -518,24 +534,22 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
     def calc_Bkl_cov_matrix_all_l(self, k, P=None):
         """Calculates the interference-plus-noise covariance matrix for all
-        streams at receiver $k$ according to equation (28) in [1].
+        streams at receiver :math:`k` according to equation (28) in
+        [Cadambe2008]_.
 
-        The interference-plus-noise covariance matrix for stream $l$ of
-        user $k$ is given by Equation (28) in [1], which is reproduced
-        below
+        The interference-plus-noise covariance matrix for stream :math:`l`
+        of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
+        which is reproduced below
 
-          $$B^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}}
-        \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} -
-        \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]}
-        \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} +
-        \mtI_{N^{[k]}}$$
+            :math:`\\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}`
 
-        where $P^{[k]}$ is the transmit power of transmitter $k$, $d^{[k]}$
-        is the number of degrees of freedom of user $k$, $\mtH^{[kj]}$ is
-        the channel between transmitter $j$ and receiver $k$,
-        $\mtV_{\star l}$ is the $l$-th column of the precoder of user $k$
-        and $\mtI_{N^{k}}$ is an identity matrix with size equal to the
-        number of receive antennas of receiver $k$.
+        where :math:`P^{[k]}` is the transmit power of transmitter
+        :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
+        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
+        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
+        l}` is the :math:`l`-th column of the precoder of user :math:`k`
+        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
+        the number of receive antennas of receiver :math:`k`.
 
         Parameters
         ----------
@@ -554,23 +568,17 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         Notes
         -----
+
         To be simple, a function that returns the covariance matrix of only
         a single stream "l" of the desired user "k" could be implemented,
         but in the order to calculate the max SINR algorithm we need the
         covariance matrix of all streams and returning them in single
         function as is done here allows us to calculate the first part in
-        equation (28) of [1] only once, since it is the same for all
-        streams.
-
-        References
-        ----------
-
-        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
-        Capacity of Wireless Networks through Distributed Interference
-        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
-        Telecommunications Conference, 2008, pp. 1-6.
+        equation (28) of [Cadambe2008]_ only once, since it is the same for
+        all streams.
 
         """
+        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
         Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
         first_part = self._calc_Bkl_cov_matrix_first_part(k, P)
         for l in range(self._Ns[k]):
@@ -580,12 +588,13 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         return Bkl_all_l
 
     def calc_Ukl(self, Bkl, k, l):
-        """Calculates the Ukl matrix in equation (29) of [1].
+        """Calculates the Ukl matrix in equation (29) of [Cadambe2008]_.
 
         Parameters
         ----------
         Bkl : 2D numpy complex array
-            The previously calculates Bkl matrix in equation (28) of [1]
+            The previously calculates Bkl matrix in equation (28) of
+            [Cadambe2008]_
         k : int
             Index of the desired user
         l : int
@@ -595,14 +604,6 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         -------
         Ukl : 2D numpy array (with self.Nr[k] rows and a single column)
             The calculated Ukl matrix.
-
-        References
-        ----------
-
-        [1] K. Gomadam, V. R. Cadambe, and S. A. Jafar, "Approaching the
-        Capacity of Wireless Networks through Distributed Interference
-        Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
-        Telecommunications Conference, 2008, pp. 1-6.
 
         """
         Hkk = self.get_channel(k, k)
@@ -615,9 +616,9 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
     def calc_Uk(self, Bkl_all_l, k):
         """Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
-        calculates the receive filter (a vector) only for the $l$-th stream
-        :meth:`calc_ik` calculates a receive filter (a matrix) for all
-        streams.
+        calculates the receive filter (a vector) only for the :math:`l`-th
+        stream :meth:`calc_Uk` calculates a receive filter (a matrix) for
+        all streams.
 
         Parameters
         ----------
@@ -632,6 +633,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         -------
         Uk : 2D numpy array.
             The receive filver for all streams of user k.
+
         """
         num_streams = Bkl_all_l.size
         num_Rx = Bkl_all_l[0].shape[0]

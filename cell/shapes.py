@@ -10,8 +10,7 @@ __revision__ = "$Revision$"
 
 try:
     from matplotlib import pylab
-    from matplotlib import patches
-    from matplotlib.path import Path
+    from matplotlib import patches, path
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
@@ -146,7 +145,7 @@ class Shape(Coordinate):
 
         The `path` property returns a Matplotlib Path for the shape.
         """
-        return Path(from_complex_array_to_real_matrix(self.vertices))
+        return path.Path(from_complex_array_to_real_matrix(self.vertices))
 
     path = property(_get_path)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
