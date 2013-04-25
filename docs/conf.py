@@ -20,6 +20,7 @@ import os
 #sys.path.insert(0, os.path.abspath('.'))
 parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
+sys.path.append(os.path.abspath('.'))
 
 sys.path.append(os.path.join(parent_dir, 'MATLAB'))
 
@@ -48,6 +49,8 @@ extensions = [#'matplotlib.sphinxext.mathmpl',
               'sphinxcontrib.aafig',
               'sphinx.ext.autosummary',
               'numpydoc']
+
+mathjax_path = parent_dir + '/docs/Mathjax/MathJax.js?config=default,local/local.js'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
