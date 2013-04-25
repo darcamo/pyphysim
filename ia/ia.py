@@ -12,7 +12,8 @@ import itertools
 from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
-__all__ = ['IASolverBaseClass', 'AlternatingMinIASolver']
+__all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
+           'MaxSinrIASolverIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -546,7 +547,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         Returns
         -------
-        Bkl : 1D numpy array of numpy arrays
+        Bkl : 1D numpy array of 2D numpy arrays
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
@@ -592,7 +593,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         Returns
         -------
-        Ukl : 2Dnumpy array
+        Ukl : 2D numpy array (with self.Nr[k] rows and a single column)
             The calculated Ukl matrix.
 
         References
@@ -605,14 +606,42 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         """
         Hkk = self.get_channel(k, k)
-        Vl = self.F[l]
+        Vkl = self.F[k][:, l:l + 1]
         invBkl = np.linalg.inv(Bkl)
         Ukl = np.dot(invBkl,
-                     np.dot(Hkk, Vl))
+                     np.dot(Hkk, Vkl))
         Ukl = Ukl / np.linalg.norm(Ukl, 'fro')
         return Ukl
 
-    def calc_SINR_k(self, Bkl_all_l, Ukl_all_l, k):
+    def calc_Uk(self, Bkl_all_l, k):
+        """Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
+        calculates the receive filter (a vector) only for the $l$-th stream
+        :meth:`calc_ik` calculates a receive filter (a matrix) for all
+        streams.
+
+        Parameters
+        ----------
+        Bkl_all_l : 1D numpy array of 2D numpy arrays.
+            Covariance matrix of all streams of user k. Each element of the
+            returned 1D numpy array is a 2D numpy complex array
+            corresponding to the covariance matrix of one stream of user k.
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        Uk : 2D numpy array.
+            The receive filver for all streams of user k.
+        """
+        num_streams = Bkl_all_l.size
+        num_Rx = Bkl_all_l[0].shape[0]
+        Uk = np.zeros([num_Rx, num_streams], dtype=complex)
+        for l in range(num_streams):
+            Uk[:, l] = self.calc_Ukl(Bkl_all_l[l], k, l)[:, 0]
+
+        return Uk
+
+    def calc_SINR_k(self, Bkl_all_l, Uk, k, P=None):
         """Calculates the SINR of all streams of user 'k'.
 
         Parameters
@@ -620,12 +649,41 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         Bkl_all_l : A sequence of 2D numpy arrays.
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
-        Ukl_all_l: A sequence of 2D numpy arrays.
-            A sequence (1D numpy array, a list, etc) of 2D numpy arrays
-            corresponding to the Ukl matrices for all 'l's.
+        Uk: 2D numpy arrays.
+            The receive filter for all streams of user k.
         k : int
             Index of the desired user.
+        P : 1D numpy array.
+            Transmit power of all users. If not provided, a transmit power
+            equal to 1.0 will be used for each user.
+
+        Returns
+        -------
+        SINR_k : 1D numpy array
+            The SINR for the different streams of user k.
 
         """
-        # TODO: Finish implementation
-        pass
+        if P is None:
+            P = np.ones(self.K)
+
+        Hkk = self.get_channel(k, k)
+        Vk = self.F[k]
+        Pk = P[k]
+
+        SINR_k = np.empty(self.Ns[k], dtype=float)
+
+        for l in range(self.Ns[k]):
+            Vkl = Vk[:, l:l + 1]
+            Ukl = Uk[:, l:l + 1]
+            Ukl_H = Ukl.transpose().conjugate()
+            aux = np.dot(Ukl_H,
+                         np.dot(Hkk, Vkl))
+            numerator = np.dot(aux,
+                               aux.transpose().conjugate()) * Pk / self.Ns[k]
+            denominator = np.dot(Ukl_H,
+                                 np.dot(Bkl_all_l[l], Ukl))
+            SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
+            SINR_k[l] = np.abs(SINR_kl)  # The imaginary part should be
+                                         # negligible
+
+        return SINR_k

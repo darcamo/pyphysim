@@ -417,16 +417,79 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
             Hkk = self.iasolver.get_channel(k, k)
             Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
             for l in range(Ns[k]):
-                expected_Uk0 = np.dot(
+                expected_Ukl = np.dot(
                     np.linalg.inv(Bkl_all_l[l]),
-                    np.dot(Hkk, self.iasolver.F[l]))
-                expected_Uk0 = expected_Uk0 / np.linalg.norm(expected_Uk0, 'fro')
-                Uk0 = self.iasolver.calc_Ukl(Bkl_all_l[l], k, l)
-                np.testing.assert_array_almost_equal(expected_Uk0, Uk0)
+                    np.dot(Hkk, self.iasolver.F[k][:, l:l + 1]))
+                expected_Ukl = expected_Ukl / np.linalg.norm(expected_Ukl, 'fro')
+                Ukl = self.iasolver.calc_Ukl(Bkl_all_l[l], k, l)
+                np.testing.assert_array_almost_equal(expected_Ukl, Ukl)
+
+    def teste_calc_Uk(self):
+        K = 3
+        Nt = np.ones(K, dtype=int) * 3
+        Nr = np.ones(K, dtype=int) * 3
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.random.seed(42)  # Used in the generation of teh random precoder
+        self.iasolver._multiUserChannel.set_channel_seed(324)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+
+        for k in range(K):
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
+            expected_Uk = np.empty(Ns[k], dtype=np.ndarray)
+            Uk = self.iasolver.calc_Uk(Bkl_all_l, k)
+
+            expected_Uk = np.empty([Nr[k], Ns[k]], dtype=complex)
+            for l in range(Ns[k]):
+                expected_Uk[:, l] = self.iasolver.calc_Ukl(Bkl_all_l[l], k, l)[:, 0]
+            np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
     def test_calc_SINR_k(self):
         # TODO: Finish implementation
-        pass
+        K = 3
+        Nt = np.ones(K, dtype=int) * 3
+        Nr = np.ones(K, dtype=int) * 3
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.random.seed(42)  # Used in the generation of teh random precoder
+        self.iasolver._multiUserChannel.set_channel_seed(324)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+
+        for k in range(K):
+            print
+            Hkk = self.iasolver.get_channel(k, k)
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
+            Uk = self.iasolver.calc_Uk(Bkl_all_l, k)
+
+            SINR_k_all_l = self.iasolver.calc_SINR_k(Bkl_all_l, Uk, k, P)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = self.iasolver.F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hkk, Vkl))
+
+                expectedSINRkl = np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) * (P[k] / Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+                )
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
