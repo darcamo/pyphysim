@@ -34,14 +34,14 @@ sys.path.append(os.path.join(parent_dir, 'MATLAB'))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 # In the PyPhysim we use the docstring conventions used in
 # numpy. Therefore, we require the numpydoc extension.
-extensions = ['matplotlib.sphinxext.mathmpl',
-              'matplotlib.sphinxext.only_directives',
-              'matplotlib.sphinxext.plot_directive',
+extensions = [#'matplotlib.sphinxext.mathmpl',
+              #'matplotlib.sphinxext.only_directives',
+              #'matplotlib.sphinxext.plot_directive',
               # 'matplotlib.sphinxext.ipython_directive',
               'sphinx.ext.autodoc',
               'sphinx.ext.todo',
-              #'sphinx.ext.mathjax',
-              'sphinx.ext.pngmath',
+              'sphinx.ext.mathjax',
+              #'sphinx.ext.pngmath',
               'sphinx.ext.viewcode',
               # 'inheritance_diagram',
               #'sphinx.ext.extlinks',  # Markup to shorten external links
