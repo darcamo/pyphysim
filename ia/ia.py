@@ -170,7 +170,7 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel.get_channel(k, l)
 
-    def calc_Q(self, k, P):
+    def calc_Q(self, k, P=None):
         """Calculates the interference covariance matrix at the :math:`k`-th
         receiver.
 
@@ -200,6 +200,8 @@ class IASolverBaseClass(object):
 
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
+        if P is None:
+            P = np.ones(self.K)
 
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
@@ -211,6 +213,51 @@ class IASolverBaseClass(object):
             Qk = Qk + np.dot(P[l] * Hkl_F, Hkl_F.transpose().conjugate())
 
         return Qk
+
+    def calc_remaining_interference_percentage(self, k, Qk=None, P=None):
+        """Calculates the percentage of the interference in the desired signal
+        space according to equation (30) in [Cadambe2008]_.
+
+        The percentage :math:`p_k` of the interference in the desired
+        signal space is given by
+
+            :math:`p_k = \\frac{\\sum_{j=1}^{Ns[k]} \\lambda_j [\\mtQ k]}{Tr[\\mtQ k]}`
+
+        where :math:`\\lambda_j[\\mtA]` denotes the :math:`j`-th smallest
+        eigenvalue of :math:`\\mtA`.
+
+        Parameters
+        ----------
+        k : int
+            The index of the desired user.
+        Qk : 2D numpy complex array
+            The covariance matrix of the remaining interference at receiver
+            k. If not provided, it will be automatically calculated. In
+            that case, the `P` parameter will also be taken into account if
+            provided.
+        P : 1D numpy array
+            Transmit power of all users. This is only used if Qk was not
+            provided and should be calculated. If neither `Qk` nor `P` is
+            provided then `Qk` will be calculated with the default power of
+            1 for each user. Note that `P` has the power of all users to be
+            consistent with other methods in this module that require the
+            power of the users, but the power of the :math:`k`-th user in
+            `P` will be ignored.
+
+        Notes
+        -----
+        `Qk` must be a symmetric matrix so that its eigenvalues are real and
+        positive (any covariance matrix is a symmetric matrix).
+
+        """
+        # $$p_k = \frac{\sum_{j=1}^{Ns[k]} \lambda_j [\mtQ k]}{Tr[\mtQ k]}$$
+
+        if Qk is None:
+            Qk = self.calc_Q(k, P)
+
+        [V, D] = leig(Qk, self.Ns[k])
+        pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
+        return pk
 
     def solve(self):
         """Find the IA solution.
@@ -320,32 +367,49 @@ class AlternatingMinIASolver(IASolverBaseClass):
         step
         """
         # $$\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$$
+
+        # xxxxxxxxxx New Implementation using calc_Q xxxxxxxxxxxxxxxxxxxxxx
         Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
 
-        self.C = np.zeros(self.K, dtype=np.ndarray)
-        # This will get all combinations of (k,l) without repetition. This
-        # is equivalent to two nested for loops with an if statement to
-        # only execute the code only when `k` is different of `l`.
-        all_kl_indexes = itertools.permutations(range(self.K), 2)
+        self.C = np.empty(self.K, dtype=np.ndarray)
 
-        # This code will store in self.C[k] the equivalent of
-        # $\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$
-        for k, l in all_kl_indexes:
-            Hkl_F = np.dot(
-                self.get_channel(k, l),
-                self.F[l])
-            self.C[k] = self.C[k] + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
-
-        # Every element in self.C[k] is a matrix. We want to replace each
-        # element by the dominant eigenvectors of that element.
         for k in np.arange(self.K):
-            # TODO: implement and test with external interference
-            # # We are inside only of the first for loop
-            # # Add the external interference contribution
-            # self.C[k] = obj.C{k} + obj.Rk{k}
+            ### TODO: Implement and test with external interference
+            # We are inside only of the first for loop
+            # Add the external interference contribution
+            #self.C[k] = self.calc_Q(k) + self.Rk[k]
 
             # C[k] will receive the Ni most dominant eigenvectors of C[k]
-            self.C[k] = peig(self.C[k], Ni[k])[0]
+            self.C[k] = peig(self.calc_Q(k), Ni[k])[0]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # xxxxxxxxxx Old Implementation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
+
+        # self.C = np.zeros(self.K, dtype=np.ndarray)
+        # # This will get all combinations of (k,l) without repetition. This
+        # # is equivalent to two nested for loops with an if statement to
+        # # only execute the code only when `k` is different of `l`.
+        # all_kl_indexes = itertools.permutations(range(self.K), 2)
+
+        # # This code will store in self.C[k] the equivalent of
+        # # $\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$
+        # for k, l in all_kl_indexes:
+        #     Hkl_F = np.dot(
+        #         self.get_channel(k, l),
+        #         self.F[l])
+        #     self.C[k] = self.C[k] + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
+
+        # # Every element in self.C[k] is a matrix. We want to replace each
+        # # element by the dominant eigenvectors of that element.
+        # for k in np.arange(self.K):
+        #     # TODO: implement and test with external interference
+        #     # # We are inside only of the first for loop
+        #     # # Add the external interference contribution
+        #     # self.C[k] = obj.C{k} + obj.Rk{k}
+
+        #     # C[k] will receive the Ni most dominant eigenvectors of C[k]
+        #     self.C[k] = peig(self.C[k], Ni[k])[0]
 
     def updateF(self):
         """Update the value of the precoder of all K users.

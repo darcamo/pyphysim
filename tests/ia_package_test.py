@@ -159,6 +159,45 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_calc_remaining_interference_percentage(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([2, 2, 2])
+        Ns = np.array([1, 1, 1])
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeH(Nr, Nt, K)
+
+        #xxxxxxxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 0
+        Qk = self.iasolver.calc_Q(k, P)
+        pk = self.iasolver.calc_remaining_interference_percentage(k, Qk)
+
+        [V, D] = leig(Qk, Ns[k])
+        expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
+        self.assertAlmostEqual(pk, expected_pk)
+
+        #xxxxxxxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 1
+        Qk = self.iasolver.calc_Q(k, P)
+        pk = self.iasolver.calc_remaining_interference_percentage(k, P=P)
+
+        [V, D] = leig(Qk, Ns[k])
+        expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
+        self.assertAlmostEqual(pk, expected_pk)
+
+        #xxxxxxxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 2
+        Qk = self.iasolver.calc_Q(k)
+        pk = self.iasolver.calc_remaining_interference_percentage(k)
+
+        [V, D] = leig(Qk, Ns[k])
+        expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
+        self.assertAlmostEqual(pk, expected_pk)
+
     def test_solve(self):
         with self.assertRaises(NotImplementedError):
             self.iasolver.solve()
@@ -409,7 +448,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of teh random precoder
+        np.random.seed(42)  # Used in the generation of the random precoder
         self.iasolver._multiUserChannel.set_channel_seed(324)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -477,7 +516,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of teh random precoder
+        np.random.seed(42)  # Used in the generation of the random precoder
         self.iasolver._multiUserChannel.set_channel_seed(324)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -506,7 +545,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of teh random precoder
+        np.random.seed(42)  # Used in the generation of the random precoder
         self.iasolver._multiUserChannel.set_channel_seed(324)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -534,7 +573,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of teh random precoder
+        np.random.seed(42)  # Used in the generation of the random precoder
         self.iasolver._multiUserChannel.set_channel_seed(324)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
