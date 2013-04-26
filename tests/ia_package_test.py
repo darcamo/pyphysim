@@ -437,69 +437,68 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.iasolver = MaxSinrIASolverIASolver()
-
-    def test_calc_Bkl_cov_matrix(self):
-        K = 3
-        Nt = np.ones(K, dtype=int) * 3
-        Nr = np.ones(K, dtype=int) * 3
-        Ns = np.ones(K, dtype=int) * 2
+        self.K = 3
+        self.Nt = np.ones(self.K, dtype=int) * 3
+        self.Nr = np.ones(self.K, dtype=int) * 3
+        self.Ns = np.ones(self.K, dtype=int) * 2
 
         # Transmit power of all users
-        P = np.array([1.2, 1.5, 0.9])
+        self.P = np.array([1.2, 1.5, 0.9])
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.random.seed(42)  # Used in the generation of the random precoder
         self.iasolver._multiUserChannel.set_channel_seed(324)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        self.iasolver.randomizeF(Nt, Ns, K)
-        self.iasolver.randomizeH(Nr, Nt, K)
+        self.iasolver.randomizeF(self.Nt, self.Ns, self.K)
+        self.iasolver.randomizeH(self.Nr, self.Nt, self.K)
 
+    def test_calc_Bkl_cov_matrix(self):
         # Calculates Bkl for all streams (l index) of all users (k index)
-        for k in range(K):  # range(K) <-------
+        for k in range(self.K):  # range(K) <-------
 
             first_part = 0.0  # First part in the equation of Bkl (the double
                               # summation)
 
             # The outer for loop will calculate
             # first_part = $\sum_{j=1}^{K} \frac{1.0}{Ns[k]} \text{aux}$
-            for j in range(K):
+            for j in range(self.K):
                 aux = 0.0  # The inner for loop will calculate
                             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
                 Hkj = self.iasolver.get_channel(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
-                for d in range(Ns[k]):
+                for d in range(self.Ns[k]):
                     Vjd = self.iasolver.F[j][:, d:d + 1]
                     Vjd_H = Vjd.conjugate().transpose()
                     aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
-                first_part = first_part + (P[j] / Ns[j]) * aux
+                first_part = first_part + (self.P[j] / self.Ns[j]) * aux
 
             np.testing.assert_array_almost_equal(
                 first_part,
-                self.iasolver._calc_Bkl_cov_matrix_first_part(k, P)
+                self.iasolver._calc_Bkl_cov_matrix_first_part(k, self.P)
             )
 
             # xxxxx Calculates the Second Part xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            expected_Bkl = np.empty(Ns[k], dtype=np.ndarray)
+            expected_Bkl = np.empty(self.Ns[k], dtype=np.ndarray)
             Hkk = self.iasolver.get_channel(k, k)
             Hkk_H = Hkk.transpose().conjugate()
-            for l in range(Ns[k]):
+            for l in range(self.Ns[k]):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
                 # second_part = $\frac{1.0}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = self.iasolver.F[k][:, l:l+1]
                 Vkl_H = Vkl.transpose().conjugate()
                 second_part = np.dot(Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
-                second_part = (P[k] / Ns[k]) * second_part
-                expected_Bkl[l] = first_part - second_part + np.eye(Nr[k])
+                second_part = (self.P[k] / self.Ns[k]) * second_part
+                expected_Bkl[l] = first_part - second_part + np.eye(self.Nr[k])
 
                 np.testing.assert_array_almost_equal(
                     second_part,
-                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l, P))
+                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l, self.P))
 
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, self.P)
 
             np.testing.assert_array_almost_equal(expected_Bkl[0],
                                                  Bkl_all_l[0])
@@ -507,27 +506,10 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
                                                  Bkl_all_l[1])
 
     def test_calc_Ukl(self):
-        K = 3
-        Nt = np.ones(K, dtype=int) * 3
-        Nr = np.ones(K, dtype=int) * 3
-        Ns = np.ones(K, dtype=int) * 2
-
-        # Transmit power of all users
-        P = np.array([1.2, 1.5, 0.9])
-
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of the random precoder
-        self.iasolver._multiUserChannel.set_channel_seed(324)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        self.iasolver.randomizeF(Nt, Ns, K)
-        self.iasolver.randomizeH(Nr, Nt, K)
-
-        # xxxxxxxxxx Calculates for k=0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        for k in range(K):
+        for k in range(self.K):
             Hkk = self.iasolver.get_channel(k, k)
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
-            for l in range(Ns[k]):
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, self.P)
+            for l in range(self.Ns[k]):
                 expected_Ukl = np.dot(
                     np.linalg.inv(Bkl_all_l[l]),
                     np.dot(Hkk, self.iasolver.F[k][:, l:l + 1]))
@@ -536,59 +518,27 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expected_Ukl, Ukl)
 
     def teste_calc_Uk(self):
-        K = 3
-        Nt = np.ones(K, dtype=int) * 3
-        Nr = np.ones(K, dtype=int) * 3
-        Ns = np.ones(K, dtype=int) * 2
-
-        # Transmit power of all users
-        P = np.array([1.2, 1.5, 0.9])
-
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of the random precoder
-        self.iasolver._multiUserChannel.set_channel_seed(324)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        self.iasolver.randomizeF(Nt, Ns, K)
-        self.iasolver.randomizeH(Nr, Nt, K)
-
-        for k in range(K):
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
-            expected_Uk = np.empty(Ns[k], dtype=np.ndarray)
+        for k in range(self.K):
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, self.P)
+            expected_Uk = np.empty(self.Ns[k], dtype=np.ndarray)
             Uk = self.iasolver.calc_Uk(Bkl_all_l, k)
 
-            expected_Uk = np.empty([Nr[k], Ns[k]], dtype=complex)
-            for l in range(Ns[k]):
+            expected_Uk = np.empty([self.Nr[k], self.Ns[k]], dtype=complex)
+            for l in range(self.Ns[k]):
                 expected_Uk[:, l] = self.iasolver.calc_Ukl(Bkl_all_l[l], k, l)[:, 0]
             np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
     def test_calc_SINR_k(self):
         # TODO: Finish implementation
-        K = 3
-        Nt = np.ones(K, dtype=int) * 3
-        Nr = np.ones(K, dtype=int) * 3
-        Ns = np.ones(K, dtype=int) * 2
-
-        # Transmit power of all users
-        P = np.array([1.2, 1.5, 0.9])
-
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of the random precoder
-        self.iasolver._multiUserChannel.set_channel_seed(324)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        self.iasolver.randomizeF(Nt, Ns, K)
-        self.iasolver.randomizeH(Nr, Nt, K)
-
-        for k in range(K):
+        for k in range(self.K):
             print
             Hkk = self.iasolver.get_channel(k, k)
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, P)
+            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k, self.P)
             Uk = self.iasolver.calc_Uk(Bkl_all_l, k)
 
-            SINR_k_all_l = self.iasolver.calc_SINR_k(Bkl_all_l, Uk, k, P)
+            SINR_k_all_l = self.iasolver.calc_SINR_k(Bkl_all_l, Uk, k, self.P)
 
-            for l in range(Ns[k]):
+            for l in range(self.Ns[k]):
                 Ukl = Uk[:, l:l + 1]
                 Ukl_H = Ukl.transpose().conjugate()
                 Vkl = self.iasolver.F[k][:, l:l + 1]
@@ -596,7 +546,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
                              np.dot(Hkk, Vkl))
 
                 expectedSINRkl = np.asscalar(
-                    np.dot(aux, aux.transpose().conjugate()) * (P[k] / Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+                    np.dot(aux, aux.transpose().conjugate()) * (self.P[k] / self.Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
                 )
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
