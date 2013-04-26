@@ -154,14 +154,14 @@ class IASolverBaseClass(object):
     # This method does not need testing, since the logic is implemented in
     # the MultiUserChannelMatrix class and it is already tested.
     def get_channel(self, k, l):
-        """Get the channel from user l to user k.
+        """Get the channel from transmitter l to receiver k.
 
         Parameters
         ----------
         l : int
             Transmitting user.
         k : int
-            Receiving user
+            Receiving user.
 
         Returns
         -------
@@ -335,7 +335,7 @@ class AlternatingMinIASolver(IASolverBaseClass):
         return Cost
 
     def step(self):
-        """Step the algorithm
+        """Performs one iteration of the algorithm.
 
         The step method is usually all you need to call to perform an
         iteration of the Alternating Minimization algorithm. It will update
@@ -532,7 +532,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         The first part is given by
 
-            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
+            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
 
         Note that it only depends on the value of :math:`k`.
 
@@ -549,7 +549,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         Bkl_first_part : 2D numpy complex array
             First part in equation (28) of [Cadambe2008]_.
         """
-        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger}$$
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
         if P is None:
             P = np.ones(self.K)
 
@@ -571,7 +571,8 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
     def _calc_Bkl_cov_matrix_second_part(self, k, l, P=None):
         """Calculates the second part in the equation of the Blk covariance
-        matrix in equation (28) of [Cadambe2008]_.
+        matrix in equation (28) of [Cadambe2008]_ (note that it does not
+        include the identity matrix).
 
         The second part is given by
 
@@ -765,3 +766,80 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
                                          # negligible
 
         return SINR_k
+
+    # @classmethod
+    # def _get_reverse_channel(multiUserChannel):
+    #     """Get a MultiUserChannelMatrix object corresponding to the channel
+    #     of the reverse network of the channel in `multiUserChannel`.
+
+    #     Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
+    #     transmitter :math:`l` to receiver :math:`k`. The corresponding
+    #     matrix for the reverse network is given by
+    #     :math:`\\overleftarrow{\\mtH}_{kl} = \\mtH_{lk}^\\dagger`.
+
+    #     Parameters
+    #     ----------
+    #     multiUserChannel : An object of the MultiUserChannelMatrix class.
+    #         The MultiUserChannelMatrix object corresponding to the channel
+    #         of the direct network.
+
+    #     Returns
+    #     -------
+    #     multiUserChannel_rev : An object of the MultiUserChannelMatrix class.
+    #         The MultiUserChannelMatrix object corresponding to the channel
+    #         of the reverse network.
+
+    #     """
+    #     # TODO: Implement-me
+    #     pass
+
+    def get_channel_rev(self, k, l):
+        """Get the channel from transmitter l to receiver k in the reverse
+        network.
+
+        Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
+        transmitter :math:`l` to receiver :math:`k` in the direct
+        network. The channel matrix between the transmitter :math:`l` to
+        receiver :math:`k` in the reverse network, denoted as
+        :math:`\\overleftarrow{\\mtH}_{kl}`, is then given by
+        :math:`\\overleftarrow{\\mtH}_{kl} = \\mtH_{lk}^\\dagger` where
+        :math:`\\mtA^\\dagger` is the conjugate transpose of :math:`\\mtA`.
+
+        Parameters
+        ----------
+        l : int
+            Transmitting user of the reverse network.
+        k : int
+            Receiving user of the reverse network.
+
+        Returns
+        -------
+        H : 2D numpy array
+            The channel matrix between transmitter l and receiver k in the
+            reverse network.
+
+        Notes
+        -----
+        See Section III of [Cadambe2008]_ for details.
+
+        """
+        return self.get_channel(l, k).transpose().conjugate()
+
+    def step(self):
+        """Performs one iteration of the algorithm.
+
+        The step method is usually all you need to call to perform an
+        iteration of the algorithm. Note that it is necesary to initialize
+        the precoders and the channel before calling the step method for
+        the first time.
+
+        See also
+        --------
+        randomizeF, randomizeH, init_from_channel_matrix
+
+        """
+        # xxxxxxxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+        # TODO: Implement-me
+        pass
