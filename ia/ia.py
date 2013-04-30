@@ -36,6 +36,10 @@ class IASolverBaseClass(object):
         # Channel of all users
         self._multiUserChannel = MultiUserChannelMatrix()
 
+        self.P = None  # Power of each user (P is an 1D numpy array). If
+                       # not set (P is None), then a power of 1 will be
+                       # used for each transmitter.
+
     @property
     def Ns(self):
         """Number of streams of all users.
@@ -81,7 +85,7 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel._Nt
 
-    def randomizeF(self, Nt, Ns, K):
+    def randomizeF(self, Nt, Ns, K, P=None):
         """Generates a random precoder for each user.
 
         Parameters
@@ -92,11 +96,16 @@ class IASolverBaseClass(object):
             Number of transmit antennas of each user.
         Ns : int or 1D numpy array
             Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
         """
         if isinstance(Ns, int):
             Ns = np.ones(K) * Ns
         if isinstance(Nt, int):
             Nt = np.ones(K) * Nt
+
+        self.P = P
 
         # Lambda function that returns a normalized version of the input
         # numpy array
@@ -170,7 +179,7 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel.get_channel(k, l)
 
-    def calc_Q(self, k, P=None):
+    def calc_Q(self, k):
         """Calculates the interference covariance matrix at the :math:`k`-th
         receiver.
 
@@ -186,20 +195,19 @@ class IASolverBaseClass(object):
         ----------
         k : int
             Index of the desired receiver.
-        P : 1D numpy array
-            Transmit power of all users. If not provided, a transmit power
-            equal to 1.0 will be used for each user. Note that `P` has the
-            power of all users to be consistent with other methods in this
-            module that require the power of the users, but the power of
-            the :math:`k`-th user in `P` will be ignored.
 
         Returns
         -------
         Qk : 2D numpy complex array.
             The interference covariance matrix at receiver :math:`k`.
 
+        Notes
+        -----
+
+        This is impacted by the self.P attribute.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
+        P = self.P
         if P is None:
             P = np.ones(self.K)
 
@@ -214,7 +222,7 @@ class IASolverBaseClass(object):
 
         return Qk
 
-    def calc_remaining_interference_percentage(self, k, Qk=None, P=None):
+    def calc_remaining_interference_percentage(self, k, Qk=None):
         """Calculates the percentage of the interference in the desired signal
         space according to equation (30) in [Cadambe2008]_.
 
@@ -233,16 +241,8 @@ class IASolverBaseClass(object):
         Qk : 2D numpy complex array
             The covariance matrix of the remaining interference at receiver
             k. If not provided, it will be automatically calculated. In
-            that case, the `P` parameter will also be taken into account if
-            provided.
-        P : 1D numpy array
-            Transmit power of all users. This is only used if Qk was not
-            provided and should be calculated. If neither `Qk` nor `P` is
-            provided then `Qk` will be calculated with the default power of
-            1 for each user. Note that `P` has the power of all users to be
-            consistent with other methods in this module that require the
-            power of the users, but the power of the :math:`k`-th user in
-            `P` will be ignored.
+            that case, the `P` attribute will also be taken into account if
+            it is set.
 
         Notes
         -----
@@ -253,7 +253,7 @@ class IASolverBaseClass(object):
         # $$p_k = \frac{\sum_{j=1}^{Ns[k]} \lambda_j [\mtQ k]}{Tr[\mtQ k]}$$
 
         if Qk is None:
-            Qk = self.calc_Q(k, P)
+            Qk = self.calc_Q(k)
 
         [V, D] = leig(Qk, self.Ns[k])
         pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
@@ -526,7 +526,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         """
         IASolverBaseClass.__init__(self)
 
-    def _calc_Bkl_cov_matrix_first_part(self, k, P=None):
+    def _calc_Bkl_cov_matrix_first_part(self, k):
         """Calculates the first part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_.
 
@@ -540,16 +540,15 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         ----------
         k : int
             Index of the desired user.
-        P : 1D numpy array
-            Transmit power of all users. If not provided, a transmit power
-            equal to 1.0 will be used for each user.
 
         Returns
         -------
         Bkl_first_part : 2D numpy complex array
             First part in equation (28) of [Cadambe2008]_.
+
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
+        P = self.P
         if P is None:
             P = np.ones(self.K)
 
@@ -558,6 +557,47 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             Hkj = self.get_channel(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = self.F[j]
+            Vj_H = Vj.conjugate().transpose()
+
+            first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
+                Hkj,
+                np.dot(
+                    np.dot(Vj,
+                           Vj_H),
+                    Hkj_H))
+
+        return first_part
+
+    def _calc_Bkl_cov_matrix_first_part_rev(self, k):
+        """Calculates the first part in the equation of the Blk covariance
+        matrix of the reverse channel.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        Bkl_first_part_rev : 2D numpy complex array
+            First part in equation (28) of [Cadambe2008]_, but for the
+            reverse channel.
+
+        See also
+        --------
+        _calc_Bkl_cov_matrix_first_part_rev
+
+        """
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
+        P = self.P
+        if P is None:
+            P = np.ones(self.K)
+
+        first_part = 0.0
+        for j in range(self.K):
+            Hkj = self.get_channel_rev(k, j)
+            Hkj_H = Hkj.conjugate().transpose()
+            Vj = self.W[j]
             Vj_H = Vj.conjugate().transpose()
 
             first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
@@ -609,7 +649,47 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         return second_part * (float(P[k]) / self._Ns[k])
 
-    def calc_Bkl_cov_matrix_all_l(self, k, P=None):
+    def _calc_Bkl_cov_matrix_second_part_rev(self, k, l):
+        """Calculates the second part in the equation of the Blk covariance
+        matrix of the reverse channel..
+
+        The second part is given by
+
+            :math:`\\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger}`
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+        l : int
+            Index of the desired stream.
+
+        Returns
+        -------
+        second_part : 2D numpy complex array.
+            Second part in equation (28) of [Cadambe2008]_.
+
+        See also
+        --------
+        _calc_Bkl_cov_matrix_second_part
+        """
+        # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
+        P = self.P
+        if P is None:
+            P = np.ones(self.K)
+
+        Hkk = self.get_channel_rev(k, k)
+        Hkk_H = Hkk.transpose().conjugate()
+
+        Vkl = self.W[k][:, l:l + 1]
+        Vkl_H = Vkl.transpose().conjugate()
+        second_part = np.dot(Hkk,
+                             np.dot(np.dot(Vkl, Vkl_H),
+                                    Hkk_H))
+
+        return second_part * (float(P[k]) / self._Ns[k])
+
+    def calc_Bkl_cov_matrix_all_l(self, k):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
         [Cadambe2008]_.
@@ -632,9 +712,6 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         ----------
         k : int
             Index of the desired user.
-        P : 1D numpy array
-            Transmit power of all users. If not provided, a transmit power
-            equal to 1.0 will be used for each user.
 
         Returns
         -------
@@ -656,19 +733,61 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
+        P = self.P
+        if P is None:
+            P = np.ones(self.K)
         Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(k, P)
+        first_part = self._calc_Bkl_cov_matrix_first_part(k)
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part(k, l, P)
             Bkl_all_l[l] = first_part - second_part + np.eye(self.Nr[k])
 
         return Bkl_all_l
 
-    def calc_Ukl(self, Bkl, k, l):
+    def calc_Bkl_cov_matrix_all_l_rev(self, k):
+        """Calculates the interference-plus-noise covariance matrix for all
+        streams at "receiver" :math:`k` for the reverse channel.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        Bkl_rev : 1D numpy array of 2D numpy arrays
+            Covariance matrix of all streams of user k. Each element of the
+            returned 1D numpy array is a 2D numpy complex array
+            corresponding to the covariance matrix of one stream of user k.
+
+        See also
+        --------
+        calc_Bkl_cov_matrix_all_l
+
+        """
+        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
+        P = self.P
+        if P is None:
+            P = np.ones(self.K)
+
+        Bkl_all_l_rev = np.empty(self._Ns[k], dtype=np.ndarray)
+        first_part = self._calc_Bkl_cov_matrix_first_part_rev(k)
+        for l in range(self._Ns[k]):
+            second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
+            Bkl_all_l_rev[l] = first_part - second_part + np.eye(self.Nr[k])
+
+        return Bkl_all_l_rev
+
+    @classmethod
+    def _calc_Ukl(cls, Hkk, Vk, Bkl, k, l):
         """Calculates the Ukl matrix in equation (29) of [Cadambe2008]_.
 
         Parameters
         ----------
+        Hkk : 2D numpy complex array
+            Channel from transmitter K to receiver K.
+        Vk : 2D numpy array
+            Precoder of user k.
         Bkl : 2D numpy complex array
             The previously calculates Bkl matrix in equation (28) of
             [Cadambe2008]_
@@ -683,15 +802,15 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             The calculated Ukl matrix.
 
         """
-        Hkk = self.get_channel(k, k)
-        Vkl = self.F[k][:, l:l + 1]
+        Vkl = Vk[:, l:l + 1]
         invBkl = np.linalg.inv(Bkl)
         Ukl = np.dot(invBkl,
                      np.dot(Hkk, Vkl))
         Ukl = Ukl / np.linalg.norm(Ukl, 'fro')
         return Ukl
 
-    def calc_Uk(self, Bkl_all_l, k):
+    @classmethod
+    def _calc_Uk(cls, Hkk, Vk, Bkl_all_l, k):
         """Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
         calculates the receive filter (a vector) only for the :math:`l`-th
         stream :meth:`calc_Uk` calculates a receive filter (a matrix) for
@@ -699,6 +818,10 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         Parameters
         ----------
+        Hkk : 2D numpy complex array
+            Channel from transmitter K to receiver K.
+        Vk : 2D numpy array
+            Precoder of user k.
         Bkl_all_l : 1D numpy array of 2D numpy arrays.
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
@@ -716,8 +839,38 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         num_Rx = Bkl_all_l[0].shape[0]
         Uk = np.zeros([num_Rx, num_streams], dtype=complex)
         for l in range(num_streams):
-            Uk[:, l] = self.calc_Ukl(Bkl_all_l[l], k, l)[:, 0]
+            Uk[:, l] = MaxSinrIASolverIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
 
+        return Uk
+
+    def calc_Uk_all_k(self):
+        """Calculates the receive filter of all users.
+        """
+        P = self.P
+        if P is None:
+            P = np.ones(self.K)
+
+        Uk = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            Hkk = self.get_channel(k, k)
+            Bkl_all_l = self.calc_Bkl_cov_matrix_all_l(k)
+            Uk[k] = self._calc_Uk(Hkk, self.F[k], Bkl_all_l, k)
+        return Uk
+
+    def calc_Uk_all_k_rev(self):
+        """Calculates the receive filter of all users for the reverse channel.
+        """
+        P = self.P
+        if P is None:
+            P = np.ones(self.K)
+
+        Uk = np.empty(self.K, dtype=np.ndarray)
+        F = self.W  # The precoder is the receive filter of the direct
+                    # channel
+        for k in range(self.K):
+            Hkk = self.get_channel_rev(k, k)
+            Bkl_all_l = self.calc_Bkl_cov_matrix_all_l_rev(k)
+            Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l, k)
         return Uk
 
     def calc_SINR_k(self, Bkl_all_l, Uk, k, P=None):
