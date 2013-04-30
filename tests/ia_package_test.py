@@ -511,8 +511,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
                     expected_second_part
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
-                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l,
-                                                                   self.P))
+                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
 
     def test_calc_Bkl_cov_matrix_second_part_rev(self):
         for k in range(self.K):
@@ -544,8 +543,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
             for l in range(self.Ns[k]):
                 # The second part depend on the user index and the stream
                 # index.
-                second_part = self.iasolver._calc_Bkl_cov_matrix_second_part(
-                    k, l, self.P)
+                second_part = self.iasolver._calc_Bkl_cov_matrix_second_part(k, l)
                 expected_Bkl[l] = first_part - second_part + np.eye(self.Nr[k])
 
             Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
@@ -611,7 +609,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
             Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
             Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
 
-            SINR_k_all_l = self.iasolver.calc_SINR_k(Bkl_all_l, Uk, k, self.P)
+            SINR_k_all_l = self.iasolver.calc_SINR_k(Bkl_all_l, Uk, k)
 
             for l in range(self.Ns[k]):
                 Ukl = Uk[:, l:l + 1]

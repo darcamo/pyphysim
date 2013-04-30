@@ -609,7 +609,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         return first_part
 
-    def _calc_Bkl_cov_matrix_second_part(self, k, l, P=None):
+    def _calc_Bkl_cov_matrix_second_part(self, k, l):
         """Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
         include the identity matrix).
@@ -624,9 +624,6 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             Index of the desired user.
         l : int
             Index of the desired stream.
-        P : 1D numpy array
-            Transmit power of all users. If not provided, a transmit power
-            equal to 1.0 will be used for each user.
 
         Returns
         -------
@@ -635,6 +632,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
+        P = self.P
         if P is None:
             P = np.ones(self.K)
 
@@ -733,13 +731,10 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
-        P = self.P
-        if P is None:
-            P = np.ones(self.K)
         Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
         first_part = self._calc_Bkl_cov_matrix_first_part(k)
         for l in range(self._Ns[k]):
-            second_part = self._calc_Bkl_cov_matrix_second_part(k, l, P)
+            second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
             Bkl_all_l[l] = first_part - second_part + np.eye(self.Nr[k])
 
         return Bkl_all_l
@@ -766,12 +761,9 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
 
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
-        P = self.P
-        if P is None:
-            P = np.ones(self.K)
-
         Bkl_all_l_rev = np.empty(self._Ns[k], dtype=np.ndarray)
         first_part = self._calc_Bkl_cov_matrix_first_part_rev(k)
+
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
             Bkl_all_l_rev[l] = first_part - second_part + np.eye(self.Nr[k])
@@ -846,10 +838,6 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
     def calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
         """
-        P = self.P
-        if P is None:
-            P = np.ones(self.K)
-
         Uk = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
             Hkk = self.get_channel(k, k)
@@ -860,10 +848,6 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
     def calc_Uk_all_k_rev(self):
         """Calculates the receive filter of all users for the reverse channel.
         """
-        P = self.P
-        if P is None:
-            P = np.ones(self.K)
-
         Uk = np.empty(self.K, dtype=np.ndarray)
         F = self.W  # The precoder is the receive filter of the direct
                     # channel
@@ -873,7 +857,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l, k)
         return Uk
 
-    def calc_SINR_k(self, Bkl_all_l, Uk, k, P=None):
+    def calc_SINR_k(self, Bkl_all_l, Uk, k):
         """Calculates the SINR of all streams of user 'k'.
 
         Parameters
@@ -885,9 +869,6 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             The receive filter for all streams of user k.
         k : int
             Index of the desired user.
-        P : 1D numpy array.
-            Transmit power of all users. If not provided, a transmit power
-            equal to 1.0 will be used for each user.
 
         Returns
         -------
@@ -895,12 +876,13 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
             The SINR for the different streams of user k.
 
         """
-        if P is None:
-            P = np.ones(self.K)
+        if self.P is None:
+            Pk = 1.0
+        else:
+            Pk = self.P[k]
 
         Hkk = self.get_channel(k, k)
         Vk = self.F[k]
-        Pk = P[k]
 
         SINR_k = np.empty(self.Ns[k], dtype=float)
 
