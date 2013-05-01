@@ -434,9 +434,9 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
         """Called before each test."""
         self.iasolver = MaxSinrIASolverIASolver()
         self.K = 3
-        self.Nt = np.ones(self.K, dtype=int) * 3
-        self.Nr = np.ones(self.K, dtype=int) * 3
-        self.Ns = np.ones(self.K, dtype=int) * 2
+        self.Nt = np.ones(self.K, dtype=int) * 2
+        self.Nr = np.ones(self.K, dtype=int) * 2
+        self.Ns = np.ones(self.K, dtype=int) * 1
 
         # Transmit power of all users
         self.P = np.array([1.2, 1.5, 0.9])
@@ -548,10 +548,9 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
 
             Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
 
-            # Test if the Bkl for streams 0 and 1 of user k were calculated
-            # correctly
-            np.testing.assert_array_almost_equal(expected_Bkl[0], Bkl_all_l[0])
-            np.testing.assert_array_almost_equal(expected_Bkl[1], Bkl_all_l[1])
+            # Test if the Bkl for all l of user k were calculated correctly
+            for l in range(self.Ns[k]):
+                np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
     def test_calc_Bkl_cov_matrix_all_l_rev(self):
         # Calculates Bkl for all streams (l index) of all users (k index)
@@ -571,10 +570,9 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
 
             Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l_rev(k)
 
-            # Test if the Bkl for streams 0 and 1 of user k were calculated
-            # correctly
-            np.testing.assert_array_almost_equal(expected_Bkl[0], Bkl_all_l[0])
-            np.testing.assert_array_almost_equal(expected_Bkl[1], Bkl_all_l[1])
+            # Test if the Bkl for all l of user k were calculated correctly
+            for l in range(self.Ns[k]):
+                np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
     def test_calc_Ukl(self):
         for k in range(self.K):
@@ -654,33 +652,42 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
     # def test_step(self):
-    #     self.iasolver.step()
-
-    #     # xxxxxxxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     k = 0
-
-    #     Qk = self.iasolver.calc_Q(k, self.P)
-    #     pk = self.iasolver.calc_remaining_interference_percentage(k, Qk, self.P)
+    #     repmax = 20
+    #     pk = np.zeros([repmax, self.K])
+    #     #Qk = np.empty([self.K, repmax], dtype=np.ndarray)
+    #     SINR_k = np.zeros([repmax, self.K])
 
     #     print
-    #     print pk
 
-    #     # xxxxxxxxxxxxxxxxxxxx
-    #     self.iasolver.step()
-    #     Qk = self.iasolver.calc_Q(k, self.P)
-    #     pk = self.iasolver.calc_remaining_interference_percentage(k, Qk, self.P)
-    #     print pk
-    #     # xxxxxxxxxxxxxxxxxxxx
+    #     # print "F00:\n{0}".format(self.iasolver.F[0])
+    #     # print "F10:\n{0}".format(self.iasolver.F[1])
+    #     # print "F20:\n{0}".format(self.iasolver.F[2])
 
-    #     # xxxxxxxxxxxxxxxxxxxx
-    #     self.iasolver.step()
-    #     Qk = self.iasolver.calc_Q(k, self.P)
-    #     pk = self.iasolver.calc_remaining_interference_percentage(k, Qk, self.P)
-    #     print pk
-    #     # xxxxxxxxxxxxxxxxxxxx
+    #     #self.iasolver.step()
+    #     #print "um passo feito"
+    #     # print "F00:\n{0}".format(self.iasolver.F[0])
+    #     # print "F10:\n{0}".format(self.iasolver.F[1])
+    #     # print "F20:\n{0}".format(self.iasolver.F[2])
 
+    #     for step in range(repmax):
+    #         self.iasolver.step()
+    #         for k in range(self.K):
+    #             Qk = self.iasolver.calc_Q(k)
+    #             pk[step, k] = self.iasolver.calc_remaining_interference_percentage(k, Qk)
+
+    #             Bkl = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+    #             SINR_k[step, k] = self.iasolver.calc_SINR_k(Bkl, self.iasolver.W[k], k)
+    #     print "SINR_k:\n{0}".format(SINR_k)
+    #         # Calc SINR
+
+    #     print "pk:\n{0}".format(pk)
+    #         # xxxxxxxxxxxxxxxxxxxx
+
+    # def test_solve(self):
+    #     self.iasolver.solve()
     #     # TODO: Implement-me
     #     pass
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

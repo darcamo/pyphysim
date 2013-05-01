@@ -525,6 +525,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         """
         """
         IASolverBaseClass.__init__(self)
+        self.max_iterations = 50
 
     def _calc_Bkl_cov_matrix_first_part(self, k):
         """Calculates the first part in the equation of the Blk covariance
@@ -973,8 +974,23 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         randomizeF, randomizeH, init_from_channel_matrix
 
         """
-        # xxxxxxxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.F = self.calc_Uk_all_k_rev()
+        self.W = self.calc_Uk_all_k()
 
+    def solve(self):
+        """Find the IA solution with the Max SINR algorithm.
 
-        # TODO: Implement-me
-        pass
+        The number of iterations of the algorithm must be specified in the
+        max_iterations member variable.
+
+        Notes
+        -----
+
+        You need to call :meth:`randomizeF` at least once before calling
+        :meth:`solve` as well as initialize the channel either calling the
+        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+
+        """
+        self.W = self.calc_Uk_all_k()
+        for i in range(self.max_iterations):
+            self.step()
