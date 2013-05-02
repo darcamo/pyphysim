@@ -21,7 +21,7 @@ import doctest
 import numpy as np
 
 import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolverIASolver
+from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver
 from util.misc import peig, leig, randn_c
 
 
@@ -432,7 +432,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.iasolver = MaxSinrIASolverIASolver()
+        self.iasolver = MaxSinrIASolver()
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
         self.Nr = np.ones(self.K, dtype=int) * 2

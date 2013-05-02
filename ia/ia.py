@@ -13,7 +13,7 @@ from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
 __all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
-           'MaxSinrIASolverIASolver']
+           'MaxSinrIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -498,7 +498,7 @@ class AlternatingMinIASolver(IASolverBaseClass):
 
 
 # TODO: Finish the implementation
-class MaxSinrIASolverIASolver(IASolverBaseClass):
+class MaxSinrIASolver(IASolverBaseClass):
     """Implements the "Interference Alignment via Max SINR" algorithm.
 
     This algorithm is applicable to a "K-user" scenario and it is
@@ -832,7 +832,7 @@ class MaxSinrIASolverIASolver(IASolverBaseClass):
         num_Rx = Bkl_all_l[0].shape[0]
         Uk = np.zeros([num_Rx, num_streams], dtype=complex)
         for l in range(num_streams):
-            Uk[:, l] = MaxSinrIASolverIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
+            Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
 
         return Uk
 
