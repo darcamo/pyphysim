@@ -429,7 +429,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
 
 # TODO: finish implementation
-class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
+class MaxSinrIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.iasolver = MaxSinrIASolver()
@@ -448,7 +448,7 @@ class MaxSinrIASolverIASolverTestCase(unittest.TestCase):
 
         self.iasolver.randomizeF(self.Nt, self.Ns, self.K, self.P)
         self.iasolver.randomizeH(self.Nr, self.Nt, self.K)
-        self.iasolver.W = self.iasolver.calc_Uk_all_k()
+        self.iasolver._W = self.iasolver.calc_Uk_all_k()
 
     def test_calc_Bkl_cov_matrix_first_part(self):
         for k in range(self.K):

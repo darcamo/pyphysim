@@ -27,8 +27,8 @@ class IASolverBaseClass(object):
         """Initialize the variables that every IA solver will have.
         """
         # The F and W variables will be numpy arrays OF numpy arrays.
-        self.F = np.array([])  # Precoder: One precoder for each user
-        self.W = np.array([])  # Receive filter: One for each user
+        self._F = np.array([])  # Precoder: One precoder for each user
+        self._W = np.array([])  # Receive filter: One for each user
 
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
         # Number of streams per user
@@ -36,9 +36,35 @@ class IASolverBaseClass(object):
         # Channel of all users
         self._multiUserChannel = MultiUserChannelMatrix()
 
-        self.P = None  # Power of each user (P is an 1D numpy array). If
-                       # not set (P is None), then a power of 1 will be
+        self._P = None  # Power of each user (P is an 1D numpy array). If
+                       # not set (_P is None), then a power of 1 will be
                        # used for each transmitter.
+
+    @property
+    def F(self):
+        """Transmit precoder of all users."""
+        return self._F
+
+    @property
+    def W(self):
+        """Receive filter of all users."""
+        return self._W
+
+    @property
+    def P(self):
+        """Transmit power of all users.
+        """
+        return self._P
+
+    @P.setter
+    def P(self, value):
+        """Transmit power of all users.
+        """
+        if np.isscalar(value):
+            self._P = np.ones(self.K, dtype=float) * value
+        else:
+            assert len(value) == self.K
+            self._P = np.array(value)
 
     @property
     def Ns(self):
@@ -105,16 +131,16 @@ class IASolverBaseClass(object):
         if isinstance(Nt, int):
             Nt = np.ones(K) * Nt
 
-        self.P = P
+        self._P = P
 
         # Lambda function that returns a normalized version of the input
         # numpy array
         normalized = lambda A: A / np.linalg.norm(A, 'fro')
 
-        self.F = np.zeros(K, dtype=np.ndarray)
+        self._F = np.zeros(K, dtype=np.ndarray)
         for k in range(K):
-            self.F[k] = normalized(randn_c(Nt[k], Ns[k]))
-        #self.F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
+            self._F[k] = normalized(randn_c(Nt[k], Ns[k]))
+        #self._F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
         self._Ns = Ns
 
     # This method does not need testing, since the logic is implemented in
@@ -204,10 +230,10 @@ class IASolverBaseClass(object):
         Notes
         -----
 
-        This is impacted by the self.P attribute.
+        This is impacted by the self._P attribute.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
-        P = self.P
+        P = self._P
         if P is None:
             P = np.ones(self.K)
 
@@ -217,7 +243,7 @@ class IASolverBaseClass(object):
         for l in interfering_users:
             Hkl_F = np.dot(
                 self.get_channel(k, l),
-                self.F[l])
+                self._F[l])
             Qk = Qk + np.dot(P[l] * Hkl_F, Hkl_F.transpose().conjugate())
 
         return Qk
@@ -322,7 +348,7 @@ class AlternatingMinIASolver(IASolverBaseClass):
             (k, l) = kl
             Hkl_Fl = np.dot(
                 self.get_channel(k, l),
-                self.F[l])
+                self._F[l])
             Cost = Cost + np.linalg.norm(
                 Hkl_Fl -
                 np.dot(
@@ -452,7 +478,7 @@ class AlternatingMinIASolver(IASolverBaseClass):
 
         # Every element in newF is a matrix. We want to replace each
         # element by the least dominant eigenvectors of that element.
-        self.F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
+        self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
 
     def updateW(self):
         """Update the zero-forcing filters.
@@ -472,12 +498,12 @@ class AlternatingMinIASolver(IASolverBaseClass):
         newW = np.zeros(self.K, dtype=np.ndarray)
         for k in np.arange(self.K):
             tildeHi = np.hstack(
-                [np.dot(self.get_channel(k, k), self.F[k]),
+                [np.dot(self.get_channel(k, k), self._F[k]),
                  self.C[k]])
             newW[k] = np.linalg.inv(tildeHi)
             # We only want the first Ns[k] lines
             newW[k] = newW[k][0:self.Ns[k]]
-        self.W = newW
+        self._W = newW
 
     def solve(self):
         """Find the IA solution with the Alternating Minimizations algorithm.
@@ -549,7 +575,7 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
-        P = self.P
+        P = self._P
         if P is None:
             P = np.ones(self.K)
 
@@ -557,7 +583,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         for j in range(self.K):
             Hkj = self.get_channel(k, j)
             Hkj_H = Hkj.conjugate().transpose()
-            Vj = self.F[j]
+            Vj = self._F[j]
             Vj_H = Vj.conjugate().transpose()
 
             first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
@@ -590,7 +616,7 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
-        P = self.P
+        P = self._P
         if P is None:
             P = np.ones(self.K)
 
@@ -598,7 +624,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         for j in range(self.K):
             Hkj = self.get_channel_rev(k, j)
             Hkj_H = Hkj.conjugate().transpose()
-            Vj = self.W[j]
+            Vj = self._W[j]
             Vj_H = Vj.conjugate().transpose()
 
             first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
@@ -633,14 +659,14 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        P = self.P
+        P = self._P
         if P is None:
             P = np.ones(self.K)
 
         Hkk = self.get_channel(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
-        Vkl = self.F[k][:, l:l + 1]
+        Vkl = self._F[k][:, l:l + 1]
         Vkl_H = Vkl.transpose().conjugate()
         second_part = np.dot(Hkk,
                              np.dot(np.dot(Vkl, Vkl_H),
@@ -673,14 +699,14 @@ class MaxSinrIASolver(IASolverBaseClass):
         _calc_Bkl_cov_matrix_second_part
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        P = self.P
+        P = self._P
         if P is None:
             P = np.ones(self.K)
 
         Hkk = self.get_channel_rev(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
-        Vkl = self.W[k][:, l:l + 1]
+        Vkl = self._W[k][:, l:l + 1]
         Vkl_H = Vkl.transpose().conjugate()
         second_part = np.dot(Hkk,
                              np.dot(np.dot(Vkl, Vkl_H),
@@ -843,14 +869,14 @@ class MaxSinrIASolver(IASolverBaseClass):
         for k in range(self.K):
             Hkk = self.get_channel(k, k)
             Bkl_all_l = self.calc_Bkl_cov_matrix_all_l(k)
-            Uk[k] = self._calc_Uk(Hkk, self.F[k], Bkl_all_l, k)
+            Uk[k] = self._calc_Uk(Hkk, self._F[k], Bkl_all_l, k)
         return Uk
 
     def calc_Uk_all_k_rev(self):
         """Calculates the receive filter of all users for the reverse channel.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
-        F = self.W  # The precoder is the receive filter of the direct
+        F = self._W  # The precoder is the receive filter of the direct
                     # channel
         for k in range(self.K):
             Hkk = self.get_channel_rev(k, k)
@@ -877,13 +903,13 @@ class MaxSinrIASolver(IASolverBaseClass):
             The SINR for the different streams of user k.
 
         """
-        if self.P is None:
+        if self._P is None:
             Pk = 1.0
         else:
-            Pk = self.P[k]
+            Pk = self._P[k]
 
         Hkk = self.get_channel(k, k)
-        Vk = self.F[k]
+        Vk = self._F[k]
 
         SINR_k = np.empty(self.Ns[k], dtype=float)
 
@@ -974,8 +1000,8 @@ class MaxSinrIASolver(IASolverBaseClass):
         randomizeF, randomizeH, init_from_channel_matrix
 
         """
-        self.F = self.calc_Uk_all_k_rev()
-        self.W = self.calc_Uk_all_k()
+        self._F = self.calc_Uk_all_k_rev()
+        self._W = self.calc_Uk_all_k()
 
     def solve(self):
         """Find the IA solution with the Max SINR algorithm.
@@ -991,6 +1017,6 @@ class MaxSinrIASolver(IASolverBaseClass):
         :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
 
         """
-        self.W = self.calc_Uk_all_k()
+        self._W = self.calc_Uk_all_k()
         for i in range(self.max_iterations):
             self.step()
