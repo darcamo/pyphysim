@@ -21,7 +21,7 @@ import doctest
 import numpy as np
 
 import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver
+from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver
 from util.misc import peig, leig, randn_c
 
 
@@ -49,13 +49,25 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         Nt = np.array([2, 3, 5])
         Ns = np.array([1, 2, 3])
         self.iasolver.randomizeH(Nr, Nt, K)
-        self.iasolver.randomizeF(Nt, Ns, K)
+        self.iasolver.randomizeF(Nt, Ns, K, P=None)  # Setting P here will be tested in test_randomizeF
 
         # Test the properties
         self.assertEqual(self.iasolver.K, K)
         np.testing.assert_array_equal(self.iasolver.Nr, Nr)
         np.testing.assert_array_equal(self.iasolver.Nt, Nt)
         np.testing.assert_array_equal(self.iasolver.Ns, Ns)
+
+        # Test getting and setting the P (power) property
+        self.assertIsNone(self.iasolver.P)
+        self.iasolver.P = 1.5
+        np.testing.assert_array_almost_equal(self.iasolver.P, [1.5, 1.5, 1.5])
+        self.iasolver.P = [1.3, 1.2, 1.8]
+        np.testing.assert_array_almost_equal(self.iasolver.P, np.array([1.3, 1.2, 1.8]))
+
+        # If we try to set P with a sequency of wrong length (different
+        # from the number of users) an exception should be raised.
+        with self.assertRaises(ValueError):
+            self.iasolver.P = [1.2, 2.1]
 
     def test_randomizeF(self):
         K = 3
@@ -120,8 +132,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         )
         expected_Q0 = np.dot(P[1] * H01_F1,
                              H01_F1.transpose().conjugate()) + \
-                      np.dot(P[2] * H02_F2,
-                             H02_F2.transpose().conjugate())
+            np.dot(P[2] * H02_F2,
+                   H02_F2.transpose().conjugate())
 
         Qk = self.iasolver.calc_Q(k)
         # Test if Qk is equal to the expected output
@@ -140,8 +152,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         )
         expected_Q1 = np.dot(P[0] * H10_F0,
                              H10_F0.transpose().conjugate()) + \
-                      np.dot(P[2] * H12_F2,
-                             H12_F2.transpose().conjugate())
+            np.dot(P[2] * H12_F2,
+                   H12_F2.transpose().conjugate())
 
         Qk = self.iasolver.calc_Q(k)
         # Test if Qk is equal to the expected output
@@ -160,8 +172,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         )
         expected_Q2 = np.dot(P[0] * H20_F0,
                              H20_F0.transpose().conjugate()) + \
-                      np.dot(P[1] * H21_F1,
-                             H21_F1.transpose().conjugate())
+            np.dot(P[1] * H21_F1,
+                   H21_F1.transpose().conjugate())
 
         Qk = self.iasolver.calc_Q(k)
         # Test if Qk is equal to the expected output
@@ -311,19 +323,19 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Aliases for (I-Ck Ck^H)) for each k xxxxxxxxxxxxxxxxxx
         Y0 = np.eye(self.Nr[0], dtype=complex) - \
-             np.dot(
-                 self.iasolver.C[0],
-                 self.iasolver.C[0].conjugate().transpose())
+            np.dot(
+                self.iasolver.C[0],
+                self.iasolver.C[0].conjugate().transpose())
 
         Y1 = np.eye(self.Nr[1], dtype=complex) - \
-             np.dot(
-                 self.iasolver.C[1],
-                 self.iasolver.C[1].conjugate().transpose())
+            np.dot(
+                self.iasolver.C[1],
+                self.iasolver.C[1].conjugate().transpose())
 
         Y2 = np.eye(self.Nr[2], dtype=complex) - \
-             np.dot(
-                 self.iasolver.C[2],
-                 self.iasolver.C[2].conjugate().transpose())
+            np.dot(
+                self.iasolver.C[2],
+                self.iasolver.C[2].conjugate().transpose())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[0] after one step xxxxxxxxxxxxxxxx
@@ -651,42 +663,151 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
             expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
-    # def test_step(self):
-    #     repmax = 20
-    #     pk = np.zeros([repmax, self.K])
-    #     #Qk = np.empty([self.K, repmax], dtype=np.ndarray)
-    #     SINR_k = np.zeros([repmax, self.K])
+    # Test the calc_Q_rev method from IASolverBaseClass
+    def test_calc_Q_rev(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([3, 3, 3])
+        Ns = np.array([1, 1, 1])
 
-    #     print
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
 
-    #     # print "F00:\n{0}".format(self.iasolver.F[0])
-    #     # print "F10:\n{0}".format(self.iasolver.F[1])
-    #     # print "F20:\n{0}".format(self.iasolver.F[2])
+        self.iasolver.randomizeF(Nt, Ns, K, P)
+        self.iasolver.randomizeH(Nr, Nt, K)
+        self.iasolver._W = self.iasolver.calc_Uk_all_k()
 
-    #     #self.iasolver.step()
-    #     #print "um passo feito"
-    #     # print "F00:\n{0}".format(self.iasolver.F[0])
-    #     # print "F10:\n{0}".format(self.iasolver.F[1])
-    #     # print "F20:\n{0}".format(self.iasolver.F[2])
+        # xxxxx Calculate the expected Q[0]_rev after one step xxxxxxxxxxxx
+        k = 0
+        H01_F1_rev = np.dot(
+            self.iasolver.get_channel_rev(k, 1),
+            self.iasolver.W[1]
+        )
+        H02_F2_rev = np.dot(
+            self.iasolver.get_channel_rev(k, 2),
+            self.iasolver.W[2]
+        )
+        expected_Q0_rev = np.dot(P[1] * H01_F1_rev,
+                                 H01_F1_rev.transpose().conjugate()) + \
+            np.dot(P[2] * H02_F2_rev,
+                   H02_F2_rev.transpose().conjugate())
 
-    #     for step in range(repmax):
-    #         self.iasolver.step()
-    #         for k in range(self.K):
-    #             Qk = self.iasolver.calc_Q(k)
-    #             pk[step, k] = self.iasolver.calc_remaining_interference_percentage(k, Qk)
+        Q0_rev = self.iasolver.calc_Q_rev(k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Q0_rev, expected_Q0_rev)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #             Bkl = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
-    #             SINR_k[step, k] = self.iasolver.calc_SINR_k(Bkl, self.iasolver.W[k], k)
-    #     print "SINR_k:\n{0}".format(SINR_k)
-    #         # Calc SINR
+        # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
+        k = 1
+        H10_F0_rev = np.dot(
+            self.iasolver.get_channel_rev(k, 0),
+            self.iasolver.W[0]
+        )
+        H12_F2_rev = np.dot(
+            self.iasolver.get_channel_rev(k, 2),
+            self.iasolver.W[2]
+        )
+        expected_Q1_rev = np.dot(P[0] * H10_F0_rev,
+                                 H10_F0_rev.transpose().conjugate()) + \
+            np.dot(P[2] * H12_F2_rev,
+                   H12_F2_rev.transpose().conjugate())
 
-    #     print "pk:\n{0}".format(pk)
-    #         # xxxxxxxxxxxxxxxxxxxx
+        Q1_rev = self.iasolver.calc_Q_rev(k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Q1_rev, expected_Q1_rev)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # def test_solve(self):
-    #     self.iasolver.solve()
-    #     # TODO: Implement-me
-    #     pass
+        # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
+        k = 2
+        H20_F0_rev = np.dot(
+            self.iasolver.get_channel_rev(k, 0),
+            self.iasolver.W[0]
+        )
+        H21_F1_rev = np.dot(
+            self.iasolver.get_channel_rev(k, 1),
+            self.iasolver.W[1]
+        )
+        expected_Q2_rev = np.dot(P[0] * H20_F0_rev,
+                                 H20_F0_rev.transpose().conjugate()) + \
+            np.dot(P[1] * H21_F1_rev,
+                   H21_F1_rev.transpose().conjugate())
+
+        Q2_rev = self.iasolver.calc_Q_rev(k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Q2_rev, expected_Q2_rev)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# TODO: finish implementation
+class MinLeakageIASolverTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.iasolver = MinLeakageIASolver()
+        self.K = 3
+        self.Nt = np.ones(self.K, dtype=int) * 2
+        self.Nr = np.ones(self.K, dtype=int) * 2
+        self.Ns = np.ones(self.K, dtype=int) * 1
+
+        # Transmit power of all users
+        self.P = np.array([1.2, 1.5, 0.9])
+
+        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.random.seed(42)  # Used in the generation of the random precoder
+        self.iasolver._multiUserChannel.set_channel_seed(324)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.iasolver.randomizeF(self.Nt, self.Ns, self.K, self.P)
+        self.iasolver.randomizeH(self.Nr, self.Nt, self.K)
+        self.iasolver._W = self.iasolver.calc_Uk_all_k()
+
+    def test_calc_Uk_all_k(self):
+        Uk_all = self.iasolver.calc_Uk_all_k()
+
+        # xxxxxxxxxx First User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 0
+        Qk = self.iasolver.calc_Q(k)
+        [expected_Uk0, D0] = leig(Qk, self.Ns[k])
+        np.testing.assert_array_almost_equal(expected_Uk0, Uk_all[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Second User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 1
+        Qk = self.iasolver.calc_Q(k)
+        [expected_Uk1, D1] = leig(Qk, self.Ns[k])
+        np.testing.assert_array_almost_equal(expected_Uk1, Uk_all[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Third user xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 2
+        Qk = self.iasolver.calc_Q(k)
+        [expected_Uk2, D2] = leig(Qk, self.Ns[k])
+        np.testing.assert_array_almost_equal(expected_Uk2, Uk_all[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_Uk_all_k_rev(self):
+        self.iasolver_W = self.iasolver.calc_Uk_all_k()
+        Uk_all = self.iasolver.calc_Uk_all_k_rev()
+
+        # xxxxxxxxxx First User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 0
+        Qk_rev = self.iasolver.calc_Q_rev(k)
+        [expected_Uk0_rev, D0] = leig(Qk_rev, self.Ns[k])
+        np.testing.assert_array_almost_equal(expected_Uk0_rev, Uk_all[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Second User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 1
+        Qk_rev = self.iasolver.calc_Q_rev(k)
+        [expected_Uk1_rev, D1] = leig(Qk_rev, self.Ns[k])
+        np.testing.assert_array_almost_equal(expected_Uk1_rev, Uk_all[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Third user xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        k = 2
+        Qk_rev = self.iasolver.calc_Q_rev(k)
+        [expected_Uk2_rev, D2] = leig(Qk_rev, self.Ns[k])
+        np.testing.assert_array_almost_equal(expected_Uk2_rev, Uk_all[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

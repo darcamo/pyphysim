@@ -13,7 +13,7 @@ from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
 __all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
-           'MaxSinrIASolver']
+           'MaxSinrIASolver', 'MinLeakageIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -63,8 +63,10 @@ class IASolverBaseClass(object):
         if np.isscalar(value):
             self._P = np.ones(self.K, dtype=float) * value
         else:
-            assert len(value) == self.K
-            self._P = np.array(value)
+            if len(value) != self.K:
+                raise ValueError("P must be set to a sequency of length K")
+            else:
+                self._P = np.array(value)
 
     @property
     def Ns(self):
@@ -205,9 +207,41 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel.get_channel(k, l)
 
+    def get_channel_rev(self, k, l):
+        """Get the channel from transmitter l to receiver k in the reverse
+        network.
+
+        Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
+        transmitter :math:`l` to receiver :math:`k` in the direct
+        network. The channel matrix between the transmitter :math:`l` to
+        receiver :math:`k` in the reverse network, denoted as
+        :math:`\\overleftarrow{\\mtH}_{kl}`, is then given by
+        :math:`\\overleftarrow{\\mtH}_{kl} = \\mtH_{lk}^\\dagger` where
+        :math:`\\mtA^\\dagger` is the conjugate transpose of :math:`\\mtA`.
+
+        Parameters
+        ----------
+        l : int
+            Transmitting user of the reverse network.
+        k : int
+            Receiving user of the reverse network.
+
+        Returns
+        -------
+        H : 2D numpy array
+            The channel matrix between transmitter l and receiver k in the
+            reverse network.
+
+        Notes
+        -----
+        See Section III of [Cadambe2008]_ for details.
+
+        """
+        return self.get_channel(l, k).transpose().conjugate()
+
     def calc_Q(self, k):
-        """Calculates the interference covariance matrix at the :math:`k`-th
-        receiver.
+        """Calculates the interference covariance matrix at the
+        :math:`k`-th receiver.
 
         The interference covariance matrix at the :math:`k`-th receiver,
         :math:`\mtQ k`, is given by
@@ -231,6 +265,7 @@ class IASolverBaseClass(object):
         -----
 
         This is impacted by the self._P attribute.
+
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
         P = self._P
@@ -248,9 +283,48 @@ class IASolverBaseClass(object):
 
         return Qk
 
+    # This method must be tested in a subclass of IASolverBaseClass, since
+    # we need the receive filter and IASolverBaseClass does not know how to
+    # calculate it
+    def calc_Q_rev(self, k):
+        """Calculates the interference covariance matrix at the
+        :math:`k`-th receiver in the reverse network.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired receiver.
+
+        Returns
+        -------
+        Qk_rev : 2D numpy complex array.
+            The interference covariance matrix at receiver :math:`k` in the
+            reverse network.
+
+        See also
+        --------
+        calc_Q
+        """
+        # TODO: The power in the reverse network is probably different and
+        # therefore maybe we should not use self._P directly.
+        P = self._P
+        if P is None:
+            P = np.ones(self.K)
+
+        interfering_users = set(range(self.K)) - set([k])
+        Qk = np.zeros([self.Nt[k], self.Nt[k]], dtype=complex)
+
+        for l in interfering_users:
+            Hkl_F_rev = np.dot(
+                self.get_channel_rev(k, l),
+                self._W[l])
+            Qk = Qk + np.dot(P[l] * Hkl_F_rev, Hkl_F_rev.transpose().conjugate())
+
+        return Qk
+
     def calc_remaining_interference_percentage(self, k, Qk=None):
-        """Calculates the percentage of the interference in the desired signal
-        space according to equation (30) in [Cadambe2008]_.
+        """Calculates the percentage of the interference in the desired
+        signal space according to equation (30) in [Cadambe2008]_.
 
         The percentage :math:`p_k` of the interference in the desired
         signal space is given by
@@ -523,6 +597,74 @@ class AlternatingMinIASolver(IASolverBaseClass):
             self.step()
 
 
+class MinLeakageIASolver(IASolverBaseClass):
+    """Implements the Minimum Leakage Interference Alignment algorithm.
+    """
+
+    def __init__(self, ):
+        """
+        """
+        IASolverBaseClass.__init__(self)
+        self.max_iterations = 50
+
+    def calc_Uk_all_k(self):
+        """Calculates the receive filter of all users.
+        """
+        Uk = np.empty(self.K, dtype=np.ndarray)
+
+        for k in range(self.K):
+            Qk = self.calc_Q(k)
+            [V, D] = leig(Qk, self.Ns[k])
+            Uk[k] = V
+        return Uk
+
+    def calc_Uk_all_k_rev(self):
+        """Calculates the receive filter of all users in the reverse
+        network.
+
+        """
+        Uk_rev = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            Qk_rev = self.calc_Q_rev(k)
+            [V, D] = leig(Qk_rev, self.Ns[k])
+            Uk_rev[k] = V
+        return Uk_rev
+
+    def step(self):
+        """Performs one iteration of the algorithm.
+
+        The step method is usually all you need to call to perform an
+        iteration of the algorithm. Note that it is necesary to initialize
+        the precoders and the channel before calling the step method for
+        the first time.
+
+        See also
+        --------
+        randomizeF, randomizeH, init_from_channel_matrix
+
+        """
+        self._F = self.calc_Uk_all_k_rev()
+        self._W = self.calc_Uk_all_k()
+
+    def solve(self):
+        """Find the IA solution with the Min Leakage algorithm.
+
+        The number of iterations of the algorithm must be specified in the
+        max_iterations member variable.
+
+        Notes
+        -----
+
+        You need to call :meth:`randomizeF` at least once before calling
+        :meth:`solve` as well as initialize the channel either calling the
+        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+
+        """
+        self._W = self.calc_Uk_all_k()
+        for i in range(self.max_iterations):
+            self.step()
+
+
 # TODO: Finish the implementation
 class MaxSinrIASolver(IASolverBaseClass):
     """Implements the "Interference Alignment via Max SINR" algorithm.
@@ -577,7 +719,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
         P = self._P
         if P is None:
-            P = np.ones(self.K)
+            P = np.ones(self.K)  # pragma: no cover
 
         first_part = 0.0
         for j in range(self.K):
@@ -618,7 +760,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
         P = self._P
         if P is None:
-            P = np.ones(self.K)
+            P = np.ones(self.K)  # pragma: no cover
 
         first_part = 0.0
         for j in range(self.K):
@@ -661,7 +803,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
         P = self._P
         if P is None:
-            P = np.ones(self.K)
+            P = np.ones(self.K)  # pragma: no cover
 
         Hkk = self.get_channel(k, k)
         Hkk_H = Hkk.transpose().conjugate()
@@ -701,7 +843,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
         P = self._P
         if P is None:
-            P = np.ones(self.K)
+            P = np.ones(self.K)  # pragma: no cover
 
         Hkk = self.get_channel_rev(k, k)
         Hkk_H = Hkk.transpose().conjugate()
@@ -793,7 +935,7 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
-            Bkl_all_l_rev[l] = first_part - second_part + np.eye(self.Nr[k])
+            Bkl_all_l_rev[l] = first_part - second_part + np.eye(self.Nt[k])
 
         return Bkl_all_l_rev
 
@@ -929,65 +1071,7 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         return SINR_k
 
-    # @classmethod
-    # def _get_reverse_channel(multiUserChannel):
-    #     """Get a MultiUserChannelMatrix object corresponding to the channel
-    #     of the reverse network of the channel in `multiUserChannel`.
-
-    #     Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
-    #     transmitter :math:`l` to receiver :math:`k`. The corresponding
-    #     matrix for the reverse network is given by
-    #     :math:`\\overleftarrow{\\mtH}_{kl} = \\mtH_{lk}^\\dagger`.
-
-    #     Parameters
-    #     ----------
-    #     multiUserChannel : An object of the MultiUserChannelMatrix class.
-    #         The MultiUserChannelMatrix object corresponding to the channel
-    #         of the direct network.
-
-    #     Returns
-    #     -------
-    #     multiUserChannel_rev : An object of the MultiUserChannelMatrix class.
-    #         The MultiUserChannelMatrix object corresponding to the channel
-    #         of the reverse network.
-
-    #     """
-    #     # TODO: Implement-me
-    #     pass
-
-    def get_channel_rev(self, k, l):
-        """Get the channel from transmitter l to receiver k in the reverse
-        network.
-
-        Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
-        transmitter :math:`l` to receiver :math:`k` in the direct
-        network. The channel matrix between the transmitter :math:`l` to
-        receiver :math:`k` in the reverse network, denoted as
-        :math:`\\overleftarrow{\\mtH}_{kl}`, is then given by
-        :math:`\\overleftarrow{\\mtH}_{kl} = \\mtH_{lk}^\\dagger` where
-        :math:`\\mtA^\\dagger` is the conjugate transpose of :math:`\\mtA`.
-
-        Parameters
-        ----------
-        l : int
-            Transmitting user of the reverse network.
-        k : int
-            Receiving user of the reverse network.
-
-        Returns
-        -------
-        H : 2D numpy array
-            The channel matrix between transmitter l and receiver k in the
-            reverse network.
-
-        Notes
-        -----
-        See Section III of [Cadambe2008]_ for details.
-
-        """
-        return self.get_channel(l, k).transpose().conjugate()
-
-    def step(self):
+    def step(self):  # pragma: no cover
         """Performs one iteration of the algorithm.
 
         The step method is usually all you need to call to perform an
@@ -1003,7 +1087,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         self._F = self.calc_Uk_all_k_rev()
         self._W = self.calc_Uk_all_k()
 
-    def solve(self):
+    def solve(self):  # pragma: no cover
         """Find the IA solution with the Max SINR algorithm.
 
         The number of iterations of the algorithm must be specified in the
