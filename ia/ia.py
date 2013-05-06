@@ -322,6 +322,24 @@ class IASolverBaseClass(object):
 
         return Qk
 
+    def calc_equivalent_channel(self, k):
+        """Calculates the equivalent channel for user :math:`k` considering
+        the effect of the precoder, the actual channel, and the receive
+        filter.
+
+        Parameters
+        ----------
+        k : int
+            The index of the desired user.
+
+        """
+        # TODO: Test this method
+        Wk = self.W[k].transpose().conjugate()
+        Fk = self.F[k]
+        Hkk = self.get_channel(k, k)
+        Hk_eq = Wk.dot(Hkk.dot(Fk))
+        return Hk_eq
+
     def calc_remaining_interference_percentage(self, k, Qk=None):
         """Calculates the percentage of the interference in the desired
         signal space according to equation (30) in [Cadambe2008]_.

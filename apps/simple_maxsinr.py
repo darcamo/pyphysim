@@ -30,8 +30,8 @@ if __name__ == '__main__':
     Nt = np.ones(K, dtype=int) * 2
     Ns = np.ones(K, dtype=int) * 1
     #ia_solver = ia.AlternatingMinIASolver()
-    #ia_solver = ia.MaxSinrIASolver()
-    ia_solver = ia.MinLeakageIASolver()
+    ia_solver = ia.MaxSinrIASolver()
+    #ia_solver = ia.MinLeakageIASolver()
     ia_solver.max_iterations = 300
 
     # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -67,13 +67,20 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-    dot2=lambda w,r: np.dot(w.transpose().conjugate(), r)
+    dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
+    # This will cancel the interference
     received_data_no_interference = map(dot2,
                                         ia_solver._W, received_data)
+
+    # We still need to compensate the combined effect of the precoding and
+    # IA receive filter
+    compensate_filters = [np.linalg.inv(ia_solver.calc_equivalent_channel(k)) for k in range(K)]
+    received_data_no_interference2 = map(np.dot,
+                                         compensate_filters, received_data_no_interference)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    received_data_no_interference = np.vstack(received_data_no_interference)
+    received_data_no_interference = np.vstack(received_data_no_interference2)
     demodulated_data = modulator.demodulate(received_data_no_interference)
     # demodulated_data = map(modulator.demodulate, received_data_no_interference)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
