@@ -334,8 +334,8 @@ class IASolverBaseClass(object):
 
         """
         # TODO: Test this method
-        Wk = self.W[k].transpose().conjugate()
-        Fk = self.F[k]
+        Wk = self._W[k].transpose().conjugate()
+        Fk = self._F[k]
         Hkk = self.get_channel(k, k)
         Hk_eq = Wk.dot(Hkk.dot(Fk))
         return Hk_eq
@@ -647,6 +647,21 @@ class MinLeakageIASolver(IASolverBaseClass):
             [V, D] = leig(Qk_rev, self.Ns[k])
             Uk_rev[k] = V
         return Uk_rev
+
+    @property
+    def W(self):
+        """Receive filter of all users."""
+        W = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            # Equivalent channel with the effect of the precoder, channel
+            # and receive filter
+            Hieq = self.calc_equivalent_channel(k)
+
+            W[k] = np.linalg.inv(Hieq).dot(self._W[k].transpose().conjugate())
+            # W is the only receive filter required to cancel the
+            # interference and compensate the effect of the channel and
+            # transmit precoder.
+        return W
 
     def step(self):
         """Performs one iteration of the algorithm.
