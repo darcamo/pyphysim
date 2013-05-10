@@ -194,7 +194,7 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Alt. Min. IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
         legend()
 
         grid(True, which='both', axis='both')
@@ -240,7 +240,7 @@ if __name__ == '__main__1':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Alt. Min. IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
         legend()
 
         grid(True, which='both', axis='both')

@@ -43,7 +43,10 @@ class MaxSINRSimulationRunner(SimulationRunner):
         self.Nr = np.ones(self.K, dtype=int) * 2
         self.Nt = np.ones(self.K, dtype=int) * 2
         self.Ns = np.ones(self.K, dtype=int) * 1
-        self.ia_solver = ia.MaxSinrIASolver()
+
+        # noise_power will be changed later depending on the SNR value
+        self.ia_solver = ia.MaxSinrIASolver(noise_power=1)
+
         # Iterations of the MaxSINRMinIASolver algorithm.
         self.ia_solver.max_iterations = 50
 
@@ -98,6 +101,7 @@ class MaxSINRSimulationRunner(SimulationRunner):
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         noise_var = 1 / dB2Linear(SNR)
+        self.ia_solver.noise_power = noise_var
         multi_user_channel = self.ia_solver._multiUserChannel
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
@@ -105,9 +109,8 @@ class MaxSINRSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-        #import pudb; pudb.set_trace()  ## DEBUG ##
-        dot2=lambda w,r: np.dot(w.transpose().conjugate(), r)
-        received_data_no_interference = map(dot2,
+        #dot2=lambda w,r: np.dot(w.transpose().conjugate(), r)
+        received_data_no_interference = map(np.dot,
                                             self.ia_solver.W, received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -197,7 +200,7 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
         legend()
 
         grid(True, which='both', axis='both')
@@ -243,7 +246,7 @@ if __name__ == '__main__1':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
         legend()
 
         grid(True, which='both', axis='both')

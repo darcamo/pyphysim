@@ -722,11 +722,31 @@ class MaxSinrIASolver(IASolverBaseClass):
 
     """
 
-    def __init__(self, ):
+    def __init__(self, noise_power=1):
         """
+        Parameters
+        ----------
+        noise_var : float
+            Noise power in dBm.
         """
         IASolverBaseClass.__init__(self)
+        self.noise_power = noise_power
         self.max_iterations = 50
+
+    @property
+    def W(self):
+        """Receive filter of all users."""
+        W = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            # Equivalent channel with the effect of the precoder, channel
+            # and receive filter
+            Hieq = self.calc_equivalent_channel(k)
+
+            W[k] = np.linalg.inv(Hieq).dot(self._W[k].transpose().conjugate())
+            # W is the only receive filter required to cancel the
+            # interference and compensate the effect of the channel and
+            # transmit precoder.
+        return W
 
     def _calc_Bkl_cov_matrix_first_part(self, k):
         """Calculates the first part in the equation of the Blk covariance
@@ -937,7 +957,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         first_part = self._calc_Bkl_cov_matrix_first_part(k)
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
-            Bkl_all_l[l] = first_part - second_part + np.eye(self.Nr[k])
+            Bkl_all_l[l] = first_part - second_part + (self.noise_power * np.eye(self.Nr[k]))
 
         return Bkl_all_l
 
@@ -968,7 +988,7 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
-            Bkl_all_l_rev[l] = first_part - second_part + np.eye(self.Nt[k])
+            Bkl_all_l_rev[l] = first_part - second_part + (self.noise_power * np.eye(self.Nt[k]))
 
         return Bkl_all_l_rev
 
