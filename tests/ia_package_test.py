@@ -496,7 +496,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                 Hkj_H = Hkj.conjugate().transpose()
 
                 for d in range(self.Ns[k]):
-                    Vjd = self.iasolver.W[j][:, d:d + 1]
+                    Vjd = self.iasolver._W[j][:, d:d + 1]
                     Vjd_H = Vjd.conjugate().transpose()
                     aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
@@ -533,7 +533,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
-                Vkl = self.iasolver.W[k][:, l:l + 1]
+                Vkl = self.iasolver._W[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
                 expected_second_part = np.dot(Hkk,
                                               np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
@@ -658,7 +658,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
 
         for k in range(self.K):
             Hkk = self.iasolver.get_channel_rev(k, k)
-            Vk = self.iasolver.W[k]
+            Vk = self.iasolver._W[k]
             Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l_rev(k)
             expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
@@ -681,11 +681,11 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
         k = 0
         H01_F1_rev = np.dot(
             self.iasolver.get_channel_rev(k, 1),
-            self.iasolver.W[1]
+            self.iasolver._W[1]
         )
         H02_F2_rev = np.dot(
             self.iasolver.get_channel_rev(k, 2),
-            self.iasolver.W[2]
+            self.iasolver._W[2]
         )
         expected_Q0_rev = np.dot(P[1] * H01_F1_rev,
                                  H01_F1_rev.transpose().conjugate()) + \
@@ -701,11 +701,11 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
         k = 1
         H10_F0_rev = np.dot(
             self.iasolver.get_channel_rev(k, 0),
-            self.iasolver.W[0]
+            self.iasolver._W[0]
         )
         H12_F2_rev = np.dot(
             self.iasolver.get_channel_rev(k, 2),
-            self.iasolver.W[2]
+            self.iasolver._W[2]
         )
         expected_Q1_rev = np.dot(P[0] * H10_F0_rev,
                                  H10_F0_rev.transpose().conjugate()) + \
@@ -721,11 +721,11 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
         k = 2
         H20_F0_rev = np.dot(
             self.iasolver.get_channel_rev(k, 0),
-            self.iasolver.W[0]
+            self.iasolver._W[0]
         )
         H21_F1_rev = np.dot(
             self.iasolver.get_channel_rev(k, 1),
-            self.iasolver.W[1]
+            self.iasolver._W[1]
         )
         expected_Q2_rev = np.dot(P[0] * H20_F0_rev,
                                  H20_F0_rev.transpose().conjugate()) + \

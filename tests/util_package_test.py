@@ -475,7 +475,7 @@ class SimulationResultsTestCase(unittest.TestCase):
             ['a string'])
 
     def test_save_to_and_load_from_file(self):
-        filename = 'params.pickle'
+        filename = 'results.pickle'
         # Let's make sure the file does not exist
         try:
             os.remove(filename)

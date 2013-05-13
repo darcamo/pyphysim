@@ -42,8 +42,15 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     >>> # Case where we have a single array
     >>> single_array = np.array([2, 2, 4, 5, 6, 8, 8, 8, 8])
     >>> sizes = np.array([2, 3, 4])
-    >>> print single_matrix_to_matrix_of_matrices(single_array, sizes)
-    [[2 2] [4 5 6] [8 8 8 8]]
+    >>> m_of_ms = single_matrix_to_matrix_of_matrices(single_array, sizes)
+    >>> print m_of_ms.size
+    3
+    >>> print m_of_ms[0]
+    [2 2]
+    >>> print m_of_ms[1]
+    [4 5 6]
+    >>> print m_of_ms[2]
+    [8 8 8 8]
     >>>
     >>> # Case where we have a matrix to break in packs of rows
     >>> single_matrix = np.array([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
