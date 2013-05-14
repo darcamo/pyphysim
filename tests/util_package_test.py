@@ -418,6 +418,12 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults['lala'][0].get_result(), 13)
         self.assertEqual(self.simresults['lala'][1].get_result(), 25)
 
+        # Test if an exception is thrown if we try to append result with a
+        # different type
+        result1_wrong  =Result.create("lala", Result.RATIOTYPE, 25, 30)
+        with self.assertRaises(ValueError):
+            self.simresults.append_result(result1_wrong)
+
     def test_append_all_results(self):
         self.simresults.append_all_results(self.other_simresults)
         # Note that self.simresults only has the 'lala' and 'lele' results.
@@ -696,7 +702,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertEqual(self.runner.progressbar_message, "Progress")
 
     def test_not_implemented_methods(self):
-        pass
         #self.assertRaises(NotImplementedError, self.S1._get_vertex_positions)
         with self.assertRaises(NotImplementedError):
             self.runner._run_simulation(None)

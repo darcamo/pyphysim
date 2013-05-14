@@ -505,8 +505,9 @@ class SimulationRunner(object):
             self.results.append_all_results(current_sim_results)
 
             # This will add a blank line between the simulations for
-            # different unpacked variations
-            print ""
+            # different unpacked variations (when there is more then one)
+            if self.params.get_num_unpacked_variations() > 1:
+                print ""
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1053,6 +1054,52 @@ class SimulationParameters(object):
             obj = pickle.load(inputfile)
         return obj
 
+    def save_to_hdf5_group(self, group):
+        """Save the contents of the SimulationParameters object into an
+        HDF5 group.
+
+        This function is called in the save_to_hdf5_file function in the
+        SimulationResults class.
+
+        Parameters
+        ----------
+        group : An HDF5 group
+            The group where the parameters will be saved.
+
+        """
+        # Store each parameter in self.parameter in a different dataset
+        for name, value in self.parameters.iteritems():
+            group.create_dataset(name, data=value)
+
+        # Store the _unpacked_parameters_set as an attribute of the group.
+        # Note that we need to convert _unpacked_parameters_set to a list,
+        # since a set has no native HDF5 equivalent.
+        group.attrs.create('_unpacked_parameters_set', data=list(self._unpacked_parameters_set))
+
+    @staticmethod
+    def load_from_hdf5_group(group):
+        """Load the simulation parameters from an HDF5 group.
+
+        This function is called in the load_from_hdf5_file function in the
+        SimulationResults class.
+
+        Parameters
+        ----------
+        group : An HDF5 group
+            The group from where the parameters will be loaded.
+
+        Returns
+        -------
+        params : A SimulationParameters object.
+            The SimulationParameters object loaded from `group`.
+        """
+        params = SimulationParameters()
+
+        for name, ds in group.iteritems():
+            params.add(name, ds.value)
+
+        params._unpacked_parameters_set = set(group.attrs['_unpacked_parameters_set'])
+        return params
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -1232,12 +1279,23 @@ class SimulationResults(object):
         If multiple values for some Result are stored, then only the last
         value can be updated with :meth:`merge_all_results`.
 
+        Raises
+        ------
+        ValueError
+            If the `result` has a different type from the result previously
+            stored.
+
         See also
         --------
         append_all_results, merge_all_results
+
         """
         if result.name in self._results.keys():
-            self._results[result.name].append(result)
+            update_type_code = self._results[result.name][0]._update_type_code
+            if update_type_code == result._update_type_code:
+                self._results[result.name].append(result)
+            else:
+                raise ValueError("Can only append to results of the same type")
         else:
             self.add_result(result)
 
@@ -1387,6 +1445,84 @@ class SimulationResults(object):
         with open(filename, 'r') as inputfile:
             obj = pickle.load(inputfile)
         return obj
+
+    def save_to_hdf5_file(self, filename, attrs={}):
+        """Save the SimulationResults to the file `filename` using the HDF5
+        format standard.
+
+        Parameters
+        ----------
+        filename : src
+            Name of the file to save the results.
+        attrs : a dictionary
+            Extra attributes to add to the HDF5 file.
+        """
+        import h5py
+        fid = h5py.File(filename, 'w')
+
+        # Add the attributes, if any
+        if isinstance(attrs, dict):
+            # attr is a dictionary of attributes
+            for name, value in attrs.items():
+                fid.attrs.create(name, value)
+
+        # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
+        g = fid.create_group('results')
+        for r in self:
+            size = len(r)
+            # Do I need to test if r has a length greater than zero???
+            name = r[0].name
+            ds = Result.create_hdf5_dataset(g, name, (size,))
+            Result.fill_hdf5_dataset(ds, r)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
+        pg = fid.create_group('parameters')
+
+        self.params.save_to_hdf5_group(pg)
+
+        # TODO: continue
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+        fid.close()
+
+    @staticmethod
+    def load_from_hdf5_file(filename):
+        """Load a SimulationResults object from an HDF5 file saved with the
+        save_to_hdf5_file method.
+
+        Parameters
+        ----------
+        filename : src
+            Name of the file to save the results.
+
+        Returns
+        -------
+        simresults : A SimulationResults object.
+            The SimulationResults object loaded from the file.
+        """
+        simresults = SimulationResults()
+
+        import h5py
+        fid = h5py.File(filename, 'r')
+
+        # xxxxxxxxxx Results group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        rg = fid['results']
+
+        for result_name in rg:
+            ds = rg[result_name]
+            simresults._results[result_name] = Result.load_from_hdf5_dataset(ds)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Parameters grop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # TODO: Test if the file really has the 'parameters' group.
+        pg = fid['parameters']
+        simresults._params = SimulationParameters.load_from_hdf5_group(pg)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        fid.close()
+        return simresults
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1673,4 +1809,93 @@ class Result(object):
                 return float(self._value) / self._total
             else:
                 return self._value
+
+    @staticmethod
+    def create_hdf5_dataset(parent, name, shape):
+        """Static method that knows how to greate an HDF5 dataset of
+        Results.
+
+        This method is mainly used in the SimulationResults class.
+
+        Parameters
+        ----------
+        parent : An HDF5 group (usually) or file.
+            The parent that will contain the dataset.
+        shape : A valid numpy shape
+            The shape of the dataset. Use (5,) to create a 1D dataset with 5
+        elements, for instance.
+
+        Returns
+        -------
+        ds : The new created dataset (which is also already in `parent`.
+
+        """
+        dtype = [('_value', float), ('_total', float), ('num_updates', int)]
+        ds = parent.create_dataset(name, shape=shape, dtype=dtype)
+
+        return ds
+
+    @staticmethod
+    def fill_hdf5_dataset(ds, results_list):
+        """Fill the provided HDF5 dataset with a list of Result objects.
+
+        Parameters
+        ----------
+        ds : An HDF5 Dataset
+            The dataset where the data in the Result objects in
+            `results_list` will be added. This dataset must have a dtype
+            equal to
+            "[('_value', float), ('_total', float), ('num_updates', int)]"
+            and a 1D shape of size equal to the size of results_list.
+        results_list : A list
+            A list of Result objects.
+
+        Notes
+        -----
+        The "_value" and "_total" fields are always saved as floats.
+
+        See also
+        --------
+        create_hdf5_dataset
+
+        """
+        # index, Result object
+        for i, r in enumerate(results_list):
+            ds[i] = (r._value, r._total, r.num_updates)
+            ds.attrs.create('update_type_code', data=r._update_type_code)
+
+    @staticmethod
+    def load_from_hdf5_dataset(ds):
+        """Load a list of Rersult objects from an HDF5 dataset.
+
+        This dataset was suposelly filled with the fill_hdf5_dataset
+        function.
+
+        Parameters
+        ----------
+        ds : An HDF5 Dataset
+            The dataset to be loaded.
+
+        Returns
+        -------
+        results_list : A list of Result objects.
+            The list of Result objects loaded from the dataset.
+
+        See also
+        --------
+        fill_hdf5_dataset
+        """
+        results_list = []
+
+        name = ds.name.split('/')[-1]
+        update_type_code = ds.attrs['update_type_code']
+        for data in ds:
+            r = Result.create(name,
+                              update_type_code,
+                              data['_value'],
+                              data['_total'])
+            r.num_updates = data['num_updates']
+            results_list.append(r)
+        return results_list
+
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
