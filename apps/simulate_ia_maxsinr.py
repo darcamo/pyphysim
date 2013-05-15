@@ -43,16 +43,15 @@ class MaxSINRSimulationRunner(SimulationRunner):
         self.Nr = np.ones(self.K, dtype=int) * 2
         self.Nt = np.ones(self.K, dtype=int) * 2
         self.Ns = np.ones(self.K, dtype=int) * 1
-
         # noise_power will be changed later depending on the SNR value
         self.ia_solver = ia.MaxSinrIASolver(noise_power=1)
 
-        # Iterations of the MaxSINRMinIASolver algorithm.
+        # Iterations of the algorithm.
         self.ia_solver.max_iterations = 50
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
-        self.rep_max = 1000
+        self.rep_max = 2000
         #self.rep_max = 200
         self.progressbar_message = "MaxSINR Min. ({0}-QAM mod.) - SNR: {{SNR}}".format(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -93,7 +92,6 @@ class MaxSINRSimulationRunner(SimulationRunner):
 
         self.ia_solver.randomizeH(Nr, Nt, K)
         self.ia_solver.randomizeF(Nt, Ns, K)
-
         self.ia_solver.solve()
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
@@ -109,7 +107,6 @@ class MaxSINRSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-        #dot2=lambda w,r: np.dot(w.transpose().conjugate(), r)
         received_data_no_interference = map(np.dot,
                                             self.ia_solver.W, received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -164,23 +161,23 @@ class MaxSINRSimulationRunner(SimulationRunner):
 
         return simResults
 
-    def _keep_going(self, current_parameters, simulation_results):
-        #return True
-        cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
-        return cumulated_bit_errors < self.max_bit_errors
+    # def _keep_going(self, current_parameters, simulation_results):
+    #     #return True
+    #     cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
+    #     return cumulated_bit_errors < self.max_bit_errors
 
-    def get_data_to_be_plotted(self):
-        """The get_data_to_be_plotted is not part of the simulation, but it
-        is useful after the simulation is finished to get the results
-        easily for plot.
-        """
-        ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ber')
+    # def get_data_to_be_plotted(self):
+    #     """The get_data_to_be_plotted is not part of the simulation, but it
+    #     is useful after the simulation is finished to get the results
+    #     easily for plot.
+    #     """
+    #     ber = self.results.get_result_values_list('ber')
+    #     ser = self.results.get_result_values_list('ber')
 
-        # Get the SNR from the simulation parameters
-        SNR = np.array(self.params['SNR'])
+    #     # Get the SNR from the simulation parameters
+    #     SNR = np.array(self.params['SNR'])
 
-        return (SNR, ber, ser)
+    #     return (SNR, ber, ser)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -189,10 +186,44 @@ class MaxSINRSimulationRunner(SimulationRunner):
 if __name__ == '__main__':
     from pylab import *
 
-    sim = MaxSINRSimulationRunner()
-    sim.simulate()
+    from apps.simulate_ia_maxsinr import MaxSINRSimulationRunner
+    from util import simulations
 
-    SNR, ber, ser = sim.get_data_to_be_plotted()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # File name (without extension) for the figure and result files.
+    results_filename = 'ia_max_sinr_results'
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    runner = MaxSINRSimulationRunner()
+    runner.simulate()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    runner.results.save_to_file('{0}.pickle'.format(results_filename))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #
+    #
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
+    #
+    #
+    #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results_filename = 'ia_max_sinr_results'
+    results = simulations.SimulationResults.load_from_file(
+        '{0}{1}'.format(results_filename, '.pickle'))
+
+    #SNR, ber, ser = runner.get_data_to_be_plotted()
+    ber = results.get_result_values_list('ber')
+    ser = results.get_result_values_list('ber')
+
+    # Get the SNR from the simulation parameters
+    SNR = np.array(results.params['SNR'])
+
+    # TODO: store these in results.params
+    K = 3
+    Nr = np.ones(K, dtype=int) * 2
+    Nt = np.ones(K, dtype=int) * 2
+    Ns = np.ones(K, dtype=int) * 1
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -200,14 +231,14 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(K, Nr, Nt, Ns))
         legend()
 
         grid(True, which='both', axis='both')
         show()
 
-    print "Runned iterations: {0}".format(sim.runned_reps)
-    print sim.elapsed_time
+    print "Runned iterations: {0}".format(runner.runned_reps)
+    print runner.elapsed_time
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -235,10 +266,10 @@ if __name__ == '__main__1':
     from pylab import *
     from apps.simulate_ia_maxsinr import MaxSINRSimulationRunner
 
-    sim = MaxSINRSimulationRunner()
-    sim.simulate_in_parallel(dview)
+    runner = MaxSINRSimulationRunner()
+    runner.simulate_in_parallel(dview)
 
-    SNR, ber, ser = sim.get_data_to_be_plotted()
+    SNR, ber, ser = runner.get_data_to_be_plotted()
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -246,11 +277,11 @@ if __name__ == '__main__1':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(runner.K, runner.Nr, runner.Nt, runner.Ns))
         legend()
 
         grid(True, which='both', axis='both')
         show()
 
-    print "Runned iterations: {0}".format(sim.runned_reps)
-    print sim.elapsed_time
+    print "Runned iterations: {0}".format(runner.runned_reps)
+    print runner.elapsed_time
