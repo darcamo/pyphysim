@@ -36,13 +36,19 @@ class MaxSINRSimulationRunner(SimulationRunner):
         # SNR = np.array([0., 3, 6, 9, 12])
         SNR = np.array([0., 5, 10, 15, 20, 25, 30])
         #SNR = np.array([50])
-        M = 16
-        self.NSymbs = 200
+        M = 4
         self.modulator = modulators.PSK(M)
-        self.K = 3
-        self.Nr = np.ones(self.K, dtype=int) * 2
-        self.Nt = np.ones(self.K, dtype=int) * 2
-        self.Ns = np.ones(self.K, dtype=int) * 1
+        NSymbs = 200
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        self.params.add('NSymbs', NSymbs)
+        self.params.add('K', K)
+        self.params.add('Nr', Nr)
+        self.params.add('Nt', Nt)
+        self.params.add('Ns', Ns)
+
         # noise_power will be changed later depending on the SNR value
         self.ia_solver = ia.MaxSinrIASolver(noise_power=1)
 
@@ -60,18 +66,21 @@ class MaxSINRSimulationRunner(SimulationRunner):
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
 
+        # xxxxxxxxxx Parameters Stored for reference xxxxxxxxxxxxxxxxxxxxxx
+        self.params.add('Modulator', self.modulator.name)
+        self.params.add('IA_Max_Iterations', self.ia_solver.max_iterations)
+        self.params.add('rep_max', self.rep_max)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
-        K = self.K
-        M = self.modulator.M
-        NSymbs = self.NSymbs
-        Nr = self.Nr
-        Nt = self.Nt
-        Ns = self.Ns
+        NSymbs = current_parameters["NSymbs"]
+        K = current_parameters["K"]
+        Nr = current_parameters["Nr"]
+        Nt = current_parameters["Nt"]
+        Ns = current_parameters["Ns"]
         SNR = current_parameters["SNR"]
-
-        # print "Simulation Parameters"
-        # print "K: {K}\nNr: {Nr}\nNt: {Nt}\nNs: {Ns}\nNSymbs: {NSymbs}".format(**locals())
+        M = self.modulator.M
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -185,9 +194,9 @@ class MaxSINRSimulationRunner(SimulationRunner):
 # Run the MaxSINRSimulationRunner and plot the results
 if __name__ == '__main__':
     from pylab import *
+    from util import simulations, misc
 
     from apps.simulate_ia_maxsinr import MaxSINRSimulationRunner
-    from util import simulations
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
@@ -214,16 +223,15 @@ if __name__ == '__main__':
 
     #SNR, ber, ser = runner.get_data_to_be_plotted()
     ber = results.get_result_values_list('ber')
-    ser = results.get_result_values_list('ber')
+    ser = results.get_result_values_list('ser')
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
 
-    # TODO: store these in results.params
-    K = 3
-    Nr = np.ones(K, dtype=int) * 2
-    Nt = np.ones(K, dtype=int) * 2
-    Ns = np.ones(K, dtype=int) * 1
+    K = results.params["K"]
+    Nr = results.params["Nr"]
+    Nt = results.params["Nt"]
+    Ns = results.params["Ns"]
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -237,8 +245,8 @@ if __name__ == '__main__':
         grid(True, which='both', axis='both')
         show()
 
-    print "Runned iterations: {0}".format(runner.runned_reps)
-    print runner.elapsed_time
+    print "Runned iterations: {0}".format(results.runned_reps)
+    print misc.pretty_time(results.elapsed_time)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
