@@ -700,7 +700,7 @@ class QAM(Modulator):
         rows = np.tile(row, (1, L))
         # Shift the first part by half the number of bits and sum with the
         # second part to form each element in the index matrix
-        index_matrix = (rows << (level2bits(L ** 2) / 2)) + columns
+        index_matrix = (rows << (level2bits(L ** 2) // 2)) + columns
 
         # Return the indexes as a vector (row order, which is the default
         # in numpy)

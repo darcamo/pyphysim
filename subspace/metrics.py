@@ -38,7 +38,7 @@ def calcPrincipalAngles(matrix1, matrix2):
     --------
     >>> A = np.array([[1, 2], [3, 4], [5, 6]])
     >>> B = np.array([[1, 5], [3, 7], [5, -1]])
-    >>> print calcPrincipalAngles(A, B)
+    >>> print(calcPrincipalAngles(A, B))
     [ 0.          0.54312217]
     """
     # Primeiro preciso achar as matrizes de base ortonormal para matrix1 e
@@ -96,7 +96,7 @@ def calcChordalDistanceFromPrincipalAngles(principalAngles):
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
     >>> princ_angles = calcPrincipalAngles(A, B)
-    >>> print calcChordalDistanceFromPrincipalAngles(princ_angles)
+    >>> print(calcChordalDistanceFromPrincipalAngles(princ_angles))
     0.473867859572
     """
     return np.sqrt(np.sum(np.sin(principalAngles) ** 2))
@@ -131,7 +131,7 @@ def calcChordalDistance(matrix1, matrix2):
     >>> A = np.arange(1, 9.)
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
-    >>> print calcChordalDistance(A, B)
+    >>> print(calcChordalDistance(A, B))
     0.473867859572
     """
     Q1 = np.linalg.qr(matrix1)[0]
@@ -176,7 +176,7 @@ def calcChordalDistance2(matrix1, matrix2):
     >>> A = np.arange(1, 9.)
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
-    >>> print calcChordalDistance2(A, B)
+    >>> print(calcChordalDistance2(A, B))
     0.473867859572
     """
     return np.linalg.norm(calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') / math.sqrt(2)

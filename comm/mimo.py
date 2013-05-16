@@ -373,7 +373,7 @@ class Alamouti(MimoBase):
         """
         Ns = received_data.shape[1]
         # Number of Alamouti codewords
-        number_of_blocks = Ns / 2
+        number_of_blocks = Ns // 2
         decoded_data = np.empty(Ns, dtype=complex)
 
         # Conjugate of the first column of the channel (first transmit

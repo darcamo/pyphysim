@@ -3,4 +3,4 @@
 
 """Package with Interference Alignment algorithms."""
 
-import ia
+# import ia

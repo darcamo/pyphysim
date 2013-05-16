@@ -15,7 +15,7 @@ from collections import Iterable
 import numpy as np
 import itertools
 
-import shapes
+from . import shapes
 
 __all__ = ['Node', 'CellBase', 'Cell', 'Cluster', 'Grid']
 
@@ -1236,7 +1236,7 @@ if __name__ == '__main__1':  # pragma: no cover
     C.fill_face_bool = True
     C.add_random_users(np.arange(1, num_cells + 1))
     dists = C.calc_dist_all_cells_to_all_users()
-    print dists
+    print(dists)
     C.plot()
 
 

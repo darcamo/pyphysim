@@ -285,8 +285,8 @@ class CircleTestCase(unittest.TestCase):
                              (num_vertexes - 1.) / num_vertexes * 360,
                              num_vertexes)
         expected_vertexes = np.array(
-            map(self.C1.get_border_point,
-                angles, np.ones(angles.shape))) - self.C1.pos
+            list(map(self.C1.get_border_point,
+                     angles, np.ones(angles.shape)))) - self.C1.pos
         vertexes = self.C1._get_vertex_positions()
         np.testing.assert_array_almost_equal(expected_vertexes, vertexes)
 
@@ -480,7 +480,8 @@ class ClusterTestCase(unittest.TestCase):
         # variable ever changes, in which case it will fail. If this is the
         # case change this test_get_ii_and_jj unittest to reflect the
         # changes and make this test below pass.
-        self.assertEqual(cell.Cluster._ii_and_jj.keys(), [1, 3, 4, 7, 13, 19])
+        self.assertEqual(sorted(cell.Cluster._ii_and_jj.keys()),
+                         [1, 3, 4, 7, 13, 19])
 
         self.assertEqual(cell.Cluster._get_ii_and_jj(1), (1, 0))
         self.assertEqual(cell.Cluster._get_ii_and_jj(3), (1, 1))

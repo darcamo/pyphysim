@@ -823,7 +823,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
     def test_level2bits(self):
         self.assertEqual(
-            map(misc.level2bits, range(1, 20)),
+            list(map(misc.level2bits, range(1, 20))),
             [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
 
         # Test if an exception is raised for a value of n lower then 1
@@ -834,7 +834,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
     def test_int2bits(self):
         self.assertEqual(
-            map(misc.int2bits, range(0, 19)),
+            list(map(misc.int2bits, range(0, 19))),
             [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
 
         # Test if an exception is raised for a negative value of n

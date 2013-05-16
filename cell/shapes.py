@@ -591,7 +591,7 @@ def from_complex_array_to_real_matrix(a):
     Examples
     --------
     >>> a = np.array([1+2j, 3-4j, 5+6j])
-    >>> print from_complex_array_to_real_matrix(a)
+    >>> print(from_complex_array_to_real_matrix(a))
     [[ 1.  2.]
      [ 3. -4.]
      [ 5.  6.]]

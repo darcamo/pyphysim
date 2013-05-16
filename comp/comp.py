@@ -383,7 +383,7 @@ class CompExtInt(BlockDiaginalizer):
         Examples
         --------
         >>> sinrs_linear = np.array([11.4, 20.3])
-        >>> print CompExtInt._calc_shannon_sum_capacity(sinrs_linear)
+        >>> print(CompExtInt._calc_shannon_sum_capacity(sinrs_linear))
         8.04504974084
         """
         sum_capacity = np.sum(np.log2(1 + sinrs))
@@ -704,7 +704,7 @@ if __name__ == '__main__1':  # pragma: no cover
     (newH, Ms) = blockdiagonalization.block_diagonalize(
         channel.big_H, num_users, Pu, noise_var)
 
-    print newH.shape
+    print(newH.shape)
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -720,8 +720,8 @@ if __name__ == '__main__1':  # pragma: no cover
 
         #externalInterference =
 
-        print internalInterference
+        print(internalInterference)
 
         a = np.array([[1, 2, 3], [4, 5, 6], [5, 4, 3]])
-        print a
-        print np.sum(a, axis=1)
+        print(a)
+        print(np.sum(a, axis=1))

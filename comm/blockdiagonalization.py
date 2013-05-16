@@ -74,9 +74,9 @@ class BlockDiaginalizer(object):
 
     >>> print newH.round(4)
     [[ 0.0916+0.0135j -1.7449-0.4328j  0.0000-0.j     -0.0000-0.j    ]
-     [-0.0114-0.146j   0.0213-1.1366j  0.0000-0.j      0.0000-0.j    ]
+     [-0.0114-0.146j   0.0213-1.1366j  0.0000-0.j      0.0000+0.j    ]
      [-0.0000+0.j      0.0000+0.j      0.0868+0.1565j -0.3673+0.2289j]
-     [ 0.0000+0.j      0.0000-0.j     -0.0396+0.0407j  1.0240+0.8997j]]
+     [ 0.0000+0.j     -0.0000+0.j     -0.0396+0.0407j  1.0240+0.8997j]]
 
     Notice how the power restriction of each BS is respected (although only
     one BS will transmit with its maximum power).
@@ -160,7 +160,7 @@ class BlockDiaginalizer(object):
         assert iNr % self.num_users == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
 
         # Number of antennas per user
-        iNrU = iNr / self.num_users
+        iNrU = iNr // self.num_users
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Ms_bad = []
@@ -464,7 +464,7 @@ class BlockDiaginalizer(object):
 
         """
         nrows = mt_channel.shape[0]
-        iNrU = nrows / self.num_users  # Number of receive antennas per user
+        iNrU = nrows // self.num_users  # Number of receive antennas per user
 
         if isinstance(desired_users, collections.Iterable):
             vtIndexes = []

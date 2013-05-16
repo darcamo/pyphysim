@@ -34,13 +34,13 @@ def to_mat_str(x, format_string='+.12e'):
     >>> a=np.arange(1,10)
     >>> a.shape=(3,3)
     >>> # Print as a numpy matrix
-    >>> print a
+    >>> print(a)
     [[1 2 3]
      [4 5 6]
      [7 8 9]]
     >>> # Call to_mat_str(a) to print the string representation of the
     >>> # converted matrix
-    >>> print to_mat_str(a)
+    >>> print(to_mat_str(a))
     [+1.000000000000e+00, +2.000000000000e+00, +3.000000000000e+00; +4.000000000000e+00, +5.000000000000e+00, +6.000000000000e+00; +7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
 
     """

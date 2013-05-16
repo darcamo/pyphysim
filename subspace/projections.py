@@ -123,7 +123,7 @@ class Projection(object):
         >>> # Matrix that projects into the subspace spanned by the columns
         >>> # of A
         >>> Q = calcProjectionMatrix(A)
-        >>> print Q.round(4)
+        >>> print(Q.round(4))
         [[ 0.5239-0.j      0.0366+0.3296j  0.3662+0.0732j]
          [ 0.0366-0.3296j  0.7690+0.j     -0.0789+0.2479j]
          [ 0.3662-0.0732j -0.0789-0.2479j  0.7070-0.j    ]]
@@ -160,7 +160,7 @@ class Projection(object):
         >>> # Matrix that projects into the subspace orthognal to the
         >>> # subspace spanned by the columns of A
         >>> oQ = calcOrthogonalProjectionMatrix(A)
-        >>> print oQ
+        >>> print(oQ)
         [[ 0.12121212 -0.3030303   0.12121212]
          [-0.3030303   0.75757576 -0.3030303 ]
          [ 0.12121212 -0.3030303   0.12121212]]

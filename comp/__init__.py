@@ -3,4 +3,4 @@
 
 """Package with Coordinated Multipoint (CoMP) algorithms."""
 
-import comp
+# import comp
