@@ -132,10 +132,10 @@ def pretty_time(time_in_seconds):
     '1h:12m:23s'
     """
     seconds = time_in_seconds
-    minutes = int(seconds) / 60
+    minutes = int(seconds) // 60
     seconds = int(round(seconds % 60))
 
-    hours = minutes / 60
+    hours = minutes // 60
     minutes = minutes % 60
 
     if(hours > 0):
@@ -310,7 +310,7 @@ def _count_bits_single_element(n):
     Exaples
     -------
     >>> a = np.array([3, 0, 2])
-    >>> print count_bits(a)
+    >>> print(count_bits(a))
     [2 0 1]
 
     """

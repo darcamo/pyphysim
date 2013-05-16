@@ -17,12 +17,12 @@ __all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Base Class for IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Base Class for all IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class IASolverBaseClass(object):
-    """Base class for Interference Alignment Algorithms.
-    """
+    """Base class for all Interference Alignment Algorithms.
 
+    """
     def __init__(self):
         """Initialize the variables that every IA solver will have.
         """
@@ -391,9 +391,88 @@ class IASolverBaseClass(object):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Base Class for all iterative IA algorithms xxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class IterativeIASolverBaseClass(IASolverBaseClass):
+    """Base class for all Iterative IA algorithms.
+
+    All iterative IA algorithms must implement a `step` method. The solve
+    method will be then simply running the step method a given number of
+    times, which is controlled by the max_iterations attribute.
+
+    """
+
+    def __init__(self, ):
+        IASolverBaseClass.__init__(self)
+
+        self._runned_iterations = 0  # Count how many times the step method
+                                     # was called. This will be reseted to
+                                     # zero whenever the channel or the
+                                     # precoder is reinitialized.
+        self.max_iterations = 50  # Number of times the step method is
+                                  # called in the solve method.
+
+    def step(self):
+        """Performs one iteration of the algorithm.
+
+        This method does not return anything, but instead updates the
+        precoder and receive filter.
+
+        Notes
+        -----
+        This function should be implemented in the derived classes
+
+        """
+        raise NotImplementedError("step: Not implemented")
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Overwrite methods in the IASolverBaseClass that change the channel or
+    # the precoder so that they also reset the _runned_iterations attribute
+    # to.
+    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
+        self._runned_iterations = 0
+        super(IterativeIASolverBaseClass, self).init_from_channel_matrix(
+            channel_matrix, Nr, Nt, K)
+
+    def randomizeH(self, Nr, Nt, K):
+        self._runned_iterations = 0
+        super(IterativeIASolverBaseClass, self).randomizeH(Nr, Nt, K)
+
+    def randomizeF(self, Nt, Ns, K, P=None):
+        self._runned_iterations = 0
+        super(IterativeIASolverBaseClass, self).randomizeF(Nt, Ns, K, P)
+
+    # This will use the docstrings of the base class for the overwritten
+    # methods.
+    init_from_channel_matrix.__doc__ = \
+        IASolverBaseClass.init_from_channel_matrix.__doc__
+    randomizeH.__doc__ = IASolverBaseClass.randomizeH.__doc__
+    randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def solve(self):
+        """Find the IA solution by performing the `step` method several times.
+
+        The number of iterations of the algorithm must be specified in the
+        max_iterations member variable.
+
+        Notes
+        -----
+
+        You need to call :meth:`randomizeF` at least once before calling
+        :meth:`solve` as well as initialize the channel either calling the
+        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+
+        """
+        for i in range(self.max_iterations):
+            self._runned_iterations = self._runned_iterations + 1
+            self.step()
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx AlternatingMinIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class AlternatingMinIASolver(IASolverBaseClass):
+class AlternatingMinIASolver(IterativeIASolverBaseClass):
     """Implements the "Interference Alignment via Alternating Minimization"
     algorithm from the paper with the same name.
 
@@ -412,11 +491,9 @@ class AlternatingMinIASolver(IASolverBaseClass):
 
     """
     def __init__(self):
-        IASolverBaseClass.__init__(self)
+        IterativeIASolverBaseClass.__init__(self)
 
         self.C = []    # Basis of the interference subspace for each user
-        self.max_iterations = 50
-
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def getCost(self):
@@ -597,33 +674,18 @@ class AlternatingMinIASolver(IASolverBaseClass):
             newW[k] = newW[k][0:self.Ns[k]]
         self._W = newW
 
-    def solve(self):
-        """Find the IA solution with the Alternating Minimizations algorithm.
 
-        The number of iterations of the algorithm must be specified in the
-        max_iterations member variable.
-
-        Notes
-        -----
-
-        You need to call :meth:`randomizeF` at least once before calling
-        :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
-
-        """
-        for i in range(self.max_iterations):
-            self.step()
-
-
-class MinLeakageIASolver(IASolverBaseClass):
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MinLeakageIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class MinLeakageIASolver(IterativeIASolverBaseClass):
     """Implements the Minimum Leakage Interference Alignment algorithm.
     """
 
     def __init__(self, ):
         """
         """
-        IASolverBaseClass.__init__(self)
-        self.max_iterations = 50
+        IterativeIASolverBaseClass.__init__(self)
 
     def calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
@@ -694,12 +756,14 @@ class MinLeakageIASolver(IASolverBaseClass):
 
         """
         self._W = self.calc_Uk_all_k()
-        for i in range(self.max_iterations):
-            self.step()
+        IterativeIASolverBaseClass.solve(self)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MaxSinrIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: Finish the implementation
-class MaxSinrIASolver(IASolverBaseClass):
+class MaxSinrIASolver(IterativeIASolverBaseClass):
     """Implements the "Interference Alignment via Max SINR" algorithm.
 
     This algorithm is applicable to a "K-user" scenario and it is
@@ -729,7 +793,7 @@ class MaxSinrIASolver(IASolverBaseClass):
         noise_var : float
             Noise power in dBm.
         """
-        IASolverBaseClass.__init__(self)
+        IterativeIASolverBaseClass.__init__(self)
         self.noise_power = noise_power
         self.max_iterations = 50
 
@@ -1155,5 +1219,4 @@ class MaxSinrIASolver(IASolverBaseClass):
 
         """
         self._W = self.calc_Uk_all_k()
-        for i in range(self.max_iterations):
-            self.step()
+        IterativeIASolverBaseClass.solve(self)

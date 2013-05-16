@@ -390,7 +390,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         expected_output = set(['lala', 'lele'])
         self.assertEqual(set(self.simresults.get_result_names()), expected_output)
         # Test also the representation of the SimulationResults object
-        self.assertEqual(self.simresults.__repr__(), """SimulationResults: ['lele', 'lala']""")
+        self.assertEqual(self.simresults.__repr__(), """SimulationResults: ['lala', 'lele']""")
 
     def test_add_result(self):
         # Add a result with the same name of an existing result -> Should
@@ -559,11 +559,14 @@ class SimulationParametersTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.sim_params.set_unpack_parameter('sixth')
 
-        # Now that a few parameters were added and set to be unpacked, lets
-        # test the representation of the SimulationParameters object. Note
-        # that the parameters that are marked for unpacking have '*'
-        # appended to their name.
-        self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
+        import sys
+        if sys.version_info[0] < 3:
+            # Now that a few parameters were added and set to be unpacked,
+            # lets test the representation of the SimulationParameters
+            # object. Note that the parameters that are marked for
+            # unpacking have '*' appended to their name.
+            # THIS TEST WILL NOT BE PERFORMED IN PYTHON 3
+            self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
 
         # Test if we can unset a parameter that was previously set to be
         # unpacked.
@@ -1052,4 +1055,4 @@ if __name__ == '__main__1':  # pragma: no cover
     # Stop the process that updates the progressbar.
     bar.stop_updater()
 
-    print "FIM"
+    print("The End")

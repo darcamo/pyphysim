@@ -38,11 +38,11 @@ class MaxSINRSimulationRunner(SimulationRunner):
         #SNR = np.array([50])
         M = 4
         self.modulator = modulators.PSK(M)
-        NSymbs = 200
+        NSymbs = 100
         K = 3
-        Nr = np.ones(K, dtype=int) * 2
-        Nt = np.ones(K, dtype=int) * 2
-        Ns = np.ones(K, dtype=int) * 1
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
         self.params.add('NSymbs', NSymbs)
         self.params.add('K', K)
         self.params.add('Nr', Nr)
@@ -53,13 +53,13 @@ class MaxSINRSimulationRunner(SimulationRunner):
         self.ia_solver = ia.MaxSinrIASolver(noise_power=1)
 
         # Iterations of the algorithm.
-        self.ia_solver.max_iterations = 50
+        self.ia_solver.max_iterations = 200
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
         self.rep_max = 2000
         #self.rep_max = 200
-        self.progressbar_message = "MaxSINR Min. ({0}-QAM mod.) - SNR: {{SNR}}".format(M)
+        self.progressbar_message = "MaxSINR Min. ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # We need to add the parameters to the self.param variable.
@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'ia_max_sinr_results'
+    results_filename = 'ia_max_sinr_results_4PSK_4x4(2)'
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -217,7 +217,7 @@ if __name__ == '__main__':
     #
     #
     #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'ia_max_sinr_results'
+    #results_filename = 'ia_max_sinr_results'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
@@ -232,6 +232,7 @@ if __name__ == '__main__':
     Nr = results.params["Nr"]
     Nt = results.params["Nt"]
     Ns = results.params["Ns"]
+    modulator_name = results.params['Modulator']
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -239,7 +240,7 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(K, Nr, Nt, Ns))
+        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr[0], Nt[0], Ns[0], modulator_name))
         legend()
 
         grid(True, which='both', axis='both')

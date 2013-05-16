@@ -37,7 +37,7 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # SNR = np.array([0., 3, 6, 9, 12])
         SNR = np.array([0., 5, 10, 15, 20, 25, 30])
         #SNR = np.array([50])
-        M = 16
+        M = 4
         self.NSymbs = 200
         self.modulator = modulators.PSK(M)
         self.K = 3

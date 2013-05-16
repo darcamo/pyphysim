@@ -465,7 +465,7 @@ class SimulationRunner(object):
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Loop through all the parameters combinations
         for current_params in self.params.get_unpacked_params_list():
-            var_print_iter.next()
+            next(var_print_iter)
 
             # Implement the _on_simulate_current_params_start method in a
             # subclass if you need to run code before the _run_simulation
@@ -507,7 +507,7 @@ class SimulationRunner(object):
             # This will add a blank line between the simulations for
             # different unpacked variations (when there is more then one)
             if self.params.get_num_unpacked_variations() > 1:
-                print ""
+                print("")
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -862,6 +862,7 @@ class SimulationParameters(object):
             # Generator for the lengths of the parameters set to be unpacked
             gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
             # Just multiply all the lengths
+            from functools import reduce
             return reduce(lambda x, y: x * y, gen_values)
 
     def get_pack_indexes(self, fixed_params_dict=dict()):
@@ -1038,7 +1039,7 @@ class SimulationParameters(object):
         filename : str
             Name of the file to save the parameters.
         """
-        with open(filename, 'w') as output:
+        with open(filename, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
@@ -1050,7 +1051,7 @@ class SimulationParameters(object):
         filename : src
             Name of the file from where the results will be loaded.
         """
-        with open(filename, 'r') as inputfile:
+        with open(filename, 'rb') as inputfile:
             obj = pickle.load(inputfile)
         return obj
 
@@ -1209,7 +1210,7 @@ class SimulationResults(object):
 
     def __repr__(self):
         list_of_names = self._results.keys()
-        repr_string = "SimulationResults: %s" % list_of_names
+        repr_string = "SimulationResults: {0}".format(sorted(list_of_names))
         return repr_string
 
     def add_result(self, result):
@@ -1414,7 +1415,14 @@ class SimulationResults(object):
         """Get an iterator to the results stored in the SimulationResults
         object.
         """
-        return self._results.itervalues()
+        try:
+            # This is for python 2
+            iterator = self._results.itervalues()
+        except AttributeError:
+            # This is for python 3
+            iterator = iter(self._results.values())
+
+        return iterator
 
     def save_to_file(self, filename):
         """Save the SimulationResults to the file `filename`.
@@ -1425,7 +1433,8 @@ class SimulationResults(object):
             Name of the file to save the results.
 
         """
-        with open(filename, 'w') as output:
+        # For python3 compatibility the file must be opened in binary mode
+        with open(filename, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
@@ -1442,7 +1451,7 @@ class SimulationResults(object):
         simresults : A SimulationResults object
             The SimulationResults object loaded from the file `filename`.
         """
-        with open(filename, 'r') as inputfile:
+        with open(filename, 'rb') as inputfile:
             obj = pickle.load(inputfile)
         return obj
 
@@ -1899,3 +1908,32 @@ class Result(object):
         return results_list
 
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+## HDF5
+## http://scipy-user.10969.n7.nabble.com/Should-I-use-pickle-for-numpy-array-td144.html
+# >>> import h5py
+# >>> f = h5py.File('example.hdf5', 'w')
+# >>> import numpy
+# >>> f['my_array'] = numpy.arange(10)
+# >>> f.close()
+
+## PyTables
+## http://stackoverflow.com/questions/8447926/loading-matlab-sparse-matrix-using-python-pytables
+
+## Conclusions
+# Its better to use h5py instead of PyTables. The h5py library provides an
+# interface similar to numpy arrays and I don't need the extra abstraction
+# layer from PyTables and its complex database like operations.
+
+
+## Boa resposta
+# http://stackoverflow.com/questions/10075661/how-to-save-dictionaries-and-arrays-in-the-same-archive-with-numpy-savez
+
+
+## Quick Start Guide do h5py
+# http://www.h5py.org/docs/intro/quick.html
+
+
+# Você pode usar o programa vitables par visualizar os arquivos criados com
+# o pytables ou hdf5.
