@@ -18,86 +18,98 @@ from ia import ia
 from comm import modulators
 from util.conversion import dB2Linear
 from util import misc
+from util.progressbar import ProgressbarText
 
 
 if __name__ == '__main__':
-    SNR = 50.0
-    M = 16
-    NSymbs = 200
-    modulator = modulators.PSK(M)
-    K = 3
-    Nr = np.ones(K, dtype=int) * 2
-    Nt = np.ones(K, dtype=int) * 2
-    Ns = np.ones(K, dtype=int) * 1
-    #ia_solver = ia.AlternatingMinIASolver()
-    ia_solver = ia.MaxSinrIASolver()
-    #ia_solver = ia.MinLeakageIASolver()
-    ia_solver.max_iterations = 300
-
-    # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # inputData has the data of all users (vertically stacked)
-    inputData = np.random.randint(0, M, [np.sum(Ns), NSymbs])
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # modulatedData has the data of all users (vertically stacked)
-    modulatedData = modulator.modulate(inputData)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Perform the Interference Alignment xxxxxxxxxxxxxxxxxxxxxxxx
-    cumNs = np.cumsum(Ns)
-    # Split the data. transmit_signal will be a list and each element
-    # is a numpy array with the data of a user
-    transmit_signal = np.split(modulatedData, cumNs[:-1])
-
-    ia_solver.randomizeH(Nr, Nt, K)
-    ia_solver.randomizeF(Nt, Ns, K)
-
-    ia_solver.solve()
-
-    transmit_signal_precoded = map(np.dot, ia_solver._F, transmit_signal)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    SNR = 30.0
     noise_var = 1 / dB2Linear(SNR)
-    multi_user_channel = ia_solver._multiUserChannel
-    # received_data is an array of matrices, one matrix for each receiver.
-    received_data = multi_user_channel.corrupt_data(
-        transmit_signal_precoded, noise_var)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    M = 4
+    NSymbs = 200
+    rep_max = 5000
+    modulator = modulators.QAM(M)
+    K = 3
+    Nr = np.ones(K, dtype=int) * 4
+    Nt = np.ones(K, dtype=int) * 4
+    Ns = np.ones(K, dtype=int) * 2
+    #ia_solver = ia.AlternatingMinIASolver()
+    ia_solver = ia.MaxSinrIASolver(noise_var)
+    #ia_solver = ia.MinLeakageIASolver()
+    ia_solver.max_iterations = 50
 
-    # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-    dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
-    # This will cancel the interference
-    received_data_no_interference = map(dot2,
-                                        ia_solver._W, received_data)
+    pb = ProgressbarText(rep_max, '*', message="Simulating for SNR: {0}".format(SNR))
 
-    # We still need to compensate the combined effect of the precoding and
-    # IA receive filter
-    compensate_filters = [np.linalg.inv(ia_solver.calc_equivalent_channel(k)) for k in range(K)]
-    received_data_no_interference2 = map(np.dot,
-                                         compensate_filters, received_data_no_interference)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    symbolErrors = 0
+    bitErrors = 0
+    numSymbols = 0
+    numBits = 0
+    for rep in range(rep_max):
+        pb.progress(rep)
+        # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # inputData has the data of all users (vertically stacked)
+        inputData = np.random.randint(0, M, [np.sum(Ns), NSymbs])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    received_data_no_interference = np.vstack(received_data_no_interference2)
-    demodulated_data = modulator.demodulate(received_data_no_interference)
-    # demodulated_data = map(modulator.demodulate, received_data_no_interference)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # modulatedData has the data of all users (vertically stacked)
+        modulatedData = modulator.modulate(inputData)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # print "IA Cost: {0:f}".format(ia_solver.getCost())
-    # print inputData - demodulated_data
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Perform the Interference Alignment xxxxxxxxxxxxxxxxxxxxxxxx
+        cumNs = np.cumsum(Ns)
+        # Split the data. transmit_signal will be a list and each element
+        # is a numpy array with the data of a user
+        transmit_signal = np.split(modulatedData, cumNs[:-1])
 
-    # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
-    symbolErrors = np.sum(inputData != demodulated_data)
-    bitErrors = misc.count_bit_errors(inputData, demodulated_data)
-    numSymbols = inputData.size
-    numBits = inputData.size * modulators.level2bits(M)
-    #ia_cost = ia_solver.getCost()
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        ia_solver.randomizeH(Nr, Nt, K)
+        ia_solver.randomizeF(Nt, Ns, K)
 
+        ia_solver.solve()
+
+        transmit_signal_precoded = map(np.dot, ia_solver.F, transmit_signal)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        multi_user_channel = ia_solver._multiUserChannel
+        # received_data is an array of matrices, one matrix for each receiver.
+        received_data = multi_user_channel.corrupt_data(
+            transmit_signal_precoded, noise_var)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
+        #dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
+        # This will cancel the interference
+        received_data_no_interference = map(np.dot,
+                                            ia_solver.W, received_data)
+
+        # We still need to compensate the combined effect of the precoding and
+        # IA receive filter
+        # compensate_filters = [np.linalg.inv(ia_solver.calc_equivalent_channel(k)) for k in range(K)]
+        # received_data_no_interference2 = map(np.dot,
+        #                                      compensate_filters, received_data_no_interference)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        received_data_no_interference = np.vstack(received_data_no_interference)
+        # received_data_no_interference = np.vstack(received_data_no_interference2)
+        demodulated_data = modulator.demodulate(received_data_no_interference)
+        # demodulated_data = map(modulator.demodulate, received_data_no_interference)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # print "IA Cost: {0:f}".format(ia_solver.getCost())
+        # print inputData - demodulated_data
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
+        symbolErrors = symbolErrors + np.sum(inputData != demodulated_data)
+        bitErrors = bitErrors + misc.count_bit_errors(inputData, demodulated_data)
+        numSymbols = numSymbols + inputData.size
+        numBits = numBits + inputData.size * modulators.level2bits(M)
+        #ia_cost = ia_solver.getCost()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    print
     print bitErrors
     print numBits
     BER = bitErrors / numBits
