@@ -1821,7 +1821,7 @@ class Result(object):
     @staticmethod
     def save_to_hdf5_dataset(parent, results_list):
         """Create an HDF5 dataset in `parent` and fill it with the Result
-        objects in result_list.
+        objects in `results_list`.
 
         Parameters
         ----------
@@ -1840,60 +1840,6 @@ class Result(object):
         for i, r in enumerate(results_list):
             ds[i] = (r._value, r._total, r.num_updates)
             ds.attrs.create('update_type_code', data=r._update_type_code)
-
-    # @staticmethod
-    # def create_hdf5_dataset(parent, name, shape):
-    #     """Static method that knows how to create an HDF5 dataset of
-    #     Results.
-
-    #     This method is mainly used in the SimulationResults class.
-
-    #     Parameters
-    #     ----------
-    #     parent : An HDF5 group (usually) or file.
-    #         The parent that will contain the dataset.
-    #     shape : A valid numpy shape
-    #         The shape of the dataset. Use (5,) to create a 1D dataset with 5
-    #     elements, for instance.
-
-    #     Returns
-    #     -------
-    #     ds : The new created dataset (which is also already in `parent`.
-
-    #     """
-    #     dtype = [('_value', float), ('_total', float), ('num_updates', int)]
-    #     ds = parent.create_dataset(name, shape=shape, dtype=dtype)
-
-    #     return ds
-
-    # @staticmethod
-    # def fill_hdf5_dataset(ds, results_list):
-    #     """Fill the provided HDF5 dataset with a list of Result objects.
-
-    #     Parameters
-    #     ----------
-    #     ds : An HDF5 Dataset
-    #         The dataset where the data in the Result objects in
-    #         `results_list` will be added. This dataset must have a dtype
-    #         equal to
-    #         "[('_value', float), ('_total', float), ('num_updates', int)]"
-    #         and a 1D shape of size equal to the size of results_list.
-    #     results_list : A list
-    #         A list of Result objects.
-
-    #     Notes
-    #     -----
-    #     The "_value" and "_total" fields are always saved as floats.
-
-    #     See also
-    #     --------
-    #     create_hdf5_dataset
-
-    #     """
-    #     # index, Result object
-    #     for i, r in enumerate(results_list):
-    #         ds[i] = (r._value, r._total, r.num_updates)
-    #         ds.attrs.create('update_type_code', data=r._update_type_code)
 
     @staticmethod
     def load_from_hdf5_dataset(ds):
