@@ -369,11 +369,11 @@ class SimulationRunner(object):
         # If the self.update_progress_function_style attribute matches one of the
         # available styles, then update_progress_func will be appropriately
         # set.
-        if self.update_progress_function_style == 'text1':
+        if self.update_progress_function_style == 'text1':  # pragma: no cover
             # We will use the ProgressbarText class
             self._pbar = ProgressbarText(self.rep_max, '*', message)
             update_progress_func = self._pbar.progress
-        elif self.update_progress_function_style == 'text2':
+        elif self.update_progress_function_style == 'text2':  # pragma: no cover
             # We will use the ProgressbarText2 class
             self._pbar = ProgressbarText2(self.rep_max, '*', message)
             update_progress_func = self._pbar.progress
@@ -385,7 +385,7 @@ class SimulationRunner(object):
             # self.update_progress_function_style should basically do what
             # _get_update_progress_function is supposed to do.
             update_progress_func = self.update_progress_function_style(
-                self.rep_max, self.progressbar_message)
+                self.rep_max, self.progressbar_message)  # pragma: no cover
 
         return update_progress_func
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -420,7 +420,7 @@ class SimulationRunner(object):
             if self.update_progress_function_style is None:
                 for i in itertools.repeat(''):
                     yield 0
-            else:
+            else:  # pragma: no cover
                 variation_pbar = ProgressbarText3(
                     num_variations,
                     progresschar='-',
@@ -1483,16 +1483,14 @@ class SimulationResults(object):
             size = len(r)
             # Do I need to test if r has a length greater than zero???
             name = r[0].name
-            ds = Result.create_hdf5_dataset(g, name, (size,))
-            Result.fill_hdf5_dataset(ds, r)
+            Result.save_to_hdf5_dataset(g, r)
+            # ds = Result.create_hdf5_dataset(g, name, (size,))
+            # Result.fill_hdf5_dataset(ds, r)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
         pg = fid.create_group('parameters')
-
         self.params.save_to_hdf5_group(pg)
-
-        # TODO: continue
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         fid.close()
@@ -1821,58 +1819,81 @@ class Result(object):
                 return self._value
 
     @staticmethod
-    def create_hdf5_dataset(parent, name, shape):
-        """Static method that knows how to greate an HDF5 dataset of
-        Results.
-
-        This method is mainly used in the SimulationResults class.
+    def save_to_hdf5_dataset(parent, results_list):
+        """Create an HDF5 dataset in `parent` and fill it with the Result
+        objects in result_list.
 
         Parameters
         ----------
         parent : An HDF5 group (usually) or file.
             The parent that will contain the dataset.
-        shape : A valid numpy shape
-            The shape of the dataset. Use (5,) to create a 1D dataset with 5
-        elements, for instance.
-
-        Returns
-        -------
-        ds : The new created dataset (which is also already in `parent`.
+        results_list : A python list of Result objects.
+            A list of Result objects. All of these objects must have the
+            same name and update type.
 
         """
         dtype = [('_value', float), ('_total', float), ('num_updates', int)]
-        ds = parent.create_dataset(name, shape=shape, dtype=dtype)
+        name = results_list[0].name
+        size = len(results_list)
+        ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
 
-        return ds
-
-    @staticmethod
-    def fill_hdf5_dataset(ds, results_list):
-        """Fill the provided HDF5 dataset with a list of Result objects.
-
-        Parameters
-        ----------
-        ds : An HDF5 Dataset
-            The dataset where the data in the Result objects in
-            `results_list` will be added. This dataset must have a dtype
-            equal to
-            "[('_value', float), ('_total', float), ('num_updates', int)]"
-            and a 1D shape of size equal to the size of results_list.
-        results_list : A list
-            A list of Result objects.
-
-        Notes
-        -----
-        The "_value" and "_total" fields are always saved as floats.
-
-        See also
-        --------
-        create_hdf5_dataset
-
-        """
-        # index, Result object
         for i, r in enumerate(results_list):
             ds[i] = (r._value, r._total, r.num_updates)
             ds.attrs.create('update_type_code', data=r._update_type_code)
+
+    # @staticmethod
+    # def create_hdf5_dataset(parent, name, shape):
+    #     """Static method that knows how to create an HDF5 dataset of
+    #     Results.
+
+    #     This method is mainly used in the SimulationResults class.
+
+    #     Parameters
+    #     ----------
+    #     parent : An HDF5 group (usually) or file.
+    #         The parent that will contain the dataset.
+    #     shape : A valid numpy shape
+    #         The shape of the dataset. Use (5,) to create a 1D dataset with 5
+    #     elements, for instance.
+
+    #     Returns
+    #     -------
+    #     ds : The new created dataset (which is also already in `parent`.
+
+    #     """
+    #     dtype = [('_value', float), ('_total', float), ('num_updates', int)]
+    #     ds = parent.create_dataset(name, shape=shape, dtype=dtype)
+
+    #     return ds
+
+    # @staticmethod
+    # def fill_hdf5_dataset(ds, results_list):
+    #     """Fill the provided HDF5 dataset with a list of Result objects.
+
+    #     Parameters
+    #     ----------
+    #     ds : An HDF5 Dataset
+    #         The dataset where the data in the Result objects in
+    #         `results_list` will be added. This dataset must have a dtype
+    #         equal to
+    #         "[('_value', float), ('_total', float), ('num_updates', int)]"
+    #         and a 1D shape of size equal to the size of results_list.
+    #     results_list : A list
+    #         A list of Result objects.
+
+    #     Notes
+    #     -----
+    #     The "_value" and "_total" fields are always saved as floats.
+
+    #     See also
+    #     --------
+    #     create_hdf5_dataset
+
+    #     """
+    #     # index, Result object
+    #     for i, r in enumerate(results_list):
+    #         ds[i] = (r._value, r._total, r.num_updates)
+    #         ds.attrs.create('update_type_code', data=r._update_type_code)
 
     @staticmethod
     def load_from_hdf5_dataset(ds):
