@@ -1067,6 +1067,15 @@ class SimulationParameters(object):
         group : An HDF5 group
             The group where the parameters will be saved.
 
+        Notes
+        -----
+        This method is called from the save_to_hdf5_file method in the
+        SimulationResults class. It uses the python h5py library and
+        `group` is supposed to be an HDF5 group created with that library.
+
+        See also
+        --------
+        load_from_hdf5_group
         """
         # Store each parameter in self.parameter in a different dataset
         for name, value in self.parameters.iteritems():
@@ -1084,6 +1093,12 @@ class SimulationParameters(object):
         This function is called in the load_from_hdf5_file function in the
         SimulationResults class.
 
+        Notes
+        -----
+        This method is called from the load_from_hdf5_file method in the
+        SimulationResults class. It uses the python h5py library and
+        `group` is supposed to be an HDF5 group created with that library.
+
         Parameters
         ----------
         group : An HDF5 group
@@ -1093,6 +1108,10 @@ class SimulationParameters(object):
         -------
         params : A SimulationParameters object.
             The SimulationParameters object loaded from `group`.
+
+        See also
+        --------
+        save_to_hdf5_group
         """
         params = SimulationParameters()
 
@@ -1480,12 +1499,7 @@ class SimulationResults(object):
         # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
         g = fid.create_group('results')
         for r in self:
-            size = len(r)
-            # Do I need to test if r has a length greater than zero???
-            name = r[0].name
             Result.save_to_hdf5_dataset(g, r)
-            # ds = Result.create_hdf5_dataset(g, name, (size,))
-            # Result.fill_hdf5_dataset(ds, r)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
@@ -1524,9 +1538,13 @@ class SimulationResults(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Parameters grop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # TODO: Test if the file really has the 'parameters' group.
-        pg = fid['parameters']
-        simresults._params = SimulationParameters.load_from_hdf5_group(pg)
+        try:
+            # We only set the simulation parameters if it was stored in the
+            # hdf5 file.
+            pg = fid['parameters']
+            simresults._params = SimulationParameters.load_from_hdf5_group(pg)
+        except KeyError:
+            pass
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         fid.close()
@@ -1831,6 +1849,16 @@ class Result(object):
             A list of Result objects. All of these objects must have the
             same name and update type.
 
+        Notes
+        -----
+        This method is called from the save_to_hdf5_file method in the
+        SimulationResults class. It uses the python h5py library and
+        `parent` is supposed to be an HDF5 group created with that library.
+
+        See also
+        --------
+        load_from_hdf5_dataset
+
         """
         dtype = [('_value', float), ('_total', float), ('num_updates', int)]
         name = results_list[0].name
@@ -1845,7 +1873,7 @@ class Result(object):
     def load_from_hdf5_dataset(ds):
         """Load a list of Rersult objects from an HDF5 dataset.
 
-        This dataset was suposelly filled with the fill_hdf5_dataset
+        This dataset was suposelly saved with the save_to_hdf5_dataset
         function.
 
         Parameters
@@ -1858,9 +1886,16 @@ class Result(object):
         results_list : A list of Result objects.
             The list of Result objects loaded from the dataset.
 
+        Notes
+        -----
+        This method is called from the load_from_hdf5_file method in the
+        SimulationResults class. It uses the python h5py library and
+        `ds` is supposed to be an HDF5 dataset created with that library.
+
         See also
         --------
-        fill_hdf5_dataset
+        save_to_hdf5_dataset
+
         """
         results_list = []
 
