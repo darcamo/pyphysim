@@ -366,12 +366,11 @@ class SimulationResultsTestCase(unittest.TestCase):
     """
     def setUp(self):
         # First SimulationResults object
-        result1 = Result.create("lala", Result.SUMTYPE, 13)
+        self.simresults = SimulationResults()
+        self.simresults.add_new_result("lala", Result.SUMTYPE, 13)
         result2 = Result("lele", Result.RATIOTYPE)
         result2.update(3, 10)
         result2.update(8, 10)
-        self.simresults = SimulationResults()
-        self.simresults.add_result(result1)
         self.simresults.add_result(result2)
 
         # Second SimulationResults object
@@ -382,6 +381,24 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.other_simresults.add_result(result1_other)
         self.other_simresults.add_result(result2_other)
         self.other_simresults.add_result(result3)
+
+    def test_params_property(self):
+        params = SimulationParameters()
+        params.add('number', 10)
+        params.add('name', 'lala')
+
+        # Try to set the parameters to an invalid object
+        with self.assertRaises(ValueError):
+            self.simresults.set_parameters(10)
+
+        # Set the simulation parameters
+        self.simresults.set_parameters(params)
+
+        # test the get property
+        params2 = self.simresults.params
+        self.assertEqual(len(params), len(params2))
+        self.assertEqual(params['number'], params2['number'])
+        self.assertEqual(params['name'], params2['name'])
 
     def test_get_result_names(self):
         # The output of the get_result_names is a list of names. We
@@ -488,6 +505,11 @@ class SimulationResultsTestCase(unittest.TestCase):
         except OSError:  # pragma: no cover
             pass
 
+        # Set sime simulation parameters
+        self.simresults.params.add('factor', 0.5)
+        self.simresults.params.add('temperature', 50.5)
+        self.simresults.params.add('age', 3)
+
         # Save to the file
         self.simresults.save_to_file(filename)
 
@@ -508,6 +530,53 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
                                simresults2['lele'][0].get_result(),)
 
+        # test if the parameters were also saved
+        self.assertEqual(self.simresults.params['age'],
+                         simresults2.params['age'])
+        self.assertAlmostEqual(self.simresults.params['temperature'],
+                               simresults2.params['temperature'])
+        self.assertAlmostEqual(self.simresults.params['factor'],
+                               simresults2.params['factor'])
+
+    def test_save_to_and_load_from_hdf5_file(self):
+        filename = 'results.h5'
+        # Let's make sure the file does not exist
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        # Set sime simulation parameters
+        self.simresults.params.add('factor', 0.5)
+        self.simresults.params.add('temperature', 50.5)
+        self.simresults.params.add('age', 3)
+
+        # Save to the file
+        self.simresults.save_to_hdf5_file(filename)
+
+        # Load from the file
+        simresults2 = simulations.SimulationResults.load_from_hdf5_file(filename)
+        self.assertEqual(len(self.simresults), len(simresults2))
+        self.assertEqual(set(self.simresults.get_result_names()),
+                         set(simresults2.get_result_names()))
+
+        self.assertEqual(self.simresults['lala'][0].type_code,
+                         simresults2['lala'][0].type_code)
+        self.assertEqual(self.simresults['lele'][0].type_code,
+                         simresults2['lele'][0].type_code)
+
+        self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
+                               simresults2['lala'][0].get_result(),)
+        self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
+                               simresults2['lele'][0].get_result(),)
+
+        # test if the parameters were also saved
+        self.assertEqual(self.simresults.params['age'],
+                         simresults2.params['age'])
+        self.assertAlmostEqual(self.simresults.params['temperature'],
+                               simresults2.params['temperature'])
+        self.assertAlmostEqual(self.simresults.params['factor'],
+                               simresults2.params['factor'])
 
 class SimulationParametersTestCase(unittest.TestCase):
     """Unit-tests for the SimulationParameters class in the simulations

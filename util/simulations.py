@@ -260,7 +260,7 @@ class SimulationRunner(object):
         # to use the parallel processing capabilities of IPython
         self._engine_view = None
 
-    def clear(self, ):
+    def clear(self, ):  # pragma: no cover
         """Clear the SimulationRunner.
 
         This will erase any results from previous simulations as well as
@@ -507,7 +507,7 @@ class SimulationRunner(object):
             # This will add a blank line between the simulations for
             # different unpacked variations (when there is more then one)
             if self.params.get_num_unpacked_variations() > 1:
-                print("")
+                print("")  # pragma: no cover
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -839,7 +839,7 @@ class SimulationParameters(object):
         """
         return len(self.parameters)
 
-    def __iter__(self):
+    def __iter__(self):  # pragma: no cover
         """Get an iterator to the parameters in the SimulationParameters
         object.
         """
@@ -1188,7 +1188,7 @@ class SimulationResults(object):
         # This will store the simulation parameters used in the simulation
         # that resulted in the results. This should be set by calling the
         # set_parameters method.
-        self._params = None
+        self._params = SimulationParameters()
 
     def _get_params(self):
         """Get method for the params property."""
@@ -1206,6 +1206,8 @@ class SimulationResults(object):
             parameters.
 
         """
+        if not isinstance(params, SimulationParameters):
+            raise ValueError('params must be a SimulationParameters object')
         self._params = params
 
     def __repr__(self):
@@ -1407,7 +1409,7 @@ class SimulationResults(object):
         """
         return len(self._results)
 
-    def __iter__(self):
+    def __iter__(self):  # pragma: no cover
         # """Get an iterator to the internal dictionary. Therefore iterating
         # through this will iterate through the dictionary keys, that is, the
         # name of the results stored in the SimulationResults object.
@@ -1470,7 +1472,7 @@ class SimulationResults(object):
         fid = h5py.File(filename, 'w')
 
         # Add the attributes, if any
-        if isinstance(attrs, dict):
+        if isinstance(attrs, dict):  # pragma: no cover
             # attr is a dictionary of attributes
             for name, value in attrs.items():
                 fid.attrs.create(name, value)
@@ -1492,7 +1494,6 @@ class SimulationResults(object):
 
         # TODO: continue
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
         fid.close()
 
