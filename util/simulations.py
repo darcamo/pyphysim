@@ -1086,6 +1086,42 @@ class SimulationParameters(object):
         # since a set has no native HDF5 equivalent.
         group.attrs.create('_unpacked_parameters_set', data=list(self._unpacked_parameters_set))
 
+    def save_to_pytables_group(self, group):
+        """Save the contents of the SimulationParameters object into an
+        Pytables group.
+
+        This function is called in the save_to_pytables_file function in the
+        SimulationResults class.
+
+        Parameters
+        ----------
+        group : A Pytables group
+            The group where the parameters will be saved.
+
+        Notes
+        -----
+        This method is called from the save_to_pytables_file method in the
+        SimulationResults class. It uses the python pytables library and
+        `group` is supposed to be an pytables group created with that library.
+
+        See also
+        --------
+        load_from_pytables_group
+        """
+        pytables_file = group._v_file
+
+        # Store each parameter in self.parameter in a different dataset
+        for name, value in self.parameters.iteritems():
+            pytables_file.createArray(group, name, value, title=name)
+
+        # Store the _unpacked_parameters_set as an attribute of the group.
+        # Note that we need to convert _unpacked_parameters_set to a list,
+        # since a set has no native HDF5 equivalent.
+
+        # TODO: Currently the atrybute will be saved as a python object,
+        # but it should be an array of strings.
+        pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(self._unpacked_parameters_set))
+
     @staticmethod
     def load_from_hdf5_group(group):
         """Load the simulation parameters from an HDF5 group.
@@ -1251,7 +1287,6 @@ class SimulationResults(object):
         # Added as a list with a single element
         self._results[result.name] = [result]
 
-    # TODO: Test-me
     def add_new_result(self, name, update_type, value, total=0):
         """Create a new Result object on the fly and add it to the
         SimulationResults object.
@@ -1486,9 +1521,17 @@ class SimulationResults(object):
             Name of the file to save the results.
         attrs : a dictionary
             Extra attributes to add to the HDF5 file.
+
+        See also
+        --------
+        load_from_hdf5_file
         """
         import h5py
         fid = h5py.File(filename, 'w')
+
+        # Save the TITTLE attribute to be more consistent with what
+        # Pytables would do.
+        fid.attrs.create("TITLE", "Simulation Results file")
 
         # Add the attributes, if any
         if isinstance(attrs, dict):  # pragma: no cover
@@ -1498,13 +1541,44 @@ class SimulationResults(object):
 
         # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
         g = fid.create_group('results')
+        # Save the TITTLE attribute to be more consistent with what
+        # Pytables would do.
+        g.attrs.create("TITLE", "Simulation Results")
         for r in self:
             Result.save_to_hdf5_dataset(g, r)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
         pg = fid.create_group('parameters')
+        # Save the TITTLE attribute to be more consistent with what
+        # Pytables would do.
+        pg.attrs.create("TITLE", "Simulation Parameters")
         self.params.save_to_hdf5_group(pg)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        fid.close()
+
+    # TODO: Test if this method saves all the information that the
+    # save_to_hdf5_file method saves.
+    def save_to_pytables_file(self, filename, attrs={}):
+        import tables as tb
+        fid = tb.openFile(filename, 'w', title='Simulation Results file')
+
+        # Add the attributes, if any
+        if isinstance(attrs, dict):  # pragma: no cover
+            # attr is a dictionary of attributes
+            for name, value in attrs.items():
+                fid.setNodeAttr(fid.root, name, value)
+
+        # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
+        g = fid.createGroup(fid.root, 'results', title="Simulation Results")
+        for r in self:
+            Result.save_to_pytables_table(g, r)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
+        pg = fid.createGroup(fid.root, 'parameters', title="Simulation Parameters")
+        self.params.save_to_pytables_group(pg)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         fid.close()
@@ -1523,6 +1597,10 @@ class SimulationResults(object):
         -------
         simresults : A SimulationResults object.
             The SimulationResults object loaded from the file.
+
+        See also
+        --------
+        save_to_hdf5_file
         """
         simresults = SimulationResults()
 
@@ -1867,7 +1945,28 @@ class Result(object):
 
         for i, r in enumerate(results_list):
             ds[i] = (r._value, r._total, r.num_updates)
-            ds.attrs.create('update_type_code', data=r._update_type_code)
+
+        ds.attrs.create('update_type_code', data=r._update_type_code)
+
+    @staticmethod
+    def save_to_pytables_table(parent, results_list):
+        """
+        """
+        import tables as tb
+        pytables_file = parent._v_file
+        name = results_list[0].name
+        description = {'_value': tb.FloatCol(), '_total': tb.FloatCol(), 'num_updates': tb.IntCol()}
+        table = pytables_file.createTable(parent, name, description,
+                                          title=name)
+        row = table.row
+        for r in results_list:
+            row['_value'] = r._value
+            row['_total'] = r._total
+            row['num_updates'] = r.num_updates
+            row.append()
+
+        pytables_file.setNodeAttr(table, 'update_type_code', r._update_type_code)
+        table.flush()
 
     @staticmethod
     def load_from_hdf5_dataset(ds):

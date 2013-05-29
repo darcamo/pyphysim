@@ -539,7 +539,7 @@ class SimulationResultsTestCase(unittest.TestCase):
                                simresults2.params['factor'])
 
     def test_save_to_and_load_from_hdf5_file(self):
-        filename = 'results.h5'
+        filename = 'results_hdf5.h5'
         # Let's make sure the file does not exist
         try:
             os.remove(filename)
@@ -547,9 +547,11 @@ class SimulationResultsTestCase(unittest.TestCase):
             pass
 
         # Set sime simulation parameters
-        self.simresults.params.add('factor', 0.5)
-        self.simresults.params.add('temperature', 50.5)
+        self.simresults.params.add('factor', [0.5, 0.6])
+        self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
         self.simresults.params.add('age', 3)
+        self.simresults.params.set_unpack_parameter('temperature')
+        self.simresults.params.set_unpack_parameter('factor')
 
         # Save to the file
         self.simresults.save_to_hdf5_file(filename)
@@ -573,10 +575,61 @@ class SimulationResultsTestCase(unittest.TestCase):
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
                          simresults2.params['age'])
-        self.assertAlmostEqual(self.simresults.params['temperature'],
-                               simresults2.params['temperature'])
-        self.assertAlmostEqual(self.simresults.params['factor'],
-                               simresults2.params['factor'])
+        np.testing.assert_almost_equal(self.simresults.params['factor'],
+                                       simresults2.params['factor'])
+        np.testing.assert_almost_equal(self.simresults.params['temperature'],
+                                       simresults2.params['temperature'])
+
+        # Test if the unpacked parameters where also saved
+        self.assertEqual(self.simresults.params.unpacked_parameters[0],
+                         simresults2.params.unpacked_parameters[0])
+
+    # def test_save_to_and_load_from_pytables_file(self):
+    #     filename = 'results_pytables.h5'
+    #     # Let's make sure the file does not exist
+    #     try:
+    #         os.remove(filename)
+    #     except OSError:  # pragma: no cover
+    #         pass
+
+    #     # Set sime simulation parameters
+    #     self.simresults.params.add('factor', [0.5, 0.6])
+    #     self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
+    #     self.simresults.params.add('age', 3)
+    #     self.simresults.params.set_unpack_parameter('temperature')
+    #     self.simresults.params.set_unpack_parameter('factor')
+
+    #     # Save to the file
+    #     self.simresults.save_to_pytables_file(filename)
+
+    #     # Load from the file
+    #     simresults2 = simulations.SimulationResults.load_from_pytables_file(filename)
+    #     self.assertEqual(len(self.simresults), len(simresults2))
+    #     self.assertEqual(set(self.simresults.get_result_names()),
+    #                      set(simresults2.get_result_names()))
+
+    #     self.assertEqual(self.simresults['lala'][0].type_code,
+    #                      simresults2['lala'][0].type_code)
+    #     self.assertEqual(self.simresults['lele'][0].type_code,
+    #                      simresults2['lele'][0].type_code)
+
+    #     self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
+    #                            simresults2['lala'][0].get_result(),)
+    #     self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
+    #                            simresults2['lele'][0].get_result(),)
+
+    #     # test if the parameters were also saved
+    #     self.assertEqual(self.simresults.params['age'],
+    #                      simresults2.params['age'])
+    #     np.testing.assert_almost_equal(self.simresults.params['factor'],
+    #                                    simresults2.params['factor'])
+    #     np.testing.assert_almost_equal(self.simresults.params['temperature'],
+    #                                    simresults2.params['temperature'])
+
+    #     # Test if the unpacked parameters where also saved
+    #     self.assertEqual(self.simresults.params.unpacked_parameters[0],
+    #                      simresults2.params.unpacked_parameters[0])
+
 
 class SimulationParametersTestCase(unittest.TestCase):
     """Unit-tests for the SimulationParameters class in the simulations
