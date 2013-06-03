@@ -1079,7 +1079,10 @@ class SimulationParameters(object):
         """
         # Store each parameter in self.parameter in a different dataset
         for name, value in self.parameters.iteritems():
-            group.create_dataset(name, data=value)
+            ds = group.create_dataset(name, data=value)
+            # Save the TITTLE attribute to be more consistent with what
+            # Pytables would do.
+            ds.attrs.create("TITLE", name)
 
         # Store the _unpacked_parameters_set as an attribute of the group.
         # Note that we need to convert _unpacked_parameters_set to a list,
@@ -1947,6 +1950,9 @@ class Result(object):
             ds[i] = (r._value, r._total, r.num_updates)
 
         ds.attrs.create('update_type_code', data=r._update_type_code)
+        # Save the TITTLE attribute to be more consistent with what
+        # Pytables would do.
+        ds.attrs.create("TITLE", name)
 
     @staticmethod
     def save_to_pytables_table(parent, results_list):
