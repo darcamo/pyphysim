@@ -79,23 +79,33 @@ if __name__ == '__main__':
     # the file.
     result = conf_file_parser.validate(validator, preserve_errors=True, copy=True)
 
+    # Note that if thare was no parsing errors, then "result" will be True.
+    # It there was an error, then result will be a dictionary with each
+    # parameter as a key. The value of each key will be either 'True' if
+    # that parameter was parsed without error or a "validate.something"
+    # object (since we set preserve_errors to True) describing the error.
+
+    # if result != True:
+    #     print 'Config file validation failed!'
+    #     sys.exit(1)
+
     # xxxxxxxxxx Test if there was some error in parsing the file xxxxxxxxx
+    # The flatten_errors function will return only the parameters whose
+    # parsing failed.
     errors_list = flatten_errors(conf_file_parser, result)
 
     if len(errors_list) != 0:
         first_error = errors_list[0]
         # The exception will only describe the error for the first
         # incorrect parameter.
-        raise Exception("Parameter {0} in section {1} is incorrect.\nMessage: {2}".format(first_error[1], first_error[0], first_error[2].message.capitalize()))
+        if first_error[2] is False:
+            raise Exception("Parameter '{0}' in section '{1}' must be provided.".format(first_error[1], first_error[0][0]))
+        else:
+            raise Exception("Parameter '{0}' in section '{1}' is invalid. {2}".format(first_error[1], first_error[0][0], first_error[2].message.capitalize()))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print 'Filename: {0}'.format(config_file_name)
     print "Valid_config_file: {0}".format(result)
-
-
-    # if result != True:
-    #     print 'Config file validation failed!'
-    #     sys.exit(1)
 
     SimulationSection = conf_file_parser['Simulation']
     SNR = SimulationSection['SNR']
