@@ -4,23 +4,54 @@
 # See the link below for an "argparse + configobj" option
 # http://mail.scipy.org/pipermail/numpy-discussion/2011-November/059332.html
 
-from configobj import ConfigObj
+from configobj import ConfigObj, flatten_errors
 import validate
 from validate import Validator, VdtTypeError
 import numpy as np
 
+def _parse_range_expr(value):
+    """Parse a string in the form of min:max or min:step:max and return a numpy
+    array.
+
+    """
+    try:
+        limits = value.split(':')
+        limits = [float(i) for i in limits]
+        if len(limits) == 2:
+            value = np.arange(limits[0], limits[1])
+        elif len(limits) == 3:
+            value = np.arange(limits[0], limits[2], limits[1])
+    except Exception:
+        raise VdtTypeError(value)
+
+    return value
+
 
 def real_numpy_array_check(value, minv=None, maxv=None):
-    # The value can be a single number or a list of numbers
-    try:
-        # Lets fist try to interpret it as a list of integers
-        value = [validate.is_float(value)]
-    except VdtTypeError:
-        # It is not a single number
-        # Lets try to interpret it as a list of floats
-        value = validate.is_float_list(value, minv, maxv)
+    """Value can be either a single number, a range expression in the form of
+    min:max or min:step:max, or even a list containing numbers and range
+    expressions.
 
-    return np.array(value)
+    """
+    # Test if it is a list or not
+    if isinstance(value, list):
+        # If it is a list, each element can be either a number of a 'range
+        # expression' that can be parsed with _parse_range_expr. We simple
+        # apply real_numpy_array_check on each element in the list to do
+        # the work and stack horizontally all the results.
+        value = [real_numpy_array_check(a) for a in value]
+        value = np.hstack(value)
+
+    else:
+        # It its not a list, it can be either a single number of a 'range
+        # expression' that can be parsed with _parse_range_expr
+        try:
+            value = validate.is_float(value)
+            value=np.array([value])
+        except VdtTypeError:
+            value = _parse_range_expr(value)
+
+    return value
 
 
 if __name__ == '__main__':
@@ -30,8 +61,8 @@ if __name__ == '__main__':
     spec = """[Simulation]
     SNR=real_numpy_array
     M=integer(min=4, max=512, default=4)
-    NSymbs=integer(min=10, max=1000000, default=1000)
-    rep_max=integer(min=1, max=1000000, default=5000)
+    NSymbs=integer(min=10, max=1000000, default=500)
+    rep_max=integer(min=1, default=5000)
     max_bit_errors=integer(min=1, default=300)""".split("\n")
 
     conf_file_parser = ConfigObj(
@@ -48,8 +79,19 @@ if __name__ == '__main__':
     # the file.
     result = conf_file_parser.validate(validator, preserve_errors=True, copy=True)
 
+    # xxxxxxxxxx Test if there was some error in parsing the file xxxxxxxxx
+    errors_list = flatten_errors(conf_file_parser, result)
+
+    if len(errors_list) != 0:
+        first_error = errors_list[0]
+        # The exception will only describe the error for the first
+        # incorrect parameter.
+        raise Exception("Parameter {0} in section {1} is incorrect.\nMessage: {2}".format(first_error[1], first_error[0], first_error[2].message.capitalize()))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     print 'Filename: {0}'.format(config_file_name)
     print "Valid_config_file: {0}".format(result)
+
 
     # if result != True:
     #     print 'Config file validation failed!'

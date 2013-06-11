@@ -32,17 +32,16 @@ class AlternatingSimulationRunner(SimulationRunner):
         # max_bit_errors are achieved.
         self.max_bit_errors = 3000
 
-        #SNR = np.array([0., 3., 6, 9])
-        # SNR = np.array([0., 3, 6, 9, 12])
         SNR = np.array([0., 5, 10, 15, 20, 25, 30])
-        #SNR = np.array([50])
+
         M = 4
         self.modulator = modulators.PSK(M)
+
         NSymbs = 200
         K = 3
-        Nr = np.ones(K, dtype=int) * 4
-        Nt = np.ones(K, dtype=int) * 4
-        Ns = np.ones(K, dtype=int) * 2
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
         self.params.add('NSymbs', NSymbs)
         self.params.add('K', K)
         self.params.add('Nr', Nr)
@@ -52,12 +51,11 @@ class AlternatingSimulationRunner(SimulationRunner):
         self.ia_solver = ia.AlternatingMinIASolver()
 
         # Iterations of the algorithm.
-        self.ia_solver.max_iterations = 200
+        self.ia_solver.max_iterations = 60
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
         self.rep_max = 2000
-        #self.rep_max = 200
         self.progressbar_message = "Alternating Min. ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -196,14 +194,25 @@ if __name__ == '__main__':
 
     from apps.simulate_ia_alt_min import AlternatingSimulationRunner
 
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # File name (without extension) for the figure and result files.
-    results_filename = 'ia_alt_min_results_4PSK_4x4(2)'
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
     # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
     runner = AlternatingSimulationRunner()
     runner.simulate()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Get the parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    K = runner.params["K"]
+    Nr = runner.params["Nr"]
+    Nt = runner.params["Nt"]
+    Ns = runner.params["Ns"]
+    modulator_name = runner.params['Modulator']
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # File name (without extension) for the figure and result files.
+    results_filename = 'ia_alt_min_results_{0}_{1}x{2}({3})'.format(modulator_name,
+                                                                        Nr[0],
+                                                                        Nt[0],
+                                                                        Ns[0])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
@@ -215,11 +224,10 @@ if __name__ == '__main__':
     #
     #
     #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #results_filename = 'ia_alt_min_results'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
-    # SNR, ber, ser = runner.get_data_to_be_plotted()
+    # Get the BER and SER from the results object
     ber = results.get_result_values_list('ber')
     ser = results.get_result_values_list('ser')
 

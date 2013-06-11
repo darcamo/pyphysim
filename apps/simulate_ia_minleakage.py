@@ -33,40 +33,51 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # max_bit_errors are achieved.
         self.max_bit_errors = 3000
 
-        #SNR = np.array([0., 3., 6, 9])
-        # SNR = np.array([0., 3, 6, 9, 12])
         SNR = np.array([0., 5, 10, 15, 20, 25, 30])
-        #SNR = np.array([50])
+
         M = 4
-        self.NSymbs = 200
         self.modulator = modulators.PSK(M)
-        self.K = 3
-        self.Nr = np.ones(self.K, dtype=int) * 2
-        self.Nt = np.ones(self.K, dtype=int) * 2
-        self.Ns = np.ones(self.K, dtype=int) * 1
+
+        NSymbs = 200
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+
+        self.params.add('NSymbs', NSymbs)
+        self.params.add('K', K)
+        self.params.add('Nr', Nr)
+        self.params.add('Nt', Nt)
+        self.params.add('Ns', Ns)
+
         self.ia_solver = ia.MinLeakageIASolver()
         # Iterations of the MinLeakageMinIASolver algorithm.
-        self.ia_solver.max_iterations = 50
+        self.ia_solver.max_iterations = 60
 
         # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
         # We need to set these two in all simulations
-        self.rep_max = 1000
-        #self.rep_max = 200
-        self.progressbar_message = "Min Leakage ({0}-QAM mod.) - SNR: {{SNR}}".format(M)
+        self.rep_max = 2000
+        self.progressbar_message = "Min Leakage ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # We need to add the parameters to the self.param variable.
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
 
+        # xxxxxxxxxx Parameters Stored for reference xxxxxxxxxxxxxxxxxxxxxx
+        self.params.add('Modulator', self.modulator.name)
+        self.params.add('IA_Max_Iterations', self.ia_solver.max_iterations)
+        self.params.add('rep_max', self.rep_max)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
-        K = self.K
         M = self.modulator.M
-        NSymbs = self.NSymbs
-        Nr = self.Nr
-        Nt = self.Nt
-        Ns = self.Ns
+        NSymbs = current_parameters["NSymbs"]
+        K = current_parameters["K"]
+        Nr = current_parameters["Nr"]
+        Nt = current_parameters["Nt"]
+        Ns = current_parameters["Ns"]
         SNR = current_parameters["SNR"]
 
         # print "Simulation Parameters"
@@ -106,7 +117,6 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-        #import pudb; pudb.set_trace()  ## DEBUG ##
         #dot2=lambda w,r: np.dot(w.transpose().conjugate(), r)
         received_data_no_interference = map(np.dot,
                                             self.ia_solver.W, received_data)
@@ -186,11 +196,60 @@ class MinLeakageSimulationRunner(SimulationRunner):
 # Run the MinLeakageSimulationRunner and plot the results
 if __name__ == '__main__':
     from pylab import *
+    from util import simulations
 
-    sim = MinLeakageSimulationRunner()
-    sim.simulate()
+    from apps.simulate_ia_minleakage import MinLeakageSimulationRunner
 
-    SNR, ber, ser = sim.get_data_to_be_plotted()
+    # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    runner = MinLeakageSimulationRunner()
+    runner.simulate()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Get the parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    K = runner.params["K"]
+    Nr = runner.params["Nr"]
+    Nt = runner.params["Nt"]
+    Ns = runner.params["Ns"]
+    modulator_name = runner.params['Modulator']
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # File name (without extension) for the figure and result files.
+    results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(modulator_name,
+                                                                        Nr[0],
+                                                                        Nt[0],
+                                                                        Ns[0])
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    runner.results.save_to_file('{0}.pickle'.format(results_filename))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #
+    #
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
+    #
+    #
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # K = 3
+    # Nr = np.ones(K, dtype=int) * 2
+    # Nt = np.ones(K, dtype=int) * 2
+    # Ns = np.ones(K, dtype=int) * 1
+    # modulator_name = '4-PSK'
+
+    results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(modulator_name,
+                                                                        Nr[0],
+                                                                        Nt[0],
+                                                                        Ns[0])
+
+    results = simulations.SimulationResults.load_from_file('{0}.pickle'.format(
+        results_filename))
+
+    # Get the BER and SER from the results object
+    ber = results.get_result_values_list('ber')
+    ser = results.get_result_values_list('ser')
+
+    # Get the SNR from the simulation parameters
+    SNR = np.array(results.params['SNR'])
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -198,14 +257,14 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Min Leakage IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name))
         legend()
 
         grid(True, which='both', axis='both')
         show()
 
-    print "Runned iterations: {0}".format(sim.runned_reps)
-    print sim.elapsed_time
+    print "Runned iterations: {0}".format(runner.runned_reps)
+    print runner.elapsed_time
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -233,10 +292,10 @@ if __name__ == '__main__1':
     from pylab import *
     from apps.simulate_ia_maxsinr import MinLeakageSimulationRunner
 
-    sim = MinLeakageSimulationRunner()
-    sim.simulate_in_parallel(dview)
+    runner = MinLeakageSimulationRunner()
+    runner.simulate_in_parallel(dview)
 
-    SNR, ber, ser = sim.get_data_to_be_plotted()
+    SNR, ber, ser = runner.get_data_to_be_plotted()
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -244,11 +303,11 @@ if __name__ == '__main__1':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(sim.K, sim.Nr, sim.Nt, sim.Ns))
+        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(runner.K, runner.Nr, runner.Nt, runner.Ns))
         legend()
 
         grid(True, which='both', axis='both')
         show()
 
-    print "Runned iterations: {0}".format(sim.runned_reps)
-    print sim.elapsed_time
+    print "Runned iterations: {0}".format(runner.runned_reps)
+    print runner.elapsed_time
