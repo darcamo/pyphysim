@@ -65,7 +65,7 @@ however, then you should store all the simulation parameters in the
 `self.params` attribute. This will allow you to call the method
 :meth:`.SimulationParameters.save_to_file` to save everything into a
 file. The simulation parameters can be recovered latter from this file by
-calling the static method :meth:`SimulationParameters.load_from_file`.
+calling the static method :meth:`SimulationParameters.load_from_pickled_file`.
 
 
 Simulation Results
@@ -164,6 +164,76 @@ from util.misc import pretty_time
 from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, center_message
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def _parse_range_expr(value):
+    """
+    Parse a string in the form of min:max or min:step:max and return a
+    numpy array.
+    """
+    import validate
+    try:
+        limits = value.split(':')
+        limits = [float(i) for i in limits]
+        if len(limits) == 2:
+            value = np.arange(limits[0], limits[1])
+        elif len(limits) == 3:
+            value = np.arange(limits[0], limits[2], limits[1])
+    except Exception:
+        raise validate.VdtTypeError(value)
+
+    return value
+
+
+# TODO: Check agains the 'min' and 'max'. For now they are ignored.
+def _real_numpy_array_check(value, min=None, max=None):
+    """Parse and validate `value` as a numpy array.
+
+    Value can be either a single number, a range expression in the form of
+    min:max or min:step:max, or even a list containing numbers and range
+    expressions.
+
+    Notes:
+    ------
+    You can either separate the values with commas or spaces. However, if
+    you separate with spaces the values should be brackets, while if you
+    separate with commands there should be no brackets.
+    .. code::
+        SNR = 0,5,10:20
+        SNR = [0 5 10:20]
+    """
+    import validate
+
+    if isinstance(value, str):
+        # Remove '[' and ']' if they exist.
+        if value[0] == '[' and value[-1] == ']':
+            value = value[1:-1].strip()
+            value = value.split()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Test if it is a list or not
+    if isinstance(value, list):
+        # If it is a list, each element can be either a number of a 'range
+        # expression' that can be parsed with _parse_range_expr. We simple
+        # apply _real_numpy_array_check on each element in the list to do
+        # the work and stack horizontally all the results.
+        value = [_real_numpy_array_check(a) for a in value]
+        value = np.hstack(value)
+
+    else:
+        # It its not a list, it can be either a single number of a 'range
+        # expression' that can be parsed with _parse_range_expr
+        try:
+            value = validate.is_float(value)
+            value = np.array([value])
+        except validate.VdtTypeError:
+            value = _parse_range_expr(value)
+
+    return value
+# xxxxxxxxxx Module Functions - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1031,8 +1101,10 @@ class SimulationParameters(object):
         # objects and return it
         return map(SimulationParameters.create, all_possible_dicts_list)
 
-    def save_to_file(self, filename):
-        """Save the SimulationParameters object to the file `filename`.
+    def save_to_pickled_file(self, filename):
+        """
+        Save the SimulationParameters object to the file `filename` using
+        pickle.
 
         Parameters
         ----------
@@ -1043,8 +1115,10 @@ class SimulationParameters(object):
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
-    def load_from_file(filename):
-        """Load the SimulationParameters from the file 'filename'.
+    def load_from_pickled_file(filename):
+        """
+        Load the SimulationParameters from the file 'filename' previously
+        stored (using pickle) with `save_to_pickled_file`.
 
         Parameters
         ----------
@@ -1054,6 +1128,105 @@ class SimulationParameters(object):
         with open(filename, 'rb') as inputfile:
             obj = pickle.load(inputfile)
         return obj
+
+    @staticmethod
+    def load_from_config_file(filename, spec=[]):
+        """
+        Load the SimulationParameters from a config file using the configobj
+        module.
+
+        Parameters
+        ----------
+        filename : src
+            Name of the file from where the results will be loaded.
+        spec : A list of stringsstr
+            A list of strings with the confog spec. See "validation" in the
+            configobj module documentation for more info.
+
+        Notes:
+        ------
+        Besides the usual checks that the configobj validation has such as
+        `integer`, `string`, `option`, etc., you can also use
+        `real_numpy_array` for numpy float arrays. Note that when this
+        validation function is used you can set the array in the config
+        file in several ways such as
+            SNR=0,5,10,15:20
+        for instance.
+        """
+        from configobj import ConfigObj, flatten_errors
+        import validate
+        from validate import Validator, VdtTypeError
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        def add_params(simulation_params, config):
+            """
+            Add the parameters in `config`.
+
+            Parameters
+            ----------
+            simulation_params : A SimulationParameters object
+                The SimulationParameters object where the parameters will
+                be added.
+            config : A configobj.ConfigObj or a configobj.Section object
+                A ConfigObj object or a Section object. The `config` object
+                can contain parameters (called scalars) or sections which
+                can contain either parameters or other sections.
+            """
+            # Add scalar parameters
+            for v in config.scalars:
+                simulation_params.add(v, config[v])
+
+            for s in config.sections:
+                add_params(simulation_params, config[s])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        conf_file_parser = ConfigObj(
+            filename,
+            list_values=True,
+            configspec=spec)
+
+        # Dictionary with custom validation functions. Here we add a
+        # validation function for numpy float arrays.
+        fdict = {'real_numpy_array': _real_numpy_array_check}
+        validator = Validator(fdict)
+
+        # The 'copy' argument indicates that if we save the ConfigObj
+        # object to a file after validating, the default values will also
+        # be written to the file.
+        result = conf_file_parser.validate(validator,
+                                           preserve_errors=True,
+                                           copy=True)
+
+        # Note that if thare was no parsing errors, then "result" will be
+        # 'True'.  It there was an error, then result will be a dictionary
+        # with each parameter as a key. The value of each key will be
+        # either 'True' if that parameter was parsed without error or a
+        # "validate.something" object (since we set preserve_errors to
+        # True) describing the error.
+
+        # if result != True:
+        #     print 'Config file validation failed!'
+        #     sys.exit(1)
+
+        # xxxxx Test if there was some error in parsing the file xxxxxxxxxx
+        # The flatten_errors function will return only the parameters whose
+        # parsing failed.
+        errors_list = flatten_errors(conf_file_parser, result)
+        if len(errors_list) != 0:
+            first_error = errors_list[0]
+            # The exception will only describe the error for the first
+            # incorrect parameter.
+            if first_error[2] is False:
+                raise Exception("Parameter '{0}' in section '{1}' must be provided.".format(first_error[1], first_error[0][0]))
+            else:
+                raise Exception("Parameter '{0}' in section '{1}' is invalid. {2}".format(first_error[1], first_error[0][0], first_error[2].message.capitalize()))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Finally add the parsed parameters to the params object xxxx
+        params = SimulationParameters()
+        add_params(params, conf_file_parser)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        return params
 
     def save_to_hdf5_group(self, group):
         """Save the contents of the SimulationParameters object into an

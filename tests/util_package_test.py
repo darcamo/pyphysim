@@ -793,16 +793,62 @@ class SimulationParametersTestCase(unittest.TestCase):
             pass
 
         # Save to the file
-        self.sim_params.save_to_file(filename)
+        self.sim_params.save_to_pickled_file(filename)
 
         # Load from the file
-        sim_params2 = simulations.SimulationParameters.load_from_file(filename)
+        sim_params2 = simulations.SimulationParameters.load_from_pickled_file(filename)
 
         self.assertEqual(self.sim_params['first'], sim_params2['first'])
         self.assertEqual(self.sim_params['second'], sim_params2['second'])
         self.assertEqual(len(self.sim_params), len(sim_params2))
         self.assertEqual(self.sim_params.get_num_unpacked_variations(),
                          sim_params2.get_num_unpacked_variations())
+
+    def test_load_from_config_file(self):
+        filename = 'test_config_file.txt'
+
+        # xxxxxxxxxx Write the config file xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.close()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Read the parameters from the file xxxxxxxxxxxxxxxxxxxx
+        # Since we are not specifying a "validation spec" all parameters
+        # will be read as strings or list of strings.
+        params = SimulationParameters.load_from_config_file('test_config_file.txt')
+        self.assertEqual(len(params), 5)
+        self.assertEqual(params['modo'], 'test')
+        self.assertEqual(params['SNR'], ['0', '5', '10'])
+        self.assertEqual(params['M'], '4')
+        self.assertEqual(params['modulator'], 'PSK')
+        self.assertEqual(params['max_iterations'], '60')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Read the parameters from file with a validation spec xxxxxx
+        spec = """modo=string
+        [Scenario]
+        SNR=real_numpy_array(default=15)
+        M=integer(min=4, max=512, default=4)
+        modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
+        [IA Algorithm]
+        max_iterations=integer(min=1, default=60)
+        """.split("\n")
+        params2 = SimulationParameters.load_from_config_file(
+            'test_config_file.txt', spec)
+        self.assertEqual(len(params2), 5)
+        self.assertEqual(params2['modo'], 'test')
+        np.testing.assert_array_almost_equal(params2['SNR'],
+                                             np.array([0., 5., 10.]))
+        self.assertEqual(params2['M'], 4)
+        self.assertEqual(params2['modulator'], 'PSK')
+        self.assertEqual(params2['max_iterations'], 60)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class SimulationRunnerTestCase(unittest.TestCase):
