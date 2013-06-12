@@ -1130,10 +1130,14 @@ class SimulationParameters(object):
         return obj
 
     @staticmethod
-    def load_from_config_file(filename, spec=[]):
+    def load_from_config_file(filename, spec=[], save_parsed_file=False):
         """
         Load the SimulationParameters from a config file using the configobj
         module.
+
+        If the config file has a parameter called `unpacked_parameters`,
+        which should be a list of strings with the names of other
+        parameters, then these parameters will be set to be unpacked.
 
         Parameters
         ----------
@@ -1142,6 +1146,12 @@ class SimulationParameters(object):
         spec : A list of stringsstr
             A list of strings with the confog spec. See "validation" in the
             configobj module documentation for more info.
+        save_parsed_file : bool
+            If `save_parsed_file` is True, then the parsed config file will
+            be written back to disk. This will add any missing values in
+            the config file whose default values are provided in the
+            `spec`. This will even create the file if all default values
+            are provided in `spec` and the file does not exist yet.
 
         Notes:
         ------
@@ -1154,8 +1164,7 @@ class SimulationParameters(object):
         for instance.
         """
         from configobj import ConfigObj, flatten_errors
-        import validate
-        from validate import Validator, VdtTypeError
+        from validate import Validator
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         def add_params(simulation_params, config):
@@ -1226,6 +1235,30 @@ class SimulationParameters(object):
         params = SimulationParameters()
         add_params(params, conf_file_parser)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        if save_parsed_file is True:
+            # xxxxx Write the parsed config file to disk xxxxxxxxxxxxxxxxxx
+            # This will add the default values if they are not present. If
+            # the file does not exist yet and all default values are
+            # provided in the spec then the file will be created. If some
+            # parameter without a default value was not provided then when
+            # exception would already have been thrown and we wouldn't be
+            # here.
+            conf_file_parser.write()
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # If the special parameter 'unpacked_parameters' is in the config
+        # file, then we will set the parameters whose name are in it to be
+        # unpacked
+        try:
+            unpacked_parameters_list = params['unpacked_parameters']
+        except KeyError:
+            unpacked_parameters_list = []
+        for name in unpacked_parameters_list:
+            params.set_unpack_parameter(name)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         return params
 
     def save_to_hdf5_group(self, group):

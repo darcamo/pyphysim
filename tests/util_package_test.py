@@ -821,7 +821,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # xxxxxxxxxx Read the parameters from the file xxxxxxxxxxxxxxxxxxxx
         # Since we are not specifying a "validation spec" all parameters
         # will be read as strings or list of strings.
-        params = SimulationParameters.load_from_config_file('test_config_file.txt')
+        params = SimulationParameters.load_from_config_file(filename)
         self.assertEqual(len(params), 5)
         self.assertEqual(params['modo'], 'test')
         self.assertEqual(params['SNR'], ['0', '5', '10'])
@@ -838,18 +838,27 @@ class SimulationParametersTestCase(unittest.TestCase):
         modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
         [IA Algorithm]
         max_iterations=integer(min=1, default=60)
+        unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
         params2 = SimulationParameters.load_from_config_file(
-            'test_config_file.txt', spec)
-        self.assertEqual(len(params2), 5)
+            filename, spec)
+        self.assertEqual(len(params2), 6)
         self.assertEqual(params2['modo'], 'test')
         np.testing.assert_array_almost_equal(params2['SNR'],
                                              np.array([0., 5., 10.]))
         self.assertEqual(params2['M'], 4)
         self.assertEqual(params2['modulator'], 'PSK')
         self.assertEqual(params2['max_iterations'], 60)
+        self.assertEqual(params2['unpacked_parameters'], ['SNR'])
+        self.assertEqual(params2.unpacked_parameters, ['SNR'])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 class SimulationRunnerTestCase(unittest.TestCase):
     """Unit-tests for the SimulationRunner class in the simulations

@@ -451,10 +451,16 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def solve(self):
-        """Find the IA solution by performing the `step` method several times.
+        """
+        Find the IA solution by performing the `step` method several times.
 
         The number of iterations of the algorithm must be specified in the
         max_iterations member variable.
+
+        Returns
+        -------
+        Number of iterations the iterative interference alignment algorithm
+        run.
 
         Notes
         -----
@@ -462,11 +468,13 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         You need to call :meth:`randomizeF` at least once before calling
         :meth:`solve` as well as initialize the channel either calling the
         :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
-
         """
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self.step()
+
+        # Return the number of iterations the algorithm run
+        return i + 1
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -747,6 +755,12 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         The number of iterations of the algorithm must be specified in the
         max_iterations member variable.
 
+        Returns
+        -------
+        Number of iterations the iterative interference alignment algorithm
+        run.
+
+
         Notes
         -----
 
@@ -756,7 +770,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         """
         self._W = self.calc_Uk_all_k()
-        IterativeIASolverBaseClass.solve(self)
+        return IterativeIASolverBaseClass.solve(self)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -806,7 +820,14 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             # and receive filter
             Hieq = self.calc_equivalent_channel(k)
 
-            W[k] = np.linalg.inv(Hieq).dot(self._W[k].transpose().conjugate())
+            try:
+                Hieq_inv = np.linalg.inv(Hieq)
+            except Exception:
+                # Should not be here
+                import pudb; pudb.set_trace()  ## DEBUG ##
+                Hieq_inv = np.eye(Hieq.shape[0])
+
+            W[k] = Hieq_inv.dot(self._W[k].transpose().conjugate())
             # W is the only receive filter required to cancel the
             # interference and compensate the effect of the channel and
             # transmit precoder.
@@ -1210,6 +1231,12 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         The number of iterations of the algorithm must be specified in the
         max_iterations member variable.
 
+        Returns
+        -------
+        Number of iterations the iterative interference alignment algorithm
+        run.
+
+
         Notes
         -----
 
@@ -1219,4 +1246,4 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         """
         self._W = self.calc_Uk_all_k()
-        IterativeIASolverBaseClass.solve(self)
+        return IterativeIASolverBaseClass.solve(self)

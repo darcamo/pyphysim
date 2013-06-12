@@ -22,52 +22,58 @@ import numpy as np
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MinLeakageSimulationRunner(SimulationRunner):
-    """Implements a simulation runner for a transmission with the Minimum
+    """
+    Implements a simulation runner for a transmission with the Minimum
     Leakage Interference Alignment Algorithm.
 
+    Parameters:
+    -----------
+    config_filename : str
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
     """
-    def __init__(self):
+    def __init__(self, config_filename):
         SimulationRunner.__init__(self)
 
-        # The _keep_going method will stop the simulation earlier when
-        # max_bit_errors are achieved.
-        self.max_bit_errors = 3000
+        # xxxxxxxxxx Read Parameters from file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        M=integer(min=4, max=512, default=4)
+        modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        K=integer(min=2,default=3)
+        Nr=integer(min=2,default=2)
+        Nt=integer(min=2,default=2)
+        Ns=integer(min=1,default=1)
+        [IA Algorithm]
+        max_iterations=integer(min=1, default=120)
+        [General]
+        rep_max=integer(min=1, default=2000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
 
-        SNR = np.array([0., 5, 10, 15, 20, 25, 30])
+        self.params = SimulationParameters.load_from_config_file(
+            config_filename,
+            spec,
+            save_parsed_file=True)
 
-        M = 4
-        self.modulator = modulators.PSK(M)
+        # Set the max_bit_errors and rep_max attributes
+        self.max_bit_errors = self.params['max_bit_errors']
+        self.rep_max = self.params['rep_max']
 
-        NSymbs = 200
-        K = 3
-        Nr = np.ones(K, dtype=int) * 2
-        Nt = np.ones(K, dtype=int) * 2
-        Ns = np.ones(K, dtype=int) * 1
+        # Create the modulator object
+        M = self.params['M']
+        modulator_options = {'PSK': modulators.PSK,
+                             'QAM': modulators.QAM,
+                             'BPSK': modulators.BPSK}
+        self.modulator = modulator_options[self.params['modulator']](M)
 
-        self.params.add('NSymbs', NSymbs)
-        self.params.add('K', K)
-        self.params.add('Nr', Nr)
-        self.params.add('Nt', Nt)
-        self.params.add('Ns', Ns)
-
+        # Create the IA Solver object
         self.ia_solver = ia.MinLeakageIASolver()
         # Iterations of the MinLeakageMinIASolver algorithm.
-        self.ia_solver.max_iterations = 60
-
-        # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
-        # We need to set these two in all simulations
-        self.rep_max = 2000
-        self.progressbar_message = "Min Leakage ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # We need to add the parameters to the self.param variable.
-        self.params.add('SNR', SNR)
-        self.params.set_unpack_parameter('SNR')
-
-        # xxxxxxxxxx Parameters Stored for reference xxxxxxxxxxxxxxxxxxxxxx
-        self.params.add('Modulator', self.modulator.name)
-        self.params.add('IA_Max_Iterations', self.ia_solver.max_iterations)
-        self.params.add('rep_max', self.rep_max)
+        self.ia_solver.max_iterations = self.params['max_iterations']
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _run_simulation(self, current_parameters):
@@ -75,13 +81,10 @@ class MinLeakageSimulationRunner(SimulationRunner):
         M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]
         K = current_parameters["K"]
-        Nr = current_parameters["Nr"]
-        Nt = current_parameters["Nt"]
-        Ns = current_parameters["Ns"]
+        Nr = np.ones(K, dtype=int) * current_parameters["Nr"]
+        Nt = np.ones(K, dtype=int) * current_parameters["Nt"]
+        Ns = np.ones(K, dtype=int) * current_parameters["Ns"]
         SNR = current_parameters["SNR"]
-
-        # print "Simulation Parameters"
-        # print "K: {K}\nNr: {Nr}\nNt: {Nt}\nNs: {Ns}\nNSymbs: {NSymbs}".format(**locals())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -102,7 +105,6 @@ class MinLeakageSimulationRunner(SimulationRunner):
 
         self.ia_solver.randomizeH(Nr, Nt, K)
         self.ia_solver.randomizeF(Nt, Ns, K)
-
         self.ia_solver.solve()
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
@@ -183,7 +185,7 @@ class MinLeakageSimulationRunner(SimulationRunner):
         easily for plot.
         """
         ber = self.results.get_result_values_list('ber')
-        ser = self.results.get_result_values_list('ber')
+        ser = self.results.get_result_values_list('ser')
 
         # Get the SNR from the simulation parameters
         SNR = np.array(self.params['SNR'])
@@ -201,7 +203,7 @@ if __name__ == '__main__':
     from apps.simulate_ia_minleakage import MinLeakageSimulationRunner
 
     # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
-    runner = MinLeakageSimulationRunner()
+    runner = MinLeakageSimulationRunner('ia_config_file.txt')
     runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -210,15 +212,15 @@ if __name__ == '__main__':
     Nr = runner.params["Nr"]
     Nt = runner.params["Nt"]
     Ns = runner.params["Ns"]
-    modulator_name = runner.params['Modulator']
+    modulator_name = runner.modulator.name
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
     results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(modulator_name,
-                                                                        Nr[0],
-                                                                        Nt[0],
-                                                                        Ns[0])
+                                                                        Nr,
+                                                                        Nt,
+                                                                        Ns)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
@@ -226,6 +228,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #
     #
+    print "Runned iterations: {0}".format(runner.runned_reps)
     print "Elapsed Time: {0}".format(runner.elapsed_time)
     #
     #
@@ -236,10 +239,11 @@ if __name__ == '__main__':
     # Ns = np.ones(K, dtype=int) * 1
     # modulator_name = '4-PSK'
 
-    results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(modulator_name,
-                                                                        Nr[0],
-                                                                        Nt[0],
-                                                                        Ns[0])
+    results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(
+        modulator_name,
+        Nr,
+        Nt,
+        Ns)
 
     results = simulations.SimulationResults.load_from_file('{0}.pickle'.format(
         results_filename))
@@ -264,7 +268,7 @@ if __name__ == '__main__':
         show()
 
     print "Runned iterations: {0}".format(runner.runned_reps)
-    print runner.elapsed_time
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -292,7 +296,7 @@ if __name__ == '__main__1':
     from pylab import *
     from apps.simulate_ia_maxsinr import MinLeakageSimulationRunner
 
-    runner = MinLeakageSimulationRunner()
+    runner = MinLeakageSimulationRunner('ia_config_file.txt')
     runner.simulate_in_parallel(dview)
 
     SNR, ber, ser = runner.get_data_to_be_plotted()
