@@ -76,6 +76,10 @@ class MinLeakageSimulationRunner(SimulationRunner):
         self.ia_solver.max_iterations = self.params['max_iterations']
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.progressbar_message = "Min Leakage ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
