@@ -4,73 +4,17 @@
 # See the link below for an "argparse + configobj" option
 # http://mail.scipy.org/pipermail/numpy-discussion/2011-November/059332.html
 
+# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
+import sys
+import os
+parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+sys.path.append(parent_dir)
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 from configobj import ConfigObj, flatten_errors
-import validate
-from validate import Validator, VdtTypeError
-import numpy as np
+from validate import Validator
 
-
-def _parse_range_expr(value):
-    """
-    Parse a string in the form of min:max or min:step:max and return a
-    numpy array.
-    """
-    try:
-        limits = value.split(':')
-        limits = [float(i) for i in limits]
-        if len(limits) == 2:
-            value = np.arange(limits[0], limits[1])
-        elif len(limits) == 3:
-            value = np.arange(limits[0], limits[2], limits[1])
-    except Exception:
-        raise VdtTypeError(value)
-
-    return value
-
-
-# TODO: Check agains the 'min' and 'max'. For now they are ignored.
-def real_numpy_array_check(value, min=None, max=None):
-    """Parse and validate `value` as a numpy array.
-
-    Value can be either a single number, a range expression in the form of
-    min:max or min:step:max, or even a list containing numbers and range
-    expressions.
-
-    Notes:
-    ------
-    You can either separate the values with commas or spaces. However, if
-    you separate with spaces the values should be brackets, while if you
-    separate with commands there should be no brackets.
-    .. code::
-        SNR = 0,5,10:20
-        SNR = [0 5 10:20]
-    """
-    if isinstance(value, str):
-        # Remove '[' and ']' if they exist.
-        if value[0] == '[' and value[-1] == ']':
-            value = value[1:-1].strip()
-            value = value.split()
-
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Test if it is a list or not
-    if isinstance(value, list):
-        # If it is a list, each element can be either a number of a 'range
-        # expression' that can be parsed with _parse_range_expr. We simple
-        # apply real_numpy_array_check on each element in the list to do
-        # the work and stack horizontally all the results.
-        value = [real_numpy_array_check(a) for a in value]
-        value = np.hstack(value)
-
-    else:
-        # It its not a list, it can be either a single number of a 'range
-        # expression' that can be parsed with _parse_range_expr
-        try:
-            value = validate.is_float(value)
-            value = np.array([value])
-        except VdtTypeError:
-            value = _parse_range_expr(value)
-
-    return value
+from util.simulations import _real_numpy_array_check
 
 
 if __name__ == '__main__':
@@ -102,7 +46,7 @@ if __name__ == '__main__':
     #conf_file_parser.write()
 
     # Dictionary with custom validation functions
-    fdict = {'real_numpy_array': real_numpy_array_check}
+    fdict = {'real_numpy_array': _real_numpy_array_check}
     validator = Validator(fdict)
 
     # The 'copy' argument indicates that if we save the ConfigObj object to
@@ -130,7 +74,10 @@ if __name__ == '__main__':
         # The exception will only describe the error for the first
         # incorrect parameter.
         if first_error[2] is False:
-            raise Exception("Parameter '{0}' in section '{1}' must be provided.".format(first_error[1], first_error[0][0]))
+            raise Exception(
+                "Parameter '{0}' in section '{1}' must be provided.".format(
+                    first_error[1],
+                    first_error[0][0]))
         else:
             raise Exception("Parameter '{0}' in section '{1}' is invalid. {2}".format(first_error[1], first_error[0][0], first_error[2].message.capitalize()))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
