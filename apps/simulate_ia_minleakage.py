@@ -40,7 +40,7 @@ class MinLeakageSimulationRunner(SimulationRunner):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
-        modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
         K=integer(min=2,default=3)
         Nr=integer(min=2,default=2)
@@ -66,6 +66,7 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # Create the modulator object
         M = self.params['M']
         modulator_options = {'PSK': modulators.PSK,
+                             'QPSK': modulators.QPSK,
                              'QAM': modulators.QAM,
                              'BPSK': modulators.BPSK}
         self.modulator = modulator_options[self.params['modulator']](M)
@@ -255,6 +256,7 @@ if __name__ == '__main__':
     # Get the BER and SER from the results object
     ber = results.get_result_values_list('ber')
     ser = results.get_result_values_list('ser')
+    ia_iterations = results.params['max_iterations']
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
@@ -265,7 +267,7 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Min Leakage IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name))
+        title('Min Leakage IA Algorithm ({5} Iterations)\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name, ia_iterations))
         legend()
 
         grid(True, which='both', axis='both')
@@ -298,12 +300,24 @@ if __name__ == '__main__1':
     dview.execute('sys.path.append("{0}")'.format(parent_dir))
 
     from pylab import *
-    from apps.simulate_ia_maxsinr import MinLeakageSimulationRunner
+    from apps.simulate_ia_minleakage import MinLeakageSimulationRunner
 
     runner = MinLeakageSimulationRunner('ia_config_file.txt')
     runner.simulate_in_parallel(dview)
 
+    # xxxxxxxxxx Get the parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    K = runner.params["K"]
+    Nr = runner.params["Nr"]
+    Nt = runner.params["Nt"]
+    Ns = runner.params["Ns"]
+    modulator_name = runner.modulator.name
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    print "Runned iterations: {0}".format(runner.runned_reps)
+    print "Elapsed Time: {0}".format(runner.elapsed_time)
+
     SNR, ber, ser = runner.get_data_to_be_plotted()
+    ia_iterations = results.params['max_iterations']
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -311,7 +325,7 @@ if __name__ == '__main__1':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Interference Alignment\nK={0}, Nr={1}, Nt={2}, Ns={3} System'.format(runner.K, runner.Nr, runner.Nt, runner.Ns))
+        title('Min Leakage IA Algorithm ({5} Iterations)\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name, ia_iterations))
         legend()
 
         grid(True, which='both', axis='both')
