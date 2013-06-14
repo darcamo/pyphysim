@@ -21,7 +21,7 @@ import doctest
 import numpy as np
 
 import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver
+from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver
 from util.misc import peig, leig, randn_c
 
 
@@ -222,6 +222,120 @@ class IASolverBaseClassTestCase(unittest.TestCase):
     def test_solve(self):
         with self.assertRaises(NotImplementedError):
             self.iasolver.solve()
+
+
+# TODO: finish implementation
+class ClosedFormIASolverTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.iasolver = ClosedFormIASolver(Ns=1)
+        self.K = 3
+        self.Nr = np.array([2, 2, 2])
+        self.Nt = np.array([2, 2, 2])
+        self.iasolver.randomizeH(self.Nr, self.Nt, self.K)
+
+    def test_sanity(self):
+        # The number of users is always equal to 3
+        self.assertEqual(self.iasolver.K, 3)
+        np.testing.assert_array_equal(np.ones(3), self.iasolver.Ns)
+
+    def test_invalid_solve(self):
+        # ClosedFormIASolver only works with 3 users ...
+        iasolver2 = ClosedFormIASolver(2)
+        K = 4
+        iasolver2.randomizeH(3, 3, K)
+        # ... Therefore an AssertionError will be raised if we try to call
+        # the solve method.
+        with self.assertRaises(AssertionError):
+            iasolver2.solve()
+
+    def test_calc_E(self):
+        H31 = np.matrix(self.iasolver.get_channel(2, 0))
+        H32 = np.matrix(self.iasolver.get_channel(2, 1))
+        H12 = np.matrix(self.iasolver.get_channel(0, 1))
+        H13 = np.matrix(self.iasolver.get_channel(0, 2))
+        H23 = np.matrix(self.iasolver.get_channel(1, 2))
+        H21 = np.matrix(self.iasolver.get_channel(1, 0))
+
+        expected_E = H31.I * H32 * H12.I * H13 * H23.I * H21
+        np.testing.assert_array_almost_equal(expected_E, self.iasolver._calc_E())
+
+    def test_updateF(self):
+        Ns = 1
+        E = self.iasolver._calc_E()
+        [eigenvalues, eigenvectors] = np.linalg.eig(E)
+        # V1 is the expected precoder for the first user
+        V1 = np.matrix(eigenvectors[:, 0:Ns])
+
+        H32 = np.matrix(self.iasolver.get_channel(2, 1))
+        H31 = np.matrix(self.iasolver.get_channel(2, 0))
+        H23 = np.matrix(self.iasolver.get_channel(1, 2))
+        H21 = np.matrix(self.iasolver.get_channel(1, 0))
+
+        # Expected precoder for the second user
+        V2 = H32.I * H31 * V1
+        # Expected precoder for the third user
+        V3 = H23.I * H21 * V1
+
+        # Normalize the precoders
+        V1 = V1 / np.linalg.norm(V1, 'fro')
+        V2 = V2 / np.linalg.norm(V2, 'fro')
+        V3 = V3 / np.linalg.norm(V3, 'fro')
+
+        # Find the precoders using the iasolver
+        self.iasolver.updateF()
+
+        np.testing.assert_array_almost_equal(V1, self.iasolver.F[0])
+        np.testing.assert_array_almost_equal(V2, self.iasolver.F[1])
+        np.testing.assert_array_almost_equal(V3, self.iasolver.F[2])
+
+        self.assertAlmostEqual(np.linalg.norm(V1, 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(V2, 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(V3, 'fro'), 1.0)
+
+    def test_updateW(self):
+        self.iasolver.updateF()
+        self.iasolver.updateW()
+        V1 = np.matrix(self.iasolver.F[0])
+        V2 = np.matrix(self.iasolver.F[1])
+        V3 = np.matrix(self.iasolver.F[2])
+
+        H12 = np.matrix(self.iasolver.get_channel(0, 1))
+        H21 = np.matrix(self.iasolver.get_channel(1, 0))
+        H31 = np.matrix(self.iasolver.get_channel(2, 0))
+
+        U1 = H12 * V2
+        U1 = leig(U1 * U1.H, 1)[0]
+        U2 = H21 * V1
+        U2 = leig(U2 * U2.H, 1)[0]
+        U3 = H31 * V1
+        U3 = leig(U3 * U3.H, 1)[0]
+
+        np.testing.assert_array_almost_equal(self.iasolver._W[0], U1)
+        np.testing.assert_array_almost_equal(self.iasolver._W[1], U2)
+        np.testing.assert_array_almost_equal(self.iasolver._W[2], U3)
+
+        # xxxxx Test if the equivalent channel is equal to 1 xxxxxxxxxxxxxx
+        H11 = self.iasolver.get_channel(0, 0)
+        H22 = self.iasolver.get_channel(1, 1)
+        H33 = self.iasolver.get_channel(2, 2)
+
+        np.testing.assert_almost_equal(
+            np.dot(self.iasolver.W[0], np.dot(H11, self.iasolver.F[0])),
+            np.array([[1.0]]))
+
+        np.testing.assert_almost_equal(
+            np.dot(self.iasolver.W[1], np.dot(H22, self.iasolver.F[1])),
+            np.array([[1.0]]))
+
+        np.testing.assert_almost_equal(
+            np.dot(self.iasolver.W[2], np.dot(H33, self.iasolver.F[2])),
+            np.array([[1.0]]))
+
+    def test_solve(self):
+
+        # TODO: Implement-me
+        pass
 
 
 class AlternatingMinIASolverTestCase(unittest.TestCase):
@@ -759,6 +873,30 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver.randomizeF(self.Nt, self.Ns, self.K, self.P)
         self.iasolver.randomizeH(self.Nr, self.Nt, self.K)
         self.iasolver._W = self.iasolver.calc_Uk_all_k()
+
+    def test_getCost(self):
+        Q0 = np.matrix(self.iasolver.calc_Q(0))
+        W0 = np.matrix(self.iasolver._W[0])
+        Q1 = np.matrix(self.iasolver.calc_Q(1))
+        W1 = np.matrix(self.iasolver._W[1])
+        Q2 = np.matrix(self.iasolver.calc_Q(2))
+        W2 = np.matrix(self.iasolver._W[2])
+        expected_cost = np.trace(np.abs(
+            W0.H * Q0 * W0 + W1.H * Q1 * W1 + W2.H * Q2 * W2))
+        self.assertAlmostEqual(expected_cost, self.iasolver.getCost())
+
+        self.iasolver.step()
+        Q0 = np.matrix(self.iasolver.calc_Q(0))
+        W0 = np.matrix(self.iasolver._W[0])
+        Q1 = np.matrix(self.iasolver.calc_Q(1))
+        W1 = np.matrix(self.iasolver._W[1])
+        Q2 = np.matrix(self.iasolver.calc_Q(2))
+        W2 = np.matrix(self.iasolver._W[2])
+        expected_cost2 = np.trace(np.abs(
+            W0.H * Q0 * W0 + W1.H * Q1 * W1 + W2.H * Q2 * W2))
+        self.assertAlmostEqual(expected_cost2, self.iasolver.getCost())
+
+        self.assertTrue(expected_cost2 < expected_cost)
 
     def test_calc_Uk_all_k(self):
         Uk_all = self.iasolver.calc_Uk_all_k()

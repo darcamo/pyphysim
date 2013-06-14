@@ -13,7 +13,7 @@ from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
 __all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
-           'MaxSinrIASolver', 'MinLeakageIASolver']
+           'MaxSinrIASolver', 'MinLeakageIASolver', 'ClosedFormIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -129,9 +129,9 @@ class IASolverBaseClass(object):
             for each user.
         """
         if isinstance(Ns, int):
-            Ns = np.ones(K) * Ns
+            Ns = np.ones(K, dtype=int) * Ns
         if isinstance(Nt, int):
-            Nt = np.ones(K) * Nt
+            Nt = np.ones(K, dtype=int) * Nt
 
         self._P = P
 
@@ -378,16 +378,151 @@ class IASolverBaseClass(object):
         return pk
 
     def solve(self):
-        """Find the IA solution.
+        """
+        Find the IA solution.
 
-        This method does not return anythin, but instead updates the 'F'
-        and 'W' member variables.
+        This method instead updates the 'F' and 'W' member variables.
 
         Notes
         -----
         This function should be implemented in the derived classes
         """
         raise NotImplementedError("solve: Not implemented")
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ClosedFormIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ClosedFormIASolver(IASolverBaseClass):
+    """
+    Implements the closed form Interference Alignment algorithm as
+    described in the paper "Interference Alignment and Degrees of Freedom
+    of the K User Interference Channel [CadambeDoF2008]_".
+
+    Notes
+    -----
+
+    .. [CadambeDoF2008] V. R. Cadambe and S. A. Jafar, "Interference
+       Alignment and Degrees of Freedom of the K User Interference
+       Channel," IEEE Transactions on Information Theory 54, pp. 3425–3441,
+       Aug. 2008.
+    """
+
+    def __init__(self, Ns):
+        """
+
+        Paramters
+        ---------
+        Ns : int or 1D numpy array
+            Number of streams of all users.
+        """
+        IASolverBaseClass.__init__(self)
+
+        if isinstance(Ns, int):
+            Ns = np.ones(3, dtype=int) * Ns
+        else:
+            assert len(Ns) == 3
+        self._Ns = Ns
+
+    def _calc_E(self):
+        """
+        Calculates the "E" matrix, given by
+
+        :math:`\\mtE = \\mtH_{31}^{-1}\\mtH_{32}\\mtH_{12}^{-1}\\mtH_{13}\\mtH_{23}^{-1}\\mtH_{21}`.
+        """
+        # $\mtE = \mtH_{31}^{-1}\mtH_{32}\mtH_{12}^{-1}\mtH_{13}\mtH_{23}^{-1}\mtH_{21}$
+        inv = np.linalg.inv
+        H31 = self.get_channel(2, 0)
+        H32 = self.get_channel(2, 1)
+        H12 = self.get_channel(0, 1)
+        H13 = self.get_channel(0, 2)
+        H23 = self.get_channel(1, 2)
+        H21 = self.get_channel(1, 0)
+        E = np.dot(inv(H31),
+                   np.dot(H32,
+                          np.dot(inv(H12),
+                                 np.dot(H13, np.dot(inv(H23), H21)))))
+        return E
+
+    def updateF(self):
+        """Find the precoders.
+        """
+        E = self._calc_E()
+        Ns0 = self.Ns[0]
+
+        # The number of users is always 3 for the ClosedFormIASolver class
+        self._F = np.zeros(3, dtype=np.ndarray)
+
+        # The first precoder is given by any subset of the eigenvectors of
+        # the "E" matrix. We simple get the first Ns_0 eigenvectors of E.
+        eigenvectors = np.linalg.eig(E)[1]
+        V1 = eigenvectors[:, 0:Ns0]
+        self._F[0] = V1
+
+        # The second precoder is given by $\mtH_{32}^{-1}\mtH_{31}\mtV_1$
+        invH32 = np.linalg.inv(self.get_channel(2, 1))
+        H31 = self.get_channel(2, 0)
+        self._F[1] = np.dot(invH32, np.dot(H31, V1))
+        # The third precoder is given by $\mtH_{23}^{-1}\mtH_{21}\mtV_1$
+        invH23 = np.linalg.inv(self.get_channel(1, 2))
+        H21 = self.get_channel(1, 0)
+        self._F[2] = np.dot(invH23, np.dot(H21, V1))
+
+        # Normalize the precoders
+        self._F[0] = self._F[0] / np.linalg.norm(self._F[0], 'fro')
+        self._F[1] = self._F[1] / np.linalg.norm(self._F[1], 'fro')
+        self._F[2] = self._F[2] / np.linalg.norm(self._F[2], 'fro')
+
+    def updateW(self):
+        """Find the receive filters
+        """
+        # The number of users is always 3 for the ClosedFormIASolver class
+        self._W = np.zeros(3, dtype=np.ndarray)
+
+        A0 = np.dot(self.get_channel(0, 1), self.F[1])
+        self._W[0] = leig(
+            np.dot(A0, A0.transpose().conjugate()),
+            self.Ns[0])[0]
+
+        A1 = np.dot(self.get_channel(1, 0), self.F[0])
+        self._W[1] = leig(
+            np.dot(A1, A1.transpose().conjugate()),
+            self.Ns[1])[0]
+
+        A2 = np.dot(self.get_channel(2, 0), self.F[0])
+        self._W[2] = leig(
+            np.dot(A2, A2.transpose().conjugate()),
+            self.Ns[2])[0]
+        pass
+
+    @property
+    def W(self):
+        """Receive filter of all users."""
+        W = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            # Equivalent channel with the effect of the precoder, channel
+            # and receive filter
+            Hieq = self.calc_equivalent_channel(k)
+
+            try:
+                Hieq_inv = np.linalg.inv(Hieq)
+            except Exception:
+                # Should not be here
+                Hieq_inv = np.eye(Hieq.shape[0])
+
+            W[k] = Hieq_inv.dot(self._W[k].transpose().conjugate())
+            # W is the only receive filter required to cancel the
+            # interference and compensate the effect of the channel and
+            # transmit precoder.
+        return W
+
+    def solve(self):
+        """
+        Find the IA solution.
+        """
+        assert self.K == 3, 'The ClosedFormIASolver class only works in a MIMO-IC scenario with 3 users.'
+
+        # TODO: Implement-me
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -505,7 +640,8 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def getCost(self):
-        """Get the Cost of the algorithm for the current iteration of the
+        """
+        Get the Cost of the algorithm for the current iteration of the
         precoder.
 
         Returns
@@ -513,7 +649,6 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         cost : float
             The Cost of the algorithm for the current iteration of the
             precoder
-
         """
         Cost = 0
         # This will get all combinations of (k,l) without repetition. This
@@ -687,13 +822,44 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 # xxxxxxxxxxxxxxx MinLeakageIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MinLeakageIASolver(IterativeIASolverBaseClass):
-    """Implements the Minimum Leakage Interference Alignment algorithm.
+    """
+    Implements the Minimum Leakage Interference Alignment algorithm as
+    described in the paper "Approaching the Capacity of Wireless Networks
+    through Distributed Interference Alignment [Cadambe2008]_".
     """
 
     def __init__(self, ):
         """
         """
         IterativeIASolverBaseClass.__init__(self)
+
+    def getCost(self):
+        """
+        Get the Cost of the algorithm for the current iteration of the
+        precoder.
+
+        For the Minimum Leakage Interference Alignment algorithm the cost
+        is equivalent to the sum of the interference that all users see
+        after applying the receive filter. That is,
+
+            :math:`C = Tr[\\mtU_k^H \\mtQ_k \\mtU_k]`
+
+        Returns
+        -------
+        cost : float
+            The Cost of the algorithm for the current iteration of the
+            precoder
+        """
+        # $$C = Tr[\mtU_k^H \mtQ_k \mtU_k]$$
+        cost = 0
+        for k in range(self.K):
+            Qk = self.calc_Q(k)
+            Wk = self._W[k]
+            aux = np.dot(
+                np.dot(Wk.transpose().conjugate(), Qk),
+                Wk)
+            cost = cost + np.trace(np.abs(aux))
+        return cost
 
     def calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
@@ -776,7 +942,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MaxSinrIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Finish the implementation
+# TODO: Test and validate this implementation
 class MaxSinrIASolver(IterativeIASolverBaseClass):
     """Implements the "Interference Alignment via Max SINR" algorithm.
 
@@ -787,7 +953,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     transmitter/receiver with 2 antennas in each node and 1 stream
     transmitted per node.
 
-    You can determine the scenario of an AlternatingMinIASolver object by
+    You can determine the scenario of an MaxSinrIASolver object by
     infering the variables K, Nt, Nr and Ns.
 
     Notes
@@ -809,7 +975,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """
         IterativeIASolverBaseClass.__init__(self)
         self.noise_power = noise_power
-        self.max_iterations = 50
 
     @property
     def W(self):
@@ -824,7 +989,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
                 Hieq_inv = np.linalg.inv(Hieq)
             except Exception:
                 # Should not be here
-                import pudb; pudb.set_trace()  ## DEBUG ##
                 Hieq_inv = np.eye(Hieq.shape[0])
 
             W[k] = Hieq_inv.dot(self._W[k].transpose().conjugate())

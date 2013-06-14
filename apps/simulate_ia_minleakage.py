@@ -124,7 +124,6 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-        #dot2=lambda w,r: np.dot(w.transpose().conjugate(), r)
         received_data_no_interference = map(np.dot,
                                             self.ia_solver.W, received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -222,10 +221,11 @@ if __name__ == '__main__':
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(modulator_name,
-                                                                        Nr,
-                                                                        Nt,
-                                                                        Ns)
+    results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(
+        modulator_name,
+        Nr,
+        Nt,
+        Ns)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
@@ -237,11 +237,11 @@ if __name__ == '__main__':
     print "Elapsed Time: {0}".format(runner.elapsed_time)
     #
     #
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # K = 3
-    # Nr = np.ones(K, dtype=int) * 2
-    # Nt = np.ones(K, dtype=int) * 2
-    # Ns = np.ones(K, dtype=int) * 1
+    # Nr = 2
+    # Nt = 2
+    # Ns = 1
     # modulator_name = '4-PSK'
 
     results_filename = 'ia_min_leakage_results_{0}_{1}x{2}({3})'.format(
@@ -250,8 +250,8 @@ if __name__ == '__main__':
         Nt,
         Ns)
 
-    results = simulations.SimulationResults.load_from_file('{0}.pickle'.format(
-        results_filename))
+    results = simulations.SimulationResults.load_from_file(
+        '{0}.pickle'.format(results_filename))
 
     # Get the BER and SER from the results object
     ber = results.get_result_values_list('ber')
@@ -273,8 +273,8 @@ if __name__ == '__main__':
         grid(True, which='both', axis='both')
         show()
 
-    print "Runned iterations: {0}".format(runner.runned_reps)
-    print "Elapsed Time: {0}".format(runner.elapsed_time)
+    print "Runned iterations: {0}".format(results.runned_reps)
+    print "Elapsed Time: {0}".format(pretty_time(results.elapsed_time))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
