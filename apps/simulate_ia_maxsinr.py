@@ -25,62 +25,64 @@ class MaxSINRSimulationRunner(SimulationRunner):
     """Implements a simulation runner for a transmission with the
     MaxSINR Minimizations Interference Alignment Algorithm.
     """
-    def __init__(self):
+    def __init__(self, config_filename):
         SimulationRunner.__init__(self)
 
-        # The _keep_going method will stop the simulation earlier when
-        # max_bit_errors are achieved.
-        self.max_bit_errors = 3000
+        # xxxxxxxxxx Read Parameters from file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        M=integer(min=4, max=512, default=4)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        K=integer(min=2,default=3)
+        Nr=integer(min=2,default=2)
+        Nt=integer(min=2,default=2)
+        Ns=integer(min=1,default=1)
+        [IA Algorithm]
+        max_iterations=integer(min=1, default=120)
+        [General]
+        rep_max=integer(min=1, default=2000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
 
-        #SNR = np.array([0., 3., 6, 9])
-        # SNR = np.array([0., 3, 6, 9, 12])
-        SNR = np.array([0., 5, 10, 15, 20, 25, 30])
-        #SNR = np.array([50])
-        M = 4
-        self.modulator = modulators.PSK(M)
-        NSymbs = 100
-        K = 3
-        Nr = np.ones(K, dtype=int) * 4
-        Nt = np.ones(K, dtype=int) * 4
-        Ns = np.ones(K, dtype=int) * 2
-        self.params.add('NSymbs', NSymbs)
-        self.params.add('K', K)
-        self.params.add('Nr', Nr)
-        self.params.add('Nt', Nt)
-        self.params.add('Ns', Ns)
+        self.params = SimulationParameters.load_from_config_file(
+            config_filename,
+            spec,
+            save_parsed_file=True)
 
-        # noise_power will be changed later depending on the SNR value
+        # Set the max_bit_errors and rep_max attributes
+        self.max_bit_errors = self.params['max_bit_errors']
+        self.rep_max = self.params['rep_max']
+
+        # Create the modulator object
+        M = self.params['M']
+        modulator_options = {'PSK': modulators.PSK,
+                             'QPSK': modulators.QPSK,
+                             'QAM': modulators.QAM,
+                             'BPSK': modulators.BPSK}
+        self.modulator = modulator_options[self.params['modulator']](M)
+
+        # Create the IA Solver object. Noise_power will be changed later
+        # depending on the SNR value
         self.ia_solver = ia.MaxSinrIASolver(noise_power=1)
-
-        # Iterations of the algorithm.
-        self.ia_solver.max_iterations = 200
-
-        # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
-        # We need to set these two in all simulations
-        self.rep_max = 2000
-        #self.rep_max = 200
-        self.progressbar_message = "MaxSINR Min. ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
+        # Iterations of the MinLeakageMinIASolver algorithm.
+        self.ia_solver.max_iterations = self.params['max_iterations']
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # We need to add the parameters to the self.param variable.
-        self.params.add('SNR', SNR)
-        self.params.set_unpack_parameter('SNR')
-
-        # xxxxxxxxxx Parameters Stored for reference xxxxxxxxxxxxxxxxxxxxxx
-        self.params.add('Modulator', self.modulator.name)
-        self.params.add('IA_Max_Iterations', self.ia_solver.max_iterations)
-        self.params.add('rep_max', self.rep_max)
+        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.progressbar_message = "Max SINR ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
+        M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]
         K = current_parameters["K"]
-        Nr = current_parameters["Nr"]
-        Nt = current_parameters["Nt"]
-        Ns = current_parameters["Ns"]
+        Nr = np.ones(K, dtype=int) * current_parameters["Nr"]
+        Nt = np.ones(K, dtype=int) * current_parameters["Nt"]
+        Ns = np.ones(K, dtype=int) * current_parameters["Ns"]
         SNR = current_parameters["SNR"]
-        M = self.modulator.M
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -204,7 +206,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
-    runner = MaxSINRSimulationRunner()
+    runner = MaxSINRSimulationRunner('ia_config_file.txt')
     runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

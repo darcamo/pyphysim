@@ -37,8 +37,8 @@ class IASolverBaseClass(object):
         self._multiUserChannel = MultiUserChannelMatrix()
 
         self._P = None  # Power of each user (P is an 1D numpy array). If
-                       # not set (_P is None), then a power of 1 will be
-                       # used for each transmitter.
+                        # not set (_P is None), then a power of 1 will be
+                        # used for each transmitter.
 
     @property
     def F(self):
@@ -521,8 +521,8 @@ class ClosedFormIASolver(IASolverBaseClass):
         Find the IA solution.
         """
         assert self.K == 3, 'The ClosedFormIASolver class only works in a MIMO-IC scenario with 3 users.'
-
-        # TODO: Implement-me
+        self.updateF()
+        self.updateW()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

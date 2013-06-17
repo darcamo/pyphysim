@@ -224,7 +224,6 @@ class IASolverBaseClassTestCase(unittest.TestCase):
             self.iasolver.solve()
 
 
-# TODO: finish implementation
 class ClosedFormIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -333,9 +332,18 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             np.array([[1.0]]))
 
     def test_solve(self):
-
-        # TODO: Implement-me
-        pass
+        print
+        self.iasolver.solve()
+        for l in range(3):
+            for k in range(3):
+                Hlk = self.iasolver.get_channel(l, k)
+                Wl = self.iasolver.W[l]
+                Fk = self.iasolver.F[k]
+                s = np.dot(Wl, np.dot(Hlk, Fk))[0][0]
+                if l == k:
+                    self.assertAlmostEqual(1.0, s)
+                else:
+                    self.assertAlmostEqual(0.0, s)
 
 
 class AlternatingMinIASolverTestCase(unittest.TestCase):
