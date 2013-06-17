@@ -592,7 +592,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
 
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
         self.iasolver.randomizeF(self.Ns, self.P)
-        self.iasolver._W = self.iasolver.calc_Uk_all_k()
+        self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
     def test_calc_Bkl_cov_matrix_first_part(self):
         for k in range(self.K):
@@ -690,7 +690,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                 second_part = self.iasolver._calc_Bkl_cov_matrix_second_part(k, l)
                 expected_Bkl[l] = first_part - second_part + np.eye(self.Nr[k])
 
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
 
             # Test if the Bkl for all l of user k were calculated correctly
             for l in range(self.Ns[k]):
@@ -712,7 +712,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                     k, l)
                 expected_Bkl[l] = first_part - second_part + np.eye(self.Nr[k])
 
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l_rev(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l_rev(k)
 
             # Test if the Bkl for all l of user k were calculated correctly
             for l in range(self.Ns[k]):
@@ -721,7 +721,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
     def test_calc_Ukl(self):
         for k in range(self.K):
             Hkk = self.iasolver._get_channel(k, k)
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             F = self.iasolver.F[k]
             for l in range(self.Ns[k]):
                 expected_Ukl = np.dot(
@@ -733,7 +733,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
 
     def teste_calc_Uk(self):
         for k in range(self.K):
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             expected_Uk = np.empty(self.Ns[k], dtype=np.ndarray)
             Hkk = self.iasolver._get_channel(k, k)
             Vk = self.iasolver.F[k]
@@ -748,10 +748,10 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
         for k in range(self.K):
             Hkk = self.iasolver._get_channel(k, k)
             Vk = self.iasolver.F[k]
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
 
-            SINR_k_all_l = self.iasolver.calc_SINR_k(Bkl_all_l, Uk, k)
+            SINR_k_all_l = self.iasolver._calc_SINR_k(Bkl_all_l, Uk, k)
 
             for l in range(self.Ns[k]):
                 Ukl = Uk[:, l:l + 1]
@@ -776,22 +776,22 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expected_Hkl_rev, Hkl_rev)
 
     def test_calc_Uk_all_k(self):
-        Uk = self.iasolver.calc_Uk_all_k()
+        Uk = self.iasolver._calc_Uk_all_k()
 
         for k in range(self.K):
             Hkk = self.iasolver._get_channel(k, k)
             Vk = self.iasolver.F[k]
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
     def test_calc_Uk_all_k_rev(self):
-        Uk = self.iasolver.calc_Uk_all_k_rev()
+        Uk = self.iasolver._calc_Uk_all_k_rev()
 
         for k in range(self.K):
             Hkk = self.iasolver._get_channel_rev(k, k)
             Vk = self.iasolver._W[k]
-            Bkl_all_l = self.iasolver.calc_Bkl_cov_matrix_all_l_rev(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l_rev(k)
             expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
@@ -808,7 +808,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
 
         multiUserChannel.randomize(Nr, Nt, K)
         self.iasolver.randomizeF(Ns, P)
-        self.iasolver._W = self.iasolver.calc_Uk_all_k()
+        self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
         # xxxxx Calculate the expected Q[0]_rev after one step xxxxxxxxxxxx
         k = 0

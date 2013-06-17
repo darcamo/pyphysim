@@ -1174,7 +1174,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return second_part * (float(P[k]) / self._Ns[k])
 
-    def calc_Bkl_cov_matrix_all_l(self, k):
+    def _calc_Bkl_cov_matrix_all_l(self, k):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
         [Cadambe2008]_.
@@ -1226,7 +1226,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return Bkl_all_l
 
-    def calc_Bkl_cov_matrix_all_l_rev(self, k):
+    def _calc_Bkl_cov_matrix_all_l_rev(self, k):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at "receiver" :math:`k` for the reverse channel.
 
@@ -1322,17 +1322,17 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return Uk
 
-    def calc_Uk_all_k(self):
+    def _calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
             Hkk = self._get_channel(k, k)
-            Bkl_all_l = self.calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k)
             Uk[k] = self._calc_Uk(Hkk, self._F[k], Bkl_all_l, k)
         return Uk
 
-    def calc_Uk_all_k_rev(self):
+    def _calc_Uk_all_k_rev(self):
         """Calculates the receive filter of all users for the reverse channel.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
@@ -1340,11 +1340,13 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
                     # channel
         for k in range(self.K):
             Hkk = self._get_channel_rev(k, k)
-            Bkl_all_l = self.calc_Bkl_cov_matrix_all_l_rev(k)
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l_rev(k)
             Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l, k)
         return Uk
 
-    def calc_SINR_k(self, Bkl_all_l, Uk, k):
+    # NOTE: This method is specific to the MaxSinrIASolver algorithm and that is
+    # why it is an internal method (starting with a "_")
+    def _calc_SINR_k(self, Bkl_all_l, Uk, k):
         """Calculates the SINR of all streams of user 'k'.
 
         Parameters
@@ -1398,8 +1400,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         randomizeF
 
         """
-        self._F = self.calc_Uk_all_k_rev()
-        self._W = self.calc_Uk_all_k()
+        self._F = self._calc_Uk_all_k_rev()
+        self._W = self._calc_Uk_all_k()
 
     def solve(self):  # pragma: no cover
         """Find the IA solution with the Max SINR algorithm.
@@ -1421,5 +1423,5 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
 
         """
-        self._W = self.calc_Uk_all_k()
+        self._W = self._calc_Uk_all_k()
         return IterativeIASolverBaseClass.solve(self)

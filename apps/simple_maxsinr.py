@@ -114,9 +114,9 @@ if __name__ == '__main__':
     BER = bitErrors / numBits
     print "BER: {0}".format(BER)
 
-    # SINR_0 = ia_solver.calc_SINR_k(0)
-    # SINR_1 = ia_solver.calc_SINR_k(1)
-    # SINR_2 = ia_solver.calc_SINR_k(2)
+    # SINR_0 = ia_solver._calc_SINR_k(0)
+    # SINR_1 = ia_solver._calc_SINR_k(1)
+    # SINR_2 = ia_solver._calc_SINR_k(2)
 
     # print "SINR_0: {0}".format(SINR_0)
     # print "SINR_1: {0}".format(SINR_1)
