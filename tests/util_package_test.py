@@ -539,7 +539,7 @@ class SimulationResultsTestCase(unittest.TestCase):
                                simresults2.params['factor'])
 
     def test_save_to_and_load_from_hdf5_file(self):
-        filename = 'results_hdf5.h5'
+        filename = 'test_results_hdf5.h5'
         # Let's make sure the file does not exist
         try:
             os.remove(filename)
@@ -583,6 +583,13 @@ class SimulationResultsTestCase(unittest.TestCase):
         # Test if the unpacked parameters where also saved
         self.assertEqual(self.simresults.params.unpacked_parameters[0],
                          simresults2.params.unpacked_parameters[0])
+
+        # Remove the file created during the test
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
 
     # def test_save_to_and_load_from_pytables_file(self):
     #     filename = 'results_pytables.h5'

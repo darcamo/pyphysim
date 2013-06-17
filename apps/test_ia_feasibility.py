@@ -11,35 +11,32 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 
 from ia import ia
+from comm.channels import MultiUserChannelMatrix
 
 
 if __name__ == '__main__':
-    alternating_iterations = 400
-    # K = 3
-    # Nr = np.ones(K) * 4
-    # Nt = np.ones(K) * 4
-    # Ns = np.ones(K) * 2
+    K = 3
+    Nr = np.ones(K) * 2
+    Nt = np.ones(K) * 2
+    Ns = np.ones(K) * 1
 
-    K = 5
-    Nr = np.ones(K) * 4
-    Nt = np.ones(K) * 8
-    Ns = np.ones(K) * 2
+    multiuserchannel = MultiUserChannelMatrix()
 
-    alt = ia.AlternatingMinIASolver()
-    alt.randomizeH(Nr, Nt, K)
-    alt.randomizeF(Nt, Ns, K)
+    alt = ia.AlternatingMinIASolver(multiuserchannel)
+    multiuserchannel.randomize(Nr, Nt, K)
+    alt.randomizeF(Ns)
+    alt.max_iterations = 100
 
-    for i in xrange(alternating_iterations):
-        alt.step()
+    alt.solve()
 
-    print alt.getCost()
+    print "Final_Cost: {0}\n".format(alt.getCost())
 
     all_possibilities = itertools.product(range(K), range(K))
     for ij in all_possibilities:
         i, j = ij
-        print "H{0}{1}".format(i, j)
-        Hij = alt.get_channel(i, j)
+        print "Hij: H{0}{1}".format(i, j)
+        Hij = multiuserchannel.get_channel(i, j)
         Hij_eff = np.dot(alt.W[i], np.dot(Hij, alt.F[j]))
-        print np.linalg.svd(Hij_eff)[1].round(5)
-        print np.linalg.svd(Hij_eff)[0].round(5)
+        print "Eigenvalus: {0}".format(np.linalg.svd(Hij_eff)[1].round(6)[0])
+        print "Eigenvector: {0}".format(np.linalg.svd(Hij_eff)[0].round(6)[0][0])
         print

@@ -13,11 +13,12 @@ sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from util.simulations import *
-from comm import modulators
+from comm import modulators, channels
 from util.conversion import dB2Linear
 from util import misc
 from ia import ia
 import numpy as np
+from pprint import pprint
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -71,8 +72,11 @@ class MinLeakageSimulationRunner(SimulationRunner):
                              'BPSK': modulators.BPSK}
         self.modulator = modulator_options[self.params['modulator']](M)
 
+        # Create the channel object
+        self.multiUserChannel = channels.MultiUserChannelMatrix()
+
         # Create the IA Solver object
-        self.ia_solver = ia.MinLeakageIASolver()
+        self.ia_solver = ia.MinLeakageIASolver(self.multiUserChannel)
         # Iterations of the MinLeakageMinIASolver algorithm.
         self.ia_solver.max_iterations = self.params['max_iterations']
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -108,8 +112,8 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # is a numpy array with the data of a user
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
-        self.ia_solver.randomizeH(Nr, Nt, K)
-        self.ia_solver.randomizeF(Nt, Ns, K)
+        self.multiUserChannel.randomize(Nr, Nt, K)
+        self.ia_solver.randomizeF(Ns)
         self.ia_solver.solve()
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
@@ -208,6 +212,8 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
     runner = MinLeakageSimulationRunner('ia_config_file.txt')
+    pprint(runner.params.parameters)
+    print(runner.ia_solver.__class__)
     runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

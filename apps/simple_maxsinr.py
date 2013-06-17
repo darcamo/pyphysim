@@ -15,7 +15,7 @@ sys.path.append(parent_dir)
 import numpy as np
 
 from ia import ia
-from comm import modulators
+from comm import modulators, channels
 from util.conversion import dB2Linear
 from util import misc
 from util.progressbar import ProgressbarText
@@ -25,16 +25,17 @@ if __name__ == '__main__':
     SNR = 30.0
     noise_var = 1 / dB2Linear(SNR)
     M = 4
-    NSymbs = 200
-    rep_max = 5000
+    NSymbs = 50
+    rep_max = 3000
     modulator = modulators.QAM(M)
     K = 3
     Nr = np.ones(K, dtype=int) * 4
     Nt = np.ones(K, dtype=int) * 4
     Ns = np.ones(K, dtype=int) * 2
-    #ia_solver = ia.AlternatingMinIASolver()
-    ia_solver = ia.MaxSinrIASolver(noise_var)
-    #ia_solver = ia.MinLeakageIASolver()
+    multi_user_channel = channels.MultiUserChannelMatrix()
+    #ia_solver = ia.AlternatingMinIASolver(multi_user_channel)
+    ia_solver = ia.MaxSinrIASolver(multi_user_channel, noise_var)
+    #ia_solver = ia.MinLeakageIASolver(multi_user_channel)
     ia_solver.max_iterations = 50
 
     pb = ProgressbarText(rep_max, '*', message="Simulating for SNR: {0}".format(SNR))
@@ -61,16 +62,14 @@ if __name__ == '__main__':
         # is a numpy array with the data of a user
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
-        ia_solver.randomizeH(Nr, Nt, K)
-        ia_solver.randomizeF(Nt, Ns, K)
-
+        multi_user_channel.randomize(Nr, Nt, K)
+        ia_solver.randomizeF(Ns)
         ia_solver.solve()
 
         transmit_signal_precoded = map(np.dot, ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        multi_user_channel = ia_solver._multiUserChannel
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
             transmit_signal_precoded, noise_var)
@@ -84,7 +83,7 @@ if __name__ == '__main__':
 
         # We still need to compensate the combined effect of the precoding and
         # IA receive filter
-        # compensate_filters = [np.linalg.inv(ia_solver.calc_equivalent_channel(k)) for k in range(K)]
+        # compensate_filters = [np.linalg.inv(ia_solver._calc_equivalent_channel(k)) for k in range(K)]
         # received_data_no_interference2 = map(np.dot,
         #                                      compensate_filters, received_data_no_interference)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -124,15 +123,15 @@ if __name__ == '__main__':
     # print "SINR_2: {0}".format(SINR_2)
 
     # xxxxxxxxxx Debug info xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    H00 = ia_solver.get_channel(0, 0)
-    H01 = ia_solver.get_channel(0, 1)
-    H02 = ia_solver.get_channel(0, 2)
-    H10 = ia_solver.get_channel(1, 0)
-    H11 = ia_solver.get_channel(1, 1)
-    H12 = ia_solver.get_channel(1, 2)
-    H20 = ia_solver.get_channel(2, 0)
-    H21 = ia_solver.get_channel(2, 1)
-    H22 = ia_solver.get_channel(2, 2)
+    H00 = multi_user_channel.get_channel(0, 0)
+    H01 = multi_user_channel.get_channel(0, 1)
+    H02 = multi_user_channel.get_channel(0, 2)
+    H10 = multi_user_channel.get_channel(1, 0)
+    H11 = multi_user_channel.get_channel(1, 1)
+    H12 = multi_user_channel.get_channel(1, 2)
+    H20 = multi_user_channel.get_channel(2, 0)
+    H21 = multi_user_channel.get_channel(2, 1)
+    H22 = multi_user_channel.get_channel(2, 2)
 
     F0 = ia_solver.F[0]
     F1 = ia_solver.F[1]

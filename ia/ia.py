@@ -12,8 +12,8 @@ import itertools
 from util.misc import peig, leig, randn_c
 from comm.channels import MultiUserChannelMatrix
 
-__all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
-           'MaxSinrIASolver', 'MinLeakageIASolver', 'ClosedFormIASolver']
+__all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
+           'MinLeakageIASolver', 'ClosedFormIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -22,8 +22,12 @@ __all__ = ['IASolverBaseClass', 'AlternatingMinIASolver',
 class IASolverBaseClass(object):
     """Base class for all Interference Alignment Algorithms.
 
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
     """
-    def __init__(self):
+    def __init__(self, multiUserChannel):
         """Initialize the variables that every IA solver will have.
         """
         # The F and W variables will be numpy arrays OF numpy arrays.
@@ -34,33 +38,93 @@ class IASolverBaseClass(object):
         # Number of streams per user
         self._Ns = np.array([])
         # Channel of all users
-        self._multiUserChannel = MultiUserChannelMatrix()
+        self._multiUserChannel = multiUserChannel
 
         self._P = None  # Power of each user (P is an 1D numpy array). If
                         # not set (_P is None), then a power of 1 will be
                         # used for each transmitter.
+
+    # def clear(self, ):
+    #     """
+    #     Clear the IA Solver object.
+
+    #     The object becames as if it was just created.
+
+    #     Notes
+    #     -----
+    #     You should overwrite this method in subclasses that pass parameters
+    #     to the __init__ method, since here we call __init__ without
+    #     arguments which is probably not what you want.
+    #     """
+    #     # The F and W variables will be numpy arrays OF numpy arrays.
+    #     self._F = np.array([])  # Precoder: One precoder for each user
+    #     self._W = np.array([])  # Receive filter: One for each user
 
     @property
     def F(self):
         """Transmit precoder of all users."""
         return self._F
 
+    # The W property should return a receive filter that can be directly
+    # multiplied (no need to calculate the hermitian of W) by the received
+    # signal to cancel interference and compensate the effect of the
+    # channel.
     @property
     def W(self):
         """Receive filter of all users."""
         return self._W
 
+    # In some of the derived classes the the W property must be the
+    # hermitian of _W combined with the inverse of the effective channel
+    # (so that the effect of the precoder, channel and receive filter is a
+    # identity matrix). The code to do that is here so that the subclasses
+    # can define the W property and use _get_W_property_alt in that
+    # definition.
+    def _get_W_property_alt(self):
+        """
+        Receive filter of all users.
+
+        The returned filter is equivalent to first calculating the
+        hermitian of self._W. Then calculate the inverse of the effective
+        channel and then multiply them.
+        """
+        W = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            # Equivalent channel with the effect of the precoder, channel
+            # and receive filter
+            Hieq = self._calc_equivalent_channel(k)
+
+            try:
+                Hieq_inv = np.linalg.inv(Hieq)
+            except Exception:
+                # Should not be here
+                Hieq_inv = np.eye(Hieq.shape[0])
+
+            W[k] = Hieq_inv.dot(self._W[k].transpose().conjugate())
+            # W is the only receive filter required to cancel the
+            # interference and compensate the effect of the channel and
+            # transmit precoder.
+        return W
+
     @property
     def P(self):
         """Transmit power of all users.
         """
-        return self._P
+        if self._P is None:
+            P = np.ones(self.K, dtype=float)
+        else:
+            P = self._P
+        return P
 
     @P.setter
     def P(self, value):
         """Transmit power of all users.
         """
-        if np.isscalar(value):
+        if value is None:
+            # Note that if self._P is None then the getter property will
+            # return a numpy array of ones with the appropriated size.
+            self._P = None
+        elif np.isscalar(value):
             self._P = np.ones(self.K, dtype=float) * value
         else:
             if len(value) != self.K:
@@ -113,7 +177,7 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel._Nt
 
-    def randomizeF(self, Nt, Ns, K, P=None):
+    def randomizeF(self, Ns, P=None):
         """Generates a random precoder for each user.
 
         Parameters
@@ -129,68 +193,23 @@ class IASolverBaseClass(object):
             for each user.
         """
         if isinstance(Ns, int):
-            Ns = np.ones(K, dtype=int) * Ns
-        if isinstance(Nt, int):
-            Nt = np.ones(K, dtype=int) * Nt
+            Ns = np.ones(self.K, dtype=int) * Ns
 
-        self._P = P
+        self.P = P
 
         # Lambda function that returns a normalized version of the input
         # numpy array
         normalized = lambda A: A / np.linalg.norm(A, 'fro')
 
-        self._F = np.zeros(K, dtype=np.ndarray)
-        for k in range(K):
-            self._F[k] = normalized(randn_c(Nt[k], Ns[k]))
+        self._F = np.zeros(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            self._F[k] = normalized(randn_c(self.Nt[k], Ns[k]))
         #self._F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
         self._Ns = Ns
 
-    # This method does not need testing, since the logic is implemented in
-    # the MultiUserChannelMatrix class and it is already tested.
-    def randomizeH(self, Nr, Nt, K):
-        """Generates a random channel matrix for all users.
-
-        Parameters
-        ----------
-        K : int
-            Number of users.
-        Nr : int or 1D numpy array
-            Number of receive antennas of each user.
-        Nt : int or 1D numpy array
-            Number of transmit antennas of each user.
-        """
-        self._multiUserChannel.randomize(Nr, Nt, K)
-
-    # This method does not need testing, since the logic is implemented in
-    # the MultiUserChannelMatrix class and it is already tested.
-    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
-        """Initializes the multiuser channel matrix from the given
-        `channel_matrix`.
-
-        Parameters
-        ----------
-        channel_matrix : 2D numpy array
-            A matrix concatenating the channel of all users (from each
-            transmitter to each receiver).
-        Nr : 1D numpy array
-            The number of receive antennas of each user.
-        Nt : 1D numpy array
-            The number of transmit antennas of each user.
-        K : int
-            Number of users.
-
-        Raises
-        ------
-        ValueError
-            If the arguments are invalid.
-
-        """
-        self._multiUserChannel.init_from_channel_matrix(channel_matrix, Nr,
-                                                        Nt, K)
-
-    # This method does not need testing, since the logic is implemented in
-    # the MultiUserChannelMatrix class and it is already tested.
-    def get_channel(self, k, l):
+    # This method is just an alias for the get_channel method of the
+    # multiuserchannel object associated with the IA Solver.xs
+    def _get_channel(self, k, l):
         """Get the channel from transmitter l to receiver k.
 
         Parameters
@@ -207,7 +226,7 @@ class IASolverBaseClass(object):
         """
         return self._multiUserChannel.get_channel(k, l)
 
-    def get_channel_rev(self, k, l):
+    def _get_channel_rev(self, k, l):
         """Get the channel from transmitter l to receiver k in the reverse
         network.
 
@@ -237,7 +256,7 @@ class IASolverBaseClass(object):
         See Section III of [Cadambe2008]_ for details.
 
         """
-        return self.get_channel(l, k).transpose().conjugate()
+        return self._get_channel(l, k).transpose().conjugate()
 
     def calc_Q(self, k):
         """Calculates the interference covariance matrix at the
@@ -277,7 +296,7 @@ class IASolverBaseClass(object):
 
         for l in interfering_users:
             Hkl_F = np.dot(
-                self.get_channel(k, l),
+                self._get_channel(k, l),
                 self._F[l])
             Qk = Qk + np.dot(P[l] * Hkl_F, Hkl_F.transpose().conjugate())
 
@@ -307,23 +326,21 @@ class IASolverBaseClass(object):
         """
         # TODO: The power in the reverse network is probably different and
         # therefore maybe we should not use self._P directly.
-        P = self._P
-        if P is None:
-            P = np.ones(self.K)
-
+        P = self.P
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nt[k], self.Nt[k]], dtype=complex)
 
         for l in interfering_users:
             Hkl_F_rev = np.dot(
-                self.get_channel_rev(k, l),
+                self._get_channel_rev(k, l),
                 self._W[l])
             Qk = Qk + np.dot(P[l] * Hkl_F_rev, Hkl_F_rev.transpose().conjugate())
 
         return Qk
 
-    def calc_equivalent_channel(self, k):
-        """Calculates the equivalent channel for user :math:`k` considering
+    def _calc_equivalent_channel(self, k):
+        """
+        Calculates the equivalent channel for user :math:`k` considering
         the effect of the precoder, the actual channel, and the receive
         filter.
 
@@ -332,11 +349,19 @@ class IASolverBaseClass(object):
         k : int
             The index of the desired user.
 
+        Notes
+        -----
+        This method is used only internaly in order to calculate the "W"
+        get property so that the returned filter W compensates the effect
+        of the direct channel.
         """
-        # TODO: Test this method
+        # Note that here Wk is the self._Wk attribute and not the W
+        # property. Since _calc_equivalent_channel is used in the W get
+        # property if we had used self.W here we would get an infinity
+        # recursion.
         Wk = self._W[k].transpose().conjugate()
-        Fk = self._F[k]
-        Hkk = self.get_channel(k, k)
+        Fk = self.F[k]
+        Hkk = self._get_channel(k, k)
         Hk_eq = Wk.dot(Hkk.dot(Fk))
         return Hk_eq
 
@@ -399,6 +424,13 @@ class ClosedFormIASolver(IASolverBaseClass):
     described in the paper "Interference Alignment and Degrees of Freedom
     of the K User Interference Channel [CadambeDoF2008]_".
 
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
+    Ns : int or 1D numpy array
+        Number of streams of all users.
+
     Notes
     -----
 
@@ -408,15 +440,17 @@ class ClosedFormIASolver(IASolverBaseClass):
        Aug. 2008.
     """
 
-    def __init__(self, Ns):
+    def __init__(self, multiUserChannel, Ns):
         """
 
         Paramters
         ---------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
         Ns : int or 1D numpy array
             Number of streams of all users.
         """
-        IASolverBaseClass.__init__(self)
+        IASolverBaseClass.__init__(self, multiUserChannel)
 
         if isinstance(Ns, int):
             Ns = np.ones(3, dtype=int) * Ns
@@ -432,12 +466,12 @@ class ClosedFormIASolver(IASolverBaseClass):
         """
         # $\mtE = \mtH_{31}^{-1}\mtH_{32}\mtH_{12}^{-1}\mtH_{13}\mtH_{23}^{-1}\mtH_{21}$
         inv = np.linalg.inv
-        H31 = self.get_channel(2, 0)
-        H32 = self.get_channel(2, 1)
-        H12 = self.get_channel(0, 1)
-        H13 = self.get_channel(0, 2)
-        H23 = self.get_channel(1, 2)
-        H21 = self.get_channel(1, 0)
+        H31 = self._get_channel(2, 0)
+        H32 = self._get_channel(2, 1)
+        H12 = self._get_channel(0, 1)
+        H13 = self._get_channel(0, 2)
+        H23 = self._get_channel(1, 2)
+        H21 = self._get_channel(1, 0)
         E = np.dot(inv(H31),
                    np.dot(H32,
                           np.dot(inv(H12),
@@ -460,12 +494,12 @@ class ClosedFormIASolver(IASolverBaseClass):
         self._F[0] = V1
 
         # The second precoder is given by $\mtH_{32}^{-1}\mtH_{31}\mtV_1$
-        invH32 = np.linalg.inv(self.get_channel(2, 1))
-        H31 = self.get_channel(2, 0)
+        invH32 = np.linalg.inv(self._get_channel(2, 1))
+        H31 = self._get_channel(2, 0)
         self._F[1] = np.dot(invH32, np.dot(H31, V1))
         # The third precoder is given by $\mtH_{23}^{-1}\mtH_{21}\mtV_1$
-        invH23 = np.linalg.inv(self.get_channel(1, 2))
-        H21 = self.get_channel(1, 0)
+        invH23 = np.linalg.inv(self._get_channel(1, 2))
+        H21 = self._get_channel(1, 0)
         self._F[2] = np.dot(invH23, np.dot(H21, V1))
 
         # Normalize the precoders
@@ -479,17 +513,17 @@ class ClosedFormIASolver(IASolverBaseClass):
         # The number of users is always 3 for the ClosedFormIASolver class
         self._W = np.zeros(3, dtype=np.ndarray)
 
-        A0 = np.dot(self.get_channel(0, 1), self.F[1])
+        A0 = np.dot(self._get_channel(0, 1), self.F[1])
         self._W[0] = leig(
             np.dot(A0, A0.transpose().conjugate()),
             self.Ns[0])[0]
 
-        A1 = np.dot(self.get_channel(1, 0), self.F[0])
+        A1 = np.dot(self._get_channel(1, 0), self.F[0])
         self._W[1] = leig(
             np.dot(A1, A1.transpose().conjugate()),
             self.Ns[1])[0]
 
-        A2 = np.dot(self.get_channel(2, 0), self.F[0])
+        A2 = np.dot(self._get_channel(2, 0), self.F[0])
         self._W[2] = leig(
             np.dot(A2, A2.transpose().conjugate()),
             self.Ns[2])[0]
@@ -498,23 +532,7 @@ class ClosedFormIASolver(IASolverBaseClass):
     @property
     def W(self):
         """Receive filter of all users."""
-        W = np.empty(self.K, dtype=np.ndarray)
-        for k in range(self.K):
-            # Equivalent channel with the effect of the precoder, channel
-            # and receive filter
-            Hieq = self.calc_equivalent_channel(k)
-
-            try:
-                Hieq_inv = np.linalg.inv(Hieq)
-            except Exception:
-                # Should not be here
-                Hieq_inv = np.eye(Hieq.shape[0])
-
-            W[k] = Hieq_inv.dot(self._W[k].transpose().conjugate())
-            # W is the only receive filter required to cancel the
-            # interference and compensate the effect of the channel and
-            # transmit precoder.
-        return W
+        return self._get_W_property_alt()
 
     def solve(self):
         """
@@ -531,14 +549,25 @@ class ClosedFormIASolver(IASolverBaseClass):
 class IterativeIASolverBaseClass(IASolverBaseClass):
     """Base class for all Iterative IA algorithms.
 
-    All iterative IA algorithms must implement a `step` method. The solve
-    method will be then simply running the step method a given number of
+    All iterative IA algorithms must implement a `_step` method. The solve
+    method will be then simply running the _step method a given number of
     times, which is controlled by the max_iterations attribute.
+
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
 
     """
 
-    def __init__(self, ):
-        IASolverBaseClass.__init__(self)
+    def __init__(self, multiUserChannel):
+        """
+        Parameters
+        ----------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
+        """
+        IASolverBaseClass.__init__(self, multiUserChannel)
 
         self._runned_iterations = 0  # Count how many times the step method
                                      # was called. This will be reseted to
@@ -547,7 +576,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.max_iterations = 50  # Number of times the step method is
                                   # called in the solve method.
 
-    def step(self):
+    def _step(self):
         """Performs one iteration of the algorithm.
 
         This method does not return anything, but instead updates the
@@ -558,30 +587,14 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         This function should be implemented in the derived classes
 
         """
-        raise NotImplementedError("step: Not implemented")
+        raise NotImplementedError("step: Not implemented")  # pragma: no cover
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Overwrite methods in the IASolverBaseClass that change the channel or
-    # the precoder so that they also reset the _runned_iterations attribute
-    # to.
-    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
+    # Overwrite method in the IASolverBaseClass that change the precoder so
+    # that they also reset the _runned_iterations attribute to zero.
+    def randomizeF(self, Ns, P=None):
         self._runned_iterations = 0
-        super(IterativeIASolverBaseClass, self).init_from_channel_matrix(
-            channel_matrix, Nr, Nt, K)
-
-    def randomizeH(self, Nr, Nt, K):
-        self._runned_iterations = 0
-        super(IterativeIASolverBaseClass, self).randomizeH(Nr, Nt, K)
-
-    def randomizeF(self, Nt, Ns, K, P=None):
-        self._runned_iterations = 0
-        super(IterativeIASolverBaseClass, self).randomizeF(Nt, Ns, K, P)
-
-    # This will use the docstrings of the base class for the overwritten
-    # methods.
-    init_from_channel_matrix.__doc__ = \
-        IASolverBaseClass.init_from_channel_matrix.__doc__
-    randomizeH.__doc__ = IASolverBaseClass.randomizeH.__doc__
+        super(IterativeIASolverBaseClass, self).randomizeF(Ns, P)
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -602,11 +615,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         You need to call :meth:`randomizeF` at least once before calling
         :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+        :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
         """
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
-            self.step()
+            self._step()
 
         # Return the number of iterations the algorithm run
         return i + 1
@@ -632,9 +645,20 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     You can determine the scenario of an AlternatingMinIASolver object by
     infering the variables K, Nt, Nr and Ns.
 
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
+
     """
-    def __init__(self):
-        IterativeIASolverBaseClass.__init__(self)
+    def __init__(self, multiUserChannel):
+        """
+        Parameters
+        ----------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
+        """
+        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         self.C = []    # Basis of the interference subspace for each user
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -659,7 +683,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         for kl in all_kl_indexes:
             (k, l) = kl
             Hkl_Fl = np.dot(
-                self.get_channel(k, l),
+                self._get_channel(k, l),
                 self._F[l])
             Cost = Cost + np.linalg.norm(
                 Hkl_Fl -
@@ -672,7 +696,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         return Cost
 
-    def step(self):
+    def _step(self):
         """Performs one iteration of the algorithm.
 
         The step method is usually all you need to call to perform an
@@ -782,7 +806,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)H_{k,l}$
         for lk in all_lk_indexes:
             (l, k) = lk
-            lH = self.get_channel(k, l)
+            lH = self._get_channel(k, l)
             newF[l] = newF[l] + np.dot(
                 np.dot(lH.conjugate().transpose(),
                        Y[k]),
@@ -810,7 +834,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         newW = np.zeros(self.K, dtype=np.ndarray)
         for k in np.arange(self.K):
             tildeHi = np.hstack(
-                [np.dot(self.get_channel(k, k), self._F[k]),
+                [np.dot(self._get_channel(k, k), self._F[k]),
                  self.C[k]])
             newW[k] = np.linalg.inv(tildeHi)
             # We only want the first Ns[k] lines
@@ -826,12 +850,21 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
     Implements the Minimum Leakage Interference Alignment algorithm as
     described in the paper "Approaching the Capacity of Wireless Networks
     through Distributed Interference Alignment [Cadambe2008]_".
+
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
     """
 
-    def __init__(self, ):
+    def __init__(self, multiUserChannel):
         """
+        Parameters
+        ----------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
         """
-        IterativeIASolverBaseClass.__init__(self)
+        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
     def getCost(self):
         """
@@ -861,7 +894,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
             cost = cost + np.trace(np.abs(aux))
         return cost
 
-    def calc_Uk_all_k(self):
+    def _calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
@@ -872,7 +905,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
             Uk[k] = V
         return Uk
 
-    def calc_Uk_all_k_rev(self):
+    def _calc_Uk_all_k_rev(self):
         """Calculates the receive filter of all users in the reverse
         network.
 
@@ -887,19 +920,9 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
     @property
     def W(self):
         """Receive filter of all users."""
-        W = np.empty(self.K, dtype=np.ndarray)
-        for k in range(self.K):
-            # Equivalent channel with the effect of the precoder, channel
-            # and receive filter
-            Hieq = self.calc_equivalent_channel(k)
+        return self._get_W_property_alt()
 
-            W[k] = np.linalg.inv(Hieq).dot(self._W[k].transpose().conjugate())
-            # W is the only receive filter required to cancel the
-            # interference and compensate the effect of the channel and
-            # transmit precoder.
-        return W
-
-    def step(self):
+    def _step(self):
         """Performs one iteration of the algorithm.
 
         The step method is usually all you need to call to perform an
@@ -909,11 +932,11 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         See also
         --------
-        randomizeF, randomizeH, init_from_channel_matrix
+        randomizeF
 
         """
-        self._F = self.calc_Uk_all_k_rev()
-        self._W = self.calc_Uk_all_k()
+        self._F = self._calc_Uk_all_k_rev()
+        self._W = self._calc_Uk_all_k()
 
     def solve(self):
         """Find the IA solution with the Min Leakage algorithm.
@@ -932,10 +955,10 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         You need to call :meth:`randomizeF` at least once before calling
         :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+        :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
 
         """
-        self._W = self.calc_Uk_all_k()
+        self._W = self._calc_Uk_all_k()
         return IterativeIASolverBaseClass.solve(self)
 
 
@@ -956,6 +979,13 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     You can determine the scenario of an MaxSinrIASolver object by
     infering the variables K, Nt, Nr and Ns.
 
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
+    noise_var : float
+        Noise power in dBm.
+
     Notes
     -----
 
@@ -966,36 +996,22 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     """
 
-    def __init__(self, noise_power=1):
+    def __init__(self, multiUserChannel, noise_power=1):
         """
         Parameters
         ----------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
         noise_var : float
             Noise power in dBm.
         """
-        IterativeIASolverBaseClass.__init__(self)
+        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
         self.noise_power = noise_power
 
     @property
     def W(self):
         """Receive filter of all users."""
-        W = np.empty(self.K, dtype=np.ndarray)
-        for k in range(self.K):
-            # Equivalent channel with the effect of the precoder, channel
-            # and receive filter
-            Hieq = self.calc_equivalent_channel(k)
-
-            try:
-                Hieq_inv = np.linalg.inv(Hieq)
-            except Exception:
-                # Should not be here
-                Hieq_inv = np.eye(Hieq.shape[0])
-
-            W[k] = Hieq_inv.dot(self._W[k].transpose().conjugate())
-            # W is the only receive filter required to cancel the
-            # interference and compensate the effect of the channel and
-            # transmit precoder.
-        return W
+        return self._get_W_property_alt()
 
     def _calc_Bkl_cov_matrix_first_part(self, k):
         """Calculates the first part in the equation of the Blk covariance
@@ -1025,7 +1041,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         first_part = 0.0
         for j in range(self.K):
-            Hkj = self.get_channel(k, j)
+            Hkj = self._get_channel(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = self._F[j]
             Vj_H = Vj.conjugate().transpose()
@@ -1066,7 +1082,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         first_part = 0.0
         for j in range(self.K):
-            Hkj = self.get_channel_rev(k, j)
+            Hkj = self._get_channel_rev(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = self._W[j]
             Vj_H = Vj.conjugate().transpose()
@@ -1107,7 +1123,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         if P is None:
             P = np.ones(self.K)  # pragma: no cover
 
-        Hkk = self.get_channel(k, k)
+        Hkk = self._get_channel(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
         Vkl = self._F[k][:, l:l + 1]
@@ -1147,7 +1163,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         if P is None:
             P = np.ones(self.K)  # pragma: no cover
 
-        Hkk = self.get_channel_rev(k, k)
+        Hkk = self._get_channel_rev(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
         Vkl = self._W[k][:, l:l + 1]
@@ -1311,7 +1327,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
-            Hkk = self.get_channel(k, k)
+            Hkk = self._get_channel(k, k)
             Bkl_all_l = self.calc_Bkl_cov_matrix_all_l(k)
             Uk[k] = self._calc_Uk(Hkk, self._F[k], Bkl_all_l, k)
         return Uk
@@ -1323,7 +1339,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         F = self._W  # The precoder is the receive filter of the direct
                     # channel
         for k in range(self.K):
-            Hkk = self.get_channel_rev(k, k)
+            Hkk = self._get_channel_rev(k, k)
             Bkl_all_l = self.calc_Bkl_cov_matrix_all_l_rev(k)
             Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l, k)
         return Uk
@@ -1347,12 +1363,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             The SINR for the different streams of user k.
 
         """
-        if self._P is None:
-            Pk = 1.0
-        else:
-            Pk = self._P[k]
-
-        Hkk = self.get_channel(k, k)
+        Pk = self.P[k]
+        Hkk = self._get_channel(k, k)
         Vk = self._F[k]
 
         SINR_k = np.empty(self.Ns[k], dtype=float)
@@ -1373,7 +1385,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return SINR_k
 
-    def step(self):  # pragma: no cover
+    def _step(self):  # pragma: no cover
         """Performs one iteration of the algorithm.
 
         The step method is usually all you need to call to perform an
@@ -1383,7 +1395,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         See also
         --------
-        randomizeF, randomizeH, init_from_channel_matrix
+        randomizeF
 
         """
         self._F = self.calc_Uk_all_k_rev()
@@ -1406,7 +1418,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         You need to call :meth:`randomizeF` at least once before calling
         :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomizeH` methods.
+        :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
 
         """
         self._W = self.calc_Uk_all_k()
