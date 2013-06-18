@@ -10,7 +10,6 @@ import numpy as np
 import itertools
 
 from util.misc import peig, leig, randn_c
-from comm.channels import MultiUserChannelMatrix
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver']
@@ -20,7 +19,11 @@ __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
 # xxxxxxxxxxxxxxx Base Class for all IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class IASolverBaseClass(object):
-    """Base class for all Interference Alignment Algorithms.
+    """
+    Base class for all Interference Alignment Algorithms.
+
+    At least the `solve` method must be implemented in the subclasses of
+    IASolverBaseClass.
 
     Parameters
     ----------
@@ -282,15 +285,11 @@ class IASolverBaseClass(object):
 
         Notes
         -----
-
-        This is impacted by the self._P attribute.
+        This is impacted by the self.P attribute.
 
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
-        P = self._P
-        if P is None:
-            P = np.ones(self.K)
-
+        P = self.P
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
@@ -325,7 +324,7 @@ class IASolverBaseClass(object):
         calc_Q
         """
         # TODO: The power in the reverse network is probably different and
-        # therefore maybe we should not use self._P directly.
+        # therefore maybe we should not use self.P directly.
         P = self.P
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nt[k], self.Nt[k]], dtype=complex)
@@ -402,11 +401,20 @@ class IASolverBaseClass(object):
         pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
         return pk
 
-    def solve(self):
+    def solve(self, Ns, P=None):
         """
         Find the IA solution.
 
-        This method instead updates the 'F' and 'W' member variables.
+        This method must be implemented in a subclass and should updates
+        the 'F' and 'W' member variables.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
 
         Notes
         -----
@@ -428,8 +436,6 @@ class ClosedFormIASolver(IASolverBaseClass):
     ----------
     multiUserChannel : A MultiUserChannelMatrix object.
         The multiuser channel.
-    Ns : int or 1D numpy array
-        Number of streams of all users.
 
     Notes
     -----
@@ -440,23 +446,15 @@ class ClosedFormIASolver(IASolverBaseClass):
        Aug. 2008.
     """
 
-    def __init__(self, multiUserChannel, Ns):
+    def __init__(self, multiUserChannel):
         """
 
         Paramters
         ---------
         multiUserChannel : A MultiUserChannelMatrix object.
             The multiuser channel.
-        Ns : int or 1D numpy array
-            Number of streams of all users.
         """
         IASolverBaseClass.__init__(self, multiUserChannel)
-
-        if isinstance(Ns, int):
-            Ns = np.ones(3, dtype=int) * Ns
-        else:
-            assert len(Ns) == 3
-        self._Ns = Ns
 
     def _calc_E(self):
         """
@@ -478,7 +476,7 @@ class ClosedFormIASolver(IASolverBaseClass):
                                  np.dot(H13, np.dot(inv(H23), H21)))))
         return E
 
-    def updateF(self):
+    def _updateF(self):
         """Find the precoders.
         """
         E = self._calc_E()
@@ -507,7 +505,7 @@ class ClosedFormIASolver(IASolverBaseClass):
         self._F[1] = self._F[1] / np.linalg.norm(self._F[1], 'fro')
         self._F[2] = self._F[2] / np.linalg.norm(self._F[2], 'fro')
 
-    def updateW(self):
+    def _updateW(self):
         """Find the receive filters
         """
         # The number of users is always 3 for the ClosedFormIASolver class
@@ -534,30 +532,64 @@ class ClosedFormIASolver(IASolverBaseClass):
         """Receive filter of all users."""
         return self._get_W_property_alt()
 
-    def solve(self):
+    def solve(self, Ns, P=None):
         """
         Find the IA solution.
+
+        This method updates the 'F' and 'W' member variables.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
         """
         assert self.K == 3, 'The ClosedFormIASolver class only works in a MIMO-IC scenario with 3 users.'
-        self.updateF()
-        self.updateW()
+
+        if isinstance(Ns, int):
+            Ns = np.ones(3, dtype=int) * Ns
+        else:
+            assert len(Ns) == 3
+        self._Ns = Ns
+
+        self._updateF()
+        self._updateW()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Base Class for all iterative IA algorithms xxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class IterativeIASolverBaseClass(IASolverBaseClass):
-    """Base class for all Iterative IA algorithms.
+    """
+    Base class for all Iterative IA algorithms.
 
-    All iterative IA algorithms must implement a `_step` method. The solve
-    method will be then simply running the _step method a given number of
-    times, which is controlled by the max_iterations attribute.
+    All subclasses of IterativeIASolverBaseClass must implement at least
+    the _updateF and _updateW methods.
+
+    Solving an iterative algorithm usually involves some initialization and
+    then performing a "step" a given number of times until convergence. The
+    initialization code is performed in the `_solve_init` method while the
+    "step" corresponds to the `_step` method.
+
+    The initialization code is defined here as simply initializing the
+    precoder with a random matrix and then calling the `_updateW` method
+    (which must be implemented in a subclass) to update the receive
+    filter. This is usually what you want but any subclass can redefine
+    `_solve_init` if a different initialization is required.
+
+    The "step" part usually involves updating the precoder and then
+    updating the receive filters. The definition of `_step` here calls two
+    methods that MUST be defined in subclasses, the _updateF method and the
+    _updateW method. If anything else is required in the "step" part then
+    the _step method can be redefined in a subclass, but even in that case
+    it should call the _updateF and _updateW methods.
 
     Parameters
     ----------
     multiUserChannel : A MultiUserChannelMatrix object.
         The multiuser channel.
-
     """
 
     def __init__(self, multiUserChannel):
@@ -576,18 +608,42 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.max_iterations = 50  # Number of times the step method is
                                   # called in the solve method.
 
+    def _updateF(self):
+        """
+        Update the precoders.
+
+        Notes
+        -----
+        This method should be implemented in the derived classes
+
+        See also
+        --------
+        _step
+        """
+        raise NotImplementedError("_updateF: Not implemented")
+
+    def _updateW(self):
+        """
+        Update the receive filters.
+
+        Notes
+        -----
+        This method should be implemented in the derived classes
+
+        See also
+        --------
+        _step
+        """
+        raise NotImplementedError("_updateW: Not implemented")
+
     def _step(self):
         """Performs one iteration of the algorithm.
 
         This method does not return anything, but instead updates the
         precoder and receive filter.
-
-        Notes
-        -----
-        This function should be implemented in the derived classes
-
         """
-        raise NotImplementedError("step: Not implemented")  # pragma: no cover
+        self._updateF()
+        self._updateW()
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Overwrite method in the IASolverBaseClass that change the precoder so
@@ -598,12 +654,37 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def solve(self):
+    def _solve_init(self, Ns, P):
+        """
+        Code run in the `solve` method before the loop that run the `step`
+        method.
+
+        The implementation here simple initializes the precoder variable
+        and then calculates the initial receive filter.
+        """
+        self.randomizeF(Ns, P)
+        self._updateW()
+
+    def solve(self, Ns, P=None):
         """
         Find the IA solution by performing the `step` method several times.
 
-        The number of iterations of the algorithm must be specified in the
+        The number of times the `step` method is run is controlled by the
         max_iterations member variable.
+
+        Before calling the `step` method for the first time the
+        `_solve_init` method is called to perform any required
+        initializations. Since iterative IA algorithms usually starts with
+        a random precoder then the `_solve_init` implementation in
+        IterativeIASolverBaseClass calls randomizeF.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
 
         Returns
         -------
@@ -617,6 +698,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         :meth:`solve` as well as initialize the channel either calling the
         :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
         """
+        self._solve_init(Ns, P)
+
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self._step()
@@ -660,7 +743,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
-        self.C = []    # Basis of the interference subspace for each user
+        self._C = []    # Basis of the interference subspace for each user
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def getCost(self):
@@ -689,12 +772,24 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
                 Hkl_Fl -
                 np.dot(
                     np.dot(
-                        self.C[k],
-                        self.C[k].transpose().conjugate()),
+                        self._C[k],
+                        self._C[k].transpose().conjugate()),
                     Hkl_Fl
                 ), 'fro') ** 2
 
         return Cost
+
+    def _solve_init(self, Ns, P):
+        """
+        Code run in the `solve` method before the loop that run the `step`
+        method.
+
+        The implementation here simple initializes the precoder variable
+        and then calculates the initial receive filter.
+        """
+        self.randomizeF(Ns, P)
+        self._updateC()
+        self._updateW()
 
     def _step(self):
         """Performs one iteration of the algorithm.
@@ -708,11 +803,12 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         updateC, updateF, updateW
 
         """
-        self.updateC()
-        self.updateF()
-        self.updateW()
 
-    def updateC(self):
+        self._updateC()
+        self._updateF()
+        self._updateW()
+
+    def _updateC(self):
         """Update the value of Ck for all K users.
 
         Ck contains the orthogonal basis of the interference subspace of
@@ -733,48 +829,21 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # xxxxxxxxxx New Implementation using calc_Q xxxxxxxxxxxxxxxxxxxxxx
         Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
 
-        self.C = np.empty(self.K, dtype=np.ndarray)
+        self._C = np.empty(self.K, dtype=np.ndarray)
 
         for k in np.arange(self.K):
             ### TODO: Implement and test with external interference
             # We are inside only of the first for loop
             # Add the external interference contribution
-            #self.C[k] = self.calc_Q(k) + self.Rk[k]
+            #self._C[k] = self.calc_Q(k) + self.Rk[k]
 
             # C[k] will receive the Ni most dominant eigenvectors of C[k]
-            self.C[k] = peig(self.calc_Q(k), Ni[k])[0]
+            self._C[k] = peig(self.calc_Q(k), Ni[k])[0]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # # xxxxxxxxxx Old Implementation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Ni = self.Nr - self.Ns  # Ni: Dimension of the interference subspace
-
-        # self.C = np.zeros(self.K, dtype=np.ndarray)
-        # # This will get all combinations of (k,l) without repetition. This
-        # # is equivalent to two nested for loops with an if statement to
-        # # only execute the code only when `k` is different of `l`.
-        # all_kl_indexes = itertools.permutations(range(self.K), 2)
-
-        # # This code will store in self.C[k] the equivalent of
-        # # $\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$
-        # for k, l in all_kl_indexes:
-        #     Hkl_F = np.dot(
-        #         self.get_channel(k, l),
-        #         self.F[l])
-        #     self.C[k] = self.C[k] + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
-
-        # # Every element in self.C[k] is a matrix. We want to replace each
-        # # element by the dominant eigenvectors of that element.
-        # for k in np.arange(self.K):
-        #     # TODO: implement and test with external interference
-        #     # # We are inside only of the first for loop
-        #     # # Add the external interference contribution
-        #     # self.C[k] = obj.C{k} + obj.Rk{k}
-
-        #     # C[k] will receive the Ni most dominant eigenvectors of C[k]
-        #     self.C[k] = peig(self.C[k], Ni[k])[0]
-
-    def updateF(self):
-        """Update the value of the precoder of all K users.
+    def _updateF(self):
+        """
+        Update the value of the precoder of all K users.
 
         Fl, the precoder of the l-th user, tries avoid as much as possible
         to send energy into the desired signal subspace of the other
@@ -794,7 +863,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # Note that $\mtY[k] = (\mtI - \mtC_k \mtC_k^H)$
         calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
             np.dot(C, C.conjugate().transpose())
-        Y = map(calc_Y, self.Nr, self.C)
+        Y = map(calc_Y, self.Nr, self._C)
 
         newF = np.zeros(self.K, dtype=np.ndarray)
         # This will get all combinations of (l,k) without repetition. This
@@ -816,8 +885,9 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # element by the least dominant eigenvectors of that element.
         self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
 
-    def updateW(self):
-        """Update the zero-forcing filters.
+    def _updateW(self):
+        """
+        Update the zero-forcing filters.
 
         The zero-forcing filter is calculated in the paper "MIMO
         Interference Alignment Over Correlated Channels with Imperfect
@@ -835,7 +905,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         for k in np.arange(self.K):
             tildeHi = np.hstack(
                 [np.dot(self._get_channel(k, k), self._F[k]),
-                 self.C[k]])
+                 self._C[k]])
             newW[k] = np.linalg.inv(tildeHi)
             # We only want the first Ns[k] lines
             newW[k] = newW[k][0:self.Ns[k]]
@@ -922,44 +992,50 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         """Receive filter of all users."""
         return self._get_W_property_alt()
 
-    def _step(self):
-        """Performs one iteration of the algorithm.
-
-        The step method is usually all you need to call to perform an
-        iteration of the algorithm. Note that it is necesary to initialize
-        the precoders and the channel before calling the step method for
-        the first time.
-
-        See also
-        --------
-        randomizeF
-
+    def _updateF(self):
         """
-        self._F = self._calc_Uk_all_k_rev()
-        self._W = self._calc_Uk_all_k()
-
-    def solve(self):
-        """Find the IA solution with the Min Leakage algorithm.
-
-        The number of iterations of the algorithm must be specified in the
-        max_iterations member variable.
-
-        Returns
-        -------
-        Number of iterations the iterative interference alignment algorithm
-        run.
-
+        Update the precoders.
 
         Notes
         -----
+        This method is called in the :meth:`_step` method.
 
-        You need to call :meth:`randomizeF` at least once before calling
-        :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
+        See also
+        --------
+        _step
 
         """
+        self._F = self._calc_Uk_all_k_rev()
+
+    def _updateW(self):
+        """
+        Update the receive filters.
+
+        Notes
+        -----
+        This method is called in the :meth:`_step` method.
+
+        See also
+        --------
+        _step
+        """
         self._W = self._calc_Uk_all_k()
-        return IterativeIASolverBaseClass.solve(self)
+
+    # def _step(self):
+    #     """Performs one iteration of the algorithm.
+
+    #     The step method is usually all you need to call to perform an
+    #     iteration of the algorithm. Note that it is necesary to initialize
+    #     the precoders and the channel before calling the step method for
+    #     the first time.
+
+    #     See also
+    #     --------
+    #     randomizeF
+
+    #     """
+    #     self._updateF()
+    #     self._updateW()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1035,9 +1111,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
-        P = self._P
-        if P is None:
-            P = np.ones(self.K)  # pragma: no cover
+        P = self.P
 
         first_part = 0.0
         for j in range(self.K):
@@ -1076,10 +1150,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
-        P = self._P
-        if P is None:
-            P = np.ones(self.K)  # pragma: no cover
-
+        P = self.P
         first_part = 0.0
         for j in range(self.K):
             Hkj = self._get_channel_rev(k, j)
@@ -1119,9 +1190,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        P = self._P
-        if P is None:
-            P = np.ones(self.K)  # pragma: no cover
+        P = self.P
 
         Hkk = self._get_channel(k, k)
         Hkk_H = Hkk.transpose().conjugate()
@@ -1159,9 +1228,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         _calc_Bkl_cov_matrix_second_part
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        P = self._P
-        if P is None:
-            P = np.ones(self.K)  # pragma: no cover
+        P = self.P
 
         Hkk = self._get_channel_rev(k, k)
         Hkk_H = Hkk.transpose().conjugate()
@@ -1326,6 +1393,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """Calculates the receive filter of all users.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
+
         for k in range(self.K):
             Hkk = self._get_channel(k, k)
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k)
@@ -1387,41 +1455,28 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return SINR_k
 
-    def _step(self):  # pragma: no cover
-        """Performs one iteration of the algorithm.
-
-        The step method is usually all you need to call to perform an
-        iteration of the algorithm. Note that it is necesary to initialize
-        the precoders and the channel before calling the step method for
-        the first time.
-
-        See also
-        --------
-        randomizeF
-
+    def _updateF(self):
+        """Update the value of the precoder of all K users.
         """
         self._F = self._calc_Uk_all_k_rev()
-        self._W = self._calc_Uk_all_k()
 
-    def solve(self):  # pragma: no cover
-        """Find the IA solution with the Max SINR algorithm.
-
-        The number of iterations of the algorithm must be specified in the
-        max_iterations member variable.
-
-        Returns
-        -------
-        Number of iterations the iterative interference alignment algorithm
-        run.
-
-
-        Notes
-        -----
-
-        You need to call :meth:`randomizeF` at least once before calling
-        :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
-
+    def _updateW(self):
+        """
         """
         self._W = self._calc_Uk_all_k()
-        return IterativeIASolverBaseClass.solve(self)
+
+    # def _step(self):  # pragma: no cover
+    #     """Performs one iteration of the algorithm.
+
+    #     The step method is usually all you need to call to perform an
+    #     iteration of the algorithm. Note that it is necesary to initialize
+    #     the precoders and the channel before calling the step method for
+    #     the first time.
+
+    #     See also
+    #     --------
+    #     randomizeF
+
+    #     """
+    #     self._updateF()
+    #     self._updateW()

@@ -78,48 +78,6 @@ class AlternatingSimulationRunner(SimulationRunner):
         self.progressbar_message = "Alternating Min. ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
-        # # The _keep_going method will stop the simulation earlier when
-        # # max_bit_errors are achieved.
-        # self.max_bit_errors = 3000
-
-        # SNR = np.array([0., 5, 10, 15, 20, 25, 30])
-
-        # M = 4
-        # self.modulator = modulators.PSK(M)
-
-        # NSymbs = 200
-        # K = 3
-        # Nr = np.ones(K, dtype=int) * 2
-        # Nt = np.ones(K, dtype=int) * 2
-        # Ns = np.ones(K, dtype=int) * 1
-        # self.params.add('NSymbs', NSymbs)
-        # self.params.add('K', K)
-        # self.params.add('Nr', Nr)
-        # self.params.add('Nt', Nt)
-        # self.params.add('Ns', Ns)
-
-        # self.ia_solver = ia.AlternatingMinIASolver()
-
-        # # Iterations of the algorithm.
-        # self.ia_solver.max_iterations = 60
-
-        # # xxxxx Declared in the SimulationRunner class xxxxxxxxxxxxxxxxxxxx
-        # # We need to set these two in all simulations
-        # self.rep_max = 2000
-        # self.progressbar_message = "Alternating Min. ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # # We need to add the parameters to the self.param variable.
-        # self.params.add('SNR', SNR)
-        # self.params.set_unpack_parameter('SNR')
-
-        # # xxxxxxxxxx Parameters Stored for reference xxxxxxxxxxxxxxxxxxxxxx
-        # self.params.add('Modulator', self.modulator.name)
-        # self.params.add('IA_Max_Iterations', self.ia_solver.max_iterations)
-        # self.params.add('rep_max', self.rep_max)
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
@@ -148,8 +106,8 @@ class AlternatingSimulationRunner(SimulationRunner):
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
         self.multiUserChannel.randomize(Nr, Nt, K)
-        self.ia_solver.randomizeF(Ns)
-        self.ia_solver.solve()
+        #self.ia_solver.randomizeF(Ns)
+        self.ia_solver.solve(Ns)
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -248,7 +206,7 @@ if __name__ == '__main__':
     # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
     runner = AlternatingSimulationRunner('ia_config_file.txt')
     pprint(runner.params.parameters)
-    print(runner.ia_solver.__class__)
+    print("IA Solver: {0}".format(runner.ia_solver.__class__))
     runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -315,7 +273,7 @@ if __name__ == '__main__':
         show()
 
     print "Runned iterations: {0}".format(results.runned_reps)
-    print "Elapsed Time: {0}".format(pretty_time(results.elapsed_time))
+    print "Elapsed Time: {0}".format(misc.pretty_time(results.elapsed_time))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

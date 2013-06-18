@@ -113,8 +113,8 @@ class MinLeakageSimulationRunner(SimulationRunner):
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
         self.multiUserChannel.randomize(Nr, Nt, K)
-        self.ia_solver.randomizeF(Ns)
-        self.ia_solver.solve()
+        #self.ia_solver.randomizeF(Ns)
+        self.ia_solver.solve(Ns)
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -280,7 +280,7 @@ if __name__ == '__main__':
         show()
 
     print "Runned iterations: {0}".format(results.runned_reps)
-    print "Elapsed Time: {0}".format(pretty_time(results.elapsed_time))
+    print "Elapsed Time: {0}".format(misc.pretty_time(results.elapsed_time))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

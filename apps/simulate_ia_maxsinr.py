@@ -106,8 +106,8 @@ class MaxSINRSimulationRunner(SimulationRunner):
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
         self.multiUserChannel.randomize(Nr, Nt, K)
-        self.ia_solver.randomizeF(Ns)
-        self.ia_solver.solve()
+        #self.ia_solver.randomizeF(Ns)
+        self.ia_solver.solve(Ns)
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     Nr = results.params["Nr"]
     Nt = results.params["Nt"]
     Ns = results.params["Ns"]
-    modulator_name = results.params['Modulator']
+    modulator_name = runner.modulator.name
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -248,7 +248,7 @@ if __name__ == '__main__':
         semilogy(SNR, ser, '--b*', label='SER')
         xlabel('SNR')
         ylabel('Error')
-        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr[0], Nt[0], Ns[0], modulator_name))
+        title('Max SINR IA Algorithm\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Ns, Nt, Ns, modulator_name))
         legend()
 
         grid(True, which='both', axis='both')

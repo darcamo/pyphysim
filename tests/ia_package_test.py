@@ -20,10 +20,10 @@ import unittest
 import doctest
 import numpy as np
 
-import comm
+from comm import channels
 import ia  # Import the package ia
 from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver
-from util.misc import peig, leig, randn_c
+from util.misc import peig, leig
 
 
 # UPDATE THIS CLASS if another module is added to the ia package
@@ -42,7 +42,7 @@ class IaDoctestsTestCase(unittest.TestCase):
 class IASolverBaseClassTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = IASolverBaseClass(multiUserChannel)
 
     def test_properties(self):
@@ -232,14 +232,14 @@ class IASolverBaseClassTestCase(unittest.TestCase):
 
     def test_solve(self):
         with self.assertRaises(NotImplementedError):
-            self.iasolver.solve()
+            self.iasolver.solve(Ns=1)
 
 
 class ClosedFormIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
-        self.iasolver = ClosedFormIASolver(multiUserChannel, Ns=1)
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        self.iasolver = ClosedFormIASolver(multiUserChannel)
         self.K = 3
         self.Nr = np.array([2, 2, 2])
         self.Nt = np.array([2, 2, 2])
@@ -248,23 +248,19 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
     def test_sanity(self):
         # The number of users is always equal to 3
         self.assertEqual(self.iasolver.K, 3)
-        np.testing.assert_array_equal(np.ones(3), self.iasolver.Ns)
-
-        # Test if an assert is raised if Ns has a dimensions different from 3
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
-        with self.assertRaises(AssertionError):
-            iasolver = ClosedFormIASolver(multiUserChannel, Ns=np.array([1, 1]))
+        #np.testing.assert_array_equal(np.ones(3), self.iasolver.Ns)
 
     def test_invalid_solve(self):
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        Ns = 1
         # ClosedFormIASolver only works with 3 users ...
-        iasolver2 = ClosedFormIASolver(multiUserChannel, 2)
+        iasolver2 = ClosedFormIASolver(multiUserChannel)
         K = 4
         multiUserChannel.randomize(3, 3, K)
         # ... Therefore an AssertionError will be raised if we try to call
         # the solve method.
         with self.assertRaises(AssertionError):
-            iasolver2.solve()
+            iasolver2.solve(Ns)
 
     def test_calc_E(self):
         H31 = np.matrix(self.iasolver._get_channel(2, 0))
@@ -299,8 +295,13 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         V2 = V2 / np.linalg.norm(V2, 'fro')
         V3 = V3 / np.linalg.norm(V3, 'fro')
 
+        # The number of streams _Ns is set in the solve method, before
+        # _updateF is called. However, since we are testing the _updateF
+        # method alone here we need to set _Ns manually.
+        self.iasolver._Ns = np.ones(self.iasolver.K, dtype=int) * Ns
+
         # Find the precoders using the iasolver
-        self.iasolver.updateF()
+        self.iasolver._updateF()
 
         np.testing.assert_array_almost_equal(V1, self.iasolver.F[0])
         np.testing.assert_array_almost_equal(V2, self.iasolver.F[1])
@@ -311,11 +312,18 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.norm(V3, 'fro'), 1.0)
 
     def test_updateW(self):
-        self.iasolver.updateF()
-        self.iasolver.updateW()
+        Ns = 1
+        # The number of streams _Ns is set in the solve method, before
+        # _updateF and the _updateW methods are called. However, since we
+        # are testing the _updateW method alone here we need to set _Ns
+        # manually.
+        self.iasolver._Ns = np.ones(self.iasolver.K, dtype=int) * Ns
+
+        self.iasolver._updateF()
+        self.iasolver._updateW()
         V1 = np.matrix(self.iasolver.F[0])
         V2 = np.matrix(self.iasolver.F[1])
-        V3 = np.matrix(self.iasolver.F[2])
+        #V3 = np.matrix(self.iasolver.F[2])
 
         H12 = np.matrix(self.iasolver._get_channel(0, 1))
         H21 = np.matrix(self.iasolver._get_channel(1, 0))
@@ -350,8 +358,8 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             np.array([[1.0]]))
 
     def test_solve(self):
-        print
-        self.iasolver.solve()
+        Ns = 1
+        self.iasolver.solve(Ns)
         for l in range(3):
             for k in range(3):
                 Hlk = self.iasolver._get_channel(l, k)
@@ -368,20 +376,22 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = AlternatingMinIASolver(multiUserChannel)
         self.K = 3
         self.Nr = np.array([2, 4, 6])
         self.Nt = np.array([2, 3, 5])
         self.Ns = np.array([1, 2, 3])
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-        self.iasolver.randomizeF(self.Ns)
+        #self.iasolver.randomizeF(self.Ns)
 
     def test_updateC(self):
+        self.iasolver.randomizeF(self.Ns)
+
         # Dimensions of the interference subspace
         Ni = self.Nr - self.Ns
 
-        self.iasolver.updateC()
+        self.iasolver._updateC()
 
         # xxxxx Calculate the expected C[0] after one step xxxxxxxxxxxxxxxx
         k = 0
@@ -398,7 +408,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_C0 = peig(expected_C0, Ni[k])[0]
 
         # Test if C[0] is equal to the expected output
-        np.testing.assert_array_almost_equal(self.iasolver.C[0], expected_C0)
+        np.testing.assert_array_almost_equal(self.iasolver._C[0], expected_C0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected C[1] after one step xxxxxxxxxxxxxxxx
@@ -416,7 +426,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_C1 = peig(expected_C1, Ni[k])[0]
 
         # Test if C[1] is equal to the expected output
-        np.testing.assert_array_almost_equal(self.iasolver.C[1], expected_C1)
+        np.testing.assert_array_almost_equal(self.iasolver._C[1], expected_C1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected C[2] after one step xxxxxxxxxxxxxxxx
@@ -434,12 +444,13 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_C2 = peig(expected_C2, Ni[k])[0]
 
         # Test if C[2] is equal to the expected output
-        np.testing.assert_array_almost_equal(self.iasolver.C[2], expected_C2)
+        np.testing.assert_array_almost_equal(self.iasolver._C[2], expected_C2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_updateF(self):
-        self.iasolver.updateC()
-        self.iasolver.updateF()
+        self.iasolver.randomizeF(self.Ns)
+        self.iasolver._updateC()
+        self.iasolver._updateF()
 
         # xxxxxxxxxx Aliases for each channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         H01 = self.iasolver._get_channel(0, 1)
@@ -455,18 +466,18 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxx Aliases for (I-Ck Ck^H)) for each k xxxxxxxxxxxxxxxxxx
         Y0 = np.eye(self.Nr[0], dtype=complex) - \
             np.dot(
-                self.iasolver.C[0],
-                self.iasolver.C[0].conjugate().transpose())
+                self.iasolver._C[0],
+                self.iasolver._C[0].conjugate().transpose())
 
         Y1 = np.eye(self.Nr[1], dtype=complex) - \
             np.dot(
-                self.iasolver.C[1],
-                self.iasolver.C[1].conjugate().transpose())
+                self.iasolver._C[1],
+                self.iasolver._C[1].conjugate().transpose())
 
         Y2 = np.eye(self.Nr[2], dtype=complex) - \
             np.dot(
-                self.iasolver.C[2],
-                self.iasolver.C[2].conjugate().transpose())
+                self.iasolver._C[2],
+                self.iasolver._C[2].conjugate().transpose())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[0] after one step xxxxxxxxxxxxxxxx
@@ -496,6 +507,8 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.iasolver.F[2], expected_F2)
 
     def test_updateW(self):
+        self.iasolver.randomizeF(self.Ns)
+
         # Call updateC, updateF and updateW
         self.iasolver._step()
 
@@ -503,7 +516,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         tildeH0 = np.dot(
             self.iasolver._get_channel(0, 0),
             self.iasolver.F[0])
-        tildeH0 = np.hstack([tildeH0, self.iasolver.C[0]])
+        tildeH0 = np.hstack([tildeH0, self.iasolver._C[0]])
         expected_W0 = np.linalg.inv(tildeH0)[0:self.iasolver.Ns[0]]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -511,7 +524,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         tildeH1 = np.dot(
             self.iasolver._get_channel(1, 1),
             self.iasolver.F[1])
-        tildeH1 = np.hstack([tildeH1, self.iasolver.C[1]])
+        tildeH1 = np.hstack([tildeH1, self.iasolver._C[1]])
         expected_W1 = np.linalg.inv(tildeH1)[0:self.iasolver.Ns[1]]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -519,7 +532,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         tildeH2 = np.dot(
             self.iasolver._get_channel(2, 2),
             self.iasolver.F[2])
-        tildeH2 = np.hstack([tildeH2, self.iasolver.C[2]])
+        tildeH2 = np.hstack([tildeH2, self.iasolver._C[2]])
         expected_W2 = np.linalg.inv(tildeH2)[0:self.iasolver.Ns[2]]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -548,7 +561,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         Cost = Cost + np.linalg.norm(
             H01_F1 -
             np.dot(
-                np.dot(self.iasolver.C[k], self.iasolver.C[k].transpose().conjugate()),
+                np.dot(self.iasolver._C[k], self.iasolver._C[k].transpose().conjugate()),
                 H01_F1
             ), 'fro') ** 2
 
@@ -559,23 +572,23 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         Cost = Cost + np.linalg.norm(
             H10_F0 -
             np.dot(
-                np.dot(self.iasolver.C[k], self.iasolver.C[k].transpose().conjugate()),
+                np.dot(self.iasolver._C[k], self.iasolver._C[k].transpose().conjugate()),
                 H10_F0
             ), 'fro') ** 2
 
         self.assertAlmostEqual(self.iasolver.getCost(), Cost)
 
-    def test_solve(self):
-        self.iasolver.max_iterations = 1
-        # We are only testing if this does not thrown an exception. That's
-        # why there is no assert clause here
-        self.iasolver.solve()
+    # def test_solve(self):
+    #     self.iasolver.max_iterations = 1
+    #     # We are only testing if this does not thrown an exception. That's
+    #     # why there is no assert clause here
+    #     self.iasolver.solve(self.Ns)
 
 
 class MaxSinrIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = MaxSinrIASolver(multiUserChannel)
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
@@ -886,7 +899,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
 class MinLeakageIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = comm.channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = MinLeakageIASolver(multiUserChannel)
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
@@ -902,10 +915,13 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
+        #self.iasolver.randomizeF(self.Ns, self.P)
+        #self.iasolver._W = self.iasolver._calc_Uk_all_k()
+
+    def test_getCost(self):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
-    def test_getCost(self):
         Q0 = np.matrix(self.iasolver.calc_Q(0))
         W0 = np.matrix(self.iasolver._W[0])
         Q1 = np.matrix(self.iasolver.calc_Q(1))
@@ -930,6 +946,8 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.assertTrue(expected_cost2 < expected_cost)
 
     def test_calc_Uk_all_k(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+
         Uk_all = self.iasolver._calc_Uk_all_k()
 
         # xxxxxxxxxx First User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -954,7 +972,9 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_Uk_all_k_rev(self):
-        self.iasolver_W = self.iasolver._calc_Uk_all_k()
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._W = self.iasolver._calc_Uk_all_k()
+
         Uk_all = self.iasolver._calc_Uk_all_k_rev()
 
         # xxxxxxxxxx First User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -979,6 +999,9 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_step(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._W = self.iasolver._calc_Uk_all_k()
+
         last_cost = self.iasolver.getCost()
         for i in range(5):
             self.iasolver._step()
@@ -987,6 +1010,9 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
             last_cost = new_cost
 
     def test_W_property(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._W = self.iasolver._calc_Uk_all_k()
+
         self.iasolver._step()
         F = self.iasolver.F
         W = self.iasolver.W
@@ -1001,7 +1027,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver.max_iterations = 1
         # We are only testing if this does not thrown an exception. That's
         # why there is no assert clause here
-        self.iasolver.solve()
+        self.iasolver.solve(Ns=1)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

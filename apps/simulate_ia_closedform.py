@@ -76,7 +76,7 @@ class ClosedFormSimulationRunner(SimulationRunner):
         self.multiUserChannel = channels.MultiUserChannelMatrix()
 
         # Create the IA Solver object
-        self.ia_solver = ia.ClosedFormIASolver(self.multiUserChannel, Ns)
+        self.ia_solver = ia.ClosedFormIASolver(self.multiUserChannel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -111,7 +111,7 @@ class ClosedFormSimulationRunner(SimulationRunner):
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
         self.multiUserChannel.randomize(Nr, Nt, K)
-        self.ia_solver.solve()
+        self.ia_solver.solve(Ns)
 
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
