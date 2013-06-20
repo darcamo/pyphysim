@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     alt.solve()
 
-    print "Final_Cost: {0}\n".format(alt.getCost())
+    print "Final_Cost: {0}\n".format(alt.get_cost())
 
     all_possibilities = itertools.product(range(K), range(K))
     for ij in all_possibilities:

@@ -96,7 +96,7 @@ if __name__ == '__main__':
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # print "IA Cost: {0:f}".format(ia_solver.getCost())
+        # print "IA Cost: {0:f}".format(ia_solver.get_cost())
         # print inputData - demodulated_data
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         bitErrors = bitErrors + misc.count_bit_errors(inputData, demodulated_data)
         numSymbols = numSymbols + inputData.size
         numBits = numBits + inputData.size * modulators.level2bits(M)
-        #ia_cost = ia_solver.getCost()
+        #ia_cost = ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print

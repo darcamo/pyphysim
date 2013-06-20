@@ -372,7 +372,7 @@ class SimulationRunner(object):
             the run iteration.
 
         """
-        raise NotImplementedError("This function must be implemented in a subclass")
+        raise NotImplementedError("'_run_simulation' must be implemented in a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
     @staticmethod

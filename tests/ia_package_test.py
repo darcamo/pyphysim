@@ -45,6 +45,9 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = IASolverBaseClass(multiUserChannel)
 
+    def test_get_cost(self):
+        self.assertEqual(self.iasolver.get_cost(), -1)
+
     def test_properties(self):
         K = 3
         Nr = np.array([2, 4, 6])
@@ -576,7 +579,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
                 H10_F0
             ), 'fro') ** 2
 
-        self.assertAlmostEqual(self.iasolver.getCost(), Cost)
+        self.assertAlmostEqual(self.iasolver.get_cost(), Cost)
 
     # def test_solve(self):
     #     self.iasolver.max_iterations = 1
@@ -930,7 +933,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         W2 = np.matrix(self.iasolver._W[2])
         expected_cost = np.trace(np.abs(
             W0.H * Q0 * W0 + W1.H * Q1 * W1 + W2.H * Q2 * W2))
-        self.assertAlmostEqual(expected_cost, self.iasolver.getCost())
+        self.assertAlmostEqual(expected_cost, self.iasolver.get_cost())
 
         self.iasolver._step()
         Q0 = np.matrix(self.iasolver.calc_Q(0))
@@ -941,7 +944,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         W2 = np.matrix(self.iasolver._W[2])
         expected_cost2 = np.trace(np.abs(
             W0.H * Q0 * W0 + W1.H * Q1 * W1 + W2.H * Q2 * W2))
-        self.assertAlmostEqual(expected_cost2, self.iasolver.getCost())
+        self.assertAlmostEqual(expected_cost2, self.iasolver.get_cost())
 
         self.assertTrue(expected_cost2 < expected_cost)
 
@@ -1002,10 +1005,10 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
-        last_cost = self.iasolver.getCost()
+        last_cost = self.iasolver.get_cost()
         for i in range(5):
             self.iasolver._step()
-            new_cost = self.iasolver.getCost()
+            new_cost = self.iasolver.get_cost()
             self.assertTrue(new_cost < last_cost)
             last_cost = new_cost
 

@@ -25,6 +25,12 @@ from pprint import pprint
 class AlternatingSimulationRunner(SimulationRunner):
     """Implements a simulation runner for a transmission with the
     Alternating Minimizations Interference Alignment Algorithm.
+
+    Parameters
+    ----------
+    config_filename : string
+        The name of the file containing the configuration of the
+        simulation.
     """
     def __init__(self, config_filename):
         SimulationRunner.__init__(self)
@@ -70,7 +76,7 @@ class AlternatingSimulationRunner(SimulationRunner):
         # Create the IA Solver object
         self.ia_solver = ia.AlternatingMinIASolver(self.multiUserChannel)
 
-        # Iterations of the MinLeakageMinIASolver algorithm.
+        # Iterations of the AlternatingMinIASolver algorithm.
         self.ia_solver.max_iterations = self.params['max_iterations']
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -132,7 +138,7 @@ class AlternatingSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # print "IA Cost: {0:f}".format(self.ia_solver.getCost())
+        # print "IA Cost: {0:f}".format(self.ia_solver.get_cost())
         # print inputData - demodulated_data
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -141,7 +147,7 @@ class AlternatingSimulationRunner(SimulationRunner):
         bitErrors = misc.count_bit_errors(inputData, demodulated_data)
         numSymbols = inputData.size
         numBits = inputData.size * modulators.level2bits(M)
-        ia_cost = self.ia_solver.getCost()
+        ia_cost = self.ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx

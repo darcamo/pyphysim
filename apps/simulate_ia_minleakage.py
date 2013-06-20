@@ -139,7 +139,7 @@ class MinLeakageSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # print "IA Cost: {0:f}".format(self.ia_solver.getCost())
+        # print "IA Cost: {0:f}".format(self.ia_solver.get_cost())
         # print inputData - demodulated_data
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -148,7 +148,7 @@ class MinLeakageSimulationRunner(SimulationRunner):
         bitErrors = misc.count_bit_errors(inputData, demodulated_data)
         numSymbols = inputData.size
         numBits = inputData.size * modulators.level2bits(M)
-        #ia_cost = self.ia_solver.getCost()
+        #ia_cost = self.ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx

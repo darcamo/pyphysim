@@ -25,6 +25,12 @@ class IASolverBaseClass(object):
     At least the `solve` method must be implemented in the subclasses of
     IASolverBaseClass.
 
+    Another method that can be implemented is the get_cost method. It should
+    return the cost of the current IA solution. What is considered "the
+    cost" varies from one IA algorithm to another, but should always be a
+    real non-negative number. If get_cost is not implemented a value of -1
+    is returned.
+
     Parameters
     ----------
     multiUserChannel : A MultiUserChannelMatrix object.
@@ -34,12 +40,12 @@ class IASolverBaseClass(object):
         """Initialize the variables that every IA solver will have.
         """
         # The F and W variables will be numpy arrays OF numpy arrays.
-        self._F = np.array([])  # Precoder: One precoder for each user
-        self._W = np.array([])  # Receive filter: One for each user
+        self._F = None  # Precoder: One precoder for each user
+        self._W = None  # Receive filter: One for each user
 
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
         # Number of streams per user
-        self._Ns = np.array([])
+        self._Ns = None
         # Channel of all users
         self._multiUserChannel = multiUserChannel
 
@@ -47,21 +53,36 @@ class IASolverBaseClass(object):
                         # not set (_P is None), then a power of 1 will be
                         # used for each transmitter.
 
-    # def clear(self, ):
-    #     """
-    #     Clear the IA Solver object.
+    def clear(self):
+        """
+        Clear the IA Solver object.
 
-    #     The object becames as if it was just created.
+        All member attributes that are updated during the solve method,
+        such as the precoder and receive filters, will be cleared. The
+        other attributes that correspond to "configuration" such as the
+        channel object won't be changed.
 
-    #     Notes
-    #     -----
-    #     You should overwrite this method in subclasses that pass parameters
-    #     to the __init__ method, since here we call __init__ without
-    #     arguments which is probably not what you want.
-    #     """
-    #     # The F and W variables will be numpy arrays OF numpy arrays.
-    #     self._F = np.array([])  # Precoder: One precoder for each user
-    #     self._W = np.array([])  # Receive filter: One for each user
+        Notes
+        -----
+        You should overwrite this method in subclasses that pass parameters
+        to the __init__ method, since here we call __init__ without
+        arguments which is probably not what you want.
+        """
+        # The F and W variables will be numpy arrays OF numpy arrays.
+        self._F = None  # Precoder: One precoder for each user
+        self._W = None  # Receive filter: One for each user
+        self._P = None
+        self._Ns = None
+
+    def get_cost(self):
+        """
+
+        Returns
+        -------
+        cost : float (real non-negative number)
+            The Cost of the current IA solution.
+        """
+        return -1
 
     @property
     def F(self):
@@ -608,6 +629,24 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.max_iterations = 50  # Number of times the step method is
                                   # called in the solve method.
 
+    def clear(self):
+        """
+        Clear the IA Solver object.
+
+        All member attributes that are updated during the solve method,
+        such as the precoder and receive filters, will be cleared. The
+        other attributes that correspond to "configuration" such as the
+        channel object won't be changed
+
+        Notes
+        -----
+        You should overwrite this method in subclasses that pass parameters
+        to the __init__ method, since here we call __init__ without
+        arguments which is probably not what you want.
+        """
+        IASolverBaseClass.clear(self)
+        self._runned_iterations = 0
+
     def _updateF(self):
         """
         Update the precoders.
@@ -746,14 +785,14 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         self._C = []    # Basis of the interference subspace for each user
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def getCost(self):
+    def get_cost(self):
         """
         Get the Cost of the algorithm for the current iteration of the
         precoder.
 
         Returns
         -------
-        cost : float
+        cost : float (real non-negative number)
             The Cost of the algorithm for the current iteration of the
             precoder
         """
@@ -936,7 +975,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
-    def getCost(self):
+    def get_cost(self):
         """
         Get the Cost of the algorithm for the current iteration of the
         precoder.
@@ -949,7 +988,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        cost : float
+        cost : float (real non-negative number)
             The Cost of the algorithm for the current iteration of the
             precoder
         """
