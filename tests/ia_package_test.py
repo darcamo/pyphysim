@@ -374,6 +374,92 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
                 else:
                     self.assertAlmostEqual(0.0, s)
 
+    # def test_calc_SINR(self):
+    #     Ns = 1
+    #     self.iasolver.randomizeF(Ns)
+    #     self.iasolver._updateW()
+    #     SINRs = self.iasolver.calc_SINR()
+
+    #     multiuser_channel = self.iasolver._multiUserChannel
+    #     K = self.iasolver.K  # Must always be 3 for the ClosedFormIASolver
+
+    #     # Calculates the expected SIRNs
+    #     F0 = np.matrix(self.iasolver.F[0])
+    #     F1 = np.matrix(self.iasolver.F[1])
+    #     F2 = np.matrix(self.iasolver.F[2])
+
+    #     W0 = np.matrix(self.iasolver.W[0])
+    #     W1 = np.matrix(self.iasolver.W[1])
+    #     W2 = np.matrix(self.iasolver.W[2])
+
+    #     H00 = np.matrix(self.iasolver._get_channel(0, 0))
+    #     H11 = np.matrix(self.iasolver._get_channel(1, 1))
+    #     H22 = np.matrix(self.iasolver._get_channel(2, 2))
+
+    #     H01 = np.matrix(self.iasolver._get_channel(0, 1))
+    #     H02 = np.matrix(self.iasolver._get_channel(0, 2))
+    #     H10 = np.matrix(self.iasolver._get_channel(1, 0))
+    #     H12 = np.matrix(self.iasolver._get_channel(1, 2))
+    #     H20 = np.matrix(self.iasolver._get_channel(2, 0))
+    #     H21 = np.matrix(self.iasolver._get_channel(2, 1))
+
+    #     expected_SINRs = np.zeros(self.iasolver.K)
+    #     # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     numerator0 = W0 * H00 * F0
+    #     numerator0 = np.abs(numerator0[0, 0])**2
+    #     denominator0 = W0 * H01 * F1 + W0 * H02 * F2
+    #     denominator0 = np.abs(denominator0[0, 0])**2
+    #     expected_SINRs[0] = numerator0 / denominator0
+
+    #     # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     numerator1 = W1 * H11 * F1
+    #     numerator1 = np.abs(numerator1[0, 0])**2
+    #     denominator1 = W1 * H10 * F0 + W1 * H12 * F2
+    #     denominator1 = np.abs(denominator1[0, 0])**2
+    #     expected_SINRs[1] = numerator1 / denominator1
+
+    #     # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     numerator2 = W2 * H22 * F2
+    #     numerator2 = np.abs(numerator2[0, 0])**2
+    #     denominator2 = W2 * H20 * F0 + W2 * H21 * F1
+    #     denominator2 = np.abs(denominator2[0, 0])**2
+    #     expected_SINRs[2] = numerator2 / denominator2
+
+    #     np.testing.assert_array_almost_equal(expected_SINRs, SINRs)
+
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # Repeat the calculation, but now including the noise
+    #     noise_var = 1e-2
+    #     SINRs = self.iasolver.calc_SINR(noise_var)
+
+    #     expected_SINRs = np.zeros(self.iasolver.K)
+    #     # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     numerator0 = W0 * H00 * F0
+    #     numerator0 = np.abs(numerator0[0, 0])**2
+    #     denominator0 = W0 * H01 * F1 + W0 * H02 * F2
+    #     denominator0 = np.abs(denominator0[0, 0])**2
+    #     noise_power0 = np.abs(noise_var * W0 * W0.H)
+    #     expected_SINRs[0] = numerator0 / (denominator0 + noise_power0[0,0])
+
+    #     # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     numerator1 = W1 * H11 * F1
+    #     numerator1 = np.abs(numerator1[0, 0])**2
+    #     denominator1 = W1 * H10 * F0 + W1 * H12 * F2
+    #     denominator1 = np.abs(denominator1[0, 0])**2
+    #     noise_power1 = np.abs(noise_var * W1 * W1.H)
+    #     expected_SINRs[1] = numerator1 / (denominator1 + noise_power1[0,0])
+
+    #     # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     numerator2 = W2 * H22 * F2
+    #     numerator2 = np.abs(numerator2[0, 0])**2
+    #     denominator2 = W2 * H20 * F0 + W2 * H21 * F1
+    #     denominator2 = np.abs(denominator2[0, 0])**2
+    #     noise_power2 = np.abs(noise_var * W2 * W2.H)
+    #     expected_SINRs[2] = numerator2 / (denominator2 + noise_power2[0,0])
+
+    #     np.testing.assert_array_almost_equal(expected_SINRs, SINRs)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 class AlternatingMinIASolverTestCase(unittest.TestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
@@ -586,6 +672,106 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
     #     # We are only testing if this does not thrown an exception. That's
     #     # why there is no assert clause here
     #     self.iasolver.solve(self.Ns)
+
+    def test_calc_SINR(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+
+        # xxxxxxxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        multiUserChannel.set_channel_seed(42)
+        multiUserChannel.set_noise_seed(456)
+        np.random.seed(25)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        iasolver = AlternatingMinIASolver(multiUserChannel)
+        K = 3
+        Nr = 4
+        Nt = 4
+        Ns = 2
+
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver.max_iterations = 1
+        iasolver.solve(Ns)
+        SINRs = iasolver.calc_SINR()
+
+        # Calculates the expected SIRNs
+        F0 = np.matrix(iasolver.F[0])
+        F1 = np.matrix(iasolver.F[1])
+        F2 = np.matrix(iasolver.F[2])
+
+        W0 = np.matrix(iasolver.W[0])
+        W1 = np.matrix(iasolver.W[1])
+        W2 = np.matrix(iasolver.W[2])
+
+        H00 = np.matrix(iasolver._get_channel(0, 0))
+        H11 = np.matrix(iasolver._get_channel(1, 1))
+        H22 = np.matrix(iasolver._get_channel(2, 2))
+
+        H01 = np.matrix(iasolver._get_channel(0, 1))
+        H02 = np.matrix(iasolver._get_channel(0, 2))
+        H10 = np.matrix(iasolver._get_channel(1, 0))
+        H12 = np.matrix(iasolver._get_channel(1, 2))
+        H20 = np.matrix(iasolver._get_channel(2, 0))
+        H21 = np.matrix(iasolver._get_channel(2, 1))
+
+        expected_SINRs = np.empty(K, dtype=np.ndarray)
+
+        # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        numerator0 = W0 * H00 * F0
+        numerator0 = numerator0 * numerator0.H
+        numerator0 = np.abs(np.diag(numerator0))
+
+        denominator0 = W0 * H01 * F1 + W0 * H02 * F2
+        denominator0 = denominator0 * denominator0.H
+        denominator0 = np.abs(np.diag(denominator0))
+
+        expected_SINRs[0] = numerator0 / denominator0
+
+        # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        numerator1 = W1 * H11 * F1
+        numerator1 = numerator1 * numerator1.H
+        numerator1 = np.abs(np.diag(numerator1))
+
+        denominator1 = W1 * H10 * F0 + W1 * H12 * F2
+        denominator1 = denominator1 * denominator1.H
+        denominator1 = np.abs(np.diag(denominator1))
+        expected_SINRs[1] = numerator1 / denominator1
+
+        # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        numerator2 = W2 * H22 * F2
+        numerator2 = numerator2 * numerator2.H
+        numerator2 = np.abs(np.diag(numerator2))
+
+        denominator2 = W2 * H20 * F0 + W2 * H21 * F1
+        denominator2 = denominator2 * denominator2.H
+        denominator2 = np.abs(np.diag(denominator2))
+        expected_SINRs[2] = numerator2 / denominator2
+
+        for k in range(K):
+            np.testing.assert_array_almost_equal(SINRs[k], expected_SINRs[k])
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Repeat the calculation, but now including the noise
+        noise_var = 1e-2
+        SINRs = iasolver.calc_SINR(noise_var)
+
+        expected_SINRs2 = np.empty(K, dtype=np.ndarray)
+
+        # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        noise_term0 = W0 * W0.H * noise_var
+        denominator0_with_noise = denominator0 + np.abs(np.diag(noise_term0))
+        expected_SINRs2[0] = numerator0 / denominator0_with_noise
+
+        # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        noise_term1 = W1 * W1.H * noise_var
+        denominator1_with_noise = denominator1 + np.abs(np.diag(noise_term1))
+        expected_SINRs2[1] = numerator1 / denominator1_with_noise
+
+        # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        noise_term2 = W2 * W2.H * noise_var
+        denominator2_with_noise = denominator2 + np.abs(np.diag(noise_term2))
+        expected_SINRs2[2] = numerator2 / denominator2_with_noise
+
+        for k in range(K):
+            np.testing.assert_array_almost_equal(SINRs[k], expected_SINRs2[k])
 
 
 class MaxSinrIASolverTestCase(unittest.TestCase):

@@ -384,6 +384,30 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
 
+    def test_last_noise_property(self):
+        noise_var = 1e-2
+        H = np.eye(6)
+        self.multiH.init_from_channel_matrix(H, np.array([2,2,2]), np.array([2,2,2]), 3)
+
+        data = randn_c(6, 10)
+
+        corrupted_data = self.multiH.corrupt_concatenated_data(data, noise_var)
+        last_noise = self.multiH.last_noise
+
+        expected_corrupted_data = data + last_noise
+
+        np.testing.assert_array_almost_equal(expected_corrupted_data, corrupted_data)
+
+        last_noise_var = self.multiH.last_noise_var
+        self.assertAlmostEqual(noise_var, last_noise_var)
+
+        # Call corrupt_concatenated_data again, but without noise var. This
+        # should set last_noise to None and last_noise_var to zero.
+        corrupted_data = self.multiH.corrupt_concatenated_data(data)
+        np.testing.assert_array_almost_equal(corrupted_data, data)
+        self.assertIsNone(self.multiH.last_noise)
+        self.assertAlmostEqual(self.multiH.last_noise_var, 0.0)
+
 
 class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
     def setUp(self):

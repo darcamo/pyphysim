@@ -95,6 +95,13 @@ class MultiUserChannelMatrix(object):
         self._RS_channel = np.random.RandomState()
         self._RS_noise = np.random.RandomState()
 
+        self._last_noise = None  # Store the AWGN noise array from the last
+                                 # time any of the corrupt*_data methods
+                                 # were called.
+        self._last_noise_var = 0.0  # Store the noise variance from the
+                                    # last time any of the corrupt*_data
+                                    # methods were called.
+
     def set_channel_seed(self, seed):
         """Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
@@ -199,6 +206,18 @@ class MultiUserChannelMatrix(object):
         """Get method for the pathloss property."""
         return self._pathloss_matrix
     pathloss = property(_get_pathloss)
+
+    def _get_last_noise(self):
+        """Get method for the last_noise property."""
+        return self._last_noise
+
+    last_noise = property(_get_last_noise)
+
+    def _get_last_noise_var(self):
+        """Get method for the last_noise_var property."""
+        return self._last_noise_var
+
+    last_noise_var = property(_get_last_noise_var)
 
     @staticmethod
     def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
@@ -456,6 +475,11 @@ class MultiUserChannelMatrix(object):
             awgn_noise = (
                 randn_c_RS(self._RS_noise, *output.shape) * np.sqrt(noise_var))
             output = output + awgn_noise
+            self._last_noise = awgn_noise
+            self._last_noise_var = noise_var
+        else:
+            self._last_noise = None
+            self._last_noise_var = 0.0
         return output
 
     def corrupt_data(self, data, noise_var=None):

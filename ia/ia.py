@@ -422,6 +422,48 @@ class IASolverBaseClass(object):
         pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
         return pk
 
+    def calc_SINR(self, noise_var = 0.0):
+        """
+        Calculates the SINR values (in linear scale) of all streams of all
+        users with the current IA solution.
+
+        Returns
+        -------
+        SINRs : 1D numpy array of 1D numpy arrays (of floats)
+            The SINR of all streams of all users
+        noise_var : float
+            Noise variance. If not provided a value of 0 will be used which
+            effectively means that the SIR values will be returned instead
+            of the SIRN values.
+        """
+        K = self.K
+        SINRs = np.empty(K, dtype=np.ndarray)
+
+        for j in range(K):
+            numerator = 0.0
+            denominator = 0.0
+            Wj = self.W[j]
+            for i in range(K):
+                Hji = self._get_channel(j, i)
+                Fi = self.F[i]
+                aux = np.dot(Wj, np.dot(Hji, Fi))
+                if i == j:
+                    aux = np.dot(aux, aux.transpose().conjugate())
+                    # Numerator will be a 1D numpy array with length equal
+                    # to the number of streams
+                    numerator = numerator + np.diag(np.abs(aux))
+                else:
+                    denominator = denominator + aux
+
+            denominator = np.dot(denominator, denominator.transpose().conjugate())
+            noise_power = noise_var * np.dot(Wj, Wj.transpose().conjugate())
+            denominator = denominator + noise_power
+            denominator = np.diag(np.abs(denominator))
+
+            SINRs[j] = numerator/denominator
+
+        return SINRs
+
     def solve(self, Ns, P=None):
         """
         Find the IA solution.
@@ -1060,22 +1102,6 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         """
         self._W = self._calc_Uk_all_k()
 
-    # def _step(self):
-    #     """Performs one iteration of the algorithm.
-
-    #     The step method is usually all you need to call to perform an
-    #     iteration of the algorithm. Note that it is necesary to initialize
-    #     the precoders and the channel before calling the step method for
-    #     the first time.
-
-    #     See also
-    #     --------
-    #     randomizeF
-
-    #     """
-    #     self._updateF()
-    #     self._updateW()
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MaxSinrIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1503,19 +1529,3 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """
         """
         self._W = self._calc_Uk_all_k()
-
-    # def _step(self):  # pragma: no cover
-    #     """Performs one iteration of the algorithm.
-
-    #     The step method is usually all you need to call to perform an
-    #     iteration of the algorithm. Note that it is necesary to initialize
-    #     the precoders and the channel before calling the step method for
-    #     the first time.
-
-    #     See also
-    #     --------
-    #     randomizeF
-
-    #     """
-    #     self._updateF()
-    #     self._updateW()
