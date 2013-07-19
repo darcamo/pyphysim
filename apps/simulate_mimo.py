@@ -86,7 +86,7 @@ class MIMOSimulationRunner(SimulationRunner):
         modulatedData = self.modulator.modulate(inputData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Encode with Alamouti xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Encode with the MIMO scheme xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         transmit_signal = self.mimo_object.encode(
             modulatedData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -98,13 +98,13 @@ class MIMOSimulationRunner(SimulationRunner):
         received_signal = np.dot(channel, transmit_signal) + awgn_noise
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Decode Alamouti xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        alamouti_decoded_data = self.mimo_object.decode(
+        # xxxxx Decode with the MIMO Scheme xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        mimo_decoded_data = self.mimo_object.decode(
             received_signal, channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        demodulatedData = self.modulator.demodulate(alamouti_decoded_data)
+        demodulatedData = self.modulator.demodulate(mimo_decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
@@ -348,8 +348,8 @@ def plot_ber_and_ser(results, plot_title = None, block=True):
 
 
 if __name__ == '__main__':
-    # results, filename = simulate_alamouti()
-    # plot_ber_and_ser(results, plot_title='BER and SER for {M}-{modulator} with Alamouti (Nr={Nr})', block=False)
+    results, filename = simulate_alamouti()
+    plot_ber_and_ser(results, plot_title='BER and SER for {M}-{modulator} with Alamouti (Nr={Nr})', block=True)
 
-    results, filename = simulate_blast()
-    plot_ber_and_ser(results, plot_title='BER and SER for {M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})', block=True)
+    # results, filename = simulate_blast()
+    # plot_ber_and_ser(results, plot_title='BER and SER for {M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})', block=True)
