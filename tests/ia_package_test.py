@@ -383,7 +383,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
     #     multiuser_channel = self.iasolver._multiUserChannel
     #     K = self.iasolver.K  # Must always be 3 for the ClosedFormIASolver
 
-    #     # Calculates the expected SIRNs
+    #     # Calculates the expected SINRs
     #     F0 = np.matrix(self.iasolver.F[0])
     #     F1 = np.matrix(self.iasolver.F[1])
     #     F2 = np.matrix(self.iasolver.F[2])
@@ -692,7 +692,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         iasolver.solve(Ns)
         SINRs = iasolver.calc_SINR()
 
-        # Calculates the expected SIRNs
+        # Calculates the expected SINRs
         F0 = np.matrix(iasolver.F[0])
         F1 = np.matrix(iasolver.F[1])
         F2 = np.matrix(iasolver.F[2])
