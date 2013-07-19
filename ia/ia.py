@@ -430,7 +430,7 @@ class IASolverBaseClass(object):
         Returns
         -------
         SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR of all streams of all users
+            The SINR (in linear scale) of all streams of all users.
         noise_var : float
             Noise variance. If not provided a value of 0 will be used which
             effectively means that the SIR values will be returned instead
