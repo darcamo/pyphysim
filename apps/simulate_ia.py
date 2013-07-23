@@ -136,7 +136,7 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Calculates the Sum Capacity xxxxxxxxxxxxxxxxxxxxxxxxxx
-        sirn_all_k = self.ia_solver.calc_SINR(noise_var=noise_var)
+        sirn_all_k = self.ia_solver.calc_SINR_old(noise_var=noise_var)
         calc_capacity = lambda sirn:np.sum(np.log2(1 + sirn))
         # Array with the sum capacity of each user
         sum_capacity = map(calc_capacity, sirn_all_k)

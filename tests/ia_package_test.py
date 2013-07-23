@@ -233,6 +233,137 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
         self.assertAlmostEqual(pk, expected_pk)
 
+    def test_calc_Bkl_cov_matrix_first_part(self):
+        Nr = 2
+        Nt = 2
+        Ns = 1*np.ones(3, dtype=int)
+        K = 3
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
+        self.iasolver.randomizeF(Ns, P)
+
+        # For ones stream the expected Bkl is equivalent to the Q matrix
+        # plus the direct channel part.
+        for k in range(self.iasolver.K):
+            Hkk = self.iasolver._get_channel(k, k)
+            Fk = self.iasolver.F[k]
+            HkkFk = np.dot(Hkk, Fk)
+            expected_first_part = self.iasolver.calc_Q(k) + P[k]/Ns[k].astype(float) * np.dot(HkkFk, HkkFk.transpose().conjugate())
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.iasolver._calc_Bkl_cov_matrix_first_part(k))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        Nr = 4
+        Nt = 4
+        Ns = 2 * np.ones(3, dtype=int)
+
+        self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
+        self.iasolver.randomizeF(Ns, P)
+
+        for k in range(self.iasolver.K):
+            expected_first_part = 0.0  # First part in the equation of Bkl
+                                       # (the double summation)
+
+            # The outer for loop will calculate
+            # first_part = $\sum_{j=1}^{K} \frac{P[k]}{Ns[k]} \text{aux}$
+            for j in range(self.iasolver.K):
+                aux = 0.0  # The inner for loop will calculate
+                            # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
+                Hkj = self.iasolver._get_channel(k, j)
+                Hkj_H = Hkj.conjugate().transpose()
+
+                for d in range(self.iasolver.Ns[k]):
+                    Vjd = self.iasolver.F[j][:, d:d + 1]
+                    Vjd_H = Vjd.conjugate().transpose()
+                    aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
+
+                expected_first_part = expected_first_part + \
+                    (P[j] / Ns[j].astype(float)) * aux
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.iasolver._calc_Bkl_cov_matrix_first_part(k))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_Bkl_cov_matrix_second_part(self):
+        Nr = 2
+        Nt = 2
+        Ns = 1 * np.ones(3, dtype=int)
+        K = 3
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
+        self.iasolver.randomizeF(Ns, P)
+
+        for k in range(K):
+            Hkk = self.iasolver._get_channel(k, k)
+            Hkk_H = Hkk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = self.iasolver.F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hkk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = (P[k] / Ns[k].astype(float)) * \
+                    expected_second_part
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        Nr = 4
+        Nt = 4
+        Ns = 2 * np.ones(3, dtype=int)
+        K = 3
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
+        self.iasolver.randomizeF(Ns, P)
+
+        for k in range(K):
+            Hkk = self.iasolver._get_channel(k, k)
+            Hkk_H = Hkk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = self.iasolver.F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hkk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = (P[k] / Ns[k].astype(float)) * \
+                    expected_second_part
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
+
+    def test_calc_Bkl(self):
+        # For the case of a single stream oer user Bkl (which only has l=0)
+        # is equal to Qk plus I (identity matrix)
+        Nr = 2
+        Nt = 2
+        Ns = 1 * np.ones(3, dtype=int)
+        K = 3
+        P = np.array([1.2, 1.5, 0.9])
+        noise_power = 0.568
+
+        self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
+        self.iasolver.randomizeF(Ns, P)
+
+        for k in range(K):
+            # We only have the stream 0
+            expected_Bk0 = self.iasolver.calc_Q(k) + (noise_power * np.eye(Nr))
+            Bk0 = self.iasolver._calc_Bkl_cov_matrix_all_l(k, noise_power=noise_power)[0]
+            np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
+
     def test_solve(self):
         with self.assertRaises(NotImplementedError):
             self.iasolver.solve(Ns=1)
@@ -374,91 +505,34 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
                 else:
                     self.assertAlmostEqual(0.0, s)
 
-    # def test_calc_SINR(self):
+    # def test_calc_SINR_k(self):
     #     Ns = 1
-    #     self.iasolver.randomizeF(Ns)
-    #     self.iasolver._updateW()
-    #     SINRs = self.iasolver.calc_SINR()
+    #     self.iasolver.solve(Ns)
+    #     for k in range(self.K):
+    #         Hkk = self.iasolver._get_channel(k, k)
 
-    #     multiuser_channel = self.iasolver._multiUserChannel
-    #     K = self.iasolver.K  # Must always be 3 for the ClosedFormIASolver
+    #         import pudb; pudb.set_trace()  ## DEBUG ##
 
-    #     # Calculates the expected SINRs
-    #     F0 = np.matrix(self.iasolver.F[0])
-    #     F1 = np.matrix(self.iasolver.F[1])
-    #     F2 = np.matrix(self.iasolver.F[2])
+    #         Vk = self.iasolver.F[k]
+    #         Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
+    #         #Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
+    #         Uk = self.iasolver.W[k]
 
-    #     W0 = np.matrix(self.iasolver.W[0])
-    #     W1 = np.matrix(self.iasolver.W[1])
-    #     W2 = np.matrix(self.iasolver.W[2])
+    #         SINR_k_all_l = self.iasolver._calc_SINR_k(Bkl_all_l, Uk, k)
 
-    #     H00 = np.matrix(self.iasolver._get_channel(0, 0))
-    #     H11 = np.matrix(self.iasolver._get_channel(1, 1))
-    #     H22 = np.matrix(self.iasolver._get_channel(2, 2))
+    #         for l in range(self.Ns[k]):
+    #             Ukl = Uk[:, l:l + 1]
+    #             Ukl_H = Ukl.transpose().conjugate()
+    #             Vkl = self.iasolver.F[k][:, l:l + 1]
+    #             aux = np.dot(Ukl_H,
+    #                          np.dot(Hkk, Vkl))
 
-    #     H01 = np.matrix(self.iasolver._get_channel(0, 1))
-    #     H02 = np.matrix(self.iasolver._get_channel(0, 2))
-    #     H10 = np.matrix(self.iasolver._get_channel(1, 0))
-    #     H12 = np.matrix(self.iasolver._get_channel(1, 2))
-    #     H20 = np.matrix(self.iasolver._get_channel(2, 0))
-    #     H21 = np.matrix(self.iasolver._get_channel(2, 1))
+    #             expectedSINRkl = np.asscalar(
+    #                 np.dot(aux, aux.transpose().conjugate()) * (self.P[k] / self.Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+    #             )
 
-    #     expected_SINRs = np.zeros(self.iasolver.K)
-    #     # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     numerator0 = W0 * H00 * F0
-    #     numerator0 = np.abs(numerator0[0, 0])**2
-    #     denominator0 = W0 * H01 * F1 + W0 * H02 * F2
-    #     denominator0 = np.abs(denominator0[0, 0])**2
-    #     expected_SINRs[0] = numerator0 / denominator0
-
-    #     # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     numerator1 = W1 * H11 * F1
-    #     numerator1 = np.abs(numerator1[0, 0])**2
-    #     denominator1 = W1 * H10 * F0 + W1 * H12 * F2
-    #     denominator1 = np.abs(denominator1[0, 0])**2
-    #     expected_SINRs[1] = numerator1 / denominator1
-
-    #     # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     numerator2 = W2 * H22 * F2
-    #     numerator2 = np.abs(numerator2[0, 0])**2
-    #     denominator2 = W2 * H20 * F0 + W2 * H21 * F1
-    #     denominator2 = np.abs(denominator2[0, 0])**2
-    #     expected_SINRs[2] = numerator2 / denominator2
-
-    #     np.testing.assert_array_almost_equal(expected_SINRs, SINRs)
-
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     # Repeat the calculation, but now including the noise
-    #     noise_var = 1e-2
-    #     SINRs = self.iasolver.calc_SINR(noise_var)
-
-    #     expected_SINRs = np.zeros(self.iasolver.K)
-    #     # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     numerator0 = W0 * H00 * F0
-    #     numerator0 = np.abs(numerator0[0, 0])**2
-    #     denominator0 = W0 * H01 * F1 + W0 * H02 * F2
-    #     denominator0 = np.abs(denominator0[0, 0])**2
-    #     noise_power0 = np.abs(noise_var * W0 * W0.H)
-    #     expected_SINRs[0] = numerator0 / (denominator0 + noise_power0[0,0])
-
-    #     # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     numerator1 = W1 * H11 * F1
-    #     numerator1 = np.abs(numerator1[0, 0])**2
-    #     denominator1 = W1 * H10 * F0 + W1 * H12 * F2
-    #     denominator1 = np.abs(denominator1[0, 0])**2
-    #     noise_power1 = np.abs(noise_var * W1 * W1.H)
-    #     expected_SINRs[1] = numerator1 / (denominator1 + noise_power1[0,0])
-
-    #     # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     numerator2 = W2 * H22 * F2
-    #     numerator2 = np.abs(numerator2[0, 0])**2
-    #     denominator2 = W2 * H20 * F0 + W2 * H21 * F1
-    #     denominator2 = np.abs(denominator2[0, 0])**2
-    #     noise_power2 = np.abs(noise_var * W2 * W2.H)
-    #     expected_SINRs[2] = numerator2 / (denominator2 + noise_power2[0,0])
-
-    #     np.testing.assert_array_almost_equal(expected_SINRs, SINRs)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #             np.testing.assert_array_almost_equal(expectedSINRkl,
+    #                                                  SINR_k_all_l[l])
 
 
 class AlternatingMinIASolverTestCase(unittest.TestCase):
@@ -690,7 +764,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         multiUserChannel.randomize(Nr, Nt, K)
         iasolver.max_iterations = 1
         iasolver.solve(Ns)
-        SINRs = iasolver.calc_SINR()
+        SINRs = iasolver.calc_SINR_old()
 
         # Calculates the expected SINRs
         F0 = np.matrix(iasolver.F[0])
@@ -751,7 +825,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Repeat the calculation, but now including the noise
         noise_var = 1e-2
-        SINRs = iasolver.calc_SINR(noise_var)
+        SINRs = iasolver.calc_SINR_old(noise_var)
 
         expected_SINRs2 = np.empty(K, dtype=np.ndarray)
 
@@ -774,7 +848,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(SINRs[k], expected_SINRs2[k])
 
 
-class MaxSinrIASolverTestCase(unittest.TestCase):
+class MaxSinrIASolerTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
@@ -796,31 +870,6 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
-    def test_calc_Bkl_cov_matrix_first_part(self):
-        for k in range(self.K):
-            expected_first_part = 0.0  # First part in the equation of Bkl
-                                       # (the double summation)
-
-            # The outer for loop will calculate
-            # first_part = $\sum_{j=1}^{K} \frac{P[k]}{Ns[k]} \text{aux}$
-            for j in range(self.K):
-                aux = 0.0  # The inner for loop will calculate
-                            # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
-                Hkj = self.iasolver._get_channel(k, j)
-                Hkj_H = Hkj.conjugate().transpose()
-
-                for d in range(self.Ns[k]):
-                    Vjd = self.iasolver.F[j][:, d:d + 1]
-                    Vjd_H = Vjd.conjugate().transpose()
-                    aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
-
-                expected_first_part = expected_first_part + \
-                    (self.P[j] / self.Ns[j]) * aux
-
-            np.testing.assert_array_almost_equal(
-                expected_first_part,
-                self.iasolver._calc_Bkl_cov_matrix_first_part(k))
-
     def test_calc_Bkl_cov_matrix_first_part_rev(self):
         for k in range(self.K):
             expected_first_part_rev = 0.0
@@ -840,24 +889,6 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                 expected_first_part_rev,
                 self.iasolver._calc_Bkl_cov_matrix_first_part_rev(k)
             )
-
-    def test_calc_Bkl_cov_matrix_second_part(self):
-        for k in range(self.K):
-            Hkk = self.iasolver._get_channel(k, k)
-            Hkk_H = Hkk.transpose().conjugate()
-            for l in range(self.Ns[k]):
-                # Calculate the second part in Equation (28). The second part
-                # is different for each value of l and is given by
-                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
-                Vkl = self.iasolver.F[k][:, l:l + 1]
-                Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
-                expected_second_part = (self.P[k] / self.Ns[k]) * \
-                    expected_second_part
-                np.testing.assert_array_almost_equal(
-                    expected_second_part,
-                    self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
 
     def test_calc_Bkl_cov_matrix_second_part_rev(self):
         for k in range(self.K):
@@ -892,7 +923,7 @@ class MaxSinrIASolverTestCase(unittest.TestCase):
                 second_part = self.iasolver._calc_Bkl_cov_matrix_second_part(k, l)
                 expected_Bkl[l] = first_part - second_part + np.eye(self.Nr[k])
 
-            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k, noise_power=1.0)
 
             # Test if the Bkl for all l of user k were calculated correctly
             for l in range(self.Ns[k]):
@@ -1222,28 +1253,3 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 if __name__ == "__main__":
     # plot_psd_OFDM_symbols()
     unittest.main()
-
-
-## Use this if you want to optimize the code on the ia.ia module
-# if __name__ == '__main__':
-#     import time
-#     from misc import pretty_time
-
-#     tic = time.time()
-
-#     K = 4
-#     Nr = np.array([5, 5, 5, 5])
-#     Nt = np.array([5, 5, 5, 5])
-#     Ns = np.array([2, 2, 2, 2])
-#     alt = AlternatingMinIASolver()
-#     alt.randomizeH(Nr, Nt, K)
-#     alt.randomizeF(Nt, Ns, K)
-
-#     maxIter = 5000
-#     Cost = np.zeros(maxIter)
-#     for i in np.arange(maxIter):
-#         alt.step()
-#         Cost[i] = alt.getCost()
-
-#     toc = time.time()
-#     print pretty_time(toc - tic)

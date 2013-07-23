@@ -76,6 +76,10 @@ class IASolverBaseClass(object):
 
     def get_cost(self):
         """
+        Get the current cost of the IA Solution.
+
+        This method should be implemented in subclasses and return a number
+        greater than or equal to zero..
 
         Returns
         -------
@@ -422,10 +426,13 @@ class IASolverBaseClass(object):
         pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
         return pk
 
-    def calc_SINR(self, noise_var = 0.0):
+    def calc_SINR_old(self, noise_var = 0.0):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
+
+        This method is deprecated since it's not the correct way to
+        calculate the SIRN. Use the calc_SINR method instead.
 
         Returns
         -------
@@ -463,6 +470,177 @@ class IASolverBaseClass(object):
             SINRs[j] = numerator/denominator
 
         return SINRs
+
+    def _calc_Bkl_cov_matrix_first_part(self, k):
+        """Calculates the first part in the equation of the Blk covariance
+        matrix in equation (28) of [Cadambe2008]_.
+
+        The first part is given by
+
+            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
+
+        Note that it only depends on the value of :math:`k`.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        Bkl_first_part : 2D numpy complex array
+            First part in equation (28) of [Cadambe2008]_.
+
+        """
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
+        P = self.P
+
+        first_part = 0.0
+        for j in range(self.K):
+            Hkj = self._get_channel(k, j)
+            Hkj_H = Hkj.conjugate().transpose()
+            Vj = self._F[j]
+            Vj_H = Vj.conjugate().transpose()
+
+            first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
+                Hkj,
+                np.dot(
+                    np.dot(Vj,
+                           Vj_H),
+                    Hkj_H))
+
+        return first_part
+
+    def _calc_Bkl_cov_matrix_second_part(self, k, l):
+        """Calculates the second part in the equation of the Blk covariance
+        matrix in equation (28) of [Cadambe2008]_ (note that it does not
+        include the identity matrix).
+
+        The second part is given by
+
+            :math:`\\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger}`
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+        l : int
+            Index of the desired stream.
+
+        Returns
+        -------
+        second_part : 2D numpy complex array.
+            Second part in equation (28) of [Cadambe2008]_.
+
+        """
+        # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
+        P = self.P
+
+        Hkk = self._get_channel(k, k)
+        Hkk_H = Hkk.transpose().conjugate()
+
+        Vkl = self._F[k][:, l:l + 1]
+        Vkl_H = Vkl.transpose().conjugate()
+        second_part = np.dot(Hkk,
+                             np.dot(np.dot(Vkl, Vkl_H),
+                                    Hkk_H))
+
+        return second_part * (float(P[k]) / self._Ns[k])
+
+    def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=0):
+        """Calculates the interference-plus-noise covariance matrix for all
+        streams at receiver :math:`k` according to equation (28) in
+        [Cadambe2008]_.
+
+        The interference-plus-noise covariance matrix for stream :math:`l`
+        of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
+        which is reproduced below
+
+            :math:`\\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}`
+
+        where :math:`P^{[k]}` is the transmit power of transmitter
+        :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
+        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
+        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
+        l}` is the :math:`l`-th column of the precoder of user :math:`k`
+        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
+        the number of receive antennas of receiver :math:`k`.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        Bkl : 1D numpy array of 2D numpy arrays
+            Covariance matrix of all streams of user k. Each element of the
+            returned 1D numpy array is a 2D numpy complex array
+            corresponding to the covariance matrix of one stream of user k.
+
+        Notes
+        -----
+
+        To be simple, a function that returns the covariance matrix of only
+        a single stream "l" of the desired user "k" could be implemented,
+        but in the order to calculate the max SINR algorithm we need the
+        covariance matrix of all streams and returning them in single
+        function as is done here allows us to calculate the first part in
+        equation (28) of [Cadambe2008]_ only once, since it is the same for
+        all streams.
+
+        """
+        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
+        Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
+        first_part = self._calc_Bkl_cov_matrix_first_part(k)
+        for l in range(self._Ns[k]):
+            second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
+            Bkl_all_l[l] = first_part - second_part + (noise_power * np.eye(self.Nr[k]))
+
+        return Bkl_all_l
+
+    # NOTE: This method is specific to the MaxSinrIASolver algorithm and that is
+    # why it is an internal method (starting with a "_")
+    def _calc_SINR_k(self, Bkl_all_l, Uk, k):
+        """Calculates the SINR of all streams of user 'k'.
+
+        Parameters
+        ----------
+        Bkl_all_l : A sequence of 2D numpy arrays.
+            A sequence (1D numpy array, a list, etc) of 2D numpy arrays
+            corresponding to the Bkl matrices for all 'l's.
+        Uk: 2D numpy arrays.
+            The receive filter for all streams of user k.
+        k : int
+            Index of the desired user.
+
+        Returns
+        -------
+        SINR_k : 1D numpy array
+            The SINR for the different streams of user k.
+
+        """
+        Pk = self.P[k]
+        Hkk = self._get_channel(k, k)
+        Vk = self._F[k]
+
+        SINR_k = np.empty(self.Ns[k], dtype=float)
+
+        for l in range(self.Ns[k]):
+            Vkl = Vk[:, l:l + 1]
+            Ukl = Uk[:, l:l + 1]
+            Ukl_H = Ukl.transpose().conjugate()
+            aux = np.dot(Ukl_H,
+                         np.dot(Hkk, Vkl))
+            numerator = np.dot(aux,
+                               aux.transpose().conjugate()) * Pk / self.Ns[k]
+            denominator = np.dot(Ukl_H,
+                                 np.dot(Bkl_all_l[l], Ukl))
+            SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
+            SINR_k[l] = np.abs(SINR_kl)  # The imaginary part should be
+                                         # negligible
+
+        return SINR_k
 
     def solve(self, Ns, P=None):
         """
@@ -1154,46 +1332,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """Receive filter of all users."""
         return self._get_W_property_alt()
 
-    def _calc_Bkl_cov_matrix_first_part(self, k):
-        """Calculates the first part in the equation of the Blk covariance
-        matrix in equation (28) of [Cadambe2008]_.
-
-        The first part is given by
-
-            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
-
-        Note that it only depends on the value of :math:`k`.
-
-        Parameters
-        ----------
-        k : int
-            Index of the desired user.
-
-        Returns
-        -------
-        Bkl_first_part : 2D numpy complex array
-            First part in equation (28) of [Cadambe2008]_.
-
-        """
-        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
-        P = self.P
-
-        first_part = 0.0
-        for j in range(self.K):
-            Hkj = self._get_channel(k, j)
-            Hkj_H = Hkj.conjugate().transpose()
-            Vj = self._F[j]
-            Vj_H = Vj.conjugate().transpose()
-
-            first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
-                Hkj,
-                np.dot(
-                    np.dot(Vj,
-                           Vj_H),
-                    Hkj_H))
-
-        return first_part
-
     def _calc_Bkl_cov_matrix_first_part_rev(self, k):
         """Calculates the first part in the equation of the Blk covariance
         matrix of the reverse channel.
@@ -1232,42 +1370,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return first_part
 
-    def _calc_Bkl_cov_matrix_second_part(self, k, l):
-        """Calculates the second part in the equation of the Blk covariance
-        matrix in equation (28) of [Cadambe2008]_ (note that it does not
-        include the identity matrix).
-
-        The second part is given by
-
-            :math:`\\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger}`
-
-        Parameters
-        ----------
-        k : int
-            Index of the desired user.
-        l : int
-            Index of the desired stream.
-
-        Returns
-        -------
-        second_part : 2D numpy complex array.
-            Second part in equation (28) of [Cadambe2008]_.
-
-        """
-        # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        P = self.P
-
-        Hkk = self._get_channel(k, k)
-        Hkk_H = Hkk.transpose().conjugate()
-
-        Vkl = self._F[k][:, l:l + 1]
-        Vkl_H = Vkl.transpose().conjugate()
-        second_part = np.dot(Hkk,
-                             np.dot(np.dot(Vkl, Vkl_H),
-                                    Hkk_H))
-
-        return second_part * (float(P[k]) / self._Ns[k])
-
     def _calc_Bkl_cov_matrix_second_part_rev(self, k, l):
         """Calculates the second part in the equation of the Blk covariance
         matrix of the reverse channel..
@@ -1305,58 +1407,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
                                     Hkk_H))
 
         return second_part * (float(P[k]) / self._Ns[k])
-
-    def _calc_Bkl_cov_matrix_all_l(self, k):
-        """Calculates the interference-plus-noise covariance matrix for all
-        streams at receiver :math:`k` according to equation (28) in
-        [Cadambe2008]_.
-
-        The interference-plus-noise covariance matrix for stream :math:`l`
-        of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
-        which is reproduced below
-
-            :math:`\\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}`
-
-        where :math:`P^{[k]}` is the transmit power of transmitter
-        :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
-        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
-        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
-        l}` is the :math:`l`-th column of the precoder of user :math:`k`
-        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
-        the number of receive antennas of receiver :math:`k`.
-
-        Parameters
-        ----------
-        k : int
-            Index of the desired user.
-
-        Returns
-        -------
-        Bkl : 1D numpy array of 2D numpy arrays
-            Covariance matrix of all streams of user k. Each element of the
-            returned 1D numpy array is a 2D numpy complex array
-            corresponding to the covariance matrix of one stream of user k.
-
-        Notes
-        -----
-
-        To be simple, a function that returns the covariance matrix of only
-        a single stream "l" of the desired user "k" could be implemented,
-        but in the order to calculate the max SINR algorithm we need the
-        covariance matrix of all streams and returning them in single
-        function as is done here allows us to calculate the first part in
-        equation (28) of [Cadambe2008]_ only once, since it is the same for
-        all streams.
-
-        """
-        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
-        Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(k)
-        for l in range(self._Ns[k]):
-            second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
-            Bkl_all_l[l] = first_part - second_part + (self.noise_power * np.eye(self.Nr[k]))
-
-        return Bkl_all_l
 
     def _calc_Bkl_cov_matrix_all_l_rev(self, k):
         """Calculates the interference-plus-noise covariance matrix for all
@@ -1476,49 +1526,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l_rev(k)
             Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l, k)
         return Uk
-
-    # NOTE: This method is specific to the MaxSinrIASolver algorithm and that is
-    # why it is an internal method (starting with a "_")
-    def _calc_SINR_k(self, Bkl_all_l, Uk, k):
-        """Calculates the SINR of all streams of user 'k'.
-
-        Parameters
-        ----------
-        Bkl_all_l : A sequence of 2D numpy arrays.
-            A sequence (1D numpy array, a list, etc) of 2D numpy arrays
-            corresponding to the Bkl matrices for all 'l's.
-        Uk: 2D numpy arrays.
-            The receive filter for all streams of user k.
-        k : int
-            Index of the desired user.
-
-        Returns
-        -------
-        SINR_k : 1D numpy array
-            The SINR for the different streams of user k.
-
-        """
-        Pk = self.P[k]
-        Hkk = self._get_channel(k, k)
-        Vk = self._F[k]
-
-        SINR_k = np.empty(self.Ns[k], dtype=float)
-
-        for l in range(self.Ns[k]):
-            Vkl = Vk[:, l:l + 1]
-            Ukl = Uk[:, l:l + 1]
-            Ukl_H = Ukl.transpose().conjugate()
-            aux = np.dot(Ukl_H,
-                         np.dot(Hkk, Vkl))
-            numerator = np.dot(aux,
-                               aux.transpose().conjugate()) * Pk / self.Ns[k]
-            denominator = np.dot(Ukl_H,
-                                 np.dot(Bkl_all_l[l], Ukl))
-            SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
-            SINR_k[l] = np.abs(SINR_kl)  # The imaginary part should be
-                                         # negligible
-
-        return SINR_k
 
     def _updateF(self):
         """Update the value of the precoder of all K users.
