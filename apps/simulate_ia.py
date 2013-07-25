@@ -143,7 +143,7 @@ class IASimulationRunner(SimulationRunner):
 
         # xxxxxxxxxx Calculates the Sum Capacity xxxxxxxxxxxxxxxxxxxxxxxxxx
         sirn_all_k = self.ia_solver.calc_SINR_old()
-        calc_capacity = lambda sirn:np.sum(np.log2(1 + sirn))
+        calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
         # Array with the sum capacity of each user
         sum_capacity = map(calc_capacity, sirn_all_k)
         # Total sum capacity
@@ -184,6 +184,7 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
+
 
 class AlternatingSimulationRunner(IASimulationRunner):
     """
@@ -333,8 +334,6 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
     """
-
-
     def __init__(self, config_filename):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:31)
@@ -373,7 +372,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Functions Simulating each IA Algorithm xxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def plot_ber(results, plot_title = None, block=True):
+def plot_ber(results, plot_title=None, block=True):
     """
     Parameters
     ----------
@@ -398,7 +397,7 @@ def plot_ber(results, plot_title = None, block=True):
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
         fig = plt.figure()
-        ax = plt.axes()
+        ax = fig.add_subplot(111)
         ax.semilogy(SNR, ber, '--g*', label='BER')
         ax.semilogy(SNR, ser, '--b*', label='SER')
         plt.xlabel('SNR')
@@ -412,7 +411,7 @@ def plot_ber(results, plot_title = None, block=True):
         plt.show(block=block)
 
 
-def plot_sum_capacity(results, plot_title = None, block=True):
+def plot_sum_capacity(results, plot_title=None, block=True):
     """
     Parameters
     ----------
@@ -436,7 +435,7 @@ def plot_sum_capacity(results, plot_title = None, block=True):
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
         fig = plt.figure()
-        ax = plt.axes()
+        ax = fig.add_subplot(111)
         ax.plot(SNR, sum_capacity, '--g*', label='Sum Capacity')
         plt.xlabel('SNR')
         plt.ylabel('Sum Capacity (bits/channel user')
@@ -447,7 +446,6 @@ def plot_sum_capacity(results, plot_title = None, block=True):
 
         ax.grid(True, which='both', axis='both')
         plt.show(block=block)
-
 
 
 def simulate_general(runner, results_filename):
@@ -480,7 +478,7 @@ def simulate_general(runner, results_filename):
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # The simulation will be run either in parallel or serially depending
     # if the IPython engines are running or not.
-    run_in_parallel=True
+    run_in_parallel = True
     try:
         # If we can get an IPython view that means that the IPython engines
         # are running. In that case we will perform the simulation in
@@ -499,7 +497,7 @@ def simulate_general(runner, results_filename):
 
         # But for the actual simulation we are better using a load balanced view
         lview = cl.load_balanced_view()
-    except Exception, e:
+    except Exception:
         # If we can't get an IPython view then we will perform the
         # simulation serially
         run_in_parallel = False
@@ -534,7 +532,7 @@ def simulate_alternating():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -550,7 +548,7 @@ def simulate_closed_form():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -566,7 +564,7 @@ def simulate_min_leakage():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_min_leakage_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_min_leakage_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -582,7 +580,7 @@ def simulate_max_sinr():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -687,12 +685,15 @@ if __name__ == '__main__1':
     # plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
 
 
-
 if __name__ == '__main__':
-    #simulate_max_sinr()
-
+    print "Simulating Max SINR algorithm"
     max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
-    # Plot the results
-    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
 
-    plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
+    print "Simulating Alternating Min. algorithm"
+    alt_min_results, alt_min_filename = simulate_alternating()
+
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
+
+    print "Simulating Min. Leakage algorithm"
+    min_leakage_results, min_leakage_filename = simulate_min_leakage()
