@@ -110,6 +110,8 @@ class IASimulationRunner(SimulationRunner):
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         noise_var = 1 / dB2Linear(SNR)
+        import pudb; pudb.set_trace()  ## DEBUG ##
+        #self.ia_solver.set_noise_power(noise_var)
         multi_user_channel = self.ia_solver._multiUserChannel
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
@@ -118,7 +120,7 @@ class IASimulationRunner(SimulationRunner):
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
         received_data_no_interference = map(np.dot,
-                                            self.ia_solver.W, received_data)
+                                            self.ia_solver.full_W_H, received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -662,7 +664,7 @@ if __name__ == '__main__1':
 
 
 # 60 Iterations with capacity
-if __name__ == '__main__':
+if __name__ == '__main__1':
     alt_min_results = SimulationResults.load_from_file('ia_alt_min_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')
     # closed_form_results = SimulationResults.load_from_file('ia_closed_form_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')
     # max_sinrn_results = SimulationResults.load_from_file('ia_max_sinr_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')

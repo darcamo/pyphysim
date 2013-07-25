@@ -57,7 +57,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel.randomize(Nr, Nt, K)
         self.iasolver.randomizeF(Ns, P=None)  # Setting P here will be tested in test_randomizeF
 
-        # Test the properties
+        # Test the properties Nr, Nt and Ns
         self.assertEqual(self.iasolver.K, K)
         np.testing.assert_array_equal(self.iasolver.Nr, Nr)
         np.testing.assert_array_equal(self.iasolver.Nt, Nt)
@@ -460,8 +460,11 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         #V3 = np.matrix(self.iasolver.F[2])
 
         H12 = np.matrix(self.iasolver._get_channel(0, 1))
+        H13 = np.matrix(self.iasolver._get_channel(0, 2))
         H21 = np.matrix(self.iasolver._get_channel(1, 0))
+        H23 = np.matrix(self.iasolver._get_channel(1, 2))
         H31 = np.matrix(self.iasolver._get_channel(2, 0))
+        H32 = np.matrix(self.iasolver._get_channel(2, 1))
 
         U1 = H12 * V2
         U1 = leig(U1 * U1.H, 1)[0]
@@ -474,36 +477,73 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.iasolver._W[1], U2)
         np.testing.assert_array_almost_equal(self.iasolver._W[2], U3)
 
-        # xxxxx Test if the equivalent channel is equal to 1 xxxxxxxxxxxxxx
-        H11 = self.iasolver._get_channel(0, 0)
-        H22 = self.iasolver._get_channel(1, 1)
-        H33 = self.iasolver._get_channel(2, 2)
+        # xxxxx Test if the interference is cancelled xxxxxxxxxxxxxxxxxxxxx
+        I1 = np.dot(self.iasolver.W_H[0], np.dot(H12, self.iasolver.F[1])) + \
+             np.dot(self.iasolver.W_H[0], np.dot(H13, self.iasolver.F[2]))
+        self.assertAlmostEqual(I1, 0.0)
 
-        np.testing.assert_almost_equal(
-            np.dot(self.iasolver.W[0], np.dot(H11, self.iasolver.F[0])),
-            np.array([[1.0]]))
+        I2 = np.dot(self.iasolver.W_H[1], np.dot(H21, self.iasolver.F[0])) + \
+             np.dot(self.iasolver.W_H[1], np.dot(H23, self.iasolver.F[2]))
+        self.assertAlmostEqual(I2, 0.0)
 
-        np.testing.assert_almost_equal(
-            np.dot(self.iasolver.W[1], np.dot(H22, self.iasolver.F[1])),
-            np.array([[1.0]]))
+        I3 = np.dot(self.iasolver.W_H[2], np.dot(H31, self.iasolver.F[0])) + \
+             np.dot(self.iasolver.W_H[2], np.dot(H32, self.iasolver.F[1]))
+        self.assertAlmostEqual(I3, 0.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        np.testing.assert_almost_equal(
-            np.dot(self.iasolver.W[2], np.dot(H33, self.iasolver.F[2])),
-            np.array([[1.0]]))
+        # xxxxx Sanity tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if the hermitian of W[k] is equal to W[k]
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # Note: the full_W_H property will be tested in the
+        # test_solve_and_calc_equivalent_channel method.
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_solve(self):
+    def test_solve_and_calc_equivalent_channel(self):
         Ns = 1
         self.iasolver.solve(Ns)
         for l in range(3):
             for k in range(3):
                 Hlk = self.iasolver._get_channel(l, k)
-                Wl = self.iasolver.W[l]
+                Wl_H = self.iasolver.W_H[l]
                 Fk = self.iasolver.F[k]
-                s = np.dot(Wl, np.dot(Hlk, Fk))[0][0]
+                s = np.dot(Wl_H, np.dot(Hlk, Fk))[0][0]
                 if l == k:
-                    self.assertAlmostEqual(1.0, s)
+                    Hk_eq = self.iasolver._calc_equivalent_channel(k)
+                    s2 = s/Hk_eq[0,0]  # We only have one stream -> the
+                                       # equivalent channel is an scalar.
+                    self.assertAlmostEqual(1.0, s2)
                 else:
+                    # Test if the interference is equal to 0.0
                     self.assertAlmostEqual(0.0, s)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if an exception is raised if we try to use the
+        # ClosedFormIASolver class with a number of users different from 3.
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        Nr = 2
+        Nt = 2
+        multiUserChannel.randomize(Nr, Nt, 2)
+        iasolver = ClosedFormIASolver(multiUserChannel)
+        with self.assertRaises(AssertionError):
+            iasolver.solve(Ns=1)
+
+        multiUserChannel.randomize(Nr, Nt, 3)
+        iasolver = ClosedFormIASolver(multiUserChannel)
+        with self.assertRaises(AssertionError):
+            iasolver.solve(Ns=np.array([1, 1]))
+
+    def test_full_W_H_property(self):
+        Ns = 1
+        self.iasolver.solve(Ns)
+        for k in range(self.iasolver.K):
+            Hkk = self.iasolver._get_channel(k, k)
+            full_Wk_H = self.iasolver.full_W_H[k]
+            Fk = self.iasolver.F[k]
+            s = np.dot(full_Wk_H, np.dot(Hkk, Fk))[0][0]
+            self.assertAlmostEqual(1.0, s)
 
     # def test_calc_SINR_k(self):
     #     Ns = 1
@@ -680,7 +720,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             self.iasolver._get_channel(0, 0),
             self.iasolver.F[0])
         tildeH0 = np.hstack([tildeH0, self.iasolver._C[0]])
-        expected_W0 = np.linalg.inv(tildeH0)[0:self.iasolver.Ns[0]]
+        expected_W0_H = np.linalg.inv(tildeH0)[0:self.iasolver.Ns[0]]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the expected receive filter for user 1 xxxxxxxxx
@@ -688,7 +728,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             self.iasolver._get_channel(1, 1),
             self.iasolver.F[1])
         tildeH1 = np.hstack([tildeH1, self.iasolver._C[1]])
-        expected_W1 = np.linalg.inv(tildeH1)[0:self.iasolver.Ns[1]]
+        expected_W1_H = np.linalg.inv(tildeH1)[0:self.iasolver.Ns[1]]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the expected receive filter for user 2 xxxxxxxxx
@@ -696,13 +736,28 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             self.iasolver._get_channel(2, 2),
             self.iasolver.F[2])
         tildeH2 = np.hstack([tildeH2, self.iasolver._C[2]])
-        expected_W2 = np.linalg.inv(tildeH2)[0:self.iasolver.Ns[2]]
+        expected_W2_H = np.linalg.inv(tildeH2)[0:self.iasolver.Ns[2]]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Finally perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(self.iasolver.W[0], expected_W0)
-        np.testing.assert_array_almost_equal(self.iasolver.W[1], expected_W1)
-        np.testing.assert_array_almost_equal(self.iasolver.W[2], expected_W2)
+        np.testing.assert_array_almost_equal(self.iasolver.W_H[0], expected_W0_H)
+        np.testing.assert_array_almost_equal(self.iasolver.W_H[1], expected_W1_H)
+        np.testing.assert_array_almost_equal(self.iasolver.W_H[2], expected_W2_H)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Sanity tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if the hermitian of W[k] is equal to W[k]
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # Perform one step and test again
+        self.iasolver._step()
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_getCost(self):
         K = 2
@@ -747,7 +802,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
     #     # why there is no assert clause here
     #     self.iasolver.solve(self.Ns)
 
-    def test_calc_SINR(self):
+    def test_calc_SINR_old(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
 
         # xxxxxxxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -774,6 +829,9 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         W0 = np.matrix(iasolver.W[0])
         W1 = np.matrix(iasolver.W[1])
         W2 = np.matrix(iasolver.W[2])
+        W0_H = np.matrix(iasolver.W_H[0])
+        W1_H = np.matrix(iasolver.W_H[1])
+        W2_H = np.matrix(iasolver.W_H[2])
 
         H00 = np.matrix(iasolver._get_channel(0, 0))
         H11 = np.matrix(iasolver._get_channel(1, 1))
@@ -789,32 +847,32 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_SINRs = np.empty(K, dtype=np.ndarray)
 
         # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        numerator0 = W0 * H00 * F0
+        numerator0 = W0_H * H00 * F0
         numerator0 = numerator0 * numerator0.H
         numerator0 = np.abs(np.diag(numerator0))
 
-        denominator0 = W0 * H01 * F1 + W0 * H02 * F2
+        denominator0 = W0_H * H01 * F1 + W0_H * H02 * F2
         denominator0 = denominator0 * denominator0.H
         denominator0 = np.abs(np.diag(denominator0))
 
         expected_SINRs[0] = numerator0 / denominator0
 
         # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        numerator1 = W1 * H11 * F1
+        numerator1 = W1_H * H11 * F1
         numerator1 = numerator1 * numerator1.H
         numerator1 = np.abs(np.diag(numerator1))
 
-        denominator1 = W1 * H10 * F0 + W1 * H12 * F2
+        denominator1 = W1_H * H10 * F0 + W1_H * H12 * F2
         denominator1 = denominator1 * denominator1.H
         denominator1 = np.abs(np.diag(denominator1))
         expected_SINRs[1] = numerator1 / denominator1
 
         # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        numerator2 = W2 * H22 * F2
+        numerator2 = W2_H * H22 * F2
         numerator2 = numerator2 * numerator2.H
         numerator2 = np.abs(np.diag(numerator2))
 
-        denominator2 = W2 * H20 * F0 + W2 * H21 * F1
+        denominator2 = W2_H * H20 * F0 + W2_H * H21 * F1
         denominator2 = denominator2 * denominator2.H
         denominator2 = np.abs(np.diag(denominator2))
         expected_SINRs[2] = numerator2 / denominator2
@@ -830,23 +888,32 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_SINRs2 = np.empty(K, dtype=np.ndarray)
 
         # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_term0 = W0 * W0.H * noise_var
+        noise_term0 = W0_H * W0 * noise_var
         denominator0_with_noise = denominator0 + np.abs(np.diag(noise_term0))
         expected_SINRs2[0] = numerator0 / denominator0_with_noise
 
         # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_term1 = W1 * W1.H * noise_var
+        noise_term1 = W1_H * W1 * noise_var
         denominator1_with_noise = denominator1 + np.abs(np.diag(noise_term1))
         expected_SINRs2[1] = numerator1 / denominator1_with_noise
 
         # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_term2 = W2 * W2.H * noise_var
+        noise_term2 = W2_H * W2 * noise_var
         denominator2_with_noise = denominator2 + np.abs(np.diag(noise_term2))
         expected_SINRs2[2] = numerator2 / denominator2_with_noise
 
         for k in range(K):
             np.testing.assert_array_almost_equal(SINRs[k], expected_SINRs2[k])
 
+    def test_clear(self):
+        Ns = 1
+        self.iasolver.solve(Ns)
+        self.iasolver.clear()
+        self.assertIsNone(self.iasolver.F)
+        self.assertIsNone(self.iasolver.W)
+        self.assertIsNone(self.iasolver.W_H)
+        self.assertIsNone(self.iasolver.full_W_H)
+        self.assertAlmostEqual(self.iasolver._runned_iterations, 0.0)
 
 class MaxSinrIASolerTestCase(unittest.TestCase):
     def setUp(self):
@@ -868,7 +935,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
         self.iasolver.randomizeF(self.Ns, self.P)
-        self.iasolver._W = self.iasolver._calc_Uk_all_k()
+        self.iasolver._updateW()
 
     def test_calc_Bkl_cov_matrix_first_part_rev(self):
         for k in range(self.K):
@@ -978,23 +1045,40 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
     def test_calc_SINR_k(self):
-        for k in range(self.K):
-            Hkk = self.iasolver._get_channel(k, k)
-            Vk = self.iasolver.F[k]
-            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
-            Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        iasolver = MaxSinrIASolver(multiUserChannel)
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
 
-            SINR_k_all_l = self.iasolver._calc_SINR_k(Bkl_all_l, Uk, k)
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
 
-            for l in range(self.Ns[k]):
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver.randomizeF(Ns, P)
+        iasolver._updateW()
+
+        for k in range(K):
+            Hkk = iasolver._get_channel(k, k)
+            Vk = iasolver.F[k]
+            Bkl_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k)
+            #Uk = iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
+            Uk = iasolver.W[k]
+            #Uk_H = Uk.conj().T
+            Uk_H = iasolver.W_H[k]
+
+            SINR_k_all_l = iasolver._calc_SINR_k(Bkl_all_l, Uk_H, k)
+
+            for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
                 Ukl_H = Ukl.transpose().conjugate()
-                Vkl = self.iasolver.F[k][:, l:l + 1]
+                Vkl = iasolver.F[k][:, l:l + 1]
                 aux = np.dot(Ukl_H,
                              np.dot(Hkk, Vkl))
 
                 expectedSINRkl = np.asscalar(
-                    np.dot(aux, aux.transpose().conjugate()) * (self.P[k] / self.Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+                    np.dot(aux, aux.transpose().conjugate()) * (P[k] / Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
                 )
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
@@ -1103,16 +1187,66 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Q2_rev, expected_Q2_rev)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_W_property(self):
+    def test_updateW(self):
+        self.iasolver._updateW()
+
+        for k in range(self.iasolver.K):
+            np.testing.assert_array_almost_equal(self.iasolver.W[k], self.iasolver._calc_Uk_all_k()[k])
+
+        # xxxxx Sanity tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if the hermitian of W[k] is equal to W[k]
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # Perform one step and test again
+        self.iasolver._step()
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.iasolver._clear_receive_filter()
+        self.assertIsNone(self.iasolver.W)
+        self.assertIsNone(self.iasolver.W_H)
+        self.assertIsNone(self.iasolver.full_W_H)
+
+    def test_full_W_H_property(self):
         self.iasolver._step()
         F = self.iasolver.F
-        W = self.iasolver.W
+        full_W_H = self.iasolver.full_W_H
         H00 = self.iasolver._get_channel(0, 0)
         H11 = self.iasolver._get_channel(1, 1)
         H22 = self.iasolver._get_channel(2, 2)
-        self.assertAlmostEqual(np.dot(W[0], np.dot(H00, F[0]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(W[1], np.dot(H11, F[1]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(W[2], np.dot(H22, F[2]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+
+    def test_solve(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        iasolver = MaxSinrIASolver(multiUserChannel, noise_power=0)
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver.solve(Ns)
+
+        # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+        # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
+        # self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
+        # self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+
+
+        # TODO: DARLAN -> Implement-me
+        pass
 
 
 # TODO: Finish the implementation
@@ -1229,19 +1363,45 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
             self.assertTrue(new_cost < last_cost)
             last_cost = new_cost
 
-    def test_W_property(self):
+    def test_updateW(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._updateW()
+
+        for k in range(self.iasolver.K):
+            np.testing.assert_array_almost_equal(self.iasolver.W[k], self.iasolver._calc_Uk_all_k()[k])
+
+        # xxxxx Sanity tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if the hermitian of W[k] is equal to W[k]
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # Perform one step and test again
+        self.iasolver._step()
+        for k in range(self.iasolver.K):
+            self.assertIsNotNone(self.iasolver.W[k])
+            np.testing.assert_array_almost_equal(self.iasolver.W[k].conj().T,
+                                                 self.iasolver.W_H[k])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.iasolver._clear_receive_filter()
+        self.assertIsNone(self.iasolver.W)
+        self.assertIsNone(self.iasolver.W_H)
+        self.assertIsNone(self.iasolver.full_W_H)
+
+    def test_full_W_H_property(self):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
         self.iasolver._step()
         F = self.iasolver.F
-        W = self.iasolver.W
+        full_W_H = self.iasolver.full_W_H
         H00 = self.iasolver._get_channel(0, 0)
         H11 = self.iasolver._get_channel(1, 1)
         H22 = self.iasolver._get_channel(2, 2)
-        self.assertAlmostEqual(np.dot(W[0], np.dot(H00, F[0]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(W[1], np.dot(H11, F[1]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(W[2], np.dot(H22, F[2]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
 
     def test_solve(self):
         self.iasolver.max_iterations = 1
