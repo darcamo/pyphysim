@@ -75,6 +75,23 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.iasolver.P = [1.2, 2.1]
 
+        # xxxxx Test the noise_var property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # It starts as "None"
+        self.assertIsNone(self.iasolver._noise_var)
+        # If we try to get the value of the last_noise_var property it will
+        # return the value of the last_noise_var property of the
+        # multiUserChannel object
+        self.assertEqual(self.iasolver.noise_var, 0.0)
+        self.iasolver._multiUserChannel._last_noise_var = 1.3
+        self.assertEqual(self.iasolver.noise_var, 1.3)
+        # But if we set the noise_var property to some (non negative) value
+        # it will be respected.
+        self.iasolver.noise_var = 1.5
+        self.assertEqual(self.iasolver.noise_var, 1.5)
+        with self.assertRaises(AssertionError):
+            self.iasolver.noise_var = -0.6
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_randomizeF(self):
         K = 3
         Nt = np.array([2, 3, 5])
@@ -236,7 +253,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
     def test_calc_Bkl_cov_matrix_first_part(self):
         Nr = 2
         Nt = 2
-        Ns = 1*np.ones(3, dtype=int)
+        Ns = 1 * np.ones(3, dtype=int)
         K = 3
         P = np.array([1.2, 1.5, 0.9])
 
@@ -249,7 +266,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
             Hkk = self.iasolver._get_channel(k, k)
             Fk = self.iasolver.F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = self.iasolver.calc_Q(k) + P[k]/Ns[k].astype(float) * np.dot(HkkFk, HkkFk.transpose().conjugate())
+            expected_first_part = self.iasolver.calc_Q(k) + P[k] / Ns[k].astype(float) * np.dot(HkkFk, HkkFk.transpose().conjugate())
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -479,15 +496,15 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
         # xxxxx Test if the interference is cancelled xxxxxxxxxxxxxxxxxxxxx
         I1 = np.dot(self.iasolver.W_H[0], np.dot(H12, self.iasolver.F[1])) + \
-             np.dot(self.iasolver.W_H[0], np.dot(H13, self.iasolver.F[2]))
+            np.dot(self.iasolver.W_H[0], np.dot(H13, self.iasolver.F[2]))
         self.assertAlmostEqual(I1, 0.0)
 
         I2 = np.dot(self.iasolver.W_H[1], np.dot(H21, self.iasolver.F[0])) + \
-             np.dot(self.iasolver.W_H[1], np.dot(H23, self.iasolver.F[2]))
+            np.dot(self.iasolver.W_H[1], np.dot(H23, self.iasolver.F[2]))
         self.assertAlmostEqual(I2, 0.0)
 
         I3 = np.dot(self.iasolver.W_H[2], np.dot(H31, self.iasolver.F[0])) + \
-             np.dot(self.iasolver.W_H[2], np.dot(H32, self.iasolver.F[1]))
+            np.dot(self.iasolver.W_H[2], np.dot(H32, self.iasolver.F[1]))
         self.assertAlmostEqual(I3, 0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -512,8 +529,8 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
                 s = np.dot(Wl_H, np.dot(Hlk, Fk))[0][0]
                 if l == k:
                     Hk_eq = self.iasolver._calc_equivalent_channel(k)
-                    s2 = s/Hk_eq[0,0]  # We only have one stream -> the
-                                       # equivalent channel is an scalar.
+                    s2 = s / Hk_eq[0, 0]  # We only have one stream -> the
+                                          # equivalent channel is an scalar.
                     self.assertAlmostEqual(1.0, s2)
                 else:
                     # Test if the interference is equal to 0.0
@@ -607,7 +624,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             self.iasolver.F[2]
         )
         expected_C0 = np.dot(H01_F1, H01_F1.transpose().conjugate()) + \
-                      np.dot(H02_F2, H02_F2.transpose().conjugate())
+            np.dot(H02_F2, H02_F2.transpose().conjugate())
         expected_C0 = peig(expected_C0, Ni[k])[0]
 
         # Test if C[0] is equal to the expected output
@@ -625,7 +642,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             self.iasolver.F[2]
         )
         expected_C1 = np.dot(H10_F0, H10_F0.transpose().conjugate()) + \
-                      np.dot(H12_F2, H12_F2.transpose().conjugate())
+            np.dot(H12_F2, H12_F2.transpose().conjugate())
         expected_C1 = peig(expected_C1, Ni[k])[0]
 
         # Test if C[1] is equal to the expected output
@@ -643,7 +660,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
             self.iasolver.F[1]
         )
         expected_C2 = np.dot(H20_F0, H20_F0.transpose().conjugate()) + \
-                      np.dot(H21_F1, H21_F1.transpose().conjugate())
+            np.dot(H21_F1, H21_F1.transpose().conjugate())
         expected_C2 = peig(expected_C2, Ni[k])[0]
 
         # Test if C[2] is equal to the expected output
@@ -686,21 +703,21 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxx Calculate the expected F[0] after one step xxxxxxxxxxxxxxxx
         # l = 0 -> k = 1 and k = 2
         expected_F0 = np.dot(np.dot(H10.conjugate().transpose(), Y1), H10) + \
-                      np.dot(np.dot(H20.conjugate().transpose(), Y2), H20)
+            np.dot(np.dot(H20.conjugate().transpose(), Y2), H20)
         expected_F0 = leig(expected_F0, self.Ns[0])[0]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[1] after one step xxxxxxxxxxxxxxxx
         # l = 1 -> k = 0 and k = 2
         expected_F1 = np.dot(np.dot(H01.conjugate().transpose(), Y0), H01) + \
-                      np.dot(np.dot(H21.conjugate().transpose(), Y2), H21)
+            np.dot(np.dot(H21.conjugate().transpose(), Y2), H21)
         expected_F1 = leig(expected_F1, self.Ns[1])[0]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[1] after one step xxxxxxxxxxxxxxxx
         # l = 2 -> k = 0 and k = 1
         expected_F2 = np.dot(np.dot(H02.conjugate().transpose(), Y0), H02) + \
-                      np.dot(np.dot(H12.conjugate().transpose(), Y1), H12)
+            np.dot(np.dot(H12.conjugate().transpose(), Y1), H12)
         expected_F2 = leig(expected_F2, self.Ns[2])[0]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -883,7 +900,8 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Repeat the calculation, but now including the noise
         noise_var = 1e-2
-        SINRs = iasolver.calc_SINR_old(noise_var)
+        iasolver.noise_var = noise_var
+        SINRs = iasolver.calc_SINR_old()
 
         expected_SINRs2 = np.empty(K, dtype=np.ndarray)
 
@@ -914,6 +932,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         self.assertIsNone(self.iasolver.W_H)
         self.assertIsNone(self.iasolver.full_W_H)
         self.assertAlmostEqual(self.iasolver._runned_iterations, 0.0)
+
 
 class MaxSinrIASolerTestCase(unittest.TestCase):
     def setUp(self):
@@ -997,6 +1016,8 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
     def test_calc_Bkl_cov_matrix_all_l_rev(self):
+        self.iasolver.noise_var = 1.0
+
         # Calculates Bkl for all streams (l index) of all users (k index)
         for k in range(self.K):
             # The first_part does not depend on the stream index. Only on
@@ -1061,7 +1082,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
         for k in range(K):
             Hkk = iasolver._get_channel(k, k)
-            Vk = iasolver.F[k]
+            # Vk = iasolver.F[k]
             Bkl_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k)
             #Uk = iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             Uk = iasolver.W[k]
@@ -1225,7 +1246,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
     def test_solve(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
-        iasolver = MaxSinrIASolver(multiUserChannel, noise_power=0)
+        iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4

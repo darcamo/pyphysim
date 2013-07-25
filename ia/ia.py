@@ -2,7 +2,14 @@
 # -*- coding: utf-8 -*-
 
 
-"""Module with implementation of Interference Alignment algorithms"""
+"""
+Module with implementation of Interference Alignment (IA) algorithms.
+
+Note that all IA algorithms require the channel object and any change to
+the channel object must be performed before calling the `solve` method of
+the IA algorithm object. This includes generating the channel and setting
+the noise variance.
+"""
 
 __revision__ = "$Revision$"
 
@@ -22,8 +29,17 @@ class IASolverBaseClass(object):
     """
     Base class for all Interference Alignment Algorithms.
 
-    At least the `solve` method must be implemented in the subclasses of
-    IASolverBaseClass.
+    At least the `_updateW`, `_updateF` and `solve` methods must be
+    implemented in the subclasses of IASolverBaseClass, where the `solve`
+    method uses the `_updateW` and `_updateF` methods in its
+    implementation.
+
+    The implementation of the `_updateW` method should call the
+    `_clear_receive_filter` method in the beginning and after that set
+    either the _W or the _W_H variables with the correct value.
+
+    The implementation of the `_updateF` method must set the _F variable
+    with the correct value.
 
     Another method that can be implemented is the get_cost method. It should
     return the cost of the current IA solution. What is considered "the
@@ -42,7 +58,7 @@ class IASolverBaseClass(object):
         # Precoder and receive filters (numpy arrays of numpy arrays)
         self._F = None  # Precoder: One precoder for each user
         self._W = None  # Receive filter: One for each user
-        self._W_H = None # Receive filter: One for each user
+        self._W_H = None  # Receive filter: One for each user
 
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
         # Number of streams per user
@@ -53,6 +69,9 @@ class IASolverBaseClass(object):
         self._P = None  # Power of each user (P is an 1D numpy array). If
                         # not set (_P is None), then a power of 1 will be
                         # used for each transmitter.
+        self._noise_var = None  # If None, then the value of last_noise_var
+                                # in the multiUserChannel object will be
+                                # used.
 
     def _clear_receive_filter(self):
         """
@@ -80,11 +99,13 @@ class IASolverBaseClass(object):
         to the __init__ method, since here we call __init__ without
         arguments which is probably not what you want.
         """
-        # The F and W variables will be numpy arrays OF numpy arrays.
+        # The F and W variables will be numpy arrays of numpy arrays.
         self._F = None  # Precoder: One precoder for each user
         self._clear_receive_filter()  # Set _W, _W_H and _full_W_H to None
         self._P = None
         self._Ns = None
+
+        # Don't clear the self._noise_var attribute
 
     def get_cost(self):
         """
@@ -99,6 +120,20 @@ class IASolverBaseClass(object):
             The Cost of the current IA solution.
         """
         return -1
+
+    @property
+    def noise_var(self):
+        """Get method for the noise_var property."""
+        if self._noise_var is None:
+            return self._multiUserChannel.last_noise_var
+        else:
+            return self._noise_var
+
+    @noise_var.setter
+    def noise_var(self, value):
+        """Set method for the noise_var property."""
+        assert value >= 0.0, "Noise variance must be >= 0."
+        self._noise_var = value
 
     @property
     def F(self):
@@ -439,10 +474,14 @@ class IASolverBaseClass(object):
         pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
         return pk
 
-    def calc_SINR_old(self, noise_var = 0.0):
+    def calc_SINR_old(self):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
+
+        The noise variance used will be the value of the noise_var
+        property, which, if not explicitly set, will use the
+        last_noise_var property of the multiuserchannel object.
 
         This method is deprecated since it's not the correct way to
         calculate the SIRN. Use the calc_SINR method instead.
@@ -451,10 +490,6 @@ class IASolverBaseClass(object):
         -------
         SINRs : 1D numpy array of 1D numpy arrays (of floats)
             The SINR (in linear scale) of all streams of all users.
-        noise_var : float
-            Noise variance. If not provided a value of 0 will be used which
-            effectively means that the SIR values will be returned instead
-            of the SIRN values.
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -475,12 +510,14 @@ class IASolverBaseClass(object):
                 else:
                     denominator = denominator + aux
 
-            denominator = np.dot(denominator, denominator.transpose().conjugate())
-            noise_power = noise_var * np.dot(Wj_H, Wj_H.transpose().conjugate())
+            denominator = np.dot(denominator,
+                                 denominator.transpose().conjugate())
+            noise_power = self.noise_var * np.dot(
+                Wj_H, Wj_H.transpose().conjugate())
             denominator = denominator + noise_power
             denominator = np.diag(np.abs(denominator))
 
-            SINRs[j] = numerator/denominator
+            SINRs[j] = numerator / denominator
 
         return SINRs
 
@@ -641,7 +678,7 @@ class IASolverBaseClass(object):
 
         for l in range(self.Ns[k]):
             Vkl = Vk[:, l:l + 1]
-            Ukl_H = Uk_H[l:l+1, :]
+            Ukl_H = Uk_H[l:l + 1, :]
             Ukl = Ukl_H.conj().T
             # Ukl = Uk[:, l:l + 1]
             # Ukl_H = Ukl.transpose().conjugate()
@@ -1298,7 +1335,6 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         self._W = self._calc_Uk_all_k()
 
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MaxSinrIASolver class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1319,8 +1355,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     ----------
     multiUserChannel : A MultiUserChannelMatrix object.
         The multiuser channel.
-    noise_var : float
-        Noise power (in linear scale).
 
     Notes
     -----
@@ -1332,17 +1366,14 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     """
 
-    def __init__(self, multiUserChannel, noise_power=1.0):
+    def __init__(self, multiUserChannel):
         """
         Parameters
         ----------
         multiUserChannel : A MultiUserChannelMatrix object.
             The multiuser channel.
-        noise_var : float
-            Noise power (in linear scale).
         """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
-        self.noise_power = noise_power
 
     def _calc_Bkl_cov_matrix_first_part_rev(self, k):
         """Calculates the first part in the equation of the Blk covariance
@@ -1447,7 +1478,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
-            Bkl_all_l_rev[l] = first_part - second_part + (self.noise_power * np.eye(self.Nt[k]))
+            Bkl_all_l_rev[l] = first_part - second_part + (self.noise_var * np.eye(self.Nt[k]))
 
         return Bkl_all_l_rev
 

@@ -83,6 +83,9 @@ class IASimulationRunner(SimulationRunner):
         Nt = np.ones(K, dtype=int) * current_parameters["Nt"]
         Ns = np.ones(K, dtype=int) * current_parameters["Ns"]
         SNR = current_parameters["SNR"]
+
+        # Dependent parameters
+        noise_var = 1 / dB2Linear(SNR)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -102,6 +105,10 @@ class IASimulationRunner(SimulationRunner):
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
         self.multiUserChannel.randomize(Nr, Nt, K)
+        # We wouldn't need to explicitly set self.ia_solver.noise_var
+        # variable if the multiUserChannel object had the correct value at
+        # this point.
+        self.ia_solver.noise_var = noise_var
         self.ia_solver.clear()
         self.ia_solver.solve(Ns)
 
@@ -109,9 +116,6 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_var = 1 / dB2Linear(SNR)
-        import pudb; pudb.set_trace()  ## DEBUG ##
-        #self.ia_solver.set_noise_power(noise_var)
         multi_user_channel = self.ia_solver._multiUserChannel
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
@@ -138,7 +142,7 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Calculates the Sum Capacity xxxxxxxxxxxxxxxxxxxxxxxxxx
-        sirn_all_k = self.ia_solver.calc_SINR_old(noise_var=noise_var)
+        sirn_all_k = self.ia_solver.calc_SINR_old()
         calc_capacity = lambda sirn:np.sum(np.log2(1 + sirn))
         # Array with the sum capacity of each user
         sum_capacity = map(calc_capacity, sirn_all_k)
@@ -681,3 +685,14 @@ if __name__ == '__main__1':
 
     # plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
     # plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+
+
+
+if __name__ == '__main__':
+    #simulate_max_sinr()
+
+    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    # Plot the results
+    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+
+    plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
