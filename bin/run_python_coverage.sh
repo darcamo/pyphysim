@@ -22,10 +22,10 @@
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Remove any previous information from coverage.
-rm .coverage
+rm -f .coverage
 
 cd ../tests
-rm .coverage
+rm -f .coverage
 for file in *test.py;
 do
     echo "xxxxxxxxxx Running python-coverage on file $file"

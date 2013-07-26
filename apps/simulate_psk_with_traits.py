@@ -211,7 +211,7 @@ class SimplePskSimulationRunner(SimulationRunner, HasTraits):
 
         return simResults
 
-    def _keep_going(self, simulation_results):
+    def _keep_going(self, current_params, simulation_results):
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors
         cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()

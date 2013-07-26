@@ -22,6 +22,7 @@ import numpy as np
 
 from util import misc, progressbar, simulations, conversion
 from util.simulations import *
+from util.simulations import _parse_range_expr, _real_numpy_array_check
 
 
 class UtilDoctestsTestCase(unittest.TestCase):
@@ -243,6 +244,90 @@ class ConversionTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SimulationsModuleFunctionsTestCase(unittest.TestCase):
+    def test_parse_range_expr(self):
+        import validate
+
+        expr = "10:15"
+        expected_parsed_expr = np.r_[10:15]
+        parsed_expr = _parse_range_expr(expr)
+
+        np.testing.assert_array_almost_equal(expected_parsed_expr,
+                                             parsed_expr)
+
+        expr = "10:2:15"
+        expected_parsed_expr = np.r_[10:15:2]
+        parsed_expr = _parse_range_expr(expr)
+
+        np.testing.assert_array_almost_equal(expected_parsed_expr,
+                                             parsed_expr)
+
+        expr = "-3.4:0.5:5"
+        expected_parsed_expr = np.r_[-3.4:5.0:0.5]
+        parsed_expr = _parse_range_expr(expr)
+
+        np.testing.assert_array_almost_equal(expected_parsed_expr,
+                                             parsed_expr)
+
+        # xxxxx Test invalid values xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        expr = "a string"
+        with self.assertRaises(validate.VdtTypeError):
+            _parse_range_expr(expr)
+
+        expr = "10,5"
+        with self.assertRaises(validate.VdtTypeError):
+            _parse_range_expr(expr)
+
+        expr = "10.5."
+        with self.assertRaises(validate.VdtTypeError):
+            _parse_range_expr(expr)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_real_numpy_array_check(self):
+        import validate
+
+        array_string = "[0 5 10:15]"
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
+
+        np.testing.assert_array_almost_equal(parsed_array,
+                                             expected_parsed_array)
+
+        array_string = "10:15"
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        expected_parsed_array = np.array([10, 11, 12, 13, 14])
+
+        np.testing.assert_array_almost_equal(parsed_array,
+                                             expected_parsed_array)
+
+        array_string = "[10:15]"
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        expected_parsed_array = np.array([10, 11, 12, 13, 14])
+
+        np.testing.assert_array_almost_equal(parsed_array,
+                                             expected_parsed_array)
+
+        array_string = "[0,5,10:15,20]"
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
+
+        np.testing.assert_array_almost_equal(parsed_array,
+                                             expected_parsed_array)
+
+        # xxxxx Test validation against the minimum allowed value xxxxxxxxx
+        array_string = "[0,5,10:15,20]"
+        with self.assertRaises(validate.VdtValueTooSmallError):
+            parsed_array = _real_numpy_array_check(array_string,
+                                                   min=4,
+                                                   max=30)
+
+        with self.assertRaises(validate.VdtValueTooBigError):
+            parsed_array = _real_numpy_array_check(array_string,
+                                                   min=0,
+                                                   max=15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 class ResultTestCase(unittest.TestCase):
     """Unit-tests for the Result class in the simulations module."""
 
