@@ -117,7 +117,7 @@ class PlotCurveData(HasTraits):
 
 
 class PlotView(HasTraits):
-    """Class to plor simulation results.
+    """Class to plot simulation results.
     """
     # Dictionary Trait to store the curves. The keys are used as the legend
     # for the curves
@@ -153,18 +153,7 @@ class PlotView(HasTraits):
         buttons=['OK', 'Cancel'],
         resizable=True)
 
-    # traits_view = View(Item('plot_container', editor=ComponentEditor(), show_label=False),
-    #                    Item('curves_data', editor=InstanceEditor()),
-    #                    Item('indexes_data', editor=InstanceEditor()),
-    #                    Item('chosen_index', style='readonly'),
-    #                    width=800, height=600,
-    #                    buttons=['OK', 'Cancel'],
-    #                    resizable=True,
-    #                    title='Window Title')
-
     def __init__(self, ):
-        """
-        """
         HasTraits.__init__(self)
 
     def create_the_plot(self):
@@ -267,32 +256,6 @@ class PlotView(HasTraits):
         if self.chosen_index not in self.indexes_data.keys():
             # Set the chosen_index as the first curve
             self.chosen_index = self.indexes_data.keys()[0]
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # index_data = PlotIndexData()
-    # plot_curve = PlotCurveData()
-    plot_view = PlotView()
-
-    angle_radians = np.arange(0, 2 * np.pi, 0.05 * np.pi)
-    angle_degrees = 180 * angle_radians / np.pi
-    sin_values = np.sin(angle_radians)
-    cos_values = np.cos(angle_radians)
-
-    plot_view.add_index_data('Angle (radians)', angle_radians)
-    plot_view.add_index_data('Angle (degrees)', angle_degrees)
-    plot_view.add_curve_data('Sin', sin_values)
-    plot_view.add_curve_data('Cos', cos_values)
-
-    plot_view.plot_container = plot_view.create_the_plot()
-    plot_view.configure_traits()
-
-
-    # RESET PAN
-    # plotter.plot.range2d.x_range.reset()
-    # plotter.plot.range2d.y_range.reset()
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class SimulationResultsPlotter(HasTraits):
@@ -534,9 +497,34 @@ class SimulationResultsPlotter(HasTraits):
         self.plot.range2d.y_range.reset()
 
 
-
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
-    # SimulationResultsPlotter().configure_traits()
+    # index_data = PlotIndexData()
+    # plot_curve = PlotCurveData()
+    plot_view = PlotView()
+
+    angle_radians = np.arange(0, 2 * np.pi, 0.05 * np.pi)
+    angle_degrees = 180 * angle_radians / np.pi
+    sin_values = np.sin(angle_radians)
+    cos_values = np.cos(angle_radians)
+
+    plot_view.add_index_data('Angle (radians)', angle_radians)
+    plot_view.add_index_data('Angle (degrees)', angle_degrees)
+    plot_view.add_curve_data('Sin', sin_values)
+    plot_view.add_curve_data('Cos', cos_values)
+
+    plot_view.plot_container = plot_view.create_the_plot()
+    plot_view.configure_traits()
+
+
+    # RESET PAN
+    # plotter.plot.range2d.x_range.reset()
+    # plotter.plot.range2d.y_range.reset()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+if __name__ == '__main__':
+    #SimulationResultsPlotter().configure_traits()
 
     # from comm.modulators import PSK
     # SNR = np.arange(0, 20, 3)

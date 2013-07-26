@@ -188,9 +188,9 @@ def _parse_range_expr(value):
     return value
 
 
-# TODO: Check agains the 'min' and 'max'. For now they are ignored.
 def _real_numpy_array_check(value, min=None, max=None):
-    """Parse and validate `value` as a numpy array.
+    """
+    Parse and validate `value` as a numpy array.
 
     Value can be either a single number, a range expression in the form of
     min:max or min:step:max, or even a list containing numbers and range
@@ -198,20 +198,21 @@ def _real_numpy_array_check(value, min=None, max=None):
 
     Notes:
     ------
-    You can either separate the values with commas or spaces. However, if
-    you separate with spaces the values should be brackets, while if you
-    separate with commands there should be no brackets.
+    You can either separate the values with commas or spaces (any comma
+    will have the same effect as a space). However, if you separate with
+    spaces the values should be brackets, while if you separate with
+    commands there should be no brackets.
     .. code::
         SNR = 0,5,10:20
         SNR = [0 5 10:20]
     """
     import validate
-
     if isinstance(value, str):
         # Remove '[' and ']' if they exist.
         if value[0] == '[' and value[-1] == ']':
             value = value[1:-1].strip()
-            value = value.split()
+            value = value.replace(',', ' ')  # Replace any commas by a space
+            value = value.split()  # Split based on spaces
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Test if it is a list or not
@@ -220,7 +221,7 @@ def _real_numpy_array_check(value, min=None, max=None):
         # expression' that can be parsed with _parse_range_expr. We simple
         # apply _real_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
-        value = [_real_numpy_array_check(a) for a in value]
+        value = [_real_numpy_array_check(a, min, max) for a in value]
         value = np.hstack(value)
 
     else:
@@ -231,6 +232,16 @@ def _real_numpy_array_check(value, min=None, max=None):
             value = np.array([value])
         except validate.VdtTypeError:
             value = _parse_range_expr(value)
+
+    # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
+    if min is not None:
+        if value.min() < min:
+            raise validate.VdtValueTooSmallError(value.min())
+
+    if max is not None:
+        if value.max() > max:
+            raise validate.VdtValueTooBigError(value.max())
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return value
 # xxxxxxxxxx Module Functions - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
