@@ -620,7 +620,7 @@ if __name__ == '__main__1':
 
 
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
     print "Simulating Max SINR algorithm"
     max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
@@ -635,7 +635,7 @@ if __name__ == '__main__1':
 
 
 # xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     params = SimulationParameters.load_from_config_file('ia_config_file.txt')
     K = params['K']

@@ -390,6 +390,26 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             result_invalid.update(10)
 
+    def test_update_with_accumulate(self):
+        result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+        result1.update(13)
+        result1.update(30)
+        self.assertEqual(result1._value, 43)
+        self.assertEqual(result1.get_result(), 43)
+        self.assertEqual(result1._total, 0)
+        self.assertEqual(result1._value_list, [13, 30])
+        self.assertEqual(result1._total_list, [])
+
+        result2 = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        result2.update(3, 10)
+        result2.update(6, 7)
+        result2.update(1, 15)
+        self.assertEqual(result2._value, 10)
+        self.assertEqual(result2._total, 32)
+        self.assertEqual(result2.get_result(), 0.3125)
+        self.assertEqual(result2._value_list, [3, 6, 1])
+        self.assertEqual(result2._total_list, [10, 7, 15])
+
     def test_merge(self):
         # Test merge of Results of SUMTYPE
         self.result1.update(13)
@@ -429,7 +449,34 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.result1.merge(result5)
 
-    def test_test_representation(self):
+    def test_merge_with_accumulate(self):
+        result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+        result1.update(13)
+        result1.update(30)
+        result1_other = Result.create("name", Result.SUMTYPE, 11, accumulate_values=True)
+        result1_other.update(22)
+        result1_other.update(4)
+        result1.merge(result1_other)
+        self.assertEqual(result1.get_result(), 80)
+        self.assertEqual(result1._value_list, [13, 30, 11, 22, 4])
+        self.assertEqual(result1._total_list, [])
+
+        result2 = Result('name2', Result.RATIOTYPE, accumulate_values=True)
+        result2.update(3, 10)
+        result2.update(6, 7)
+        result2.update(1, 15)
+
+        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50, accumulate_values=True)
+        result2_other.update(12, 18)
+        result2.merge(result2_other)
+        self.assertEqual(result2._value, 56)
+        self.assertEqual(result2._value_list, [3, 6, 1, 34, 12])
+        self.assertEqual(result2._total, 100)
+        self.assertEqual(result2._total_list, [10, 7, 15, 50, 18])
+        self.assertEqual(result2.get_result(), 0.56)
+        self.assertEqual(result2.num_updates, 5)
+
+    def test_representation(self):
         self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
         self.assertEqual(self.result3.__repr__(),

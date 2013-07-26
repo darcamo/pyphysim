@@ -235,10 +235,16 @@ def _real_numpy_array_check(value, min=None, max=None):
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
     if min is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
+        # to a float
+        min = float(min)
         if value.min() < min:
             raise validate.VdtValueTooSmallError(value.min())
 
     if max is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
+        # to a float
+        max = float(max)
         if value.max() > max:
             raise validate.VdtValueTooBigError(value.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1338,7 +1344,7 @@ class SimulationParameters(object):
         # Note that we need to convert _unpacked_parameters_set to a list,
         # since a set has no native HDF5 equivalent.
 
-        # TODO: Currently the atrybute will be saved as a python object,
+        # TODO: Currently the atribute will be saved as a python object,
         # but it should be an array of strings.
         pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(self._unpacked_parameters_set))
 
@@ -1939,7 +1945,7 @@ class Result(object):
         MISCTYPE: "MISCTYPE",
     }
 
-    def __init__(self, name, update_type_code):
+    def __init__(self, name, update_type_code, accumulate_values=False):
         self.name = name
         self._update_type_code = update_type_code
         self._value = 0
@@ -1947,9 +1953,23 @@ class Result(object):
         self.num_updates = 0  # Number of times the Result object was
                               # updated
 
+        # Accumulation of values
+        self._accumulate_values_bool = accumulate_values
+        self._value_list = []
+        self._total_list = []
+
+    @property
+    def accumulate_values_bool(self):
+        """
+        Property to see if values are accumulated of not during a call to the
+        `update` method.
+        """
+        return self._accumulate_values_bool
+
     @staticmethod
-    def create(name, update_type, value, total=0):
-        """Create a Result object and update it with `value` and `total` at
+    def create(name, update_type, value, total=0, accumulate_values=False):
+        """
+        Create a Result object and update it with `value` and `total` at
         the same time.
 
         Equivalent to creating the object and then calling its
@@ -1966,17 +1986,28 @@ class Result(object):
         total : same type as `value`
             Total value of the result (used only for the RATIOTYPE and
             ignored for the other types).
+        accumulate_values : bool
+            If True, then the values `value` and `total` will be
+            accumulated in the `update` method. This means that the Result
+            object will use more memory as more and more values are
+            accumulated, but you will be able to perform calculations using
+            all the values instead of a single "updated value".
 
         Returns
         -------
         result : A Result object.
             The new Result object.
 
+        Notes
+        -----
+        Even if accumulate_values is True the values will not be
+        accumulated for the MISCTYPE.
+
         See also
         --------
         update
         """
-        result = Result(name, update_type)
+        result = Result(name, update_type, accumulate_values)
         result.update(value, total)
         return result
 
@@ -2063,6 +2094,8 @@ class Result(object):
         def __update_SUMTYPE_value(value, dummy):
             """Update the Result object when its type is SUMTYPE."""
             self._value += value
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
 
         def __update_RATIOTYPE_value(value, total):
             """Update the Result object when its type is RATIOTYPE.
@@ -2077,6 +2110,10 @@ class Result(object):
 
             self._value += value
             self._total += total
+
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
+                self._total_list.append(total)
 
         def __update_by_replacing_current_value(value, dummy):
             """Update the Result object when its type is MISCTYPE."""
@@ -2103,6 +2140,9 @@ class Result(object):
         other : Result object
             Another Result object.
         """
+        # Both objects must be set to either accumulate or not accumulate
+        assert self._accumulate_values_bool == other._accumulate_values_bool
+
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
@@ -2113,6 +2153,10 @@ class Result(object):
         self.num_updates += other.num_updates
         self._value += other._value  # pylint: disable=W0212
         self._total += other._total  # pylint: disable=W0212
+
+        if self._accumulate_values_bool is True:
+            self._value_list.extend(other._value_list)
+            self._total_list.extend(other._total_list)
 
     def get_result(self):
         """Get the result stored in the Result object.
