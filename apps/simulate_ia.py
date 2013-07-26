@@ -619,38 +619,47 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# 120 Iterations
+# xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
-    alt_min_results = SimulationResults.load_from_file('ia_alt_min_results_4-PSK_2x2_(1)_120_IA_Iter.pickle')
-    closed_form_results = SimulationResults.load_from_file('ia_closed_form_results_4-PSK_2x2_(1)_120_IA_Iter.pickle')
-    max_sinrn_results = SimulationResults.load_from_file('ia_max_sinr_results_4-PSK_2x2_(1)_120_IA_Iter.pickle')
-    min_leakage_results = SimulationResults.load_from_file('ia_min_leakage_results_4-PSK_2x2_(1)_120_IA_Iter.pickle')
+    print "Simulating Max SINR algorithm"
+    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
-    plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_ber(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+    print "Simulating Alternating Min. algorithm"
+    alt_min_results, alt_min_filename = simulate_alternating()
 
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
 
-# 60 Iterations
-if __name__ == '__main__1':
-    alt_min_results = SimulationResults.load_from_file('ia_alt_min_results_4-PSK_2x2_(1)_60_IA_Iter.pickle')
-    closed_form_results = SimulationResults.load_from_file('ia_closed_form_results_4-PSK_2x2_(1)_60_IA_Iter.pickle')
-    max_sinrn_results = SimulationResults.load_from_file('ia_max_sinr_results_4-PSK_2x2_(1)_60_IA_Iter.pickle')
-    min_leakage_results = SimulationResults.load_from_file('ia_min_leakage_results_4-PSK_2x2_(1)_60_IA_Iter.pickle')
-
-    plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_ber(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+    print "Simulating Min. Leakage algorithm"
+    min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
 
-# 120 Iterations with capacity
-if __name__ == '__main__1':
-    alt_min_results = SimulationResults.load_from_file('ia_alt_min_results_4-PSK_2x2_(1)_120_IA_Iter_C.pickle')
-    closed_form_results = SimulationResults.load_from_file('ia_closed_form_results_4-PSK_2x2_(1)_120_IA_Iter_C.pickle')
-    max_sinrn_results = SimulationResults.load_from_file('ia_max_sinr_results_4-PSK_2x2_(1)_120_IA_Iter_C.pickle')
-    min_leakage_results = SimulationResults.load_from_file('ia_min_leakage_results_4-PSK_2x2_(1)_120_IA_Iter_C.pickle')
+# xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':
+    # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    params = SimulationParameters.load_from_config_file('ia_config_file.txt')
+    K = params['K']
+    Nr = params['Nr']
+    Nt = params['Nt']
+    Ns = params['Ns']
+    max_iterations = params['max_iterations']
+    M = params['M']
+    modulator = params['modulator']
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter'.format(**params.parameters)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    alt_min_results = SimulationResults.load_from_file(
+        'ia_alt_min_{0}.pickle'.format(base_name))
+    closed_form_results = SimulationResults.load_from_file(
+        'ia_closed_form_{0}.pickle'.format(base_name))
+    max_sinrn_results = SimulationResults.load_from_file(
+        'ia_max_sinr_{0}.pickle'.format(base_name))
+    min_leakage_results = SimulationResults.load_from_file(
+        'ia_min_leakage_{0}.pickle'.format(base_name))
 
     plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
     plot_sum_capacity(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
@@ -663,37 +672,3 @@ if __name__ == '__main__1':
 
     plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
     plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-
-
-# 60 Iterations with capacity
-if __name__ == '__main__1':
-    alt_min_results = SimulationResults.load_from_file('ia_alt_min_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')
-    # closed_form_results = SimulationResults.load_from_file('ia_closed_form_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')
-    # max_sinrn_results = SimulationResults.load_from_file('ia_max_sinr_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')
-    # min_leakage_results = SimulationResults.load_from_file('ia_min_leakage_results_4-PSK_2x2_(1)_60_IA_Iter_C.pickle')
-
-    plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_sum_capacity(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-
-    # plot_ber(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    # plot_sum_capacity(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-
-    # plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    # plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-
-    # plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    # plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-
-
-if __name__ == '__main__':
-    print "Simulating Max SINR algorithm"
-    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
-
-    print "Simulating Alternating Min. algorithm"
-    alt_min_results, alt_min_filename = simulate_alternating()
-
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
-
-    print "Simulating Min. Leakage algorithm"
-    min_leakage_results, min_leakage_filename = simulate_min_leakage()
