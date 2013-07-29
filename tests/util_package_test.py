@@ -1220,6 +1220,25 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
+    def test_calc_confidence_interval(self):
+        # xxxxx Test for a 95% confidence interval xxxxxxxxxxxxxxxxxxxxxxxx
+        mean = 250.2
+        std = 2.5
+        n = 25
+        interval = misc.calc_confidence_interval(mean, std, n, P=95)
+        expected_interval = [249.22, 251.18]
+        np.testing.assert_array_almost_equal(interval, expected_interval)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test for a 90% confidence interval xxxxxxxxxxxxxxxxxxxxxxxx
+        mean = 101.82
+        std = 1.2
+        n = 6
+        interval = misc.calc_confidence_interval(mean, std, n, P=90)
+        expected_interval = [101.01411787,  102.62588213]
+        np.testing.assert_array_almost_equal(interval, expected_interval)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
