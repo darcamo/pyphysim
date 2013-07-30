@@ -204,7 +204,7 @@ def randn_c(*args):
         np.random.randn(*args) + (1j * np.random.randn(*args)))
 
 
-def randn_c_RS(RS, *args):
+def randn_c_RS(RS, *args):  # pragma: no cover
     """Generates a random circularly complex gaussian matrix.
 
     This is essentially the same as the the randn_c function. The only
@@ -294,7 +294,7 @@ def int2bits(n):
 # integer. However, we are writing the documentation as if it were a numpy
 # ufunc because we will create the count_bits ufunc with it using
 # numpy.vectorize and count_bits will inherit the documentation.
-def _count_bits_single_element(n):
+def _count_bits_single_element(n):  # pragma: no cover
     """Count the number of bits that are set in `n`.
 
     Parameters
@@ -557,15 +557,73 @@ def calc_autocorr(x):
     # instead.
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
+
+def calc_confidence_interval(mean, std, n, P=95):
+    """
+    Calculate the confidence interval that contains the true mean (of a
+    normal random variable) with a certain probability `P`, given the
+    measured `mean`, standard deviation `std` for number of samples `n`.
+
+    Only a few values are allowed for the probability `P`, which are: 50%,
+    60%, 70%, 80%, 90%, 95%, 98%, 99%, 99.5%, 99.8% and 99.9%.
+
+    Parameters
+    ----------
+    mean : float
+        The measured mean value.
+    std : float
+        The measured standard deviation.
+    n : int
+        The number of samples used to measure the mean and standard
+        deviation.
+    P : float
+        The desired confidence (probability in %) that true value is inside
+        the calculated interval.
+
+    Returns
+    -------
+    Interval : Numpy (float) array with two elements.
+
+    Notes
+    -----
+    This function assumes that the estimated random variable is a normal
+    variable.
+    """
+    # Dictionary that maps a desired "confidence" to the corresponding
+    # critical value. See https://en.wikipedia.org/wiki/Student%27s_t-distribution
+    table_of_values = { 50:0.674,
+                        60:0.842,
+                        70:1.036,
+                        80:1.282,
+                        90:1.645,
+                        95:1.960,
+                        98:2.326,
+                        99:2.576,
+                        99.5:2.807,
+                        99.8:3.090,
+                        99.9:3.291 }
+
+    # Critical value used in the calculation of the confidence interval
+    C = table_of_values[P]
+
+    norm_std = std / np.sqrt(n)
+    min_value = mean - (C * norm_std)
+    max_value = mean + (C * norm_std)
+
+    return np.array([min_value, max_value])
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxx Load Cython reimplementation of functions here xxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 try:
     # If the misc_c.so extension was compiled then any method defined there
     # will replace the corresponding method defined here.
     from c_extensions.misc_c import *
-except Exception:
+except Exception:  # pragma: no cover
     pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

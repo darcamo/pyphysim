@@ -211,7 +211,26 @@ class SimplePskSimulationRunner(SimulationRunner, HasTraits):
 
         return simResults
 
-    def _keep_going(self, current_params, simulation_results):
+    def _keep_going(self, current_params, simulation_results, current_rep):
+        """
+        Check if the simulation should continue or stop.
+
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            SimulationParameters object with the parameters of the
+            simulation.
+        current_sim_results : SimulationResults object
+            SimulationResults object from the last iteration (merged with
+            all the previous results)
+        current_rep : int
+            Number of iterations already run.
+
+        Returns
+        -------
+        result : bool
+            True if the simulation should continue or False otherwise.
+        """
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors
         cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()

@@ -122,15 +122,31 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
         return simResults
 
-    def _keep_going(self, current_parameters, simulation_results):
-        """The _keep_going method is not really required, but it can speed
-        up the simulation.
+    def _keep_going(self, current_parameters, simulation_results, current_rep):
+        """
+        The _keep_going method is not really required, but it can speed up the
+        simulation.
 
         The _keep_going method should return True if more iterations of
         _run_simulation should be run. If we can stop the simulation
         earlier because some condition was achieved, then _keep_going
         should return False to indicate that.
 
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            SimulationParameters object with the parameters of the
+            simulation.
+        current_sim_results : SimulationResults object
+            SimulationResults object from the last iteration (merged with
+            all the previous results)
+        current_rep : int
+            Number of iterations already run.
+
+        Returns
+        -------
+        result : bool
+            True if the simulation should continue or False otherwise.
         """
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors

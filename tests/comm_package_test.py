@@ -1442,6 +1442,9 @@ class BPSKTestCase(unittest.TestCase):
         """Called before each test."""
         self.bpsk_obj = modulators.BPSK()
 
+    def test_name(self):
+        self.assertEqual(self.bpsk_obj.name, "BPSK")
+
     def test_constellation(self):
         self.assertEqual(self.bpsk_obj.M, 2)
         self.assertAlmostEqual(self.bpsk_obj.K, 1)

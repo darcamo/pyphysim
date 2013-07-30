@@ -160,7 +160,7 @@ import itertools
 import copy
 import numpy as np
 
-from util.misc import pretty_time
+from util.misc import pretty_time, calc_confidence_interval
 from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, center_message
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
@@ -235,10 +235,16 @@ def _real_numpy_array_check(value, min=None, max=None):
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
     if min is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
+        # to a float
+        min = float(min)
         if value.min() < min:
             raise validate.VdtValueTooSmallError(value.min())
 
     if max is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
+        # to a float
+        max = float(max)
         if value.max() > max:
             raise validate.VdtValueTooBigError(value.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -386,27 +392,31 @@ class SimulationRunner(object):
         raise NotImplementedError("'_run_simulation' must be implemented in a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
-    @staticmethod
-    def _keep_going(current_params, current_sim_results):
-        """Check if the simulation should continue or stop.
+    def _keep_going(self, current_params, current_sim_results, current_rep):
+        """
+        Check if the simulation should continue or stop.
 
         This function may be reimplemented in the derived class if a stop
-        condition besides the number of iterations is desired.  The idea is
+        condition besides the number of iterations is desired. The idea is
         that _run_simulation returns a SimulationResults object, which is
         then passed to _keep_going, which is then in charge of deciding if
         the simulation should stop or not.
 
         Parameters
         ----------
+        current_params : SimulationParameters object
+            SimulationParameters object with the parameters of the
+            simulation.
         current_sim_results : SimulationResults object
             SimulationResults object from the last iteration (merged with
             all the previous results)
+        current_rep : int
+            Number of iterations already run.
 
         Returns
         -------
         result : bool
             True if the simulation should continue or False otherwise.
-
         """
         # If this function is not reimplemented in a subclass it always
         # returns True. Therefore, the simulation will only stop when the
@@ -560,7 +570,7 @@ class SimulationRunner(object):
             current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
-            while (self._keep_going(current_params, current_sim_results)
+            while (self._keep_going(current_params, current_sim_results, current_rep)
                    and
                    current_rep < self.rep_max):
                 current_sim_results.merge_all_results(
@@ -650,7 +660,7 @@ class SimulationRunner(object):
             current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
-            while (obj._keep_going(current_params, current_sim_results)
+            while (obj._keep_going(current_params, current_sim_results, current_rep)
                    and
                    current_rep < obj.rep_max):
                 current_sim_results.merge_all_results(
@@ -1247,7 +1257,7 @@ class SimulationParameters(object):
         add_params(params, conf_file_parser)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if save_parsed_file is True:
+        if save_parsed_file is True:  # pragma: no cover
             # xxxxx Write the parsed config file to disk xxxxxxxxxxxxxxxxxx
             # This will add the default values if they are not present. If
             # the file does not exist yet and all default values are
@@ -1338,7 +1348,7 @@ class SimulationParameters(object):
         # Note that we need to convert _unpacked_parameters_set to a list,
         # since a set has no native HDF5 equivalent.
 
-        # TODO: Currently the atrybute will be saved as a python object,
+        # TODO: Currently the atribute will be saved as a python object,
         # but it should be an array of strings.
         pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(self._unpacked_parameters_set))
 
@@ -1654,6 +1664,33 @@ class SimulationResults(object):
         """
         return [i.get_result() for i in self[result_name]]
 
+    def get_result_values_confidence_intervals(self, result_name, P=95):
+        """
+        Get the values for the results with name `result_name`.
+
+        This method is similar to the `get_result_values_list` method, but
+        instead of returning a list with the values it will return a list
+        with the confidence intervals for those values.
+
+        Parameters
+        ----------
+        result_name : str
+            The name of the desired result.
+        P : float
+
+        Returns
+        -------
+        confidence_interval_list : list
+            A list of Numpy (float) arrays. Each element in the list is an
+            array with two elements, corresponding to the lower and upper
+            limits of the confidence interval.8
+
+        See also
+        --------
+        util.misc.calc_confidence_interval
+        """
+        return [i.get_confidence_interval(P) for i in self[result_name]]
+
     def __getitem__(self, key):
         """Get the value of the desired result
 
@@ -1939,7 +1976,7 @@ class Result(object):
         MISCTYPE: "MISCTYPE",
     }
 
-    def __init__(self, name, update_type_code):
+    def __init__(self, name, update_type_code, accumulate_values=False):
         self.name = name
         self._update_type_code = update_type_code
         self._value = 0
@@ -1947,9 +1984,23 @@ class Result(object):
         self.num_updates = 0  # Number of times the Result object was
                               # updated
 
+        # Accumulation of values
+        self._accumulate_values_bool = accumulate_values
+        self._value_list = []
+        self._total_list = []
+
+    @property
+    def accumulate_values_bool(self):
+        """
+        Property to see if values are accumulated of not during a call to the
+        `update` method.
+        """
+        return self._accumulate_values_bool
+
     @staticmethod
-    def create(name, update_type, value, total=0):
-        """Create a Result object and update it with `value` and `total` at
+    def create(name, update_type, value, total=0, accumulate_values=False):
+        """
+        Create a Result object and update it with `value` and `total` at
         the same time.
 
         Equivalent to creating the object and then calling its
@@ -1966,17 +2017,28 @@ class Result(object):
         total : same type as `value`
             Total value of the result (used only for the RATIOTYPE and
             ignored for the other types).
+        accumulate_values : bool
+            If True, then the values `value` and `total` will be
+            accumulated in the `update` (and merge) method(s). This means
+            that the Result object will use more memory as more and more
+            values are accumulated, but having all values sometimes is
+            useful to perform statistical calculations.
 
         Returns
         -------
         result : A Result object.
             The new Result object.
 
+        Notes
+        -----
+        Even if accumulate_values is True the values will not be
+        accumulated for the MISCTYPE.
+
         See also
         --------
         update
         """
-        result = Result(name, update_type)
+        result = Result(name, update_type, accumulate_values)
         result.update(value, total)
         return result
 
@@ -2057,12 +2119,12 @@ class Result(object):
 
             """
             raise ValueError("Can't update a Result object of type '{0}'".format(self._update_type_code))
-            # print("Warning: update not performed for unknown type %s" %
-            #       self._update_type_code)
 
         def __update_SUMTYPE_value(value, dummy):
             """Update the Result object when its type is SUMTYPE."""
             self._value += value
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
 
         def __update_RATIOTYPE_value(value, total):
             """Update the Result object when its type is RATIOTYPE.
@@ -2078,9 +2140,15 @@ class Result(object):
             self._value += value
             self._total += total
 
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
+                self._total_list.append(total)
+
         def __update_by_replacing_current_value(value, dummy):
             """Update the Result object when its type is MISCTYPE."""
             self._value = value
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Now we fill the dictionary with the functions
@@ -2103,6 +2171,10 @@ class Result(object):
         other : Result object
             Another Result object.
         """
+        # Both objects must be set to either accumulate or not accumulate
+        assert self._accumulate_values_bool == other._accumulate_values_bool, (
+            "Both objects must either accumulate or not accumulate values")
+
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
@@ -2113,6 +2185,10 @@ class Result(object):
         self.num_updates += other.num_updates
         self._value += other._value  # pylint: disable=W0212
         self._total += other._total  # pylint: disable=W0212
+
+        if self._accumulate_values_bool is True:
+            self._value_list.extend(other._value_list)
+            self._total_list.extend(other._total_list)
 
     def get_result(self):
         """Get the result stored in the Result object.
@@ -2134,6 +2210,46 @@ class Result(object):
             else:
                 return self._value
 
+    def get_confidence_interval(self, P=95):
+        """
+        Get the confidence inteval that contains the true result with a given
+        probability `P`.
+
+        Parameters
+        ----------
+        P : float
+            The desired confidence (probability in %) that true value is
+            inside the calculated interval. The possible values are
+            described in the documentaiton of the
+            `util.misc.calc_confidence_interval` function`
+
+        Returns
+        -------
+        Interval : Numpy (float) array with two elements.
+
+        See also
+        --------
+        util.misc.calc_confidence_interval
+        """
+        if len(self._value_list) == 0:
+            if self._accumulate_values_bool is False:
+                message = "get_confidence_interval: The accumulate_values option must be set to True."
+            else:
+                message = "get_confidence_interval: There are no stored values yet."
+            raise RuntimeError(message)
+
+        values = np.array(self._value_list, dtype=float)
+        if self._update_type_code == Result.RATIOTYPE:
+            values = values / np.array(self._total_list, dtype=float)
+
+        mean = values.mean()
+        std = values.std()
+        n = values.size
+
+        return calc_confidence_interval(mean, std, n, P)
+
+    # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # variables
     @staticmethod
     def save_to_hdf5_dataset(parent, results_list):
         """Create an HDF5 dataset in `parent` and fill it with the Result
@@ -2171,6 +2287,8 @@ class Result(object):
         # Pytables would do.
         ds.attrs.create("TITLE", name)
 
+    # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # variables
     @staticmethod
     def save_to_pytables_table(parent, results_list):
         """

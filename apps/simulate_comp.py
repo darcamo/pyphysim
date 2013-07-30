@@ -918,7 +918,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         return simResults
 
-    # def _keep_going(self, current_sim_results):
+    # def _keep_going(self, current_sim_results, current_rep):
     #     ber_result = current_sim_results['ber'][-1]
     #     num_bit_errors = ber_result._value
     #     return num_bit_errors < self.max_bit_errors
@@ -932,13 +932,17 @@ class CompSimulationRunner(simulations.SimulationRunner):
         then finds the transmit power that gives the desired mean SNR
         at the cell border.
 
-        Arguments:
-        - `SNR_dB`: SNR value (in dB)
-        - `N0_dBm`: Noise power (in dBm)
-        - `cell_radius`: Cell radius (in Km)
-        - `path_loss_obj`: Object of a pathloss class used to calculate
-                           the path loss.
+        Parameters
+        ----------
+        SNR_dB : SNR value (in dB)
+        N0_dBm : Noise power (in dBm)
+        cell_radius : Cell radius (in Km)
+        path_loss_obj : Object of a pathloss class used to calculate the path loss.
 
+        Returns
+        -------
+        transmit_power : float
+            Desired transmit power (in linear scale).
         """
         path_loss_border = path_loss_obj.calc_path_loss(cell_radius)
         snr = conversion.dB2Linear(SNR_dB)

@@ -141,8 +141,7 @@ class MIMOSimulationRunner(SimulationRunner):
 
         return simResults
 
-    # @staticmethod
-    # def _keep_going(current_params, simulation_results):
+    # def _keep_going(self, current_params, simulation_results, current_rep):
     #     #return True
     #     cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
     #     max_bit_errors = current_params['max_bit_errors']

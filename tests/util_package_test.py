@@ -390,6 +390,37 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             result_invalid.update(10)
 
+    def test_update_with_accumulate(self):
+        result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+        self.assertEqual(result1.accumulate_values_bool, result1._accumulate_values_bool)
+        result1.update(13)
+        result1.update(30)
+        self.assertEqual(result1._value, 43)
+        self.assertEqual(result1.get_result(), 43)
+        self.assertEqual(result1._total, 0)
+        self.assertEqual(result1._value_list, [13, 30])
+        self.assertEqual(result1._total_list, [])
+
+        result2 = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        result2.update(3, 10)
+        result2.update(6, 7)
+        result2.update(1, 15)
+        self.assertEqual(result2._value, 10)
+        self.assertEqual(result2._total, 32)
+        self.assertEqual(result2.get_result(), 0.3125)
+        self.assertEqual(result2._value_list, [3, 6, 1])
+        self.assertEqual(result2._total_list, [10, 7, 15])
+
+        result3 = Result('name', Result.MISCTYPE, accumulate_values=True)
+        result3.update(3)
+        result3.update("some string")
+        result3.update(2)
+        self.assertEqual(result3._value, 2)
+        self.assertEqual(result3._total, 0)
+        self.assertEqual(result3.get_result(), 2)
+        self.assertEqual(result3._value_list, [3, "some string", 2])
+        self.assertEqual(result3._total_list, [])
+
     def test_merge(self):
         # Test merge of Results of SUMTYPE
         self.result1.update(13)
@@ -429,7 +460,34 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.result1.merge(result5)
 
-    def test_test_representation(self):
+    def test_merge_with_accumulate(self):
+        result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+        result1.update(13)
+        result1.update(30)
+        result1_other = Result.create("name", Result.SUMTYPE, 11, accumulate_values=True)
+        result1_other.update(22)
+        result1_other.update(4)
+        result1.merge(result1_other)
+        self.assertEqual(result1.get_result(), 80)
+        self.assertEqual(result1._value_list, [13, 30, 11, 22, 4])
+        self.assertEqual(result1._total_list, [])
+
+        result2 = Result('name2', Result.RATIOTYPE, accumulate_values=True)
+        result2.update(3, 10)
+        result2.update(6, 7)
+        result2.update(1, 15)
+
+        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50, accumulate_values=True)
+        result2_other.update(12, 18)
+        result2.merge(result2_other)
+        self.assertEqual(result2._value, 56)
+        self.assertEqual(result2._value_list, [3, 6, 1, 34, 12])
+        self.assertEqual(result2._total, 100)
+        self.assertEqual(result2._total_list, [10, 7, 15, 50, 18])
+        self.assertEqual(result2.get_result(), 0.56)
+        self.assertEqual(result2.num_updates, 5)
+
+    def test_representation(self):
         self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
         self.assertEqual(self.result3.__repr__(),
@@ -443,6 +501,37 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
 
+    def test_calc_confidence_interval(self):
+        # Test if an exceptions is raised for a Result object of the
+        # MISCTYPE update type.
+        with self.assertRaises(RuntimeError):
+            # A result object of the MISCTYPE type cannot use the
+            # calc_confidence_interval method, since this update ignores
+            # the accumulate_values option and never accumulates any value.
+            self.result3.get_confidence_interval()
+
+        # Test if an exception is raised if the accumulate_values option
+        # was not set to True
+        with self.assertRaises(RuntimeError):
+            self.result1.get_confidence_interval()
+
+        result = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        # Test if an exception is raised if there are not stored values yet
+        with self.assertRaises(RuntimeError):
+            result.get_confidence_interval()
+
+        # Now lets finally store some values.
+        result.update(10, 30)
+        result.update(3, 24)
+        result.update(15, 42)
+        result.update(5, 7)
+
+        # Calculate the expected confidence interval
+        A = np.array(result._value_list, dtype=float) / np.array(result._total_list, dtype=float)
+        expected_confidence_interval = misc.calc_confidence_interval(A.mean(), A.std(), A.size, P=95)
+        confidence_interval = result.get_confidence_interval(P=95)
+        np.testing.assert_array_almost_equal(expected_confidence_interval,
+                                             confidence_interval)
 
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
@@ -581,6 +670,35 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(
             self.simresults.get_result_values_list('lili'),
             ['a string'])
+
+    def test_get_result_values_confidence_intervals(self):
+        simresults = SimulationResults()
+        result = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        result_other = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        result.update(3, 10)
+        result.update(7, 9)
+        result.update(2, 5)
+        result.update(3, 3)
+        result.update(7, 15)
+
+        result_other.update(13, 15)
+        result_other.update(15, 20)
+        result_other.update(4, 9)
+
+        simresults.add_result(result)
+        simresults.append_result(result_other)
+
+        P = 95  # Confidence level of 95%
+        list_of_confidence_intervals = simresults.get_result_values_confidence_intervals(
+            'name', P)
+
+        # Calculates the expected list of confidence intervals
+        expected_list_of_confidence_intervals = [i.get_confidence_interval(P) for i in simresults['name']]
+
+        # Test of they are equal
+        for a, b in zip(list_of_confidence_intervals,
+                        expected_list_of_confidence_intervals):
+            np.testing.assert_array_almost_equal(a, b)
 
     def test_save_to_and_load_from_file(self):
         filename = 'results.pickle'
@@ -929,7 +1047,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         M=integer(min=4, max=512, default=4)
         modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
         [IA Algorithm]
-        max_iterations=integer(min=1, default=60)
+        max_iterations=integer(min=1)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
         params2 = SimulationParameters.load_from_config_file(
@@ -943,6 +1061,26 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(params2['max_iterations'], 60)
         self.assertEqual(params2['unpacked_parameters'], ['SNR'])
         self.assertEqual(params2.unpacked_parameters, ['SNR'])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Lets create an invalid config file and try to load the parameters
+        # First we provide an invalid value for M
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=-4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.close()
+
+        with self.assertRaises(Exception):
+            params2 = SimulationParameters.load_from_config_file(
+                filename, spec)
+
+        # Now we do not provide the required parameter max_iterations
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]")
+        fid.close()
+
+        with self.assertRaises(Exception):
+            params2 = SimulationParameters.load_from_config_file(
+                filename, spec)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
@@ -981,7 +1119,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     def test_keep_going(self):
         # the _keep_going method in the SimulationRunner class should
         # return True
-        self.assertTrue(self.runner._keep_going(None, None))
+        self.assertTrue(self.runner._keep_going(None, None, None))
 
     def test_simulate(self):
         # First we need to create a dummy subclass of SimulationRunner that
@@ -1172,6 +1310,25 @@ class MiscFunctionsTestCase(unittest.TestCase):
         autocor = misc.calc_autocorr(x)
         expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
+
+    def test_calc_confidence_interval(self):
+        # xxxxx Test for a 95% confidence interval xxxxxxxxxxxxxxxxxxxxxxxx
+        mean = 250.2
+        std = 2.5
+        n = 25
+        interval = misc.calc_confidence_interval(mean, std, n, P=95)
+        expected_interval = [249.22, 251.18]
+        np.testing.assert_array_almost_equal(interval, expected_interval)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test for a 90% confidence interval xxxxxxxxxxxxxxxxxxxxxxxx
+        mean = 101.82
+        std = 1.2
+        n = 6
+        interval = misc.calc_confidence_interval(mean, std, n, P=90)
+        expected_interval = [101.01411787,  102.62588213]
+        np.testing.assert_array_almost_equal(interval, expected_interval)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

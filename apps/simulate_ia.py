@@ -161,16 +161,18 @@ class IASimulationRunner(SimulationRunner):
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
-        berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits)
+        berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits,
+                                  accumulate_values=True)
 
         serResult = Result.create(
-            "ser", Result.RATIOTYPE, symbolErrors, numSymbols)
+            "ser", Result.RATIOTYPE, symbolErrors, numSymbols, accumulate_values=True)
 
         ia_costResult = Result.create(
-            "ia_cost", Result.RATIOTYPE, ia_cost, 1)
+            "ia_cost", Result.RATIOTYPE, ia_cost, 1, accumulate_values=True)
 
         sum_capacityResult = Result.create(
-            "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1)
+            "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1,
+            accumulate_values=True)
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
@@ -184,6 +186,50 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
+
+    def _keep_going(self, current_params, current_sim_results, current_rep):
+        """
+        Check if the simulation should continue or stop.
+
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            SimulationParameters object with the parameters of the
+            simulation.
+        current_sim_results : SimulationResults object
+            SimulationResults object from the last iteration (merged with
+            all the previous results)
+        current_rep : int
+            Number of iterations already run.
+
+        Returns
+        -------
+        result : bool
+            True if the simulation should continue or False otherwise.
+        """
+        # For each multiple of 300 iterations we test if the length of the
+        # confidence interval is greater then one tenth of the actual
+        # value. If it is that means that we still need to run more
+        # iterations and thus re return True. If it is not, than we can
+        # stop the iterations for the current parameters and thus we return
+        # false. This choice was arbitrarily, but seems reasonable.
+        if current_rep % 300 == 0:
+            ber_result = current_sim_results['ber'][-1]
+            ber_value = ber_result.get_result()
+            if ber_value == 0.0:
+                return True
+            else:
+                conf_interval = ber_result.get_confidence_interval()
+                error = np.abs(conf_interval[1] - conf_interval[0])
+
+                # If error is lower then one fifth of the current result
+                # and we have runned at least 5000 iterations, then we have
+                # enough and we return False to indicate the simulation of
+                # the current parameters can stop.
+                if error < ber_value/10.0 and current_rep > 5000:
+                    return False
+
+        return True
 
 
 class AlternatingSimulationRunner(IASimulationRunner):
@@ -201,7 +247,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
 
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -250,7 +296,7 @@ class ClosedFormSimulationRunner(IASimulationRunner):
 
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -289,7 +335,7 @@ class MinLeakageSimulationRunner(IASimulationRunner):
 
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -336,7 +382,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
     """
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -391,6 +437,13 @@ def plot_ber(results, plot_title=None, block=True):
     ber = results.get_result_values_list('ber')
     ser = results.get_result_values_list('ser')
 
+    ber_CFs = results.get_result_values_confidence_intervals('ber', P=95)
+    ser_CFs = results.get_result_values_confidence_intervals('ser', P=95)
+
+    ber_errors = np.abs([i[1] - i[0] for i in ber_CFs])
+    ser_errors = np.abs([i[1] - i[0] for i in ser_CFs])
+
+
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
 
@@ -398,8 +451,13 @@ def plot_ber(results, plot_title=None, block=True):
     if SNR.size > 1:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.semilogy(SNR, ber, '--g*', label='BER')
-        ax.semilogy(SNR, ser, '--b*', label='SER')
+
+        # ax.semilogy(SNR, ber, '--g*', label='BER')
+        # ax.semilogy(SNR, ser, '--b*', label='SER')
+
+        ax.errorbar(SNR, ber, ber_errors, fmt='--g*', elinewidth=2.0, label='BER')
+        #ax.errorbar(SNR, ser, ser_errors, fmt='--b*', elinewidth=2.0, label='SER')
+        ax.set_yscale('log')
         plt.xlabel('SNR')
         plt.ylabel('Error')
         if plot_title is not None:
@@ -428,6 +486,9 @@ def plot_sum_capacity(results, plot_title=None, block=True):
 
     # Get the BER and SER from the results object
     sum_capacity = results.get_result_values_list('sum_capacity')
+    # Confidence intervals for the sum capacity values
+    sum_capacity_CFs = results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    errors = np.abs([i[1] - i[0] for i in sum_capacity_CFs])
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
@@ -436,7 +497,8 @@ def plot_sum_capacity(results, plot_title=None, block=True):
     if SNR.size > 1:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.plot(SNR, sum_capacity, '--g*', label='Sum Capacity')
+        # ax.plot(SNR, sum_capacity, '--g*', label='Sum Capacity')
+        ax.errorbar(SNR, sum_capacity, errors, fmt='--g*',label='Sum Capacity', elinewidth=5.0,ecolor='red')
         plt.xlabel('SNR')
         plt.ylabel('Sum Capacity (bits/channel user')
         if plot_title is not None:
@@ -620,22 +682,22 @@ if __name__ == '__main__1':
 
 
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
+
     print "Simulating Max SINR algorithm"
     max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     print "Simulating Alternating Min. algorithm"
     alt_min_results, alt_min_filename = simulate_alternating()
 
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
-
     print "Simulating Min. Leakage algorithm"
     min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
 
 # xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     params = SimulationParameters.load_from_config_file('ia_config_file.txt')
     K = params['K']
@@ -672,3 +734,127 @@ if __name__ == '__main__':
 
     plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
     plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+
+
+if __name__ == '__main__1':
+    # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    params = SimulationParameters.load_from_config_file('ia_config_file.txt')
+    K = params['K']
+    Nr = params['Nr']
+    Nt = params['Nt']
+    Ns = params['Ns']
+    max_iterations = params['max_iterations']
+    M = params['M']
+    modulator = params['modulator']
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter'.format(**params.parameters)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    max_sinrn_results = SimulationResults.load_from_file(
+        'ia_max_sinr_{0}.pickle'.format(base_name))
+
+    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+    # plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+
+
+if __name__ == '__main__1':
+    from matplotlib import pyplot as plt
+
+    # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    params = SimulationParameters.load_from_config_file('ia_config_file.txt')
+    K = params['K']
+    Nr = params['Nr']
+    Nt = params['Nt']
+    Ns = params['Ns']
+    max_iterations = params['max_iterations']
+    M = params['M']
+    modulator = params['modulator']
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter'.format(**params.parameters)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    alt_min_results = SimulationResults.load_from_file(
+        'ia_alt_min_{0}.pickle'.format(base_name))
+    closed_form_results = SimulationResults.load_from_file(
+        'ia_closed_form_{0}.pickle'.format(base_name))
+    max_sinrn_results = SimulationResults.load_from_file(
+        'ia_max_sinr_{0}.pickle'.format(base_name))
+    min_leakage_results = SimulationResults.load_from_file(
+        'ia_min_leakage_{0}.pickle'.format(base_name))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+    # xxxxx Plot BER (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    SNR = np.array(alt_min_results.params['SNR'])
+
+    ber_alt_min = alt_min_results.get_result_values_list('ber')
+    ber_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_errors_alt_min = np.abs([i[1] - i[0] for i in ber_CF_alt_min])
+
+    ber_closed_form = closed_form_results.get_result_values_list('ber')
+    ber_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_errors_closed_form = np.abs([i[1] - i[0] for i in ber_CF_closed_form])
+
+    ber_max_sinr = max_sinrn_results.get_result_values_list('ber')
+    ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_errors_max_sinr = np.abs([i[1] - i[0] for i in ber_CF_max_sinr])
+
+    ber_min_leakage = min_leakage_results.get_result_values_list('ber')
+    ber_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_errors_min_leakage = np.abs([i[1] - i[0] for i in ber_CF_min_leakage])
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.errorbar(SNR, ber_alt_min, ber_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
+    ax.errorbar(SNR, ber_closed_form, ber_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
+    ax.errorbar(SNR, ber_max_sinr, ber_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
+    ax.errorbar(SNR, ber_min_leakage, ber_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+
+    plt.xlabel('SNR')
+    plt.ylabel('BER')
+    title = 'BER for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
+    plt.title(title.format(**alt_min_results.params.parameters))
+
+    ax.set_yscale('log')
+    ax.legend()
+    ax.grid(True, which='both', axis='both')
+    plt.show()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Plot Sum Capacity (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    sum_capacity_alt_min = alt_min_results.get_result_values_list('sum_capacity')
+    sum_capacity_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_errors_alt_min = np.abs([i[1] - i[0] for i in sum_capacity_CF_alt_min])
+
+    sum_capacity_closed_form = closed_form_results.get_result_values_list('sum_capacity')
+    sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form])
+
+    sum_capacity_max_sinr = max_sinrn_results.get_result_values_list('sum_capacity')
+    sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_CF_max_sinr])
+
+    sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
+    sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
+
+    fig2, ax2 = plt.subplots(nrows=1, ncols=1)
+    ax2.errorbar(SNR, sum_capacity_alt_min, sum_capacity_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
+    ax2.errorbar(SNR, sum_capacity_closed_form, sum_capacity_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
+    ax2.errorbar(SNR, sum_capacity_max_sinr, sum_capacity_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
+    ax2.errorbar(SNR, sum_capacity_min_leakage, sum_capacity_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+
+    plt.xlabel('SNR')
+    plt.ylabel('Sum Capacity')
+    title = 'Sum Capacity for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
+    plt.title(title.format(**alt_min_results.params.parameters))
+
+    ax2.legend(loc=2)
+    ax2.grid(True, which='both', axis='both')
+    plt.show()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
