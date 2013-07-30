@@ -392,6 +392,7 @@ class ResultTestCase(unittest.TestCase):
 
     def test_update_with_accumulate(self):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+        self.assertEqual(result1.accumulate_values_bool, result1._accumulate_values_bool)
         result1.update(13)
         result1.update(30)
         self.assertEqual(result1._value, 43)
@@ -409,6 +410,16 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result2.get_result(), 0.3125)
         self.assertEqual(result2._value_list, [3, 6, 1])
         self.assertEqual(result2._total_list, [10, 7, 15])
+
+        result3 = Result('name', Result.MISCTYPE, accumulate_values=True)
+        result3.update(3)
+        result3.update("some string")
+        result3.update(2)
+        self.assertEqual(result3._value, 2)
+        self.assertEqual(result3._total, 0)
+        self.assertEqual(result3.get_result(), 2)
+        self.assertEqual(result3._value_list, [3, "some string", 2])
+        self.assertEqual(result3._total_list, [])
 
     def test_merge(self):
         # Test merge of Results of SUMTYPE
@@ -490,6 +501,37 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
 
+    def test_calc_confidence_interval(self):
+        # Test if an exceptions is raised for a Result object of the
+        # MISCTYPE update type.
+        with self.assertRaises(RuntimeError):
+            # A result object of the MISCTYPE type cannot use the
+            # calc_confidence_interval method, since this update ignores
+            # the accumulate_values option and never accumulates any value.
+            self.result3.get_confidence_interval()
+
+        # Test if an exception is raised if the accumulate_values option
+        # was not set to True
+        with self.assertRaises(RuntimeError):
+            self.result1.get_confidence_interval()
+
+        result = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        # Test if an exception is raised if there are not stored values yet
+        with self.assertRaises(RuntimeError):
+            result.get_confidence_interval()
+
+        # Now lets finally store some values.
+        result.update(10, 30)
+        result.update(3, 24)
+        result.update(15, 42)
+        result.update(5, 7)
+
+        # Calculate the expected confidence interval
+        A = np.array(result._value_list, dtype=float) / np.array(result._total_list, dtype=float)
+        expected_confidence_interval = misc.calc_confidence_interval(A.mean(), A.std(), A.size, P=95)
+        confidence_interval = result.get_confidence_interval(P=95)
+        np.testing.assert_array_almost_equal(expected_confidence_interval,
+                                             confidence_interval)
 
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
@@ -628,6 +670,35 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(
             self.simresults.get_result_values_list('lili'),
             ['a string'])
+
+    def test_get_result_values_confidence_intervals(self):
+        simresults = SimulationResults()
+        result = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        result_other = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        result.update(3, 10)
+        result.update(7, 9)
+        result.update(2, 5)
+        result.update(3, 3)
+        result.update(7, 15)
+
+        result_other.update(13, 15)
+        result_other.update(15, 20)
+        result_other.update(4, 9)
+
+        simresults.add_result(result)
+        simresults.append_result(result_other)
+
+        P = 95  # Confidence level of 95%
+        list_of_confidence_intervals = simresults.get_result_values_confidence_intervals(
+            'name', P)
+
+        # Calculates the expected list of confidence intervals
+        expected_list_of_confidence_intervals = [i.get_confidence_interval(P) for i in simresults['name']]
+
+        # Test of they are equal
+        for a, b in zip(list_of_confidence_intervals,
+                        expected_list_of_confidence_intervals):
+            np.testing.assert_array_almost_equal(a, b)
 
     def test_save_to_and_load_from_file(self):
         filename = 'results.pickle'
@@ -976,7 +1047,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         M=integer(min=4, max=512, default=4)
         modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
         [IA Algorithm]
-        max_iterations=integer(min=1, default=60)
+        max_iterations=integer(min=1)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
         params2 = SimulationParameters.load_from_config_file(
@@ -990,6 +1061,26 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(params2['max_iterations'], 60)
         self.assertEqual(params2['unpacked_parameters'], ['SNR'])
         self.assertEqual(params2.unpacked_parameters, ['SNR'])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Lets create an invalid config file and try to load the parameters
+        # First we provide an invalid value for M
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=-4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.close()
+
+        with self.assertRaises(Exception):
+            params2 = SimulationParameters.load_from_config_file(
+                filename, spec)
+
+        # Now we do not provide the required parameter max_iterations
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]")
+        fid.close()
+
+        with self.assertRaises(Exception):
+            params2 = SimulationParameters.load_from_config_file(
+                filename, spec)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx

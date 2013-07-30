@@ -254,7 +254,7 @@ class CompExtInt(BlockDiaginalizer):
             self._metric_func_name = 'fixed'
             self._metric_func = None
             if 'num_streams' not in metric_func_extra_args_dict.keys():
-                raise AttributeError("The 'fixed' metric requires that metric_func_extra_args_dict is provided and has the 'num_streams' key")
+                raise AttributeError("The 'fixed' metric requires that metric_func_extra_args_dict is provided and has the 'num_streams' key")  # pragma: no cover
 
             # Set self._metric_func_extra_args as a dictionary containing
             # the 'num_stream' key (and value) in

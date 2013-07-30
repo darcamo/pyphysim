@@ -160,7 +160,7 @@ import itertools
 import copy
 import numpy as np
 
-from util.misc import pretty_time
+from util.misc import pretty_time, calc_confidence_interval
 from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, center_message
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
@@ -1253,7 +1253,7 @@ class SimulationParameters(object):
         add_params(params, conf_file_parser)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if save_parsed_file is True:
+        if save_parsed_file is True:  # pragma: no cover
             # xxxxx Write the parsed config file to disk xxxxxxxxxxxxxxxxxx
             # This will add the default values if they are not present. If
             # the file does not exist yet and all default values are
@@ -1660,6 +1660,33 @@ class SimulationResults(object):
         """
         return [i.get_result() for i in self[result_name]]
 
+    def get_result_values_confidence_intervals(self, result_name, P=95):
+        """
+        Get the values for the results with name `result_name`.
+
+        This method is similar to the `get_result_values_list` method, but
+        instead of returning a list with the values it will return a list
+        with the confidence intervals for those values.
+
+        Parameters
+        ----------
+        result_name : str
+            The name of the desired result.
+        P : float
+
+        Returns
+        -------
+        confidence_interval_list : list
+            A list of Numpy (float) arrays. Each element in the list is an
+            array with two elements, corresponding to the lower and upper
+            limits of the confidence interval.8
+
+        See also
+        --------
+        util.misc.calc_confidence_interval
+        """
+        return [i.get_confidence_interval(P) for i in self[result_name]]
+
     def __getitem__(self, key):
         """Get the value of the desired result
 
@@ -1988,10 +2015,10 @@ class Result(object):
             ignored for the other types).
         accumulate_values : bool
             If True, then the values `value` and `total` will be
-            accumulated in the `update` method. This means that the Result
-            object will use more memory as more and more values are
-            accumulated, but you will be able to perform calculations using
-            all the values instead of a single "updated value".
+            accumulated in the `update` (and merge) method(s). This means
+            that the Result object will use more memory as more and more
+            values are accumulated, but having all values sometimes is
+            useful to perform statistical calculations.
 
         Returns
         -------
@@ -2088,8 +2115,6 @@ class Result(object):
 
             """
             raise ValueError("Can't update a Result object of type '{0}'".format(self._update_type_code))
-            # print("Warning: update not performed for unknown type %s" %
-            #       self._update_type_code)
 
         def __update_SUMTYPE_value(value, dummy):
             """Update the Result object when its type is SUMTYPE."""
@@ -2118,6 +2143,8 @@ class Result(object):
         def __update_by_replacing_current_value(value, dummy):
             """Update the Result object when its type is MISCTYPE."""
             self._value = value
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Now we fill the dictionary with the functions
@@ -2141,7 +2168,8 @@ class Result(object):
             Another Result object.
         """
         # Both objects must be set to either accumulate or not accumulate
-        assert self._accumulate_values_bool == other._accumulate_values_bool
+        assert self._accumulate_values_bool == other._accumulate_values_bool, (
+            "Both objects must either accumulate or not accumulate values")
 
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
@@ -2178,6 +2206,46 @@ class Result(object):
             else:
                 return self._value
 
+    def get_confidence_interval(self, P=95):
+        """
+        Get the confidence inteval that contains the true result with a given
+        probability `P`.
+
+        Parameters
+        ----------
+        P : float
+            The desired confidence (probability in %) that true value is
+            inside the calculated interval. The possible values are
+            described in the documentaiton of the
+            `util.misc.calc_confidence_interval` function`
+
+        Returns
+        -------
+        Interval : Numpy (float) array with two elements.
+
+        See also
+        --------
+        util.misc.calc_confidence_interval
+        """
+        if len(self._value_list) == 0:
+            if self._accumulate_values_bool is False:
+                message = "get_confidence_interval: The accumulate_values option must be set to True."
+            else:
+                message = "get_confidence_interval: There are no stored values yet."
+            raise RuntimeError(message)
+
+        values = np.array(self._value_list, dtype=float)
+        if self._update_type_code == Result.RATIOTYPE:
+            values = values / np.array(self._total_list, dtype=float)
+
+        mean = values.mean()
+        std = values.std()
+        n = values.size
+
+        return calc_confidence_interval(mean, std, n, P)
+
+    # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # variables
     @staticmethod
     def save_to_hdf5_dataset(parent, results_list):
         """Create an HDF5 dataset in `parent` and fill it with the Result
@@ -2215,6 +2283,8 @@ class Result(object):
         # Pytables would do.
         ds.attrs.create("TITLE", name)
 
+    # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # variables
     @staticmethod
     def save_to_pytables_table(parent, results_list):
         """

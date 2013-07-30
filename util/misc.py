@@ -204,7 +204,7 @@ def randn_c(*args):
         np.random.randn(*args) + (1j * np.random.randn(*args)))
 
 
-def randn_c_RS(RS, *args):
+def randn_c_RS(RS, *args):  # pragma: no cover
     """Generates a random circularly complex gaussian matrix.
 
     This is essentially the same as the the randn_c function. The only
@@ -294,7 +294,7 @@ def int2bits(n):
 # integer. However, we are writing the documentation as if it were a numpy
 # ufunc because we will create the count_bits ufunc with it using
 # numpy.vectorize and count_bits will inherit the documentation.
-def _count_bits_single_element(n):
+def _count_bits_single_element(n):  # pragma: no cover
     """Count the number of bits that are set in `n`.
 
     Parameters
@@ -579,6 +579,15 @@ def calc_confidence_interval(mean, std, n, P=95):
     P : float
         The desired confidence (probability in %) that true value is inside
         the calculated interval.
+
+    Returns
+    -------
+    Interval : Numpy (float) array with two elements.
+
+    Notes
+    -----
+    This function assumes that the estimated random variable is a normal
+    variable.
     """
     # Dictionary that maps a desired "confidence" to the corresponding
     # critical value. See https://en.wikipedia.org/wiki/Student%27s_t-distribution
@@ -614,7 +623,7 @@ try:
     # If the misc_c.so extension was compiled then any method defined there
     # will replace the corresponding method defined here.
     from c_extensions.misc_c import *
-except Exception:
+except Exception:  # pragma: no cover
     pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
