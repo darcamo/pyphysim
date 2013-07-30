@@ -187,6 +187,50 @@ class IASimulationRunner(SimulationRunner):
 
         return simResults
 
+    def _keep_going(self, current_params, current_sim_results, current_rep):
+        """
+        Check if the simulation should continue or stop.
+
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            SimulationParameters object with the parameters of the
+            simulation.
+        current_sim_results : SimulationResults object
+            SimulationResults object from the last iteration (merged with
+            all the previous results)
+        current_rep : int
+            Number of iterations already run.
+
+        Returns
+        -------
+        result : bool
+            True if the simulation should continue or False otherwise.
+        """
+        # For each multiple of 300 iterations we test if the length of the
+        # confidence interval is greater then one tenth of the actual
+        # value. If it is that means that we still need to run more
+        # iterations and thus re return True. If it is not, than we can
+        # stop the iterations for the current parameters and thus we return
+        # false. This choice was arbitrarily, but seems reasonable.
+        if current_rep % 300 == 0:
+            ber_result = current_sim_results['ber'][-1]
+            ber_value = ber_result.get_result()
+            if ber_value == 0.0:
+                return True
+            else:
+                conf_interval = ber_result.get_confidence_interval()
+                error = np.abs(conf_interval[1] - conf_interval[0])
+
+                # If error is lower then one fifth of the current result
+                # and we have runned at least 5000 iterations, then we have
+                # enough and we return False to indicate the simulation of
+                # the current parameters can stop.
+                if error < ber_value/10.0 and current_rep > 5000:
+                    return False
+
+        return True
+
 
 class AlternatingSimulationRunner(IASimulationRunner):
     """
@@ -203,7 +247,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
 
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -252,7 +296,7 @@ class ClosedFormSimulationRunner(IASimulationRunner):
 
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -291,7 +335,7 @@ class MinLeakageSimulationRunner(IASimulationRunner):
 
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -338,7 +382,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
     """
     def __init__(self, config_filename):
         spec = """[Scenario]
-        SNR=real_numpy_array(min=0, max=100, default=0:5:31)
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
@@ -638,15 +682,15 @@ if __name__ == '__main__1':
 
 
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
+
     print "Simulating Max SINR algorithm"
     max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     print "Simulating Alternating Min. algorithm"
     alt_min_results, alt_min_filename = simulate_alternating()
-
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
 
     print "Simulating Min. Leakage algorithm"
     min_leakage_results, min_leakage_filename = simulate_min_leakage()
@@ -716,7 +760,7 @@ if __name__ == '__main__1':
     # plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

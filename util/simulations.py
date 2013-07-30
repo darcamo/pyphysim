@@ -392,27 +392,31 @@ class SimulationRunner(object):
         raise NotImplementedError("'_run_simulation' must be implemented in a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
-    @staticmethod
-    def _keep_going(current_params, current_sim_results):
-        """Check if the simulation should continue or stop.
+    def _keep_going(self, current_params, current_sim_results, current_rep):
+        """
+        Check if the simulation should continue or stop.
 
         This function may be reimplemented in the derived class if a stop
-        condition besides the number of iterations is desired.  The idea is
+        condition besides the number of iterations is desired. The idea is
         that _run_simulation returns a SimulationResults object, which is
         then passed to _keep_going, which is then in charge of deciding if
         the simulation should stop or not.
 
         Parameters
         ----------
+        current_params : SimulationParameters object
+            SimulationParameters object with the parameters of the
+            simulation.
         current_sim_results : SimulationResults object
             SimulationResults object from the last iteration (merged with
             all the previous results)
+        current_rep : int
+            Number of iterations already run.
 
         Returns
         -------
         result : bool
             True if the simulation should continue or False otherwise.
-
         """
         # If this function is not reimplemented in a subclass it always
         # returns True. Therefore, the simulation will only stop when the
@@ -566,7 +570,7 @@ class SimulationRunner(object):
             current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
-            while (self._keep_going(current_params, current_sim_results)
+            while (self._keep_going(current_params, current_sim_results, current_rep)
                    and
                    current_rep < self.rep_max):
                 current_sim_results.merge_all_results(
@@ -656,7 +660,7 @@ class SimulationRunner(object):
             current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
-            while (obj._keep_going(current_params, current_sim_results)
+            while (obj._keep_going(current_params, current_sim_results, current_rep)
                    and
                    current_rep < obj.rep_max):
                 current_sim_results.merge_all_results(
