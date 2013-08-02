@@ -1331,11 +1331,9 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == "__main__":
-    unittest.main()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # def producer(queue, sleep_time=0):
 #     process_pid = multiprocessing.current_process().pid
 #     for i in range(1, 11):
@@ -1430,6 +1428,174 @@ if __name__ == "__main__":
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+class ProgressbarTextTestCase(unittest.TestCase):
+    def setUp(self):
+        from StringIO import StringIO
+        message = "ProgressbarText Unittest"
+        # The progress will be printed to the StringIO object instead of
+        # sys.stdout
+        self.out = StringIO()
+        self.pbar = progressbar.ProgressbarText(50, '*', message, output=self.out)
+
+        self.out2 = StringIO()
+        self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
+
+    def test_progress(self):
+        # Progress 20% (10 is equivalent to 20% of 50)
+        self.pbar.progress(10)
+        self.assertEqual(self.out.getvalue(), """------------ ProgressbarText Unittest -----------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+**********""")
+
+        # Progress to 70%
+        self.pbar.progress(35)
+        self.assertEqual(self.out.getvalue(), """------------ ProgressbarText Unittest -----------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+***********************************""")
+
+        # Progress to 100% -> Note that in the case of 100% a new line is
+        # added at the end.
+        self.pbar.progress(50)
+        self.assertEqual(self.out.getvalue(), """------------ ProgressbarText Unittest -----------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+**************************************************\n""")
+
+        # Test with pbar2, which uses the default progress message and the
+        # character 'x' to indicate progress.
+        self.pbar2.progress(20)
+        self.assertEqual(self.out2.getvalue(), """------------------ % Progress -------------------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
+
+    def test_small_progress_and_zero_finalcount(self):
+        # Test the case when the progress is lower then 1%.
+        pbar3 = progressbar.ProgressbarText(finalcount=200, output=self.out)
+        pbar3.progress(1)
+        self.assertEqual(self.out.getvalue(), """------------------ % Progress -------------------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+""")
+
+        # Test the case when finalcount is zero.
+        pbar4 = progressbar.ProgressbarText(0, output=self.out2)
+        # Any progress will get the bar to 100%
+        pbar4.progress(1)
+        self.assertEqual(self.out2.getvalue(), """------------------ % Progress -------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
+
+
+class ProgressbarText2TestCase(unittest.TestCase):
+    def setUp(self):
+        from StringIO import StringIO
+        message = "ProgressbarText Unittest"
+        # The progress will be printed to the StringIO object instead of
+        # sys.stdout
+        self.out = StringIO()
+        self.pbar = progressbar.ProgressbarText2(50, '*', message, output=self.out)
+
+        self.out2 = StringIO()
+        self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
+
+    def test_some_method(self):
+        self.pbar.progress(15)
+        self.assertEqual(self.out.getvalue(), "\r[**************        30%                       ]  ProgressbarText Unittest")
+
+        self.pbar.progress(50)
+        self.assertEqual(self.out.getvalue(), "\r[**************        30%                       ]  ProgressbarText Unittest\r[*********************100%***********************]  ProgressbarText Unittest\n")
+
+        # Progressbar with no message -> Use a default message
+        self.pbar2.progress(15)
+        self.assertEqual(self.out2.getvalue(), "\r[**************        30%                       ]  15 of 50 complete")
+
+
+class ProgressbarText3TestCase(unittest.TestCase):
+    def setUp(self):
+        from StringIO import StringIO
+        message = "ProgressbarText Unittest"
+        # The progress will be printed to the StringIO object instead of
+        # sys.stdout
+        self.out = StringIO()
+        self.pbar = progressbar.ProgressbarText3(50, '*', message, output=self.out)
+
+        self.out2 = StringIO()
+        self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
+
+    def test_some_method(self):
+        self.pbar.progress(15)
+
+        # print
+        #print self.out.getvalue()
+
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********")
+
+        self.pbar.progress(50)
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********")
+
+        # Test with no message (use default message)
+        self.pbar2.progress(40)
+        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************")
+
+
+# # TODO: finish implementation
+# class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
+#     def setUp(self):
+#         """Called before each test."""
+#         from StringIO import StringIO
+#         #self.out = StringIO()
+#         self.mpbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1)
+#         self.proxybar1 = self.mpbar.register_function_and_get_proxy_progressbar(10)
+#         self.proxybar2 = self.mpbar.register_function_and_get_proxy_progressbar(15)
+
+#     def test_updater(self):
+#         from time import sleep
+#         from StringIO import StringIO
+#         stdout = sys.stdout
+#         new_out = StringIO()
+#         sys.stdout = new_out
+
+#         # Suppose that the first process already started and called the
+#         # proxybar1 to update its progress.
+#         self.proxybar1.progress(6)
+
+#         # Then we start the "updater" of the main progressbar.
+#         self.mpbar.start_updater()
+
+#         # Then the second process updates its progress
+#         self.proxybar2.progress(6)
+
+#         sleep(2)
+#         #print self.out.getvalue()
+#         # self.assertEqual(self.out.getvalue(), """------------------ Some message -----------------1
+# #     1    2    3    4    5    6    7    8    9    0
+# # ----0----0----0----0----0----0----0----0----0----0
+# # ************************""")
+
+#         # sleep(10)
+
+#         # # Finally both processes finish their progress
+#         # self.proxybar1.progress(10)
+#         # self.proxybar2.progress(14)
+
+#         # # We need to sleep so that the updater process can actually read
+#         # # the current progress and print the progressbar
+#         # sleep(0.2)
+
+#         # # If we didn't specify a timeout then program would never finish,
+#         # # since in our test the progress never reaches 100%.
+#         # self.mpbar.stop_updater(timeout=0.0)
+
+
+#         # print self.out.getvalue()
+
+
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def progress_producer2(bar, sleep_time=0.5):  # pragma: no cover
     total_count = 20
     for i in range(1, total_count + 1):
@@ -1447,13 +1613,13 @@ def progress_producer(process_id, process_data_list, sleep_time=0.5):  # pragma:
 if __name__ == '__main__1':  # pragma: no cover
     from time import sleep
     import multiprocessing
-    from progressbar import ProgressbarMultiProcessText
+    from util.progressbar import ProgressbarMultiProcessText
     bar = ProgressbarMultiProcessText(sleep_time=1)
 
     # # xxxxx Option 1: register_function xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # # Register two functions with count 20, each, in the progressbar
-    # func_1_data = bar.register_function(20)
-    # func_2_data = bar.register_function(20)
+    # func_1_data = bar._register_function(20)
+    # func_2_data = bar._register_function(20)
 
     # # Create the processes to run the functions
     # p1 = multiprocessing.Process(target=progress_producer, args=(func_1_data[0], func_1_data[1], 0.2))
@@ -1482,3 +1648,9 @@ if __name__ == '__main__1':  # pragma: no cover
     bar.stop_updater()
 
     print("The End")
+
+
+# xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == "__main__":
+    unittest.main()
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

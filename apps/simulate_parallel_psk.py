@@ -252,7 +252,7 @@ if __name__ == '__main__':
 
         ax1.set_xlabel('SNR')
         ax1.set_ylabel('Error')
-        ax1.set_title('{0} modulation (Parallel SImulation)'.format(modulator_obj.name))
+        ax1.set_title('{0} modulation (Parallel Simulation)'.format(modulator_obj.name))
         ax1.legend()
 
         ax1.grid(True, which='both', axis='both')

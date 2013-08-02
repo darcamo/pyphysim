@@ -1,16 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# http://code.activestate.com/recipes/299207-console-text-progress-indicator-class/
-# CLASS NAME: ProgressbarText
-#
-# Original Author of the ProgressbarText class:
-# Larry Bates (lbates@syscononline.com)
-# Written: 12/09/2002
-#
-# Modified by Darlan Cavalcante Moreira in 10/18/2011
-# Released under: GNU GENERAL PUBLIC LICENSE
-
 """Implement classes to represent the progress of a task.
 
 Use the ProgressbarText class for tasks that do not use multiprocessing,
@@ -125,6 +115,15 @@ class DummyProgressbar(object):  # pragma: no cover
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarText - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# http://code.activestate.com/recipes/299207-console-text-progress-indicator-class/
+# CLASS NAME: ProgressbarText
+#
+# Original Author of the ProgressbarText class:
+# Larry Bates (lbates@syscononline.com)
+# Written: 12/09/2002
+#
+# Modified by Darlan Cavalcante Moreira in 10/18/2011
+# Released under: GNU GENERAL PUBLIC LICENSE
 class ProgressbarText(object):
     """Class that prints a representation of the current progress as
     text.
@@ -173,6 +172,11 @@ class ProgressbarText(object):
             The character used to represent progress.
         message : str, optional
             A message to be shown in the top of the progressbar.
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
         """
         self.finalcount = finalcount
         self.blockcount = 0  # stores how many characters where already
@@ -180,9 +184,9 @@ class ProgressbarText(object):
                              # function
         self.block = progresschar  # The character printed to indicate progress
         #
-        # By default, self.output points to sys.stdout so I can use the
+        # By default, self._output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
-        self.output = output
+        self._output = output
 
         self._initialized = False
         self._message = message
@@ -208,11 +212,11 @@ class ProgressbarText(object):
                 bartitle = '{0}\n'.format(center_message(
                     self._message, 50, '-', '', '1'))
             else:
-                bartitle = '\n------------------ % Progress -------------------1\n'
+                bartitle = '------------------ % Progress -------------------1\n'
 
-            self.output.write(bartitle)
-            self.output.write('    1    2    3    4    5    6    7    8    9    0\n')
-            self.output.write('----0----0----0----0----0----0----0----0----0----0\n')
+            self._output.write(bartitle)
+            self._output.write('    1    2    3    4    5    6    7    8    9    0\n')
+            self._output.write('----0----0----0----0----0----0----0----0----0----0\n')
 
             self._initialized = True
 
@@ -241,14 +245,14 @@ class ProgressbarText(object):
             # function. Therefore, we only need to print the remaining
             # characters until we reach `blockcount`.
             for i in range(self.blockcount, blockcount):  # pylint:disable=W0612
-                self.output.write(self.block)
-                self.output.flush()
+                self._output.write(self.block)
+                self._output.flush()
             # Update self.blockcount
             self.blockcount = blockcount
 
         # If we completed the bar, print a newline
         if percentcomplete == 100:
-            self.output.write("\n")
+            self._output.write("\n")
 # xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -258,22 +262,47 @@ class ProgressbarText(object):
 # The original Code is in
 # http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/examples/notebooks/Progress%20Bars.ipynb
 # but it was modified to make it more similar to the ProgressbarText class
-class ProgressbarText2:
-    def __init__(self, finalcount, progresschar='*', message=''):
+class ProgressbarText2(object):
+    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
+        """Initializes the ProgressbarText2 object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        progresschar : str, optional (default to '*')
+            The character used to represent progress.
+        message : str, optional
+            A message to be shown in the top of the progressbar.
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
+        """
         self.finalcount = finalcount
         self.prog_bar = '[]'
         self.progresschar = progresschar
         self.width = 50
-        self._update_amount(0)
+        # By default, self._output points to sys.stdout so I can use the
+        # write/flush methods to display the progress bar.
+        self._output = output
         self._message = message
+        self._update_amount(0)
 
     def progress(self, count):
         self._update_iteration(count)
-        print('\r', self, end='')
+        #print('\r', self, end='')
+        self._output.write('\r')
+        self._output.write(str(self))
         if count == self.finalcount:
             # Print an empty line after the last iteration to be consistent
             # with the ProgressbarText class
-            print('\n')
+            self._output.write("\n")
+            #print('\n')
         sys.stdout.flush()
 
     def _update_iteration(self, elapsed_iter):
@@ -283,7 +312,7 @@ class ProgressbarText2:
         if(len(self._message) != 0):
             self.prog_bar += "  {0}".format(self._message)
         else:
-            self.prog_bar += '  %d of %s complete' % (elapsed_iter, self.finalcount)
+            self.prog_bar += '  %d of %d complete' % (elapsed_iter, self.finalcount)
 
     def _update_amount(self, new_amount):
         percent_done = int(round((new_amount / 100.0) * 100.0))
@@ -304,17 +333,42 @@ class ProgressbarText2:
 # xxxxxxxxxxxxxxx ProgressbarText3 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarText3(object):
-    def __init__(self, finalcount, progresschar=' ', message=''):
+    def __init__(self, finalcount, progresschar=' ', message='', output=sys.stdout):
+        """Initializes the ProgressbarText3 object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        progresschar : str, optional (default to '*')
+            The character used to represent progress.
+        message : str, optional
+            A message to be shown in the top of the progressbar.
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
+        """
         self.finalcount = finalcount
         self.prog_bar = ""
         self.progresschar = progresschar
         self.width = 50
+        # By default, self._output points to sys.stdout so I can use the
+        # write/flush methods to display the progress bar.
+        self._output = output
         self._message = message  # THIS WILL BE IGNORED
 
     def progress(self, count):
         self._update_iteration(count)
         progress_string = center_message(str(self), fill_char=self.progresschar)
-        print('\r', progress_string, sep='', end='\n')
+        self._output.write('\r')
+        self._output.write(progress_string)
+        #self.output.write('\n')
+        #print('\r', progress_string, sep='', end='\n')
 
     def _update_iteration(self, elapsed_iter):
         full_count = "{0}/{1}".format(elapsed_iter, self.finalcount)
@@ -398,8 +452,10 @@ class ProgressbarMultiProcessText(object):
     def __init__(self,
                  progresschar='*',
                  message='',
-                 sleep_time=1):
-        """Initializes the ProgressbarMultiProcessText object.
+                 sleep_time=1,
+                 output=sys.stdout):
+        """
+        Initializes the ProgressbarMultiProcessText object.
 
         Parameters
         ----------
@@ -409,7 +465,11 @@ class ProgressbarMultiProcessText(object):
             Message writen in the progressbar.
         sleep_time : float
             Time between progressbar updates (in seconds).
-
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
         """
         # total_final_count will be updated each time the register_*
         # function is called
@@ -423,13 +483,17 @@ class ProgressbarMultiProcessText(object):
         self._sleep_time = sleep_time
         self._last_id = -1
 
+        # By default, self._output points to sys.stdout so I can use the
+        # write/flush methods to display the progress bar.
+        self._output = output
+
         # Process responsible to update the progressbar. It will be started
         # by the start_updater method and it may be finished anytime by
-        # calling the finish_updater function. Also, it is set as a daemon
+        # calling the stop_updater function. Also, it is set as a daemon
         # process so that we don't get errors if the program closes before
         # the process updating the progressbar ends (because the user
-        # forgot to call the finish_updater method).
-        self._update_process = multiprocessing.Process(target=self._update_progress)
+        # forgot to call the stop_updater method).
+        self._update_process = multiprocessing.Process(target=self._update_progress, args=[self._output])
         self._update_process.daemon = True
 
         # The event will be set when the process updating the progressbar
@@ -442,7 +506,7 @@ class ProgressbarMultiProcessText(object):
         self._tic = multiprocessing.Value('f', 0.0)
         self._toc = multiprocessing.Value('f', 0.0)
 
-    def register_function(self, total_count):
+    def _register_function(self, total_count):
         """Return the `process_id` and a "process_data_list". These must be
         passed as arguments to the function that will run in another
         process.
@@ -518,14 +582,28 @@ class ProgressbarMultiProcessText(object):
                 """
                 self._process_data_list[self.process_id] = count
         # xxxxx Inline class definition - End xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        return ProgressbarMultiProcessProxy(*self.register_function(total_count))
+        return ProgressbarMultiProcessProxy(*self._register_function(total_count))
 
-    def _update_progress(self):
+    # This method will be run in a different process. Because of this the
+    # coverage rogram does not see that this method in run in the test code
+    # even though we know it is run (otherwise no output would
+    # appear). Therefore, we put the "pragma: no cover" line in it
+    def _update_progress(self, output=sys.stdout):  # pragma: no cover
         """Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
 
+        Parameters
+        ----------
+        out : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
         """
-        pbar = ProgressbarText(self._total_final_count, self._progresschar, self._message)
+        pbar = ProgressbarText(self._total_final_count,
+                               self._progresschar,
+                               self._message,
+                               output=output)
         self.running.set()
         count = 0
         while count < self._total_final_count and self.running.is_set():
@@ -548,7 +626,7 @@ class ProgressbarMultiProcessText(object):
         self._tic.value = time.time()
         self._update_process.start()
 
-    def stop_updater(self):
+    def stop_updater(self, timeout=None):
         """Stop the process updating the progressbar.
 
         You should always call this function in your main process (the same
@@ -559,7 +637,7 @@ class ProgressbarMultiProcessText(object):
         """
         self.running.clear()
         self._toc.value = time.time()
-        self._update_process.join()
+        self._update_process.join(timeout)
 
     # TODO: Check if the duration property work correctly
     @property

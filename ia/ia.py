@@ -742,8 +742,8 @@ class ClosedFormIASolver(IASolverBaseClass):
     def __init__(self, multiUserChannel):
         """
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         multiUserChannel : A MultiUserChannelMatrix object.
             The multiuser channel.
         """

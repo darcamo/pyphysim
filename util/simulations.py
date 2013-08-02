@@ -196,8 +196,8 @@ def _real_numpy_array_check(value, min=None, max=None):
     min:max or min:step:max, or even a list containing numbers and range
     expressions.
 
-    Notes:
-    ------
+    Notes
+    -----
     You can either separate the values with commas or spaces (any comma
     will have the same effect as a space). However, if you separate with
     spaces the values should be brackets, while if you separate with
@@ -1174,8 +1174,8 @@ class SimulationParameters(object):
             `spec`. This will even create the file if all default values
             are provided in `spec` and the file does not exist yet.
 
-        Notes:
-        ------
+        Notes
+        -----
         Besides the usual checks that the configobj validation has such as
         `integer`, `string`, `option`, etc., you can also use
         `real_numpy_array` for numpy float arrays. Note that when this
