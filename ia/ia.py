@@ -139,6 +139,10 @@ class IASolverBaseClass(object):
     def F(self):
         """Transmit precoder of all users."""
         return self._F
+        # F = self._F
+        # if F is not None:
+        #     F = F * self.P
+        # return F
 
     # The W property should return a receive filter that can be directly
     # multiplied (no need to calculate the hermitian of W) by the received
@@ -228,12 +232,19 @@ class IASolverBaseClass(object):
             # return a numpy array of ones with the appropriated size.
             self._P = None
         elif np.isscalar(value):
-            self._P = np.ones(self.K, dtype=float) * value
+            if value > 0.0:
+                self._P = np.ones(self.K, dtype=float) * value
+            else:
+                raise ValueError("P cannot be negative or equal to zero.")
         else:
             if len(value) != self.K:
                 raise ValueError("P must be set to a sequency of length K")
             else:
-                self._P = np.array(value)
+                value = np.array(value)
+                if np.all(value > 0.0):
+                    self._P = np.array(value)
+                else:
+                    raise ValueError("P cannot be negative or equal to zero.")
 
     @property
     def Ns(self):
@@ -738,16 +749,20 @@ class ClosedFormIASolver(IASolverBaseClass):
        Channel," IEEE Transactions on Information Theory 54, pp. 3425–3441,
        Aug. 2008.
     """
-
-    def __init__(self, multiUserChannel):
+    def __init__(self, multiUserChannel, use_best_init=True):
         """
-
         Parameters
         ----------
         multiUserChannel : A MultiUserChannelMatrix object.
             The multiuser channel.
+        use_best_init : bool
+            If true, all possible initializations (subsets of the
+            eigenvectors of the 'E' matrix)for the first precoder will be
+            tested and the best solution will be used. If false, the first
+            initialization will be used.
         """
         IASolverBaseClass.__init__(self, multiUserChannel)
+        self._use_best_init = use_best_init
 
     def _calc_E(self):
         """
@@ -769,29 +784,72 @@ class ClosedFormIASolver(IASolverBaseClass):
                                  np.dot(H13, np.dot(inv(H23), H21)))))
         return E
 
-    def _updateF(self):
-        """Find the precoders.
+    def _calc_all_F_initializations(self, Ns):
         """
-        E = self._calc_E()
-        Ns0 = self.Ns[0]
+        Calculates all possible initializations for the first precoder
+        (self._F[0]).
 
+        The precoder self._F[0] is initialized with a subset of the
+        eigenvectors of the matrix 'E'. Therefore, this method returns all
+        possible subsets of the eigenvectors of the matrix 'E'.
+
+        Parameters
+        ----------
+        Ns : int
+            Number of streams of the first user.
+
+        Returns
+        -------
+        all_initializations : A list of numpy arrays.
+            All possible subsets (with size Ns) of the eigenvectors of the
+            matrix E
+        """
+        from itertools import combinations
+        E = self._calc_E()
+        eigenvectors = np.linalg.eig(E)[1]
+        num_eigenvectors = eigenvectors.shape[1]
+
+        all_subsets = []
+
+        for comb_index in combinations(range(num_eigenvectors), Ns):
+            all_subsets.append(eigenvectors[:, comb_index])
+
+        return all_subsets
+
+    def _updateF(self, F0=None):
+        """
+        Find the precoders.
+
+        Parameters
+        ----------
+        F0 : numpy array
+            The first precoder. If not provided, the matrix 'E' will be
+            calculated (with the _calc_E method) and the the first Ns
+            eigenvectors will be used as F0.
+        """
         # The number of users is always 3 for the ClosedFormIASolver class
         self._F = np.zeros(3, dtype=np.ndarray)
 
-        # The first precoder is given by any subset of the eigenvectors of
-        # the "E" matrix. We simple get the first Ns_0 eigenvectors of E.
-        eigenvectors = np.linalg.eig(E)[1]
-        V1 = eigenvectors[:, 0:Ns0]
-        self._F[0] = V1
+        if F0 is None:
+            E = self._calc_E()
+            Ns0 = self.Ns[0]
+
+            # The first precoder is given by any subset of the eigenvectors of
+            # the "E" matrix. We simple get the first Ns_0 eigenvectors of E.
+            eigenvectors = np.linalg.eig(E)[1]
+            F0 = eigenvectors[:, 0:Ns0]
+            self._F[0] = F0
+        else:
+            self._F[0] = F0
 
         # The second precoder is given by $\mtH_{32}^{-1}\mtH_{31}\mtV_1$
         invH32 = np.linalg.inv(self._get_channel(2, 1))
         H31 = self._get_channel(2, 0)
-        self._F[1] = np.dot(invH32, np.dot(H31, V1))
+        self._F[1] = np.dot(invH32, np.dot(H31, F0))
         # The third precoder is given by $\mtH_{23}^{-1}\mtH_{21}\mtV_1$
         invH23 = np.linalg.inv(self._get_channel(1, 2))
         H21 = self._get_channel(1, 0)
-        self._F[2] = np.dot(invH23, np.dot(H21, V1))
+        self._F[2] = np.dot(invH23, np.dot(H21, F0))
 
         # Normalize the precoders
         self._F[0] = self._F[0] / np.linalg.norm(self._F[0], 'fro')
@@ -848,8 +906,43 @@ class ClosedFormIASolver(IASolverBaseClass):
             assert len(Ns) == 3
         self._Ns = Ns
 
-        self._updateF()
-        self._updateW()
+        self.P = P
+
+        if self._use_best_init is True:
+            # xxxxx Case when the best solution should be used xxxxxxxxxxxx
+            best_sum_capacity = 0
+            all_initializations = self._calc_all_F_initializations(Ns[0])
+
+            # Lambda function to calculate the sum capacity from the SINR
+            # values (in linear scale)
+            calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
+
+            for F0 in all_initializations:
+                self._updateF(F0)
+                self._updateW()
+
+                # Calculates the sum capacity
+                sirn_all_k = self.calc_SINR_old()
+
+                # Array with the sum capacity of each user
+                sum_capacity = map(calc_capacity, sirn_all_k)
+                # Total sum capacity
+                total_sum_capacity = np.sum(sum_capacity)
+
+                if total_sum_capacity > best_sum_capacity:
+                    best_sum_capacity = total_sum_capacity
+                    best_F = self._F
+                    best_W = self._W
+
+            self._clear_receive_filter()
+            self._F = best_F
+            self._W = best_W
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        else:
+            # xxxxx Case when the first solution should be used xxxxxxxxxxx
+            self._updateF()
+            self._updateW()
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1005,10 +1098,15 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Notes
         -----
+        You probably should not overwrite this method in sub-classes of the
+        IterativeIASolverBaseClass. If you want to change the
+        initialization of the algorithm overwrite the _solve_init method
+        instead.
 
-        You need to call :meth:`randomizeF` at least once before calling
-        :meth:`solve` as well as initialize the channel either calling the
-        :meth:`init_from_channel_matrix` or the :meth:`randomize` methods.
+        Subclasses must implement the _updateF() and _updateW() methods. If
+        something else besides calling these two methods is required in the
+        "step" part of the algorithm, then reimplement also the _step()
+        method.
         """
         self._solve_init(Ns, P)
 
@@ -1195,7 +1293,10 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         # Every element in newF is a matrix. We want to replace each
         # element by the least dominant eigenvectors of that element.
-        self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
+
+        #self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
+        for k in range(self.K):
+            self._F[k] = leig(newF[k], self.Ns[k])[0]
 
     def _updateW(self):
         """
@@ -1571,12 +1672,208 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         return Uk
 
     def _updateF(self):
-        """Update the value of the precoder of all K users.
+        """
+        Update the precoders.
+
+        Notes
+        -----
+        This method is called in the :meth:`_step` method.
+
+        See also
+        --------
+        _step
         """
         self._F = self._calc_Uk_all_k_rev()
 
     def _updateW(self):
         """
+        Update the receive filters.
+
+        Notes
+        -----
+        This method is called in the :meth:`_step` method.
+
+        See also
+        --------
+        _step
         """
         self._clear_receive_filter()
         self._W = self._calc_Uk_all_k()
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MMSEIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class MMSEIASolver(IterativeIASolverBaseClass):
+    """Implements the MMSE based Interference Alignment algorithm.
+
+    This algorithm is applicable to a "K-user" scenario and it is
+    described in [?????]_.
+
+    An example of a common exenario is a scenario with 3 pairs or
+    transmitter/receiver with 2 antennas in each node and 1 stream
+    transmitted per node.
+
+    You can determine the scenario of an MMSEIASolver object by
+    infering the variables K, Nt, Nr and Ns.
+
+    Parameters
+    ----------
+    multiUserChannel : A MultiUserChannelMatrix object.
+        The multiuser channel.
+
+    Notes
+    -----
+
+    .. [?????] Reference to the article
+
+    """
+
+    def __init__(self, multiUserChannel):
+        """
+        Parameters
+        ----------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
+        """
+        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
+
+        # We use the closed form ia solver to initialize the MMSE
+        # solver. This will reduce the nyumber of iterations required for
+        # convergence of the MMSE IA solver.
+        self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
+                                                         use_best_init=True)
+        self._mu = None
+
+    def _initialize_F_and_W(self, Ns, P):
+        """Initialize the IA Solution from the closed form IA solver.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+        """
+        self._closed_form_ia_solver.solve(Ns, P)
+        self._F = self._closed_form_ia_solver._F
+        self._W = self._closed_form_ia_solver._W
+        self._mu = np.zeros(3, dtype=float)
+
+    def _solve_init(self, Ns, P):
+        """
+        Code run in the `solve` method before the loop that run the `step`
+        method.
+
+        The implementation here simple initializes the precoder variable
+        and then calculates the initial receive filter.
+        """
+        self._initialize_F_and_W(Ns, P)
+
+    def _calc_Uk(self, k):
+        """Calculates the receive filter of the k-th user.
+
+        Parameters
+        ----------
+        k : int
+            User index
+        """
+        # $$\mtU_k = \left( \sum_{i=1}^K \mtH_{ki} \mtV_i \mtV_i^H \mtH_{ki}^H + \sigma_n^2 \mtI \right)^{-1} \mtH_{kk} \mtV_k$$
+        Hkk = self._get_channel(k, k)
+        Vk = self.F[k]
+        P = self.P
+
+        sum_term = 0
+        for i in range(self.K):
+            Hki = self._get_channel(k, i)
+            Vi = self.F[i]
+            aux = np.dot(Hki, Vi)
+            sum_term = sum_term + np.dot(P[i] * aux,
+                                         aux.conj().T)
+
+        inv_term = sum_term + self.noise_var * np.eye(self.Nr[k])
+        inv_term = np.linalg.inv(inv_term)
+
+        Uk = np.dot(inv_term,
+                    np.dot(Hkk,
+                           np.sqrt(P[k]) * Vk))
+        return Uk
+
+    def _updateW(self):
+        """
+        Updates the receive filter of all users.
+        """
+        self._W = np.zeros(3, dtype=np.ndarray)
+        for k in range(self.K):
+            self._W[k] = self._calc_Uk(k)
+
+    def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
+        """This method is called inside _calc_Vi.
+
+        Parameters
+        ----------
+        sum_term : numpy array
+            The sumation term in the formula to calculate the precoder.
+        mu_i : float
+            The value of the lagrange multiplier
+        H_herm_U : numpy array
+            The value of :math:`H_ii^H U_i`
+        """
+        N = sum_term.shape[0]
+        Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
+                    H_herm_U)
+
+        return Vi
+
+    def _calc_Vi(self, i, mu_i=None):
+        """
+        Calculates the precoder of the i-th user.
+
+        Parameters
+        ----------
+        i : int
+            User index
+        mu_i : float or None
+            The value of the Lagrange multiplier. If it is None (default),
+            then the best value will be found and used to calculate the
+            precoder.
+
+        Returns
+        -------
+        Vi : numpy array
+            The calculate precoder of the i-th user.
+        """
+        # $$\mtV_i = \left( \sum_{k=1}^K \mtH_{ki}^H \mtU_k \mtU_k^H \mtH_{ki} + \mu_i \mtI \right)^{-1} \mtH_{ii}^H \mtU_i$$
+        Hii = self._get_channel(i, i)
+        Ui = self.W[i]
+
+        Hii_herm_U = np.dot(Hii.conj().T, Ui)
+
+        sum_term = 0
+        for k in range(self.K):
+            Hki = self._get_channel(k, i)
+            Uk = self.W[k]
+            aux = np.dot(Hki.conj().T, Uk)
+            sum_term = sum_term + np.dot(aux, aux.conj().T)
+
+        if mu_i is None:
+            # TODO: Find the best mu_i
+            mu_i = 0  # This should be the best value instead of always zero
+            self._mu[i] = mu_i
+            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+        else:
+            self._mu[i] = mu_i
+            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+
+        return Vi
+
+    def _updateF(self):
+        """
+        Updates the precoder of all users.
+        """
+        self._F = np.zeros(3, dtype=np.ndarray)
+        self._mu = np.zeros(3, dtype=float)
+
+        for k in range(self.K):
+            self._F[k] = self._calc_Vi(k)

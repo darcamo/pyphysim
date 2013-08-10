@@ -698,7 +698,7 @@ class GridTestCase(unittest.TestCase):
         cluster2_positions = np.array([c.pos for c in G2._clusters])
         np.testing.assert_array_almost_equal(
             cluster2_positions,
-            np.array([0, 0.4330127+0.75j]))
+            np.array([0, 0.4330127 + 0.75j]))
 
         # xxxxx Test creating a grid with 7 clusters of 3 cells xxxxxxxxxxx
         G3 = cell.Grid()
@@ -708,9 +708,9 @@ class GridTestCase(unittest.TestCase):
         cluster3_positions = np.array([c.pos for c in G3._clusters])
         np.testing.assert_array_almost_equal(
             cluster3_positions,
-            np.array([0, 1.29903811+0.75j, 0+1.5j,
-                      -1.29903811+0.75j, -1.29903811-0.75j,
-                      0-1.5j, 1.29903811-0.75j]))
+            np.array([0, 1.29903811 + 0.75j, 0 + 1.5j,
+                      -1.29903811 + 0.75j, -1.29903811 - 0.75j,
+                      0 - 1.5j, 1.29903811 - 0.75j]))
 
         # xxxxx Test creating a grid with 7 clusters of 7 cells xxxxxxxxxxx
         G7 = cell.Grid()
@@ -718,9 +718,9 @@ class GridTestCase(unittest.TestCase):
         cluster7_positions = np.array([c.pos for c in G7._clusters])
         np.testing.assert_array_almost_equal(
             cluster7_positions,
-            np.array([0, 2.16506351+0.75j, 0.43301270+2.25j,
-                      -1.73205081+1.5j, -2.16506351-0.75j,
-                      -0.43301270-2.25j, 1.73205081-1.5j]))
+            np.array([0, 2.16506351 + 0.75j, 0.43301270 + 2.25j,
+                      -1.73205081 + 1.5j, -2.16506351 - 0.75j,
+                      -0.43301270 - 2.25j, 1.73205081 - 1.5j]))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

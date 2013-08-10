@@ -387,7 +387,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def test_last_noise_property(self):
         noise_var = 1e-2
         H = np.eye(6)
-        self.multiH.init_from_channel_matrix(H, np.array([2,2,2]), np.array([2,2,2]), 3)
+        self.multiH.init_from_channel_matrix(H,
+                                             np.array([2, 2, 2]),
+                                             np.array([2, 2, 2]),
+                                             3)
 
         data = randn_c(6, 10)
 

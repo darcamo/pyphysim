@@ -686,14 +686,14 @@ if __name__ == '__main__':
     print "Simulating Closed Form algorithm"
     closed_form_results, closed_form_filename = simulate_closed_form()
 
-    print "Simulating Max SINR algorithm"
-    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    # print "Simulating Max SINR algorithm"
+    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
-    print "Simulating Alternating Min. algorithm"
-    alt_min_results, alt_min_filename = simulate_alternating()
+    # print "Simulating Alternating Min. algorithm"
+    # alt_min_results, alt_min_filename = simulate_alternating()
 
-    print "Simulating Min. Leakage algorithm"
-    min_leakage_results, min_leakage_filename = simulate_min_leakage()
+    # print "Simulating Min. Leakage algorithm"
+    # min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
 
 # xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -783,6 +783,8 @@ if __name__ == '__main__1':
         'ia_alt_min_{0}.pickle'.format(base_name))
     closed_form_results = SimulationResults.load_from_file(
         'ia_closed_form_{0}.pickle'.format(base_name))
+    # closed_form_results = SimulationResults.load_from_file(
+    #     'ia_closed_form_first_init_{0}.pickle'.format(base_name))
     max_sinrn_results = SimulationResults.load_from_file(
         'ia_max_sinr_{0}.pickle'.format(base_name))
     min_leakage_results = SimulationResults.load_from_file(
@@ -823,7 +825,7 @@ if __name__ == '__main__1':
     ax.set_yscale('log')
     ax.legend()
     ax.grid(True, which='both', axis='both')
-    plt.show()
+    plt.show(block=False)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot Sum Capacity (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

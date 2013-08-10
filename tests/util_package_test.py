@@ -25,6 +25,24 @@ from util.simulations import *
 from util.simulations import _parse_range_expr, _real_numpy_array_check
 
 
+# Define a _DummyRunner class for the testing the simulate and
+# simulate_in_parallel methods in the SimulationRunner class.
+class _DummyRunner(simulations.SimulationRunner):
+    def __init__(self):
+        simulations.SimulationRunner.__init__(self)
+        # Set the progress bar message to None to avoid print the
+        # progressbar in these testes.
+        self.rep_max = 2
+        self.update_progress_function_style = None
+        # Now we add a dummy parameter to our runner object
+        self.params.add('SNR', np.array([0, 5, 10, 15, 20]))
+        self.params.set_unpack_parameter('SNR')
+
+    @staticmethod
+    def _run_simulation(current_params):
+        return SimulationResults()
+
+
 class UtilDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the util
     package.
@@ -533,6 +551,7 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
 
+
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
     module.
@@ -611,7 +630,7 @@ class SimulationResultsTestCase(unittest.TestCase):
 
         # Test if an exception is thrown if we try to append result with a
         # different type
-        result1_wrong  =Result.create("lala", Result.RATIOTYPE, 25, 30)
+        result1_wrong = Result.create("lala", Result.RATIOTYPE, 25, 30)
         with self.assertRaises(ValueError):
             self.simresults.append_result(result1_wrong)
 
@@ -1090,6 +1109,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             pass
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
 class SimulationRunnerTestCase(unittest.TestCase):
     """Unit-tests for the SimulationRunner class in the simulations
     module.
@@ -1122,29 +1142,43 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertTrue(self.runner._keep_going(None, None, None))
 
     def test_simulate(self):
-        # First we need to create a dummy subclass of SimulationRunner that
-        # implements the _run_simulation method.
-        class DummyRunner(simulations.SimulationRunner):
-            def __init__(self):
-                simulations.SimulationRunner.__init__(self)
-                # Set the progress bar message to None to avoid print the
-                # progressbar in these testes.
-                self.rep_max = 2
-                self.update_progress_function_style = None
-                # Now we add a dummy parameter to our runner object
-                self.params.add('dummy_increment', 1)
-
-            @staticmethod
-            def _run_simulation(current_params):
-                return SimulationResults()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Now we create an instance of DummyRunner
-        dummyrunner = DummyRunner()
+        from tests.util_package_test import _DummyRunner
+        dummyrunner = _DummyRunner()
         # then we call its simulate method
         dummyrunner.simulate()
 
         dummyrunner.progressbar_message = 'Progress'
         dummyrunner.simulate()
+
+    # TODO: Implement-me
+    def test_simulate_in_parallel(self):
+        try:
+            from IPython.parallel import Client
+            cl = Client()
+
+            dview = cl.direct_view()
+            dview.execute('%reset')  # Reset the engines so that we don't have
+                                 # variables there from last computations
+            dview.execute('import sys')
+            # We use block=True to ensure that all engines have modified
+            # their path to include the folder with the simulator before we
+            # create the load lanced view in the following.
+            dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+
+            lview = cl.load_balanced_view()
+            if len(lview) == 0:
+                self.skipTest("At least one IPython engine must be running.")
+        except Exception:
+            self.skipTest("The IPython engines were not found.")
+
+        from tests.util_package_test import _DummyRunner
+        runner = _DummyRunner()
+        runner.progressbar_message = 'bla'
+        runner.update_progress_function_style = 'text1'
+
+        print
+        #runner.simulate()
+        runner.simulate_in_parallel(lview)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1326,7 +1360,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         std = 1.2
         n = 6
         interval = misc.calc_confidence_interval(mean, std, n, P=90)
-        expected_interval = [101.01411787,  102.62588213]
+        expected_interval = [101.01411787, 102.62588213]
         np.testing.assert_array_almost_equal(interval, expected_interval)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1529,14 +1563,14 @@ class ProgressbarText3TestCase(unittest.TestCase):
         # print
         #print self.out.getvalue()
 
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\n")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\n\r********* ProgressbarText Unittest 50/50 *********\n")
 
         # Test with no message (use default message)
         self.pbar2.progress(40)
-        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************")
+        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************\n")
 
 
 # # TODO: finish implementation
@@ -1589,8 +1623,6 @@ class ProgressbarText3TestCase(unittest.TestCase):
 
 
 #         # print self.out.getvalue()
-
-
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

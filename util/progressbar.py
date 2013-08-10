@@ -33,7 +33,7 @@ import sys
 import multiprocessing
 import time
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarMultiProcessText', 'center_message']
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessText', 'center_message']
 
 
 def center_message(message, length=50, fill_char=' ', left='', right=''):
@@ -367,7 +367,7 @@ class ProgressbarText3(object):
         progress_string = center_message(str(self), fill_char=self.progresschar)
         self._output.write('\r')
         self._output.write(progress_string)
-        #self.output.write('\n')
+        self._output.write('\n')
         #print('\r', progress_string, sep='', end='\n')
 
     def _update_iteration(self, elapsed_iter):
@@ -560,28 +560,6 @@ class ProgressbarMultiProcessText(object):
             The proxy progressbar.
 
         """
-        # xxxxx Inline class definition - Start xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        class ProgressbarMultiProcessProxy:
-            """Proxy progressbar that behaves like a ProgressbarText object,
-            but is actually updating a ProgressbarMultiProcessText progressbar.
-
-            """
-            def __init__(self, process_id, process_data_list):
-                """Initializes the ProgressbarMultiProcessProxy object."""
-                self.process_id = process_id
-                self._process_data_list = process_data_list
-
-            def progress(self, count):
-                """Updates the proxy progress bar.
-
-                Parameters
-                ----------
-                count : int
-                    The new amount of progress.
-
-                """
-                self._process_data_list[self.process_id] = count
-        # xxxxx Inline class definition - End xxxxxxxxxxxxxxxxxxxxxxxxxxx
         return ProgressbarMultiProcessProxy(*self._register_function(total_count))
 
     # This method will be run in a different process. Because of this the
@@ -657,4 +635,26 @@ class ProgressbarMultiProcessText(object):
             toc = self._toc.value
 
         return toc - self._tic.value
+
+# Used by the ProgressbarMultiProcessText class
+class ProgressbarMultiProcessProxy:
+    """Proxy progressbar that behaves like a ProgressbarText object,
+    but is actually updating a ProgressbarMultiProcessText progressbar.
+
+    """
+    def __init__(self, process_id, process_data_list):
+        """Initializes the ProgressbarMultiProcessProxy object."""
+        self.process_id = process_id
+        self._process_data_list = process_data_list
+
+    def progress(self, count):
+        """Updates the proxy progress bar.
+
+        Parameters
+        ----------
+        count : int
+            The new amount of progress.
+
+        """
+        self._process_data_list[self.process_id] = count
 # xxxxxxxxxx ProgressbarMultiProcessText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx

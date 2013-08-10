@@ -154,14 +154,14 @@ implementation of a subclass of the :class:`SimulationRunner`.
 
 __revision__ = "$Revision$"
 
-import pickle
+import cPickle as pickle
 from collections import OrderedDict, Iterable
 import itertools
 import copy
 import numpy as np
 
 from util.misc import pretty_time, calc_confidence_interval
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, center_message
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, center_message
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -575,8 +575,8 @@ class SimulationRunner(object):
                    current_rep < self.rep_max):
                 current_sim_results.merge_all_results(
                     self._run_simulation(current_params))
-                update_progress_func(current_rep + 1)
                 current_rep += 1
+                update_progress_func(current_rep)
 
             # If the while loop ended before rep_max repetitions (because
             # _keep_going returned false) then set the progressbar to full.
@@ -597,7 +597,7 @@ class SimulationRunner(object):
 
             # This will add a blank line between the simulations for
             # different unpacked variations (when there is more then one)
-            if self.params.get_num_unpacked_variations() > 1:
+            if self.params.get_num_unpacked_variations() > 1 and self.update_progress_function_style is not None:
                 print("")  # pragma: no cover
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -630,6 +630,22 @@ class SimulationRunner(object):
             configurations of transmission parameters.
 
         """
+        # # xxxxx Initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Get the client which created the view `view` and then get a
+        # # direct_view with the same targets
+        # cl = view.client
+        # dview = cl.direct_view(view.targets)
+        # # Now we can use this direct view to perform some imports
+        # import os
+        # import sys
+        # parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+        # sys.path.append(parent_dir)
+        # dview.execute('import sys')
+        # dview.execute('sys.path.append("{0}")'.format(parent_dir))
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        pbar = ProgressbarMultiProcessText(sleep_time=5)
+
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
         tic = time()
@@ -671,6 +687,12 @@ class SimulationRunner(object):
 
         # Loop through all the parameters combinations
         num_variations = self.params.get_num_unpacked_variations()
+
+        # # Create the proxy progressbars
+        # proxybar_list = []
+        # for i in range(num_variations):
+        #     proxybar_list.append(pbar.register_function_and_get_proxy_progressbar(self.rep_max))
+
         results = view.map_sync(simulate_for_current_params,
                                 [self] * num_variations,
                                 self.params.get_unpacked_params_list())
