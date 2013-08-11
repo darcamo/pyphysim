@@ -55,7 +55,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         Ns = np.array([1, 2, 3])
         multiUserChannel = self.iasolver._multiUserChannel
         multiUserChannel.randomize(Nr, Nt, K)
-        self.iasolver.randomizeF(Ns, P=None)  # Setting P here will be tested in test_randomizeF
+        self.iasolver.randomizeF(Ns, P=None)  # Setting P here will be
+                                              # tested in test_randomizeF
 
         # xxxxx Test the properties Nr, Nt and Ns xxxxxxxxxxxxxxxxxxxxxxxxx
         self.assertEqual(self.iasolver.K, K)
@@ -113,22 +114,27 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel.randomize(5 * np.ones(K, dtype=int), Nt, K)
         self.iasolver.randomizeF(Ns, P)
 
+        # The Frobenius norm of the _F variable must be equal to one
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver._F[0], 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver._F[1], 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver._F[2], 'fro'), 1.0)
+
+        # The square of the Frobenius norm of the property bust be equal to
+        # the power
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[0], 'fro') ** 2, P[0])
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[1], 'fro') ** 2, P[1])
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[2], 'fro') ** 2, P[2])
+
         # The shape of the precoder is the number of users
-        self.assertEqual(self.iasolver.F.shape, (K,))
+        self.assertEqual(self.iasolver._F.shape, (K,))
 
         # The power of each user
         np.testing.assert_array_almost_equal(self.iasolver.P, P)
 
         # The shape of the precoder of each user is Nt[user] x Ns[user]
-        self.assertEqual(self.iasolver.F[0].shape, (Nt[0], Ns[0]))
-        self.assertEqual(self.iasolver.F[1].shape, (Nt[1], Ns[1]))
-        self.assertEqual(self.iasolver.F[2].shape, (Nt[2], Ns[2]))
-
-        # Test if the generated precoder of each user has a Frobenius norm
-        # equal to one.
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[0], 'fro'), 1.)
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[1], 'fro'), 1.)
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[2], 'fro'), 1.)
+        self.assertEqual(self.iasolver._F[0].shape, (Nt[0], Ns[0]))
+        self.assertEqual(self.iasolver._F[1].shape, (Nt[1], Ns[1]))
+        self.assertEqual(self.iasolver._F[2].shape, (Nt[2], Ns[2]))
 
         # Test when the number of streams is an scalar (the same value will
         # be used for all users)
@@ -136,9 +142,9 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.iasolver.randomizeF(Ns)
 
         # The shape of the precoder of each user is Nt[user] x Ns[user]
-        self.assertEqual(self.iasolver.F[0].shape, (Nt[0], Ns))
-        self.assertEqual(self.iasolver.F[1].shape, (Nt[1], Ns))
-        self.assertEqual(self.iasolver.F[2].shape, (Nt[2], Ns))
+        self.assertEqual(self.iasolver._F[0].shape, (Nt[0], Ns))
+        self.assertEqual(self.iasolver._F[1].shape, (Nt[1], Ns))
+        self.assertEqual(self.iasolver._F[2].shape, (Nt[2], Ns))
 
         # Test if the power is None (which means "use 1" whenever needed),
         # since it was not set. Note that self.iasolver.P (the property) is
@@ -165,15 +171,15 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         k = 0
         H01_F1 = np.dot(
             self.iasolver._get_channel(k, 1),
-            self.iasolver.F[1]
+            self.iasolver.full_F[1]
         )
         H02_F2 = np.dot(
             self.iasolver._get_channel(k, 2),
-            self.iasolver.F[2]
+            self.iasolver.full_F[2]
         )
-        expected_Q0 = np.dot(P[1] * H01_F1,
+        expected_Q0 = np.dot(H01_F1,
                              H01_F1.transpose().conjugate()) + \
-            np.dot(P[2] * H02_F2,
+            np.dot(H02_F2,
                    H02_F2.transpose().conjugate())
 
         Qk = self.iasolver.calc_Q(k)
@@ -185,11 +191,11 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         k = 1
         H10_F0 = np.dot(
             self.iasolver._get_channel(k, 0),
-            self.iasolver.F[0]
+            self.iasolver._F[0]
         )
         H12_F2 = np.dot(
             self.iasolver._get_channel(k, 2),
-            self.iasolver.F[2]
+            self.iasolver._F[2]
         )
         expected_Q1 = np.dot(P[0] * H10_F0,
                              H10_F0.transpose().conjugate()) + \
@@ -205,11 +211,11 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         k = 2
         H20_F0 = np.dot(
             self.iasolver._get_channel(k, 0),
-            self.iasolver.F[0]
+            self.iasolver._F[0]
         )
         H21_F1 = np.dot(
             self.iasolver._get_channel(k, 1),
-            self.iasolver.F[1]
+            self.iasolver._F[1]
         )
         expected_Q2 = np.dot(P[0] * H20_F0,
                              H20_F0.transpose().conjugate()) + \
@@ -306,12 +312,11 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                 Hkj_H = Hkj.conjugate().transpose()
 
                 for d in range(self.iasolver.Ns[k]):
-                    Vjd = self.iasolver.F[j][:, d:d + 1]
+                    Vjd = self.iasolver.full_F[j][:, d:d + 1]
                     Vjd_H = Vjd.conjugate().transpose()
                     aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
-                expected_first_part = expected_first_part + \
-                    (P[j] / Ns[j].astype(float)) * aux
+                expected_first_part = expected_first_part + aux
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -335,12 +340,10 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
-                Vkl = self.iasolver.F[k][:, l:l + 1]
+                Vkl = self.iasolver.full_F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
                 expected_second_part = np.dot(Hkk,
                                               np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
-                expected_second_part = (P[k] / Ns[k].astype(float)) * \
-                    expected_second_part
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
@@ -363,12 +366,10 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
-                Vkl = self.iasolver.F[k][:, l:l + 1]
+                Vkl = self.iasolver.full_F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
                 expected_second_part = np.dot(Hkk,
                                               np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
-                expected_second_part = (P[k] / Ns[k].astype(float)) * \
-                    expected_second_part
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
@@ -1148,11 +1149,8 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
         for k in range(K):
             Hkk = iasolver._get_channel(k, k)
-            # Vk = iasolver.F[k]
             Bkl_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k)
-            #Uk = iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             Uk = iasolver.W[k]
-            #Uk_H = Uk.conj().T
             Uk_H = iasolver.W_H[k]
 
             SINR_k_all_l = iasolver._calc_SINR_k(Bkl_all_l, Uk_H, k)
@@ -1160,12 +1158,13 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
                 Ukl_H = Ukl.transpose().conjugate()
-                Vkl = iasolver.F[k][:, l:l + 1]
+                Vkl = iasolver.full_F[k][:, l:l + 1]
                 aux = np.dot(Ukl_H,
                              np.dot(Hkk, Vkl))
 
                 expectedSINRkl = np.asscalar(
-                    np.dot(aux, aux.transpose().conjugate()) * (P[k] / Ns[k]) / np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))
                 )
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
@@ -1321,20 +1320,31 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
 
-        multiUserChannel.randomize(Nr, Nt, K)
-        iasolver.solve(Ns)
+        # # xxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # multiUserChannel.randomize(Nr, Nt, K)
+        # print iasolver.randomizeF(Ns, P)
+        # import pudb; pudb.set_trace()  ## DEBUG ##
+        # iasolver._updateW()
+        # W = iasolver._W
+        # print np.linalg.norm(W[0], 'fro')
+        # print np.linalg.norm(W[1], 'fro')
+        # print np.linalg.norm(W[2], 'fro')
+        # #iasolver._updateF()
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        full_W_H = iasolver.full_W_H
-        F = iasolver.F
-        H00 = iasolver._get_channel(0, 0)
-        H11 = iasolver._get_channel(1, 1)
-        H22 = iasolver._get_channel(2, 2)
+        #iasolver.solve(Ns)
 
-        H01 = iasolver._get_channel(0, 1)
-        # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+        # full_W_H = iasolver.full_W_H
+        # F = iasolver.F
+        # H00 = iasolver._get_channel(0, 0)
+        # H11 = iasolver._get_channel(1, 1)
+        # H22 = iasolver._get_channel(2, 2)
+
+        # H01 = iasolver._get_channel(0, 1)
+        # # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
+        # self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
+        # self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
 
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H01, F[1]))[0][0], 0.0)
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H02, F[2]))[0][0], 0.0)
