@@ -456,8 +456,6 @@ class IASolverBaseClass(object):
         --------
         calc_Q
         """
-        # TODO: The power in the reverse network is probably different and
-        # therefore maybe we should not use self.P directly.
         P = self.P
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nt[k], self.Nt[k]], dtype=complex)
@@ -1531,9 +1529,12 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             Hkj = self._get_channel_rev(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = self._W[j]
-            assert np.linalg.norm(Vj, 'fro') - 1.0 < 1e-6
-            Vj_H = Vj.conjugate().transpose()
 
+            # The lets make sure the receive filter norm is equal to one so
+            # that we can correctly scale it to the desired power.
+            assert np.linalg.norm(Vj, 'fro') - 1.0 < 1e-6
+
+            Vj_H = Vj.conjugate().transpose()
             first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
                 Hkj,
                 np.dot(
@@ -1675,7 +1676,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         for l in range(num_streams):
             Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
 
-        return Uk
+        return Uk / np.linalg.norm(Uk, 'fro')
 
     def _calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
@@ -1887,11 +1888,54 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             aux = np.dot(Hki.conj().T, Uk)
             sum_term = sum_term + np.dot(aux, aux.conj().T)
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if mu_i is None:
-            # TODO: Find the best mu_i
-            mu_i = 0  # This should be the best value instead of always zero
-            self._mu[i] = mu_i
-            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+            min_mu_i = 0
+            max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
+            max_norm = np.linalg.norm(self._calc_Vi_for_a_given_mu(sum_term, min_mu_i, Hii_herm_U), 'fro')
+
+            # If the square of max_norm is lower then the maximum power
+            # then we can use the value of mu_i to min_mu_i and we're done:
+            if self.P[i] > (max_norm ** 2):
+                mu_i = min_mu_i
+                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+                self._mu[i] = mu_i
+            else:
+                # If we are not done yet then we need to perform the
+                # bisection method to find the best mu value between
+                # min_mu_i and max_mu_i
+                tol = 1e-3  # Tolerance used to stop the bisection method
+
+                # Maximum number of iterations of the bisection
+                max_iter = int(1 + np.round(
+                    (np.log(max_mu_i - min_mu_i) - np.log(tol)) / np.log(2)))
+
+                # Perform the bisection
+                for ii in range(max_iter):
+                    mu_i = (max_mu_i + min_mu_i) / 2.0
+                    cost = (np.linalg.norm(self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U), 'fro') ** 2) - self.P[i]
+                    if cost > 0:
+                        # The current value of mu_i yields a precoder with
+                        # a power higher then the allowed value. Lets
+                        # increase the value of min_mu_i
+                        min_mu_i = mu_i
+                    else:
+                        # The current value of mu_i yields a precoder with
+                        # a power lower then the allowed value. Lets
+                        # decrease the value of max_mu_i
+                        max_mu_i = mu_i
+                    if np.abs(cost) < tol:
+                        break
+
+                # Now that we have the best value for mu_i, lets calculate Vi
+                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+                self._mu[i] = mu_i
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case when the mu value is provided xxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         else:
             self._mu[i] = mu_i
             Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
@@ -1907,4 +1951,9 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         self._mu = np.zeros(3, dtype=float)
 
         for k in range(self.K):
-            self._F[k] = self._calc_Vi(k)
+            # Note: The square of the Frobenius norm of Vi is NOT equal to
+            # one. Since the full_F property will apply the correct power
+            # scaling, the norm of self._F must be equal to one and thus we
+            # set self._F as the normalized value of Vi
+            Vi = self._calc_Vi(k)
+            self._F[k] = Vi / np.linalg.norm(Vi)

@@ -415,6 +415,54 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         self.ia_solver.max_iterations = self.params['max_iterations']
 
 
+class MMSESimulationRunner(IASimulationRunner):
+    """
+    Implements a simulation runner for a transmission with the MMSE based
+    Interference Alignment Algorithm.
+
+    Parameters:
+    -----------
+    config_filename : str
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
+    """
+    def __init__(self, config_filename):
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
+        M=integer(min=4, max=512, default=4)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        K=integer(min=2,default=3)
+        Nr=integer(min=2,default=2)
+        Nt=integer(min=2,default=2)
+        Ns=integer(min=1,default=1)
+        [IA Algorithm]
+        max_iterations=integer(min=1, default=120)
+        [General]
+        rep_max=integer(min=1, default=2000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+
+        IASimulationRunner.__init__(self,
+                                    ia.MMSEIASolver,
+                                    config_filename,
+                                    spec)
+
+        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.progressbar_message = "MMSE ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Almost everything is already set in the __init__ from th
+        # IASimulationRunner class. Now we set the remaining parameters
+        # which are not common to all IASolvers
+
+        # Iterations of the AlternatingMinIASolver algorithm.
+        self.ia_solver.max_iterations = self.params['max_iterations']
+
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Functions Simulating each IA Algorithm xxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -648,6 +696,22 @@ def simulate_max_sinr():
     return results, filename
 
 
+def simulate_mmse():
+    from apps.simulate_ia import MMSESimulationRunner
+
+    # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
+    runner = MMSESimulationRunner('ia_config_file.txt')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results, filename = simulate_general(
+        runner,
+        'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results, filename
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -680,11 +744,18 @@ if __name__ == '__main__1':
     plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxx Simulate the MMSE algorithm xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Run the simulation
+    mmse_results, mmse_filename = simulate_mmse()
+    # Plot the results
+    plot_ber(mmse_results, plot_title='MMSE IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
+    # print "Simulating Closed Form algorithm"
+    # closed_form_results, closed_form_filename = simulate_closed_form()
 
     # print "Simulating Max SINR algorithm"
     # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
@@ -694,6 +765,9 @@ if __name__ == '__main__':
 
     # print "Simulating Min. Leakage algorithm"
     # min_leakage_results, min_leakage_filename = simulate_min_leakage()
+
+    print "Simulating MMSE algorithm"
+    mmse_results, mmse_filename = simulate_mmse()
 
 
 # xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -722,6 +796,8 @@ if __name__ == '__main__1':
         'ia_max_sinr_{0}.pickle'.format(base_name))
     min_leakage_results = SimulationResults.load_from_file(
         'ia_min_leakage_{0}.pickle'.format(base_name))
+    mmse_results = SimulationResults.load_from_file(
+        'ia_mmse_{0}.pickle'.format(base_name))
 
     plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
     plot_sum_capacity(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
@@ -734,6 +810,9 @@ if __name__ == '__main__1':
 
     plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
     plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
+
+    plot_ber(mmse_results, plot_title='MMSE IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
+    plot_sum_capacity(mmse_results, plot_title='MMSE IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
 
 
 if __name__ == '__main__1':
@@ -789,6 +868,8 @@ if __name__ == '__main__1':
         'ia_max_sinr_{0}.pickle'.format(base_name))
     min_leakage_results = SimulationResults.load_from_file(
         'ia_min_leakage_{0}.pickle'.format(base_name))
+    mmse_results = SimulationResults.load_from_file(
+        'ia_mmse_{0}.pickle'.format(base_name))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -811,11 +892,16 @@ if __name__ == '__main__1':
     ber_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('ber', P=95)
     ber_errors_min_leakage = np.abs([i[1] - i[0] for i in ber_CF_min_leakage])
 
+    ber_mmse = mmse_results.get_result_values_list('ber')
+    ber_CF_mmse = mmse_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_errors_mmse = np.abs([i[1] - i[0] for i in ber_CF_mmse])
+
     fig, ax = plt.subplots(nrows=1, ncols=1)
     ax.errorbar(SNR, ber_alt_min, ber_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
     ax.errorbar(SNR, ber_closed_form, ber_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
     ax.errorbar(SNR, ber_max_sinr, ber_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
     ax.errorbar(SNR, ber_min_leakage, ber_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+    ax.errorbar(SNR, ber_mmse, ber_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
 
     plt.xlabel('SNR')
     plt.ylabel('BER')
@@ -845,11 +931,16 @@ if __name__ == '__main__1':
     sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
 
+    sum_capacity_mmse = mmse_results.get_result_values_list('sum_capacity')
+    sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_errors_mmse = np.abs([i[1] - i[0] for i in sum_capacity_CF_mmse])
+
     fig2, ax2 = plt.subplots(nrows=1, ncols=1)
     ax2.errorbar(SNR, sum_capacity_alt_min, sum_capacity_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
     ax2.errorbar(SNR, sum_capacity_closed_form, sum_capacity_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
     ax2.errorbar(SNR, sum_capacity_max_sinr, sum_capacity_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
     ax2.errorbar(SNR, sum_capacity_min_leakage, sum_capacity_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+    ax2.errorbar(SNR, sum_capacity_mmse, sum_capacity_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
 
     plt.xlabel('SNR')
     plt.ylabel('Sum Capacity')

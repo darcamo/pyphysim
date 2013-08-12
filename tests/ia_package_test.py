@@ -1310,8 +1310,6 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
 
     def test_solve(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
-        iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4
@@ -1320,28 +1318,21 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
 
-        # # xxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # multiUserChannel.randomize(Nr, Nt, K)
-        # print iasolver.randomizeF(Ns, P)
-        # import pudb; pudb.set_trace()  ## DEBUG ##
-        # iasolver._updateW()
-        # W = iasolver._W
-        # print np.linalg.norm(W[0], 'fro')
-        # print np.linalg.norm(W[1], 'fro')
-        # print np.linalg.norm(W[2], 'fro')
-        # #iasolver._updateF()
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver = MaxSinrIASolver(multiUserChannel)
+        iasolver.noise_var = 1e-6
 
-        #iasolver.solve(Ns)
+        iasolver.solve(Ns)
 
-        # full_W_H = iasolver.full_W_H
-        # F = iasolver.F
-        # H00 = iasolver._get_channel(0, 0)
-        # H11 = iasolver._get_channel(1, 1)
-        # H22 = iasolver._get_channel(2, 2)
+        full_W_H = iasolver.full_W_H
+        F = iasolver.F
+        H00 = iasolver._get_channel(0, 0)
+        H11 = iasolver._get_channel(1, 1)
+        H22 = iasolver._get_channel(2, 2)
 
-        # H01 = iasolver._get_channel(0, 1)
-        # # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        H01 = iasolver._get_channel(0, 1)
+        # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
         # self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
         # self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
@@ -1527,11 +1518,11 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.Nr = np.ones(self.K, dtype=int) * 2
         self.Ns = np.ones(self.K, dtype=int) * 1
 
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        multiUserChannel.set_channel_seed(43)
-        multiUserChannel.set_noise_seed(456)
-        np.random.seed(25)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # multiUserChannel.set_channel_seed(43)
+        # multiUserChannel.set_noise_seed(456)
+        # np.random.seed(25)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Transmit power of all users
         self.P = np.array([1.2, 1.5, 0.9])
@@ -1697,44 +1688,42 @@ class MMSEIASolverTestCase(unittest.TestCase):
         # Now lets repeat the tests, but without specifying the value of
         # mu. Therefore, the optimum value of mu will be also calculated.
 
-        # print np.linalg.norm(V0, 'fro') ** 2
-        # print np.linalg.norm(V1, 'fro') ** 2
-        # print np.linalg.norm(V2, 'fro') ** 2
+        V0_best = self.iasolver._calc_Vi(0)
+        V1_best = self.iasolver._calc_Vi(1)
+        V2_best = self.iasolver._calc_Vi(2)
+        # TODO: Find a way to test the case when the best value of mu is found
 
-        # print self.iasolver.P
+    def test_updateF(self):
+        self.iasolver._updateF()
+        # print np.linalg.norm(self.iasolver.F[0], 'fro') ** 2
+        # print np.linalg.norm(self.iasolver.F[1], 'fro') ** 2
+        # print np.linalg.norm(self.iasolver.F[2], 'fro') ** 2
 
-
-        # TODO: Finish implementation
+        # TODO: implement-me
         pass
 
-    # def test_updateF(self):
+    def test_solve(self):
+        # Test if the solution is better then the closed form solution
+        Ns = self.Ns
 
-    #     # TODO: Implement-me
-    #     pass
+        # # Tesf if the solution aligns the interference
+        # for l in range(3):
+        #     for k in range(3):
+        #         Hlk = self.iasolver._get_channel(l, k)
+        #         Wl_H = self.iasolver.W_H[l]
+        #         Fk = self.iasolver.F[k]
+        #         s = np.dot(Wl_H, np.dot(Hlk, Fk))[0][0]
+        #         if l == k:
+        #             Hk_eq = self.iasolver._calc_equivalent_channel(k)
+        #             s2 = s / Hk_eq[0, 0]  # We only have one stream -> the
+        #                                   # equivalent channel is an scalar.
+        #             self.assertAlmostEqual(1.0, s2)
+        #         else:
+        #             # Test if the interference is equal to 0.0
+        #             self.assertAlmostEqual(0.0, s)
 
-    # def test_solve(self):
-    #     # Test if the solution is better then the closed form solution
-    #     Ns = self.Ns
-    #     self.iasolver.solve(Ns)
-
-    #     # # Tesf if the solution aligns the interference
-    #     # for l in range(3):
-    #     #     for k in range(3):
-    #     #         Hlk = self.iasolver._get_channel(l, k)
-    #     #         Wl_H = self.iasolver.W_H[l]
-    #     #         Fk = self.iasolver.F[k]
-    #     #         s = np.dot(Wl_H, np.dot(Hlk, Fk))[0][0]
-    #     #         if l == k:
-    #     #             Hk_eq = self.iasolver._calc_equivalent_channel(k)
-    #     #             s2 = s / Hk_eq[0, 0]  # We only have one stream -> the
-    #     #                                   # equivalent channel is an scalar.
-    #     #             self.assertAlmostEqual(1.0, s2)
-    #     #         else:
-    #     #             # Test if the interference is equal to 0.0
-    #     #             self.assertAlmostEqual(0.0, s)
-
-    #     # TODO: Implement-me
-    #     pass
+        # TODO: Implement-me
+        pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
