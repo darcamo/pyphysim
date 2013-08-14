@@ -16,7 +16,7 @@ __revision__ = "$Revision$"
 import numpy as np
 import itertools
 
-from util.misc import peig, leig, randn_c
+from util.misc import peig, leig, randn_c, update_inv_sum_diag
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver']
@@ -1840,7 +1840,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             self._W[k] = self._calc_Uk(k)
 
     def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
-        """This method is called inside _calc_Vi.
+        """
+        Calculates the value of Vi for the given parameters.
+
+        This method is called inside _calc_Vi.
 
         Parameters
         ----------
@@ -1855,6 +1858,28 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
                     H_herm_U)
 
+        return Vi
+
+    def _calc_Vi_for_a_given_mu2(self, inv_sum_term, mu_i, H_herm_U):
+        """
+        Calculates the value of Vi for the given parameters.
+
+        This method is called inside _calc_Vi.
+
+        Parameters
+        ----------
+        inv_sum_term : numpy array
+            The inverse of the sumation term in the formula to calculate
+            the precoder when mu_i is equal to zero.
+        mu_i : float
+            The value of the lagrange multiplier
+        H_herm_U : numpy array
+            The value of :math:`H_ii^H U_i`
+        """
+        N = inv_sum_term.shape[0]
+        diagonal = mu_i * np.ones(N)  # Vector of N elements
+        new_inv = update_inv_sum_diag(inv_sum_term, diagonal)
+        Vi = np.dot(new_inv, H_herm_U)
         return Vi
 
     def _calc_Vi(self, i, mu_i=None):
@@ -1888,19 +1913,21 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             aux = np.dot(Hki.conj().T, Uk)
             sum_term = sum_term + np.dot(aux, aux.conj().T)
 
+        inv_sum_term = np.linalg.inv(sum_term)
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if mu_i is None:
             min_mu_i = 0
             max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
-            max_norm = np.linalg.norm(self._calc_Vi_for_a_given_mu(sum_term, min_mu_i, Hii_herm_U), 'fro')
+            max_norm = np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, min_mu_i, Hii_herm_U), 'fro')
 
             # If the square of max_norm is lower then the maximum power
             # then we can use the value of mu_i to min_mu_i and we're done:
             if self.P[i] > (max_norm ** 2):
                 mu_i = min_mu_i
-                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
             else:
                 # If we are not done yet then we need to perform the
@@ -1915,7 +1942,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # Perform the bisection
                 for ii in range(max_iter):
                     mu_i = (max_mu_i + min_mu_i) / 2.0
-                    cost = (np.linalg.norm(self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U), 'fro') ** 2) - self.P[i]
+                    cost = (np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U), 'fro') ** 2) - self.P[i]
                     if cost > 0:
                         # The current value of mu_i yields a precoder with
                         # a power higher then the allowed value. Lets
@@ -1930,7 +1957,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                         break
 
                 # Now that we have the best value for mu_i, lets calculate Vi
-                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1938,7 +1965,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         else:
             self._mu[i] = mu_i
-            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+            Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
 
         return Vi
 

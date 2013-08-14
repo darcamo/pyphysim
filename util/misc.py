@@ -558,6 +558,7 @@ def calc_autocorr(x):
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
 
+# TODO: Try to make this function faster (Cython?)
 def update_inv_sum_diag(invA, diagonal):
     """
     Calculates the inverse of a matrix `(A + D)`, where `D` is a diagonal
