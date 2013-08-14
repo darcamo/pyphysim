@@ -558,7 +558,6 @@ def calc_autocorr(x):
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
 
-# TODO: Try to make this function faster (Cython?)
 def update_inv_sum_diag(invA, diagonal):
     """
     Calculates the inverse of a matrix `(A + D)`, where `D` is a diagonal
@@ -588,16 +587,16 @@ def update_inv_sum_diag(invA, diagonal):
     # vectors "u" and "v" are equal and correspond to a column of the
     # identity matrix multiplied by a constant (only one element is
     # different of zero).
-    def f(inv_matrix, index, element):
-        value = inv_matrix - (
-            element * np.outer(inv_matrix[:, index],
-                               inv_matrix[index, :])) / (
-                                   1 + element * inv_matrix[index, index])
-        return value
+    def calc_update_term(inv_matrix, index, indexed_element, diagonal_element):
+        return (
+            diagonal_element * np.outer(inv_matrix[:, index],
+                                        inv_matrix[index, :])) / (
+                                            1 + diagonal_element * indexed_element)
 
     new_inv = invA
-    for index, element in zip(range(diagonal.size), diagonal):
-        new_inv = f(new_inv, index, element)
+    for index, diagonal_element in zip(range(diagonal.size), diagonal):
+        indexed_element = new_inv[index, index]
+        new_inv -= calc_update_term(new_inv, index, indexed_element, diagonal_element)
 
     return new_inv
 
