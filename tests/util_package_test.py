@@ -1364,6 +1364,14 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(interval, expected_interval)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_update_inv_sum_diag(self):
+        A = np.random.randn(3, 3)
+        D = np.diag([1.2, 1.5, 0.9])
+        invA = np.linalg.inv(A)
+        expected_invB = np.linalg.inv(A + D)
+        invB = misc.update_inv_sum_diag(invA, D.diagonal())
+        np.testing.assert_array_almost_equal(expected_invB, invB)
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

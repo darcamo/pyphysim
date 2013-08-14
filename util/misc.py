@@ -558,6 +558,50 @@ def calc_autocorr(x):
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
 
+# TODO: Try to make this function faster (Cython?)
+def update_inv_sum_diag(invA, diagonal):
+    """
+    Calculates the inverse of a matrix `(A + D)`, where `D` is a diagonal
+    matrix, given the inverse of `A` and the diagonal of `D`.
+
+    This calculation is performed using the Sherman–Morrison formula, given
+    my
+          :math:`"(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u},`
+    where `u` and `v` are vectors.
+
+    Parameters
+    ----------
+    invA : numpy array
+        A 2D numpy array.
+    diagonal : numpy array
+        A 1D numpy arrray with the elements in the diagonal of `D`.
+
+    Returns
+    -------
+    new_inv : numpy array
+        The inverse of A+D.
+
+    """
+    # $$(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u}$$
+
+    # This function updates the inverse as the equation above when the
+    # vectors "u" and "v" are equal and correspond to a column of the
+    # identity matrix multiplied by a constant (only one element is
+    # different of zero).
+    def f(inv_matrix, index, element):
+        value = inv_matrix - (
+            element * np.outer(inv_matrix[:, index],
+                               inv_matrix[index, :])) / (
+                                   1 + element * inv_matrix[index, index])
+        return value
+
+    new_inv = invA
+    for index, element in zip(range(diagonal.size), diagonal):
+        new_inv = f(new_inv, index, element)
+
+    return new_inv
+
+
 def calc_confidence_interval(mean, std, n, P=95):
     """
     Calculate the confidence interval that contains the true mean (of a

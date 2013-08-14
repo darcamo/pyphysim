@@ -16,7 +16,7 @@ __revision__ = "$Revision$"
 import numpy as np
 import itertools
 
-from util.misc import peig, leig, randn_c
+from util.misc import peig, leig, randn_c, update_inv_sum_diag
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver']
@@ -38,6 +38,11 @@ class IASolverBaseClass(object):
     `_clear_receive_filter` method in the beginning and after that set
     either the _W or the _W_H variables with the correct value.
 
+    The implementation of the `_updateF` method should call the
+    clear_precoder_filter in the beginning and after that set _W variable
+    with the correct precoder (normalized to have a Frobenius norm equal to
+    one.
+
     The implementation of the `_updateF` method must set the _F variable
     with the correct value.
 
@@ -57,6 +62,8 @@ class IASolverBaseClass(object):
         """
         # Precoder and receive filters (numpy arrays of numpy arrays)
         self._F = None  # Precoder: One precoder for each user
+        self._full_F = None  # Precoder: Same as _F, but scaled with the
+                             # correct power value in self.P
         self._W = None  # Receive filter: One for each user
         self._W_H = None  # Receive filter: One for each user
 
@@ -78,11 +85,21 @@ class IASolverBaseClass(object):
         Clear the receive filter.
 
         This should be called in the beginning of the implementation of the
-        updateW method in subclasses.
+        `_updateW` method in subclasses.
         """
         self._W = None
         self._W_H = None
         self._full_W_H = None
+
+    def _clear_precoder_filter(self):
+        """
+        Clear the precoder filter.
+
+        This should be called in the beginning of the implemetnation of the
+        `_updateF` method in subclasses.
+        """
+        self._F = None
+        self._full_F = None
 
     def clear(self):
         """
@@ -139,10 +156,13 @@ class IASolverBaseClass(object):
     def F(self):
         """Transmit precoder of all users."""
         return self._F
-        # F = self._F
-        # if F is not None:
-        #     F = F * self.P
-        # return F
+
+    @property
+    def full_F(self):
+        """Transmit precoder of all users."""
+        if self._full_F is None:
+            self._full_F = self._F * np.sqrt(self.P)
+        return self._full_F
 
     # The W property should return a receive filter that can be directly
     # multiplied (no need to calculate the hermitian of W) by the received
@@ -174,7 +194,12 @@ class IASolverBaseClass(object):
 
     @property
     def full_W_H(self, ):
-        """Get method for the W_H property."""
+        """
+        Get method for the full_W_H property.
+
+        The full_W_H property returns the equivalent filter of the IA
+        filter plus the post processing filter.
+        """
         if self._full_W_H is None:
             if self.W_H is not None:
                 self._full_W_H = np.empty(self.K, dtype=np.ndarray)
@@ -296,16 +321,14 @@ class IASolverBaseClass(object):
 
         Parameters
         ----------
-        K : int
-            Number of users.
-        Nt : int or 1D numpy array
-            Number of transmit antennas of each user.
         Ns : int or 1D numpy array
             Number of streams of each user.
         P : 1D numpy array
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
+        self._clear_precoder_filter()
+
         if isinstance(Ns, int):
             Ns = np.ones(self.K, dtype=int) * Ns
 
@@ -400,15 +423,14 @@ class IASolverBaseClass(object):
 
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
-        P = self.P
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
         for l in interfering_users:
             Hkl_F = np.dot(
                 self._get_channel(k, l),
-                self._F[l])
-            Qk = Qk + np.dot(P[l] * Hkl_F, Hkl_F.transpose().conjugate())
+                self.full_F[l])
+            Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
 
         return Qk
 
@@ -434,13 +456,14 @@ class IASolverBaseClass(object):
         --------
         calc_Q
         """
-        # TODO: The power in the reverse network is probably different and
-        # therefore maybe we should not use self.P directly.
         P = self.P
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nt[k], self.Nt[k]], dtype=complex)
 
         for l in interfering_users:
+            # The lets make sure the receive filter norm is equal to one so
+            # that we can correctly scale it to the desired power.
+            assert np.linalg.norm(self._W[l], 'fro') - 1.0 < 1e-6
             Hkl_F_rev = np.dot(
                 self._get_channel_rev(k, l),
                 self._W[l])
@@ -554,16 +577,14 @@ class IASolverBaseClass(object):
 
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
-        P = self.P
-
         first_part = 0.0
         for j in range(self.K):
             Hkj = self._get_channel(k, j)
             Hkj_H = Hkj.conjugate().transpose()
-            Vj = self._F[j]
+            Vj = self.full_F[j]
             Vj_H = Vj.conjugate().transpose()
 
-            first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
+            first_part = first_part + np.dot(
                 Hkj,
                 np.dot(
                     np.dot(Vj,
@@ -595,18 +616,16 @@ class IASolverBaseClass(object):
 
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        P = self.P
-
         Hkk = self._get_channel(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
-        Vkl = self._F[k][:, l:l + 1]
+        Vkl = self.full_F[k][:, l:l + 1]
         Vkl_H = Vkl.transpose().conjugate()
         second_part = np.dot(Hkk,
                              np.dot(np.dot(Vkl, Vkl_H),
                                     Hkk_H))
 
-        return second_part * (float(P[k]) / self._Ns[k])
+        return second_part
 
     def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=0):
         """Calculates the interference-plus-noise covariance matrix for all
@@ -681,9 +700,8 @@ class IASolverBaseClass(object):
             The SINR for the different streams of user k.
 
         """
-        Pk = self.P[k]
         Hkk = self._get_channel(k, k)
-        Vk = self._F[k]
+        Vk = self.full_F[k]
 
         SINR_k = np.empty(self.Ns[k], dtype=float)
 
@@ -691,12 +709,10 @@ class IASolverBaseClass(object):
             Vkl = Vk[:, l:l + 1]
             Ukl_H = Uk_H[l:l + 1, :]
             Ukl = Ukl_H.conj().T
-            # Ukl = Uk[:, l:l + 1]
-            # Ukl_H = Ukl.transpose().conjugate()
             aux = np.dot(Ukl_H,
                          np.dot(Hkk, Vkl))
             numerator = np.dot(aux,
-                               aux.transpose().conjugate()) * Pk / self.Ns[k]
+                               aux.transpose().conjugate())
             denominator = np.dot(Ukl_H,
                                  np.dot(Bkl_all_l[l], Ukl))
             SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
@@ -827,6 +843,8 @@ class ClosedFormIASolver(IASolverBaseClass):
             calculated (with the _calc_E method) and the the first Ns
             eigenvectors will be used as F0.
         """
+        self._clear_precoder_filter()
+
         # The number of users is always 3 for the ClosedFormIASolver class
         self._F = np.zeros(3, dtype=np.ndarray)
 
@@ -1271,6 +1289,12 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)\mtH_{k,l}$
         # xxxxx Calculates the temporary variable Y[k] for all k xxxxxxxxxx
         # Note that $\mtY[k] = (\mtI - \mtC_k \mtC_k^H)$
+
+        self._clear_precoder_filter()
+
+        # The number of users is always 3 for the ClosedFormIASolver class
+        self._F = np.zeros(self.K, dtype=np.ndarray)
+
         calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
             np.dot(C, C.conjugate().transpose())
         Y = map(calc_Y, self.Nr, self._C)
@@ -1418,6 +1442,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         _step
 
         """
+        self._clear_precoder_filter()
         self._F = self._calc_Uk_all_k_rev()
 
     def _updateW(self):
@@ -1499,12 +1524,17 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
         P = self.P
         first_part = 0.0
+
         for j in range(self.K):
             Hkj = self._get_channel_rev(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = self._W[j]
-            Vj_H = Vj.conjugate().transpose()
 
+            # The lets make sure the receive filter norm is equal to one so
+            # that we can correctly scale it to the desired power.
+            assert np.linalg.norm(Vj, 'fro') - 1.0 < 1e-6
+
+            Vj_H = Vj.conjugate().transpose()
             first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
                 Hkj,
                 np.dot(
@@ -1646,7 +1676,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         for l in range(num_streams):
             Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
 
-        return Uk
+        return Uk / np.linalg.norm(Uk, 'fro')
 
     def _calc_Uk_all_k(self):
         """Calculates the receive filter of all users.
@@ -1683,6 +1713,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         --------
         _step
         """
+        self._clear_precoder_filter()
         self._F = self._calc_Uk_all_k_rev()
 
     def _updateW(self):
@@ -1809,7 +1840,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             self._W[k] = self._calc_Uk(k)
 
     def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
-        """This method is called inside _calc_Vi.
+        """
+        Calculates the value of Vi for the given parameters.
+
+        This method is called inside _calc_Vi.
 
         Parameters
         ----------
@@ -1824,6 +1858,28 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
                     H_herm_U)
 
+        return Vi
+
+    def _calc_Vi_for_a_given_mu2(self, inv_sum_term, mu_i, H_herm_U):
+        """
+        Calculates the value of Vi for the given parameters.
+
+        This method is called inside _calc_Vi.
+
+        Parameters
+        ----------
+        inv_sum_term : numpy array
+            The inverse of the sumation term in the formula to calculate
+            the precoder when mu_i is equal to zero.
+        mu_i : float
+            The value of the lagrange multiplier
+        H_herm_U : numpy array
+            The value of :math:`H_ii^H U_i`
+        """
+        N = inv_sum_term.shape[0]
+        diagonal = mu_i * np.ones(N)  # Vector of N elements
+        new_inv = update_inv_sum_diag(inv_sum_term, diagonal)
+        Vi = np.dot(new_inv, H_herm_U)
         return Vi
 
     def _calc_Vi(self, i, mu_i=None):
@@ -1857,14 +1913,59 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             aux = np.dot(Hki.conj().T, Uk)
             sum_term = sum_term + np.dot(aux, aux.conj().T)
 
+        inv_sum_term = np.linalg.inv(sum_term)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if mu_i is None:
-            # TODO: Find the best mu_i
-            mu_i = 0  # This should be the best value instead of always zero
-            self._mu[i] = mu_i
-            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+            min_mu_i = 0
+            max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
+            max_norm = np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, min_mu_i, Hii_herm_U), 'fro')
+
+            # If the square of max_norm is lower then the maximum power
+            # then we can use the value of mu_i to min_mu_i and we're done:
+            if self.P[i] > (max_norm ** 2):
+                mu_i = min_mu_i
+                Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+                self._mu[i] = mu_i
+            else:
+                # If we are not done yet then we need to perform the
+                # bisection method to find the best mu value between
+                # min_mu_i and max_mu_i
+                tol = 1e-3  # Tolerance used to stop the bisection method
+
+                # Maximum number of iterations of the bisection
+                max_iter = int(1 + np.round(
+                    (np.log(max_mu_i - min_mu_i) - np.log(tol)) / np.log(2)))
+
+                # Perform the bisection
+                for ii in range(max_iter):
+                    mu_i = (max_mu_i + min_mu_i) / 2.0
+                    cost = (np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U), 'fro') ** 2) - self.P[i]
+                    if cost > 0:
+                        # The current value of mu_i yields a precoder with
+                        # a power higher then the allowed value. Lets
+                        # increase the value of min_mu_i
+                        min_mu_i = mu_i
+                    else:
+                        # The current value of mu_i yields a precoder with
+                        # a power lower then the allowed value. Lets
+                        # decrease the value of max_mu_i
+                        max_mu_i = mu_i
+                    if np.abs(cost) < tol:
+                        break
+
+                # Now that we have the best value for mu_i, lets calculate Vi
+                Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+                self._mu[i] = mu_i
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case when the mu value is provided xxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         else:
             self._mu[i] = mu_i
-            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+            Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
 
         return Vi
 
@@ -1872,8 +1973,14 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         Updates the precoder of all users.
         """
+        self._clear_precoder_filter()
         self._F = np.zeros(3, dtype=np.ndarray)
         self._mu = np.zeros(3, dtype=float)
 
         for k in range(self.K):
-            self._F[k] = self._calc_Vi(k)
+            # Note: The square of the Frobenius norm of Vi is NOT equal to
+            # one. Since the full_F property will apply the correct power
+            # scaling, the norm of self._F must be equal to one and thus we
+            # set self._F as the normalized value of Vi
+            Vi = self._calc_Vi(k)
+            self._F[k] = Vi / np.linalg.norm(Vi)
