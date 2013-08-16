@@ -64,6 +64,13 @@ through kernprof with
 See mode in http://pythonhosted.org/line_profiler/
 
 
+Memory Profiler
+~~~~~~~~~~~~~~~
+
+See the blog post below for a way to profile the memory usage of your program.
+http://www.huyng.com/posts/python-performance-analysis/
+
+
 Implementing parts of PyPhysim in Cython
 ----------------------------------------
 
