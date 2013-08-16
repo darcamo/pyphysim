@@ -42,6 +42,28 @@ After identifying which parts in the code need to be optimized, there are
 multiple ways to achieve faster speeds in python. In PyPhysim we use Cython
 for that, as described in the following section.
 
+
+Line Profiler
+~~~~~~~~~~~~~
+
+Another option for profiling is use the line_profiler module.
+Install the module with
+
+.. code-block:: bash
+
+   $ sudo pip install line_profiler
+
+With this the script kernprof.py is also installed. Now, decorate the
+function you want to profile and run a script that calls the function
+through kernprof with
+
+.. code-block:: bash
+
+   $ kernprof.py -l -v my_scrypt.py
+
+See mode in http://pythonhosted.org/line_profiler/
+
+
 Implementing parts of PyPhysim in Cython
 ----------------------------------------
 
