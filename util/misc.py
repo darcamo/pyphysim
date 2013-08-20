@@ -654,6 +654,47 @@ def calc_confidence_interval(mean, std, n, P=95):
     max_value = mean + (C * norm_std)
 
     return np.array([min_value, max_value])
+
+
+# TODO: Improve docstring
+def get_principal_component_matrix(A, num_components):
+    """
+    Returns a matrix without the "principal components" of `A`.
+
+    This function returns a new matrix formed by the most significative
+    components of `A`.
+
+    Parameters
+    ----------
+    A : A 2D numpy matrix.
+        The original matrix.
+    num_components : int
+        Number of components to be kept.
+
+    Returns
+    -------
+    out : 2D numpy array
+        The new matrix with the dead dimensions removed.
+
+    Notes
+    -----
+    You might want to normalize the returned matrix `out` after calling
+    get_principal_component_matrix to have the same norm as the original
+    matrix `A`.
+    """
+    # Note 'S' as returned by np.linalg.svd contains the singular values in
+    # descending order. Therefore, we only need to keep the first
+    # 'num_components' singular values (and vectors).
+    [U, S, V_H] = np.linalg.svd(A)
+    num_rows = U.shape[0]
+    num_cols = V_H.shape[1]
+    newS = np.zeros(num_rows, dtype=A.dtype)
+    newS[:num_components] = S[:num_components]
+    newS = np.diag(newS)[:, :num_cols]
+
+    out = np.dot(U, np.dot(newS, V_H[:, :num_components]))
+
+    return out
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -9,10 +9,19 @@ plot Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`simulationresultsplotter` Module
+..
+   :mod:`simulationresultsplotter` Module
+   --------------------------------------
+
+   .. automodule:: plot.simulationresultsplotter
+       :members:
+       :undoc-members:
+       :show-inheritance:
+
+:mod:`pgfplotshelper` Module
 --------------------------------------
 
-.. automodule:: plot.simulationresultsplotter
+.. automodule:: plot.pgfplotshelper
     :members:
     :undoc-members:
     :show-inheritance:

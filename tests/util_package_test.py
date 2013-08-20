@@ -1372,6 +1372,22 @@ class MiscFunctionsTestCase(unittest.TestCase):
         invB = misc.update_inv_sum_diag(invA, D.diagonal())
         np.testing.assert_array_almost_equal(expected_invB, invB)
 
+    def test_get_principal_component_matrix(self):
+        A = np.array([[0.03300776 - 0.77428109j, 0.13839634 + 0.24361978j],
+                      [-0.07248757 + 0.35349072j, -0.04558698 - 0.12223548j],
+                      [-0.19711349 + 0.33872698j, -0.00456194 - 0.14161498j]])
+        n = 1
+        new_A = misc.get_principal_component_matrix(A, n)
+
+        # Calculates the expected new_A matrix
+        [U, S, V_H] = np.linalg.svd(A)
+        newS = np.zeros(3, dtype=complex)
+        newS[:n] = S[:n]
+        newS = np.diag(newS)[:, :2]
+        expected_new_A = np.dot(U, np.dot(newS, V_H[:, :n]))
+
+        np.testing.assert_array_almost_equal(expected_new_A, new_A)
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
