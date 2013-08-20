@@ -757,18 +757,17 @@ if __name__ == '__main__':
     # print "Simulating Closed Form algorithm"
     # closed_form_results, closed_form_filename = simulate_closed_form()
 
-    # print "Simulating Max SINR algorithm"
-    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
-
     # print "Simulating Alternating Min. algorithm"
     # alt_min_results, alt_min_filename = simulate_alternating()
 
-    # print "Simulating Min. Leakage algorithm"
-    # min_leakage_results, min_leakage_filename = simulate_min_leakage()
+    # print "Simulating Max SINR algorithm"
+    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     print "Simulating MMSE algorithm"
     mmse_results, mmse_filename = simulate_mmse()
 
+    # print "Simulating Min. Leakage algorithm"
+    # min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
 # xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
@@ -862,8 +861,8 @@ if __name__ == '__main__1':
         'ia_alt_min_{0}.pickle'.format(base_name))
     closed_form_results = SimulationResults.load_from_file(
         'ia_closed_form_{0}.pickle'.format(base_name))
-    # closed_form_results = SimulationResults.load_from_file(
-    #     'ia_closed_form_first_init_{0}.pickle'.format(base_name))
+    closed_form_first_results = SimulationResults.load_from_file(
+        'ia_closed_form_first_init_{0}.pickle'.format(base_name))
     max_sinrn_results = SimulationResults.load_from_file(
         'ia_max_sinr_{0}.pickle'.format(base_name))
     min_leakage_results = SimulationResults.load_from_file(
@@ -883,6 +882,10 @@ if __name__ == '__main__1':
     ber_closed_form = closed_form_results.get_result_values_list('ber')
     ber_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('ber', P=95)
     ber_errors_closed_form = np.abs([i[1] - i[0] for i in ber_CF_closed_form])
+
+    ber_closed_form_first = closed_form_first_results.get_result_values_list('ber')
+    ber_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_errors_closed_form_first = np.abs([i[1] - i[0] for i in ber_CF_closed_form_first])
 
     ber_max_sinr = max_sinrn_results.get_result_values_list('ber')
     ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('ber', P=95)
@@ -912,6 +915,7 @@ if __name__ == '__main__1':
     ax.legend()
     ax.grid(True, which='both', axis='both')
     plt.show(block=False)
+    fig.savefig('ber_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot Sum Capacity (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -922,6 +926,10 @@ if __name__ == '__main__1':
     sum_capacity_closed_form = closed_form_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form])
+
+    sum_capacity_closed_form_first = closed_form_first_results.get_result_values_list('sum_capacity')
+    sum_capacity_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_errors_closed_form_first = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form_first])
 
     sum_capacity_max_sinr = max_sinrn_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('sum_capacity', P=95)
@@ -950,4 +958,5 @@ if __name__ == '__main__1':
     ax2.legend(loc=2)
     ax2.grid(True, which='both', axis='both')
     plt.show()
+    fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
