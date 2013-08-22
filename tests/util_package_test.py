@@ -1370,6 +1370,10 @@ class MiscFunctionsTestCase(unittest.TestCase):
         invA = np.linalg.inv(A)
         expected_invB = np.linalg.inv(A + D)
         invB = misc.update_inv_sum_diag(invA, D.diagonal())
+        # There was a bug before that misc.update_inv_sum_diag was
+        # modifying invA. We call misc.update_inv_sum_diag again to capture
+        # that bug if it ever comes back.
+        invB = misc.update_inv_sum_diag(invA, D.diagonal())
         np.testing.assert_array_almost_equal(expected_invB, invB)
 
     def test_get_principal_component_matrix(self):

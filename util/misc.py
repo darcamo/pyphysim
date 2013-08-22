@@ -593,7 +593,7 @@ def update_inv_sum_diag(invA, diagonal):
                                         inv_matrix[index, :])) / (
                                             1 + diagonal_element * indexed_element)
 
-    new_inv = invA
+    new_inv = invA.copy()
     for index, diagonal_element in zip(range(diagonal.size), diagonal):
         indexed_element = new_inv[index, index]
         new_inv -= calc_update_term(new_inv, index, indexed_element, diagonal_element)
