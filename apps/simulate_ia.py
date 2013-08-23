@@ -88,6 +88,23 @@ class IASimulationRunner(SimulationRunner):
         noise_var = 1 / dB2Linear(SNR)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Calc. precoders and receive filters for IA xxxxxxxxxxxxxxxx
+        # We need to perform IA before generating any data so that we know
+        # how many streams we need to send (and thus generate data. Note
+        # that it is not always equal to Ns. It can be lower for some user
+        # if the IA algorithm chooses a precoder that sends zero energy in
+        # some stream.
+        self.multiUserChannel.randomize(Nr, Nt, K)
+        # We wouldn't need to explicitly set self.ia_solver.noise_var
+        # variable if the multiUserChannel object had the correct value at
+        # this point.
+        self.ia_solver.noise_var = noise_var
+        self.ia_solver.clear()
+        self.ia_solver.solve(Ns)
+
+        cumNs = np.cumsum(self.ia_solver.Ns)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # inputData has the data of all users (vertically stacked)
         inputData = np.random.randint(0, M, [np.sum(Ns), NSymbs])
@@ -98,20 +115,10 @@ class IASimulationRunner(SimulationRunner):
         modulatedData = self.modulator.modulate(inputData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Perform the Interference Alignment xxxxxxxxxxxxxxxxxxxxxxxx
-        cumNs = np.cumsum(Ns)
+        # xxxxxxxxxx Perform the Interference Alignment xxxxxxxxxxxxxxxxxxx
         # Split the data. transmit_signal will be a list and each element
         # is a numpy array with the data of a user
         transmit_signal = np.split(modulatedData, cumNs[:-1])
-
-        self.multiUserChannel.randomize(Nr, Nt, K)
-        # We wouldn't need to explicitly set self.ia_solver.noise_var
-        # variable if the multiUserChannel object had the correct value at
-        # this point.
-        self.ia_solver.noise_var = noise_var
-        self.ia_solver.clear()
-        self.ia_solver.solve(Ns)
-
         transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -226,7 +233,7 @@ class IASimulationRunner(SimulationRunner):
                 # and we have runned at least 5000 iterations, then we have
                 # enough and we return False to indicate the simulation of
                 # the current parameters can stop.
-                if error < ber_value/10.0 and current_rep > 5000:
+                if error < ber_value / 10.0 and current_rep > 5000:
                     return False
 
         return True
@@ -462,7 +469,6 @@ class MMSESimulationRunner(IASimulationRunner):
         self.ia_solver.max_iterations = self.params['max_iterations']
 
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Functions Simulating each IA Algorithm xxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -483,14 +489,13 @@ def plot_ber(results, plot_title=None, block=True):
 
     # Get the BER and SER from the results object
     ber = results.get_result_values_list('ber')
-    ser = results.get_result_values_list('ser')
+    #ser = results.get_result_values_list('ser')
 
     ber_CFs = results.get_result_values_confidence_intervals('ber', P=95)
-    ser_CFs = results.get_result_values_confidence_intervals('ser', P=95)
+    #ser_CFs = results.get_result_values_confidence_intervals('ser', P=95)
 
     ber_errors = np.abs([i[1] - i[0] for i in ber_CFs])
-    ser_errors = np.abs([i[1] - i[0] for i in ser_CFs])
-
+    #ser_errors = np.abs([i[1] - i[0] for i in ser_CFs])
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
@@ -546,7 +551,7 @@ def plot_sum_capacity(results, plot_title=None, block=True):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # ax.plot(SNR, sum_capacity, '--g*', label='Sum Capacity')
-        ax.errorbar(SNR, sum_capacity, errors, fmt='--g*',label='Sum Capacity', elinewidth=5.0,ecolor='red')
+        ax.errorbar(SNR, sum_capacity, errors, fmt='--g*', label='Sum Capacity', elinewidth=5.0, ecolor='red')
         plt.xlabel('SNR')
         plt.ylabel('Sum Capacity (bits/channel user')
         if plot_title is not None:
@@ -715,53 +720,16 @@ def simulate_mmse():
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
-    # xxxxxxxxxx Simulate the Alternating Min. algorithm xxxxxxxxxxxxxxxxxx
-    # Run the simulation
-    alt_min_results, alt_min_filename = simulate_alternating()
-    # Plot the results
-    plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Simulate the Cloded-Form algorithm xxxxxxxxxxxxxxxxxxxxxxx
-    # Run the simulation
-    closed_form_results, closed_form_filename = simulate_closed_form()
-    # Plot the results
-    plot_ber(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Simulate the Max SINRN algorithm xxxxxxxxxxxxxxxxxxxxxxxxx
-    # Run the simulation
-    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
-    # Plot the results
-    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Simulate the min leakage algorithm xxxxxxxxxxxxxxxxxxxxxxx
-    # Run the simulation
-    min_leakage_results, min_leakage_filename = simulate_min_leakage()
-    # Plot the results
-    plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Simulate the MMSE algorithm xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Run the simulation
-    mmse_results, mmse_filename = simulate_mmse()
-    # Plot the results
-    plot_ber(mmse_results, plot_title='MMSE IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # print "Simulating Closed Form algorithm"
-    # closed_form_results, closed_form_filename = simulate_closed_form()
+if __name__ == '__main__1':
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
 
-    # print "Simulating Alternating Min. algorithm"
-    # alt_min_results, alt_min_filename = simulate_alternating()
+    print "Simulating Alternating Min. algorithm"
+    alt_min_results, alt_min_filename = simulate_alternating()
 
-    # print "Simulating Max SINR algorithm"
-    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    print "Simulating Max SINR algorithm"
+    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     print "Simulating MMSE algorithm"
     mmse_results, mmse_filename = simulate_mmse()
@@ -769,76 +737,8 @@ if __name__ == '__main__':
     # print "Simulating Min. Leakage algorithm"
     # min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
-# xxxxxxxxxx Main - Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
-    # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    params = SimulationParameters.load_from_config_file('ia_config_file.txt')
-    K = params['K']
-    Nr = params['Nr']
-    Nt = params['Nt']
-    Ns = params['Ns']
-    max_iterations = params['max_iterations']
-    M = params['M']
-    modulator = params['modulator']
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter'.format(**params.parameters)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    alt_min_results = SimulationResults.load_from_file(
-        'ia_alt_min_{0}.pickle'.format(base_name))
-    closed_form_results = SimulationResults.load_from_file(
-        'ia_closed_form_{0}.pickle'.format(base_name))
-    max_sinrn_results = SimulationResults.load_from_file(
-        'ia_max_sinr_{0}.pickle'.format(base_name))
-    min_leakage_results = SimulationResults.load_from_file(
-        'ia_min_leakage_{0}.pickle'.format(base_name))
-    mmse_results = SimulationResults.load_from_file(
-        'ia_mmse_{0}.pickle'.format(base_name))
-
-    plot_ber(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_sum_capacity(alt_min_results, plot_title='Alternating Min IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-
-    plot_ber(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_sum_capacity(closed_form_results, plot_title='Closed-Form IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-
-    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-
-    plot_ber(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_sum_capacity(min_leakage_results, plot_title='Min Leakage IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-
-    plot_ber(mmse_results, plot_title='MMSE IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=False)
-    plot_sum_capacity(mmse_results, plot_title='MMSE IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-
-
-if __name__ == '__main__1':
-    # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    params = SimulationParameters.load_from_config_file('ia_config_file.txt')
-    K = params['K']
-    Nr = params['Nr']
-    Nt = params['Nt']
-    Ns = params['Ns']
-    max_iterations = params['max_iterations']
-    M = params['M']
-    modulator = params['modulator']
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter'.format(**params.parameters)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    max_sinrn_results = SimulationResults.load_from_file(
-        'ia_max_sinr_{0}.pickle'.format(base_name))
-
-    plot_ber(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-    # plot_sum_capacity(max_sinrn_results, plot_title='Max SINR IA Algorithm ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}', block=True)
-
-
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -861,19 +761,18 @@ if __name__ == '__main__1':
         'ia_alt_min_{0}.pickle'.format(base_name))
     closed_form_results = SimulationResults.load_from_file(
         'ia_closed_form_{0}.pickle'.format(base_name))
-    closed_form_first_results = SimulationResults.load_from_file(
-        'ia_closed_form_first_init_{0}.pickle'.format(base_name))
+    # closed_form_first_results = SimulationResults.load_from_file(
+    #     'ia_closed_form_first_init_{0}.pickle'.format(base_name))
     max_sinrn_results = SimulationResults.load_from_file(
         'ia_max_sinr_{0}.pickle'.format(base_name))
-    min_leakage_results = SimulationResults.load_from_file(
-        'ia_min_leakage_{0}.pickle'.format(base_name))
+    # min_leakage_results = SimulationResults.load_from_file(
+    #     'ia_min_leakage_{0}.pickle'.format(base_name))
     mmse_results = SimulationResults.load_from_file(
         'ia_mmse_{0}.pickle'.format(base_name))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
     # xxxxx Plot BER (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    SNR = np.array(alt_min_results.params['SNR'])
+    SNR = np.array(mmse_results.params['SNR'])
 
     ber_alt_min = alt_min_results.get_result_values_list('ber')
     ber_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('ber', P=95)
@@ -883,17 +782,17 @@ if __name__ == '__main__1':
     ber_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('ber', P=95)
     ber_errors_closed_form = np.abs([i[1] - i[0] for i in ber_CF_closed_form])
 
-    ber_closed_form_first = closed_form_first_results.get_result_values_list('ber')
-    ber_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('ber', P=95)
-    ber_errors_closed_form_first = np.abs([i[1] - i[0] for i in ber_CF_closed_form_first])
+    # ber_closed_form_first = closed_form_first_results.get_result_values_list('ber')
+    # ber_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('ber', P=95)
+    # ber_errors_closed_form_first = np.abs([i[1] - i[0] for i in ber_CF_closed_form_first])
 
     ber_max_sinr = max_sinrn_results.get_result_values_list('ber')
     ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('ber', P=95)
     ber_errors_max_sinr = np.abs([i[1] - i[0] for i in ber_CF_max_sinr])
 
-    ber_min_leakage = min_leakage_results.get_result_values_list('ber')
-    ber_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('ber', P=95)
-    ber_errors_min_leakage = np.abs([i[1] - i[0] for i in ber_CF_min_leakage])
+    # ber_min_leakage = min_leakage_results.get_result_values_list('ber')
+    # ber_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('ber', P=95)
+    # ber_errors_min_leakage = np.abs([i[1] - i[0] for i in ber_CF_min_leakage])
 
     ber_mmse = mmse_results.get_result_values_list('ber')
     ber_CF_mmse = mmse_results.get_result_values_confidence_intervals('ber', P=95)
@@ -903,13 +802,13 @@ if __name__ == '__main__1':
     ax.errorbar(SNR, ber_alt_min, ber_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
     ax.errorbar(SNR, ber_closed_form, ber_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
     ax.errorbar(SNR, ber_max_sinr, ber_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
-    ax.errorbar(SNR, ber_min_leakage, ber_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+    # ax.errorbar(SNR, ber_min_leakage, ber_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
     ax.errorbar(SNR, ber_mmse, ber_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
 
     plt.xlabel('SNR')
     plt.ylabel('BER')
     title = 'BER for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
-    plt.title(title.format(**alt_min_results.params.parameters))
+    plt.title(title.format(**mmse_results.params.parameters))
 
     ax.set_yscale('log')
     ax.legend()
@@ -927,17 +826,17 @@ if __name__ == '__main__1':
     sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form])
 
-    sum_capacity_closed_form_first = closed_form_first_results.get_result_values_list('sum_capacity')
-    sum_capacity_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    sum_capacity_errors_closed_form_first = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form_first])
+    # sum_capacity_closed_form_first = closed_form_first_results.get_result_values_list('sum_capacity')
+    # sum_capacity_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    # sum_capacity_errors_closed_form_first = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form_first])
 
     sum_capacity_max_sinr = max_sinrn_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_CF_max_sinr])
 
-    sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
-    sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
+    # sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
+    # sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    # sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
 
     sum_capacity_mmse = mmse_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals('sum_capacity', P=95)
@@ -947,13 +846,13 @@ if __name__ == '__main__1':
     ax2.errorbar(SNR, sum_capacity_alt_min, sum_capacity_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
     ax2.errorbar(SNR, sum_capacity_closed_form, sum_capacity_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
     ax2.errorbar(SNR, sum_capacity_max_sinr, sum_capacity_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
-    ax2.errorbar(SNR, sum_capacity_min_leakage, sum_capacity_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+    # ax2.errorbar(SNR, sum_capacity_min_leakage, sum_capacity_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
     ax2.errorbar(SNR, sum_capacity_mmse, sum_capacity_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
 
     plt.xlabel('SNR')
     plt.ylabel('Sum Capacity')
     title = 'Sum Capacity for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
-    plt.title(title.format(**alt_min_results.params.parameters))
+    plt.title(title.format(**mmse_results.params.parameters))
 
     ax2.legend(loc=2)
     ax2.grid(True, which='both', axis='both')

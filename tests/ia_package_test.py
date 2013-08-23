@@ -1321,7 +1321,8 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
         iasolver = MaxSinrIASolver(multiUserChannel)
-        iasolver.noise_var = 1e-6
+        iasolver.noise_var = 1e-20
+        # iasolver.max_iterations = 200
 
         iasolver.solve(Ns)
 
@@ -1333,13 +1334,32 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
         H01 = iasolver._get_channel(0, 1)
         # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
-        # self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
-        # self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
+        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
 
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H01, F[1]))[0][0], 0.0)
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H02, F[2]))[0][0], 0.0)
 
+        # F0 = np.matrix(self.iasolver._F[0])
+        # F1 = np.matrix(self.iasolver._F[1])
+        # F2 = np.matrix(self.iasolver._F[2])
+
+        # W_H0 = np.matrix(self.iasolver.W_H[0])
+        # W_H1 = np.matrix(self.iasolver.W_H[1])
+        # W_H2 = np.matrix(self.iasolver.W_H[2])
+
+        # H00 = np.matrix(self.iasolver._get_channel(0,0))
+        # H01 = np.matrix(self.iasolver._get_channel(0,1))
+        # H02 = np.matrix(self.iasolver._get_channel(0,2))
+        # H10 = np.matrix(self.iasolver._get_channel(1,0))
+        # H11 = np.matrix(self.iasolver._get_channel(1,1))
+        # H12 = np.matrix(self.iasolver._get_channel(1,2))
+        # H20 = np.matrix(self.iasolver._get_channel(2,0))
+        # H21 = np.matrix(self.iasolver._get_channel(2,1))
+        # H22 = np.matrix(self.iasolver._get_channel(2,2))
+
+        # import pudb; pudb.set_trace()  ## DEBUG ##y
 
         # TODO: DARLAN -> Implement-me
         pass
@@ -1535,6 +1555,8 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.iasolver.noise_var = 1e-3
 
     def test_updateW(self):
+        P = self.iasolver.P
+
         F0 = self.iasolver.F[0]
         F1 = self.iasolver.F[1]
         F2 = self.iasolver.F[2]
@@ -1551,13 +1573,13 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
         # xxxxx Calculates the expected receive filter for the user 0 xxxxx
         aux0 = 0.0
-        H00_F0 = np.sqrt(self.P[0]) * np.dot(H00, F0)
+        H00_F0 = np.sqrt(P[0]) * np.dot(H00, F0)
         aux = np.dot(H00, F0)
-        aux0 = aux0 + (np.dot(aux, aux.conj().T) * self.P[0])
+        aux0 = aux0 + (np.dot(aux, aux.conj().T) * P[0])
         aux = np.dot(H01, F1)
-        aux0 = aux0 + (np.dot(aux, aux.conj().T) * self.P[1])
+        aux0 = aux0 + (np.dot(aux, aux.conj().T) * P[1])
         aux = np.dot(H02, F2)
-        aux0 = aux0 + (np.dot(aux, aux.conj().T) * self.P[2])
+        aux0 = aux0 + (np.dot(aux, aux.conj().T) * P[2])
         expected_W0 = np.dot(
             np.linalg.inv(aux0 + self.iasolver.noise_var * np.eye(self.Nr[0])),
             H00_F0)
@@ -1565,13 +1587,13 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
         # xxxxx Calculates the expected receive filter for the user 1 xxxxx
         aux1 = 0.0
-        H11_F1 = np.sqrt(self.P[1]) * np.dot(H11, F1)
+        H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
         aux = np.dot(H10, F0)
-        aux1 = aux1 + np.dot(aux, aux.conj().T) * self.P[0]
+        aux1 = aux1 + np.dot(aux, aux.conj().T) * P[0]
         aux = np.dot(H11, F1)
-        aux1 = aux1 + np.dot(aux, aux.conj().T) * self.P[1]
+        aux1 = aux1 + np.dot(aux, aux.conj().T) * P[1]
         aux = np.dot(H12, F2)
-        aux1 = aux1 + np.dot(aux, aux.conj().T) * self.P[2]
+        aux1 = aux1 + np.dot(aux, aux.conj().T) * P[2]
         expected_W1 = np.dot(
             np.linalg.inv(aux1 + self.iasolver.noise_var * np.eye(self.Nr[1])),
             H11_F1)
@@ -1579,13 +1601,13 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
         # xxxxx Calculates the expected receive filter for the user 2 xxxxx
         aux2 = 0.0
-        H22_F2 = np.sqrt(self.P[2]) * np.dot(H22, F2)
+        H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
         aux = np.dot(H20, F0)
-        aux2 = aux2 + np.dot(aux, aux.conj().T) * self.P[0]
+        aux2 = aux2 + np.dot(aux, aux.conj().T) * P[0]
         aux = np.dot(H21, F1)
-        aux2 = aux2 + np.dot(aux, aux.conj().T) * self.P[1]
+        aux2 = aux2 + np.dot(aux, aux.conj().T) * P[1]
         aux = np.dot(H22, F2)
-        aux2 = aux2 + np.dot(aux, aux.conj().T) * self.P[2]
+        aux2 = aux2 + np.dot(aux, aux.conj().T) * P[2]
         expected_W2 = np.dot(
             np.linalg.inv(aux2 + self.iasolver.noise_var * np.eye(self.Nr[1])),
             H22_F2)
@@ -1691,20 +1713,57 @@ class MMSEIASolverTestCase(unittest.TestCase):
         V0_best = self.iasolver._calc_Vi(0)
         V1_best = self.iasolver._calc_Vi(1)
         V2_best = self.iasolver._calc_Vi(2)
+
         # TODO: Find a way to test the case when the best value of mu is found
 
     def test_updateF(self):
         self.iasolver._updateF()
-        # print np.linalg.norm(self.iasolver.F[0], 'fro') ** 2
-        # print np.linalg.norm(self.iasolver.F[1], 'fro') ** 2
-        # print np.linalg.norm(self.iasolver.F[2], 'fro') ** 2
+
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[0], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[1], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[2], 'fro') ** 2, 1.0)
+
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[0], 'fro') ** 2,
+                               self.iasolver.P[0])
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[1], 'fro') ** 2,
+                               self.iasolver.P[1])
+        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[2], 'fro') ** 2,
+                               self.iasolver.P[2])
 
         # TODO: implement-me
         pass
 
     def test_solve(self):
         # Test if the solution is better then the closed form solution
+        self.iasolver.P = 1.0
         Ns = self.Ns
+        #self.iasolver.max_iterations = 200
+        self.iasolver.noise_var = 1e-20
+
+        self.iasolver.solve(Ns)
+        # print self.iasolver.calc_SINR_old()
+
+
+        F0 = np.matrix(self.iasolver._F[0])
+        F1 = np.matrix(self.iasolver._F[1])
+        F2 = np.matrix(self.iasolver._F[2])
+
+        W_H0 = np.matrix(self.iasolver.W_H[0])
+        W_H1 = np.matrix(self.iasolver.W_H[1])
+        W_H2 = np.matrix(self.iasolver.W_H[2])
+
+        H00 = np.matrix(self.iasolver._get_channel(0,0))
+        H01 = np.matrix(self.iasolver._get_channel(0,1))
+        H02 = np.matrix(self.iasolver._get_channel(0,2))
+        H10 = np.matrix(self.iasolver._get_channel(1,0))
+        H11 = np.matrix(self.iasolver._get_channel(1,1))
+        H12 = np.matrix(self.iasolver._get_channel(1,2))
+        H20 = np.matrix(self.iasolver._get_channel(2,0))
+        H21 = np.matrix(self.iasolver._get_channel(2,1))
+        H22 = np.matrix(self.iasolver._get_channel(2,2))
+
+        # import pudb; pudb.set_trace()  ## DEBUG ##
+
 
         # # Tesf if the solution aligns the interference
         # for l in range(3):
@@ -1718,9 +1777,9 @@ class MMSEIASolverTestCase(unittest.TestCase):
         #             s2 = s / Hk_eq[0, 0]  # We only have one stream -> the
         #                                   # equivalent channel is an scalar.
         #             self.assertAlmostEqual(1.0, s2)
-        #         else:
-        #             # Test if the interference is equal to 0.0
-        #             self.assertAlmostEqual(0.0, s)
+        #         # else:
+        #         #     # Test if the interference is equal to 0.0
+        #         #     self.assertAlmostEqual(0.0, s)
 
         # TODO: Implement-me
         pass

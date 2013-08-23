@@ -16,7 +16,7 @@ __revision__ = "$Revision$"
 import numpy as np
 import itertools
 
-from util.misc import peig, leig, randn_c, update_inv_sum_diag
+from util.misc import peig, leig, randn_c, update_inv_sum_diag, get_principal_component_matrix
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver']
@@ -1088,6 +1088,75 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.randomizeF(Ns, P)
         self._updateW()
 
+    # TODO: Implement-me and test-me
+    def _solve_finalize(self):
+        """Perform any post processing after the solution has been found.
+        """
+        # Some of the found precoders may be a singular matrix. In that
+        # case, we need to remove the dimensions with zero energy from both
+        # the found precoder and the receive filter.
+        mod_users = []  # Store the index of the users from which we need
+                        # to modify the precoders and receive filters
+        num_significant_sing_values = []
+        for k in range(self.K):
+            # We only need to perform further actions if more then one
+            # streams is transmitted. In that case we need to test if the
+            # final precoder has a large condition number indicating that
+            # some dimensions has very low energy and could be
+            # discarded. If only one stream is transmitted then the
+            # condition number is always equal to 1.
+            if self.Ns[k] > 1:
+                [U, S, V_H] = np.linalg.svd(self._F[k])
+                # If the condition number os large, then there is some
+                # dimension with zero energy
+                cond = S.max() / S.min()
+                if cond > 1e4:
+                    mod_users.append(k)
+                    # [U, S, V_H] = np.linalg.svd(self._F[k])
+                    max_sing_value = S.max()
+                    # Calculate the number of significative singular
+                    # values. Basically, any singular value (and corresponding
+                    # dimension) lower then max_sing_value/1e8 will be
+                    # discarded.
+                    n = np.sum(S > max_sing_value / 1.0e8)
+
+                    # Store the number of significative singular values for
+                    # that user
+                    num_significant_sing_values.append(n)
+
+                    new_F = get_principal_component_matrix(self._F[k], n)
+                    new_F = new_F / np.linalg.norm(new_F, 'fro')
+                    self._F[k] = new_F
+                    self.Ns[k] = n
+
+        # If we modified any of the precoders then the mod_users list has
+        # the index of the users whose precoders were modified. We need to
+        # also modify the receive filter for those users.
+        if len(mod_users) > 0:
+            # Note that we still need to remove the dead dimensions of the
+            # receive filter. However, depending on the algorithm, either the
+            # _W or the _W_H member variable was set while the other is None
+            # (at this point).
+            if self._W_H is None:
+                # Since _W_H is None that means that we need to modify the _W
+                # member variable
+                for k, n in zip(mod_users, num_significant_sing_values):
+                    new_W = get_principal_component_matrix(self._W[k], n)
+                    self._W[k] = new_W
+
+            elif self._W is None:
+                # Since _W is None that means that we need to modify the _W_H
+                # member variable
+                for k, n in zip(mod_users, num_significant_sing_values):
+                    W = self._W_H[k].conj().T
+                    new_W = get_principal_component_matrix(W, n)
+                    self._W_H[k] = new_W.conj().T
+            else:
+                # If both self._W and self._W_H are not None then something
+                # wrong happened. Maybe you called the self.W or the self.W_H
+                # properties by mistake.
+                raise Exception("I should not be here.")
+
     def solve(self, Ns, P=None):
         """
         Find the IA solution by performing the `step` method several times.
@@ -1128,9 +1197,22 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         self._solve_init(Ns, P)
 
+        if isinstance(Ns, int):
+            Ns = np.ones(self.K, dtype=int) * Ns
+        else:
+            self._Ns = Ns
+
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self._step()
+
+        # Perform any post processing after the precoder and receive
+        # filters where found. One possible usage for this method is to
+        # remove dimensions of the precoder (and receive filter) that have
+        # actually zero energy. That is, if the precoder ends up being a
+        # singular matrix we can implement _solve_finalize to remove the
+        # dimensions that do not contribute.
+        self._solve_finalize()
 
         # Return the number of iterations the algorithm run
         return i + 1
