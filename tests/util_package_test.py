@@ -1158,6 +1158,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(lala_results, expected_lala_results)
 
+    # This test method is normally skipped, unless you have started the
+    # IPython cluster so that you have at leas one engine running.
     def test_simulate_in_parallel(self):
         try:
             from IPython.parallel import Client

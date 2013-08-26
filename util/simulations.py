@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module containing useful classes to implement Monte Carlo simulations.
+"""
+Module containing useful classes to implement Monte Carlo simulations.
 
 The main class for Monte Carlo simulations is the :class:`SimulationRunner`
 class, but a few other classes are also implemented to handle simulation
@@ -150,6 +151,20 @@ Example of Implementation
 See the documentation of the :class:`SimulationRunner` class for a pseudo
 implementation of a subclass of the :class:`SimulationRunner`.
 
+
+Running Simulations in Parallel
+-------------------------------
+
+If some parameter was marked to be unpacked and instead of calling the
+:meth:`.simulate` method you call the :meth:`.simulate_in_parallel` method,
+then the simulations for the different parameters will be performed in
+parallel using the parallel capabilities of the IPython interpreter.
+
+In order to call :meth:`.simulate_in_parallel` you need to first create a
+Client (IPython.parallel.Client) and then get a "view" from it. This view
+is a required argument to call :meth:`.simulate_in_parallel`.
+
+The the IPython documentation to understand more.
 """
 
 __revision__ = "$Revision$"
@@ -258,13 +273,14 @@ def _real_numpy_array_check(value, min=None, max=None):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # pylint: disable=R0921
 class SimulationRunner(object):
-    """Base class to run Monte Carlo simulations.
+    """
+    Base class to run Monte Carlo simulations.
 
     The main idea of the :class:`SimulationRunner` class is that in order
     to implement a Monte Carlo simulation one would subclass
     :class:`SimulationRunner` and implement the :meth:`_run_simulation`
-    method (as well as any of the optional methods). This complete is
-    described in the documentation of the :mod:`simulations` module.
+    method (as well as any of the optional methods). The complete procedure
+    is described in the documentation of the :mod:`simulations` module.
 
     The code below illustrates the minimum pseudo code to implement a
     subclass of :class:`SimulationRunner`.
@@ -310,7 +326,6 @@ class SimulationRunner(object):
     SimulationResults : Class to store simulation results.
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
-
     """
     def __init__(self):
         self.rep_max = 1
@@ -343,9 +358,11 @@ class SimulationRunner(object):
         # message will be printed either.
         self.progressbar_message = 'Progress'
 
-        # Parallel view. Set this to a IPython parallel view of the engines
-        # to use the parallel processing capabilities of IPython
-        self._engine_view = None
+        # This variable will be used to store the AsyncMapResult object
+        # that will be created in the simulate_in_parallel method. This
+        # object is part of IPython parallel framework and is used to get
+        # the actual results of performing an asynchronous task in IPython.
+        self._async_results = None
 
     def clear(self, ):  # pragma: no cover
         """Clear the SimulationRunner.
@@ -617,8 +634,9 @@ class SimulationRunner(object):
         self.results.runned_reps = self._runned_reps
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def simulate_in_parallel(self, view):
-        """Same as the simulate method, but the different parameters
+    def simulate_in_parallel(self, view, wait=True):
+        """
+        Same as the simulate method, but the different parameters
         configurations are simulated in parallel.
 
         Parameters
@@ -628,7 +646,12 @@ class SimulationRunner(object):
             processing will happen by calling the 'map' method of the
             provided view to simulate in parallel the different
             configurations of transmission parameters.
-
+        wait : Bool
+            If True then the self.wait_parallel_simulation method will be
+            automatically called at the end of simulate_in_parallel. If
+            False, the you need to manually call
+            self.wait_parallel_simulation at some point after calling
+            simulate_in_parallel.
         """
         # # xxxxx Initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # # Get the client which created the view `view` and then get a
@@ -670,7 +693,13 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # ----- Function that will be called in each IPython engine -------
         def simulate_for_current_params(obj, current_params):
+            # Implement the _on_simulate_current_params_start method in a
+            # subclass if you need to run code before the _run_simulation
+            # iterations for each combination of simulation parameters.
+            obj._on_simulate_current_params_start(current_params)
+
             # Perform the first iteration of _run_simulation
             current_sim_results = obj._run_simulation(current_params)
             current_rep = 1
@@ -683,7 +712,17 @@ class SimulationRunner(object):
                     obj._run_simulation(current_params))
                 current_rep += 1
 
+            # Implement the _on_simulate_current_params_finish method in a
+            # subclass if you need to run code after all _run_simulation
+            # iterations for each combination of simulation parameters
+            # finishes.
+            obj._on_simulate_current_params_finish(current_params,
+                                                   current_sim_results)
+
+            # This function returns a tuple containing the number of
+            # iterations run as well as the SimulationResults object.
             return (current_rep, current_sim_results)
+        # -----------------------------------------------------------------
 
         # Loop through all the parameters combinations
         num_variations = self.params.get_num_unpacked_variations()
@@ -693,36 +732,64 @@ class SimulationRunner(object):
         # for i in range(num_variations):
         #     proxybar_list.append(pbar.register_function_and_get_proxy_progressbar(self.rep_max))
 
-        results = view.map_sync(simulate_for_current_params,
-                                [self] * num_variations,
-                                self.params.get_unpacked_params_list())
-        for reps, r in results:
-            self._runned_reps.append(reps)
-            self.results.append_all_results(r)
-
-        # for current_params in self.params.get_unpacked_params_list():
-        #     current_rep, current_sim_results = simulate_for_current_params(
-        #         self, current_params)
-
-        #     self._runned_reps.append(current_rep)
-        #     self.results.append_all_results(current_sim_results)
-
-        #
         # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Note that for now the elapsed time does not include the time
+        # spent at the actual simulation. We still need to sum with the
+        # elapsed time from the actual simulation.
         toc = time()
         self._elapsed_time = toc - tic
-
-        # Also save the elapsed time in the SimulationResults object
-        self.results.elapsed_time = self._elapsed_time
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Implement the _on_simulate_finish method in a subclass if you
-        # need to run code at the end of the simulate method.
-        self._on_simulate_finish()
-
-        # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
-        self.results.runned_reps = self._runned_reps
+        # xxx Perform the actual simulation in asynchronously parallel xxxx
+        self._async_results = view.map(simulate_for_current_params,
+                                       # We need to pass the SimulationRunner
+                                       # object to the IPython engine ...
+                                       [self] * num_variations,
+                                       # ... and we also need to pass the
+                                       # simulation parameters for each engine
+                                       self.params.get_unpacked_params_list(),
+                                       block=False)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        if wait is True:
+            self.wait_parallel_simulation()
+
+    def wait_parallel_simulation(self):
+        """
+        Wait for the parallel simulation to finish and then update the
+        self.results variable (as well as other internal variables).
+        """
+        # Note that at the end of this method we set self._async_results to
+        # None. Therefore, if wait_parallel_simulation is called multiple
+        # times nothing will happen.
+        if self._async_results is not None:
+            # Wait for the tasks (running in the IPython engines) to finish
+            self._async_results.wait()
+
+            # Update the elapsed time
+            self._elapsed_time += self._async_results.elapsed
+
+            results = self._async_results.get()
+
+            for reps, r in results:
+                self._runned_reps.append(reps)
+                self.results.append_all_results(r)
+
+            # xxxxx Save the elapsed time in the SimulationResults object xxxxx
+            self.results.elapsed_time = self._elapsed_time
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # Implement the _on_simulate_finish method in a subclass if you
+            # need to run code at the end of the simulate method.
+            self._on_simulate_finish()
+
+            # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
+            self.results.runned_reps = self._runned_reps
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # Erase the self._async_results object, since we already got all
+            # information we needed from it
+            self._async_results = None
 
     def _on_simulate_start(self):
         """This method is called only once, in the beginning of the the
