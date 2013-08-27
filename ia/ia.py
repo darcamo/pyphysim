@@ -1200,7 +1200,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         if isinstance(Ns, int):
             Ns = np.ones(self.K, dtype=int) * Ns
         else:
-            self._Ns = Ns
+            assert len(Ns) == 3
+
+        self._Ns = Ns
 
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
