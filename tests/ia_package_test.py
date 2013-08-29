@@ -22,7 +22,7 @@ import numpy as np
 
 from comm import channels
 import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver
+from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, IterativeIASolverBaseClass
 from util.misc import peig, leig
 
 
@@ -656,6 +656,34 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             Fk = self.iasolver.F[k]
             s = np.dot(full_Wk_H, np.dot(Hkk, Fk))[0][0]
             self.assertAlmostEqual(1.0, s)
+
+
+# TODO: finish implementation
+class IterativeIASolverBaseClassTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_is_diff_significant(self):
+        F0 = np.array([[1, 2, 3], [3, 2, 2], [1, 4, 2]], dtype=float)
+        F1 = np.array([[2, 4, 5], [2, -3, -2], [5, -4, 3]], dtype=float)
+        F2 = np.array([[4, 1, 1], [-3, -7, 4], [2, -2, 5]], dtype=float)
+        F_old = np.empty(3, dtype=np.ndarray)
+        F_old[0] = F0
+        F_old[1] = F1
+        F_old[2] = F2
+
+        F_new = np.empty(3, dtype=np.ndarray)
+        F_new[0] = F0.copy()
+        F_new[1] = F1.copy()
+        F_new[2] = F2.copy()
+
+        self.assertFalse(IterativeIASolverBaseClass._is_diff_significant(F_old, F_new))
+        F_new[1][1, 2] += 9e-4
+        F_new[2][0, 0] += 6e-4
+        self.assertFalse(IterativeIASolverBaseClass._is_diff_significant(F_old, F_new))
+        F_new[2][2, 2] += 2e-3
+        self.assertTrue(IterativeIASolverBaseClass._is_diff_significant(F_old, F_new))
 
 
 class AlternatingMinIASolverTestCase(unittest.TestCase):
@@ -1715,6 +1743,40 @@ class MMSEIASolverTestCase(unittest.TestCase):
         V2_best = self.iasolver._calc_Vi(2)
 
         # TODO: Find a way to test the case when the best value of mu is found
+
+    # TODO: Finish this implementation or erase this method
+    def test_calc_Vi2(self):
+        # This method test the case when IA is not feasible
+        K = 3
+        Nt = 4 * np.ones(K)
+        Nr = 4 * np.ones(K)
+        Ns = 2
+        P = 1.0
+
+        # This specific channel will yield a degenerated solution solution
+        big_H = np.load("big_H.npy")
+        F = np.load("F.npy")
+        W = np.load("W.npy")
+
+        multi_user_channel = channels.MultiUserChannelMatrix()
+        multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
+
+        iasolver = MMSEIASolver(multi_user_channel)
+        iasolver._F = F
+        iasolver._W = W
+
+        #iasolver._initialize_F_and_W(Ns, P)
+        #iasolver.solve(Ns, P)
+        #import pudb; pudb.set_trace()  ## DEBUG ##
+
+        #iasolver._calc_Vi(0)
+
+        #print np.linalg.svd(iasolver.F[0])[1]
+
+        #import pudb; pudb.set_trace()  ## DEBUG ##
+
+        # iasolver.noise_var = 1e-6
+        # iasolver.solve(Ns)
 
     def test_updateF(self):
         self.iasolver._updateF()

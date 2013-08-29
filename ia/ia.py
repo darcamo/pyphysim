@@ -1157,6 +1157,46 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                 # properties by mistake.
                 raise Exception("I should not be here.")
 
+    @classmethod
+    def _is_diff_significant(cls, F_old, F_new):
+        """
+        Test if there was any significant change from `F_old` to `F_new`.
+
+        This method is used internally in the solve method of the
+        IterativeIASolverBaseClass to detect when the precoder of a given
+        iteration didn't change significantly from one iteration to
+        another. This is used to stop the iterations of the algorithm and
+        avoid unnecessary computations.
+
+        Parameters
+        ----------
+        F_old : 1D numpy array of numpy arrays
+            The precoder of all users (in a previous iteration).
+        F_new : 1D numpy array of numpy arrays
+            The precoder of all users (in the current iteration).
+
+        Returns
+        -------
+        out : bool
+            True if the difference is significant, False otherwise.
+
+        Notes
+        -----
+        A difference is considered significant if it is larger then 1/1000
+        of the minimum value in the precoder.
+        """
+        K = F_old.size
+        for k in range(K):
+            Fk_old = F_old[k]
+            Fk_new = F_new[k]
+            min_value = np.abs(Fk_new).min()
+            diff = np.abs(Fk_new - Fk_old)
+            max_diff = diff.max()
+            if max_diff > (min_value / 1000.0):
+                return True
+
+        return False
+
     def solve(self, Ns, P=None):
         """
         Find the IA solution by performing the `step` method several times.
@@ -1200,11 +1240,23 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         if isinstance(Ns, int):
             Ns = np.ones(self.K, dtype=int) * Ns
         else:
-            self._Ns = Ns
+            assert len(Ns) == 3
 
+        self._Ns = Ns
+
+        # This will be used to detect of the precoder did not
+        # significativelly change
+        old_F = self._F
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self._step()
+
+            # Stop the iteration earlier if the precoder does not change
+            # too much
+            if self._is_diff_significant(old_F, self._F) is False:
+                break
+            else:
+                old_F = self._F
 
         # Perform any post processing after the precoder and receive
         # filters where found. One possible usage for this method is to
