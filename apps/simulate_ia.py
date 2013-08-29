@@ -472,97 +472,6 @@ class MMSESimulationRunner(IASimulationRunner):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Functions Simulating each IA Algorithm xxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def plot_ber(results, plot_title=None, block=True):
-    """
-    Parameters
-    ----------
-    results : A SimulationResults object
-        The results from a simulation.
-    plot_title : str
-        The tittle of the plot. Any mention to "{parameter name}" will be
-        replaced by the parameter value.
-    block : bool
-        If True the plot will block and code will only continue after the
-        plot window is closed. Set it to False if you want iterative mode.
-    """
-    from matplotlib import pyplot as plt
-
-    # Get the BER and SER from the results object
-    ber = results.get_result_values_list('ber')
-    #ser = results.get_result_values_list('ser')
-
-    ber_CFs = results.get_result_values_confidence_intervals('ber', P=95)
-    #ser_CFs = results.get_result_values_confidence_intervals('ser', P=95)
-
-    ber_errors = np.abs([i[1] - i[0] for i in ber_CFs])
-    #ser_errors = np.abs([i[1] - i[0] for i in ser_CFs])
-
-    # Get the SNR from the simulation parameters
-    SNR = np.array(results.params['SNR'])
-
-    # Can only plot if we simulated for more then one value of SNR
-    if SNR.size > 1:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-
-        # ax.semilogy(SNR, ber, '--g*', label='BER')
-        # ax.semilogy(SNR, ser, '--b*', label='SER')
-
-        ax.errorbar(SNR, ber, ber_errors, fmt='--g*', elinewidth=2.0, label='BER')
-        #ax.errorbar(SNR, ser, ser_errors, fmt='--b*', elinewidth=2.0, label='SER')
-        ax.set_yscale('log')
-        plt.xlabel('SNR')
-        plt.ylabel('Error')
-        if plot_title is not None:
-            #plt.title('Min Leakage IA Algorithm ({5} Iterations)\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name, ia_iterations))
-            plt.title(plot_title.format(**results.params.parameters))
-        ax.legend()
-
-        ax.grid(True, which='both', axis='both')
-        plt.show(block=block)
-
-
-def plot_sum_capacity(results, plot_title=None, block=True):
-    """
-    Parameters
-    ----------
-    results : A SimulationResults object
-        The results from a simulation.
-    plot_title : str
-        The tittle of the plot. Any mention to "{parameter name}" will be
-        replaced by the parameter value.
-    block : bool
-        If True the plot will block and code will only continue after the
-        plot window is closed. Set it to False if you want iterative mode.
-    """
-    from matplotlib import pyplot as plt
-
-    # Get the BER and SER from the results object
-    sum_capacity = results.get_result_values_list('sum_capacity')
-    # Confidence intervals for the sum capacity values
-    sum_capacity_CFs = results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    errors = np.abs([i[1] - i[0] for i in sum_capacity_CFs])
-
-    # Get the SNR from the simulation parameters
-    SNR = np.array(results.params['SNR'])
-
-    # Can only plot if we simulated for more then one value of SNR
-    if SNR.size > 1:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        # ax.plot(SNR, sum_capacity, '--g*', label='Sum Capacity')
-        ax.errorbar(SNR, sum_capacity, errors, fmt='--g*', label='Sum Capacity', elinewidth=5.0, ecolor='red')
-        plt.xlabel('SNR')
-        plt.ylabel('Sum Capacity (bits/channel user')
-        if plot_title is not None:
-            #plt.title('Min Leakage IA Algorithm ({5} Iterations)\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name, ia_iterations))
-            plt.title(plot_title.format(**results.params.parameters))
-        # ax.legend()
-
-        ax.grid(True, which='both', axis='both')
-        plt.show(block=block)
-
-
 def simulate_general(runner, results_filename):
     """
     Run a simulation with the provided SimulationResults object `runner`.
@@ -599,7 +508,7 @@ def simulate_general(runner, results_filename):
         # are running. In that case we will perform the simulation in
         # parallel
         from IPython.parallel import Client
-        cl = Client()
+        cl = Client(profile="default")
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
         dview.execute('%reset')  # Reset the engines so that we don't have
@@ -721,15 +630,19 @@ def simulate_mmse():
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
+if __name__ == '__main__':
+    from time import time
+    from util.misc import pretty_time
+    tic = time()
 
-    print "Simulating Alternating Min. algorithm"
-    alt_min_results, alt_min_filename = simulate_alternating()
+    # print "Simulating Closed Form algorithm"
+    # closed_form_results, closed_form_filename = simulate_closed_form()
 
-    print "Simulating Max SINR algorithm"
-    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    # print "Simulating Alternating Min. algorithm"
+    # alt_min_results, alt_min_filename = simulate_alternating()
+
+    # print "Simulating Max SINR algorithm"
+    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     print "Simulating MMSE algorithm"
     mmse_results, mmse_filename = simulate_mmse()
@@ -737,8 +650,10 @@ if __name__ == '__main__1':
     # print "Simulating Min. Leakage algorithm"
     # min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
+    toc = time()
+    print "Elapsed Time: {0}".format(pretty_time(toc - tic))
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
