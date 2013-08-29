@@ -74,6 +74,16 @@ class IASimulationRunner(SimulationRunner):
         # Create the IA Solver object
         self.ia_solver = IaSolverClass(self.multiUserChannel)
 
+        # For the ClosedFormIASolver class we manually add a
+        # _runned_iterations member variable with value of 0. This member
+        # variable is not used and does not exist in the ClosedFormIASolver
+        # solver. However, since we will store this variable as a result
+        # for each algorithm we manually added to the ClosedFormIASolver
+        # object just to make the code in _run_simulation equal for all
+        # solvers.
+        if isinstance(self.ia_solver, ia.ClosedFormIASolver):
+            self.ia_solver._runned_iterations = 0.0
+
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
@@ -157,6 +167,10 @@ class IASimulationRunner(SimulationRunner):
         total_sum_capacity = np.sum(sum_capacity)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        #xxxxxxxxxx Number of iterations of the IA algorithm xxxxxxxxxxxxxx
+        ia_runned_iterations = self.ia_solver._runned_iterations
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         symbolErrorsResult = Result.create(
             "symbol_errors", Result.SUMTYPE, symbolErrors)
@@ -181,6 +195,9 @@ class IASimulationRunner(SimulationRunner):
             "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1,
             accumulate_values=True)
 
+        ia_runned_iterationsResult = Result.create(
+            "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1, accumulate_values=True)
+
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
         simResults.add_result(numSymbolsResult)
@@ -190,6 +207,7 @@ class IASimulationRunner(SimulationRunner):
         simResults.add_result(serResult)
         simResults.add_result(ia_costResult)
         simResults.add_result(sum_capacityResult)
+        simResults.add_result(ia_runned_iterationsResult)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
@@ -722,17 +740,17 @@ def simulate_mmse():
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
+    # print "Simulating Closed Form algorithm"
+    # closed_form_results, closed_form_filename = simulate_closed_form()
 
     print "Simulating Alternating Min. algorithm"
     alt_min_results, alt_min_filename = simulate_alternating()
 
-    print "Simulating Max SINR algorithm"
-    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    # print "Simulating Max SINR algorithm"
+    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
-    print "Simulating MMSE algorithm"
-    mmse_results, mmse_filename = simulate_mmse()
+    # print "Simulating MMSE algorithm"
+    # mmse_results, mmse_filename = simulate_mmse()
 
     # print "Simulating Min. Leakage algorithm"
     # min_leakage_results, min_leakage_filename = simulate_min_leakage()
@@ -772,7 +790,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot BER (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    SNR = np.array(mmse_results.params['SNR'])
+    SNR = np.array(alt_min_results.params['SNR'])
 
     ber_alt_min = alt_min_results.get_result_values_list('ber')
     ber_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('ber', P=95)
@@ -808,7 +826,7 @@ if __name__ == '__main__':
     plt.xlabel('SNR')
     plt.ylabel('BER')
     title = 'BER for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
-    plt.title(title.format(**mmse_results.params.parameters))
+    plt.title(title.format(**alt_min_results.params.parameters))
 
     ax.set_yscale('log')
     ax.legend()
@@ -852,7 +870,7 @@ if __name__ == '__main__':
     plt.xlabel('SNR')
     plt.ylabel('Sum Capacity')
     title = 'Sum Capacity for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
-    plt.title(title.format(**mmse_results.params.parameters))
+    plt.title(title.format(**alt_min_results.params.parameters))
 
     ax2.legend(loc=2)
     ax2.grid(True, which='both', axis='both')
