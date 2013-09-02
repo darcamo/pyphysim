@@ -2047,6 +2047,29 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             aux = np.dot(Hki.conj().T, Uk)
             sum_term = sum_term + np.dot(aux, aux.conj().T)
 
+        # Note that occasionally (specially for the low SNR values) sum_term
+        # may be a singular matrix. In that case, we add a diagonal loading
+        # factor to make the sum_term non-singular. This diagonal loading
+        # corresponding to summing an identity matrix times a load_factor
+        # to the sum_term, where this load_factor is arbitrarily
+        # calculated as 1/100 of the mean of the eigen values of the
+        # singular sum_term.
+
+        # Calculates the SVD of sum_term so that we can calculate the
+        # condition number.
+        [U, S, V_H] = np.linalg.svd(sum_term)
+        cond = cond = S.max() / S.min()
+        load_factor = 0.0
+        # If the condition number is larger than 1e8 we consider sum_term
+        # as a singular matrix, which means that we will perform the
+        # diagonal loading
+        if cond > 1e8:
+            # Calculates the load_factor (arbitrarily choosen as 1/100 the
+            # mean of the current singular values of sum_term).
+            load_factor = S.mean()/100.0
+            sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
+
+        # At this point we are guaranteed that sum_term has an inverse
         inv_sum_term = np.linalg.inv(sum_term)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2092,7 +2115,11 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
                 # Now that we have the best value for mu_i, lets calculate Vi
                 Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
-                self._mu[i] = mu_i
+
+                # If any load_factor was added (in case the original
+                # sum_term is a singular matrix) we will add it to the
+                # optimum mu_i, since this is the effective value of mu_i.
+                self._mu[i] = mu_i + load_factor
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Case when the mu value is provided xxxxxxxxxxxxxxxxxxx

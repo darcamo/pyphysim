@@ -1762,14 +1762,17 @@ class MMSEIASolverTestCase(unittest.TestCase):
         multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
 
         iasolver = MMSEIASolver(multi_user_channel)
-        iasolver._F = F
-        iasolver._W = W
-
+        iasolver.noise_var=10  # Set a very high noise variance (that is, a
+                               # very low SINR)
         #iasolver._initialize_F_and_W(Ns, P)
-        #iasolver.solve(Ns, P)
-        #import pudb; pudb.set_trace()  ## DEBUG ##
 
-        #iasolver._calc_Vi(0)
+        # iasolver._F = F
+        # iasolver._W = W
+
+        #import pudb; pudb.set_trace()  ## DEBUG ##
+        iasolver.solve(Ns, P)
+
+        iasolver._calc_Vi(0)
 
         #print np.linalg.svd(iasolver.F[0])[1]
 

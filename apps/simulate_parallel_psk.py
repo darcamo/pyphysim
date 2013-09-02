@@ -70,10 +70,6 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
 
-        # IPython Parallel view of the prepared engines to use parallel
-        # processing
-        #self._engine_view = None
-
     @staticmethod
     def _run_simulation(current_parameters):
         """The _run_simulation method is where the actual code to simulate

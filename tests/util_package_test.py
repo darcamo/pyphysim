@@ -14,6 +14,7 @@ import sys
 import os
 parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
+current_dir = os.path.abspath(os.path.dirname(__file__))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import unittest
@@ -40,7 +41,12 @@ class _DummyRunner(simulations.SimulationRunner):
 
     @staticmethod
     def _run_simulation(current_params):
-        return SimulationResults()
+        SNR = current_params['SNR']
+        sim_results = SimulationResults()
+
+        # The correct result will be SNR * 1.2
+        sim_results.add_new_result('lala', Result.RATIOTYPE, 1.2 * SNR, 1)
+        return sim_results
 
 
 class UtilDoctestsTestCase(unittest.TestCase):
@@ -1147,10 +1153,13 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # then we call its simulate method
         dummyrunner.simulate()
 
-        dummyrunner.progressbar_message = 'Progress'
-        dummyrunner.simulate()
+        lala_results = [r.get_result() for r in dummyrunner.results['lala']]
+        expected_lala_results = [0.0, 6.0, 12.0, 18.0, 24.0]
 
-    # TODO: Implement-me
+        self.assertAlmostEqual(lala_results, expected_lala_results)
+
+    # This test method is normally skipped, unless you have started the
+    # IPython cluster so that you have at leas one engine running.
     def test_simulate_in_parallel(self):
         try:
             from IPython.parallel import Client
@@ -1158,12 +1167,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
             dview = cl.direct_view()
             dview.execute('%reset')  # Reset the engines so that we don't have
-                                 # variables there from last computations
+                                     # variables there from last computations
             dview.execute('import sys')
             # We use block=True to ensure that all engines have modified
             # their path to include the folder with the simulator before we
             # create the load lanced view in the following.
-            dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+            dview.execute('sys.path.append("{0}")'.format(current_dir), block=True)
 
             lview = cl.load_balanced_view()
             if len(lview) == 0:
@@ -1171,14 +1180,19 @@ class SimulationRunnerTestCase(unittest.TestCase):
         except Exception:
             self.skipTest("The IPython engines were not found.")
 
-        from tests.util_package_test import _DummyRunner
+        dview.execute('import util_package_test', block=True)
+
+        from util_package_test import _DummyRunner
         runner = _DummyRunner()
         runner.progressbar_message = 'bla'
         runner.update_progress_function_style = 'text1'
 
-        print
-        #runner.simulate()
         runner.simulate_in_parallel(lview)
+
+        lala_results = [r.get_result() for r in runner.results['lala']]
+        expected_lala_results = [0.0, 6.0, 12.0, 18.0, 24.0]
+
+        self.assertAlmostEqual(lala_results, expected_lala_results)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -490,97 +490,6 @@ class MMSESimulationRunner(IASimulationRunner):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Functions Simulating each IA Algorithm xxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def plot_ber(results, plot_title=None, block=True):
-    """
-    Parameters
-    ----------
-    results : A SimulationResults object
-        The results from a simulation.
-    plot_title : str
-        The tittle of the plot. Any mention to "{parameter name}" will be
-        replaced by the parameter value.
-    block : bool
-        If True the plot will block and code will only continue after the
-        plot window is closed. Set it to False if you want iterative mode.
-    """
-    from matplotlib import pyplot as plt
-
-    # Get the BER and SER from the results object
-    ber = results.get_result_values_list('ber')
-    #ser = results.get_result_values_list('ser')
-
-    ber_CFs = results.get_result_values_confidence_intervals('ber', P=95)
-    #ser_CFs = results.get_result_values_confidence_intervals('ser', P=95)
-
-    ber_errors = np.abs([i[1] - i[0] for i in ber_CFs])
-    #ser_errors = np.abs([i[1] - i[0] for i in ser_CFs])
-
-    # Get the SNR from the simulation parameters
-    SNR = np.array(results.params['SNR'])
-
-    # Can only plot if we simulated for more then one value of SNR
-    if SNR.size > 1:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-
-        # ax.semilogy(SNR, ber, '--g*', label='BER')
-        # ax.semilogy(SNR, ser, '--b*', label='SER')
-
-        ax.errorbar(SNR, ber, ber_errors, fmt='--g*', elinewidth=2.0, label='BER')
-        #ax.errorbar(SNR, ser, ser_errors, fmt='--b*', elinewidth=2.0, label='SER')
-        ax.set_yscale('log')
-        plt.xlabel('SNR')
-        plt.ylabel('Error')
-        if plot_title is not None:
-            #plt.title('Min Leakage IA Algorithm ({5} Iterations)\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name, ia_iterations))
-            plt.title(plot_title.format(**results.params.parameters))
-        ax.legend()
-
-        ax.grid(True, which='both', axis='both')
-        plt.show(block=block)
-
-
-def plot_sum_capacity(results, plot_title=None, block=True):
-    """
-    Parameters
-    ----------
-    results : A SimulationResults object
-        The results from a simulation.
-    plot_title : str
-        The tittle of the plot. Any mention to "{parameter name}" will be
-        replaced by the parameter value.
-    block : bool
-        If True the plot will block and code will only continue after the
-        plot window is closed. Set it to False if you want iterative mode.
-    """
-    from matplotlib import pyplot as plt
-
-    # Get the BER and SER from the results object
-    sum_capacity = results.get_result_values_list('sum_capacity')
-    # Confidence intervals for the sum capacity values
-    sum_capacity_CFs = results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    errors = np.abs([i[1] - i[0] for i in sum_capacity_CFs])
-
-    # Get the SNR from the simulation parameters
-    SNR = np.array(results.params['SNR'])
-
-    # Can only plot if we simulated for more then one value of SNR
-    if SNR.size > 1:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        # ax.plot(SNR, sum_capacity, '--g*', label='Sum Capacity')
-        ax.errorbar(SNR, sum_capacity, errors, fmt='--g*', label='Sum Capacity', elinewidth=5.0, ecolor='red')
-        plt.xlabel('SNR')
-        plt.ylabel('Sum Capacity (bits/channel user')
-        if plot_title is not None:
-            #plt.title('Min Leakage IA Algorithm ({5} Iterations)\nK={0}, Nr={1}, Nt={2}, Ns={3}, {4}'.format(K, Nr, Nt, Ns, modulator_name, ia_iterations))
-            plt.title(plot_title.format(**results.params.parameters))
-        # ax.legend()
-
-        ax.grid(True, which='both', axis='both')
-        plt.show(block=block)
-
-
 def simulate_general(runner, results_filename):
     """
     Run a simulation with the provided SimulationResults object `runner`.
@@ -617,7 +526,8 @@ def simulate_general(runner, results_filename):
         # are running. In that case we will perform the simulation in
         # parallel
         from IPython.parallel import Client
-        cl = Client()
+        # cl = Client(profile="ssh")
+        cl = Client(profile="default")
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
         dview.execute('%reset')  # Reset the engines so that we don't have
@@ -653,6 +563,40 @@ def simulate_general(runner, results_filename):
     print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
 
     return runner.results, results_filename
+
+
+def save_results(runner, results_filename):
+    """
+    Save the results in the runner object to a file.
+
+    The runner object must already have completed its simulation.
+
+    Parameters
+    ----------
+    runner : An object of a subclass of SimulationRunner.
+        The SimulationRunner object that will run the simulation.
+    results_filename : str
+        The name of the file where the simulation results will be stored.
+        This name is formatted with the simulation parameters. Therefore,
+        if there are parameter Nr=2 and Nt=1, for instance, then if
+        `results_filename` is equal to "results for {Nr}x{Nt}" then
+        "results for 2x1.pickle" will be used.
+
+    Returns
+    -------
+    filename : str
+        Name of the file where the results were saved.
+    """
+    # xxxxx Replace any parameter mention in results_filename xxxxxxxxxxxxx
+    results_filename = results_filename.format(**runner.params.parameters)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    results_filename = '{0}.pickle'.format(results_filename)
+    runner.results.save_to_file(results_filename)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results_filename
 
 
 def simulate_alternating():
@@ -739,22 +683,116 @@ def simulate_mmse():
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Performs the simulation in parallel
+if __name__ == '__main__':
+    from time import time
+    from util.misc import pretty_time
+    from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
+    tic = time()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxx Get the IPython view for the parallel simulation xxxxxxxxxxxxxx
+    from IPython.parallel import Client
+    # cl = Client(profile="ssh")
+    cl = Client(profile="default")
+    # We create a direct view to run coe in all engines
+    dview = cl.direct_view()
+    dview.execute('%reset')  # Reset the engines so that we don't have
+                             # variables there from last computations
+    dview.execute('import sys')
+    # We use block=True to ensure that all engines have modified their
+    # path to include the folder with the simulator before we create
+    # the load lanced view in the following.
+    dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+
+    # But for the actual simulation we are better using a load balanced view
+    lview = cl.load_balanced_view()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the Closed Form Runner xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating Closed Form algorithm"
+    closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
+    closed_form_runner.simulate_in_parallel(lview, wait=False)
+    pprint(closed_form_runner.params.parameters)
+    print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the Alt. Min. Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating Alternating Minimizations algorithm"
+    alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
+    alt_min_runner.simulate_in_parallel(lview, wait=False)
+    pprint(alt_min_runner.params.parameters)
+    print("IA Solver: {0}".format(alt_min_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the Max SINR Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating Max SINR algorithm"
+    max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
+    max_sinrn_runner.simulate_in_parallel(lview, wait=False)
+    pprint(max_sinrn_runner.params.parameters)
+    print("IA Solver: {0}".format(max_sinrn_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the MMSE Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating MMSE algorithm"
+    mmse_runner = MMSESimulationRunner('ia_config_file.txt')
+    mmse_runner.simulate_in_parallel(lview, wait=False)
+    pprint(mmse_runner.params.parameters)
+    print("IA Solver: {0}".format(mmse_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Wait for all simulations to stop xxxxxxxxxxxxxxxxxxxxxxxxx
+    closed_form_runner.wait_parallel_simulation()
+    alt_min_runner.wait_parallel_simulation()
+    max_sinrn_runner.wait_parallel_simulation()
+    mmse_runner.wait_parallel_simulation()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Save all results to respective files xxxxxxxxxxxxxxxxxxxxx
+    save_results(closed_form_runner, 'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "Closed Form Runned iterations: {0}".format(closed_form_runner.runned_reps)
+    print "Closed Form Elapsed Time: {0}".format(closed_form_runner.elapsed_time)
+
+    save_results(alt_min_runner, 'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "Alt. Min. Runned iterations: {0}".format(alt_min_runner.runned_reps)
+    print "Alt. Min. Elapsed Time: {0}".format(alt_min_runner.elapsed_time)
+
+    save_results(max_sinrn_runner, 'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "Max SINR Runned iterations: {0}".format(max_sinrn_runner.runned_reps)
+    print "Max SINR Elapsed Time: {0}".format(max_sinrn_runner.elapsed_time)
+
+    save_results(mmse_runner, 'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "MMSE Runned iterations: {0}".format(mmse_runner.runned_reps)
+    print "MMSE Elapsed Time: {0}".format(mmse_runner.elapsed_time)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    toc = time()
+    print "Total Elapsed Time: {0}".format(pretty_time(toc - tic))
+
+
 if __name__ == '__main__1':
-    # print "Simulating Closed Form algorithm"
-    # closed_form_results, closed_form_filename = simulate_closed_form()
+    from time import time
+    from util.misc import pretty_time
+    tic = time()
+
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
 
     print "Simulating Alternating Min. algorithm"
     alt_min_results, alt_min_filename = simulate_alternating()
 
-    # print "Simulating Max SINR algorithm"
-    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    print "Simulating Max SINR algorithm"
+    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
-    # print "Simulating MMSE algorithm"
-    # mmse_results, mmse_filename = simulate_mmse()
+    print "Simulating MMSE algorithm"
+    mmse_results, mmse_filename = simulate_mmse()
 
     # print "Simulating Min. Leakage algorithm"
     # min_leakage_results, min_leakage_filename = simulate_min_leakage()
 
+    toc = time()
+    print "Elapsed Time: {0}".format(pretty_time(toc - tic))
 
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
