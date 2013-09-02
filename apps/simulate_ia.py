@@ -526,6 +526,7 @@ def simulate_general(runner, results_filename):
         # are running. In that case we will perform the simulation in
         # parallel
         from IPython.parallel import Client
+        # cl = Client(profile="ssh")
         cl = Client(profile="default")
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
@@ -562,6 +563,40 @@ def simulate_general(runner, results_filename):
     print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
 
     return runner.results, results_filename
+
+
+def save_results(runner, results_filename):
+    """
+    Save the results in the runner object to a file.
+
+    The runner object must already have completed its simulation.
+
+    Parameters
+    ----------
+    runner : An object of a subclass of SimulationRunner.
+        The SimulationRunner object that will run the simulation.
+    results_filename : str
+        The name of the file where the simulation results will be stored.
+        This name is formatted with the simulation parameters. Therefore,
+        if there are parameter Nr=2 and Nt=1, for instance, then if
+        `results_filename` is equal to "results for {Nr}x{Nt}" then
+        "results for 2x1.pickle" will be used.
+
+    Returns
+    -------
+    filename : str
+        Name of the file where the results were saved.
+    """
+    # xxxxx Replace any parameter mention in results_filename xxxxxxxxxxxxx
+    results_filename = results_filename.format(**runner.params.parameters)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
+    results_filename = '{0}.pickle'.format(results_filename)
+    runner.results.save_to_file(results_filename)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results_filename
 
 
 def simulate_alternating():
@@ -648,19 +683,107 @@ def simulate_mmse():
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Performs the simulation in parallel
 if __name__ == '__main__':
+    from time import time
+    from util.misc import pretty_time
+    from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
+    tic = time()
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxx Get the IPython view for the parallel simulation xxxxxxxxxxxxxx
+    from IPython.parallel import Client
+    # cl = Client(profile="ssh")
+    cl = Client(profile="default")
+    # We create a direct view to run coe in all engines
+    dview = cl.direct_view()
+    dview.execute('%reset')  # Reset the engines so that we don't have
+                             # variables there from last computations
+    dview.execute('import sys')
+    # We use block=True to ensure that all engines have modified their
+    # path to include the folder with the simulator before we create
+    # the load lanced view in the following.
+    dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+
+    # But for the actual simulation we are better using a load balanced view
+    lview = cl.load_balanced_view()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the Closed Form Runner xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating Closed Form algorithm"
+    closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
+    closed_form_runner.simulate_in_parallel(lview, wait=False)
+    pprint(closed_form_runner.params.parameters)
+    print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the Alt. Min. Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating Alternating Minimizations algorithm"
+    alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
+    alt_min_runner.simulate_in_parallel(lview, wait=False)
+    pprint(alt_min_runner.params.parameters)
+    print("IA Solver: {0}".format(alt_min_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the Max SINR Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating Max SINR algorithm"
+    max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
+    max_sinrn_runner.simulate_in_parallel(lview, wait=False)
+    pprint(max_sinrn_runner.params.parameters)
+    print("IA Solver: {0}".format(max_sinrn_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Creates the MMSE Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Simulating MMSE algorithm"
+    mmse_runner = MMSESimulationRunner('ia_config_file.txt')
+    mmse_runner.simulate_in_parallel(lview, wait=False)
+    pprint(mmse_runner.params.parameters)
+    print("IA Solver: {0}".format(mmse_runner.ia_solver.__class__))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Wait for all simulations to stop xxxxxxxxxxxxxxxxxxxxxxxxx
+    closed_form_runner.wait_parallel_simulation()
+    alt_min_runner.wait_parallel_simulation()
+    max_sinrn_runner.wait_parallel_simulation()
+    mmse_runner.wait_parallel_simulation()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Save all results to respective files xxxxxxxxxxxxxxxxxxxxx
+    save_results(closed_form_runner, 'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "Closed Form Runned iterations: {0}".format(closed_form_runner.runned_reps)
+    print "Closed Form Elapsed Time: {0}".format(closed_form_runner.elapsed_time)
+
+    save_results(alt_min_runner, 'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "Alt. Min. Runned iterations: {0}".format(alt_min_runner.runned_reps)
+    print "Alt. Min. Elapsed Time: {0}".format(alt_min_runner.elapsed_time)
+
+    save_results(max_sinrn_runner, 'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "Max SINR Runned iterations: {0}".format(max_sinrn_runner.runned_reps)
+    print "Max SINR Elapsed Time: {0}".format(max_sinrn_runner.elapsed_time)
+
+    save_results(mmse_runner, 'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+    print "MMSE Runned iterations: {0}".format(mmse_runner.runned_reps)
+    print "MMSE Elapsed Time: {0}".format(mmse_runner.elapsed_time)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    toc = time()
+    print "Total Elapsed Time: {0}".format(pretty_time(toc - tic))
+
+
+if __name__ == '__main__1':
     from time import time
     from util.misc import pretty_time
     tic = time()
 
-    # print "Simulating Closed Form algorithm"
-    # closed_form_results, closed_form_filename = simulate_closed_form()
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
 
-    # print "Simulating Alternating Min. algorithm"
-    # alt_min_results, alt_min_filename = simulate_alternating()
+    print "Simulating Alternating Min. algorithm"
+    alt_min_results, alt_min_filename = simulate_alternating()
 
-    # print "Simulating Max SINR algorithm"
-    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    print "Simulating Max SINR algorithm"
+    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     print "Simulating MMSE algorithm"
     mmse_results, mmse_filename = simulate_mmse()
@@ -671,7 +794,7 @@ if __name__ == '__main__':
     toc = time()
     print "Elapsed Time: {0}".format(pretty_time(toc - tic))
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
