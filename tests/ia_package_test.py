@@ -1781,6 +1781,25 @@ class MMSEIASolverTestCase(unittest.TestCase):
         # iasolver.noise_var = 1e-6
         # iasolver.solve(Ns)
 
+    # TODO: Finish this implementation or erase this method
+    def test_calc_Vi3(self):
+        # This method test the case when IA is not feasible
+        K = 3
+        Nt = 3 * np.ones(K)
+        Nr = 3 * np.ones(K)
+        Ns = 2
+        P = 1.0
+
+        # This specific channel will yield a degenerated solution solution
+        big_H = np.load("big_H2.npy")
+        multi_user_channel = channels.MultiUserChannelMatrix()
+        multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
+
+        iasolver = MMSEIASolver(multi_user_channel)
+        iasolver.noise_var = 1000.0
+
+        iasolver.solve(Ns)
+
     def test_updateF(self):
         self.iasolver._updateF()
 

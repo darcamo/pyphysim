@@ -1118,7 +1118,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     # values. Basically, any singular value (and corresponding
                     # dimension) lower then max_sing_value/1e8 will be
                     # discarded.
-                    n = np.sum(S > max_sing_value / 1.0e8)
+                    n = np.sum(S > max_sing_value / 1.0e4)
 
                     # Store the number of significative singular values for
                     # that user
@@ -2063,10 +2063,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # If the condition number is larger than 1e8 we consider sum_term
         # as a singular matrix, which means that we will perform the
         # diagonal loading
-        if cond > 1e8:
+        if cond > 5e4:
             # Calculates the load_factor (arbitrarily choosen as 1/100 the
             # mean of the current singular values of sum_term).
-            load_factor = S.mean()/100.0
+            load_factor = S.mean() / 100.0
             sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
 
         # At this point we are guaranteed that sum_term has an inverse
