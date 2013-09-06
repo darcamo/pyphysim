@@ -1615,56 +1615,67 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************\n")
 
 
-# # TODO: finish implementation
-# class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
-#     def setUp(self):
-#         """Called before each test."""
-#         from StringIO import StringIO
-#         #self.out = StringIO()
-#         self.mpbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1)
-#         self.proxybar1 = self.mpbar.register_function_and_get_proxy_progressbar(10)
-#         self.proxybar2 = self.mpbar.register_function_and_get_proxy_progressbar(15)
+class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
 
-#     def test_updater(self):
-#         from time import sleep
-#         from StringIO import StringIO
-#         stdout = sys.stdout
-#         new_out = StringIO()
-#         sys.stdout = new_out
+        self.mpbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.proxybar1 = self.mpbar.register_function_and_get_proxy_progressbar(10)
+        self.proxybar2 = self.mpbar.register_function_and_get_proxy_progressbar(15)
 
-#         # Suppose that the first process already started and called the
-#         # proxybar1 to update its progress.
-#         self.proxybar1.progress(6)
+    def test_register(self):
+        # proxybar1 and proxybar2 were already registered in the setUp
+        # method. Let's test if this was performed correctly.
 
-#         # Then we start the "updater" of the main progressbar.
-#         self.mpbar.start_updater()
+        # _last_id starts at -1 when nothing was is registered and a value
+        # of 1 is added each time something is registered.
+        self.assertEqual(self.mpbar._last_id, 1)
 
-#         # Then the second process updates its progress
-#         self.proxybar2.progress(6)
+        self.assertEqual(self.mpbar._total_final_count, 25)
 
-#         sleep(2)
-#         #print self.out.getvalue()
-#         # self.assertEqual(self.out.getvalue(), """------------------ Some message -----------------1
-# #     1    2    3    4    5    6    7    8    9    0
-# # ----0----0----0----0----0----0----0----0----0----0
-# # ************************""")
+    # Note: This method will sleep for 0.3 seconds thus adding to the total
+    # amount of time required to run all tests. Unfortunatelly, this is a
+    # necessary cost.
+    def test_updater(self):
+        import os
+        import time
 
-#         # sleep(10)
+        # Remove old file from previous test run
+        try:
+            os.remove(self.output_filename)
+        except Exception:
+            pass
 
-#         # # Finally both processes finish their progress
-#         # self.proxybar1.progress(10)
-#         # self.proxybar2.progress(14)
+        # Suppose that the first process already started and called the
+        # proxybar1 to update its progress.
+        self.proxybar1.progress(6)
 
-#         # # We need to sleep so that the updater process can actually read
-#         # # the current progress and print the progressbar
-#         # sleep(0.2)
+        # Then we start the "updater" of the main progressbar.
+        self.mpbar.start_updater()
 
-#         # # If we didn't specify a timeout then program would never finish,
-#         # # since in our test the progress never reaches 100%.
-#         # self.mpbar.stop_updater(timeout=0.0)
+        # Then the second process updates its progress
+        self.proxybar2.progress(6)
+        #self.mpbar.stop_updater()
 
+        # Sleep for a very short time so that the
+        # ProgressbarMultiProcessText object has time to create the file
+        # with the current progress
+        time.sleep(0.3)
 
-#         # print self.out.getvalue()
+        self.mpbar.stop_updater(0)
+
+        # Open and read the progress from the file
+        progress_output_file = open(self.output_filename)
+        progress_string = progress_output_file.read()
+
+        # Expected string with the progress output
+        expected_progress_string = """------------------ Some message -----------------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+************************"""
+
+        self.assertEqual(progress_string, expected_progress_string)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1688,6 +1699,8 @@ if __name__ == '__main__1':  # pragma: no cover
     from time import sleep
     import multiprocessing
     from util.progressbar import ProgressbarMultiProcessText
+    import sys
+
     bar = ProgressbarMultiProcessText(sleep_time=1)
 
     # # xxxxx Option 1: register_function xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

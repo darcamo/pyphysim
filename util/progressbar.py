@@ -453,7 +453,7 @@ class ProgressbarMultiProcessText(object):
                  progresschar='*',
                  message='',
                  sleep_time=1,
-                 output=sys.stdout):
+                 filename=None):
         """
         Initializes the ProgressbarMultiProcessText object.
 
@@ -465,11 +465,11 @@ class ProgressbarMultiProcessText(object):
             Message writen in the progressbar.
         sleep_time : float
             Time between progressbar updates (in seconds).
-        output : File like object
-            Object with a 'write' method, which controls where the
-            progress-bar will be printed. By default sys.stdout is used,
-            which means that the progress will be printed in the standard
-            output.
+        filename : str
+            If filename is None (default) then progress will be output to
+            sys.stdout. If it is not None then the progress will be output
+            to a file with name `filename`. This is usually useful for
+            debugging and testing purposes.
         """
         # total_final_count will be updated each time the register_*
         # function is called
@@ -483,9 +483,7 @@ class ProgressbarMultiProcessText(object):
         self._sleep_time = sleep_time
         self._last_id = -1
 
-        # By default, self._output points to sys.stdout so I can use the
-        # write/flush methods to display the progress bar.
-        self._output = output
+        self._filename = filename
 
         # Process responsible to update the progressbar. It will be started
         # by the start_updater method and it may be finished anytime by
@@ -493,7 +491,7 @@ class ProgressbarMultiProcessText(object):
         # process so that we don't get errors if the program closes before
         # the process updating the progressbar ends (because the user
         # forgot to call the stop_updater method).
-        self._update_process = multiprocessing.Process(target=self._update_progress, args=[self._output])
+        self._update_process = multiprocessing.Process(target=self._update_progress, args=[self._filename])
         self._update_process.daemon = True
 
         # The event will be set when the process updating the progressbar
@@ -502,9 +500,9 @@ class ProgressbarMultiProcessText(object):
                                                 # in the _update_progress
                                                 # function
 
-        # Used for time tracking
-        self._tic = multiprocessing.Value('f', 0.0)
-        self._toc = multiprocessing.Value('f', 0.0)
+        # # Used for time tracking
+        # self._tic = multiprocessing.Value('f', 0.0)
+        # self._toc = multiprocessing.Value('f', 0.0)
 
     def _register_function(self, total_count):
         """Return the `process_id` and a "process_data_list". These must be
@@ -566,18 +564,24 @@ class ProgressbarMultiProcessText(object):
     # coverage rogram does not see that this method in run in the test code
     # even though we know it is run (otherwise no output would
     # appear). Therefore, we put the "pragma: no cover" line in it
-    def _update_progress(self, output=sys.stdout):  # pragma: no cover
-        """Collects the progress from each registered proxy progressbar and
+    def _update_progress(self, filename=None):  # pragma: no cover
+        """
+        Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
 
         Parameters
         ----------
-        out : File like object
-            Object with a 'write' method, which controls where the
-            progress-bar will be printed. By default sys.stdout is used,
-            which means that the progress will be printed in the standard
-            output.
+        filename : str
+            Name of a file where the data will be written to. If this is
+            None then all progress will be printed in the standard output
+            (defaut)
         """
+        if filename is None:
+            import sys
+            output = sys.stdout
+        else:
+            output = open(filename, 'w')
+
         pbar = ProgressbarText(self._total_final_count,
                                self._progresschar,
                                self._message,
@@ -596,12 +600,12 @@ class ProgressbarMultiProcessText(object):
         # it here to have some consistence (a cleared event will always
         # mean that the progressbar is not running).
         self.running.clear()
-        self._toc.value = time.time()
+        # self._toc.value = time.time()
 
     def start_updater(self):
         """Start the process that updates the progressbar.
         """
-        self._tic.value = time.time()
+        # self._tic.value = time.time()
         self._update_process.start()
 
     def stop_updater(self, timeout=None):
@@ -614,33 +618,39 @@ class ProgressbarMultiProcessText(object):
 
         """
         self.running.clear()
-        self._toc.value = time.time()
+        # self._toc.value = time.time()
         self._update_process.join(timeout)
 
-    # TODO: Check if the duration property work correctly
-    @property
-    def duration(self, ):
-        """Duration of the progress.
+    # # TODO: Check if the duration property work correctly
+    # @property
+    # def duration(self, ):
+    #     """Duration of the progress.
 
-        Returns
-        -------
-        toc_minus_tic : float
-            The duration passed until the progressbar reaches 100%.
-        """
-        # The progressbar is still running, calculate the duration since
-        # the beginning
-        if self.running.is_set():
-            toc = time.time()
-        else:
-            toc = self._toc.value
+    #     Returns
+    #     -------
+    #     toc_minus_tic : float
+    #         The duration passed until the progressbar reaches 100%.
+    #     """
+    #     # The progressbar is still running, calculate the duration since
+    #     # the beginning
+    #     if self.running.is_set():
+    #         toc = time.time()
+    #     else:
+    #         toc = self._toc.value
 
-        return toc - self._tic.value
+    #     return toc - self._tic.value
+
 
 # Used by the ProgressbarMultiProcessText class
 class ProgressbarMultiProcessProxy:
-    """Proxy progressbar that behaves like a ProgressbarText object,
+    """
+    Proxy progressbar that behaves like a ProgressbarText object,
     but is actually updating a ProgressbarMultiProcessText progressbar.
 
+    The basic idea is that this proxy progressbar has the "progress" method
+    similar to the standard ProgressbarText class. However, when this
+    method is called it will update a value that will be read by a
+    ProgressbarMultiProcessText object instead.
     """
     def __init__(self, process_id, process_data_list):
         """Initializes the ProgressbarMultiProcessProxy object."""
