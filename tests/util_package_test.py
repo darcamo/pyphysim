@@ -1644,7 +1644,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         # Remove old file from previous test run
         try:
             os.remove(self.output_filename)
-        except Exception:
+        except Exception:  # Pragma: no cover
             pass
 
         # Suppose that the first process already started and called the
