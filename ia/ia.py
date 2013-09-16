@@ -59,19 +59,21 @@ class IASolverBaseClass(object):
     """
     def __init__(self, multiUserChannel):
         """Initialize the variables that every IA solver will have.
-        """
-        # Precoder and receive filters (numpy arrays of numpy arrays)
-        self._F = None  # Precoder: One precoder for each user
-        self._full_F = None  # Precoder: Same as _F, but scaled with the
-                             # correct power value in self.P
-        self._W = None  # Receive filter: One for each user
-        self._W_H = None  # Receive filter: One for each user
 
+        Parameters
+        ----------
+        multiUserChannel : A MultiUserChannelMatrix object.
+            The multiuser channel.
+        """
+        from comm import channels
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
-        # Number of streams per user
-        self._Ns = None
+        if not isinstance(multiUserChannel, channels.MultiUserChannelMatrix):
+            raise ValueError("multiUserChannel must be an object of the comm.channels.MultiUserChannelMatrix class (or a subclass).")
         # Channel of all users
         self._multiUserChannel = multiUserChannel
+
+        # Number of streams per user
+        self._Ns = None
 
         self._P = None  # Power of each user (P is an 1D numpy array). If
                         # not set (_P is None), then a power of 1 will be
@@ -79,6 +81,15 @@ class IASolverBaseClass(object):
         self._noise_var = None  # If None, then the value of last_noise_var
                                 # in the multiUserChannel object will be
                                 # used.
+
+        # Precoder and receive filters (numpy arrays of numpy arrays)
+        self._F = None  # Precoder: One precoder for each user
+        self._full_F = None  # Precoder: Same as _F, but scaled with the
+                             # correct power value in self.P
+        self._W = None  # Receive filter: One for each user
+        self._W_H = None  # Receive filter: One for each user
+        self._full_W_H = None
+        self._full_W = None
 
     def _clear_receive_filter(self):
         """
@@ -90,6 +101,7 @@ class IASolverBaseClass(object):
         self._W = None
         self._W_H = None
         self._full_W_H = None
+        self._full_W = None
 
     def _clear_precoder_filter(self):
         """
@@ -210,6 +222,20 @@ class IASolverBaseClass(object):
                     Hieq_inv = np.linalg.inv(Hieq)
                     self._full_W_H[k] = Hieq_inv.dot(self.W_H[k])
         return self._full_W_H
+
+    @property
+    def full_W(self, ):
+        """
+        Get method for the full_W property.
+
+        The full_W property returns the equivalent filter of the IA
+        filter plus the post processing filter.
+        """
+        if self._full_W is None:
+            self._full_W = np.empty(self.K, dtype=np.ndarray)
+            for k in range(self.K):
+                self._full_W[k] = self.full_W_H[k].conj().T
+        return self._full_W
 
     def _calc_equivalent_channel(self, k):
         """
@@ -555,6 +581,28 @@ class IASolverBaseClass(object):
 
         return SINRs
 
+    def calc_SINR(self):
+        """
+        Calculates the SINR values (in linear scale) of all streams of all
+        users with the current IA solution.
+
+        The noise variance used will be the value of the noise_var
+        property, which, if not explicitly set, will use the
+        last_noise_var property of the multiuserchannel object.
+
+        Returns
+        -------
+        SINRs : 1D numpy array of 1D numpy arrays (of floats)
+            The SINR (in linear scale) of all streams of all users.
+        """
+        K = self.K
+        SINRs = np.empty(K, dtype=np.ndarray)
+
+        for k in range(self.K):
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k, self.noise_var)
+            SINRs[k] = self._calc_SINR_k(k, Bkl_all_l)
+        return SINRs
+
     def _calc_Bkl_cov_matrix_first_part(self, k):
         """Calculates the first part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_.
@@ -627,6 +675,8 @@ class IASolverBaseClass(object):
 
         return second_part
 
+    # TODO: Change the defaul noise_power to None and, when it is None, use
+    # the member variable _noise_value.
     def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=0):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
@@ -681,18 +731,16 @@ class IASolverBaseClass(object):
 
     # NOTE: This method is specific to the MaxSinrIASolver algorithm and that is
     # why it is an internal method (starting with a "_")
-    def _calc_SINR_k(self, Bkl_all_l, Uk_H, k):
+    def _calc_SINR_k(self, k, Bkl_all_l):
         """Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
+        k : int
+            Index of the desired user.
         Bkl_all_l : A sequence of 2D numpy arrays.
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
-        Uk_H: 2D numpy arrays.
-            The hermitian of the receive filter for all streams of user k.
-        k : int
-            Index of the desired user.
 
         Returns
         -------
@@ -702,6 +750,7 @@ class IASolverBaseClass(object):
         """
         Hkk = self._get_channel(k, k)
         Vk = self.full_F[k]
+        Uk_H = self.full_W_H[k]
 
         SINR_k = np.empty(self.Ns[k], dtype=float)
 
@@ -1088,7 +1137,6 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.randomizeF(Ns, P)
         self._updateW()
 
-    # TODO: Implement-me and test-me
     def _solve_finalize(self):
         """Perform any post processing after the solution has been found.
         """
@@ -1969,6 +2017,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         Updates the receive filter of all users.
         """
+        self._clear_receive_filter()
+
         self._W = np.zeros(3, dtype=np.ndarray)
         for k in range(self.K):
             self._W[k] = self._calc_Uk(k)
