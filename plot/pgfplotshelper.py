@@ -8,18 +8,19 @@ code using the pdfplots package) from python data.
 One example of tex code for a plot using pgfplots is show below
 
 .. code-block:: latex
-    \begin{tikzpicture}
-      \begin{axis}[axis options]
-        \addplot[plot options"
+
+    \\begin{tikzpicture}
+      \\begin{axis}[axis options]
+        \\addplot [plot options]
         plot [options]
         coordinates {
           (0, 0)
           (1, 1)
           (2, 4)
           (3, 9)};
-        \addlegendentry{Legend of the last line};
-      \end{axis}
-    \end{tikzpicture}
+        \\addlegendentry{Legend of the last line};
+      \\end{axis}
+    \\end{tikzpicture}
 
 """
 
@@ -28,6 +29,12 @@ __revision__ = "$Revision$"
 
 def generate_pgfplots_plotline(x, y, errors=None, options=None):
     """
+    This function generates the code corresponding to the "addplot" command
+    in a pgfplots plot for the coordinates given in `x` and `y`.
+
+    If the parameter `errors` is also provided then error bars will be
+    added in the `y` direction, while options to the addplot command can be
+    passed as a string in the `options` argument.
 
     Parameters
     ----------

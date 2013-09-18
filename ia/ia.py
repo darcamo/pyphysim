@@ -1322,8 +1322,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 # xxxxxxxxxx AlternatingMinIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class AlternatingMinIASolver(IterativeIASolverBaseClass):
-    """Implements the "Interference Alignment via Alternating Minimization"
-    algorithm from the paper with the same name.
+    """
+    Implements the "Interference Alignment via Alternating Minimization"
+    algorithm from the paper with the same name [PetersHeathAltMin2009]_.
 
     This algorithm is applicable to a "K-user" scenario and it is very
     flexible in the sense that you can change the number of transmit
@@ -1343,6 +1344,13 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     multiUserChannel : A MultiUserChannelMatrix object.
         The multiuser channel.
 
+    Notes
+    -----
+
+    .. [PetersHeathAltMin2009] Peters, S.W.; Heath, R.W., "Interference
+       alignment via alternating minimization," Acoustics, Speech and
+       Signal Processing, 2009. ICASSP 2009. IEEE International Conference
+       on, pp.2445,2448, 19-24 April 2009
     """
     def __init__(self, multiUserChannel):
         """
@@ -1918,10 +1926,11 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 # xxxxxxxxxxxxxxx MMSEIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MMSEIASolver(IterativeIASolverBaseClass):
-    """Implements the MMSE based Interference Alignment algorithm.
+    """
+    Implements the MMSE based Interference Alignment algorithm.
 
     This algorithm is applicable to a "K-user" scenario and it is
-    described in [?????]_.
+    described in [Peters2011]_.
 
     An example of a common exenario is a scenario with 3 pairs or
     transmitter/receiver with 2 antennas in each node and 1 stream
@@ -1938,8 +1947,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
     Notes
     -----
 
-    .. [?????] Reference to the article
-
+    .. [Peters2011] S. W. Peters and R. W. Heath, "Cooperative Algorithms
+       for MIMO Interference Channels," vol. 60, no. 1, pp. 206–218, 2011.
     """
 
     def __init__(self, multiUserChannel):

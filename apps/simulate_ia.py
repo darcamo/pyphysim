@@ -693,7 +693,7 @@ def simulate_mmse():
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Performs the simulation in parallel
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
@@ -819,7 +819,7 @@ if __name__ == '__main__1':
     toc = time()
     print "Elapsed Time: {0}".format(pretty_time(toc - tic))
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
