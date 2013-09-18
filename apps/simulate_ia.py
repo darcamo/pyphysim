@@ -159,11 +159,14 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Calculates the Sum Capacity xxxxxxxxxxxxxxxxxxxxxxxxxx
-        sirn_all_k = self.ia_solver.calc_SINR_old()
+        sirn_all_k_old = self.ia_solver.calc_SINR_old()
+        sirn_all_k = self.ia_solver.calc_SINR()
         calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
         # Array with the sum capacity of each user
+        sum_capacity_old = map(calc_capacity, sirn_all_k_old)
         sum_capacity = map(calc_capacity, sirn_all_k)
         # Total sum capacity
+        total_sum_capacity_old = np.sum(sum_capacity_old)
         total_sum_capacity = np.sum(sum_capacity)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -191,6 +194,10 @@ class IASimulationRunner(SimulationRunner):
         ia_costResult = Result.create(
             "ia_cost", Result.RATIOTYPE, ia_cost, 1, accumulate_values=True)
 
+        sum_capacity_oldResult = Result.create(
+            "sum_capacity_old", Result.RATIOTYPE, total_sum_capacity_old, 1,
+            accumulate_values=True)
+
         sum_capacityResult = Result.create(
             "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1,
             accumulate_values=True)
@@ -206,6 +213,7 @@ class IASimulationRunner(SimulationRunner):
         simResults.add_result(berResult)
         simResults.add_result(serResult)
         simResults.add_result(ia_costResult)
+        simResults.add_result(sum_capacity_oldResult)
         simResults.add_result(sum_capacityResult)
         simResults.add_result(ia_runned_iterationsResult)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -891,36 +899,60 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot Sum Capacity (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    sum_capacity_old_alt_min = alt_min_results.get_result_values_list('sum_capacity_old')
+    sum_capacity_old_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('sum_capacity_old', P=95)
+    sum_capacity_old_errors_alt_min = np.abs([i[1] - i[0] for i in sum_capacity_old_CF_alt_min])
+
     sum_capacity_alt_min = alt_min_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_alt_min = np.abs([i[1] - i[0] for i in sum_capacity_CF_alt_min])
+
+    sum_capacity_old_closed_form = closed_form_results.get_result_values_list('sum_capacity_old')
+    sum_capacity_old_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('sum_capacity_old', P=95)
+    sum_capacity_old_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_old_CF_closed_form])
 
     sum_capacity_closed_form = closed_form_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form])
 
-    # sum_capacity_closed_form_first = closed_form_first_results.get_result_values_list('sum_capacity')
-    # sum_capacity_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    # sum_capacity_errors_closed_form_first = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form_first])
+    # sum_capacity_old_closed_form_first = closed_form_first_results.get_result_values_list('sum_capacity_old')
+    # sum_capacity_old_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('sum_capacity_old', P=95)
+    # sum_capacity_old_errors_closed_form_first = np.abs([i[1] - i[0] for i in sum_capacity_old_CF_closed_form_first])
+
+    sum_capacity_old_max_sinr = max_sinrn_results.get_result_values_list('sum_capacity_old')
+    sum_capacity_old_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('sum_capacity_old', P=95)
+    sum_capacity_old_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_old_CF_max_sinr])
 
     sum_capacity_max_sinr = max_sinrn_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_CF_max_sinr])
 
-    # sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
-    # sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    # sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
+    # sum_capacity_old_min_leakage = min_leakage_results.get_result_values_list('sum_capacity_old')
+    # sum_capacity_old_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity_old', P=95)
+    # sum_capacity_old_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_old_CF_min_leakage])
+
+    sum_capacity_old_mmse = mmse_results.get_result_values_list('sum_capacity_old')
+    sum_capacity_old_CF_mmse = mmse_results.get_result_values_confidence_intervals('sum_capacity_old', P=95)
+    sum_capacity_old_errors_mmse = np.abs([i[1] - i[0] for i in sum_capacity_old_CF_mmse])
 
     sum_capacity_mmse = mmse_results.get_result_values_list('sum_capacity')
     sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     sum_capacity_errors_mmse = np.abs([i[1] - i[0] for i in sum_capacity_CF_mmse])
 
     fig2, ax2 = plt.subplots(nrows=1, ncols=1)
+    ax2.errorbar(SNR, sum_capacity_old_alt_min, sum_capacity_old_errors_alt_min, fmt='--r*', elinewidth=2.0, label='Alt. Min. (old)')
+    ax2.errorbar(SNR, sum_capacity_old_closed_form, sum_capacity_old_errors_closed_form, fmt='--b*', elinewidth=2.0, label='Closed Form (old)')
+    ax2.errorbar(SNR, sum_capacity_old_max_sinr, sum_capacity_old_errors_max_sinr, fmt='--g*', elinewidth=2.0, label='Max SINR (old)')
+    # ax2.errorbar(SNR, sum_capacity_old_min_leakage, sum_capacity_old_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
+    ax2.errorbar(SNR, sum_capacity_old_mmse, sum_capacity_old_errors_mmse, fmt='--m*', elinewidth=2.0, label='MMSE (old)')
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ax2.errorbar(SNR, sum_capacity_alt_min, sum_capacity_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
     ax2.errorbar(SNR, sum_capacity_closed_form, sum_capacity_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
     ax2.errorbar(SNR, sum_capacity_max_sinr, sum_capacity_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
     # ax2.errorbar(SNR, sum_capacity_min_leakage, sum_capacity_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
     ax2.errorbar(SNR, sum_capacity_mmse, sum_capacity_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.xlabel('SNR')
     plt.ylabel('Sum Capacity')
@@ -930,5 +962,5 @@ if __name__ == '__main__':
     ax2.legend(loc=2)
     ax2.grid(True, which='both', axis='both')
     plt.show()
-    fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
+    fig2.savefig('sum_capacity_old_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

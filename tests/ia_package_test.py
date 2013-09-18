@@ -45,6 +45,12 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = IASolverBaseClass(multiUserChannel)
 
+    def test_init(self):
+        # Try to initialize the IASolverBaseClass object with some
+        # parameter which is not a MultiUserChannelMatrix object
+        with self.assertRaises(ValueError):
+            iasolver = IASolverBaseClass(3)
+
     def test_get_cost(self):
         self.assertEqual(self.iasolver.get_cost(), -1)
 
@@ -153,6 +159,20 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # channel but since it has not been initialized in this updateF
         # test method self.iasolver.P is a zero length array.
         self.assertIsNone(self.iasolver._P)
+
+    def test_F_and_full_F(self):
+        self.iasolver.randomizeF(1)
+        self.assertIsNotNone(self.iasolver._F)
+        self.assertIsNone(self.iasolver._full_F)
+
+        # Since the power was not set yet then full_F should have the same
+        # value as F
+        self.assertIsNone(self.iasolver._P)
+        np.testing.assert_almost_equal(self.iasolver.F, self.iasolver.full_F)
+
+        # Let's change F and see if full_F matches
+        self.iasolver.randomizeF(1)
+        np.testing.assert_almost_equal(self.iasolver.F, self.iasolver.full_F)
 
     def test_calc_Q(self):
         K = 3
@@ -1160,7 +1180,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
                 expected_Uk[:, l] = self.iasolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
             np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
-    def test_calc_SINR_k(self):
+    def test_underline_calc_SINR_k(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
         iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
@@ -1178,10 +1198,10 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         for k in range(K):
             Hkk = iasolver._get_channel(k, k)
             Bkl_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k)
-            Uk = iasolver.W[k]
-            Uk_H = iasolver.W_H[k]
+            Uk = iasolver.full_W[k]
+            Uk_H = iasolver.full_W_H[k]
 
-            SINR_k_all_l = iasolver._calc_SINR_k(Bkl_all_l, Uk_H, k)
+            SINR_k_all_l = iasolver._calc_SINR_k(k, Bkl_all_l)
 
             for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
@@ -1197,6 +1217,59 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
+
+    def test_calc_SINR(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        iasolver = MaxSinrIASolver(multiUserChannel)
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver.randomizeF(Ns, P)
+        iasolver._updateW()
+
+        SINR_all_users = iasolver.calc_SINR()
+
+        # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # k = 0
+        B0l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=0, noise_power=0.0)
+        expected_SINR0 = iasolver._calc_SINR_k(0, B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=1, noise_power=0.0)
+        expected_SINR1 = iasolver._calc_SINR_k(1, B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 1
+        B2l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=2, noise_power=0.0)
+        expected_SINR2 = iasolver._calc_SINR_k(2, B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # k = 0
+        iasolver.noise_var = 0.1
+        SINR_all_users = iasolver.calc_SINR()
+        B0l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=0, noise_power=0.1)
+        expected_SINR0 = iasolver._calc_SINR_k(0, B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=1, noise_power=0.1)
+        expected_SINR1 = iasolver._calc_SINR_k(1, B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 1
+        B2l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=2, noise_power=0.1)
+        expected_SINR2 = iasolver._calc_SINR_k(2, B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_get_channel_rev(self):
         for k in range(self.K):
