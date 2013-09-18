@@ -1163,7 +1163,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     def test_simulate_in_parallel(self):
         try:
             from IPython.parallel import Client
-            cl = Client()
+            cl = Client(profile="tests")
 
             dview = cl.direct_view()
             dview.execute('%reset')  # Reset the engines so that we don't have

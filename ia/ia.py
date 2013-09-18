@@ -1038,7 +1038,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     methods that MUST be defined in subclasses, the _updateF method and the
     _updateW method. If anything else is required in the "step" part then
     the _step method can be redefined in a subclass, but even in that case
-    it should call the _updateF and _updateW methods.
+    it should call the _updateF and _updateW methods instead of
+    implementing everything in your redefined _step method.
 
     Parameters
     ----------

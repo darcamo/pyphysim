@@ -32,4 +32,5 @@ A summary of the available packages in PyPhysim is shown below.
    MATLAB
    subspace
    util
+   plot
 
