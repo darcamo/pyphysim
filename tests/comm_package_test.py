@@ -62,6 +62,24 @@ class CommDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx CHANNELS module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ModuleFunctionsTestCase(unittest.TestCase):
+    # TODO: How can I test if this functions is working correctly?
+    # Validate this function
+    def test_generate_jakes_samples(self):
+        Fd = 5  # %Hz
+        Ts = 1e-3
+        NSamples = 1000
+        NRays = 8
+
+        # Test generating channel samples for a SISO scenario
+        h = channels.generate_jakes_samples(Fd, Ts, NSamples, NRays)
+        self.assertEqual(h.size, 1000)
+        self.assertEqual(h.shape, (1000,))
+
+        h2 = channels.generate_jakes_samples(Fd, Ts, NSamples, NRays, shape=(4, 3))
+        self.assertEqual(h2.shape, (4, 3, NSamples))
+
+
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

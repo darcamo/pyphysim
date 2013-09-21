@@ -10,6 +10,7 @@ __revision__ = "$Revision$"
 import math
 import numpy as np
 from scipy.special import erfc
+from scipy import signal
 #import math.erf
 # erf can also be found in the scipy.special library
 # erf can also be found in the math library -> python 2.7 ou above
@@ -695,6 +696,30 @@ def get_principal_component_matrix(A, num_components):
     out = np.dot(U, np.dot(newS, V_H[:, :num_components]))
 
     return out
+
+
+def autocor(X):
+    """
+    Calculates the autocorrelations from lag 0 of vector X.
+
+    The returned array is normalized so its first element is equal to 1.
+
+    Parameters
+    ----------
+    X : 1D numpy array
+        The array for which the autocorrelation should be calculated.
+
+    Returns
+    -------
+    R : 1D numpy array
+        The autocorrelation of `X` from lag 0. The number of elements in
+        `R` is the same as the number of elements in `X`
+    """
+    R = signal.correlate(X, X)
+    R = R[X.size - 1:] / R[X.size - 1]  # Normalize so that the correlation
+                                        # for lag 0 (greatest one) is equal
+                                        # to one.
+    return R
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

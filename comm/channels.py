@@ -27,6 +27,80 @@ __all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Take the shape argument into account.
+def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None):
+    """
+    Generates channel samples according to the Jakes model.
+
+    This functions generates channel samples for a single tap according to
+    the Jakes model.
+
+
+    Parameters
+    ----------
+    Fd : double
+        The Doppler frequency (in Hetz).
+    Ts : double
+        The sample interval (in seconds).
+    NSamples : int
+        The number of samples to generate.
+    L : int
+        The number of rays for the Jakes model.
+    shape : tuple (of integers)
+        The shape of the generated channel. This is used to generate MIMO
+        channels. For instance, in order to generate channels samples for a
+        MIMO scenario with 3 receive antennas and 2 transmit antennas use a
+        shape of (3, 2).
+
+    Returns
+    -------
+    h : Numpy array
+        The generated channel. If `shape` is None the the shape of the
+        returned h is equal to (NSamples,). That is, h is a 1-dimensional
+        numpy array. If `shape` was provided then the shape of h is the
+        provided shape with an additional dimension for the time (the last
+        dimension). For instance, if a `shape` of (3, 2) was provided then
+        the shape of the returned h will be (3, 2, NSamples).
+    """
+    # xxxxx Time samples xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    t = np.arange(0, NSamples * Ts, Ts)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Generate phi_l and psi_l xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    if shape is None:
+        phi_l = 2 * np.pi * np.random.rand(L, 1)
+        psi_l = 2 * np.pi * np.random.rand(L, 1)
+    else:
+        new_shape = [L]
+        new_shape.extend(shape)
+        new_shape.append(1)
+        phi_l = 2 * np.pi * np.random.rand(*new_shape)
+        psi_l = 2 * np.pi * np.random.rand(*new_shape)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Calculates h xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    t_aux = np.tile(t, [L, 1])
+    # If shape is Not None we need to modify the shape of t_aux. We will
+    # add new dimensions (with value 1) for the dimensions specified in
+    # `shape` so that numpy broadcast will allow us to perform the
+    # multiplications required to calculate `h` later.
+    if shape is not None:
+        new_shape = [L]
+        new_shape.extend([1] * len(shape))
+        new_shape.append(NSamples)
+        t_aux.shape = new_shape
+
+    # $h = \sqrt{1.0 / L} \sum \exp(1j (2 \pi Fd \cos(\phi_l) t + \psi_l))$
+    h = np.sqrt(1.0 / L) * np.sum(np.exp(1j * (2 * np.pi * Fd * np.cos(phi_l) * t_aux + psi_l)), axis=0)
+    return h
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MultiUserChannelMatrix(object):
