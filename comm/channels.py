@@ -27,8 +27,7 @@ __all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Take the shape argument into account.
-def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None):
+def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None, RS=None):
     """
     Generates channel samples according to the Jakes model.
 
@@ -51,6 +50,9 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None):
         channels. For instance, in order to generate channels samples for a
         MIMO scenario with 3 receive antennas and 2 transmit antennas use a
         shape of (3, 2).
+    RS : A numpy.random.RandomState object.
+        The RandomState object used to generate the random values. If not
+        provided, the global RandomState in numpy will be used.
 
     Returns
     -------
@@ -62,20 +64,27 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None):
         dimension). For instance, if a `shape` of (3, 2) was provided then
         the shape of the returned h will be (3, 2, NSamples).
     """
+    if RS is None:
+        # If RS was not provided, we set it to the numy.random module. That
+        # way, when the rand "method" in RS is called it will actually call
+        # the global rand function in numpy.random.  RandomState object in
+        # numpy.
+        RS = np.random
+
     # xxxxx Time samples xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     t = np.arange(0, NSamples * Ts, Ts)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Generate phi_l and psi_l xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if shape is None:
-        phi_l = 2 * np.pi * np.random.rand(L, 1)
-        psi_l = 2 * np.pi * np.random.rand(L, 1)
+        phi_l = 2 * np.pi * RS.rand(L, 1)
+        psi_l = 2 * np.pi * RS.rand(L, 1)
     else:
         new_shape = [L]
         new_shape.extend(shape)
         new_shape.append(1)
-        phi_l = 2 * np.pi * np.random.rand(*new_shape)
-        psi_l = 2 * np.pi * np.random.rand(*new_shape)
+        phi_l = 2 * np.pi * RS.rand(*new_shape)
+        psi_l = 2 * np.pi * RS.rand(*new_shape)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Calculates h xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

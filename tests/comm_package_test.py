@@ -66,18 +66,23 @@ class ModuleFunctionsTestCase(unittest.TestCase):
     # TODO: How can I test if this functions is working correctly?
     # Validate this function
     def test_generate_jakes_samples(self):
-        Fd = 5  # %Hz
-        Ts = 1e-3
-        NSamples = 1000
-        NRays = 8
+        Fd = 5  # Doppler frequency (in Hz)
+        Ts = 1e-3  # Sampling interval (in seconds)
+        N = 1000  # Number of samples
+        NRays = 8  # Number of rays for the Jakes model
 
         # Test generating channel samples for a SISO scenario
-        h = channels.generate_jakes_samples(Fd, Ts, NSamples, NRays)
+        h = channels.generate_jakes_samples(Fd, Ts, N, NRays)
         self.assertEqual(h.size, 1000)
         self.assertEqual(h.shape, (1000,))
 
-        h2 = channels.generate_jakes_samples(Fd, Ts, NSamples, NRays, shape=(4, 3))
-        self.assertEqual(h2.shape, (4, 3, NSamples))
+        h2 = channels.generate_jakes_samples(Fd, Ts, N, NRays, shape=(4, 3))
+        self.assertEqual(h2.shape, (4, 3, N))
+
+        # Test with a given RandomState object.
+        RS = np.random.RandomState()
+        h3 = channels.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2), RS=RS)
+        self.assertEqual(h3.shape, (3, 2, N))
 
 
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
