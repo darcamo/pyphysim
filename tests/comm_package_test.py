@@ -63,8 +63,6 @@ class CommDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx CHANNELS module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ModuleFunctionsTestCase(unittest.TestCase):
-    # TODO: How can I test if this functions is working correctly?
-    # Validate this function
     def test_generate_jakes_samples(self):
         Fd = 5  # Doppler frequency (in Hz)
         Ts = 1e-3  # Sampling interval (in seconds)
@@ -83,6 +81,48 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         RS = np.random.RandomState()
         h3 = channels.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2), RS=RS)
         self.assertEqual(h3.shape, (3, 2, N))
+
+
+class JakesSampleGeneratorTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        Fd = 5  # Doppler frequency (in Hz)
+        Ts = 1e-3  # Sampling interval (in seconds)
+        NRays = 8  # Number of rays for the Jakes model
+
+        self.obj = channels.JakesSampleGenerator(Fd, Ts, NRays)
+        self.obj2 = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=(3, 2))
+
+    def test_generate_channel_samples(self):
+        self.assertAlmostEqual(self.obj._current_time, 0.0)
+
+        # xxxxxxxxxx First object -> shape is None xxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate 100 samples
+        h1_part1 = self.obj.generate_channel_samples(100)
+        self.assertEqual(h1_part1.shape, (100,))
+        # For a sample interval of 1e-3 the last time sample generated was
+        # 0.099. Therefore, the next time sample should be 0.099+1e-3 = 0.1
+        self.assertAlmostEqual(self.obj._current_time, 0.1)
+
+        # Generate 50 more samples
+        h1_part2 = self.obj.generate_channel_samples(50)
+        self.assertEqual(h1_part2.shape, (50,))
+        self.assertAlmostEqual(self.obj._current_time, 0.15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Second object -> shape is (3, 2) xxxxxxxxxxxxxxxxxxxxx
+        # Generate 100 samples
+        h2_part1 = self.obj2.generate_channel_samples(120)
+        self.assertEqual(h2_part1.shape, (3, 2, 120,))
+        # For a sample interval of 1e-3 the last time sample generated was
+        # 0.099. Therefore, the next time sample should be 0.099+1e-3 = 0.1
+        self.assertAlmostEqual(self.obj2._current_time, 0.12)
+
+        # Generate 50 more samples
+        h2_part2 = self.obj2.generate_channel_samples(60)
+        self.assertEqual(h2_part2.shape, (3, 2, 60))
+        self.assertAlmostEqual(self.obj2._current_time, 0.18)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
@@ -1018,7 +1058,7 @@ class BlastTestCase(unittest.TestCase):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a MMSE filter
-        self.blast_object.set_noise_var(0.00000001)  # This should use the ZF filter
+        self.blast_object.set_noise_var(0.00000001)
         self.assertNotEqual(self.blast_object.calc_filter, mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         received_data3 = np.dot(channel, encoded_data)
