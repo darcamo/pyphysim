@@ -631,8 +631,8 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
         # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # multiUserChannel.set_channel_seed(43)
-        #multiUserChannel.set_noise_seed(456)
-        #np.random.seed(25)
+        # multiUserChannel.set_noise_seed(456)
+        # np.random.seed(25)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         multiUserChannel.randomize(Nr, Nt, K)
@@ -657,8 +657,8 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
                     # Test if the interference is equal to 0.0
                     self.assertAlmostEqual(0.0, s)
 
-        SINRs = iasolver.calc_SINR_old()
-        SINRs2 = iasolver2.calc_SINR_old()
+        SINRs = iasolver.calc_SINR()
+        SINRs2 = iasolver2.calc_SINR()
 
         # Sum Capacity using the best initialization
         sum_capacity1 = np.sum(np.log2(1 + np.hstack(SINRs)))
@@ -1199,7 +1199,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             Hkk = iasolver._get_channel(k, k)
             Bkl_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k)
             Uk = iasolver.full_W[k]
-            Uk_H = iasolver.full_W_H[k]
+            # Uk_H = iasolver.full_W_H[k]
 
             SINR_k_all_l = iasolver._calc_SINR_k(k, Bkl_all_l)
 
@@ -1422,6 +1422,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
         iasolver = MaxSinrIASolver(multiUserChannel)
+        iasolver.P = P
         iasolver.noise_var = 1e-20
         # iasolver.max_iterations = 200
 
@@ -1899,7 +1900,6 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
         self.iasolver.solve(Ns)
         # print self.iasolver.calc_SINR_old()
-
 
         F0 = np.matrix(self.iasolver._F[0])
         F1 = np.matrix(self.iasolver._F[1])

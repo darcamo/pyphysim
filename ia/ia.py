@@ -129,7 +129,7 @@ class IASolverBaseClass(object):
         arguments which is probably not what you want.
         """
         # The F and W variables will be numpy arrays of numpy arrays.
-        self._F = None  # Precoder: One precoder for each user
+        self._clear_precoder_filter()  # Set _F and _full_F to None
         self._clear_receive_filter()  # Set _W, _W_H and _full_W_H to None
         self._P = None
         self._Ns = None
@@ -544,7 +544,7 @@ class IASolverBaseClass(object):
         last_noise_var property of the multiuserchannel object.
 
         This method is deprecated since it's not the correct way to
-        calculate the SIRN. Use the calc_SINR method instead.
+        calculate the SINR. Use the calc_SINR method instead.
 
         Returns
         -------
@@ -729,8 +729,6 @@ class IASolverBaseClass(object):
 
         return Bkl_all_l
 
-    # NOTE: This method is specific to the MaxSinrIASolver algorithm and that is
-    # why it is an internal method (starting with a "_")
     def _calc_SINR_k(self, k, Bkl_all_l):
         """Calculates the SINR of all streams of user 'k'.
 
@@ -982,17 +980,17 @@ class ClosedFormIASolver(IASolverBaseClass):
 
             # Lambda function to calculate the sum capacity from the SINR
             # values (in linear scale)
-            calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
+            calc_capacity = lambda sinr: np.sum(np.log2(1 + sinr))
 
             for F0 in all_initializations:
                 self._updateF(F0)
                 self._updateW()
 
                 # Calculates the sum capacity
-                sirn_all_k = self.calc_SINR_old()
+                sinr_all_k = self.calc_SINR()
 
                 # Array with the sum capacity of each user
-                sum_capacity = map(calc_capacity, sirn_all_k)
+                sum_capacity = map(calc_capacity, sinr_all_k)
                 # Total sum capacity
                 total_sum_capacity = np.sum(sum_capacity)
 
@@ -1001,6 +999,7 @@ class ClosedFormIASolver(IASolverBaseClass):
                     best_F = self._F
                     best_W = self._W
 
+            self._clear_precoder_filter()
             self._clear_receive_filter()
             self._F = best_F
             self._W = best_W
@@ -1979,6 +1978,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
+        # Clear all precoders and receive filters
+        self._clear_precoder_filter()
+        self._clear_receive_filter()
+
         self._closed_form_ia_solver.solve(Ns, P)
         self._F = self._closed_form_ia_solver._F
         self._W = self._closed_form_ia_solver._W
