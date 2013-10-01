@@ -980,6 +980,11 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(set(params_dict['fourth']),
                          set(self.sim_params['fourth']))
 
+        # Test if the _unpack_index member variable is correct for each
+        # unpacked variation
+        for i in range(self.sim_params.get_num_unpacked_variations()):
+            self.assertEqual(unpacked_param_list[i]._unpack_index, i)
+
     def test_get_pack_indexes(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])

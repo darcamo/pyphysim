@@ -176,7 +176,7 @@ import copy
 import numpy as np
 
 from util.misc import pretty_time, calc_confidence_interval
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, center_message
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -903,10 +903,51 @@ class SimulationParameters(object):
         # unpacked, that is, the unpacked_parameters property.
         self._unpacked_parameters_set = set()
 
+        # If this SimulationParameters object was unpacked into a list of
+        # SimulationParameters objects then each of these new objects will
+        # set this variable with its index in that list. In other words, if
+        # this member variable in a SimulationParameters object was set to
+        # a non-negative integer then that SimulationParameters object is
+        # actually one of the unpacked variations of another
+        # SimulationParameters object.
+        self._unpack_index = -1
+
     @property
     def unpacked_parameters(self):
         """Names of the parameters marked to be unpacked."""
         return list(self._unpacked_parameters_set)
+
+    @staticmethod
+    def _create(params_dict, unpack_index=-1):
+        """
+        Creates a new SimulationParameters object.
+
+        This static method provides a different way to create a
+        SimulationParameters object, already containing the parameters in
+        the `params_dict` dictionary.
+
+        Parameters
+        ----------
+        params_dict : dict
+            Dictionary containing the parameters. Each dictionary key
+            corresponds to a parameter's name, while the dictionary value
+            corresponds to the actual parameter value..
+        unpack_index : int
+            Index of the created SimulationParameters object when it is
+            part of the unpacked variations of another SimulationParameters
+            object. See :meth:`get_unpacked_params_list`.
+
+        Returns
+        -------
+        sim_params : SimulationParameters object
+            The corresponding SimulationParameters object.
+        """
+        sim_params = SimulationParameters()
+        sim_params.parameters = copy.deepcopy(params_dict)
+        if unpack_index < 0:
+            unpack_index = -1
+        sim_params._unpack_index = unpack_index
+        return sim_params
 
     @staticmethod
     def create(params_dict):
@@ -928,9 +969,7 @@ class SimulationParameters(object):
         sim_params : SimulationParameters object
             The corresponding SimulationParameters object.
         """
-        sim_params = SimulationParameters()
-        sim_params.parameters = copy.deepcopy(params_dict)
-        return sim_params
+        return SimulationParameters._create(params_dict)
 
     def add(self, name, value):
         """Adds a new parameter to the SimulationParameters object.
@@ -1225,8 +1264,11 @@ class SimulationParameters(object):
             all_possible_dicts_list.append(new_dict)
 
         # Map the list of dictionaries to a list of SimulationParameters
-        # objects and return it
-        return map(SimulationParameters.create, all_possible_dicts_list)
+        # objects and return it.
+        #return map(SimulationParameters.create, all_possible_dicts_list)
+        sim_params_list = [SimulationParameters._create(v, i) for i, v in
+                           enumerate(all_possible_dicts_list)]
+        return sim_params_list
 
     def save_to_pickled_file(self, filename):
         """
