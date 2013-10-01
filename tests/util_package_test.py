@@ -932,6 +932,28 @@ class SimulationParametersTestCase(unittest.TestCase):
             set(self.sim_params.unpacked_parameters),
             set(['third']))
 
+    def test_equality(self):
+        other = SimulationParameters()
+        self.assertFalse(self.sim_params == other)
+        other.add('first', 10)
+        other.add('second', 20)
+        self.assertTrue(self.sim_params == other)
+
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.assertFalse(self.sim_params == other)
+        other.add('third', np.array([1, 3, 2, 5]))
+        self.assertTrue(self.sim_params == other)
+
+        self.sim_params.set_unpack_parameter('third')
+        self.assertFalse(self.sim_params == other)
+        other.set_unpack_parameter('third')
+        self.assertTrue(self.sim_params == other)
+
+        other.parameters['third'][2] = 10
+        self.assertFalse(self.sim_params == other)
+        self.sim_params.parameters['third'][2] = 10
+        self.assertTrue(self.sim_params == other)
+
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])

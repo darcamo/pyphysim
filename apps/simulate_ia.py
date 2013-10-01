@@ -691,6 +691,7 @@ if __name__ == '__main__1':
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
     tic = time()
 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Comment the algorithms you don't want to simulate
     algorithms_to_simulate = [
         # "Closed Form",
@@ -698,9 +699,50 @@ if __name__ == '__main__1':
         "Max SINR",
         "MMSE"
     ]
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Create the SimulationRunner objects xxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------- Creates the Closed Form Runner ---------------------------
+    if "Closed Form" in algorithms_to_simulate:
+        print "Simulating Closed Form algorithm"
+        closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
+        pprint(closed_form_runner.params.parameters)
+        print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
+    # ---------------------------------------------------------------------
+
+    # ---------- Creates the Alt. Min. Runner -----------------------------
+    if "Alt Min" in algorithms_to_simulate:
+        print "Simulating Alternating Minimizations algorithm"
+        alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
+        pprint(alt_min_runner.params.parameters)
+        print("IA Solver: {0}".format(alt_min_runner.ia_solver.__class__))
+    # ---------------------------------------------------------------------
+
+    # ---------- Creates the Max SINR Runner ------------------------------
+    if "Max SINR" in algorithms_to_simulate:
+        print "Simulating Max SINR algorithm"
+        max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
+        pprint(max_sinrn_runner.params.parameters)
+        print("IA Solver: {0}".format(max_sinrn_runner.ia_solver.__class__))
+    # ---------------------------------------------------------------------
+
+    # ---------- Creates the MMSE Runner ----------------------------------
+    if "MMSE" in algorithms_to_simulate:
+        print "Simulating MMSE algorithm"
+        mmse_runner = MMSESimulationRunner('ia_config_file.txt')
+        pprint(mmse_runner.params.parameters)
+        print("IA Solver: {0}".format(mmse_runner.ia_solver.__class__))
+    # ---------------------------------------------------------------------
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxx Get the IPython view for the parallel simulation xxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Trying to get an IPython load_balanced_view"
     from IPython.parallel import Client
     cl = Client(profile="ssh")
     # cl = Client(profile="default")
@@ -716,45 +758,40 @@ if __name__ == '__main__1':
 
     # But for the actual simulation we are better using a load balanced view
     lview = cl.load_balanced_view()
+    print "IPython load_balanced_view acquired"
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Creates the Closed Form Runner xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxx Call the simulate_in_parallel method for each runner xxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------- Creates the Closed Form Runner ---------------------------
     if "Closed Form" in algorithms_to_simulate:
-        print "Simulating Closed Form algorithm"
-        closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
         closed_form_runner.simulate_in_parallel(lview, wait=False)
-        pprint(closed_form_runner.params.parameters)
-        print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------------------------------------------------------------------
 
-    # xxxxxxxxxx Creates the Alt. Min. Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------- Creates the Alt. Min. Runner -----------------------------
     if "Alt Min" in algorithms_to_simulate:
-        print "Simulating Alternating Minimizations algorithm"
-        alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
         alt_min_runner.simulate_in_parallel(lview, wait=False)
-        pprint(alt_min_runner.params.parameters)
-        print("IA Solver: {0}".format(alt_min_runner.ia_solver.__class__))
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------------------------------------------------------------------
 
-    # xxxxxxxxxx Creates the Max SINR Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------- Creates the Max SINR Runner ------------------------------
     if "Max SINR" in algorithms_to_simulate:
-        print "Simulating Max SINR algorithm"
-        max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
         max_sinrn_runner.simulate_in_parallel(lview, wait=False)
-        pprint(max_sinrn_runner.params.parameters)
-        print("IA Solver: {0}".format(max_sinrn_runner.ia_solver.__class__))
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------------------------------------------------------------------
 
-    # xxxxxxxxxx Creates the MMSE Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # ---------- Creates the MMSE Runner ----------------------------------
     if "MMSE" in algorithms_to_simulate:
-        print "Simulating MMSE algorithm"
-        mmse_runner = MMSESimulationRunner('ia_config_file.txt')
         mmse_runner.simulate_in_parallel(lview, wait=False)
-        pprint(mmse_runner.params.parameters)
-        print("IA Solver: {0}".format(mmse_runner.ia_solver.__class__))
+    # ---------------------------------------------------------------------
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxx Save all results to respective files xxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Closed Form
     if "Closed Form" in algorithms_to_simulate:
         closed_form_runner.wait_parallel_simulation()
@@ -783,9 +820,13 @@ if __name__ == '__main__1':
         print "MMSE Runned iterations: {0}".format(mmse_runner.runned_reps)
         print "MMSE Elapsed Time: {0}".format(mmse_runner.elapsed_time)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxx Some finalization message xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     toc = time()
     print "Total Elapsed Time: {0}".format(pretty_time(toc - tic))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 if __name__ == '__main__1':
@@ -889,7 +930,7 @@ if __name__ == '__main__':
     plt.title(title.format(**alt_min_results.params.parameters))
 
     ax.set_yscale('log')
-    ax.legend()
+    leg = ax.legend(fancybox=True, shadow=True, loc='best')
     ax.grid(True, which='both', axis='both')
     plt.show(block=False)
     fig.savefig('ber_all_ia_algorithms.pgf')
@@ -930,7 +971,7 @@ if __name__ == '__main__':
     title = 'Sum Capacity for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
     plt.title(title.format(**alt_min_results.params.parameters))
 
-    ax2.legend(loc=2)
+    leg2 = ax2.legend(fancybox=True, shadow=True, loc=2)
     ax2.grid(True, which='both', axis='both')
     plt.show()
     fig2.savefig('sum_capacity_all_ia_algorithms.pgf')

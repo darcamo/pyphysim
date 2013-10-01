@@ -1025,6 +1025,23 @@ class SimulationParameters(object):
         """
         return iter(self.parameters)
 
+    def __eq__(self, other):
+        if self is other:
+            return True
+
+        if self._unpacked_parameters_set != other._unpacked_parameters_set:
+            return False
+
+        if set(self.parameters.keys()) != set(other.parameters.keys()):
+            return False
+
+        for key in self.parameters.keys():
+            if np.any(self.parameters[key] != other.parameters[key]):
+                return False
+
+        # If we didn't return until we reach this point then the objects are equal
+        return True
+
     def get_num_unpacked_variations(self):
         """Get the number of variations when the parameters are unpacked.
 
