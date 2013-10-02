@@ -1,6 +1,6 @@
 # This requires the cloc program to be installed.
 cd ..
-cloc apps cell comm comp ia MATLAB plot subspace util --exclude-lang="Bourne Shell"
+cloc apps cell comm comp ia MATLAB plot subspace util --exclude-lang="Bourne Shell,C"
 
 echo
 echo xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

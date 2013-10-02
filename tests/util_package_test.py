@@ -36,16 +36,19 @@ class _DummyRunner(simulations.SimulationRunner):
         self.rep_max = 2
         self.update_progress_function_style = None
         # Now we add a dummy parameter to our runner object
-        self.params.add('SNR', np.array([0, 5, 10, 15, 20]))
+        self.params.add('SNR', np.array([0., 5., 10., 15., 20.]))
+        self.params.add('bias', 1.3)
         self.params.set_unpack_parameter('SNR')
 
     @staticmethod
     def _run_simulation(current_params):
         SNR = current_params['SNR']
+        bias = current_params['bias']
         sim_results = SimulationResults()
 
+        value = 1.2 * SNR + bias
         # The correct result will be SNR * 1.2
-        sim_results.add_new_result('lala', Result.RATIOTYPE, 1.2 * SNR, 1)
+        sim_results.add_new_result('lala', Result.RATIOTYPE, value, 1)
         return sim_results
 
 
@@ -980,10 +983,11 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(set(params_dict['fourth']),
                          set(self.sim_params['fourth']))
 
-        # Test if the _unpack_index member variable is correct for each
-        # unpacked variation
+        # Test if the _unpack_index and the _original_sim_params member
+        # variables are correct for each unpacked variation
         for i in range(self.sim_params.get_num_unpacked_variations()):
             self.assertEqual(unpacked_param_list[i]._unpack_index, i)
+            self.assertTrue(unpacked_param_list[i]._original_sim_params is self.sim_params)
 
     def test_get_pack_indexes(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -1178,10 +1182,11 @@ class SimulationRunnerTestCase(unittest.TestCase):
         from tests.util_package_test import _DummyRunner
         dummyrunner = _DummyRunner()
         # then we call its simulate method
-        dummyrunner.simulate()
-
+        dummyrunner.simulate()  # The results will be the SNR values
+                                # multiplied by 1.2. plus the bias
+                                # parameter
         lala_results = [r.get_result() for r in dummyrunner.results['lala']]
-        expected_lala_results = [0.0, 6.0, 12.0, 18.0, 24.0]
+        expected_lala_results = [1.3, 7.3, 13.3, 19.3, 25.3]
 
         self.assertAlmostEqual(lala_results, expected_lala_results)
 

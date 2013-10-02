@@ -839,6 +839,9 @@ class SimulationRunner(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Save the _unpack_index member variable in the save methods to hdf5
+# and pytables. After that, load this information in the corresponding load
+# methods.
 class SimulationParameters(object):
     """Class to store the simulation parameters.
 
@@ -909,8 +912,11 @@ class SimulationParameters(object):
         # this member variable in a SimulationParameters object was set to
         # a non-negative integer then that SimulationParameters object is
         # actually one of the unpacked variations of another
-        # SimulationParameters object.
+        # SimulationParameters object. The original SimulationParameters
+        # object will be stored in the _original_sim_params member
+        # variable.
         self._unpack_index = -1
+        self._original_sim_params = None
 
     @property
     def unpacked_parameters(self):
@@ -918,7 +924,7 @@ class SimulationParameters(object):
         return list(self._unpacked_parameters_set)
 
     @staticmethod
-    def _create(params_dict, unpack_index=-1):
+    def _create(params_dict, unpack_index=-1, original_sim_params=None):
         """
         Creates a new SimulationParameters object.
 
@@ -936,6 +942,10 @@ class SimulationParameters(object):
             Index of the created SimulationParameters object when it is
             part of the unpacked variations of another SimulationParameters
             object. See :meth:`get_unpacked_params_list`.
+        original_sim_params : SimulationParameters object
+            The original SimulationParameters object from which the
+            SimulationParameters object that will be created by this method
+            came from.
 
         Returns
         -------
@@ -947,6 +957,7 @@ class SimulationParameters(object):
         if unpack_index < 0:
             unpack_index = -1
         sim_params._unpack_index = unpack_index
+        sim_params._original_sim_params = original_sim_params
         return sim_params
 
     @staticmethod
@@ -1265,8 +1276,15 @@ class SimulationParameters(object):
 
         # Map the list of dictionaries to a list of SimulationParameters
         # objects and return it.
-        #return map(SimulationParameters.create, all_possible_dicts_list)
-        sim_params_list = [SimulationParameters._create(v, i) for i, v in
+        #
+        # Note that since we are passing the index "i" to each new object
+        # in the list as well as the original SimulationParameters object
+        # "self", then each SimulationParameters object in the returned
+        # list will know its index in that list (the _unpack_index
+        # variable) as well as the original SimulationParameters object
+        # from where it came from (stored in the _original_sim_params
+        # variable).
+        sim_params_list = [SimulationParameters._create(v, i, self) for i, v in
                            enumerate(all_possible_dicts_list)]
         return sim_params_list
 
