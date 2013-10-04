@@ -281,7 +281,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer(min=1, default=120)
+        max_iterations=integer_numpy_array(min=1)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -329,6 +329,8 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         Nr=integer(min=2,default=2)
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
+        [IA Algorithm]
+        max_iterations=integer_numpy_array(min=1)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -369,7 +371,7 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer(min=1, default=120)
+        max_iterations=integer_numpy_array(min=1)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -416,7 +418,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer(min=1, default=120)
+        max_iterations=integer_numpy_array(min=1)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -463,7 +465,7 @@ class MMSESimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer(min=1, default=120)
+        max_iterations=integer_numpy_array(min=1)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -685,7 +687,7 @@ def simulate_mmse():
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Performs the simulation in parallel
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
@@ -694,7 +696,7 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Comment the algorithms you don't want to simulate
     algorithms_to_simulate = [
-        # "Closed Form",
+        "Closed Form",
         "Alt Min",
         "Max SINR",
         "MMSE"
@@ -708,6 +710,11 @@ if __name__ == '__main__1':
     if "Closed Form" in algorithms_to_simulate:
         print "Simulating Closed Form algorithm"
         closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
+        # The max_iterations parameter is in the config file for the other
+        # algorithms and is set to be unpacked. Since it is not used in the
+        # closed_form_runner we unset it to be unpacked to avoid unnecessary
+        # simulations.
+        closed_form_runner.params.set_unpack_parameter('max_iterations', False)
         pprint(closed_form_runner.params.parameters)
         print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
@@ -829,7 +836,7 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from time import time
     from util.misc import pretty_time
     tic = time()
