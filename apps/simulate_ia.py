@@ -256,6 +256,13 @@ class IASimulationRunner(SimulationRunner):
 
         return True
 
+    # Except for the closed form algorithm, all the other ia algorithms are
+    # iterative and we need to set the maximum number of iterations of the
+    # iterative algorithm. We do this by implementing the
+    # _on_simulate_current_params_start method.
+    def _on_simulate_current_params_start(self, current_params):
+        self.ia_solver.max_iterations = current_params['max_iterations']
+
 
 class AlternatingSimulationRunner(IASimulationRunner):
     """
@@ -298,13 +305,6 @@ class AlternatingSimulationRunner(IASimulationRunner):
             self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Almost everything is already set in the __init__ from th
-        # IASimulationRunner class. Now we set the remaining parameters
-        # which are not common to all IASolvers
-
-        # Iterations of the AlternatingMinIASolver algorithm.
-        self.ia_solver.max_iterations = self.params['max_iterations']
-
 
 class ClosedFormSimulationRunner(IASimulationRunner):
     """
@@ -345,6 +345,9 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
         self.progressbar_message = "Closed-Form ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def _on_simulate_current_params_start(self, current_params):
+        pass
 
 
 class MinLeakageSimulationRunner(IASimulationRunner):
@@ -387,13 +390,6 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         self.progressbar_message = "Min Leakage ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Almost everything is already set in the __init__ from th
-        # IASimulationRunner class. Now we set the remaining parameters
-        # which are not common to all IASolvers
-
-        # Iterations of the AlternatingMinIASolver algorithm.
-        self.ia_solver.max_iterations = self.params['max_iterations']
-
 
 class MaxSINRSimulationRunner(IASimulationRunner):
     """
@@ -434,13 +430,6 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         self.progressbar_message = "Max SINR ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Almost everything is already set in the __init__ from th
-        # IASimulationRunner class. Now we set the remaining parameters
-        # which are not common to all IASolvers
-
-        # Iterations of the AlternatingMinIASolver algorithm.
-        self.ia_solver.max_iterations = self.params['max_iterations']
-
 
 class MMSESimulationRunner(IASimulationRunner):
     """
@@ -480,13 +469,6 @@ class MMSESimulationRunner(IASimulationRunner):
         # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
         self.progressbar_message = "MMSE ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # Almost everything is already set in the __init__ from th
-        # IASimulationRunner class. Now we set the remaining parameters
-        # which are not common to all IASolvers
-
-        # Iterations of the AlternatingMinIASolver algorithm.
-        self.ia_solver.max_iterations = self.params['max_iterations']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -611,7 +593,7 @@ def simulate_alternating():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -627,7 +609,7 @@ def simulate_closed_form():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+        'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -643,7 +625,7 @@ def simulate_min_leakage():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_min_leakage_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+        'ia_min_leakage_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -659,7 +641,7 @@ def simulate_max_sinr():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -675,7 +657,7 @@ def simulate_mmse():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
+        'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -687,7 +669,7 @@ def simulate_mmse():
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Performs the simulation in parallel
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from time import time
     from util.misc import pretty_time
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
@@ -751,8 +733,8 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     print "Trying to get an IPython load_balanced_view"
     from IPython.parallel import Client
-    # cl = Client(profile="ssh")
-    cl = Client(profile="default")
+    cl = Client(profile="ssh")
+    # cl = Client(profile="default")
     # We create a direct view to run coe in all engines
     dview = cl.direct_view()
     dview.execute('%reset')  # Reset the engines so that we don't have
@@ -775,55 +757,63 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # ---------- Creates the Closed Form Runner ---------------------------
     if "Closed Form" in algorithms_to_simulate:
-        closed_form_runner.simulate_in_parallel(lview, wait=False)
+        closed_form_runner.simulate_in_parallel(
+            lview,
+            wait=False,
+            results_filename='ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Alt. Min. Runner -----------------------------
     if "Alt Min" in algorithms_to_simulate:
-        alt_min_runner.simulate_in_parallel(lview, wait=False)
+        alt_min_runner.simulate_in_parallel(
+            lview,
+            wait=False,
+            results_filename='ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Max SINR Runner ------------------------------
     if "Max SINR" in algorithms_to_simulate:
-        max_sinrn_runner.simulate_in_parallel(lview, wait=False)
+        max_sinrn_runner.simulate_in_parallel(
+            lview,
+            wait=False,
+            results_filename='ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the MMSE Runner ----------------------------------
     if "MMSE" in algorithms_to_simulate:
-        mmse_runner.simulate_in_parallel(lview, wait=False)
+        mmse_runner.simulate_in_parallel(
+            lview,
+            wait=False,
+            results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
     # ---------------------------------------------------------------------
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # xxxxxxxxxx Save all results to respective files xxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Wait for all the simulations to finish xxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Closed Form
     if "Closed Form" in algorithms_to_simulate:
         closed_form_runner.wait_parallel_simulation()
-        save_results(closed_form_runner, 'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
         print "Closed Form Runned iterations: {0}".format(closed_form_runner.runned_reps)
         print "Closed Form Elapsed Time: {0}".format(closed_form_runner.elapsed_time)
 
     # Alternating Minimizations
     if "Alt Min" in algorithms_to_simulate:
         alt_min_runner.wait_parallel_simulation()
-        save_results(alt_min_runner, 'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
         print "Alt. Min. Runned iterations: {0}".format(alt_min_runner.runned_reps)
         print "Alt. Min. Elapsed Time: {0}".format(alt_min_runner.elapsed_time)
 
     # Max SINR
     if "Max SINR" in algorithms_to_simulate:
         max_sinrn_runner.wait_parallel_simulation()
-        save_results(max_sinrn_runner, 'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
         print "Max SINR Runned iterations: {0}".format(max_sinrn_runner.runned_reps)
         print "Max SINR Elapsed Time: {0}".format(max_sinrn_runner.elapsed_time)
 
     # MMSE
     if "MMSE" in algorithms_to_simulate:
         mmse_runner.wait_parallel_simulation()
-        save_results(mmse_runner, 'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter')
         print "MMSE Runned iterations: {0}".format(mmse_runner.runned_reps)
         print "MMSE Elapsed Time: {0}".format(mmse_runner.elapsed_time)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -836,7 +826,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
     tic = time()
