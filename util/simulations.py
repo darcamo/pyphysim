@@ -492,6 +492,19 @@ class SimulationRunner(object):
         return results_filename
     results_filename = property(_get_results_filename)
 
+    def _get_unpack_result_filename(self, current_params):
+        """
+        Get the name of the file where the partial result will be saved for the
+        unpackated result with index `unpack_index`.
+        """
+        total_unpacks = current_params._original_sim_params.get_num_unpacked_variations()
+        num_digits = len(str(total_unpacks))
+        unpack_index_str = str(current_params._unpack_index).zfill(num_digits)
+        partial_results_filename = '{0}_unpack_{1}.pickle'.format(
+            self.__results_base_filename,
+            unpack_index_str)
+        return partial_results_filename
+
     def __delete_partial_results(self):
         """
         Delete the files containing partial results.
@@ -758,13 +771,8 @@ class SimulationRunner(object):
 
             # Name of the file where the partial results will be saved
             if self.__results_base_filename is not None:
-                total_unpacks = current_params._original_sim_params.get_num_unpacked_variations()
-                num_digits = len(str(total_unpacks))
-                unpack_index_str = str(current_params._unpack_index).zfill(num_digits)
-
-                partial_results_filename = '{0}_unpack_{1}.pickle'.format(
-                    self.__results_base_filename,
-                    unpack_index_str)
+                partial_results_filename = self._get_unpack_result_filename(
+                    current_params)
 
             # First we try to Load the partial results for the current
             # parameters.
@@ -944,9 +952,8 @@ class SimulationRunner(object):
         def simulate_for_current_params(obj, current_params):
             # Name of the file where the partial results will be saved
             if obj.__results_base_filename is not None:
-                partial_results_filename = '{0}_unpack_{1}.pickle'.format(
-                    obj.__results_base_filename,
-                    current_params._unpack_index)
+                partial_results_filename = obj._get_unpack_result_filename(
+                    current_params)
 
             # First we try to Load the partial results for the current
             # parameters.
