@@ -415,7 +415,10 @@ class SimulationRunner(object):
         """
         import os
         for name in self.__results_base_filename_unpack_list:
-            os.remove(name)
+            try:
+                os.remove(name)
+            except Exception:
+                pass
         self.__results_base_filename_unpack_list = []
 
     def clear(self, ):  # pragma: no cover
@@ -776,6 +779,18 @@ class SimulationRunner(object):
             False, the you need to manually call
             self.wait_parallel_simulation at some point after calling
             simulate_in_parallel.
+
+        Notes
+        -----
+        There is a limitation regarding the partial simulation results. The
+        partial results files will be saved in the folder where the IPython
+        engines are running, since the "saving part" is performed in an
+        IPython engine. However, the deletion of the files is not performed
+        in by the IPython engines, but by the main python
+        program. Therefore, unless the Ipython engines are running in the
+        same folder where the main python program will be run the partial
+        result files won't be automatically deleted after the simulation is
+        finished.
         """
         # # xxxxx Initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # # Get the client which created the view `view` and then get a
@@ -827,14 +842,36 @@ class SimulationRunner(object):
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # ----- Function that will be called in each IPython engine -------
         def simulate_for_current_params(obj, current_params):
-            # Implement the _on_simulate_current_params_start method in a
-            # subclass if you need to run code before the _run_simulation
-            # iterations for each combination of simulation parameters.
-            obj._on_simulate_current_params_start(current_params)
+            # Name of the file where the partial results will be saved
+            if obj.__results_base_filename is not None:
+                partial_results_filename = '{0}_unpack_{1}.pickle'.format(
+                    obj.__results_base_filename,
+                    current_params._unpack_index)
 
-            # Perform the first iteration of _run_simulation
-            current_sim_results = obj._run_simulation(current_params)
-            current_rep = 1
+            # First we try to Load the partial results for the current
+            # parameters.
+            try:
+                # If loading partial results succeeds, then we will have
+                # partial results and the current_rep will also be set to
+                # the value or run repetitions in the loaded partial
+                # results. This means that the "while" statement after this
+                # try/except block will not run.
+                current_sim_results = SimulationResults.load_from_file(
+                    partial_results_filename)
+                current_rep = current_sim_results.current_rep
+
+            # If loading partial results failed then we will run the FIRST
+            # repetition here and the "while" statement after this
+            # try/except block will run as usual.
+            except Exception:
+                # Implement the _on_simulate_current_params_start method in a
+                # subclass if you need to run code before the _run_simulation
+                # iterations for each combination of simulation parameters.
+                obj._on_simulate_current_params_start(current_params)
+
+                # Perform the first iteration of _run_simulation
+                current_sim_results = obj._run_simulation(current_params)
+                current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
             while (obj._keep_going(current_params, current_sim_results, current_rep)
@@ -851,9 +888,24 @@ class SimulationRunner(object):
             obj._on_simulate_current_params_finish(current_params,
                                                    current_sim_results)
 
+            # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
+            # First we add the current parameters to the partial result
+            # object
+            current_sim_results.set_parameters(current_params)
+            # Now we can save the partial results to a file.
+            if obj.__results_base_filename is not None:
+                current_sim_results.current_rep = current_rep
+                current_sim_results.save_to_file(partial_results_filename)
+
+                # obj.__results_base_filename_unpack_list.append(
+                #     partial_results_filename)
+            else:
+                partial_results_filename = None
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
             # This function returns a tuple containing the number of
             # iterations run as well as the SimulationResults object.
-            return (current_rep, current_sim_results)
+            return (current_rep, current_sim_results, partial_results_filename)
         # -----------------------------------------------------------------
 
         # Loop through all the parameters combinations
@@ -903,9 +955,10 @@ class SimulationRunner(object):
 
             results = self._async_results.get()
 
-            for reps, r in results:
+            for reps, r, filename in results:
                 self._runned_reps.append(reps)
                 self.results.append_all_results(r)
+                self.__results_base_filename_unpack_list.append(filename)
 
             # xxxxx Save the elapsed time in the SimulationResults object xxxxx
             self.results.elapsed_time = self._elapsed_time
