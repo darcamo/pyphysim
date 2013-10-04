@@ -444,6 +444,11 @@ class SimulationRunner(object):
         # the actual results of performing an asynchronous task in IPython.
         self._async_results = None
 
+        # xxxxxxxxxx Configure saving of simulation results xxxxxxxxxxxxxxx
+        # Set this to False to avoid deleting partial results
+        self.delete_partial_results_bool = True
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
         # Variable to store the name of the file where the simulation
         # results will be stored.
@@ -492,14 +497,23 @@ class SimulationRunner(object):
 
         This method is called inside the simulate method after the full
         results were saved.
+
+        Notes
+        -----
+        This method will do nothing if self.delete_partial_results_bool is
+        not True.
         """
         import os
-        for name in self.__results_base_filename_unpack_list:
-            try:
-                os.remove(name)
-            except Exception:
-                pass
-        self.__results_base_filename_unpack_list = []
+        if self.delete_partial_results_bool is True:
+            for name in self.__results_base_filename_unpack_list:
+                try:
+                    os.remove(name)
+                except Exception:
+                    pass
+            self.__results_base_filename_unpack_list = []
+        else:
+            # Do nothing if self.delete_partial_results_bool is not True
+            pass
 
     def clear(self, ):  # pragma: no cover
         """Clear the SimulationRunner.
@@ -837,7 +851,8 @@ class SimulationRunner(object):
         # xxxxx Save the results if results_filename is not None xxxxxxxxxx
         if self.__results_base_filename is not None:
             self.results.save_to_file(self.results_filename)
-            # Delete the partial results
+            # Delete the partial results (this will only delete the partial
+            # results if self.delete_partial_results_bool is True)
             self.__delete_partial_results()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1055,7 +1070,8 @@ class SimulationRunner(object):
             # xxxxx Save the results if results_filename is not None xxxxxxxxxx
             if self.__results_base_filename is not None:
                 self.results.save_to_file(self.results_filename)
-                # Delete the partial results
+                # Delete the partial results (this will only delete the partial
+                # results if self.delete_partial_results_bool is True)
                 self.__delete_partial_results()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
