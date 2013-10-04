@@ -445,8 +445,9 @@ class SimulationRunner(object):
         self._async_results = None
 
         # xxxxxxxxxx Configure saving of simulation results xxxxxxxxxxxxxxx
-        # Set this to False to avoid deleting partial results
-        self.delete_partial_results_bool = True
+        # If this variable is set to True the saved partial results will be
+        # deleted after the simulation is finished.
+        self.delete_partial_results_bool = False
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
@@ -757,9 +758,13 @@ class SimulationRunner(object):
 
             # Name of the file where the partial results will be saved
             if self.__results_base_filename is not None:
+                total_unpacks = current_params._original_sim_params.get_num_unpacked_variations()
+                num_digits = len(str(total_unpacks))
+                unpack_index_str = str(current_params._unpack_index).zfill(num_digits)
+
                 partial_results_filename = '{0}_unpack_{1}.pickle'.format(
                     self.__results_base_filename,
-                    current_params._unpack_index)
+                    unpack_index_str)
 
             # First we try to Load the partial results for the current
             # parameters.
