@@ -1222,7 +1222,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         runner.simulate_in_parallel(lview)
 
         lala_results = [r.get_result() for r in runner.results['lala']]
-        expected_lala_results = [0.0, 6.0, 12.0, 18.0, 24.0]
+        expected_lala_results = [1.3, 7.3, 13.3, 19.3, 25.3]
 
         self.assertAlmostEqual(lala_results, expected_lala_results)
 

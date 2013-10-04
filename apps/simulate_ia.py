@@ -514,7 +514,7 @@ def simulate_general(runner, results_filename):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Replace any parameter mention in results_filename xxxxxxxxxxxxx
-    results_filename = results_filename.format(**runner.params.parameters)
+    #results_filename = results_filename.format(**runner.params.parameters)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -526,8 +526,8 @@ def simulate_general(runner, results_filename):
         # are running. In that case we will perform the simulation in
         # parallel
         from IPython.parallel import Client
-        cl = Client(profile="ssh")
-        # cl = Client(profile="default")
+        # cl = Client(profile="ssh")
+        cl = Client(profile="default")
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
         dview.execute('%reset')  # Reset the engines so that we don't have
@@ -547,15 +547,15 @@ def simulate_general(runner, results_filename):
 
     if run_in_parallel is True:
         print("Simulation will be run in Parallel")
-        runner.simulate_in_parallel(lview)
+        runner.simulate_in_parallel(lview, results_filename=results_filename)
     else:
         print("Simulation will be run serially")
-        runner.simulate()
+        runner.simulate(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
-    results_filename = '{0}.pickle'.format(results_filename)
-    runner.results.save_to_file(results_filename)
+    #results_filename = '{0}.pickle'.format(results_filename)
+    #runner.results.save_to_file(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print "Runned iterations: {0}".format(runner.runned_reps)
@@ -744,8 +744,8 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     print "Trying to get an IPython load_balanced_view"
     from IPython.parallel import Client
-    cl = Client(profile="ssh")
-    # cl = Client(profile="default")
+    # cl = Client(profile="ssh")
+    cl = Client(profile="default")
     # We create a direct view to run coe in all engines
     dview = cl.direct_view()
     dview.execute('%reset')  # Reset the engines so that we don't have
@@ -829,19 +829,19 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
     tic = time()
 
-    print "Simulating Closed Form algorithm"
-    closed_form_results, closed_form_filename = simulate_closed_form()
+    # print "Simulating Closed Form algorithm"
+    # closed_form_results, closed_form_filename = simulate_closed_form()
 
     print "Simulating Alternating Min. algorithm"
     alt_min_results, alt_min_filename = simulate_alternating()
 
-    print "Simulating Max SINR algorithm"
-    max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
+    # print "Simulating Max SINR algorithm"
+    # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()
 
     # print "Simulating MMSE algorithm"
     # mmse_results, mmse_filename = simulate_mmse()
@@ -852,7 +852,7 @@ if __name__ == '__main__1':
     toc = time()
     print "Elapsed Time: {0}".format(pretty_time(toc - tic))
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
