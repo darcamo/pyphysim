@@ -2141,8 +2141,9 @@ class SimulationResults(object):
         """
         return self._results.keys()
 
-    def get_result_values_list(self, result_name):
-        """Get the values for the results with name `result_name`.
+    def get_result_values_list(self, result_name, fixed_params={}):
+        """
+        Get the values for the results with name `result_name`.
 
         Returns a list with the values.
 
@@ -2150,6 +2151,13 @@ class SimulationResults(object):
         ----------
         result_name : str
             The name of the desired result.
+        fixed_params : dict
+            A python dictionary containing the fixed parameters. If
+            `fixed_params` is provided then the returned list will be only
+            a subset of the results that match the fixed values of the
+            parameters in the `fixed_params` argument, where the key is the
+            parameter's name and the value is the fixed value. See the
+            notes for an example.
 
         Returns
         -------
@@ -2157,10 +2165,38 @@ class SimulationResults(object):
             A list with the stored values for the result with name
             `result_name`
 
+        Notes
+        -----
+        As an example of the usage of the `fixed_params` argument, suppose
+        the results where obtained in a simulation for three parameters:
+        'first', with value 'A', 'second' with value '[1, 2, 3]' and
+        'third' with value '[B, C]', where the 'second' and 'third' were
+        set to be unpacked. In that case the returned result list would
+        have a length of 6 (the number of possible combinations of the
+        parameters to be unpacked). If fixed_params is provided with the
+        value of "{'second': 2}" that means that only the subset of results
+        which corresponding to the second parameters having the value of
+        '2' will be provided and the returned list will have a length of
+        2. If fixed_params is provided with the value of "{'second': '1',
+        'third': 'C'}" then a single result will be provided instead of a
+        list.
         """
-        return [i.get_result() for i in self[result_name]]
+        # If the fictionary is not empty
+        if fixed_params:
+            # TODO: Test this part
+            indexes = self.params.get_pack_indexes(fixed_params)
+            out = [v.get_result() for i, v in enumerate(self[result_name])
+                   if i in indexes]
+        else:
+            # If fixed_params is an empty dictionary (default value) then
+            # we return the full list of results
+            out = [v.get_result() for v in self[result_name]]
+        return out
 
-    def get_result_values_confidence_intervals(self, result_name, P=95):
+    def get_result_values_confidence_intervals(self,
+                                               result_name,
+                                               P=95,
+                                               fixed_params={}):
         """
         Get the values for the results with name `result_name`.
 
@@ -2173,6 +2209,14 @@ class SimulationResults(object):
         result_name : str
             The name of the desired result.
         P : float
+        fixed_params : dict
+            A python dictionary containing the fixed parameters. If
+            `fixed_params` is provided then the returned list will be only
+            a subset of the results that match the fixed values of the
+            parameters in the `fixed_params` argument, where the key is the
+            parameter's name and the value is the fixed value. See the
+            notes in the documentation of :meth:`get_result_values_list`
+            for an example.
 
         Returns
         -------
@@ -2185,7 +2229,16 @@ class SimulationResults(object):
         --------
         util.misc.calc_confidence_interval
         """
-        return [i.get_confidence_interval(P) for i in self[result_name]]
+        if fixed_params:
+            # TODO: Test this part
+            indexes = self.params.get_pack_indexes(fixed_params)
+            out = [v.get_confidence_interval(P) for i, v in enumerate(self[result_name])
+                   if i in indexes]
+        else:
+            # If fixed_params is an empty dictionary (default value) then
+            # we return the full list of results
+            out = [i.get_confidence_interval(P) for i in self[result_name]]
+        return out
 
     def __getitem__(self, key):
         """Get the value of the desired result
