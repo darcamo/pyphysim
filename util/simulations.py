@@ -529,6 +529,46 @@ class SimulationRunner(object):
             # Do nothing if self.delete_partial_results_bool is not True
             pass
 
+    def __save_partial_results(self, current_rep, current_params, current_sim_results, partial_results_filename):
+        """
+        Save the partial simulation results to a file.
+
+        Parameters
+        ----------
+        current_rep : int
+            Current repetition.
+        current_params : SimulationParameters
+            The current parameters.
+        current_sim_results : SimulationResults
+            The partial simulations results object to be saved.
+        partial_results_filename : str
+            The name of the file to save the partial simulation results.
+
+        Notes
+        -----
+        The name of the results file where the partial results were saved,
+        that is, the value of the `partial_results_filename` argument will
+        be automatically added to the list of files to be deleted after the
+        simulation is finished if delete_partial_results_bool is
+        True. However, remember that in the simulate_in_parallel method
+        this method will be run in a different object in an IPython
+        engine. Therefore, you will need to manually add, the value of the
+        partial_results_filename variable to the list of files to be
+        deleted (the __delete_partial_results variable).
+        """
+        # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
+        # First we add the current parameters to the partial simulation
+        # results object
+        current_sim_results.set_parameters(current_params)
+        # Now we can save the partial results to a file.
+
+        current_sim_results.current_rep = current_rep
+        current_sim_results.save_to_file(partial_results_filename)
+
+        self.__results_base_filename_unpack_list.append(
+            partial_results_filename)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def clear(self, ):  # pragma: no cover
         """Clear the SimulationRunner.
 
@@ -809,6 +849,10 @@ class SimulationRunner(object):
                 current_rep += 1
                 update_progress_func(current_rep)
 
+                # Save partial results each 500 iterations
+                if current_rep % 500 == 0 and self.__results_base_filename is not None:
+                    self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+
             # If the while loop ended before rep_max repetitions (because
             # _keep_going returned false) then set the progressbar to full.
             update_progress_func(self.rep_max)
@@ -827,16 +871,8 @@ class SimulationRunner(object):
             self.results.append_all_results(current_sim_results)
 
             # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
-            # First we add the current parameters to the partial result
-            # object
-            current_sim_results.set_parameters(current_params)
-            # Now we can save the partial results to a file.
-            if results_filename is not None:
-                current_sim_results.current_rep = current_rep
-                current_sim_results.save_to_file(partial_results_filename)
-
-                self.__results_base_filename_unpack_list.append(
-                    partial_results_filename)
+            if self.__results_base_filename is not None:
+                self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # This will add a blank line between the simulations for
@@ -988,6 +1024,10 @@ class SimulationRunner(object):
                     obj._run_simulation(current_params))
                 current_rep += 1
 
+                # Save partial results each 500 iterations
+                if current_rep % 500 == 0 and obj.__results_base_filename is not None:
+                    obj.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+
             # Implement the _on_simulate_current_params_finish method in a
             # subclass if you need to run code after all _run_simulation
             # iterations for each combination of simulation parameters
@@ -996,16 +1036,8 @@ class SimulationRunner(object):
                                                    current_sim_results)
 
             # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
-            # First we add the current parameters to the partial result
-            # object
-            current_sim_results.set_parameters(current_params)
-            # Now we can save the partial results to a file.
             if obj.__results_base_filename is not None:
-                current_sim_results.current_rep = current_rep
-                current_sim_results.save_to_file(partial_results_filename)
-
-                # obj.__results_base_filename_unpack_list.append(
-                #     partial_results_filename)
+                obj.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
             else:
                 partial_results_filename = None
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
