@@ -409,7 +409,6 @@ class SimulationRunner(object):
     """
     def __init__(self):
         self.rep_max = 1
-        self._elapsed_time = 0.0
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
         self.params = SimulationParameters()
@@ -461,6 +460,12 @@ class SimulationRunner(object):
         # finished and full results were saved to delete the files with the
         # partial results.
         self.__results_base_filename_unpack_list = []
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Interval variables for tracking simulation time xxxxxxxxxxx
+        self._elapsed_time = 0.0
+        self.__tic = 0.0
+        self.__toc = 0.0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def __update__results_base_filename(self, results_filename):
@@ -783,7 +788,7 @@ class SimulationRunner(object):
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
-        tic = time()
+        self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
@@ -881,20 +886,20 @@ class SimulationRunner(object):
                 print("")  # pragma: no cover
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        toc = time()
-        self._elapsed_time = toc - tic
-
-        # Also save the elapsed time in the SimulationResults object
-        self.results.elapsed_time = self._elapsed_time
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # Implement the _on_simulate_finish method in a subclass if you
         # need to run code at the end of the simulate method.
         self._on_simulate_finish()
 
         # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
         self.results.runned_reps = self._runned_reps
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.__toc = time()
+        self._elapsed_time = self.__toc - self.__tic
+
+        # Also save the elapsed time in the SimulationResults object
+        self.results.elapsed_time = self._elapsed_time
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Save the results if results_filename is not None xxxxxxxxxx
@@ -920,7 +925,7 @@ class SimulationRunner(object):
         wait : Bool
             If True then the self.wait_parallel_simulation method will be
             automatically called at the end of simulate_in_parallel. If
-            False, the you need to manually call
+            False, the YOU NEED to manually call
             self.wait_parallel_simulation at some point after calling
             simulate_in_parallel.
 
@@ -962,7 +967,7 @@ class SimulationRunner(object):
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
-        tic = time()
+        self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
@@ -1055,14 +1060,6 @@ class SimulationRunner(object):
         # for i in range(num_variations):
         #     proxybar_list.append(pbar.register_function_and_get_proxy_progressbar(self.rep_max))
 
-        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Note that for now the elapsed time does not include the time
-        # spent at the actual simulation. We still need to sum with the
-        # elapsed time from the actual simulation.
-        toc = time()
-        self._elapsed_time = toc - tic
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # xxx Perform the actual simulation in asynchronously parallel xxxx
         self._async_results = view.map(simulate_for_current_params,
                                        # We need to pass the SimulationRunner
@@ -1109,6 +1106,14 @@ class SimulationRunner(object):
 
             # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
             self.results.runned_reps = self._runned_reps
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Note that for now the elapsed time does not include the time
+            # spent at the actual simulation. We still need to sum with the
+            # elapsed time from the actual simulation.
+            self.__toc = time()
+            self._elapsed_time = self.__toc - self.__tic
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Save the results if results_filename is not None xxxxxxxxxx
