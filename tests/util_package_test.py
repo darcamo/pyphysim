@@ -388,13 +388,299 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
             parsed_array = _integer_numpy_array_check(array_string,
-                                                   min=4,
-                                                   max=30)
+                                                      min=4,
+                                                      max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
             parsed_array = _integer_numpy_array_check(array_string,
-                                                   min=0,
-                                                   max=15)
+                                                      min=0,
+                                                      max=15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+class SimulationParametersTestCase(unittest.TestCase):
+    """Unit-tests for the SimulationParameters class in the simulations
+    module.
+    """
+    def setUp(self):
+        params_dict = {'first': 10, 'second': 20}
+        self.sim_params = SimulationParameters.create(params_dict)
+
+    def test_create(self):
+        # The create method was already called in the setUp.
+        self.assertEqual(len(self.sim_params), 2)
+        self.assertEqual(self.sim_params['first'], 10)
+        self.assertEqual(self.sim_params['second'], 20)
+
+    def test_add(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.assertEqual(len(self.sim_params), 3)
+        np.testing.assert_array_equal(
+            self.sim_params['third'], np.array([1, 3, 2, 5]))
+
+    def test_unpacking_parameters(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # One unpacked param with four values and other with two will give
+        # us 4x2=8 unpacked variations.
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 8)
+        # We make the unpacked_parameters and the expected value sets
+        # because the order does not matter
+        self.assertEqual(
+            set(self.sim_params.unpacked_parameters),
+            set(['third', 'fourth']))
+
+        # We may have 8 variations, but there are still only 4 parameters
+        self.assertEqual(len(self.sim_params), 4)
+
+        # Test if an exception is raised if we try to set a non iterable
+        # parameter to be unpacked.
+        self.sim_params.add('fifth', 10)
+        with self.assertRaises(ValueError):
+            self.sim_params.set_unpack_parameter('fifth')
+
+        # Test if an exception is thrown if we try to set a non existing
+        # parameter to be unset.
+        with self.assertRaises(ValueError):
+            self.sim_params.set_unpack_parameter('sixth')
+
+        if sys.version_info[0] < 3:
+            # Now that a few parameters were added and set to be unpacked,
+            # lets test the representation of the SimulationParameters
+            # object. Note that the parameters that are marked for
+            # unpacking have '*' appended to their name.
+            # THIS TEST WILL NOT BE PERFORMED IN PYTHON 3
+            self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
+
+        # Test if we can unset a parameter that was previously set to be
+        # unpacked.
+        self.sim_params.set_unpack_parameter('fourth', False)
+        self.assertEqual(
+            set(self.sim_params.unpacked_parameters),
+            set(['third']))
+
+    def test_equality(self):
+        other = SimulationParameters()
+        self.assertFalse(self.sim_params == other)
+        other.add('first', 10)
+        other.add('second', 20)
+        self.assertTrue(self.sim_params == other)
+
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.assertFalse(self.sim_params == other)
+        other.add('third', np.array([1, 3, 2, 5]))
+        self.assertTrue(self.sim_params == other)
+
+        self.sim_params.set_unpack_parameter('third')
+        self.assertFalse(self.sim_params == other)
+        other.set_unpack_parameter('third')
+        self.assertTrue(self.sim_params == other)
+
+        other.parameters['third'][2] = 10
+        self.assertFalse(self.sim_params == other)
+        self.sim_params.parameters['third'][2] = 10
+        self.assertTrue(self.sim_params == other)
+
+    def test_get_unpacked_params_list(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        params_dict = {'first': [], 'second': [], 'third': [], 'fourth': []}
+        unpacked_param_list = self.sim_params.get_unpacked_params_list()
+        for i in unpacked_param_list:
+            # This will add value multiple times when it shouldn't
+            params_dict['first'].append(i['first'])
+            params_dict['second'].append(i['second'])
+            params_dict['third'].append(i['third'])
+            params_dict['fourth'].append(i['fourth'])
+
+        # We change all values to sets to remove repeated values for
+        # testing purposes.
+        self.assertEqual(set(params_dict['first']),
+                         set([self.sim_params['first']]))
+        self.assertEqual(set(params_dict['second']),
+                         set([self.sim_params['second']]))
+        self.assertEqual(set(params_dict['third']),
+                         set(self.sim_params['third']))
+        self.assertEqual(set(params_dict['fourth']),
+                         set(self.sim_params['fourth']))
+
+        # Test if the _unpack_index and the _original_sim_params member
+        # variables are correct for each unpacked variation
+        for i in range(self.sim_params.get_num_unpacked_variations()):
+            self.assertEqual(unpacked_param_list[i]._unpack_index, i)
+            self.assertTrue(unpacked_param_list[i]._original_sim_params is self.sim_params)
+
+    def test_get_pack_indexes(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # The parameters 'third' and 'fourth' are marked to be unpacked,
+        # while the parameters 'first' and 'second' will always be the
+        # same. The combinations after unpacking are shown below
+        #   {'second': 20, 'fourth': A, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fourth': A, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fourth': A, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fourth': A, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fourth': B, 'third': 5, 'first': 10}
+        #
+        # Lets focus on the 'third' and 'fourth' parameters, since they are
+        # the only ones changing. Suppose we want to get the indexes
+        # corresponding to varying the 'fourth' parameters with the 'third'
+        # parameter equal to 2. We create a dictionary
+        fixed_third_2 = {'third': 2}
+
+        # The desired indexes are [2, 6]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_third_2),
+            [2, 6])
+
+        fixed_third_5 = {'third': 5}
+        # The desired indexes are [3, 7]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_third_5),
+            [3, 7])
+
+        # Now lets fix the 'fourth' parameter and let the 'third' vary.
+        fixed_fourth_A = {'fourth': 'A'}
+        # The desired indexes are [0, 1, 2, 3]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_fourth_A),
+            [0, 1, 2, 3])
+
+        fixed_fourth_B = {'fourth': 'B'}
+        # The desired indexes are [4, 5, 6, 7]
+        np.testing.assert_array_equal(
+            self.sim_params.get_pack_indexes(fixed_fourth_B),
+            [4, 5, 6, 7])
+
+        # Lets try to fix some invalid value to see if an exception is
+        # raised
+        fixed_fourth_invalid = {'fourth': 'C'}
+        with self.assertRaises(ValueError):
+            # This should raise a ValueError, since the parameter 'fourth'
+            # has no value 'C'
+            self.sim_params.get_pack_indexes(fixed_fourth_invalid)
+
+        # Now lets fix the third and the fourth parameter. This should get
+        # me a single index.
+        self.assertEqual(
+            self.sim_params.get_pack_indexes({'third': 5, 'fourth': 'B'}),
+            7)
+        self.assertEqual(
+            self.sim_params.get_pack_indexes({'third': 5, 'fourth': 'B'}),
+            7)
+
+    def test_save_to_and_load_from_file(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        filename = 'params.pickle'
+        # Let's make sure the file does not exist
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        # Save to the file
+        self.sim_params.save_to_pickled_file(filename)
+
+        # Load from the file
+        sim_params2 = simulations.SimulationParameters.load_from_pickled_file(filename)
+
+        self.assertEqual(self.sim_params['first'], sim_params2['first'])
+        self.assertEqual(self.sim_params['second'], sim_params2['second'])
+        self.assertEqual(len(self.sim_params), len(sim_params2))
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(),
+                         sim_params2.get_num_unpacked_variations())
+
+    def test_load_from_config_file(self):
+        filename = 'test_config_file.txt'
+
+        # xxxxxxxxxx Write the config file xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.close()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Read the parameters from the file xxxxxxxxxxxxxxxxxxxx
+        # Since we are not specifying a "validation spec" all parameters
+        # will be read as strings or list of strings.
+        params = SimulationParameters.load_from_config_file(filename)
+        self.assertEqual(len(params), 5)
+        self.assertEqual(params['modo'], 'test')
+        self.assertEqual(params['SNR'], ['0', '5', '10'])
+        self.assertEqual(params['M'], '4')
+        self.assertEqual(params['modulator'], 'PSK')
+        self.assertEqual(params['max_iterations'], '60')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Read the parameters from file with a validation spec xxxxxx
+        spec = """modo=string
+        [Scenario]
+        SNR=real_numpy_array(default=15)
+        M=integer(min=4, max=512, default=4)
+        modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
+        [IA Algorithm]
+        max_iterations=integer(min=1)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+        params2 = SimulationParameters.load_from_config_file(
+            filename, spec)
+        self.assertEqual(len(params2), 6)
+        self.assertEqual(params2['modo'], 'test')
+        np.testing.assert_array_almost_equal(params2['SNR'],
+                                             np.array([0., 5., 10.]))
+        self.assertEqual(params2['M'], 4)
+        self.assertEqual(params2['modulator'], 'PSK')
+        self.assertEqual(params2['max_iterations'], 60)
+        self.assertEqual(params2['unpacked_parameters'], ['SNR'])
+        self.assertEqual(params2.unpacked_parameters, ['SNR'])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Lets create an invalid config file and try to load the parameters
+        # First we provide an invalid value for M
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=-4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.close()
+
+        with self.assertRaises(Exception):
+            params2 = SimulationParameters.load_from_config_file(
+                filename, spec)
+
+        # Now we do not provide the required parameter max_iterations
+        fid = open(filename, 'w')
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]")
+        fid.close()
+
+        with self.assertRaises(Exception):
+            params2 = SimulationParameters.load_from_config_file(
+                filename, spec)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -910,285 +1196,6 @@ class SimulationResultsTestCase(unittest.TestCase):
     #     # Test if the unpacked parameters where also saved
     #     self.assertEqual(self.simresults.params.unpacked_parameters[0],
     #                      simresults2.params.unpacked_parameters[0])
-
-
-class SimulationParametersTestCase(unittest.TestCase):
-    """Unit-tests for the SimulationParameters class in the simulations
-    module.
-    """
-    def setUp(self):
-        params_dict = {'first': 10, 'second': 20}
-        self.sim_params = SimulationParameters.create(params_dict)
-
-    def test_create(self):
-        # The create method was already called in the setUp.
-        self.assertEqual(len(self.sim_params), 2)
-        self.assertEqual(self.sim_params['first'], 10)
-        self.assertEqual(self.sim_params['second'], 20)
-
-    def test_add(self):
-        self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.assertEqual(len(self.sim_params), 3)
-        np.testing.assert_array_equal(
-            self.sim_params['third'], np.array([1, 3, 2, 5]))
-
-    def test_unpacking_parameters(self):
-        self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.sim_params.add('fourth', ['A', 'B'])
-        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
-        self.sim_params.set_unpack_parameter('third')
-        self.sim_params.set_unpack_parameter('fourth')
-
-        # One unpacked param with four values and other with two will give
-        # us 4x2=8 unpacked variations.
-        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 8)
-        # We make the unpacked_parameters and the expected value sets
-        # because the order does not matter
-        self.assertEqual(
-            set(self.sim_params.unpacked_parameters),
-            set(['third', 'fourth']))
-
-        # We may have 8 variations, but there are still only 4 parameters
-        self.assertEqual(len(self.sim_params), 4)
-
-        # Test if an exception is raised if we try to set a non iterable
-        # parameter to be unpacked.
-        self.sim_params.add('fifth', 10)
-        with self.assertRaises(ValueError):
-            self.sim_params.set_unpack_parameter('fifth')
-
-        # Test if an exception is thrown if we try to set a non existing
-        # parameter to be unset.
-        with self.assertRaises(ValueError):
-            self.sim_params.set_unpack_parameter('sixth')
-
-        import sys
-        if sys.version_info[0] < 3:
-            # Now that a few parameters were added and set to be unpacked,
-            # lets test the representation of the SimulationParameters
-            # object. Note that the parameters that are marked for
-            # unpacking have '*' appended to their name.
-            # THIS TEST WILL NOT BE PERFORMED IN PYTHON 3
-            self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
-
-        # Test if we can unset a parameter that was previously set to be
-        # unpacked.
-        self.sim_params.set_unpack_parameter('fourth', False)
-        self.assertEqual(
-            set(self.sim_params.unpacked_parameters),
-            set(['third']))
-
-    def test_equality(self):
-        other = SimulationParameters()
-        self.assertFalse(self.sim_params == other)
-        other.add('first', 10)
-        other.add('second', 20)
-        self.assertTrue(self.sim_params == other)
-
-        self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.assertFalse(self.sim_params == other)
-        other.add('third', np.array([1, 3, 2, 5]))
-        self.assertTrue(self.sim_params == other)
-
-        self.sim_params.set_unpack_parameter('third')
-        self.assertFalse(self.sim_params == other)
-        other.set_unpack_parameter('third')
-        self.assertTrue(self.sim_params == other)
-
-        other.parameters['third'][2] = 10
-        self.assertFalse(self.sim_params == other)
-        self.sim_params.parameters['third'][2] = 10
-        self.assertTrue(self.sim_params == other)
-
-    def test_get_unpacked_params_list(self):
-        self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.sim_params.add('fourth', ['A', 'B'])
-        self.sim_params.set_unpack_parameter('third')
-        self.sim_params.set_unpack_parameter('fourth')
-
-        params_dict = {'first': [], 'second': [], 'third': [], 'fourth': []}
-        unpacked_param_list = self.sim_params.get_unpacked_params_list()
-        for i in unpacked_param_list:
-            # This will add value multiple times when it shouldn't
-            params_dict['first'].append(i['first'])
-            params_dict['second'].append(i['second'])
-            params_dict['third'].append(i['third'])
-            params_dict['fourth'].append(i['fourth'])
-
-        # We make change all values to sets to remove repeated values for
-        # testing purposes.
-        self.assertEqual(set(params_dict['first']),
-                         set([self.sim_params['first']]))
-        self.assertEqual(set(params_dict['second']),
-                         set([self.sim_params['second']]))
-        self.assertEqual(set(params_dict['third']),
-                         set(self.sim_params['third']))
-        self.assertEqual(set(params_dict['fourth']),
-                         set(self.sim_params['fourth']))
-
-        # Test if the _unpack_index and the _original_sim_params member
-        # variables are correct for each unpacked variation
-        for i in range(self.sim_params.get_num_unpacked_variations()):
-            self.assertEqual(unpacked_param_list[i]._unpack_index, i)
-            self.assertTrue(unpacked_param_list[i]._original_sim_params is self.sim_params)
-
-    def test_get_pack_indexes(self):
-        self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.sim_params.add('fourth', ['A', 'B'])
-        self.sim_params.set_unpack_parameter('third')
-        self.sim_params.set_unpack_parameter('fourth')
-
-        # The parameters 'third' and 'fourth' are marked to be unpacked,
-        # while the parameters 'first' and 'second' will always be the
-        # same. The combinations after unpacking are shown below
-        #   {'second': 20, 'fourth': A, 'third': 1, 'first': 10}
-        #   {'second': 20, 'fourth': A, 'third': 3, 'first': 10}
-        #   {'second': 20, 'fourth': A, 'third': 2, 'first': 10}
-        #   {'second': 20, 'fourth': A, 'third': 5, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 1, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 3, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 2, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 5, 'first': 10}
-        #
-        # Lets focus on the 'third' and 'fourth' parameters, since they are
-        # the only ones changing. Suppose we want to get the indexes
-        # corresponding to varying the 'fourth' parameters with the 'third'
-        # parameter equal to 2. We create a dictionary
-        fixed_third_2 = {'third': 2}
-
-        # The desired indexes are [2, 6]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_third_2),
-            [2, 6])
-
-        fixed_third_5 = {'third': 5}
-        # The desired indexes are [3, 7]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_third_5),
-            [3, 7])
-
-        # Now lets fix the 'fourth' parameter and let the 'third' vary.
-        fixed_fourth_A = {'fourth': 'A'}
-        # The desired indexes are [0, 1, 2, 3]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_fourth_A),
-            [0, 1, 2, 3])
-
-        fixed_fourth_B = {'fourth': 'B'}
-        # The desired indexes are [4, 5, 6, 7]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_fourth_B),
-            [4, 5, 6, 7])
-
-        # Lets try to fix some invalid value to see if an exception is
-        # raised
-        fixed_fourth_invalid = {'fourth': 'C'}
-        with self.assertRaises(ValueError):
-            # This should raise a ValueError, since the parameter 'fourth'
-            # has no value 'C'
-            self.sim_params.get_pack_indexes(fixed_fourth_invalid)
-
-    def test_save_to_and_load_from_file(self):
-        self.sim_params.add('third', np.array([1, 3, 2, 5]))
-        self.sim_params.add('fourth', ['A', 'B'])
-        self.sim_params.set_unpack_parameter('third')
-        self.sim_params.set_unpack_parameter('fourth')
-
-        filename = 'params.pickle'
-        # Let's make sure the file does not exist
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
-
-        # Save to the file
-        self.sim_params.save_to_pickled_file(filename)
-
-        # Load from the file
-        sim_params2 = simulations.SimulationParameters.load_from_pickled_file(filename)
-
-        self.assertEqual(self.sim_params['first'], sim_params2['first'])
-        self.assertEqual(self.sim_params['second'], sim_params2['second'])
-        self.assertEqual(len(self.sim_params), len(sim_params2))
-        self.assertEqual(self.sim_params.get_num_unpacked_variations(),
-                         sim_params2.get_num_unpacked_variations())
-
-    def test_load_from_config_file(self):
-        filename = 'test_config_file.txt'
-
-        # xxxxxxxxxx Write the config file xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
-
-        fid = open(filename, 'w')
-        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
-        fid.close()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Read the parameters from the file xxxxxxxxxxxxxxxxxxxx
-        # Since we are not specifying a "validation spec" all parameters
-        # will be read as strings or list of strings.
-        params = SimulationParameters.load_from_config_file(filename)
-        self.assertEqual(len(params), 5)
-        self.assertEqual(params['modo'], 'test')
-        self.assertEqual(params['SNR'], ['0', '5', '10'])
-        self.assertEqual(params['M'], '4')
-        self.assertEqual(params['modulator'], 'PSK')
-        self.assertEqual(params['max_iterations'], '60')
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxx Read the parameters from file with a validation spec xxxxxx
-        spec = """modo=string
-        [Scenario]
-        SNR=real_numpy_array(default=15)
-        M=integer(min=4, max=512, default=4)
-        modulator=option('PSK', 'QAM', 'BPSK', default="PSK")
-        [IA Algorithm]
-        max_iterations=integer(min=1)
-        unpacked_parameters=string_list(default=list('SNR'))
-        """.split("\n")
-        params2 = SimulationParameters.load_from_config_file(
-            filename, spec)
-        self.assertEqual(len(params2), 6)
-        self.assertEqual(params2['modo'], 'test')
-        np.testing.assert_array_almost_equal(params2['SNR'],
-                                             np.array([0., 5., 10.]))
-        self.assertEqual(params2['M'], 4)
-        self.assertEqual(params2['modulator'], 'PSK')
-        self.assertEqual(params2['max_iterations'], 60)
-        self.assertEqual(params2['unpacked_parameters'], ['SNR'])
-        self.assertEqual(params2.unpacked_parameters, ['SNR'])
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # Lets create an invalid config file and try to load the parameters
-        # First we provide an invalid value for M
-        fid = open(filename, 'w')
-        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=-4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
-        fid.close()
-
-        with self.assertRaises(Exception):
-            params2 = SimulationParameters.load_from_config_file(
-                filename, spec)
-
-        # Now we do not provide the required parameter max_iterations
-        fid = open(filename, 'w')
-        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]")
-        fid.close()
-
-        with self.assertRaises(Exception):
-            params2 = SimulationParameters.load_from_config_file(
-                filename, spec)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 class SimulationRunnerTestCase(unittest.TestCase):
     """Unit-tests for the SimulationRunner class in the simulations

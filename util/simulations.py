@@ -1460,7 +1460,7 @@ class SimulationParameters(object):
 
         Returns
         -------
-        indexes : 1D numpy array
+        indexes : 1D numpy array or an integer
             The desired indexes.
 
         Examples
@@ -1497,16 +1497,12 @@ class SimulationParameters(object):
         # Get the only parameter that was not fixed
         varying_param = list(
             self._unpacked_parameters_set - set(fixed_params_dict.keys()))
-        assert len(varying_param) == 1, "All unpacked parameters must be fixed except one"
-        # The only parameter still varying. That is, one parameter marked
-        # to be unpacked, bu not in fixed_params_dict.
-        varying_param = varying_param[0]  # List with one element
 
         # List to store the indexes (as strings) of the fixed parameters,
         # as well as ":" for the varying parameter,
         param_indexes = []
         for i in self.unpacked_parameters:
-            if i == varying_param:
+            if i in varying_param:
                 param_indexes.append(':')
             else:
                 fixed_param_value_index = list(self.parameters[i]).index(fixed_params_dict[i])
@@ -1573,7 +1569,8 @@ class SimulationParameters(object):
             return [self]
 
         # Lambda function to get an iterator to a (iterable) parameter
-        # given its name
+        # given its name. This only works if self.parameters[name] is an
+        # iterable.
         get_iter_from_name = lambda name: iter(self.parameters[name])
 
         # Dictionary that stores the name and an iterator of a parameter
