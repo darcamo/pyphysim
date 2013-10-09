@@ -719,6 +719,22 @@ class SimulationRunner(object):
         """Get method for the runned_reps property."""
         return self._runned_reps
 
+    def get_runned_reps_fix_params(self, fixed_params_dict=dict()):
+        """
+        Get the number of runned repetitions for a given set of parameters.
+
+        You can get a list of the number of repetitions combination of
+        transmit parameters with the "runned_reps" property. However, if
+        you have more then one transmit parameter set to be unpacked it
+        might be difficult knowing which element in the list corresponds to
+        the simulation for a given set of transmit parameters. By using the
+        get_runned_reps_fix_params method you will be the number
+        repetitions for the desired set of transmit parameters.
+        """
+        indexes = self.params.get_pack_indexes(fixed_params_dict)
+        runned_reps_subset = np.array(self.runned_reps)[indexes]
+        return runned_reps_subset
+
     def simulate(self, results_filename=None):
         """
         Performs the full Monte Carlo simulation (serially).
@@ -814,6 +830,11 @@ class SimulationRunner(object):
         for current_params in self.params.get_unpacked_params_list():
             next(var_print_iter)
 
+            # Implement the _on_simulate_current_params_start method in a
+            # subclass if you need to run code before the _run_simulation
+            # iterations for each combination of simulation parameters.
+            self._on_simulate_current_params_start(current_params)
+
             # Name of the file where the partial results will be saved
             if self.__results_base_filename is not None:
                 partial_results_filename = self._get_unpack_result_filename(
@@ -835,11 +856,6 @@ class SimulationRunner(object):
             # repetition here and the "while" statement after this
             # try/except block will run as usual.
             except Exception:
-                # Implement the _on_simulate_current_params_start method in a
-                # subclass if you need to run code before the _run_simulation
-                # iterations for each combination of simulation parameters.
-                self._on_simulate_current_params_start(current_params)
-
                 # Perform the first iteration of _run_simulation
                 current_sim_results = self._run_simulation(current_params)
                 current_rep = 1
@@ -991,6 +1007,11 @@ class SimulationRunner(object):
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # ----- Function that will be called in each IPython engine -------
         def simulate_for_current_params(obj, current_params):
+            # Implement the _on_simulate_current_params_start method in a
+            # subclass if you need to run code before the _run_simulation
+            # iterations for each combination of simulation parameters.
+            obj._on_simulate_current_params_start(current_params)
+
             # Name of the file where the partial results will be saved
             if obj.__results_base_filename is not None:
                 partial_results_filename = obj._get_unpack_result_filename(
@@ -1012,11 +1033,6 @@ class SimulationRunner(object):
             # repetition here and the "while" statement after this
             # try/except block will run as usual.
             except Exception:
-                # Implement the _on_simulate_current_params_start method in a
-                # subclass if you need to run code before the _run_simulation
-                # iterations for each combination of simulation parameters.
-                obj._on_simulate_current_params_start(current_params)
-
                 # Perform the first iteration of _run_simulation
                 current_sim_results = obj._run_simulation(current_params)
                 current_rep = 1
