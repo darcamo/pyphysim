@@ -33,7 +33,7 @@ import sys
 import multiprocessing
 import time
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessText', 'center_message']
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessText', 'ProgressbarZMQText', 'center_message']
 
 
 def center_message(message, length=50, fill_char=' ', left='', right=''):
@@ -505,9 +505,13 @@ class ProgressbarMultiProcessText(object):
         # self._toc = multiprocessing.Value('f', 0.0)
 
     def _register_function(self, total_count):
-        """Return the `process_id` and a "process_data_list". These must be
-        passed as arguments to the function that will run in another
-        process.
+        """
+        Register a new client process for the progressbar and return its
+        `preocess_id` as well as the process_data_list that the client
+        should use to update its progress.
+
+        These returned values must be passed to the corresponding proxy
+        progressbar.
 
         Parameters
         ----------
@@ -523,9 +527,7 @@ class ProgressbarMultiProcessText(object):
             ProgressbarMultiProcessText must update the element
             `process_id` of the list `process_data_list` with the current
             count.
-
         """
-        # update self._total_final_count
         self._total_final_count += total_count
 
         # Update the last_id
@@ -668,3 +670,269 @@ class ProgressbarMultiProcessProxy:
         """
         self._process_data_list[self.process_id] = count
 # xxxxxxxxxx ProgressbarMultiProcessText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarZMQText xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ProgressbarZMQText(object):
+    """Progressbar using ZMQ sockets.
+    """
+    def __init__(self,
+                 progresschar='*',
+                 message='',
+                 sleep_time=5,
+                 filename=None):
+        """
+        Initializes the ProgressbarMultiProcessText object.
+
+        Parameters
+        ----------
+        progresschar : str
+            Character used in the progressbar.
+        message : str
+            Message writen in the progressbar.
+        sleep_time : float
+            Time between progressbar updates (in seconds).
+        filename : str
+            If filename is None (default) then progress will be output to
+            sys.stdout. If it is not None then the progress will be output
+            to a file with name `filename`. This is usually useful for
+            debugging and testing purposes.
+        """
+        # We import zmq here inside the class to avoid the whole module not
+        # working if zmq is not available. That means that we will only get
+        # the import error when zmq is not available if we actually try to
+        # instantiate ProgressbarZMQText.
+        import zmq
+        self._zmq = zmq  # Store a reference to the zmq module for later use.
+
+        # total_final_count will be updated each time the register_*
+        # function is called
+        self._total_final_count = 0
+        self._progresschar = progresschar
+        self._message = message
+
+        self._sleep_time = sleep_time
+        self._last_id = -1
+
+        self._filename = filename
+
+        # Each time we register a client we add a value here for that
+        # client. When the client updates its value we update the
+        # corresponding value here. In order to obtain the total amount
+        # already run all we need to do is to is to sum all the values
+        # here.
+        self._client_data_list = []
+
+        self._running = False
+
+        # Server information
+        self._ip = 'localhost'
+        self._port = 6100
+
+        # Bind the server socket
+        self._zmq_context = zmq.Context()
+        self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
+        self._zmq_pull_socket.bind("tcp://*:%s" % self._port)
+
+    def _register_function(self, total_count):
+        """
+        Register a new client for the progressbar and return its `client_id` as
+        well as the IP and PORT that the client should use to update its
+        progress.
+
+        These returned values must be passed to the corresponding proxy
+        progressbar.
+
+        Parameters
+        ----------
+        total_count : int
+            Total count that will be equivalent to 100% progress for the
+            function.
+
+        Returns
+        -------
+        (client_id, IP, PORT) : tuple of 3 integers
+            A tuple with the client_id, the IP and the PORT that will be
+            necessary to create the proxy progressbar (see the
+            :class:`ProgressbarZMQProxy` class)
+        """
+        self._total_final_count += total_count
+
+        # Update the last_id
+        self._last_id += 1
+
+        # process_id that will be used by the function
+        client_id = self._last_id
+
+        self._client_data_list.append(0)
+        return (client_id, self._ip, self._port)
+
+    def register_function_and_get_proxy_progressbar(self, total_count):
+        """
+        Creates a new proxy progressbar that can be used to update the main
+        progressbar.
+
+        The returned progressbar should be passed to the processing that
+        wants to update the progress.
+
+        Parameters
+        ----------
+        total_count : int
+            Total count that will be equivalent to 100% for function.
+
+        Returns
+        -------
+        obj : ProgressbarZMQProxy object
+            The proxy progressbar.
+        """
+        return ProgressbarZMQProxy(*self._register_function(total_count))
+
+    def _parse_progress_message(self, message):
+        """
+        Parse the message sent from the client proxy progressbars.
+
+        The messages sent from the proxy progressbars are in the form
+        'client_id:current_count'. We need to set the element of index
+        "client_id" in self._client_data_list to the value of
+        "current_count". This method will simply parse the message and
+        perform this operation.
+
+        Parameters
+        ----------
+        message : str
+            A string in the form 'client_id:current_count'.
+        """
+        client_id, current_count = map(int, message.split(":"))
+        self._client_data_list[client_id] = current_count
+
+    def start_updater(self):
+        """
+        Start the updating of the progressbar that updates the progressbar.
+
+        This will create the socket that receives the progress from the
+        clients and update the actual progressbar.
+        """
+        from time import sleep
+
+        if self._filename is None:
+            import sys
+            output = sys.stdout
+        else:
+            output = open(filename, 'w')
+
+        pbar = ProgressbarText(self._total_final_count,
+                               self._progresschar,
+                               self._message,
+                               output=output)
+
+        self._running = True
+        count = 0
+        while count < self._total_final_count and self._running is True:
+            try:
+                # Try to receive something in the socket.
+                message = self._zmq_pull_socket.recv_string(flags=self._zmq.NOBLOCK)
+                # This will update self._client_data_list
+                self._parse_progress_message(message)
+
+                count = sum(self._client_data_list)
+                pbar.progress(count)
+                # and print the received value
+            except self._zmq.ZMQError:
+                # If we could not receive anything in the socket it will
+                # trown the ZMQError exception. In that case we sleep for
+                # "self._sleep_time" seconds.
+                sleep(self._sleep_time)
+
+    def stop_updater(self, timeout=None):
+        """Stop the process updating the progressbar.
+
+        You should always call this function in your main process (the same
+        that created the progressbar) after joining all the processes that
+        update the progressbar. This guarantees that the progressbar
+        updated any pending change and exited clearly.
+
+        """
+        pass
+
+
+# Used by the ProgressbarZMQText class
+class ProgressbarZMQProxy:
+    """
+    Proxy progressbar that behaves like a ProgressbarText object,
+    but is actually updating a ProgressbarZMQText progressbar.
+
+    The basic idea is that this proxy progressbar has the "progress" method
+    similar to the standard ProgressbarText class. However, when this
+    method is called it will update a value that will be read by a
+    ProgressbarZMQText object instead.
+    """
+    def __init__(self, client_id, ip, port):
+        """Initializes the ProgressbarZMQProxy object."""
+        # We import zmq here inside the class to avoid the whole module not
+        # working if zmq is not available. That means that we will only get
+        # the import error when zmq is not available if we actually try to
+        # instantiate ProgressbarZMQText.
+        import zmq
+        self._zmq = zmq
+
+        self.client_id = client_id
+        self.ip = ip
+        self.port = port
+
+        # Function that will be called to update the progress. This
+        # variable is initially set to the "_connect_and_update_progress"
+        # method that will create the socket, connect it to the main
+        # progressbar and finally set "_progress_func" to the "_progress"
+        # method that will actually update the progress.
+        self._progress_func = ProgressbarZMQProxy._connect_and_update_progress
+
+        # ZMQ Variables: These variables will be set the first time the
+        # progress method is called.
+        self._zmq_context = None
+        self._zmq_push_socket = None
+
+    def progress(self, count):
+        """Updates the proxy progress bar.
+
+        Parameters
+        ----------
+        count : int
+            The new amount of progress.
+
+        """
+        self._progress_func(self, count)
+
+    def _progress(self, count):
+        """
+
+        Parameters
+        ----------
+        count : int
+        """
+        # The mensage is a string composed of the client ID and the current
+        # count
+        message = "{0}:{1}".format(self.client_id, count)
+        self._zmq_push_socket.send_string(message, flags=self._zmq.NOBLOCK)
+
+    def _connect_and_update_progress(self, count):
+        """
+        Creates the "push socket", connects it to the socket of the main
+        progressbar and then updates the progress.
+
+        This function will be called only in the first time the "progress"
+        method is called. Subsequent calls to "progress" will actually
+        calls the "_progress" method.
+
+        Parameters
+        ----------
+        count : int
+            The new amount of progress.
+        """
+        self._zmq_context = self._zmq.Context()
+        self._zmq_push_socket = self._zmq_context.socket(self._zmq.PUSH)
+        self._zmq_push_socket.connect("tcp://{0}:{1}".format(self.ip, self.port))
+        self._progress_func = ProgressbarZMQProxy._progress
+        self._progress_func(self, count)
+# xxxxxxxxxx ProgressbarZMQText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

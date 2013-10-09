@@ -1112,6 +1112,7 @@ class SimulationRunner(object):
             # Note that for now the elapsed time does not include the time
             # spent at the actual simulation. We still need to sum with the
             # elapsed time from the actual simulation.
+            from time import time
             self.__toc = time()
             self._elapsed_time = self.__toc - self.__tic
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

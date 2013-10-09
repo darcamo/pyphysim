@@ -1760,6 +1760,64 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.assertEqual(progress_string, expected_progress_string)
 
 
+# TODO: finish implementation
+class ProgressbarZMQTextTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.output_filename = "ProgressbarZMQTextTestCase.out"
+
+        self.zmqbar = progressbar.ProgressbarZMQText(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.proxybar1 = self.zmqbar.register_function_and_get_proxy_progressbar(10)
+        self.proxybar2 = self.zmqbar.register_function_and_get_proxy_progressbar(15)
+
+    def tearDown(self):
+        self.zmqbar._zmq_pull_socket.close()
+
+    def test_register(self):
+        # Test last_id and total_final_count of the main progress bar
+        self.assertEqual(self.zmqbar._last_id, 1)
+        self.assertEqual(self.zmqbar._total_final_count, 25)
+
+        # Register a new proxy progressbar and test the last_id and
+        # total_final_count again.
+        proxybar3 = self.zmqbar.register_function_and_get_proxy_progressbar(13)
+        self.assertEqual(self.zmqbar._last_id, 2)
+        self.assertEqual(self.zmqbar._total_final_count, 38)
+
+        # Test IP and port of the proxy progress bars
+        self.assertEqual(self.proxybar1.ip, self.zmqbar._ip)
+        self.assertEqual(self.proxybar1.port, self.zmqbar._port)
+        self.assertEqual(self.proxybar2.ip, self.zmqbar._ip)
+        self.assertEqual(self.proxybar2.port, self.zmqbar._port)
+        self.assertEqual(proxybar3.ip, self.zmqbar._ip)
+        self.assertEqual(proxybar3.port, self.zmqbar._port)
+
+    def test_proxy_progressbars(self):
+        # Test the information in the proxybar1
+        self.assertEqual(self.proxybar1.client_id, 0)
+        self.assertEqual(self.proxybar1.ip, self.zmqbar._ip)
+        self.assertEqual(self.proxybar1.port, self.zmqbar._port)
+
+        # Test the information in the proxybar2
+        self.assertEqual(self.proxybar2.client_id, 1)
+        self.assertEqual(self.proxybar2.ip, self.zmqbar._ip)
+        self.assertEqual(self.proxybar2.port, self.zmqbar._port)
+
+        # Since we did not call the progress method of the proxy
+        # progressbars not even once yet, they have not created their
+        # sockets yet.
+        self.assertIsNone(self.proxybar1._zmq_push_socket)
+        self.assertIsNone(self.proxybar2._zmq_push_socket)
+        self.assertIsNone(self.proxybar1._zmq_context)
+        self.assertIsNone(self.proxybar2._zmq_context)
+
+        # Before the first time the progress method in self.proxybar1 and
+        # self.proxybar2 is called their "_progress_func" variable points
+        # to the "_connect_and_update_progress" method
+        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
+        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
