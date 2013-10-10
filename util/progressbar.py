@@ -33,6 +33,13 @@ import sys
 import multiprocessing
 import time
 
+try:
+    import zmq
+except ImportError:
+    # We don't have a fallback for zmq, but only the ProgressbarZMQText and
+    # ProgressbarZMQProxy classes require it
+    pass
+
 __all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessText', 'ProgressbarZMQText', 'center_message']
 
 
@@ -681,7 +688,7 @@ class ProgressbarZMQText(object):
     def __init__(self,
                  progresschar='*',
                  message='',
-                 sleep_time=5,
+                 sleep_time=2,
                  filename=None):
         """
         Initializes the ProgressbarMultiProcessText object.
@@ -700,13 +707,6 @@ class ProgressbarZMQText(object):
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
         """
-        # We import zmq here inside the class to avoid the whole module not
-        # working if zmq is not available. That means that we will only get
-        # the import error when zmq is not available if we actually try to
-        # instantiate ProgressbarZMQText.
-        import zmq
-        self._zmq = zmq  # Store a reference to the zmq module for later use.
-
         # total_final_count will be updated each time the register_*
         # function is called
         self._total_final_count = 0
@@ -832,14 +832,14 @@ class ProgressbarZMQText(object):
         while count < self._total_final_count and self._running is True:
             try:
                 # Try to receive something in the socket.
-                message = self._zmq_pull_socket.recv_string(flags=self._zmq.NOBLOCK)
+                message = self._zmq_pull_socket.recv_string(flags=zmq.NOBLOCK)
                 # This will update self._client_data_list
                 self._parse_progress_message(message)
 
                 count = sum(self._client_data_list)
                 pbar.progress(count)
                 # and print the received value
-            except self._zmq.ZMQError:
+            except zmq.ZMQError:
                 # If we could not receive anything in the socket it will
                 # trown the ZMQError exception. In that case we sleep for
                 # "self._sleep_time" seconds.
@@ -858,7 +858,7 @@ class ProgressbarZMQText(object):
 
 
 # Used by the ProgressbarZMQText class
-class ProgressbarZMQProxy:
+class ProgressbarZMQProxy(object):
     """
     Proxy progressbar that behaves like a ProgressbarText object,
     but is actually updating a ProgressbarZMQText progressbar.
@@ -874,9 +874,6 @@ class ProgressbarZMQProxy:
         # working if zmq is not available. That means that we will only get
         # the import error when zmq is not available if we actually try to
         # instantiate ProgressbarZMQText.
-        import zmq
-        self._zmq = zmq
-
         self.client_id = client_id
         self.ip = ip
         self.port = port
@@ -904,6 +901,15 @@ class ProgressbarZMQProxy:
         """
         self._progress_func(self, count)
 
+    def __call__(self, count):
+        """
+        Updates the proxy progress bar.
+
+        This method is the same as the :meth:`progress`. It is define so
+        that a ProgressbarZMQProxy object can behave like a function.
+        """
+        self._progress_func(self, count)
+
     def _progress(self, count):
         """
 
@@ -914,7 +920,7 @@ class ProgressbarZMQProxy:
         # The mensage is a string composed of the client ID and the current
         # count
         message = "{0}:{1}".format(self.client_id, count)
-        self._zmq_push_socket.send_string(message, flags=self._zmq.NOBLOCK)
+        self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
 
     def _connect_and_update_progress(self, count):
         """
@@ -930,8 +936,8 @@ class ProgressbarZMQProxy:
         count : int
             The new amount of progress.
         """
-        self._zmq_context = self._zmq.Context()
-        self._zmq_push_socket = self._zmq_context.socket(self._zmq.PUSH)
+        self._zmq_context = zmq.Context()
+        self._zmq_push_socket = self._zmq_context.socket(zmq.PUSH)
         self._zmq_push_socket.connect("tcp://{0}:{1}".format(self.ip, self.port))
         self._progress_func = ProgressbarZMQProxy._progress
         self._progress_func(self, count)

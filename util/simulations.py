@@ -176,7 +176,7 @@ import copy
 import numpy as np
 
 from util.misc import pretty_time, calc_confidence_interval
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, ProgressbarZMQText, ProgressbarZMQProxy
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -418,6 +418,8 @@ class SimulationRunner(object):
                            # progressbar object when it is created in the
                            # _get_update_progress_function method
 
+        # xxxxxxxxxx update_progress_function_style xxxxxxxxxxxxxxxxxxxxxxx
+        # --- When the simulation is performed Serially -------------------
         # Sets the style of the used progressbar. The allowed values are
         # 'text1', 'text2', None, or a callable object.
         # - If it is 'text1' then the ProgressbarText class will be used.
@@ -427,6 +429,10 @@ class SimulationRunner(object):
         #   arguments, the rep_max and the message values, and return a
         #   function that receives a single argument (the custom
         #   parameters).
+        # --- When the simulation is performed in parallel ----------------
+        # - If it is None then no progressbar will be used
+        # - If it is not None then a socket progressbar will be used, which
+        #   employes the same style as 'text1'
         self.update_progress_function_style = 'text1'
 
         # Additional message printed in the progressbar. The message can
@@ -650,9 +656,12 @@ class SimulationRunner(object):
         # maximum number of allowed iterations is reached.
         return True
 
-    def _get_update_progress_function(self, current_params):
-        """Return a function that should be called to update the
+    def _get_serial_update_progress_function(self, current_params):
+        """
+        Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
+
+        This method is only called in the 'simulate' method.
 
         The returned function accepts a single argument, corresponding to
         the number of iterations executed so far.
@@ -674,6 +683,11 @@ class SimulationRunner(object):
             Function that accepts a single integer argument and can be
             called to update the progressbar.
 
+        Notes
+        -----
+        The equivalent of this method which is used in the
+        simulate_in_parallel method if the
+        _get_parallel_update_progress_function method.
         """
         # If the progressbar_message has any string replacements in the
         # form {some_param} where 'some_param' is a parameter in
@@ -708,6 +722,64 @@ class SimulationRunner(object):
         return update_progress_func
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def _get_parallel_update_progress_function(self):
+        """
+        Return a function that should be called to update the
+        progressbar for the simulation of the current parameters.
+
+        This method is only called in the 'simulate_in_parallel' method.
+
+        The returned function accepts a single argument, corresponding to
+        the number of iterations executed so far.
+
+        # The progressbar used to get the returned function depend on the
+        # value of the self.update_progress_function_style attribute.
+
+        Parameters
+        ----------
+        full_params : SimulationParameters object
+            The simulation parameters. This should be used to perform any
+            replacement in the self.progressbar_message string that will be
+            written in the progressbar.
+
+        Returns
+        -------
+        func : function that accepts a single integer argument
+            Function that accepts a single integer argument and can be
+            called to update the progressbar.
+
+        Notes
+        -----
+        While the _get_serial_update_progress_function method receives the
+        "current parameters" this _get_parallel_update_progress_function
+        receives the full parameters. The reason for this is that when the
+        simulation is performed in parallel multiple process (for different
+        parameters) will update the same progressbar. Therefore, it does
+        not make sense to perform replacements in the progressbar message
+        based on current parameters.
+        """
+        # By default, the returned function is a dummy function that does
+        # nothing
+        update_progress_func = lambda value: None
+
+        if self.update_progress_function_style is not None:
+            if self._pbar is None:
+                parameters = self.params.parameters
+                # If the progressbar_message has any string replacements in the
+                # form {some_param} where 'some_param' is a parameter in
+                # 'full_params' then it will be replaced by the value of
+                # 'some_param'.
+                message = self.progressbar_message.format(**parameters)
+                self._pbar = ProgressbarZMQText(progresschar='*', message=message)
+
+            # Note that this will be an object of the ProgressbarZMQProxy
+            # class, but it behaves like a function.
+            proxybar = self._pbar.register_function_and_get_proxy_progressbar(self.rep_max)
+            proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
+            # update_progress_func = self._pbar.register_function_and_get_proxy_progressbar(self.rep_max)
+
+        return proxybar_data
+
     @property
     def elapsed_time(self):
         """property: Get the simulation elapsed time. Do not set this
@@ -718,6 +790,16 @@ class SimulationRunner(object):
     def runned_reps(self):
         """Get method for the runned_reps property."""
         return self._runned_reps
+
+    # This method is called when the SimulationRunner class is pickled
+    def __getstate__(self):
+        # We will pickle everything as default, escept for the "_pbar"
+        # member variable that will not be pickled. The reason is that it
+        # may be a ProgressbarZMQText object, which cannot be pickled (uses
+        # ZMQ sockets).
+        state = dict(self.__dict__)
+        del state['_pbar']
+        return state
 
     def get_runned_reps_fix_params(self, fixed_params_dict=dict()):
         """
@@ -860,7 +942,7 @@ class SimulationRunner(object):
                 current_sim_results = self._run_simulation(current_params)
                 current_rep = 1
 
-            update_progress_func = self._get_update_progress_function(current_params)
+            update_progress_func = self._get_serial_update_progress_function(current_params)
             # Run more iterations until one of the stop criteria is reached
             while (self._keep_going(current_params, current_sim_results, current_rep)
                    and
@@ -1006,7 +1088,27 @@ class SimulationRunner(object):
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # ----- Function that will be called in each IPython engine -------
-        def simulate_for_current_params(obj, current_params):
+        def simulate_for_current_params(obj, current_params, proxybar_data=None):
+            """
+            Parameters
+            ----------
+            current_params : SimulationParameters object.
+                The current parameters
+            proxybar_data : list of 3 elements or None
+                The elements are the "client_id" (and int), the "ip" (a
+                string with an IP address) and the "port". This data should
+                be used to create a ProgressbarZMQProxy object that can be
+                used to update the progressbar (via a ZMQ socket)
+            """
+            # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
+            if proxybar_data is None:
+                update_progress_func = lambda value: None
+            else:
+                client_id, ip, port = proxybar_data
+                proxybar = ProgressbarZMQProxy(client_id, ip, port)
+                update_progress_func = proxybar.progress
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
             # Implement the _on_simulate_current_params_start method in a
             # subclass if you need to run code before the _run_simulation
             # iterations for each combination of simulation parameters.
@@ -1044,10 +1146,15 @@ class SimulationRunner(object):
                 current_sim_results.merge_all_results(
                     obj._run_simulation(current_params))
                 current_rep += 1
+                update_progress_func(current_rep)
 
                 # Save partial results each 500 iterations
                 if current_rep % 500 == 0 and obj.__results_base_filename is not None:
                     obj.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+
+            # If the while loop ended before rep_max repetitions (because
+            # _keep_going returned false) then set the progressbar to full.
+            update_progress_func(obj.rep_max)
 
             # Implement the _on_simulate_current_params_finish method in a
             # subclass if you need to run code after all _run_simulation
@@ -1071,10 +1178,16 @@ class SimulationRunner(object):
         # Loop through all the parameters combinations
         num_variations = self.params.get_num_unpacked_variations()
 
-        # # Create the proxy progressbars
-        # proxybar_list = []
-        # for i in range(num_variations):
-        #     proxybar_list.append(pbar.register_function_and_get_proxy_progressbar(self.rep_max))
+        # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
+        if self.update_progress_function_style is not None:
+            # Create the proxy progressbars
+            proxybar_data_list = []
+            for i in range(num_variations):
+                proxybar_data_list.append(self._get_parallel_update_progress_function())
+        else:  # self.update_progress_function_style is None
+            # Create the dummy update progress functions
+            proxybar_data_list = [None] * num_variations
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxx Perform the actual simulation in asynchronously parallel xxxx
         self._async_results = view.map(simulate_for_current_params,
@@ -1084,8 +1197,12 @@ class SimulationRunner(object):
                                        # ... and we also need to pass the
                                        # simulation parameters for each engine
                                        self.params.get_unpacked_params_list(),
+                                       proxybar_data_list,
                                        block=False)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        if self.update_progress_function_style is not None:
+            self._pbar.start_updater()
 
         if wait is True:
             self.wait_parallel_simulation()
