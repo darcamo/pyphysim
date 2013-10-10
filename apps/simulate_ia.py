@@ -18,7 +18,7 @@ sys.path.append(parent_dir)
 from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result
 from comm import modulators, channels
 from util.conversion import dB2Linear
-from util import misc
+from util import misc, progressbar
 from ia import ia
 import numpy as np
 from pprint import pprint
@@ -299,7 +299,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
                                     ia.AlternatingMinIASolver,
                                     config_filename,
                                     spec)
-
+        #self.update_progress_function_style = None
         # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
         self.progressbar_message = "Alternating Min. ({0} mod.) - SNR: {{SNR}}".format(
             self.modulator.name)
@@ -531,6 +531,11 @@ def simulate_general(runner, results_filename):
 
     if run_in_parallel is True:
         print("Simulation will be run in Parallel")
+        # Remove the " - SNR: {SNR}" string in the progressbar message,
+        # since when the simulation is performed in parallel we get a
+        # single progressbar for all the simulation.
+        runner.progressbar_message = runner.progressbar_message.replace(
+            " - SNR: {SNR}","")
         runner.simulate_in_parallel(lview, results_filename=results_filename)
     else:
         print("Simulation will be run serially")
@@ -669,7 +674,7 @@ def simulate_mmse():
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Performs the simulation in parallel
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
@@ -688,6 +693,14 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxx Create the SimulationRunner objects xxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Since We will use the same progressbar for all simulations, we create
+    # the progressbar here and set the _pbar member variable of each
+    # runner.
+    pbar = progressbar.ProgressbarZMQText(
+        progresschar='*',
+        #message="Simulating in Parallel"
+    )
+
     # ---------- Creates the Closed Form Runner ---------------------------
     if "Closed Form" in algorithms_to_simulate:
         print "Simulating Closed Form algorithm"
@@ -698,6 +711,7 @@ if __name__ == '__main__1':
         # simulations.
         closed_form_runner.params.set_unpack_parameter('max_iterations', False)
         pprint(closed_form_runner.params.parameters)
+        closed_form_runner._pbar = pbar
         print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
 
@@ -706,6 +720,7 @@ if __name__ == '__main__1':
         print "Simulating Alternating Minimizations algorithm"
         alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
         pprint(alt_min_runner.params.parameters)
+        alt_min_runner._pbar = pbar
         print("IA Solver: {0}".format(alt_min_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
 
@@ -714,6 +729,7 @@ if __name__ == '__main__1':
         print "Simulating Max SINR algorithm"
         max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
         pprint(max_sinrn_runner.params.parameters)
+        max_sinrn_runner._pbar = pbar
         print("IA Solver: {0}".format(max_sinrn_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
 
@@ -722,6 +738,7 @@ if __name__ == '__main__1':
         print "Simulating MMSE algorithm"
         mmse_runner = MMSESimulationRunner('ia_config_file.txt')
         pprint(mmse_runner.params.parameters)
+        mmse_runner._pbar = pbar
         print("IA Solver: {0}".format(mmse_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -733,8 +750,8 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     print "Trying to get an IPython load_balanced_view"
     from IPython.parallel import Client
-    cl = Client(profile="ssh")
-    # cl = Client(profile="default")
+    # cl = Client(profile="ssh")
+    cl = Client(profile="default")
     # We create a direct view to run coe in all engines
     dview = cl.direct_view()
     dview.execute('%reset')  # Reset the engines so that we don't have
@@ -757,34 +774,38 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # ---------- Creates the Closed Form Runner ---------------------------
     if "Closed Form" in algorithms_to_simulate:
+        closed_form_runner._pbar._message = "Simulating Closed Form in parallel"
         closed_form_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
+            results_filename='ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Alt. Min. Runner -----------------------------
     if "Alt Min" in algorithms_to_simulate:
+        alt_min_runner._pbar._message = "Simulating Alt. Min. in parallel"
         alt_min_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
+            results_filename='ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Max SINR Runner ------------------------------
     if "Max SINR" in algorithms_to_simulate:
+        max_sinrn_runner._pbar._message = "Simulating Max SINR in parallel"
         max_sinrn_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
+            results_filename='ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the MMSE Runner ----------------------------------
     if "MMSE" in algorithms_to_simulate:
+        mmse_runner._pbar._message = "Simulating MMSE in parallel"
         mmse_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_DARLAN')
+            results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
     # ---------------------------------------------------------------------
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -826,13 +847,13 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from time import time
     from util.misc import pretty_time
     tic = time()
 
-    # print "Simulating Closed Form algorithm"
-    # closed_form_results, closed_form_filename = simulate_closed_form()
+    print "Simulating Closed Form algorithm"
+    closed_form_results, closed_form_filename = simulate_closed_form()
 
     print "Simulating Alternating Min. algorithm"
     alt_min_results, alt_min_filename = simulate_alternating()
@@ -864,8 +885,8 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_{max_iterations}_IA_Iter'.format(**params.parameters)
-    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
+    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]'.format(**params.parameters)
+    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -890,28 +911,50 @@ if __name__ == '__main__1':
     # SNR_min_leakage = np.array(min_leakage_results.params['SNR'])
     SNR_mmse = np.array(mmse_results.params['SNR'])
 
-    ber_alt_min = alt_min_results.get_result_values_list('ber')
-    ber_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('ber', P=95)
+    max_iterations = 5
+
+    ber_alt_min = alt_min_results.get_result_values_list(
+        'ber',
+        fixed_params={'max_iterations': max_iterations})
+    ber_CF_alt_min = alt_min_results.get_result_values_confidence_intervals(
+        'ber',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     ber_errors_alt_min = np.abs([i[1] - i[0] for i in ber_CF_alt_min])
 
-    ber_closed_form = closed_form_results.get_result_values_list('ber')
-    ber_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_closed_form = closed_form_results.get_result_values_list(
+        'ber',
+        fixed_params={'max_iterations': max_iterations})
+    ber_CF_closed_form = closed_form_results.get_result_values_confidence_intervals(
+        'ber',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     ber_errors_closed_form = np.abs([i[1] - i[0] for i in ber_CF_closed_form])
 
     # ber_closed_form_first = closed_form_first_results.get_result_values_list('ber')
     # ber_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('ber', P=95)
     # ber_errors_closed_form_first = np.abs([i[1] - i[0] for i in ber_CF_closed_form_first])
 
-    ber_max_sinr = max_sinrn_results.get_result_values_list('ber')
-    ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_max_sinr = max_sinrn_results.get_result_values_list(
+        'ber',
+        fixed_params={'max_iterations': max_iterations})
+    ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals(
+        'ber',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     ber_errors_max_sinr = np.abs([i[1] - i[0] for i in ber_CF_max_sinr])
 
     # ber_min_leakage = min_leakage_results.get_result_values_list('ber')
     # ber_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('ber', P=95)
     # ber_errors_min_leakage = np.abs([i[1] - i[0] for i in ber_CF_min_leakage])
 
-    ber_mmse = mmse_results.get_result_values_list('ber')
-    ber_CF_mmse = mmse_results.get_result_values_confidence_intervals('ber', P=95)
+    ber_mmse = mmse_results.get_result_values_list(
+        'ber',
+        fixed_params={'max_iterations': max_iterations})
+    ber_CF_mmse = mmse_results.get_result_values_confidence_intervals(
+        'ber',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     ber_errors_mmse = np.abs([i[1] - i[0] for i in ber_CF_mmse])
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -923,7 +966,7 @@ if __name__ == '__main__1':
 
     plt.xlabel('SNR')
     plt.ylabel('BER')
-    title = 'BER for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
+    title = 'BER for Different Algorithms ({max_iterations} Max Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'.replace("{max_iterations}", str(max_iterations))
     plt.title(title.format(**alt_min_results.params.parameters))
 
     ax.set_yscale('log')
@@ -934,24 +977,44 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot Sum Capacity (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    sum_capacity_alt_min = alt_min_results.get_result_values_list('sum_capacity')
-    sum_capacity_CF_alt_min = alt_min_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_alt_min = alt_min_results.get_result_values_list(
+        'sum_capacity',
+        fixed_params={'max_iterations': max_iterations})
+    sum_capacity_CF_alt_min = alt_min_results.get_result_values_confidence_intervals(
+        'sum_capacity',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     sum_capacity_errors_alt_min = np.abs([i[1] - i[0] for i in sum_capacity_CF_alt_min])
 
-    sum_capacity_closed_form = closed_form_results.get_result_values_list('sum_capacity')
-    sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_closed_form = closed_form_results.get_result_values_list(
+        'sum_capacity',
+        fixed_params={'max_iterations': max_iterations})
+    sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals(
+        'sum_capacity',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     sum_capacity_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form])
 
-    sum_capacity_max_sinr = max_sinrn_results.get_result_values_list('sum_capacity')
-    sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_max_sinr = max_sinrn_results.get_result_values_list(
+        'sum_capacity',
+        fixed_params={'max_iterations': max_iterations})
+    sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals(
+        'sum_capacity',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     sum_capacity_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_CF_max_sinr])
 
     # sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
     # sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
     # sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
 
-    sum_capacity_mmse = mmse_results.get_result_values_list('sum_capacity')
-    sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals('sum_capacity', P=95)
+    sum_capacity_mmse = mmse_results.get_result_values_list(
+        'sum_capacity',
+        fixed_params={'max_iterations': max_iterations})
+    sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals(
+        'sum_capacity',
+        P=95,
+        fixed_params={'max_iterations': max_iterations})
     sum_capacity_errors_mmse = np.abs([i[1] - i[0] for i in sum_capacity_CF_mmse])
 
     fig2, ax2 = plt.subplots(nrows=1, ncols=1)
@@ -965,7 +1028,7 @@ if __name__ == '__main__1':
 
     plt.xlabel('SNR')
     plt.ylabel('Sum Capacity')
-    title = 'Sum Capacity for Different Algorithms ({max_iterations} Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'
+    title = 'Sum Capacity for Different Algorithms ({max_iterations} Max Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'.replace("{max_iterations}", str(max_iterations))
     plt.title(title.format(**alt_min_results.params.parameters))
 
     leg2 = ax2.legend(fancybox=True, shadow=True, loc=2)

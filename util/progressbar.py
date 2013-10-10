@@ -570,7 +570,7 @@ class ProgressbarMultiProcessText(object):
         return ProgressbarMultiProcessProxy(*self._register_function(total_count))
 
     # This method will be run in a different process. Because of this the
-    # coverage rogram does not see that this method in run in the test code
+    # coverage program does not see that this method in run in the test code
     # even though we know it is run (otherwise no output would
     # appear). Therefore, we put the "pragma: no cover" line in it
     def _update_progress(self, filename=None):  # pragma: no cover
@@ -844,6 +844,8 @@ class ProgressbarZMQText(object):
                 # trown the ZMQError exception. In that case we sleep for
                 # "self._sleep_time" seconds.
                 sleep(self._sleep_time)
+
+        self._running = False
 
     def stop_updater(self, timeout=None):
         """Stop the process updating the progressbar.
