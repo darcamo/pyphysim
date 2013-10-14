@@ -598,7 +598,7 @@ def simulate_alternating():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -614,7 +614,7 @@ def simulate_closed_form():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -630,7 +630,7 @@ def simulate_min_leakage():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_min_leakage_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_min_leakage_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -646,7 +646,7 @@ def simulate_max_sinr():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -662,7 +662,7 @@ def simulate_mmse():
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
         runner,
-        'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
+        'ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -778,7 +778,8 @@ if __name__ == '__main__':
         closed_form_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
+            results_filename='ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Alt. Min. Runner -----------------------------
@@ -787,7 +788,7 @@ if __name__ == '__main__':
         alt_min_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
+            results_filename='ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Max SINR Runner ------------------------------
@@ -796,7 +797,7 @@ if __name__ == '__main__':
         max_sinrn_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
+            results_filename='ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # ---------------------------------------------------------------------
 
     # ---------- Creates the MMSE Runner ----------------------------------
@@ -805,7 +806,7 @@ if __name__ == '__main__':
         mmse_runner.simulate_in_parallel(
             lview,
             wait=False,
-            results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]')
+            results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
     # ---------------------------------------------------------------------
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -855,8 +856,8 @@ if __name__ == '__main__1':
     print "Simulating Closed Form algorithm"
     closed_form_results, closed_form_filename = simulate_closed_form()
 
-    print "Simulating Alternating Min. algorithm"
-    alt_min_results, alt_min_filename = simulate_alternating()
+    # print "Simulating Alternating Min. algorithm"
+    # alt_min_results, alt_min_filename = simulate_alternating()
 
     # print "Simulating Max SINR algorithm"
     # max_sinrn_results, max_sinrn_filename = simulate_max_sinr()

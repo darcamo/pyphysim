@@ -720,6 +720,84 @@ def autocor(X):
                                         # for lag 0 (greatest one) is equal
                                         # to one.
     return R
+
+
+def get_range_representation(array):
+    """
+    Get the "range representation" of a numpy array consisting of a
+    arithmetic progression.
+
+    Suppose you have the array
+    n = [5, 10, 15, 20, 25, 30, 35, 40]
+    This array is an arithmetic progression with step equal to 5 and can be
+    represented as "5:5:40", which is exactly what get_range_representation
+    will return for such array.
+
+    Parameters
+    ----------
+    array : 1D numpy array
+
+    Returns
+    -------
+    expr : str
+        A string expression representing `array`.
+
+    """
+    step = array[1] - array[0]
+    if np.allclose(array[1:] - step, array[0:-1]):
+        # array is an arithmetic progression
+        return "{0}:{1}:{2}".format(array[0], step, array[-1])
+    else:
+        # array is not an arithmetic progression
+        return None
+
+
+def replace_dict_values(name, dictionary):
+    """
+    Perform the replacements in `name` with the value of dictionary[name].
+
+    This function is very similar to what you can get in regular python
+    with the code
+    >> name.format(**dictionary)
+
+    The only diference is that some small changes are performed in the
+    dictionary prior to this. More specifically, modifications such as
+    changind a numpy array to a more compact representation (when
+    possible).
+
+    Parameters
+    ----------
+    name : str
+        The name fo be formated.
+    dictionary : a python dictionary
+        The dictionary with the values to be replaced in `name`.
+
+    Returns
+    -------
+    new_name : str
+        The value of `name` after the replacements in `dictionary`.
+
+    Examples
+    --------
+    >>> name = "something {value1} - {value2} something else {value3}"
+    >>> dictionary = {'value1':'bla bla', 'value2':np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
+    >>> replace_dict_values(name, dictionary)
+    'something bla bla - [5_(5)_30] something else 76'
+
+    """
+    new_dict = {}
+    for n, v in dictionary.items():
+        if isinstance(v, np.ndarray):
+            new_v = get_range_representation(v)
+            if new_v is not None:
+                v = new_v
+                # This will change something like '10:5:30' to '[10_(5)_30]'
+                v = '[{0}_({1})_{2}]'.format(*new_v.split(':'))
+            else:
+                v = np.array2string(v, separator=',')
+        new_dict[n] = v
+
+    return name.format(**new_dict)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -175,7 +175,7 @@ import itertools
 import copy
 import numpy as np
 
-from util.misc import pretty_time, calc_confidence_interval
+from util.misc import pretty_time, calc_confidence_interval, replace_dict_values
 from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, ProgressbarZMQText, ProgressbarZMQProxy
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
@@ -489,8 +489,8 @@ class SimulationRunner(object):
             stored. See the notes for more information.
         """
         if results_filename is not None:
-            self.__results_base_filename = results_filename.format(
-                **self.params.parameters)
+            self.__results_base_filename = replace_dict_values(results_filename,
+                                                               self.params.parameters)
         else:
             self.__results_base_filename = None
 
