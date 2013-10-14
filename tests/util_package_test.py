@@ -1489,6 +1489,41 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(expected_new_A, new_A)
 
+    def test_get_range_representation(self):
+        a = np.array([5, 10, 15, 20, 25, 30, 35, 40])
+        expr_a = misc.get_range_representation(a)
+        expected_expr_a = "5:5:40"
+        self.assertEqual(expr_a, expected_expr_a)
+
+        b = np.array([2.3, 2.6, 2.9, 3.2, 3.5, 3.8, 4.1, 4.4, 4.7])
+        expr_b = misc.get_range_representation(b)
+        expected_expr_b = "2.3:0.3:4.7"
+        self.assertEqual(expr_b, expected_expr_b)
+
+        c = np.array([10.2, 9., 7.8, 6.6, 5.4, 4.2])
+        expr_c = misc.get_range_representation(c)
+        expected_expr_c = "10.2:-1.2:4.2"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        # This array is not an arithmetic progression and
+        # get_range_representation should return None
+        d = np.array([1, 3, 9, 4])
+        self.assertIsNone(misc.get_range_representation(d))
+
+    def test_replace_dict_values(self):
+        name = "something {value1} - {value2} something else {value3}"
+        dictionary = {'value1': 'bla bla', 'value2': np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
+        new_name = misc.replace_dict_values(name, dictionary)
+        expected_new_name = 'something bla bla - [5_(5)_30] something else 76'
+        self.assertEqual(new_name, expected_new_name)
+
+        # Value2 is not an arithmetic progression
+        dictionary2 = {'value1': 'bla bla', 'value2': np.array([5, 10, 18, 20, 25, 30]), 'value3': 76}
+        new_name2 = misc.replace_dict_values(name, dictionary2)
+        expected_new_name2 = 'something bla bla - [ 5,10,18,20,25,30] something else 76'
+        self.assertEqual(new_name2, expected_new_name2)
+
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
