@@ -609,6 +609,7 @@ def simulate_closed_form():
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = ClosedFormSimulationRunner('ia_config_file.txt')
+    runner.params.set_unpack_parameter('max_iterations', False)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
