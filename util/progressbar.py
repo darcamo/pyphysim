@@ -455,7 +455,7 @@ class ProgressbarDistributedBase(object):
         # process so that we don't get errors if the program closes before
         # the process updating the progressbar ends (because the user
         # forgot to call the stop_updater method).
-        self._update_process = multiprocessing.Process(target=self._update_progress, args=[self._filename])
+        self._update_process = multiprocessing.Process(name="ProgressBarUpdater", target=self._update_progress, args=[self._filename])
         self._update_process.daemon = True
 
         # The event will be set when the process updating the progressbar
@@ -754,6 +754,18 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
         ProgressbarDistributedBase.__init__(self,
                                             progresschar, message, sleep_time, filename)
 
+    def _update_client_data_list(self):
+        """
+        This method process the communication between the client and the
+        server.
+        """
+        # Note that since the proxybar (ProgressbarMultiProcessProxy class)
+        # for multiprocessing will directly modify the
+        # self._client_data_list we don't need to implement a
+        # _update_client_data_list method here in the
+        # ProgressbarMultiProcessText class.
+        pass
+
     def register_client_and_get_proxy_progressbar(self, total_count):
         """
         Register a new "client" for the progressbar and returns a new proxy
@@ -812,6 +824,181 @@ class ProgressbarMultiProcessProxy(ProgressbarDistributedProxyBase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarZMQText xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ProgressbarZMQText2(ProgressbarDistributedBase):
+    """
+    Distributed "server" progressbar using ZMQ sockets.
+
+    In order to track the progress of distributed computations two classes
+    are required, one that acts as a central point and is responsible to
+    actually show the progress (the server), and other class that acts as a
+    proxy (the client) and is responsible to sending the current progress
+    to the server. There will be one object of the "server class" and one
+    or more objects of the "client class", each one tracking the progress
+    of one of the distributed computations.
+
+    This class acts like the server. It creates a ZMQ socket which expects
+    (string) messages in the form "client_id:current_progress", where the
+    client_id is the ID of one client progressbar previously registered
+    with the register_client_and_get_proxy_progressbar method while the
+    current_progress is a "number" with the current progress of that
+    client.
+
+    Note that the client proxybar for this class is implemented in the
+    ProgressbarZMQProxy class.
+
+    Parameters
+    ----------
+    progresschar : str
+        Character used in the progressbar.
+    message : str
+        Message writen in the progressbar.
+    sleep_time : float
+        Time between progressbar updates (in seconds).
+    filename : str
+        If filename is None (default) then progress will be output to
+        sys.stdout. If it is not None then the progress will be output to a
+        file with name `filename`. This is usually useful for debugging and
+        testing purposes.
+    ip : string
+        An string representing the address of the server socket.
+        Ex: '192.168.0.117', 'localhost', etc.
+    port : int
+        The port to bind the socket.
+    """
+
+    def __init__(self,
+                 progresschar='*',
+                 message='',
+                 sleep_time=1,
+                 filename=None,
+                 ip='localhost',
+                 port=7396):
+        """
+        Initializes the ProgressbarDistributedBase object.
+
+        Parameters
+        ----------
+        progresschar : str
+            Character used in the progressbar.
+        message : str
+            Message writen in the progressbar.
+        sleep_time : float
+            Time between progressbar updates (in seconds).
+        filename : str
+            If filename is None (default) then progress will be output to
+            sys.stdout. If it is not None then the progress will be output
+            to a file with name `filename`. This is usually useful for
+            debugging and testing purposes.
+        ip : string
+            An string representing the address of the server socket.
+            Ex: '192.168.0.117', 'localhost', etc.
+        port : int
+            The port to bind the socket.
+        """
+        ProgressbarDistributedBase.__init__(self,
+                                            progresschar, message, sleep_time, filename)
+
+        # Create a Multiprocessing namespace
+        self._ns = self._manager.Namespace()
+
+        # We store the IP and port of the socket in the Namespace, since
+        # the socket will be created in a different process
+        self._ns.ip = ip
+        self._ns.port = port
+
+    def _get_ip(self):
+        """Get method for the ip property."""
+        return self._ns.ip
+    ip = property(_get_ip)
+
+    def _get_port(self):
+        """Get method for the port property."""
+        return self._ns.port
+    port = property(_get_port)
+
+    def register_client_and_get_proxy_progressbar(self, total_count):
+        client_id = self._register_client(total_count)
+        proxybar = ProgressbarZMQProxy(client_id, self.ip, self.port)
+        return proxybar
+
+    def _update_progress(self, filename=None):
+        """
+        Collects the progress from each registered proxy progressbar and
+        updates the actual visible progressbar.
+
+        Parameters
+        ----------
+        filename : str
+            Name of a file where the data will be written to. If this is
+            None then all progress will be printed in the standard output
+            (defaut)
+
+        Notes
+        -----
+        We re-implement it here only to create the ZMQ socket. After that we
+        call the base class implementation of _update_progress method. Note
+        that the _update_progress method in the base class calls the
+        _update_client_data_list and we indeed re-implement this method in
+        this class and use the socket created here in that implementation.
+        """
+        # First we create the context and the socket. Then we bind the
+        # socket to the respective ip:port.
+        self._zmq_context = zmq.Context()
+        self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
+        self._zmq_pull_socket.bind("tcp://*:%s" % self.port)
+        ProgressbarDistributedBase._update_progress(self, filename)
+
+    def _update_client_data_list(self):
+        """
+        This method process the communication between the client and the
+        server.
+
+        This method will read the received messages in the socket which
+        were sent by the clients (ProgressbarZMQProxy objects) and update
+        self._client_data_list variable accordingly. The messages are in
+        the form "client_id:current_progress", which is parsed by the
+        _parse_progress_message method.
+
+        Notes
+        -----
+        This method is called inside a loop in the _update_progress method.
+        """
+
+        pending_mensages = True
+        while pending_mensages is True and self.running.is_set():
+            try:
+                # Try to read a message. If this fail we will get a
+                # zmq.ZMQError exception and then pending_mensages will be
+                # set to False so that we exit the while loop.
+                message = self._zmq_pull_socket.recv_string(flags=zmq.NOBLOCK)
+
+                # If we are here that means that a new message was
+                # successfully received from the client.  Let's call the
+                # _parse_progress_message method to parse the message and
+                # update the self._client_data_list member variable.
+                self._parse_progress_message(message)
+            except zmq.ZMQError:
+                pending_mensages = False
+
+    def _parse_progress_message(self, message):
+        """
+        Parse the message sent from the client proxy progressbars.
+
+        The messages sent from the proxy progressbars are in the form
+        'client_id:current_count'. We need to set the element of index
+        "client_id" in self._client_data_list to the value of
+        "current_count". This method will simply parse the message and
+        perform this operation.
+
+        Parameters
+        ----------
+        message : str
+            A string in the form 'client_id:current_count'.
+        """
+        client_id, current_count = map(int, message.split(":"))
+        self._client_data_list[client_id] = current_count
+
+
 class ProgressbarZMQText(object):
     """Progressbar using ZMQ sockets.
     """
@@ -855,16 +1042,20 @@ class ProgressbarZMQText(object):
         # here.
         self._client_data_list = []
 
-        self._running = False
+        self.running = False
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Server information
         self._ip = 'localhost'
-        self._port = 6100
+        self._port = None
 
         # Bind the server socket
         self._zmq_context = zmq.Context()
         self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
-        self._zmq_pull_socket.bind("tcp://*:%s" % self._port)
+        if self._port is None:
+            self._port = self._zmq_pull_socket.bind_to_random_port("tcp://*")
+        else:
+            self._zmq_pull_socket.bind("tcp://*:%s" % self._port)
 
     def _register_client(self, total_count):
         """
@@ -957,9 +1148,9 @@ class ProgressbarZMQText(object):
                                self._message,
                                output=output)
 
-        self._running = True
+        self.running = True
         count = 0
-        while count < self._total_final_count and self._running is True:
+        while count < self._total_final_count and self.running is True:
             try:
                 # Try to receive something in the socket.
                 message = self._zmq_pull_socket.recv_string(flags=zmq.NOBLOCK)
@@ -975,7 +1166,7 @@ class ProgressbarZMQText(object):
                 # "self._sleep_time" seconds.
                 sleep(self._sleep_time)
 
-        self._running = False
+        self.running = False
 
     def stop_updater(self, timeout=None):
         """Stop the process updating the progressbar.
