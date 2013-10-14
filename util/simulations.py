@@ -1138,18 +1138,34 @@ class SimulationRunner(object):
             # parameters.
             try:
                 # If loading partial results succeeds, then we will have
-                # partial results and the current_rep will also be set to
-                # the value or run repetitions in the loaded partial
-                # results. This means that the "while" statement after this
-                # try/except block will not run.
+                # partial results. If it fails because the file does not
+                # exist, this will thrown a IOError exception and we will
+                # execute the except block instead.
                 current_sim_results = SimulationResults.load_from_file(
                     partial_results_filename)
+
+                # Note that at this point we have successfully loaded the
+                # partial results from the file. However, we still need to
+                # make sure it matches our current parameters. It it does
+                # not match the user likely used a wrong name and we raise
+                # an exception to stop the simulation.
+                #
+                # NOTE: If the type of this exception is changed in the
+                # future make sure it is not caught in the except block.
+                if not current_params == current_sim_results.params:
+                    raise ValueError("Partial results loaded from file does not match current parameters. \nfile: {0}".format(partial_results_filename))
+
+                # The current_rep will be set to the value or run
+                # repetitions in the loaded partial results. This means
+                # that the "while" statement after this try/except block
+                # will have a head start and if current_rep is greater than
+                # or equal to rep_max the while loop won't run at all.
                 current_rep = current_sim_results.current_rep
 
             # If loading partial results failed then we will run the FIRST
             # repetition here and the "while" statement after this
             # try/except block will run as usual.
-            except Exception:
+            except IOError:
                 # Perform the first iteration of _run_simulation
                 current_sim_results = obj._run_simulation(current_params)
                 current_rep = 1
@@ -1577,6 +1593,9 @@ class SimulationParameters(object):
 
         # If we didn't return until we reach this point then the objects are equal
         return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def get_num_unpacked_variations(self):
         """Get the number of variations when the parameters are unpacked.
