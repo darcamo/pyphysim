@@ -38,15 +38,18 @@ class _DummyRunner(simulations.SimulationRunner):
         # Now we add a dummy parameter to our runner object
         self.params.add('SNR', np.array([0., 5., 10., 15., 20.]))
         self.params.add('bias', 1.3)
+        self.params.add('extra', np.array([2.2, 4.1]))
         self.params.set_unpack_parameter('SNR')
+        self.params.set_unpack_parameter('extra')
 
     @staticmethod
     def _run_simulation(current_params):
         SNR = current_params['SNR']
         bias = current_params['bias']
+        extra = current_params['extra']
         sim_results = SimulationResults()
 
-        value = 1.2 * SNR + bias
+        value = 1.2 * SNR + bias + extra
         # The correct result will be SNR * 1.2
         sim_results.add_new_result('lala', Result.RATIOTYPE, value, 1)
         return sim_results
@@ -463,12 +466,14 @@ class SimulationParametersTestCase(unittest.TestCase):
             set(self.sim_params.unpacked_parameters),
             set(['third']))
 
-    def test_equality(self):
+    def test_equal_and_not_equal_operators(self):
         other = SimulationParameters()
         self.assertFalse(self.sim_params == other)
+        self.assertTrue(self.sim_params != other)
         other.add('first', 10)
         other.add('second', 20)
         self.assertTrue(self.sim_params == other)
+        self.assertFalse(self.sim_params != other)
 
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.assertFalse(self.sim_params == other)
@@ -483,6 +488,12 @@ class SimulationParametersTestCase(unittest.TestCase):
         other.parameters['third'][2] = 10
         self.assertFalse(self.sim_params == other)
         self.sim_params.parameters['third'][2] = 10
+        self.assertTrue(self.sim_params == other)
+
+        # The rep_max parameter is not considering when testing if two
+        # SimulationParameters objects are equal or not.
+        other.add('rep_max', 30)
+        self.sim_params.add('rep_max', 40)
         self.assertTrue(self.sim_params == other)
 
     def test_get_unpacked_params_list(self):
@@ -1235,10 +1246,15 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner.simulate()  # The results will be the SNR values
                                 # multiplied by 1.2. plus the bias
                                 # parameter
-        lala_results = [r.get_result() for r in dummyrunner.results['lala']]
-        expected_lala_results = [1.3, 7.3, 13.3, 19.3, 25.3]
+        results_extra_1 = dummyrunner.results.get_result_values_list(
+            'lala', {'extra':2.2})
+        expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
+        np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
 
-        self.assertAlmostEqual(lala_results, expected_lala_results)
+        results_extra_2 = dummyrunner.results.get_result_values_list(
+            'lala', {'extra':4.1})
+        expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
+        np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
 
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
@@ -1272,10 +1288,15 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         runner.simulate_in_parallel(lview)
 
-        lala_results = [r.get_result() for r in runner.results['lala']]
-        expected_lala_results = [1.3, 7.3, 13.3, 19.3, 25.3]
+        results_extra_1 = runner.results.get_result_values_list(
+            'lala', {'extra':2.2})
+        expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
+        np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
 
-        self.assertAlmostEqual(lala_results, expected_lala_results)
+        results_extra_2 = runner.results.get_result_values_list(
+            'lala', {'extra':4.1})
+        expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
+        np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1431,13 +1452,13 @@ class MiscFunctionsTestCase(unittest.TestCase):
             8)
 
     def test_calc_unorm_autocorr(self):
-        x = np.array([4, 2, 1, 3, 7, 3, 8])
+        x = np.array([4., 2, 1, 3, 7, 3, 8])
         unorm_autocor = misc.calc_unorm_autocorr(x)
         expected_unorm_autocor = np.array([152, 79, 82, 53, 42, 28, 32])
         np.testing.assert_array_equal(unorm_autocor, expected_unorm_autocor)
 
     def test_calc_autocorr(self):
-        x = np.array([4, 2, 1, 3, 7, 3, 8])
+        x = np.array([4., 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
         expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)

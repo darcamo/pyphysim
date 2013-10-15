@@ -176,7 +176,7 @@ import copy
 import numpy as np
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, ProgressbarZMQText, ProgressbarZMQProxy
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, ProgressbarZMQText, ProgressbarZMQText2, ProgressbarZMQProxy
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -758,10 +758,6 @@ class SimulationRunner(object):
         not make sense to perform replacements in the progressbar message
         based on current parameters.
         """
-        # By default, the returned function is a dummy function that does
-        # nothing
-        update_progress_func = lambda value: None
-
         if self.update_progress_function_style is not None:
             if self._pbar is None:
                 parameters = self.params.parameters
@@ -770,13 +766,12 @@ class SimulationRunner(object):
                 # 'full_params' then it will be replaced by the value of
                 # 'some_param'.
                 message = self.progressbar_message.format(**parameters)
-                self._pbar = ProgressbarZMQText(progresschar='*', message=message)
+                self._pbar = ProgressbarZMQText2(progresschar='*', message=message)
 
             # Note that this will be an object of the ProgressbarZMQProxy
             # class, but it behaves like a function.
-            proxybar = self._pbar.register_function_and_get_proxy_progressbar(self.rep_max)
+            proxybar = self._pbar.register_client_and_get_proxy_progressbar(self.rep_max)
             proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
-            # update_progress_func = self._pbar.register_function_and_get_proxy_progressbar(self.rep_max)
 
         return proxybar_data
 
@@ -916,14 +911,19 @@ class SimulationRunner(object):
             # iterations for each combination of simulation parameters.
             self._on_simulate_current_params_start(current_params)
 
-            # Name of the file where the partial results will be saved
-            if self.__results_base_filename is not None:
-                partial_results_filename = self._get_unpack_result_filename(
-                    current_params)
-
             # First we try to Load the partial results for the current
             # parameters.
             try:
+                # Name of the file where the partial results will be saved
+                if self.__results_base_filename is not None:
+                    partial_results_filename = self._get_unpack_result_filename(
+                        current_params)
+                else:
+                    # If __results_base_filename is None there is also no
+                    # partial results to load. Therefore, lets raise an
+                    # IOError here to go to the except catching
+                    raise IOError()
+
                 # If loading partial results succeeds, then we will have
                 # partial results. If it fails because the file does not
                 # exist, this will thrown a IOError exception and we will
@@ -1129,14 +1129,19 @@ class SimulationRunner(object):
             # iterations for each combination of simulation parameters.
             obj._on_simulate_current_params_start(current_params)
 
-            # Name of the file where the partial results will be saved
-            if obj.__results_base_filename is not None:
-                partial_results_filename = obj._get_unpack_result_filename(
-                    current_params)
-
             # First we try to Load the partial results for the current
             # parameters.
             try:
+                # Name of the file where the partial results will be saved
+                if obj.__results_base_filename is not None:
+                    partial_results_filename = obj._get_unpack_result_filename(
+                        current_params)
+                else:
+                    # If __results_base_filename is None there is also no
+                    # partial results to load. Therefore, lets raise an
+                    # IOError here to go to the except catching
+                    raise IOError()
+
                 # If loading partial results succeeds, then we will have
                 # partial results. If it fails because the file does not
                 # exist, this will thrown a IOError exception and we will
@@ -1578,6 +1583,39 @@ class SimulationParameters(object):
         return iter(self.parameters)
 
     def __eq__(self, other):
+        """
+        Compare two SimulationParameters objects.
+
+        Two simulation parameters objects are considered equal if all
+        parameters stored in both objects are the same, except for a
+        parameter object called 'rep_max'.
+
+        Parameters
+        ----------
+        other: SimulationParameters
+            The other SimulationParameters to be compared with self.
+
+        Returns
+        -------
+        True if both objects are considered to be equal, returns False
+        otherwise.
+
+        Notes
+        -----
+        The main usage for comparing if two SimulationParameters objects
+        are equal is when loading partial results in the SimulationRunner
+        class, where we need to assure we are not combining results for
+        different simulation parameters. The SimulationRunner class must
+        check if the loaded results parameters match the current parameters
+        to be simulated and thus require the "==" operator (or the "!="
+        operator) to be implemented.
+
+        However, it makes sense to ignore a parameter called 'rep_max',
+        since it is not a parameter related to a 'scenario'. It is used in
+        the SimulationRunner class to indicate the maximum number of
+        iterations to perform and there is no problem when its value is
+        different.
+        """
         if self is other:
             return True
 
@@ -1588,8 +1626,12 @@ class SimulationParameters(object):
             return False
 
         for key in self.parameters.keys():
-            if np.any(self.parameters[key] != other.parameters[key]):
-                return False
+            # We care about all keys, except for a key called 'rep_max'
+            # whose value does not matter when comparing if two
+            # SimulationResults objects are equal or not.
+            if key != "rep_max":
+                if np.any(self.parameters[key] != other.parameters[key]):
+                    return False
 
         # If we didn't return until we reach this point then the objects are equal
         return True

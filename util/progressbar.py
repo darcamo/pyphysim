@@ -35,7 +35,7 @@ import time
 
 try:
     import zmq
-except ImportError:
+except ImportError:  # pragma: no cover
     # We don't have a fallback for zmq, but only the ProgressbarZMQText and
     # ProgressbarZMQProxy classes require it
     pass
@@ -479,7 +479,7 @@ class ProgressbarDistributedBase(object):
         progressbar.
         """
         # Implement this method in a derived class.
-        pass
+        pass  # pragma: no cover
 
     def register_client_and_get_proxy_progressbar(self, total_count):
         """
@@ -509,7 +509,7 @@ class ProgressbarDistributedBase(object):
         # register_client_and_get_proxy_progressbar can create the
         # corresponding proxy progressbar passing the client_id and any
         # other required data.
-        pass
+        pass  # pragma: no cover
 
     def _register_client(self, total_count):
         """
@@ -598,7 +598,8 @@ class ProgressbarDistributedBase(object):
         """Start the process that updates the progressbar.
         """
         # self._tic.value = time.time()
-        self._update_process.start()
+        if not self.running.is_set():
+            self._update_process.start()
 
     def stop_updater(self, timeout=None):
         """Stop the process updating the progressbar.
@@ -660,7 +661,7 @@ class ProgressbarDistributedProxyBase(object):
             The new amount of progress.
 
         """
-        pass
+        pass  # pragma: no cover
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -764,7 +765,7 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
         # self._client_data_list we don't need to implement a
         # _update_client_data_list method here in the
         # ProgressbarMultiProcessText class.
-        pass
+        pass  # pragma: no cover
 
     def register_client_and_get_proxy_progressbar(self, total_count):
         """
