@@ -1828,6 +1828,41 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 
         self.assertEqual(progress_string, expected_progress_string)
 
+    def test_start_and_stop_updater_process(self):
+        from time import sleep
+        self.assertFalse(self.mpbar.running.is_set())
+        self.assertEqual(self.mpbar._start_updater_count, 0)
+        self.mpbar.start_updater()
+        sleep(0.1)  # We need some time for the process to start and
+                    # self.mpbar.running is set
+        self.assertEqual(self.mpbar._start_updater_count, 1)
+        self.assertTrue(self.mpbar.running.is_set())
+
+        # Call the start_updater a second time. This should not really try
+        # to start the updater process, since it is already started.
+        self.mpbar.start_updater()
+        self.assertEqual(self.mpbar._start_updater_count, 2)
+
+        # Since we called start_updater two times, calling stop_updater
+        # only once should not stop the updater process. We need to
+        # stop_updater as many times as start_updater so that the updater
+        # process is actually stopped.
+        self.mpbar.stop_updater()
+        self.assertEqual(self.mpbar._start_updater_count, 1)
+        self.assertTrue(self.mpbar.running.is_set())
+
+        self.mpbar.stop_updater()
+        self.assertEqual(self.mpbar._start_updater_count, 0)
+        self.assertFalse(self.mpbar.running.is_set())
+
+    # def test_start_updater_with_no_clients(self):
+    #     from time import sleep
+    #     pbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1, filename='output.out')
+    #     pbar.start_updater()
+    #     sleep(0.1)
+
+    #     self.assertTrue(pbar.running.is_set())
+
 
 # TODO: finish implementation
 class ProgressbarZMQTextTestCase(unittest.TestCase):
@@ -1898,8 +1933,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 
     def tearDown(self):
-        #self.zmqbar._zmq_pull_socket.close()
-        pass
+        self.zmqbar.stop_updater()
 
     def test_register(self):
         # Test last_id and total_final_count of the main progress bar
@@ -1953,19 +1987,47 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         self.proxybar1.progress(5)
         self.proxybar2.progress(10)
         sleep(0.3)
-        self.zmqbar.stop_updater()
 
         # Open and read the progress from the file
         progress_output_file = open(self.output_filename)
         progress_string = progress_output_file.read()
+        progress_output_file.close()
 
         # Expected string with the progress output
         expected_progress_string = """------------------ Some message -----------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 ******************************"""
-
         self.assertEqual(progress_string, expected_progress_string)
+
+        # ------------------------
+        self.zmqbar.stop_updater()
+        # ------------------------
+
+        # After the stop_updater method the progressbar should be full
+        progress_output_file2 = open(self.output_filename)
+        progress_string2 = progress_output_file2.read()
+        progress_output_file2.close()
+        expected_progress_string2 = """------------------ Some message -----------------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+**************************************************\n"""
+        self.assertEqual(progress_string2, expected_progress_string2)
+
+    # def test_muahuahua(self):
+    #     from time import sleep
+
+    #     zmqbar = progressbar.ProgressbarZMQText2(message="Some message", sleep_time=0.05,port=None)
+    #     # TODO: Implement-me
+    #     proxy1 = zmqbar.register_client_and_get_proxy_progressbar(100)
+    #     zmqbar.start_updater()
+    #     #proxy1.progress(30)
+
+    #     print "lala"
+    #     print proxy1.port
+    #     sleep(0.1)
+    #     pass
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

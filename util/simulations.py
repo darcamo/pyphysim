@@ -435,6 +435,14 @@ class SimulationRunner(object):
         #   employes the same style as 'text1'
         self.update_progress_function_style = 'text1'
 
+        # Dictionary with extra arguments that will be passed to the
+        # __init__ method of the progressbar class. For instance, when
+        # simulating in parallel and update_progress_function_style is not
+        # None a progressbar based on ZMQ sockets will be used. Set
+        # progressbar_extra_args to "{'port':3456}" in order for the
+        # progressbar to use port 3456.
+        self.progressbar_extra_args = {}
+
         # Additional message printed in the progressbar. The message can
         # contain "{SomeParameterName}" which will be replaced with the
         # parameter value.
@@ -766,7 +774,8 @@ class SimulationRunner(object):
                 # 'full_params' then it will be replaced by the value of
                 # 'some_param'.
                 message = self.progressbar_message.format(**parameters)
-                self._pbar = ProgressbarZMQText2(progresschar='*', message=message)
+                self._pbar = ProgressbarZMQText2(message=message,
+                                                 **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQProxy
             # class, but it behaves like a function.
@@ -1237,7 +1246,7 @@ class SimulationRunner(object):
                                        block=False)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if self.update_progress_function_style is not None:
+        if self._pbar is not None:
             self._pbar.start_updater()
 
         if wait is True:
@@ -1293,6 +1302,10 @@ class SimulationRunner(object):
                 # results if self.delete_partial_results_bool is True)
                 self.__delete_partial_results()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # Stop the progressbar updating progress
+            if self.update_progress_function_style is not None:
+                self._pbar.stop_updater()
 
             # Erase the self._async_results object, since we already got all
             # information we needed from it

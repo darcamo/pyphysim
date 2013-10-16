@@ -464,6 +464,14 @@ class ProgressbarDistributedBase(object):
                                                 # in the _update_progress
                                                 # function
 
+        # Each time the start_updater method is called this variable is
+        # increased by one and each time the stop_updater method is called
+        # it is decreased by one. A started update process will only be
+        # stopped in the stop_updater method if this variables reaches 0.
+        # This control is useful so that we can share the same progressbar
+        # for multiple SimulationRunner objects.
+        self._start_updater_count = 0
+
         # # Used for time tracking
         # self._tic = multiprocessing.Value('f', 0.0)
         # self._toc = multiprocessing.Value('f', 0.0)
@@ -560,6 +568,10 @@ class ProgressbarDistributedBase(object):
             None then all progress will be printed in the standard output
             (defaut)
         """
+        if self._total_final_count == 0:
+            import warnings
+            warnings.warn('No clients registered in the progressbar')
+
         if filename is None:
             import sys
             output = sys.stdout
@@ -570,7 +582,6 @@ class ProgressbarDistributedBase(object):
                                self._progresschar,
                                self._message,
                                output=output)
-        self.running.set()
         count = 0
         while count < self._total_final_count and self.running.is_set():
             time.sleep(self._sleep_time)
@@ -585,6 +596,14 @@ class ProgressbarDistributedBase(object):
             # Represents the current total count in the progressbars
             pbar.progress(count)
 
+        # If the self.running event was cleared (because the stop_updater
+        # method was called) we most likely exited the while loop before
+        # the progressbar was full (count is lower then the total final
+        # count). If that is the case, let's set the progressbar to full
+        # here.
+        if count < self._total_final_count:
+            pbar.progress(self._total_final_count)
+
         # It may exit the while loop in two situations: if count reached
         # the maximum allowed value, in which case the progressbar is full,
         # or if the self.running event was cleared in another
@@ -595,24 +614,48 @@ class ProgressbarDistributedBase(object):
         # self._toc.value = time.time()
 
     def start_updater(self):
-        """Start the process that updates the progressbar.
+        """
+        Start the process that updates the progressbar.
+
+        Notes
+        -----
+        If this method is called multiple times then the `stop_updater`
+        method must be called the same number of times for the updater
+        process to actually stop.
         """
         # self._tic.value = time.time()
-        if not self.running.is_set():
+        #if self._start_updater_count == 0:
+        if self.running.is_set() is False:
+            self.running.set()
             self._update_process.start()
 
+        self._start_updater_count += 1
+
     def stop_updater(self, timeout=None):
-        """Stop the process updating the progressbar.
+        """
+        Stop the process updating the progressbar.
 
         You should always call this function in your main process (the same
         that created the progressbar) after joining all the processes that
         update the progressbar. This guarantees that the progressbar
         updated any pending change and exited clearly.
 
+        Parameters
+        ----------
+        timeout : float
+            The timeout to join for the process to stop.
+
+        Notes
+        -----
+        If the `start_updater` was called multiple times the process will
+        only be stopped when `stop_updater` is called the same number of
+        times.
         """
-        self.running.clear()
-        # self._toc.value = time.time()
-        self._update_process.join(timeout)
+        self._start_updater_count -= 1
+        if self._start_updater_count == 0:
+            self.running.clear()
+            # self._toc.value = time.time()
+            self._update_process.join(timeout)
 
     # # TODO: Check if the duration property work correctly
     # @property
@@ -1136,7 +1179,9 @@ class ProgressbarZMQText(object):
         This will create the socket that receives the progress from the
         clients and update the actual progressbar.
         """
-        from time import sleep
+        if self._total_final_count == 0:
+            import warnings
+            warnings.warn('No clients registered in the progressbar')
 
         if self._filename is None:
             import sys
@@ -1165,7 +1210,7 @@ class ProgressbarZMQText(object):
                 # If we could not receive anything in the socket it will
                 # trown the ZMQError exception. In that case we sleep for
                 # "self._sleep_time" seconds.
-                sleep(self._sleep_time)
+                time.sleep(self._sleep_time)
 
         self.running = False
 
@@ -1263,6 +1308,15 @@ class ProgressbarZMQProxy(object):
         self._zmq_context = zmq.Context()
         self._zmq_push_socket = self._zmq_context.socket(zmq.PUSH)
         self._zmq_push_socket.connect("tcp://{0}:{1}".format(self.ip, self.port))
+
+        # The default LINGER value for a ZMQ socket is -1, which means
+        # "wait forever". That means that if the message was not received
+        # by the server (the main progressbar) the process with the
+        # push_socket will hang. Since we don't want that, we set the
+        # LINGER option to 0 so that it does not wait for the message to be
+        # received.
+        self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
+
         self._progress_func = ProgressbarZMQProxy._progress
         self._progress_func(self, count)
 # xxxxxxxxxx ProgressbarZMQText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
