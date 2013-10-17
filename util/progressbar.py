@@ -265,83 +265,14 @@ class ProgressbarText(object):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarText2 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarTextBase - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# The original Code is in
+# The code here and in some of the derived classes is inspired in the code
+# located in
 # http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/examples/notebooks/Progress%20Bars.ipynb
-# but it was modified to make it more similar to the ProgressbarText class
-class ProgressbarText2(object):
-    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
-        """Initializes the ProgressbarText2 object.
-
-        Parameters
-        ----------
-        finalcount : int
-            The total amount that corresponds to 100%. Each time the
-            progress method is called with a number that number is added
-            with the current amount in the progressbar. When the amount
-            becomes equal to `finalcount` the bar will be 100% complete.
-        progresschar : str, optional (default to '*')
-            The character used to represent progress.
-        message : str, optional
-            A message to be shown in the top of the progressbar.
-        output : File like object
-            Object with a 'write' method, which controls where the
-            progress-bar will be printed. By default sys.stdout is used,
-            which means that the progress will be printed in the standard
-            output.
-        """
-        self.finalcount = finalcount
-        self.prog_bar = '[]'
-        self.progresschar = progresschar
-        self.width = 50
-        # By default, self._output points to sys.stdout so I can use the
-        # write/flush methods to display the progress bar.
-        self._output = output
-        self._message = message
-        self._update_amount(0)
-
-    def progress(self, count):
-        self._update_iteration(count)
-        self._output.write('\r')
-        self._output.write(str(self))
-        if count == self.finalcount:
-            # Print an empty line after the last iteration to be consistent
-            # with the ProgressbarText class
-            self._output.write("\n")
-            #print('\n')
-        self._output.flush()
-
-    def _update_iteration(self, elapsed_iter):
-        # Note that self._update_amount will change self.prog_bar
-        self._update_amount((elapsed_iter / float(self.finalcount)) * 100.0)
-
-        if(len(self._message) != 0):
-            self.prog_bar += "  {0}".format(self._message)
-        else:
-            self.prog_bar += '  %d of %d complete' % (elapsed_iter, self.finalcount)
-
-    def _update_amount(self, new_amount):
-        percent_done = int(round((new_amount / 100.0) * 100.0))
-        all_full = self.width - 2
-        num_hashes = int(round((percent_done / 100.0) * all_full))
-        self.prog_bar = '[' + self.progresschar * num_hashes + ' ' * (all_full - num_hashes) + ']'
-        pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
-        pct_string = '%d%%' % percent_done
-        self.prog_bar = self.prog_bar[0:pct_place] + \
-            (pct_string + self.prog_bar[pct_place + len(pct_string):])
-
-    def __str__(self):
-        return str(self.prog_bar)
-# xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarText3 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class ProgressbarText3(object):
+class ProgressbarTextBase(object):
     def __init__(self, finalcount, progresschar=' ', message='', output=sys.stdout):
-        """Initializes the ProgressbarText3 object.
+        """Initializes the progressbar object.
 
         Parameters
         ----------
@@ -379,8 +310,126 @@ class ProgressbarText3(object):
             self._output.write("\n")
         self._output.flush()
 
-    def _update_iteration(self, elapsed_iter):
-        full_count = "{0}/{1}".format(elapsed_iter, self.finalcount)
+    def __str__(self):
+        return str(self.prog_bar)
+
+    def _update_iteration(self, count):
+        """
+        Update the self.prog_bar member variable according with the new
+        `count`.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+        """
+        raise NotImplemented("Implement this method in a subclass")
+# xxxxxxxxxx ProgressbarTextBase - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarText2 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ProgressbarText2(ProgressbarTextBase):
+    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
+        """Initializes the progressbar object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        progresschar : str, optional (default to '*')
+            The character used to represent progress.
+        message : str, optional
+            A message to be shown in the top of the progressbar.
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
+        """
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
+
+    def _update_iteration(self, count):
+        """
+        Update the self.prog_bar member variable according with the new
+        `count`.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+        """
+        # Update the self.prog_bar variable with the current count, but
+        # without the message (if there is one)
+        self._update_prog_bar((count / float(self.finalcount)) * 100.0)
+
+        # Append the message to the self.prog_bar variable if there is one
+        # (or a default message if there is no message set)..
+        if(len(self._message) != 0):
+            self.prog_bar += "  {0}".format(self._message)
+        else:
+            self.prog_bar += '  %d of %d complete' % (count, self.finalcount)
+
+    def _update_prog_bar(self, count):
+        percent_done = int(round((count / 100.0) * 100.0))
+        all_full = self.width - 2
+        num_hashes = int(round((percent_done / 100.0) * all_full))
+        self.prog_bar = '[' + self.progresschar * num_hashes + ' ' * (all_full - num_hashes) + ']'
+        pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
+        pct_string = '%d%%' % percent_done
+        self.prog_bar = self.prog_bar[0:pct_place] + \
+            (pct_string + self.prog_bar[pct_place + len(pct_string):])
+
+# xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarText3 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ProgressbarText3(ProgressbarTextBase):
+    def __init__(self, finalcount, progresschar=' ', message='', output=sys.stdout):
+        """Initializes the progressbar object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        progresschar : str, optional (default to '*')
+            The character used to represent progress.
+        message : str, optional
+            A message to be shown in the top of the progressbar.
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
+        """
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
+
+    def _update_iteration(self, count):
+        """
+        Update the self.prog_bar member variable according with the new
+        `count`.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+        """
+        full_count = "{0}/{1}".format(count, self.finalcount)
 
         if len(self._message) != 0:
             self.prog_bar = center_message(
@@ -389,8 +438,6 @@ class ProgressbarText3(object):
         else:
             self.prog_bar = center_message(full_count, fill_char=self.progresschar)
 
-    def __str__(self):
-        return str(self.prog_bar)
 # xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
