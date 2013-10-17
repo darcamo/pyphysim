@@ -311,7 +311,7 @@ class ProgressbarText2(object):
             # with the ProgressbarText class
             self._output.write("\n")
             #print('\n')
-        sys.stdout.flush()
+        self._output.flush()
 
     def _update_iteration(self, elapsed_iter):
         # Note that self._update_amount will change self.prog_bar
@@ -375,8 +375,11 @@ class ProgressbarText3(object):
         progress_string = center_message(str(self), fill_char=self.progresschar)
         self._output.write('\r')
         self._output.write(progress_string)
-        self._output.write('\n')
-        #print('\r', progress_string, sep='', end='\n')
+        if count == self.finalcount:
+            # Print an empty line after the last iteration to be consistent
+            # with the ProgressbarText class
+            self._output.write("\n")
+        self._output.flush()
 
     def _update_iteration(self, elapsed_iter):
         full_count = "{0}/{1}".format(elapsed_iter, self.finalcount)
@@ -601,7 +604,7 @@ class ProgressbarDistributedServerBase(object):
         else:
             output = open(filename, 'w')
 
-        pbar = ProgressbarText2(self.total_final_count,
+        pbar = ProgressbarText(self.total_final_count,
                                self._progresschar,
                                self._message,
                                output=output)

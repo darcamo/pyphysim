@@ -1744,14 +1744,14 @@ class ProgressbarText3TestCase(unittest.TestCase):
         # print
         #print self.out.getvalue()
 
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\n")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\n\r********* ProgressbarText Unittest 50/50 *********\n")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********\n")
 
         # Test with no message (use default message)
         self.pbar2.progress(40)
-        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************\n")
+        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************")
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
@@ -2027,20 +2027,6 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
 ----0----0----0----0----0----0----0----0----0----0
 **************************************************\n"""
         self.assertEqual(progress_string2, expected_progress_string2)
-
-    # def test_muahuahua(self):
-    #     from time import sleep
-
-    #     zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.05,port=None)
-    #     # TODO: Implement-me
-    #     proxy1 = zmqbar.register_client_and_get_proxy_progressbar(100)
-    #     zmqbar.start_updater()
-    #     #proxy1.progress(30)
-
-    #     print "lala"
-    #     print proxy1.port
-    #     sleep(0.1)
-    #     pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
