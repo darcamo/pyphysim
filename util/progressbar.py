@@ -187,17 +187,28 @@ class ProgressbarText(object):
             output.
         """
         self.finalcount = finalcount
-        self.blockcount = 0  # stores how many characters where already
-                             # printed in a previous call to the `progress`
-                             # function
-        self.block = progresschar  # The character printed to indicate progress
+        self.progresschar = progresschar  # The character printed to indicate progress
         #
         # By default, self._output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
         self._output = output
-
-        self._initialized = False
         self._message = message
+
+        self.progresscharcount = 0  # stores how many characters where
+                                    # already printed in a previous call to
+                                    # the `progress` function
+        self._initialized = False
+
+    def _write_initialization(self):
+        if(len(self._message) != 0):
+            bartitle = '{0}\n'.format(center_message(
+                self._message, 50, '-', '', '1'))
+        else:
+            bartitle = '------------------ % Progress -------------------1\n'
+
+        self._output.write(bartitle)
+        self._output.write('    1    2    3    4    5    6    7    8    9    0\n')
+        self._output.write('----0----0----0----0----0----0----0----0----0----0\n')
 
     def progress(self, count):
         """Updates the progress bar.
@@ -213,50 +224,36 @@ class ProgressbarText(object):
 
         """
         if self._initialized is False:
-            # # If the final count is zero, don't start the progress gauge
-            # if not self.finalcount:
-            #     return
-            if(len(self._message) != 0):
-                bartitle = '{0}\n'.format(center_message(
-                    self._message, 50, '-', '', '1'))
-            else:
-                bartitle = '------------------ % Progress -------------------1\n'
-
-            self._output.write(bartitle)
-            self._output.write('    1    2    3    4    5    6    7    8    9    0\n')
-            self._output.write('----0----0----0----0----0----0----0----0----0----0\n')
-
+            self._write_initialization()
             self._initialized = True
 
-        #
         # Make sure I don't try to go off the end (e.g. >100%)
-        #
         count = min(count, self.finalcount)
-        #
-        # If finalcount is zero, I'm done
-        #
+
         if self.finalcount:
             percentcomplete = int(round(100 * count / self.finalcount))
             if percentcomplete < 1:
                 percentcomplete = 1
         else:
+            # If we are here, that means self.finalcount is zero and thus
+            # we are already done. Just set percentcomplete to 100
             percentcomplete = 100
 
         # Divide percentcomplete by two, since we use 50 characters for the
-        # full bar. Therefore, the blockcount variable will give us how
+        # full bar. Therefore, the progresscharcount variable will give us how
         # many characters we need to write to represent the correct
         # percentage of completeness.
-        blockcount = int(percentcomplete / 2)
-        if blockcount > self.blockcount:
-            # The self.blockcount stores how many characters where already
+        progresscharcount = int(percentcomplete / 2)
+        if progresscharcount > self.progresscharcount:
+            # The self.progresscharcount stores how many characters where already
             # printed in a previous call to the `progress`
             # function. Therefore, we only need to print the remaining
-            # characters until we reach `blockcount`.
-            for i in range(self.blockcount, blockcount):  # pylint:disable=W0612
-                self._output.write(self.block)
+            # characters until we reach `progresscharcount`.
+            for i in range(self.progresscharcount, progresscharcount):  # pylint:disable=W0612
+                self._output.write(self.progresschar)
                 self._output.flush()
-            # Update self.blockcount
-            self.blockcount = blockcount
+            # Update self.progresscharcount
+            self.progresscharcount = progresscharcount
 
         # If we completed the bar, print a newline
         if percentcomplete == 100:
@@ -301,13 +298,40 @@ class ProgressbarTextBase(object):
         self._message = message  # THIS WILL BE IGNORED
 
     def progress(self, count):
+        """
+        Write the current progress according to the value of `count` to the
+        output.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+
+        Notes
+        -----
+        How the progressbar is actually represented depends on the
+        `_update_iteration` method, which is left to be implemented in a
+        subclass.
+        """
+        # Update the prog_bar variable
         self._update_iteration(count)
+
+        # We simple change the cursor to the beginning of the line and
+        # write the string representation of the prog_bar variable.
         self._output.write('\r')
-        self._output.write(str(self))
+        self._output.write(str(self.prog_bar))
+
+        # If count is equal to self.finalcount we have reached 100%. In
+        # that case, we also write a final newline character.
         if count == self.finalcount:
             # Print an empty line after the last iteration to be consistent
             # with the ProgressbarText class
             self._output.write("\n")
+
+        # Flush everything to guarantee that at this point everything is
+        # written to the output.
         self._output.flush()
 
     def __str__(self):
@@ -379,9 +403,9 @@ class ProgressbarText2(ProgressbarTextBase):
             self.prog_bar += '  %d of %d complete' % (count, self.finalcount)
 
     def _update_prog_bar(self, count):
-        percent_done = int(round((count / 100.0) * 100.0))
+        percent_done = int((count / 100.0) * 100.0)
         all_full = self.width - 2
-        num_hashes = int(round((percent_done / 100.0) * all_full))
+        num_hashes = int((percent_done / 100.0) * all_full)
         self.prog_bar = '[' + self.progresschar * num_hashes + ' ' * (all_full - num_hashes) + ']'
         pct_place = (len(self.prog_bar) // 2) - len(str(percent_done))
         pct_string = '%d%%' % percent_done
@@ -434,9 +458,12 @@ class ProgressbarText3(ProgressbarTextBase):
         if len(self._message) != 0:
             self.prog_bar = center_message(
                 "{0} {1}".format(self._message, full_count),
+                length=self.width,
                 fill_char=self.progresschar)
         else:
-            self.prog_bar = center_message(full_count, fill_char=self.progresschar)
+            self.prog_bar = center_message(full_count,
+                                           length=self.width,
+                                           fill_char=self.progresschar)
 
 # xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
