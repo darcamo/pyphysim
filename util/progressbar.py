@@ -303,7 +303,6 @@ class ProgressbarText2(object):
 
     def progress(self, count):
         self._update_iteration(count)
-        #print('\r', self, end='')
         self._output.write('\r')
         self._output.write(str(self))
         if count == self.finalcount:
@@ -372,9 +371,8 @@ class ProgressbarText3(object):
 
     def progress(self, count):
         self._update_iteration(count)
-        progress_string = center_message(str(self), fill_char=self.progresschar)
         self._output.write('\r')
-        self._output.write(progress_string)
+        self._output.write(str(self))
         if count == self.finalcount:
             # Print an empty line after the last iteration to be consistent
             # with the ProgressbarText class
@@ -385,9 +383,11 @@ class ProgressbarText3(object):
         full_count = "{0}/{1}".format(elapsed_iter, self.finalcount)
 
         if len(self._message) != 0:
-            self.prog_bar = "{0} {1}".format(self._message, full_count)
+            self.prog_bar = center_message(
+                "{0} {1}".format(self._message, full_count),
+                fill_char=self.progresschar)
         else:
-            self.prog_bar = full_count
+            self.prog_bar = center_message(full_count, fill_char=self.progresschar)
 
     def __str__(self):
         return str(self.prog_bar)
