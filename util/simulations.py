@@ -176,7 +176,7 @@ import copy
 import numpy as np
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessText, ProgressbarZMQText, ProgressbarZMQText2, ProgressbarZMQProxy
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessServer, ProgressbarZMQServer, ProgressbarZMQServer2, ProgressbarZMQClient
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -774,10 +774,10 @@ class SimulationRunner(object):
                 # 'full_params' then it will be replaced by the value of
                 # 'some_param'.
                 message = self.progressbar_message.format(**parameters)
-                self._pbar = ProgressbarZMQText2(message=message,
+                self._pbar = ProgressbarZMQServer2(message=message,
                                                  **self.progressbar_extra_args)
 
-            # Note that this will be an object of the ProgressbarZMQProxy
+            # Note that this will be an object of the ProgressbarZMQClient
             # class, but it behaves like a function.
             proxybar = self._pbar.register_client_and_get_proxy_progressbar(self.rep_max)
             proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
@@ -799,7 +799,7 @@ class SimulationRunner(object):
     def __getstate__(self):
         # We will pickle everything as default, escept for the "_pbar"
         # member variable that will not be pickled. The reason is that it
-        # may be a ProgressbarZMQText object, which cannot be pickled (uses
+        # may be a ProgressbarZMQServer object, which cannot be pickled (uses
         # ZMQ sockets).
         state = dict(self.__dict__)
         del state['_pbar']
@@ -1085,7 +1085,7 @@ class SimulationRunner(object):
         self.__update__results_base_filename(results_filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        #pbar = ProgressbarMultiProcessText(sleep_time=5)
+        #pbar = ProgressbarMultiProcessServer(sleep_time=5)
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         from time import time
@@ -1121,7 +1121,7 @@ class SimulationRunner(object):
             proxybar_data : list of 3 elements or None
                 The elements are the "client_id" (and int), the "ip" (a
                 string with an IP address) and the "port". This data should
-                be used to create a ProgressbarZMQProxy object that can be
+                be used to create a ProgressbarZMQClient object that can be
                 used to update the progressbar (via a ZMQ socket)
             """
             # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
@@ -1129,7 +1129,7 @@ class SimulationRunner(object):
                 update_progress_func = lambda value: None
             else:
                 client_id, ip, port = proxybar_data
-                proxybar = ProgressbarZMQProxy(client_id, ip, port)
+                proxybar = ProgressbarZMQClient(client_id, ip, port)
                 update_progress_func = proxybar.progress
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

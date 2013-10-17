@@ -1612,7 +1612,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 # if __name__ == '__main__2':
 #     import multiprocessing
 #     from time import sleep
-#     from progressbar import ProgressbarMultiProcessText
+#     from progressbar import ProgressbarMultiProcessServer
 #
 #     # Runs in a different process and owns the queue
 #     manager = multiprocessing.Manager()
@@ -1623,7 +1623,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 #     p1 = multiprocessing.Process(target=producer, args=[queue, 1, 0.5])
 #     #p2 = multiprocessing.Process(target=producer, args=[queue])
 #
-#     # bar = ProgressbarMultiProcessText(queue, total_final_count=40, progresschar='o', message="Teste")
+#     # bar = ProgressbarMultiProcessServer(queue, total_final_count=40, progresschar='o', message="Teste")
 #     #c = progressbar.start_updater()
 #     c = multiprocessing.Process(target=progress_bar_background, args=[queue])
 #
@@ -1759,20 +1759,20 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
 
-        self.mpbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.mpbar = progressbar.ProgressbarMultiProcessServer(message="Some message", sleep_time=0.001, filename=self.output_filename)
         self.proxybar1 = self.mpbar.register_client_and_get_proxy_progressbar(10)
         self.proxybar2 = self.mpbar.register_client_and_get_proxy_progressbar(15)
 
     def test_register(self):
         # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.mpbar._last_id, 1)
-        self.assertEqual(self.mpbar._total_final_count, 25)
+        self.assertEqual(self.mpbar.total_final_count, 25)
 
         # Register a new proxy progressbar and test the last_id and
         # total_final_count again.
         proxybar3 = self.mpbar.register_client_and_get_proxy_progressbar(13)
         self.assertEqual(self.mpbar._last_id, 2)
-        self.assertEqual(self.mpbar._total_final_count, 38)
+        self.assertEqual(self.mpbar.total_final_count, 38)
 
     def test_proxy_progressbars(self):
         # Test the information in the proxybar1
@@ -1785,7 +1785,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.assertTrue(self.proxybar2._client_data_list is
                         self.mpbar._client_data_list)
 
-    # Note: This method will sleep for 0.3 seconds thus adding to the total
+    # Note: This method will sleep for 0.01 seconds thus adding to the total
     # amount of time required to run all tests. Unfortunatelly, this is a
     # necessary cost.
     def test_updater(self):
@@ -1803,16 +1803,25 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.proxybar1.progress(6)
 
         # Then we start the "updater" of the main progressbar.
-        self.mpbar.start_updater()
+        self.mpbar.start_updater(start_delay=0.03)
+
+        # Register a new proxybar after start_updater was called. This only
+        # works because we have set a start_delay
+        proxy3 = self.mpbar.register_client_and_get_proxy_progressbar(25)
+        proxy3.progress(3)
 
         # Then the second process updates its progress
         self.proxybar2.progress(6)
         #self.mpbar.stop_updater()
 
         # Sleep for a very short time so that the
-        # ProgressbarMultiProcessText object has time to create the file
+        # ProgressbarMultiProcessServer object has time to create the file
         # with the current progress
-        time.sleep(0.3)
+        time.sleep(0.01)
+
+        # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        time.sleep(0.04)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.mpbar.stop_updater(0)
 
@@ -1824,9 +1833,14 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         expected_progress_string = """------------------ Some message -----------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
-************************"""
+***************"""
 
         self.assertEqual(progress_string, expected_progress_string)
+
+        # expected_progress_string = """------------------ Some message -----------------1
+#     1    2    3    4    5    6    7    8    9    0
+# ----0----0----0----0----0----0----0----0----0----0
+# ************************"""
 
     def test_start_and_stop_updater_process(self):
         from time import sleep
@@ -1857,7 +1871,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 
     # def test_start_updater_with_no_clients(self):
     #     from time import sleep
-    #     pbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1, filename='output.out')
+    #     pbar = progressbar.ProgressbarMultiProcessServer(message="Some message", sleep_time=0.1, filename='output.out')
     #     pbar.start_updater()
     #     sleep(0.1)
 
@@ -1870,7 +1884,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQTextTestCase.out"
 
-        self.zmqbar = progressbar.ProgressbarZMQText(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.zmqbar = progressbar.ProgressbarZMQServer(message="Some message", sleep_time=0.1, filename=self.output_filename)
         self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
         self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 
@@ -1918,8 +1932,8 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         # Before the first time the progress method in self.proxybar1 and
         # self.proxybar2 is called their "_progress_func" variable points
         # to the "_connect_and_update_progress" method
-        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
-        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
+        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
 
 
 # TODO: finish implementation
@@ -1928,7 +1942,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQText2TestCase.out"
 
-        self.zmqbar = progressbar.ProgressbarZMQText2(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.1, filename=self.output_filename)
         self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
         self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 
@@ -1938,13 +1952,13 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
     def test_register(self):
         # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.zmqbar._last_id, 1)
-        self.assertEqual(self.zmqbar._total_final_count, 25)
+        self.assertEqual(self.zmqbar.total_final_count, 25)
 
         # Register a new proxy progressbar and test the last_id and
         # total_final_count again.
         proxybar3 = self.zmqbar.register_client_and_get_proxy_progressbar(13)
         self.assertEqual(self.zmqbar._last_id, 2)
-        self.assertEqual(self.zmqbar._total_final_count, 38)
+        self.assertEqual(self.zmqbar.total_final_count, 38)
 
         # Test IP and port of the proxy progress bars
         self.assertEqual(self.proxybar1.ip, self.zmqbar.ip)
@@ -1977,8 +1991,8 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         # Before the first time the progress method in self.proxybar1 and
         # self.proxybar2 is called their "_progress_func" variable points
         # to the "_connect_and_update_progress" method
-        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
-        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
+        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
 
     def test_update_progress(self):
         from time import sleep
@@ -2017,7 +2031,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
     # def test_muahuahua(self):
     #     from time import sleep
 
-    #     zmqbar = progressbar.ProgressbarZMQText2(message="Some message", sleep_time=0.05,port=None)
+    #     zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.05,port=None)
     #     # TODO: Implement-me
     #     proxy1 = zmqbar.register_client_and_get_proxy_progressbar(100)
     #     zmqbar.start_updater()
@@ -2049,10 +2063,10 @@ def progress_producer(process_id, process_data_list, sleep_time=0.5):  # pragma:
 if __name__ == '__main__1':  # pragma: no cover
     from time import sleep
     import multiprocessing
-    from util.progressbar import ProgressbarMultiProcessText
+    from util.progressbar import ProgressbarMultiProcessServer
     import sys
 
-    bar = ProgressbarMultiProcessText(sleep_time=1)
+    bar = ProgressbarMultiProcessServer(sleep_time=1)
 
     # # xxxxx Option 1: register_client xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # # Register two functions with count 20, each, in the progressbar

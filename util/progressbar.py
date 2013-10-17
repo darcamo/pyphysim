@@ -4,7 +4,7 @@
 """Implement classes to represent the progress of a task.
 
 Use the ProgressbarText class for tasks that do not use multiprocessing,
-and the ProgressbarMultiProcessText class for tasks using multiprocessing.
+and the ProgressbarMultiProcessServer class for tasks using multiprocessing.
 
 Basically, the task code must call the "progress" function to update the
 progress bar and pass a number equivalent to the increment in the progress
@@ -12,7 +12,7 @@ since the last call. The progressbar must know the maximum value equivalent
 to all the progress, which is passed during object creator for
 ProgressbarText class.
 
-The ProgressbarMultiProcessText is similar to ProgressbarText class,
+The ProgressbarMultiProcessServer is similar to ProgressbarText class,
 accounts for the progress of multiple processes. For each process you need
 to call the register_client_and_get_proxy_progressbar to get a proxy
 progressbar, where the maximum value equivalent to all the progress that
@@ -36,13 +36,14 @@ import time
 try:
     import zmq
 except ImportError:  # pragma: no cover
-    # We don't have a fallback for zmq, but only the ProgressbarZMQText and
-    # ProgressbarZMQProxy classes require it
+    # We don't have a fallback for zmq, but only the ProgressbarZMQServer and
+    # ProgressbarZMQClient classes require it
     pass
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessText', 'ProgressbarZMQText', 'center_message']
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessServer', 'ProgressbarZMQServer', 'center_message']
 
 
+# TODO: Move this function to the misc module.
 def center_message(message, length=50, fill_char=' ', left='', right=''):
     """Return a string with `message` centralized and surrounded by
     `fill_char`.
@@ -393,7 +394,7 @@ class ProgressbarText3(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarServerBase xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class ProgressbarDistributedBase(object):
+class ProgressbarDistributedServerBase(object):
     """
     Base class for progressbars for distributed computations.
 
@@ -406,11 +407,11 @@ class ProgressbarDistributedBase(object):
     of one of the distributed computations.
 
     This class is a base class for the "server part", while the
-    :class:`ProgressbarDistributedProxyBase` class is a base class for the
+    :class:`ProgressbarDistributedClientBase` class is a base class for the
     "client part".
 
-    For a full implementation, see the :class:`ProgressbarMultiProcessText`
-    and :class:`ProgressbarMultiProcessProxy` classes.
+    For a full implementation, see the :class:`ProgressbarMultiProcessServer`
+    and :class:`ProgressbarMultiProcessClient` classes.
     """
 
     def __init__(self,
@@ -419,7 +420,7 @@ class ProgressbarDistributedBase(object):
                  sleep_time=1,
                  filename=None):
         """
-        Initializes the ProgressbarDistributedBase object.
+        Initializes the ProgressbarDistributedServerBase object.
 
         Parameters
         ----------
@@ -435,9 +436,6 @@ class ProgressbarDistributedBase(object):
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
         """
-        # total_final_count will be updated each time the register_*
-        # function is called
-        self._total_final_count = 0
         self._progresschar = progresschar
         self._message = message
 
@@ -449,14 +447,20 @@ class ProgressbarDistributedBase(object):
         self._manager = multiprocessing.Manager()
         self._client_data_list = self._manager.list()  # pylint: disable=E1101
 
-        # Process responsible to update the progressbar. It will be started
-        # by the start_updater method and it may be finished anytime by
-        # calling the stop_updater function. Also, it is set as a daemon
-        # process so that we don't get errors if the program closes before
-        # the process updating the progressbar ends (because the user
-        # forgot to call the stop_updater method).
-        self._update_process = multiprocessing.Process(name="ProgressBarUpdater", target=self._update_progress, args=[self._filename])
-        self._update_process.daemon = True
+        # total_final_count will be updated each time the register_*
+        # function is called.
+        #
+        # Note that we use a Manager.Value object to store the value
+        # instead of using a simple integer because we want modifications
+        # to this value to be seem by the other updating process even after
+        # start_updater has been called if we are still in the
+        # 'start_delay' time.
+        self._total_final_count = self._manager.Value('L', 0)
+
+        # self._update_process will store the process responsible to update
+        # the progressbar. It will be created in the first time the
+        # start_updater method is called.
+        self._update_process = None
 
         # The event will be set when the process updating the progressbar
         # is running and unset (clear) when it is stopped.
@@ -475,6 +479,11 @@ class ProgressbarDistributedBase(object):
         # # Used for time tracking
         # self._tic = multiprocessing.Value('f', 0.0)
         # self._toc = multiprocessing.Value('f', 0.0)
+
+    def _get_total_final_count(self):
+        """Get method for the total_final_count property."""
+        return self._total_final_count.get()
+    total_final_count = property(_get_total_final_count)
 
     def _update_client_data_list(self):
         """
@@ -502,7 +511,7 @@ class ProgressbarDistributedBase(object):
 
         Returns
         -------
-        obj : Object of a class derived from ProgressbarDistributedProxyBase
+        obj : Object of a class derived from ProgressbarDistributedClientBase
             The proxy progressbar.
         """
         # Implement this method in a derived class
@@ -537,11 +546,18 @@ class ProgressbarDistributedBase(object):
         (client_id, client_data_list) : tuple
             A tuple with the client_id and the client_data_list. The
             function whose process is tracked by the
-            ProgressbarMultiProcessText must update the element
+            ProgressbarMultiProcessServer must update the element
             `client_id` of the list `client_data_list` with the current
             count.
         """
-        self._total_final_count += total_count
+        # Set self._total_final_count to the value currently stored plus
+        # total_count.
+        # Remember that the self._total_final_count variable is actually a
+        # proxy to the true value (that is, self._total_final_count is a
+        # multiprocessing.Manager.Value object). That is way we need the
+        # two lines below.
+        total_final_count = self.total_final_count
+        self._total_final_count.set(total_final_count + total_count)
 
         # Update the last_id
         self._last_id += 1
@@ -556,7 +572,7 @@ class ProgressbarDistributedBase(object):
     # coverage program does not see that this method in run in the test code
     # even though we know it is run (otherwise no output would
     # appear). Therefore, we put the "pragma: no cover" line in it
-    def _update_progress(self, filename=None):  # pragma: no cover
+    def _update_progress(self, filename=None, start_delay=0.0):  # pragma: no cover
         """
         Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
@@ -567,8 +583,15 @@ class ProgressbarDistributedBase(object):
             Name of a file where the data will be written to. If this is
             None then all progress will be printed in the standard output
             (defaut)
+        start_delay : float (defaut is 0.0)
+            Delay in seconds before starting the progressbar. During this
+            time it is still possible to register new clients and the
+            progressbar will only be shown after this delay..
         """
-        if self._total_final_count == 0:
+        if start_delay > 0.0:
+            time.sleep(start_delay)
+
+        if self.total_final_count == 0:
             import warnings
             warnings.warn('No clients registered in the progressbar')
 
@@ -578,12 +601,12 @@ class ProgressbarDistributedBase(object):
         else:
             output = open(filename, 'w')
 
-        pbar = ProgressbarText(self._total_final_count,
+        pbar = ProgressbarText2(self.total_final_count,
                                self._progresschar,
                                self._message,
                                output=output)
         count = 0
-        while count < self._total_final_count and self.running.is_set():
+        while count < self.total_final_count and self.running.is_set():
             time.sleep(self._sleep_time)
             # Gather information from all client proxybars and update the
             # self._client_data_list member variable
@@ -593,6 +616,11 @@ class ProgressbarDistributedBase(object):
             # self._client_data_list
             count = sum(self._client_data_list)
 
+            # Maybe a new client was registered. In that case
+            # self.total_final_count changed and we need to reflect this in
+            # the pbar.finalcount variable.
+            pbar.finalcount = self.total_final_count
+
             # Represents the current total count in the progressbars
             pbar.progress(count)
 
@@ -601,8 +629,8 @@ class ProgressbarDistributedBase(object):
         # the progressbar was full (count is lower then the total final
         # count). If that is the case, let's set the progressbar to full
         # here.
-        if count < self._total_final_count:
-            pbar.progress(self._total_final_count)
+        if count < self.total_final_count:
+            pbar.progress(self.total_final_count)
 
         # It may exit the while loop in two situations: if count reached
         # the maximum allowed value, in which case the progressbar is full,
@@ -613,9 +641,16 @@ class ProgressbarDistributedBase(object):
         self.running.clear()
         # self._toc.value = time.time()
 
-    def start_updater(self):
+    def start_updater(self, start_delay=0.0):
         """
         Start the process that updates the progressbar.
+
+        Parameters
+        ----------
+        start_delay : float
+            Delay in seconds before starting the progressbar. During this
+            time it is still possible to register new clients and the
+            progressbar will only be shown after this delay..
 
         Notes
         -----
@@ -623,9 +658,16 @@ class ProgressbarDistributedBase(object):
         method must be called the same number of times for the updater
         process to actually stop.
         """
-        # self._tic.value = time.time()
-        #if self._start_updater_count == 0:
         if self.running.is_set() is False:
+            # self._update_process stores the process responsible to update
+            # the progressbar. It may be finished anytime by calling the
+            # stop_updater method. Also, it is set as a daemon process so
+            # that we don't get errors if the program closes before the
+            # process updating the progressbar ends (because the user
+            # forgot to call the stop_updater method).
+            self._update_process = multiprocessing.Process(name="ProgressBarUpdater", target=self._update_progress, args=[self._filename, start_delay])
+            self._update_process.daemon = True
+
             self.running.set()
             self._update_process.start()
 
@@ -677,7 +719,7 @@ class ProgressbarDistributedBase(object):
     #     return toc - self._tic.value
 
 
-class ProgressbarDistributedProxyBase(object):
+class ProgressbarDistributedClientBase(object):
     """
     Proxy progressbar that behaves like a ProgressbarText object, but is
     actually updating a shared (with other clients) progressbar.
@@ -708,23 +750,23 @@ class ProgressbarDistributedProxyBase(object):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarMultiProcessText - START xxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarMultiProcessServer - START xxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class ProgressbarMultiProcessText(ProgressbarDistributedBase):
+class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
     """Class that prints a representation of the current progress of
     multiple process as text.
 
     While the :class:`ProgressbarText` class only tracks the progress of a
-    single process, the :class:`ProgressbarMultiProcessText` class can
+    single process, the :class:`ProgressbarMultiProcessServer` class can
     track the joint progress of multiple processes. This may be used, for
     instance, when you parallelize some task using the multiprocessing
     module.
 
-    Using the ProgressbarMultiProcessText class requires a little more work
+    Using the ProgressbarMultiProcessServer class requires a little more work
     than using the ProgressbarText class, as it is described in the
     following:
 
-     1. First you create an object of the ProgressbarMultiProcessText class
+     1. First you create an object of the ProgressbarMultiProcessServer class
         as usual. However, differently from the ProgressbarText class you
         don't pass the `finalcount` value to the progressbar yet.
      2. After that, for each process to be tracked, call the
@@ -735,12 +777,12 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
         process so that it can call its "progress" method. Each process
         that calls the "progress" method of the received proxy progressbar
         will actually update the progress of the main
-        ProgressbarMultiProcessText object.
+        ProgressbarMultiProcessServer object.
      3. Start all the processes and call the start_updater method of
-        ProgressbarMultiProcessText object so that the bar is updated by
+        ProgressbarMultiProcessServer object so that the bar is updated by
         the different processes.
      4. After joining all the process (all work is finished) call the
-        stop_updater method of the ProgressbarMultiProcessText object.
+        stop_updater method of the ProgressbarMultiProcessServer object.
 
     Examples
     --------
@@ -748,8 +790,8 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
     .. code-block:: python
 
        import multiprocessing
-       # Create a ProgressbarMultiProcessText object
-       pb = ProgressbarMultiProcessText(message="some message")
+       # Create a ProgressbarMultiProcessServer object
+       pb = ProgressbarMultiProcessServer(message="some message")
        # Creates a proxy progressbar for one process passing the value
        # corresponding to 100% progress for the first process
        proxybar1 = pb.register_client_and_get_proxy_progressbar(60)
@@ -763,10 +805,10 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
        # Start both processes
        p1.start()
        p2.start()
-       # Call the start_updater method of the ProgressbarMultiProcessText
+       # Call the start_updater method of the ProgressbarMultiProcessServer
        pb.start_updater()
        # Joint the process and then call the stop_updater method of the
-       # ProgressbarMultiProcessText
+       # ProgressbarMultiProcessServer
        p1.join()
        p2.join()
        pb.stop_updater()
@@ -779,7 +821,7 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
                  sleep_time=1,
                  filename=None):
         """
-        Initializes the ProgressbarMultiProcessText object.
+        Initializes the ProgressbarMultiProcessServer object.
 
         Parameters
         ----------
@@ -795,7 +837,7 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
         """
-        ProgressbarDistributedBase.__init__(self,
+        ProgressbarDistributedServerBase.__init__(self,
                                             progresschar, message, sleep_time, filename)
 
     def _update_client_data_list(self):
@@ -803,11 +845,11 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
         This method process the communication between the client and the
         server.
         """
-        # Note that since the proxybar (ProgressbarMultiProcessProxy class)
+        # Note that since the proxybar (ProgressbarMultiProcessClient class)
         # for multiprocessing will directly modify the
         # self._client_data_list we don't need to implement a
         # _update_client_data_list method here in the
-        # ProgressbarMultiProcessText class.
+        # ProgressbarMultiProcessServer class.
         pass  # pragma: no cover
 
     def register_client_and_get_proxy_progressbar(self, total_count):
@@ -817,8 +859,8 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
         calling the `progress` method of this proxy progressbar.
 
         The function whose process is tracked by the
-        ProgressbarMultiProcessText must must call the `progress` method of
-        the returned ProgressbarMultiProcessProxy object with the current
+        ProgressbarMultiProcessServer must must call the `progress` method of
+        the returned ProgressbarMultiProcessClient object with the current
         count. This is a little less intrusive regarding the tracked
         function.
 
@@ -829,27 +871,27 @@ class ProgressbarMultiProcessText(ProgressbarDistributedBase):
 
         Returns
         -------
-        obj : ProgressbarMultiProcessProxy object
+        obj : ProgressbarMultiProcessClient object
             The proxy progressbar.
         """
         client_id = self._register_client(total_count)
-        return ProgressbarMultiProcessProxy(client_id, self._client_data_list)
+        return ProgressbarMultiProcessClient(client_id, self._client_data_list)
 
 
-# Used by the ProgressbarMultiProcessText class
-class ProgressbarMultiProcessProxy(ProgressbarDistributedProxyBase):
+# Used by the ProgressbarMultiProcessServer class
+class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
     """
     Proxy progressbar that behaves like a ProgressbarText object,
-    but is actually updating a ProgressbarMultiProcessText progressbar.
+    but is actually updating a ProgressbarMultiProcessServer progressbar.
 
     The basic idea is that this proxy progressbar has the "progress" method
     similar to the standard ProgressbarText class. However, when this
     method is called it will update a value that will be read by a
-    ProgressbarMultiProcessText object instead.
+    ProgressbarMultiProcessServer object instead.
     """
     def __init__(self, client_id, client_data_list):
-        """Initializes the ProgressbarMultiProcessProxy object."""
-        ProgressbarDistributedProxyBase.__init__(self, client_id)
+        """Initializes the ProgressbarMultiProcessClient object."""
+        ProgressbarDistributedClientBase.__init__(self, client_id)
         self._client_data_list = client_data_list
 
     def progress(self, count):
@@ -862,13 +904,13 @@ class ProgressbarMultiProcessProxy(ProgressbarDistributedProxyBase):
 
         """
         self._client_data_list[self.client_id] = count
-# xxxxxxxxxx ProgressbarMultiProcessText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx ProgressbarMultiProcessServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarZMQText xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarZMQServer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class ProgressbarZMQText2(ProgressbarDistributedBase):
+class ProgressbarZMQServer2(ProgressbarDistributedServerBase):
     """
     Distributed "server" progressbar using ZMQ sockets.
 
@@ -888,7 +930,7 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
     client.
 
     Note that the client proxybar for this class is implemented in the
-    ProgressbarZMQProxy class.
+    ProgressbarZMQClient class.
 
     Parameters
     ----------
@@ -918,7 +960,7 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
                  ip='localhost',
                  port=7396):
         """
-        Initializes the ProgressbarDistributedBase object.
+        Initializes the ProgressbarDistributedServerBase object.
 
         Parameters
         ----------
@@ -939,7 +981,7 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
         port : int
             The port to bind the socket.
         """
-        ProgressbarDistributedBase.__init__(self,
+        ProgressbarDistributedServerBase.__init__(self,
                                             progresschar, message, sleep_time, filename)
 
         # Create a Multiprocessing namespace
@@ -962,10 +1004,10 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
 
     def register_client_and_get_proxy_progressbar(self, total_count):
         client_id = self._register_client(total_count)
-        proxybar = ProgressbarZMQProxy(client_id, self.ip, self.port)
+        proxybar = ProgressbarZMQClient(client_id, self.ip, self.port)
         return proxybar
 
-    def _update_progress(self, filename=None):
+    def _update_progress(self, filename=None, start_delay=0.0):
         """
         Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
@@ -976,6 +1018,10 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
             Name of a file where the data will be written to. If this is
             None then all progress will be printed in the standard output
             (defaut)
+        start_delay : float (default is 0.0)
+            Delay in seconds before starting the progressbar. During this
+            time it is still possible to register new clients and the
+            progressbar will only be shown after this delay..
 
         Notes
         -----
@@ -990,7 +1036,7 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
         self._zmq_context = zmq.Context()
         self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
         self._zmq_pull_socket.bind("tcp://*:%s" % self.port)
-        ProgressbarDistributedBase._update_progress(self, filename)
+        ProgressbarDistributedServerBase._update_progress(self, filename)
 
     def _update_client_data_list(self):
         """
@@ -998,7 +1044,7 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
         server.
 
         This method will read the received messages in the socket which
-        were sent by the clients (ProgressbarZMQProxy objects) and update
+        were sent by the clients (ProgressbarZMQClient objects) and update
         self._client_data_list variable accordingly. The messages are in
         the form "client_id:current_progress", which is parsed by the
         _parse_progress_message method.
@@ -1043,7 +1089,7 @@ class ProgressbarZMQText2(ProgressbarDistributedBase):
         self._client_data_list[client_id] = current_count
 
 
-class ProgressbarZMQText(object):
+class ProgressbarZMQServer(object):
     """Progressbar using ZMQ sockets.
     """
     def __init__(self,
@@ -1052,7 +1098,7 @@ class ProgressbarZMQText(object):
                  sleep_time=2,
                  filename=None):
         """
-        Initializes the ProgressbarMultiProcessText object.
+        Initializes the ProgressbarMultiProcessServer object.
 
         Parameters
         ----------
@@ -1121,7 +1167,7 @@ class ProgressbarZMQText(object):
         (client_id, IP, PORT) : tuple of 3 integers
             A tuple with the client_id, the IP and the PORT that will be
             necessary to create the proxy progressbar (see the
-            :class:`ProgressbarZMQProxy` class)
+            :class:`ProgressbarZMQClient` class)
         """
         self._total_final_count += total_count
 
@@ -1149,10 +1195,10 @@ class ProgressbarZMQText(object):
 
         Returns
         -------
-        obj : ProgressbarZMQProxy object
+        obj : ProgressbarZMQClient object
             The proxy progressbar.
         """
-        return ProgressbarZMQProxy(*self._register_client(total_count))
+        return ProgressbarZMQClient(*self._register_client(total_count))
 
     def _parse_progress_message(self, message):
         """
@@ -1179,7 +1225,7 @@ class ProgressbarZMQText(object):
         This will create the socket that receives the progress from the
         clients and update the actual progressbar.
         """
-        if self._total_final_count == 0:
+        if self.total_final_count == 0:
             import warnings
             warnings.warn('No clients registered in the progressbar')
 
@@ -1189,14 +1235,14 @@ class ProgressbarZMQText(object):
         else:
             output = open(filename, 'w')
 
-        pbar = ProgressbarText(self._total_final_count,
+        pbar = ProgressbarText(self.total_final_count,
                                self._progresschar,
                                self._message,
                                output=output)
 
         self.running = True
         count = 0
-        while count < self._total_final_count and self.running is True:
+        while count < self.total_final_count and self.running is True:
             try:
                 # Try to receive something in the socket.
                 message = self._zmq_pull_socket.recv_string(flags=zmq.NOBLOCK)
@@ -1226,23 +1272,23 @@ class ProgressbarZMQText(object):
         pass
 
 
-# Used by the ProgressbarZMQText class
-class ProgressbarZMQProxy(object):
+# Used by the ProgressbarZMQServer class
+class ProgressbarZMQClient(object):
     """
     Proxy progressbar that behaves like a ProgressbarText object,
-    but is actually updating a ProgressbarZMQText progressbar.
+    but is actually updating a ProgressbarZMQServer progressbar.
 
     The basic idea is that this proxy progressbar has the "progress" method
     similar to the standard ProgressbarText class. However, when this
     method is called it will update a value that will be read by a
-    ProgressbarZMQText object instead.
+    ProgressbarZMQServer object instead.
     """
     def __init__(self, client_id, ip, port):
-        """Initializes the ProgressbarZMQProxy object."""
+        """Initializes the ProgressbarZMQClient object."""
         # We import zmq here inside the class to avoid the whole module not
         # working if zmq is not available. That means that we will only get
         # the import error when zmq is not available if we actually try to
-        # instantiate ProgressbarZMQText.
+        # instantiate ProgressbarZMQServer.
         self.client_id = client_id
         self.ip = ip
         self.port = port
@@ -1252,7 +1298,7 @@ class ProgressbarZMQProxy(object):
         # method that will create the socket, connect it to the main
         # progressbar and finally set "_progress_func" to the "_progress"
         # method that will actually update the progress.
-        self._progress_func = ProgressbarZMQProxy._connect_and_update_progress
+        self._progress_func = ProgressbarZMQClient._connect_and_update_progress
 
         # ZMQ Variables: These variables will be set the first time the
         # progress method is called.
@@ -1275,7 +1321,7 @@ class ProgressbarZMQProxy(object):
         Updates the proxy progress bar.
 
         This method is the same as the :meth:`progress`. It is define so
-        that a ProgressbarZMQProxy object can behave like a function.
+        that a ProgressbarZMQClient object can behave like a function.
         """
         self._progress_func(self, count)
 
@@ -1317,6 +1363,6 @@ class ProgressbarZMQProxy(object):
         # received.
         self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
 
-        self._progress_func = ProgressbarZMQProxy._progress
+        self._progress_func = ProgressbarZMQClient._progress
         self._progress_func(self, count)
-# xxxxxxxxxx ProgressbarZMQText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

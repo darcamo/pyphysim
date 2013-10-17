@@ -697,11 +697,14 @@ if __name__ == '__main__':
     # Since We will use the same progressbar for all simulations, we create
     # the progressbar here and set the _pbar member variable of each
     # runner.
-    pbar = progressbar.ProgressbarZMQText(
+    pbar = progressbar.ProgressbarZMQServer2(
         progresschar='*',
-        #message="Simulating in Parallel"
+        message="Simulating in Parallel",
     )
 
+    pbar.start_updater()
+
+    print "antes de criar os SimulationRunner objects"
     # ---------- Creates the Closed Form Runner ---------------------------
     if "Closed Form" in algorithms_to_simulate:
         print "Simulating Closed Form algorithm"
@@ -712,6 +715,7 @@ if __name__ == '__main__':
         # simulations.
         closed_form_runner.params.set_unpack_parameter('max_iterations', False)
         pprint(closed_form_runner.params.parameters)
+        #closed_form_runner.progressbar_extra_args = {'port':3456}
         closed_form_runner._pbar = pbar
         print("IA Solver: {0}".format(closed_form_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
@@ -721,6 +725,7 @@ if __name__ == '__main__':
         print "Simulating Alternating Minimizations algorithm"
         alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
         pprint(alt_min_runner.params.parameters)
+        #alt_min_runner.progressbar_extra_args = {'port':3457}
         alt_min_runner._pbar = pbar
         print("IA Solver: {0}".format(alt_min_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
@@ -730,6 +735,7 @@ if __name__ == '__main__':
         print "Simulating Max SINR algorithm"
         max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
         pprint(max_sinrn_runner.params.parameters)
+        #max_sinrn_runner.progressbar_extra_args = {'port':3458}
         max_sinrn_runner._pbar = pbar
         print("IA Solver: {0}".format(max_sinrn_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
@@ -739,9 +745,12 @@ if __name__ == '__main__':
         print "Simulating MMSE algorithm"
         mmse_runner = MMSESimulationRunner('ia_config_file.txt')
         pprint(mmse_runner.params.parameters)
+        #mmse_runner.progressbar_extra_args = {'port':3459}
         mmse_runner._pbar = pbar
         print("IA Solver: {0}".format(mmse_runner.ia_solver.__class__))
     # ---------------------------------------------------------------------
+    print "depois de criar os SimulationRunner objects"
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -775,7 +784,8 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # ---------- Creates the Closed Form Runner ---------------------------
     if "Closed Form" in algorithms_to_simulate:
-        closed_form_runner._pbar._message = "Simulating Closed Form in parallel"
+        #closed_form_runner._pbar._message = "Simulating Closed Form in parallel"
+        closed_form_runner.progressbar_message = "Simulating Closed Form in parallel"
         closed_form_runner.simulate_in_parallel(
             lview,
             wait=False,
@@ -785,7 +795,8 @@ if __name__ == '__main__':
 
     # ---------- Creates the Alt. Min. Runner -----------------------------
     if "Alt Min" in algorithms_to_simulate:
-        alt_min_runner._pbar._message = "Simulating Alt. Min. in parallel"
+        #alt_min_runner._pbar._message = "Simulating Alt. Min. in parallel"
+        alt_min_runner.progressbar_message = "Simulating Alt. Min. in parallel"
         alt_min_runner.simulate_in_parallel(
             lview,
             wait=False,
@@ -794,7 +805,8 @@ if __name__ == '__main__':
 
     # ---------- Creates the Max SINR Runner ------------------------------
     if "Max SINR" in algorithms_to_simulate:
-        max_sinrn_runner._pbar._message = "Simulating Max SINR in parallel"
+        #max_sinrn_runner._pbar._message = "Simulating Max SINR in parallel"
+        max_sinrn_runner.progressbar_message = "Simulating Max SINR in parallel"
         max_sinrn_runner.simulate_in_parallel(
             lview,
             wait=False,
@@ -803,11 +815,13 @@ if __name__ == '__main__':
 
     # ---------- Creates the MMSE Runner ----------------------------------
     if "MMSE" in algorithms_to_simulate:
-        mmse_runner._pbar._message = "Simulating MMSE in parallel"
+        #mmse_runner._pbar._message = "Simulating MMSE in parallel"
+        mmse_runner.progressbar_message = "Simulating MMSE in parallel"
         mmse_runner.simulate_in_parallel(
             lview,
             wait=False,
             results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+
     # ---------------------------------------------------------------------
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -819,26 +833,33 @@ if __name__ == '__main__':
     # Closed Form
     if "Closed Form" in algorithms_to_simulate:
         closed_form_runner.wait_parallel_simulation()
+        print
         print "Closed Form Runned iterations: {0}".format(closed_form_runner.runned_reps)
         print "Closed Form Elapsed Time: {0}".format(closed_form_runner.elapsed_time)
 
     # Alternating Minimizations
     if "Alt Min" in algorithms_to_simulate:
         alt_min_runner.wait_parallel_simulation()
+        print
         print "Alt. Min. Runned iterations: {0}".format(alt_min_runner.runned_reps)
         print "Alt. Min. Elapsed Time: {0}".format(alt_min_runner.elapsed_time)
 
     # Max SINR
     if "Max SINR" in algorithms_to_simulate:
         max_sinrn_runner.wait_parallel_simulation()
+        print
         print "Max SINR Runned iterations: {0}".format(max_sinrn_runner.runned_reps)
         print "Max SINR Elapsed Time: {0}".format(max_sinrn_runner.elapsed_time)
 
     # MMSE
     if "MMSE" in algorithms_to_simulate:
         mmse_runner.wait_parallel_simulation()
+        print
         print "MMSE Runned iterations: {0}".format(mmse_runner.runned_reps)
         print "MMSE Elapsed Time: {0}".format(mmse_runner.elapsed_time)
+
+    # Stop the progressbar
+    pbar.stop_updater()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

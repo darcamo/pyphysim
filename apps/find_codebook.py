@@ -316,7 +316,7 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Multiprocess progressbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    pb = progressbar.ProgressbarMultiProcessText(message="Find {0} {1} precoders in G({2},{3})".format(K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
+    pb = progressbar.ProgressbarMultiProcessServer(message="Find {0} {1} precoders in G({2},{3})".format(K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Create the processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
