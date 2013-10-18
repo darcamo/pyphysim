@@ -1655,6 +1655,21 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
 
+    def test_write_initialization(self):
+        self.pbar.width = 80
+        self.pbar._write_initialization()
+
+        self.assertEqual(self.out.getvalue(), """--------------------------- ProgressbarText Unittest --------------------------1
+       1       2       3       4       5       6       7       8       9       0
+-------0-------0-------0-------0-------0-------0-------0-------0-------0-------0\n""")
+
+        self.pbar2.width = 40
+        self.pbar2._message = "Just a Message"
+        self.pbar2._write_initialization()
+        self.assertEqual(self.out2.getvalue(), """------------ Just a Message -----------1
+   1   2   3   4   5   6   7   8   9   0
+---0---0---0---0---0---0---0---0---0---0\n""")
+
     def test_progress(self):
         # Progress 20% (10 is equivalent to 20% of 50)
         self.pbar.progress(10)
@@ -1681,7 +1696,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         # Test with pbar2, which uses the default progress message and the
         # character 'x' to indicate progress.
         self.pbar2.progress(20)
-        self.assertEqual(self.out2.getvalue(), """------------------ % Progress -------------------1
+        self.assertEqual(self.out2.getvalue(), """------------------- % Progress ------------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
@@ -1690,7 +1705,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         # Test the case when the progress is lower then 1%.
         pbar3 = progressbar.ProgressbarText(finalcount=200, output=self.out)
         pbar3.progress(1)
-        self.assertEqual(self.out.getvalue(), """------------------ % Progress -------------------1
+        self.assertEqual(self.out.getvalue(), """------------------- % Progress ------------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 """)
@@ -1699,7 +1714,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         pbar4 = progressbar.ProgressbarText(0, output=self.out2)
         # Any progress will get the bar to 100%
         pbar4.progress(1)
-        self.assertEqual(self.out2.getvalue(), """------------------ % Progress -------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
+        self.assertEqual(self.out2.getvalue(), """------------------- % Progress ------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
 
 
 class ProgressbarText2TestCase(unittest.TestCase):

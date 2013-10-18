@@ -188,6 +188,7 @@ class ProgressbarText(object):
         """
         self.finalcount = finalcount
         self.progresschar = progresschar  # The character printed to indicate progress
+        self._width = 50  # This should be a multiple of 10
         #
         # By default, self._output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
@@ -199,16 +200,84 @@ class ProgressbarText(object):
                                     # the `progress` function
         self._initialized = False
 
-    def _write_initialization(self):
+    def _set_width(self, value):
+        """Set method for the width property."""
+        # If value is not a multiple of 10, width will be set to the
+        # largest multiple of 10 which is lower then value.
+        self._width = value - (value % 10)
+
+    def _get_width(self):
+        """Get method for the width property."""
+        return self._width
+
+    width = property(_get_width, _set_width)
+
+    def __get_initialization_bartitle(self):
+        """
+        Get the progressbar title.
+
+        The title is the first line of the progressbar initialization
+        message.
+
+        The bar title is something like the line below
+
+        ------------------- % Progress ------------------1\n
+
+        when there is no message.
+
+        Returns
+        -------
+        bartitle : str
+            The bar title.
+
+        Notes
+        -----
+        This method is only a helper method called in the
+        `_write_initialization` method.
+        """
         if(len(self._message) != 0):
-            bartitle = '{0}\n'.format(center_message(
-                self._message, 50, '-', '', '1'))
+            message = self._message
         else:
-            bartitle = '------------------ % Progress -------------------1\n'
+            message = '% Progress'
+
+        bartitle = center_message(message, self.width + 1, '-', '', '1\n')
+        return bartitle
+
+    def __get_initialization_markers(self):
+        """
+        The initialization markers 'mark' the current progress in the
+        progressbar that will apear below it.
+
+        Returns
+        -------
+        (marker_line1, marker_line2) : a tuple of two strings
+            A tuple containing the 'two lines' with the progress markers.
+
+        Notes
+        -----
+        This method is only a helper method called in the
+        `_write_initialization` method.
+        """
+        steps = self.width / 10  # This division must be exact
+
+        values1 = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+        values2 = ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0']
+
+        line1sep = ' ' * (steps - 1)
+        line1 = '{0}{1}\n'.format(line1sep, line1sep.join(values1))
+
+        line2sep = '-' * (steps - 1)
+        line2 = '{0}{1}\n'.format(line2sep, line2sep.join(values2))
+
+        return (line1, line2)
+
+    def _write_initialization(self):
+        bartitle = self.__get_initialization_bartitle()
+        marker_line1, marker_line2 = self.__get_initialization_markers()
 
         self._output.write(bartitle)
-        self._output.write('    1    2    3    4    5    6    7    8    9    0\n')
-        self._output.write('----0----0----0----0----0----0----0----0----0----0\n')
+        self._output.write(marker_line1)
+        self._output.write(marker_line2)
 
     def progress(self, count):
         """Updates the progress bar.
@@ -239,14 +308,12 @@ class ProgressbarText(object):
             # we are already done. Just set percentcomplete to 100
             percentcomplete = 100
 
-        # Divide percentcomplete by two, since we use 50 characters for the
-        # full bar. Therefore, the progresscharcount variable will give us how
-        # many characters we need to write to represent the correct
-        # percentage of completeness.
-        progresscharcount = int(percentcomplete / 2)
+        # The progresscharcount variable will give us how many characters
+        # we need to represent the correct percentage of completeness.
+        progresscharcount = int(percentcomplete * self.width / 100)
         if progresscharcount > self.progresscharcount:
-            # The self.progresscharcount stores how many characters where already
-            # printed in a previous call to the `progress`
+            # The self.progresscharcount stores how many characters where
+            # already printed in previous calls to the `progress`
             # function. Therefore, we only need to print the remaining
             # characters until we reach `progresscharcount`.
             for i in range(self.progresscharcount, progresscharcount):  # pylint:disable=W0612
