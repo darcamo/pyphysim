@@ -1729,16 +1729,58 @@ class ProgressbarText2TestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
 
-    def test_some_method(self):
+    def test_get_percentage_representation(self):
+        # xxxxxxxxxx Tests for bar width of 50 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.assertEqual(
+            self.pbar._get_percentage_representation(50,
+                                                     central_message='',
+                                                     left_side='',
+                                                     right_side=''),
+            '*************************                         ')
+
+        self.assertEqual(
+            self.pbar._get_percentage_representation(50,
+                                                     central_message=''),
+            '[************************                        ]')
+
+        self.assertEqual(self.pbar._get_percentage_representation(30),
+                         '[**************         30%                      ]')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Tests for bar width of 80 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.pbar2.width = 80
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(50,
+                                                      central_message='',
+                                                      left_side='',
+                                                      right_side=''),
+            '****************************************                                        ')
+
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(50, central_message=''),
+            '[***************************************                                       ]')
+
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(25, central_message=''),
+            '[*******************                                                           ]')
+
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(
+                70,
+                central_message='Progress: {percent}'),
+            '[*********************************Progress: 70*********                        ]')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_progress(self):
         self.pbar.progress(15)
-        self.assertEqual(self.out.getvalue(), "\r[**************        30%                       ]  ProgressbarText Unittest")
+        self.assertEqual(self.out.getvalue(), "\r[**************         30%                      ]  ProgressbarText Unittest")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r[**************        30%                       ]  ProgressbarText Unittest\r[*********************100%***********************]  ProgressbarText Unittest\n")
+        self.assertEqual(self.out.getvalue(), "\r[**************         30%                      ]  ProgressbarText Unittest\r[**********************100%**********************]  ProgressbarText Unittest\n")
 
         # Progressbar with no message -> Use a default message
         self.pbar2.progress(15)
-        self.assertEqual(self.out2.getvalue(), "\r[**************        30%                       ]  15 of 50 complete")
+        self.assertEqual(self.out2.getvalue(), "\r[**************         30%                      ]  15 of 50 complete")
 
 
 class ProgressbarText3TestCase(unittest.TestCase):
@@ -1753,7 +1795,7 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
 
-    def test_some_method(self):
+    def test_progress(self):
         self.pbar.progress(15)
 
         # print
