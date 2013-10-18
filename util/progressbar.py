@@ -132,7 +132,7 @@ class DummyProgressbar(object):  # pragma: no cover
 # located in
 # http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/examples/notebooks/Progress%20Bars.ipynb
 class ProgressbarTextBase(object):
-    def __init__(self, finalcount, progresschar=' ', message='', output=sys.stdout):
+    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
         """Initializes the progressbar object.
 
         Parameters
@@ -152,14 +152,31 @@ class ProgressbarTextBase(object):
             which means that the progress will be printed in the standard
             output.
         """
-        self.finalcount = finalcount
         self.prog_bar = ""
+
+        self.finalcount = finalcount
         self.progresschar = progresschar
-        self.width = 50
+        self._width = 50  # This should be a multiple of 10 and the lower
+                          # possible value is 40.
+
         # By default, self._output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
         self._output = output
         self._message = message  # THIS WILL BE IGNORED
+
+    def _set_width(self, value):
+        """Set method for the width property."""
+        # If value is not a multiple of 10, width will be set to the
+        # largest multiple of 10 which is lower then value.
+        if value < 40:
+            self._width = 40
+        self._width = value - (value % 10)
+
+    def _get_width(self):
+        """Get method for the width property."""
+        return self._width
+
+    width = property(_get_width, _set_width)
 
     def _get_percentage_representation(self, percent, central_message='{percent}%', left_side='[', right_side=']'):
         """
