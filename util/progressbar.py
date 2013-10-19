@@ -294,7 +294,7 @@ class ProgressbarTextBase(object):
 #
 # Modified by Darlan Cavalcante Moreira in 10/18/2011
 # Released under: GNU GENERAL PUBLIC LICENSE
-class ProgressbarText(object):
+class ProgressbarText(ProgressbarTextBase):
     """Class that prints a representation of the current progress as
     text.
 
@@ -322,11 +322,11 @@ class ProgressbarText(object):
     ----0----0----0----0----0----0----0----0----0----0
     oooooooooo
     >> pb.progress(40)
-    oooooooooo
+    oooooooooooooooooooo
     >> pb.progress(50)
-    ooooo
-    >> pb.progress(100)
     ooooooooooooooooooooooooo
+    >> pb.progress(100)
+    oooooooooooooooooooooooooooooooooooooooooooooooooo
     """
     def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
         """Initializes the ProgressbarText object.
@@ -348,34 +348,12 @@ class ProgressbarText(object):
             which means that the progress will be printed in the standard
             output.
         """
-        self.finalcount = finalcount
-        self.progresschar = progresschar  # The character printed to indicate progress
-        self._width = 50  # This should be a multiple of 10 and the lower
-                          # possible value is 40.
-        #
-        # By default, self._output points to sys.stdout so I can use the
-        # write/flush methods to display the progress bar.
-        self._output = output
-        self._message = message
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
 
         self.progresscharcount = 0  # stores how many characters where
                                     # already printed in a previous call to
                                     # the `progress` function
         self._initialized = False
-
-    def _set_width(self, value):
-        """Set method for the width property."""
-        # If value is not a multiple of 10, width will be set to the
-        # largest multiple of 10 which is lower then value.
-        if value < 40:
-            self._width = 40
-        self._width = value - (value % 10)
-
-    def _get_width(self):
-        """Get method for the width property."""
-        return self._width
-
-    width = property(_get_width, _set_width)
 
     def __get_initialization_bartitle(self):
         """
@@ -461,35 +439,50 @@ class ProgressbarText(object):
             self._write_initialization()
             self._initialized = True
 
-        # Make sure I don't try to go off the end (e.g. >100%)
-        count = min(count, self.finalcount)
+        # # Write the actual progress. This modifies the
+        # # self.progresscharcount variable, which is how the ProgressbarText
+        # # objects keeps track of how many characters were already printed.
+        # self._write_progress(count)
 
-        if self.finalcount:
-            percentcomplete = int(round(100 * count / self.finalcount))
-            if percentcomplete < 1:
-                percentcomplete = 1
-        else:
-            # If we are here, that means self.finalcount is zero and thus
-            # we are already done. Just set percentcomplete to 100
-            percentcomplete = 100
+        ProgressbarTextBase.progress(self, count)
 
-        # The progresscharcount variable will give us how many characters
-        # we need to represent the correct percentage of completeness.
-        progresscharcount = int(percentcomplete * self.width / 100)
-        if progresscharcount > self.progresscharcount:
-            # The self.progresscharcount stores how many characters where
-            # already printed in previous calls to the `progress`
-            # function. Therefore, we only need to print the remaining
-            # characters until we reach `progresscharcount`.
-            for i in range(self.progresscharcount, progresscharcount):  # pylint:disable=W0612
-                self._output.write(self.progresschar)
-                self._output.flush()
-            # Update self.progresscharcount
-            self.progresscharcount = progresscharcount
+    def _update_iteration(self, count):
+        percentage = (count / float(self.finalcount)) * 100.0
 
-        # If we completed the bar, print a newline
-        if percentcomplete == 100:
-            self._output.write("\n")
+        # Set the self.prog_bar variable simply as a string containing as
+        # many self.progresschar characters as necessary.
+        self.prog_bar = self._get_percentage_representation(percentage, left_side='', right_side='', central_message='')
+
+    # def _write_progress(self, count):
+    #     # Make sure I don't try to go off the end (e.g. >100%)
+    #     count = min(count, self.finalcount)
+
+    #     if self.finalcount:
+    #         percentcomplete = int(round(100 * count / self.finalcount))
+    #         if percentcomplete < 1:
+    #             percentcomplete = 1
+    #     else:
+    #         # If we are here, that means self.finalcount is zero and thus
+    #         # we are already done. Just set percentcomplete to 100
+    #         percentcomplete = 100
+
+    #     # The progresscharcount variable will give us how many characters
+    #     # we need to represent the correct percentage of completeness.
+    #     progresscharcount = int(percentcomplete * self.width / 100)
+    #     if progresscharcount > self.progresscharcount:
+    #         # The self.progresscharcount stores how many characters where
+    #         # already printed in previous calls to the `progress`
+    #         # function. Therefore, we only need to print the remaining
+    #         # characters until we reach `progresscharcount`.
+    #         for i in range(self.progresscharcount, progresscharcount):  # pylint:disable=W0612
+    #             self._output.write(self.progresschar)
+    #             self._output.flush()
+    #         # Update self.progresscharcount
+    #         self.progresscharcount = progresscharcount
+
+    #     # If we completed the bar, print a newline
+    #     if percentcomplete == 100:
+    #         self._output.write("\n")
 # xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
