@@ -672,6 +672,14 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C2.cell_radius, 1.0)
         self.assertEqual(self.C3.cell_radius, 1.0)
 
+    def test_iterator_cells_in_the_cluster(self):
+        for i,c in enumerate(self.C1):
+            self.assertTrue(isinstance(c, cell.Cell))
+        self.assertEqual(i, 2)
+
+        for i,c in enumerate(self.C2):
+            self.assertTrue(isinstance(c, cell.Cell))
+        self.assertEqual(i, 6)
 
 class GridTestCase(unittest.TestCase):
     def setUp(self):
@@ -722,6 +730,12 @@ class GridTestCase(unittest.TestCase):
                       -1.73205081 + 1.5j, -2.16506351 - 0.75j,
                       -0.43301270 - 2.25j, 1.73205081 - 1.5j]))
 
+    def test_iterator_for_clusters(self):
+        G1 = cell.Grid()
+        G1.create_clusters(2, 2, 0.5)
+        for i, c in enumerate(G1):
+            self.assertTrue(isinstance(c, cell.Cluster))
+        self.assertEqual(i, 1)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

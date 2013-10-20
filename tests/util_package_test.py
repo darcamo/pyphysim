@@ -26,6 +26,23 @@ from util.simulations import *
 from util.simulations import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
 
 
+# This method is used in test methods for the ProgressbarText class (and
+# other classes that use ProgressbarText)
+def _get_clear_string_from_stringio_object(mystring):
+    """
+    """
+    from StringIO import StringIO
+    if isinstance(mystring, StringIO):
+        # mystring is actually a StringIO object
+        value = mystring.getvalue()
+    else:
+        # mystring is a regular string
+        value = mystring
+
+    value = value.split('\r')
+    return value[0] + value[-1].strip(' ')
+
+
 # Define a _DummyRunner class for the testing the simulate and
 # simulate_in_parallel methods in the SimulationRunner class.
 class _DummyRunner(simulations.SimulationRunner):
@@ -38,15 +55,18 @@ class _DummyRunner(simulations.SimulationRunner):
         # Now we add a dummy parameter to our runner object
         self.params.add('SNR', np.array([0., 5., 10., 15., 20.]))
         self.params.add('bias', 1.3)
+        self.params.add('extra', np.array([2.2, 4.1]))
         self.params.set_unpack_parameter('SNR')
+        self.params.set_unpack_parameter('extra')
 
     @staticmethod
     def _run_simulation(current_params):
         SNR = current_params['SNR']
         bias = current_params['bias']
+        extra = current_params['extra']
         sim_results = SimulationResults()
 
-        value = 1.2 * SNR + bias
+        value = 1.2 * SNR + bias + extra
         # The correct result will be SNR * 1.2
         sim_results.add_new_result('lala', Result.RATIOTYPE, value, 1)
         return sim_results
@@ -463,12 +483,14 @@ class SimulationParametersTestCase(unittest.TestCase):
             set(self.sim_params.unpacked_parameters),
             set(['third']))
 
-    def test_equality(self):
+    def test_equal_and_not_equal_operators(self):
         other = SimulationParameters()
         self.assertFalse(self.sim_params == other)
+        self.assertTrue(self.sim_params != other)
         other.add('first', 10)
         other.add('second', 20)
         self.assertTrue(self.sim_params == other)
+        self.assertFalse(self.sim_params != other)
 
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.assertFalse(self.sim_params == other)
@@ -483,6 +505,12 @@ class SimulationParametersTestCase(unittest.TestCase):
         other.parameters['third'][2] = 10
         self.assertFalse(self.sim_params == other)
         self.sim_params.parameters['third'][2] = 10
+        self.assertTrue(self.sim_params == other)
+
+        # The rep_max parameter is not considering when testing if two
+        # SimulationParameters objects are equal or not.
+        other.add('rep_max', 30)
+        self.sim_params.add('rep_max', 40)
         self.assertTrue(self.sim_params == other)
 
     def test_get_unpacked_params_list(self):
@@ -1235,13 +1263,19 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner.simulate()  # The results will be the SNR values
                                 # multiplied by 1.2. plus the bias
                                 # parameter
-        lala_results = [r.get_result() for r in dummyrunner.results['lala']]
-        expected_lala_results = [1.3, 7.3, 13.3, 19.3, 25.3]
+        results_extra_1 = dummyrunner.results.get_result_values_list(
+            'lala', {'extra':2.2})
+        expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
+        np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
 
-        self.assertAlmostEqual(lala_results, expected_lala_results)
+        results_extra_2 = dummyrunner.results.get_result_values_list(
+            'lala', {'extra':4.1})
+        expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
+        np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
 
-    # This test method is normally skipped, unless you have started the
-    # IPython cluster so that you have at leas one engine running.
+    # This test method is normally skipped, unless you have started an
+    # IPython cluster with a "tests" profile so that you have at least one
+    # engine running.
     def test_simulate_in_parallel(self):
         try:
             from IPython.parallel import Client
@@ -1271,10 +1305,15 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         runner.simulate_in_parallel(lview)
 
-        lala_results = [r.get_result() for r in runner.results['lala']]
-        expected_lala_results = [1.3, 7.3, 13.3, 19.3, 25.3]
+        results_extra_1 = runner.results.get_result_values_list(
+            'lala', {'extra':2.2})
+        expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
+        np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
 
-        self.assertAlmostEqual(lala_results, expected_lala_results)
+        results_extra_2 = runner.results.get_result_values_list(
+            'lala', {'extra':4.1})
+        expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
+        np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1430,13 +1469,13 @@ class MiscFunctionsTestCase(unittest.TestCase):
             8)
 
     def test_calc_unorm_autocorr(self):
-        x = np.array([4, 2, 1, 3, 7, 3, 8])
+        x = np.array([4., 2, 1, 3, 7, 3, 8])
         unorm_autocor = misc.calc_unorm_autocorr(x)
         expected_unorm_autocor = np.array([152, 79, 82, 53, 42, 28, 32])
         np.testing.assert_array_equal(unorm_autocor, expected_unorm_autocor)
 
     def test_calc_autocorr(self):
-        x = np.array([4, 2, 1, 3, 7, 3, 8])
+        x = np.array([4., 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
         expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
@@ -1590,7 +1629,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 # if __name__ == '__main__2':
 #     import multiprocessing
 #     from time import sleep
-#     from progressbar import ProgressbarMultiProcessText
+#     from progressbar import ProgressbarMultiProcessServer
 #
 #     # Runs in a different process and owns the queue
 #     manager = multiprocessing.Manager()
@@ -1601,7 +1640,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 #     p1 = multiprocessing.Process(target=producer, args=[queue, 1, 0.5])
 #     #p2 = multiprocessing.Process(target=producer, args=[queue])
 #
-#     # bar = ProgressbarMultiProcessText(queue, total_final_count=40, progresschar='o', message="Teste")
+#     # bar = ProgressbarMultiProcessServer(queue, total_final_count=40, progresschar='o', message="Teste")
 #     #c = progressbar.start_updater()
 #     c = multiprocessing.Process(target=progress_bar_background, args=[queue])
 #
@@ -1633,17 +1672,37 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
 
+    def test_write_initialization(self):
+        self.pbar.width = 80
+        self.pbar._write_initialization()
+
+        self.assertEqual(self.out.getvalue(), """--------------------------- ProgressbarText Unittest --------------------------1
+       1       2       3       4       5       6       7       8       9       0
+-------0-------0-------0-------0-------0-------0-------0-------0-------0-------0\n""")
+
+        self.pbar2.width = 40
+        self.pbar2._message = "Just a Message"
+        self.pbar2._write_initialization()
+        self.assertEqual(self.out2.getvalue(), """------------ Just a Message -----------1
+   1   2   3   4   5   6   7   8   9   0
+---0---0---0---0---0---0---0---0---0---0\n""")
+
     def test_progress(self):
         # Progress 20% (10 is equivalent to 20% of 50)
         self.pbar.progress(10)
-        self.assertEqual(self.out.getvalue(), """------------ ProgressbarText Unittest -----------1
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(self.out),
+            #self.out.getvalue(),
+"""------------ ProgressbarText Unittest -----------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 **********""")
 
         # Progress to 70%
         self.pbar.progress(35)
-        self.assertEqual(self.out.getvalue(), """------------ ProgressbarText Unittest -----------1
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(self.out),
+"""------------ ProgressbarText Unittest -----------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 ***********************************""")
@@ -1651,7 +1710,9 @@ class ProgressbarTextTestCase(unittest.TestCase):
         # Progress to 100% -> Note that in the case of 100% a new line is
         # added at the end.
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), """------------ ProgressbarText Unittest -----------1
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(self.out),
+"""------------ ProgressbarText Unittest -----------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 **************************************************\n""")
@@ -1659,7 +1720,9 @@ class ProgressbarTextTestCase(unittest.TestCase):
         # Test with pbar2, which uses the default progress message and the
         # character 'x' to indicate progress.
         self.pbar2.progress(20)
-        self.assertEqual(self.out2.getvalue(), """------------------ % Progress -------------------1
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(self.out2),
+"""------------------- % Progress ------------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
@@ -1668,16 +1731,18 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         # Test the case when the progress is lower then 1%.
         pbar3 = progressbar.ProgressbarText(finalcount=200, output=self.out)
         pbar3.progress(1)
-        self.assertEqual(self.out.getvalue(), """------------------ % Progress -------------------1
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(self.out),
+"""------------------- % Progress ------------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 """)
 
-        # Test the case when finalcount is zero.
-        pbar4 = progressbar.ProgressbarText(0, output=self.out2)
-        # Any progress will get the bar to 100%
-        pbar4.progress(1)
-        self.assertEqual(self.out2.getvalue(), """------------------ % Progress -------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
+        # # Test the case when finalcount is zero.
+        # pbar4 = progressbar.ProgressbarText(0, output=self.out2)
+        # # Any progress will get the bar to 100%
+        # pbar4.progress(1)
+        # self.assertEqual(self.out2.getvalue(), """------------------- % Progress ------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
 
 
 class ProgressbarText2TestCase(unittest.TestCase):
@@ -1692,16 +1757,58 @@ class ProgressbarText2TestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
 
-    def test_some_method(self):
+    def test_get_percentage_representation(self):
+        # xxxxxxxxxx Tests for bar width of 50 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.assertEqual(
+            self.pbar._get_percentage_representation(50,
+                                                     central_message='',
+                                                     left_side='',
+                                                     right_side=''),
+            '*************************                         ')
+
+        self.assertEqual(
+            self.pbar._get_percentage_representation(50,
+                                                     central_message=''),
+            '[************************                        ]')
+
+        self.assertEqual(self.pbar._get_percentage_representation(30),
+                         '[**************         30%                      ]')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Tests for bar width of 80 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.pbar2.width = 80
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(50,
+                                                      central_message='',
+                                                      left_side='',
+                                                      right_side=''),
+            '****************************************                                        ')
+
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(50, central_message=''),
+            '[***************************************                                       ]')
+
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(25, central_message=''),
+            '[*******************                                                           ]')
+
+        self.assertEqual(
+            self.pbar2._get_percentage_representation(
+                70,
+                central_message='Progress: {percent}'),
+            '[*********************************Progress: 70*********                        ]')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_progress(self):
         self.pbar.progress(15)
-        self.assertEqual(self.out.getvalue(), "\r[**************        30%                       ]  ProgressbarText Unittest")
+        self.assertEqual(self.out.getvalue(), "\r[**************         30%                      ]  ProgressbarText Unittest")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r[**************        30%                       ]  ProgressbarText Unittest\r[*********************100%***********************]  ProgressbarText Unittest\n")
+        self.assertEqual(self.out.getvalue(), "\r[**************         30%                      ]  ProgressbarText Unittest\r[**********************100%**********************]  ProgressbarText Unittest\n")
 
         # Progressbar with no message -> Use a default message
         self.pbar2.progress(15)
-        self.assertEqual(self.out2.getvalue(), "\r[**************        30%                       ]  15 of 50 complete")
+        self.assertEqual(self.out2.getvalue(), "\r[**************         30%                      ]  15 of 50 complete")
 
 
 class ProgressbarText3TestCase(unittest.TestCase):
@@ -1716,20 +1823,20 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
 
-    def test_some_method(self):
+    def test_progress(self):
         self.pbar.progress(15)
 
         # print
         #print self.out.getvalue()
 
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\n")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\n\r********* ProgressbarText Unittest 50/50 *********\n")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********\n")
 
         # Test with no message (use default message)
         self.pbar2.progress(40)
-        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************\n")
+        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************")
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
@@ -1737,21 +1844,33 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
 
-        self.mpbar = progressbar.ProgressbarMultiProcessText(message="Some message", sleep_time=0.1, filename=self.output_filename)
-        self.proxybar1 = self.mpbar.register_function_and_get_proxy_progressbar(10)
-        self.proxybar2 = self.mpbar.register_function_and_get_proxy_progressbar(15)
+        self.mpbar = progressbar.ProgressbarMultiProcessServer(message="Some message", sleep_time=0.001, filename=self.output_filename)
+        self.proxybar1 = self.mpbar.register_client_and_get_proxy_progressbar(10)
+        self.proxybar2 = self.mpbar.register_client_and_get_proxy_progressbar(15)
 
     def test_register(self):
-        # proxybar1 and proxybar2 were already registered in the setUp
-        # method. Let's test if this was performed correctly.
-
-        # _last_id starts at -1 when nothing was is registered and a value
-        # of 1 is added each time something is registered.
+        # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.mpbar._last_id, 1)
+        self.assertEqual(self.mpbar.total_final_count, 25)
 
-        self.assertEqual(self.mpbar._total_final_count, 25)
+        # Register a new proxy progressbar and test the last_id and
+        # total_final_count again.
+        proxybar3 = self.mpbar.register_client_and_get_proxy_progressbar(13)
+        self.assertEqual(self.mpbar._last_id, 2)
+        self.assertEqual(self.mpbar.total_final_count, 38)
 
-    # Note: This method will sleep for 0.3 seconds thus adding to the total
+    def test_proxy_progressbars(self):
+        # Test the information in the proxybar1
+        self.assertEqual(self.proxybar1.client_id, 0)
+        self.assertTrue(self.proxybar1._client_data_list is
+                        self.mpbar._client_data_list)
+
+        # Test the information in the proxybar2
+        self.assertEqual(self.proxybar2.client_id, 1)
+        self.assertTrue(self.proxybar2._client_data_list is
+                        self.mpbar._client_data_list)
+
+    # Note: This method will sleep for 0.01 seconds thus adding to the total
     # amount of time required to run all tests. Unfortunatelly, this is a
     # necessary cost.
     def test_updater(self):
@@ -1769,16 +1888,25 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.proxybar1.progress(6)
 
         # Then we start the "updater" of the main progressbar.
-        self.mpbar.start_updater()
+        self.mpbar.start_updater(start_delay=0.03)
+
+        # Register a new proxybar after start_updater was called. This only
+        # works because we have set a start_delay
+        proxy3 = self.mpbar.register_client_and_get_proxy_progressbar(25)
+        proxy3.progress(3)
 
         # Then the second process updates its progress
         self.proxybar2.progress(6)
         #self.mpbar.stop_updater()
 
         # Sleep for a very short time so that the
-        # ProgressbarMultiProcessText object has time to create the file
+        # ProgressbarMultiProcessServer object has time to create the file
         # with the current progress
-        time.sleep(0.3)
+        time.sleep(0.01)
+
+        # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        time.sleep(0.04)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.mpbar.stop_updater(0)
 
@@ -1790,9 +1918,51 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         expected_progress_string = """------------------ Some message -----------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
-************************"""
+***************"""
 
-        self.assertEqual(progress_string, expected_progress_string)
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(progress_string),
+            expected_progress_string)
+
+        # expected_progress_string = """------------------ Some message -----------------1
+#     1    2    3    4    5    6    7    8    9    0
+# ----0----0----0----0----0----0----0----0----0----0
+# ************************"""
+
+    def test_start_and_stop_updater_process(self):
+        from time import sleep
+        self.assertFalse(self.mpbar.running.is_set())
+        self.assertEqual(self.mpbar._start_updater_count, 0)
+        self.mpbar.start_updater()
+        sleep(0.1)  # We need some time for the process to start and
+                    # self.mpbar.running is set
+        self.assertEqual(self.mpbar._start_updater_count, 1)
+        self.assertTrue(self.mpbar.running.is_set())
+
+        # Call the start_updater a second time. This should not really try
+        # to start the updater process, since it is already started.
+        self.mpbar.start_updater()
+        self.assertEqual(self.mpbar._start_updater_count, 2)
+
+        # Since we called start_updater two times, calling stop_updater
+        # only once should not stop the updater process. We need to
+        # stop_updater as many times as start_updater so that the updater
+        # process is actually stopped.
+        self.mpbar.stop_updater()
+        self.assertEqual(self.mpbar._start_updater_count, 1)
+        self.assertTrue(self.mpbar.running.is_set())
+
+        self.mpbar.stop_updater()
+        self.assertEqual(self.mpbar._start_updater_count, 0)
+        self.assertFalse(self.mpbar.running.is_set())
+
+    # def test_start_updater_with_no_clients(self):
+    #     from time import sleep
+    #     pbar = progressbar.ProgressbarMultiProcessServer(message="Some message", sleep_time=0.1, filename='output.out')
+    #     pbar.start_updater()
+    #     sleep(0.1)
+
+    #     self.assertTrue(pbar.running.is_set())
 
 
 # TODO: finish implementation
@@ -1801,9 +1971,9 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQTextTestCase.out"
 
-        self.zmqbar = progressbar.ProgressbarZMQText(message="Some message", sleep_time=0.1, filename=self.output_filename)
-        self.proxybar1 = self.zmqbar.register_function_and_get_proxy_progressbar(10)
-        self.proxybar2 = self.zmqbar.register_function_and_get_proxy_progressbar(15)
+        self.zmqbar = progressbar.ProgressbarZMQServer(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
+        self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 
     def tearDown(self):
         self.zmqbar._zmq_pull_socket.close()
@@ -1815,7 +1985,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
 
         # Register a new proxy progressbar and test the last_id and
         # total_final_count again.
-        proxybar3 = self.zmqbar.register_function_and_get_proxy_progressbar(13)
+        proxybar3 = self.zmqbar.register_client_and_get_proxy_progressbar(13)
         self.assertEqual(self.zmqbar._last_id, 2)
         self.assertEqual(self.zmqbar._total_final_count, 38)
 
@@ -1849,8 +2019,105 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         # Before the first time the progress method in self.proxybar1 and
         # self.proxybar2 is called their "_progress_func" variable points
         # to the "_connect_and_update_progress" method
-        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
-        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQProxy._connect_and_update_progress)
+        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+
+
+# TODO: finish implementation
+class ProgressbarZMQText2TestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.output_filename = "ProgressbarZMQText2TestCase.out"
+
+        self.zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
+        self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
+
+    def tearDown(self):
+        self.zmqbar.stop_updater()
+
+    def test_register(self):
+        # Test last_id and total_final_count of the main progress bar
+        self.assertEqual(self.zmqbar._last_id, 1)
+        self.assertEqual(self.zmqbar.total_final_count, 25)
+
+        # Register a new proxy progressbar and test the last_id and
+        # total_final_count again.
+        proxybar3 = self.zmqbar.register_client_and_get_proxy_progressbar(13)
+        self.assertEqual(self.zmqbar._last_id, 2)
+        self.assertEqual(self.zmqbar.total_final_count, 38)
+
+        # Test IP and port of the proxy progress bars
+        self.assertEqual(self.proxybar1.ip, self.zmqbar.ip)
+        self.assertEqual(self.proxybar1.port, self.zmqbar.port)
+        self.assertEqual(self.proxybar2.ip, self.zmqbar.ip)
+        self.assertEqual(self.proxybar2.port, self.zmqbar.port)
+        self.assertEqual(proxybar3.ip, self.zmqbar.ip)
+        self.assertEqual(proxybar3.port, self.zmqbar.port)
+
+
+    def test_proxy_progressbars(self):
+        # Test the information in the proxybar1
+        self.assertEqual(self.proxybar1.client_id, 0)
+        self.assertEqual(self.proxybar1.ip, self.zmqbar.ip)
+        self.assertEqual(self.proxybar1.port, self.zmqbar.port)
+
+        # Test the information in the proxybar2
+        self.assertEqual(self.proxybar2.client_id, 1)
+        self.assertEqual(self.proxybar2.ip, self.zmqbar.ip)
+        self.assertEqual(self.proxybar2.port, self.zmqbar.port)
+
+        # Since we did not call the progress method of the proxy
+        # progressbars not even once yet, they have not created their
+        # sockets yet.
+        self.assertIsNone(self.proxybar1._zmq_push_socket)
+        self.assertIsNone(self.proxybar2._zmq_push_socket)
+        self.assertIsNone(self.proxybar1._zmq_context)
+        self.assertIsNone(self.proxybar2._zmq_context)
+
+        # Before the first time the progress method in self.proxybar1 and
+        # self.proxybar2 is called their "_progress_func" variable points
+        # to the "_connect_and_update_progress" method
+        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+
+    def test_update_progress(self):
+        from time import sleep
+        #self.zmqbar._sleep_time = 5
+        self.zmqbar.start_updater()
+        self.proxybar1.progress(5)
+        self.proxybar2.progress(10)
+        sleep(0.3)
+
+        # Open and read the progress from the file
+        progress_output_file = open(self.output_filename)
+        progress_string = progress_output_file.read()
+        progress_output_file.close()
+
+        # Expected string with the progress output
+        expected_progress_string = """------------------ Some message -----------------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+******************************"""
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(progress_string),
+            expected_progress_string)
+
+        # ------------------------
+        self.zmqbar.stop_updater()
+        # ------------------------
+
+        # After the stop_updater method the progressbar should be full
+        progress_output_file2 = open(self.output_filename)
+        progress_string2 = progress_output_file2.read()
+        progress_output_file2.close()
+        expected_progress_string2 = """------------------ Some message -----------------1
+    1    2    3    4    5    6    7    8    9    0
+----0----0----0----0----0----0----0----0----0----0
+**************************************************\n"""
+        self.assertEqual(
+            _get_clear_string_from_stringio_object(progress_string2),
+            expected_progress_string2)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1873,25 +2140,25 @@ def progress_producer(process_id, process_data_list, sleep_time=0.5):  # pragma:
 if __name__ == '__main__1':  # pragma: no cover
     from time import sleep
     import multiprocessing
-    from util.progressbar import ProgressbarMultiProcessText
+    from util.progressbar import ProgressbarMultiProcessServer
     import sys
 
-    bar = ProgressbarMultiProcessText(sleep_time=1)
+    bar = ProgressbarMultiProcessServer(sleep_time=1)
 
-    # # xxxxx Option 1: register_function xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # # xxxxx Option 1: register_client xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # # Register two functions with count 20, each, in the progressbar
-    # func_1_data = bar._register_function(20)
-    # func_2_data = bar._register_function(20)
+    # func_1_data = bar._register_client(20)
+    # func_2_data = bar._register_client(20)
 
     # # Create the processes to run the functions
     # p1 = multiprocessing.Process(target=progress_producer, args=(func_1_data[0], func_1_data[1], 0.2))
     # p2 = multiprocessing.Process(target=progress_producer, args=(func_2_data[0], func_2_data[1], 0.3))
     # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Option 2: register_function_and_get_proxy_progressbar xxxxxxxxx
+    # xxxxx Option 2: register_client_and_get_proxy_progressbar xxxxxxxxx
     # Register two functions with count 20, each, in the progressbar
-    proxybar1 = bar.register_function_and_get_proxy_progressbar(20)
-    proxybar2 = bar.register_function_and_get_proxy_progressbar(20)
+    proxybar1 = bar.register_client_and_get_proxy_progressbar(20)
+    proxybar2 = bar.register_client_and_get_proxy_progressbar(20)
 
     # Create the processes to run the functions
     p1 = multiprocessing.Process(target=progress_producer2, args=(proxybar1, 0.2))
