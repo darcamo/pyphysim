@@ -1915,10 +1915,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         progress_string = progress_output_file.read()
 
         # Expected string with the progress output
-        expected_progress_string = """------------------ Some message -----------------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-***************"""
+        expected_progress_string = """[**************         30%                      ]  Some message"""
 
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string),
@@ -2029,7 +2026,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQText2TestCase.out"
 
-        self.zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.1, filename=self.output_filename)
+        self.zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.1, filename=self.output_filename, port=7755)
         self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
         self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 
@@ -2095,10 +2092,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         progress_output_file.close()
 
         # Expected string with the progress output
-        expected_progress_string = """------------------ Some message -----------------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-******************************"""
+        expected_progress_string = """[***********************60%**                    ]  Some message"""
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string),
             expected_progress_string)
@@ -2111,10 +2105,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         progress_output_file2 = open(self.output_filename)
         progress_string2 = progress_output_file2.read()
         progress_output_file2.close()
-        expected_progress_string2 = """------------------ Some message -----------------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-**************************************************\n"""
+        expected_progress_string2 = """[**********************100%**********************]  Some message\n"""
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string2),
             expected_progress_string2)
@@ -2123,60 +2114,60 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def progress_producer2(bar, sleep_time=0.5):  # pragma: no cover
-    total_count = 20
-    for i in range(1, total_count + 1):
-        sleep(sleep_time)
-        bar.progress(i)
+# def progress_producer2(bar, sleep_time=0.5):  # pragma: no cover
+#     total_count = 20
+#     for i in range(1, total_count + 1):
+#         sleep(sleep_time)
+#         bar.progress(i)
 
 
-def progress_producer(process_id, process_data_list, sleep_time=0.5):  # pragma: no cover
-    total_count = 20
-    for i in range(1, total_count + 1):
-        sleep(sleep_time)
-        process_data_list[process_id] = i
+# def progress_producer(process_id, process_data_list, sleep_time=0.5):  # pragma: no cover
+#     total_count = 20
+#     for i in range(1, total_count + 1):
+#         sleep(sleep_time)
+#         process_data_list[process_id] = i
 
 
-if __name__ == '__main__1':  # pragma: no cover
-    from time import sleep
-    import multiprocessing
-    from util.progressbar import ProgressbarMultiProcessServer
-    import sys
+# if __name__ == '__main__1':  # pragma: no cover
+#     from time import sleep
+#     import multiprocessing
+#     from util.progressbar import ProgressbarMultiProcessServer
+#     import sys
 
-    bar = ProgressbarMultiProcessServer(sleep_time=1)
+#     bar = ProgressbarMultiProcessServer(sleep_time=1)
 
-    # # xxxxx Option 1: register_client xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # # Register two functions with count 20, each, in the progressbar
-    # func_1_data = bar._register_client(20)
-    # func_2_data = bar._register_client(20)
+#     # # xxxxx Option 1: register_client xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#     # # Register two functions with count 20, each, in the progressbar
+#     # func_1_data = bar._register_client(20)
+#     # func_2_data = bar._register_client(20)
 
-    # # Create the processes to run the functions
-    # p1 = multiprocessing.Process(target=progress_producer, args=(func_1_data[0], func_1_data[1], 0.2))
-    # p2 = multiprocessing.Process(target=progress_producer, args=(func_2_data[0], func_2_data[1], 0.3))
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#     # # Create the processes to run the functions
+#     # p1 = multiprocessing.Process(target=progress_producer, args=(func_1_data[0], func_1_data[1], 0.2))
+#     # p2 = multiprocessing.Process(target=progress_producer, args=(func_2_data[0], func_2_data[1], 0.3))
+#     # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Option 2: register_client_and_get_proxy_progressbar xxxxxxxxx
-    # Register two functions with count 20, each, in the progressbar
-    proxybar1 = bar.register_client_and_get_proxy_progressbar(20)
-    proxybar2 = bar.register_client_and_get_proxy_progressbar(20)
+#     # xxxxx Option 2: register_client_and_get_proxy_progressbar xxxxxxxxx
+#     # Register two functions with count 20, each, in the progressbar
+#     proxybar1 = bar.register_client_and_get_proxy_progressbar(20)
+#     proxybar2 = bar.register_client_and_get_proxy_progressbar(20)
 
-    # Create the processes to run the functions
-    p1 = multiprocessing.Process(target=progress_producer2, args=(proxybar1, 0.2))
-    p2 = multiprocessing.Process(target=progress_producer2, args=(proxybar2, 0.3))
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#     # Create the processes to run the functions
+#     p1 = multiprocessing.Process(target=progress_producer2, args=(proxybar1, 0.2))
+#     p2 = multiprocessing.Process(target=progress_producer2, args=(proxybar2, 0.3))
+#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # Start the processes and the progressbar updating
-    bar.start_updater()
-    p1.start()
-    p2.start()
+#     # Start the processes and the progressbar updating
+#     bar.start_updater()
+#     p1.start()
+#     p2.start()
 
-    p1.join()
-    p2.join()
+#     p1.join()
+#     p2.join()
 
-    # Stop the process that updates the progressbar.
-    bar.stop_updater()
+#     # Stop the process that updates the progressbar.
+#     bar.stop_updater()
 
-    print("The End")
+#     print("The End")
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -877,6 +877,7 @@ class SimulationRunner(object):
 
                 for i in range(1, num_variations + 1):
                     variation_pbar.progress(i)
+                    print  # print a new line
                     yield i
 
         # Create the var_print_iter Iterator

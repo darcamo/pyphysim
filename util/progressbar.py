@@ -164,6 +164,11 @@ class ProgressbarTextBase(object):
         self._output = output
         self._message = message  # THIS WILL BE IGNORED
 
+        # This will be set to true when the progress reaches 100%. When
+        # this is True, any subsequent calls to the `progress` method will
+        # be ignored.
+        self._finalized = False
+
     def _set_width(self, value):
         """Set method for the width property."""
         # If value is not a multiple of 10, width will be set to the
@@ -243,24 +248,30 @@ class ProgressbarTextBase(object):
         `_update_iteration` method, which is left to be implemented in a
         subclass.
         """
-        # Update the prog_bar variable
-        self._update_iteration(count)
+        if self._finalized is False:
+            # Update the prog_bar variable
+            self._update_iteration(count)
 
-        # We simple change the cursor to the beginning of the line and
-        # write the string representation of the prog_bar variable.
-        self._output.write('\r')
-        self._output.write(str(self.prog_bar))
+            # We simple change the cursor to the beginning of the line and
+            # write the string representation of the prog_bar variable.
+            self._output.write('\r')
+            self._output.write(str(self.prog_bar))
 
-        # If count is equal to self.finalcount we have reached 100%. In
-        # that case, we also write a final newline character.
-        if count == self.finalcount:
-            # Print an empty line after the last iteration to be consistent
-            # with the ProgressbarText class
-            self._output.write("\n")
+            # If count is equal to self.finalcount we have reached 100%. In
+            # that case, we also write a final newline character.
+            if count == self.finalcount:
+                # Print an empty line after the last iteration to be consistent
+                # with the ProgressbarText class
+                self._output.write("\n")
 
-        # Flush everything to guarantee that at this point everything is
-        # written to the output.
-        self._output.flush()
+                # When progress reaches 100% we set the internal variable
+                # to True so that any subsequent calls to the `progress`
+                # method will be ignored.
+                self._finalized = True
+
+            # Flush everything to guarantee that at this point everything is
+            # written to the output.
+            self._output.flush()
 
     def __str__(self):
         return str(self.prog_bar)
@@ -807,10 +818,10 @@ class ProgressbarDistributedServerBase(object):
         else:
             output = open(filename, 'w')
 
-        pbar = ProgressbarText(self.total_final_count,
-                               self._progresschar,
-                               self._message,
-                               output=output)
+        pbar = ProgressbarText2(self.total_final_count,
+                                self._progresschar,
+                                self._message,
+                                output=output)
         count = 0
         while count < self.total_final_count and self.running.is_set():
             time.sleep(self._sleep_time)
