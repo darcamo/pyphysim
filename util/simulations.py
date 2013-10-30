@@ -711,7 +711,7 @@ class SimulationRunner(object):
         # set.
         if self.update_progress_function_style == 'text1':  # pragma: no cover
             # We will use the ProgressbarText class
-            self._pbar = ProgressbarText(self.rep_max, '*', message)
+            self._pbar = ProgressbarText2(self.rep_max, '*', message)
             update_progress_func = self._pbar.progress
         elif self.update_progress_function_style == 'text2':  # pragma: no cover
             # We will use the ProgressbarText2 class

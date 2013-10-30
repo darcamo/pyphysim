@@ -169,6 +169,24 @@ class ProgressbarTextBase(object):
         # be ignored.
         self._finalized = False
 
+    def _count_to_percent(self, count):
+        """Convert a given count into the equivalent percentage.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+
+        Returns
+        -------
+        percentage : float
+            The percentage that `count` is of self.finalcount (between 0 and 100)
+        """
+        percentage = (count / float(self.finalcount)) * 100.0
+        return percentage
+
     def _set_width(self, value):
         """Set method for the width property."""
         # If value is not a multiple of 10, width will be set to the
@@ -458,7 +476,7 @@ class ProgressbarText(ProgressbarTextBase):
         ProgressbarTextBase.progress(self, count)
 
     def _update_iteration(self, count):
-        percentage = (count / float(self.finalcount)) * 100.0
+        percentage = self._count_to_percent(count)
 
         # Set the self.prog_bar variable simply as a string containing as
         # many self.progresschar characters as necessary.
@@ -514,7 +532,7 @@ class ProgressbarText2(ProgressbarTextBase):
         progresschar : str, optional (default to '*')
             The character used to represent progress.
         message : str, optional
-            A message to be shown in the top of the progressbar.
+            A message to be shown in the right of the progressbar.
         output : File like object
             Object with a 'write' method, which controls where the
             progress-bar will be printed. By default sys.stdout is used,
@@ -537,7 +555,7 @@ class ProgressbarText2(ProgressbarTextBase):
         """
         # Update the self.prog_bar variable with the current count, but
         # without the message (if there is one)
-        self._update_prog_bar((count / float(self.finalcount)) * 100.0)
+        self._update_prog_bar(self._count_to_percent(count))
 
         # Append the message to the self.prog_bar variable if there is one
         # (or a default message if there is no message set)..
@@ -572,7 +590,7 @@ class ProgressbarText3(ProgressbarTextBase):
         progresschar : str, optional (default to '*')
             The character used to represent progress.
         message : str, optional
-            A message to be shown in the top of the progressbar.
+            A message to be shown in the progressbar.
         output : File like object
             Object with a 'write' method, which controls where the
             progress-bar will be printed. By default sys.stdout is used,
