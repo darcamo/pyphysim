@@ -164,10 +164,34 @@ class ProgressbarTextBase(object):
         self._output = output
         self._message = message  # THIS WILL BE IGNORED
 
+        self._initialized = False
+
         # This will be set to true when the progress reaches 100%. When
         # this is True, any subsequent calls to the `progress` method will
         # be ignored.
         self._finalized = False
+
+        # This variable will store the time when the `start` method was
+        # called for the first time (either manually or in the `progress`
+        # method. It will be used for tracking the elapsed time.
+        self._start_time = 0.0
+        # This variable will store the time when the `stop` method was
+        # called for the first time (either manually or in the `progress`
+        # method. It will be used for tracking the elapsed time.
+        self._stop_time = 0.0
+
+    def _get_elapsed_time(self):
+        """Get method for the elapsed_time property."""
+        from util.misc import pretty_time
+
+        elapsed_time = 0.0
+        if self._initialized is True:
+            if self._finalized is False:
+                elapsed_time = time.time() - self._start_time
+            else:
+                elapsed_time = self._stop_time - self._start_time
+        return pretty_time(elapsed_time)
+    elapsed_time = property(_get_elapsed_time)
 
     def _count_to_percent(self, count):
         """Convert a given count into the equivalent percentage.
@@ -210,8 +234,10 @@ class ProgressbarTextBase(object):
         central_message : str
             A message that will be in the middle of the percentage bar. If
             there is the label '{percent}' in the central_message it will
-            be replaced by the percentage. Note that this message should be
-            very small, since it hides the progresschars.
+            be replaced by the percentage. If there is the label
+            '{elapsed_time}' in the central_message it will be replaced by
+            the elapsed time. Note that this message should be very small,
+            since it hides the progresschars.
         left_side : str
             The left side of the bar.
         - `right_side`:
@@ -223,6 +249,7 @@ class ProgressbarTextBase(object):
         """
         # Remove any fractinonal part
         percent_done = int(percent)
+        elapsed_time = self.elapsed_time
 
         # Calculates how many characters are spent just for the sides.
         sides_length = len(left_side) + len(right_side)
@@ -242,16 +269,57 @@ class ProgressbarTextBase(object):
         prog_bar = left_side + self.progresschar * num_hashes + ' ' * (all_full - num_hashes) + right_side
 
         # Replace the center of prog_bar with the message
-        central_message = central_message.format(percent=percent_done)
+        central_message = central_message.format(percent=percent_done, elapsed_time=elapsed_time)
         pct_place = (len(prog_bar) // 2) - (len(str(central_message)) // 2)
         prog_bar = prog_bar[0:pct_place] + central_message + prog_bar[pct_place + len(central_message):]
 
         return prog_bar
 
+    def _perform_initialization(self):
+        """
+        Perform the initializations.
+
+        This method should be derived in sub-classes if any initialization
+        code should be run.
+        """
+        pass
+
+    def start(self):
+        """
+        Start the progressbar.
+
+        This method should be called just before the progressbar is used
+        for the first time. Among possible other things, it will store the
+        current time so that the elapsed time can be tracked.
+        """
+        if self._initialized is False:
+            self._start_time = time.time()
+            self._perform_initialization()
+            self._initialized = True
+
+    def stop(self):
+        """
+        Stop the progressbar.
+
+        This method is automatically called in the `progress` method when
+        the progress reaches 100%. If manually called, any subsequent call
+        to the `progress` method will be ignored.
+        """
+        if self._finalized is False:
+            self._stop_time = time.time()
+
+            # Print an empty line after the last iteration to be consistent
+            # with the ProgressbarText class
+            self._output.write("\n")
+
+            # When progress reaches 100% we set the internal variable
+            # to True so that any subsequent calls to the `progress`
+            # method will be ignored.
+            self._finalized = True
+
     def progress(self, count):
         """
-        Write the current progress according to the value of `count` to the
-        output.
+        Updates the progress bar.
 
         Parameters
         ----------
@@ -267,6 +335,17 @@ class ProgressbarTextBase(object):
         subclass.
         """
         if self._finalized is False:
+            # Start the progressbar. This only have an effect the first
+            # time it is called. It initializes the elapsed time tracking
+            # and call the _perform_initialization method to perform any
+            # initialization.
+            self.start()
+
+            # Sanity check. If count is greater then self.finalcount we set
+            # it to self.finalcount
+            if count > self.finalcount:
+                count = self.finalcount
+
             # Update the prog_bar variable
             self._update_iteration(count)
 
@@ -278,14 +357,7 @@ class ProgressbarTextBase(object):
             # If count is equal to self.finalcount we have reached 100%. In
             # that case, we also write a final newline character.
             if count == self.finalcount:
-                # Print an empty line after the last iteration to be consistent
-                # with the ProgressbarText class
-                self._output.write("\n")
-
-                # When progress reaches 100% we set the internal variable
-                # to True so that any subsequent calls to the `progress`
-                # method will be ignored.
-                self._finalized = True
+                self.stop()
 
             # Flush everything to guarantee that at this point everything is
             # written to the output.
@@ -308,7 +380,6 @@ class ProgressbarTextBase(object):
         """
         raise NotImplemented("Implement this method in a subclass")
 # xxxxxxxxxx ProgressbarTextBase - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -382,7 +453,6 @@ class ProgressbarText(ProgressbarTextBase):
         self.progresscharcount = 0  # stores how many characters where
                                     # already printed in a previous call to
                                     # the `progress` function
-        self._initialized = False
 
     def __get_initialization_bartitle(self):
         """
@@ -443,37 +513,13 @@ class ProgressbarText(ProgressbarTextBase):
 
         return (line1, line2)
 
-    def _write_initialization(self):
+    def _perform_initialization(self):
         bartitle = self.__get_initialization_bartitle()
         marker_line1, marker_line2 = self.__get_initialization_markers()
 
         self._output.write(bartitle)
         self._output.write(marker_line1)
         self._output.write(marker_line2)
-
-    def progress(self, count):
-        """Updates the progress bar.
-
-        The value of `count` will be added to the current amount and a
-        number of characters used to represent progress will be printed.
-
-        Parameters
-        ----------
-        count : int
-            The new amount of progress. The actual percentage of progress
-            is equal to count/finalcount.
-
-        """
-        if self._initialized is False:
-            self._write_initialization()
-            self._initialized = True
-
-        # # Write the actual progress. This modifies the
-        # # self.progresscharcount variable, which is how the ProgressbarText
-        # # objects keeps track of how many characters were already printed.
-        # self._write_progress(count)
-
-        ProgressbarTextBase.progress(self, count)
 
     def _update_iteration(self, count):
         percentage = self._count_to_percent(count)

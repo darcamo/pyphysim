@@ -1264,12 +1264,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
                                 # multiplied by 1.2. plus the bias
                                 # parameter
         results_extra_1 = dummyrunner.results.get_result_values_list(
-            'lala', {'extra':2.2})
+            'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
         np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
 
         results_extra_2 = dummyrunner.results.get_result_values_list(
-            'lala', {'extra':4.1})
+            'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
         np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
 
@@ -1306,12 +1306,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
         runner.simulate_in_parallel(lview)
 
         results_extra_1 = runner.results.get_result_values_list(
-            'lala', {'extra':2.2})
+            'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
         np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
 
         results_extra_2 = runner.results.get_result_values_list(
-            'lala', {'extra':4.1})
+            'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
         np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
 
@@ -1562,7 +1562,6 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertEqual(new_name2, expected_new_name2)
 
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1674,7 +1673,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
     def test_write_initialization(self):
         self.pbar.width = 80
-        self.pbar._write_initialization()
+        self.pbar._perform_initialization()
 
         self.assertEqual(self.out.getvalue(), """--------------------------- ProgressbarText Unittest --------------------------1
        1       2       3       4       5       6       7       8       9       0
@@ -1682,7 +1681,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
         self.pbar2.width = 40
         self.pbar2._message = "Just a Message"
-        self.pbar2._write_initialization()
+        self.pbar2._perform_initialization()
         self.assertEqual(self.out2.getvalue(), """------------ Just a Message -----------1
    1   2   3   4   5   6   7   8   9   0
 ---0---0---0---0---0---0---0---0---0---0\n""")
@@ -1773,6 +1772,13 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
         self.assertEqual(self.pbar._get_percentage_representation(30),
                          '[**************         30%                      ]')
+
+        self.assertEqual(
+            self.pbar._get_percentage_representation(70,
+                                                     central_message='{percent}% (Time: {elapsed_time})',
+                                                     left_side='',
+                                                     right_side=''),
+            '*****************70% (Time: 0.00s)*               ')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Tests for bar width of 80 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1858,6 +1864,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         proxybar3 = self.mpbar.register_client_and_get_proxy_progressbar(13)
         self.assertEqual(self.mpbar._last_id, 2)
         self.assertEqual(self.mpbar.total_final_count, 38)
+        self.assertEqual(proxybar3.client_id, 2)
 
     def test_proxy_progressbars(self):
         # Test the information in the proxybar1
@@ -2051,7 +2058,6 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         self.assertEqual(self.proxybar2.port, self.zmqbar.port)
         self.assertEqual(proxybar3.ip, self.zmqbar.ip)
         self.assertEqual(proxybar3.port, self.zmqbar.port)
-
 
     def test_proxy_progressbars(self):
         # Test the information in the proxybar1

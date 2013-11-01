@@ -743,6 +743,9 @@ def get_range_representation(array):
         A string expression representing `array`.
 
     """
+    if len(array) == 1:
+        return None
+
     step = array[1] - array[0]
     if np.allclose(array[1:] - step, array[0:-1]):
         # array is an arithmetic progression
