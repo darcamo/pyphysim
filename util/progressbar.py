@@ -566,7 +566,8 @@ class ProgressbarText(ProgressbarTextBase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarText2(ProgressbarTextBase):
     def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
-        """Initializes the progressbar object.
+        """
+        Initializes the progressbar object.
 
         Parameters
         ----------
@@ -578,7 +579,9 @@ class ProgressbarText2(ProgressbarTextBase):
         progresschar : str, optional (default to '*')
             The character used to represent progress.
         message : str, optional
-            A message to be shown in the right of the progressbar.
+            A message to be shown in the right of the progressbar. If this
+            message contains "{elapsed_time}" it will be replaced by the
+            elapsed time.
         output : File like object
             Object with a 'write' method, which controls where the
             progress-bar will be printed. By default sys.stdout is used,
@@ -606,7 +609,8 @@ class ProgressbarText2(ProgressbarTextBase):
         # Append the message to the self.prog_bar variable if there is one
         # (or a default message if there is no message set)..
         if(len(self._message) != 0):
-            self.prog_bar += "  {0}".format(self._message)
+            message = self._message.format(elapsed_time=self.elapsed_time)
+            self.prog_bar += "  {0}".format(message)
         else:
             self.prog_bar += '  %d of %d complete' % (count, self.finalcount)
 

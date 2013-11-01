@@ -1561,6 +1561,32 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_new_name2 = 'something bla bla - [ 5,10,18,20,25,30] something else 76'
         self.assertEqual(new_name2, expected_new_name2)
 
+    def test_pretty_time(self):
+        self.assertEqual(misc.pretty_time(0), '0.00s')
+        self.assertEqual(misc.pretty_time(2.3), '2.30s')
+        self.assertEqual(misc.pretty_time(5.15), '5.15s')
+        self.assertEqual(misc.pretty_time(23.44), '23.44s')
+
+        # Note that once we passed one minute, we always use two digits for
+        # the seconds
+        self.assertEqual(misc.pretty_time(60), '1m:00s')
+        self.assertEqual(misc.pretty_time(63), '1m:03s')
+
+        # Note that the seconds are now rounded to the closest integer
+        # value.
+        self.assertEqual(misc.pretty_time(65.7), '1m:06s')
+
+        # Note that once we passed one hour, we always use two digits for
+        # the minutes
+        self.assertEqual(misc.pretty_time(3745), '1h:02m:25s')
+
+        self.assertEqual(misc.pretty_time(6000), '1h:40m:00s')
+        self.assertEqual(misc.pretty_time(6015), '1h:40m:15s')
+        # Lets add two minuts (120 seconds)
+        self.assertEqual(misc.pretty_time(6135), '1h:42m:15s')
+
+        self.assertEqual(misc.pretty_time(6137), '1h:42m:17s')
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

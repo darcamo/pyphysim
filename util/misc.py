@@ -140,9 +140,9 @@ def pretty_time(time_in_seconds):
     minutes = minutes % 60
 
     if(hours > 0):
-        return "%sh:%sm:%ss" % (hours, minutes, seconds)
+        return "%sh:%02dm:%02ds" % (hours, minutes, seconds)
     elif(minutes > 0):
-        return "%sm:%ss" % (minutes, seconds)
+        return "%sm:%02ds" % (minutes, seconds)
     else:
         return "%.2fs" % time_in_seconds
 
