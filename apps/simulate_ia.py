@@ -686,7 +686,7 @@ if __name__ == '__main__':
     algorithms_to_simulate = [
         "Closed Form",
         "Alt Min",
-        "Max SINR",
+        # "Max SINR",
         "MMSE"
     ]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -699,7 +699,8 @@ if __name__ == '__main__':
     # runner.
     pbar = progressbar.ProgressbarZMQServer2(
         progresschar='*',
-        message="Simulating in Parallel",
+        message="Elapsed Time: {elapsed_time}",
+        sleep_time=1
     )
 
     pbar.start_updater()

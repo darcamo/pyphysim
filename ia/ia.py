@@ -834,17 +834,19 @@ class ClosedFormIASolver(IASolverBaseClass):
         :math:`\\mtE = \\mtH_{31}^{-1}\\mtH_{32}\\mtH_{12}^{-1}\\mtH_{13}\\mtH_{23}^{-1}\\mtH_{21}`.
         """
         # $\mtE = \mtH_{31}^{-1}\mtH_{32}\mtH_{12}^{-1}\mtH_{13}\mtH_{23}^{-1}\mtH_{21}$
-        inv = np.linalg.inv
+
+        #inv = np.linalg.inv
+        pinv = np.linalg.pinv
         H31 = self._get_channel(2, 0)
         H32 = self._get_channel(2, 1)
         H12 = self._get_channel(0, 1)
         H13 = self._get_channel(0, 2)
         H23 = self._get_channel(1, 2)
         H21 = self._get_channel(1, 0)
-        E = np.dot(inv(H31),
+        E = np.dot(pinv(H31),
                    np.dot(H32,
-                          np.dot(inv(H12),
-                                 np.dot(H13, np.dot(inv(H23), H21)))))
+                          np.dot(pinv(H12),
+                                 np.dot(H13, np.dot(pinv(H23), H21)))))
         return E
 
     def _calc_all_F_initializations(self, Ns):
@@ -908,11 +910,11 @@ class ClosedFormIASolver(IASolverBaseClass):
             self._F[0] = F0
 
         # The second precoder is given by $\mtH_{32}^{-1}\mtH_{31}\mtV_1$
-        invH32 = np.linalg.inv(self._get_channel(2, 1))
+        invH32 = np.linalg.pinv(self._get_channel(2, 1))
         H31 = self._get_channel(2, 0)
         self._F[1] = np.dot(invH32, np.dot(H31, F0))
         # The third precoder is given by $\mtH_{23}^{-1}\mtH_{21}\mtV_1$
-        invH23 = np.linalg.inv(self._get_channel(1, 2))
+        invH23 = np.linalg.pinv(self._get_channel(1, 2))
         H21 = self._get_channel(1, 0)
         self._F[2] = np.dot(invH23, np.dot(H21, F0))
 
