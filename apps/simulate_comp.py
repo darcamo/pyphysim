@@ -147,7 +147,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         #self.params.set_unpack_parameter('metric')
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 50  # Maximum number of repetitions for each
+        self.rep_max = 5000  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -173,14 +173,19 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.noise_var = conversion.dBm2Linear(self.N0)
 
         # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
+        # This must be either 'Symmetric Far Away' of 'Random'
+        self._scenario = 'Symmetric Far Away'
+
         # the scenario specific variables are created by running the
-        # _create_users_according_to_scenario method.
-        #
-        # Here we set the _create_users_according_to_scenario method to be
-        # one of the methods responsible for the users creation. Each
-        # possible method corresponds to a different scenario.
-        #self._create_users_according_to_scenario = self._create_random_users_scenario
-        self._create_users_according_to_scenario = self._create_symmetric_far_away_users_scenario
+        # _create_users_according_to_scenario method. Depending on the
+        # value of self._scenario _create_users_according_to_scenario will
+        # call the appropriated method.
+
+    def _create_users_according_to_scenario(self):
+        if self._scenario == 'Symmetric Far Away':
+            self._create_symmetric_far_away_users_scenario()
+        elif self._scenario == 'Random':
+            self._create_random_users_scenario()
 
     def _create_random_users_scenario(self):
         """Run this method to set variables specific to the 'RandomUsers'
@@ -268,8 +273,8 @@ class CompSimulationRunner(simulations.SimulationRunner):
                                              self.pe)
         self.comp_obj_None.set_ext_int_handling_metric(
             "None", {'modulator': self.modulator,
-                                       'packet_length': self.packet_length,
-                                       'num_streams': 1})
+                     'packet_length': self.packet_length,
+                     'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the Naive metric xxxxxxxxxxxxxx
@@ -1141,7 +1146,6 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
     return fig
 
 
-
 def plot_per_all_metrics(results, Pe_dBm):
     from matplotlib import pyplot as plt
 
@@ -1193,7 +1197,7 @@ def plot_per_all_metrics(results, Pe_dBm):
     return fig
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     # Lets import matplotlib if it is available
     try:
@@ -1207,23 +1211,56 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
     results_filename = 'comp_results'
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Performs the actual simulation xxxxxxxxxxxxxxxxxxxxxxxxxxx
     runner = CompSimulationRunner()
-    runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
-    runner.results.save_to_file('{0}.pickle'.format(results_filename))
+    ## xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # The simulation will be run either in parallel or serially depending
+    # if the IPython engines are running or not.
+    run_in_parallel = True
+    try:
+        # If we can get an IPython view that means that the IPython engines
+        # are running. In that case we will perform the simulation in
+        # parallel
+        from IPython.parallel import Client
+        # cl = Client(profile="ssh")
+        cl = Client(profile="default")
+        # We create a direct view to run coe in all engines
+        dview = cl.direct_view()
+        dview.execute('%reset')  # Reset the engines so that we don't have
+                                 # variables there from last computations
+        dview.execute('import sys')
+        # We use block=True to ensure that all engines have modified their
+        # path to include the folder with the simulator before we create
+        # the load lanced view in the following.
+        dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+
+        # But for the actual simulation we are better using a load balanced view
+        lview = cl.load_balanced_view()
+    except Exception:
+        # If we can't get an IPython view then we will perform the
+        # simulation serially
+        run_in_parallel = False
+
+    if run_in_parallel is True:
+        print("Simulation will be run in Parallel")
+        # Remove the " - SNR: {SNR}" string in the progressbar message,
+        # since when the simulation is performed in parallel we get a
+        # single progressbar for all the simulation.
+        runner.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
+        runner.simulate_in_parallel(lview, results_filename=results_filename)
+    else:
+        print("Simulation will be run serially")
+        runner.simulate(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #
     #
+    print "Runned iterations: {0}".format(runner.runned_reps)
     print "Elapsed Time: {0}".format(runner.elapsed_time)
     #
     #
     #
-    #xxxxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results_filename = 'comp_results'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
