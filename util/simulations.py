@@ -1236,15 +1236,19 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxx Perform the actual simulation in asynchronously parallel xxxx
-        self._async_results = view.map(simulate_for_current_params,
-                                       # We need to pass the SimulationRunner
-                                       # object to the IPython engine ...
-                                       [self] * num_variations,
-                                       # ... and we also need to pass the
-                                       # simulation parameters for each engine
-                                       self.params.get_unpacked_params_list(),
-                                       proxybar_data_list,
-                                       block=False)
+        # NOTE: If this fails because of some pickling error, make sure the
+        # class of 'self' (that is, the subclass of SimulationRunner that
+        # you are trying to run) is pickle-able.
+        self._async_results = view.map(
+            simulate_for_current_params,
+            # We need to pass the SimulationRunner
+            # object to the IPython engine ...
+            [self] * num_variations,
+            # ... and we also need to pass the
+            # simulation parameters for each engine
+            self.params.get_unpacked_params_list(),
+            proxybar_data_list,
+            block=False)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         if self._pbar is not None:
