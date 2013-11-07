@@ -22,7 +22,7 @@ import doctest
 import numpy as np
 
 from util import misc, progressbar, simulations, conversion
-from util.simulations import *
+from util.simulations import Result, SimulationParameters, SimulationResults, SimulationRunner
 from util.simulations import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
 
 
@@ -45,9 +45,9 @@ def _get_clear_string_from_stringio_object(mystring):
 
 # Define a _DummyRunner class for the testing the simulate and
 # simulate_in_parallel methods in the SimulationRunner class.
-class _DummyRunner(simulations.SimulationRunner):
+class _DummyRunner(SimulationRunner):
     def __init__(self):
-        simulations.SimulationRunner.__init__(self)
+        SimulationRunner.__init__(self)
         # Set the progress bar message to None to avoid print the
         # progressbar in these testes.
         self.rep_max = 2
@@ -627,7 +627,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.save_to_pickled_file(filename)
 
         # Load from the file
-        sim_params2 = simulations.SimulationParameters.load_from_pickled_file(filename)
+        sim_params2 = SimulationParameters.load_from_pickled_file(filename)
 
         self.assertEqual(self.sim_params['first'], sim_params2['first'])
         self.assertEqual(self.sim_params['second'], sim_params2['second'])
@@ -1102,7 +1102,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.save_to_file(filename)
 
         # Load from the file
-        simresults2 = simulations.SimulationResults.load_from_file(filename)
+        simresults2 = SimulationResults.load_from_file(filename)
 
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
@@ -1145,7 +1145,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.save_to_hdf5_file(filename)
 
         # Load from the file
-        simresults2 = simulations.SimulationResults.load_from_hdf5_file(filename)
+        simresults2 = SimulationResults.load_from_hdf5_file(filename)
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
                          set(simresults2.get_result_names()))
@@ -1198,7 +1198,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     #     self.simresults.save_to_pytables_file(filename)
 
     #     # Load from the file
-    #     simresults2 = simulations.SimulationResults.load_from_pytables_file(filename)
+    #     simresults2 = SimulationResults.load_from_pytables_file(filename)
     #     self.assertEqual(len(self.simresults), len(simresults2))
     #     self.assertEqual(set(self.simresults.get_result_names()),
     #                      set(simresults2.get_result_names()))
