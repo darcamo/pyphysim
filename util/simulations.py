@@ -174,9 +174,10 @@ from collections import OrderedDict, Iterable
 import itertools
 import copy
 import numpy as np
+from time import time
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarMultiProcessServer, ProgressbarZMQServer, ProgressbarZMQServer2, ProgressbarZMQClient
+from util.progressbar import ProgressbarText2, ProgressbarText3, ProgressbarZMQServer2, ProgressbarZMQClient
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -477,6 +478,10 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Interval variables for tracking simulation time xxxxxxxxxxx
+        # Note that self._elapsed_time is different from the 'elapsed_time'
+        # result returned after the simulation has finished. This variable
+        # only tracks the CURRENT SIMULATION and does not account the time
+        # any loaded partial results required to be simulated.
         self._elapsed_time = 0.0
         self.__tic = 0.0
         self.__toc = 0.0
@@ -601,6 +606,34 @@ class SimulationRunner(object):
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
         self.results = SimulationResults()
+
+    def __run_simulation_and_track_elapsed_time(self, current_parameters):
+        """
+        Perform the _run_simulation method and track its execution time. This
+        time will be added as a Result to the returned SimulationResults
+        object from _run_simulation.
+
+        Parameters
+        ----------
+        current_parameters : SimulationParameters object
+            SimulationParameters object with the parameters for the
+            simulation. The self.params variable is not used directly. It
+            is first unpacked in the simulate function which then calls
+            _run_simulation for each combination of unpacked parameters.
+
+        Notes
+        -----
+        This method is called in the `simulate` and `simulate_in_parallel`.
+        """
+        tic = time()
+        current_sim_results = self._run_simulation(current_parameters)
+        toc = time()
+        elapsed_time_result = Result.create('elapsed_time',
+                                                    Result.SUMTYPE,
+                                                    toc - tic)
+        current_sim_results.add_result(elapsed_time_result)
+
+        return current_sim_results
 
     def _run_simulation(self, current_parameters):
         """Performs one iteration of the simulation.
@@ -890,7 +923,6 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        from time import time
         self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -964,7 +996,8 @@ class SimulationRunner(object):
             # try/except block will run as usual.
             except IOError:
                 # Perform the first iteration of _run_simulation
-                current_sim_results = self._run_simulation(current_params)
+                current_sim_results = self.__run_simulation_and_track_elapsed_time(
+                    current_params)
                 current_rep = 1
 
             update_progress_func = self._get_serial_update_progress_function(current_params)
@@ -972,8 +1005,10 @@ class SimulationRunner(object):
             while (self._keep_going(current_params, current_sim_results, current_rep)
                    and
                    current_rep < self.rep_max):
-                current_sim_results.merge_all_results(
-                    self._run_simulation(current_params))
+                new_sim_results = self.__run_simulation_and_track_elapsed_time(
+                    current_params)
+                current_sim_results.merge_all_results(new_sim_results)
+
                 current_rep += 1
                 update_progress_func(current_rep)
 
@@ -1089,7 +1124,6 @@ class SimulationRunner(object):
         #pbar = ProgressbarMultiProcessServer(sleep_time=5)
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        from time import time
         self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1182,7 +1216,8 @@ class SimulationRunner(object):
             # try/except block will run as usual.
             except IOError:
                 # Perform the first iteration of _run_simulation
-                current_sim_results = obj._run_simulation(current_params)
+                current_sim_results = obj.__run_simulation_and_track_elapsed_time(
+                    current_params)
                 current_rep = 1
 
             # Run more iterations until one of the stop criteria is reached
@@ -1190,7 +1225,7 @@ class SimulationRunner(object):
                    and
                    current_rep < obj.rep_max):
                 current_sim_results.merge_all_results(
-                    obj._run_simulation(current_params))
+                    obj.__run_simulation_and_track_elapsed_time(current_params))
                 current_rep += 1
                 update_progress_func(current_rep)
 
@@ -1295,7 +1330,6 @@ class SimulationRunner(object):
             # Note that for now the elapsed time does not include the time
             # spent at the actual simulation. We still need to sum with the
             # elapsed time from the actual simulation.
-            from time import time
             self.__toc = time()
             self._elapsed_time = self.__toc - self.__tic
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
