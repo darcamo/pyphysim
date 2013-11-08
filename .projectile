@@ -1,0 +1,5 @@
+-*pyc
+-/build
+-/docs/_build
+-/__pycache__
+-/.svn
