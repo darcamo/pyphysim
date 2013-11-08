@@ -1,27 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module with implementation of Coordinated Multipoint (CoMP) algorithms.
+"""
+Module with implementation of the Enhanced Block Diagonalization
+Algorithm.
 
-In gerenal, the CoMP algorithm is applied to an MIMO Interference Channel
-(MIMO-IC) scenario, where we have pairs of transmitters and receivers, each
-transmitter sending information only to its intending receiver, but
-interfering with the other receivers. Alternativelly, an external
-interference source may also be presented, which will interfere with all
-receivers. In order to model the MIMO-IC one can use the
-:class:`.channels.MultiUserChannelMatrix` and
+In gerenal, the Block Diagonalization (BD) algorithm is applied to an MIMO
+Interference Channel (MIMO-IC) scenario, where we have pairs of
+transmitters and receivers, each transmitter sending information only to
+its intending receiver, but interfering with the other
+receivers. Alternativelly, an external interference source may also be
+presented, which will interfere with all receivers. In order to model the
+MIMO-IC one can use the :class:`.channels.MultiUserChannelMatrix` and
 :class:`.channels.MultiUserChannelMatrixExtInt` classes.
 
-The CoMP algorithm may or may not take the external interference source
-into consideration. The CoMP algorithm is implemented here as the
-:class:`CompExtInt` class and the different external interference handling
+The BD algorithm may or may not take the external interference source into
+consideration. The BD algorithm is implemented here as the
+:class:`EnhancedBD` class and the different external interference handling
 metrics are described in the following section.
 
 
 External Interference Hangling Metrics
 --------------------------------------
 
-The way the external interference is treated in the CompExtInt class
+The way the external interference is treated in the EnhancedBD class
 basically consists of sacrificing streams to avoid dimensions strongly
 occupied by external interference. In other words, instead of using all
 available spatial dimensions only a subset (containing less or no external
@@ -29,10 +31,12 @@ interference) of these dimensions is used. One has to decised how many (if
 any) dimensions will be sacrificed and for that difference metrics can be
 used.
 
-The different metrics implemented in the CompExtInt class are:
+The different metrics implemented in the EnhancedBD class are:
 
 - None: No stream reduction and this external interference handling is
   performed.
+- Naive: Stream reduction is performed, but not in any particular
+  direction.
 - capacity: The Shannon capacity is used.
 - effective_throughput: The expected throughput is used. The effective
   throughput consists of the nominal data rate (considering a modulator and
@@ -41,16 +45,15 @@ The different metrics implemented in the CompExtInt class are:
   reduction also means better SIRN values and thus a lower package error
   rate.
 
-The usage of the CompExtInt class is described in the following section.
+The usage of the EnhancedBD class is described in the following section.
 
 
-CompExtInt usage
+EnhancedBD usage
 ----------------
 
-1. First create a CompExtInt object.
+1. First create a EnhancedBD object.
 2. Set the desired external interference handling metric by calling the :meth:`.set_ext_int_handling_metric` method.
-3. Call the :meth:`.perform_comp_no_waterfilling` method.
-
+3. Call the :meth:`.perform_BD_no_waterfilling` method.
 """
 
 __revision__ = "$Revision$"
@@ -66,7 +69,7 @@ from comm import channels
 from util.misc import least_right_singular_vectors
 from util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 
-__all__ = ['CompExtInt']
+__all__ = ['EnhancedBD']
 
 
 def _calc_stream_reduction_matrix(Re_k, kept_streams):
@@ -95,14 +98,14 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
     return min_Vs
 
 
-class CompExtInt(BlockDiaginalizer):
+class EnhancedBD(BlockDiaginalizer):
     """Performs the Coordinated Multipoint transmission also taking into
     account the external interference.
 
-    The CompExtInt class performs the block diagonalization characteristic
+    The EnhancedBD class performs the block diagonalization characteristic
     to the joint transmission scenario where multiple base stations act as
     a single transmitter to send data to the users. However, in addition to
-    what the BlockDiaginalizer class does the CompExtInt class can also
+    what the BlockDiaginalizer class does the EnhancedBD class can also
     take external interference into account.
 
     One way to reduce of eliminate the external interference is to
@@ -117,7 +120,7 @@ class CompExtInt(BlockDiaginalizer):
     """
 
     def __init__(self, num_users, iPu, noise_var, pe):
-        """Initializes the CompExtInt object.
+        """Initializes the EnhancedBD object.
 
         Parameters
         ----------
@@ -383,7 +386,7 @@ class CompExtInt(BlockDiaginalizer):
         Examples
         --------
         >>> sinrs_linear = np.array([11.4, 20.3])
-        >>> print(CompExtInt._calc_shannon_sum_capacity(sinrs_linear))
+        >>> print(EnhancedBD._calc_shannon_sum_capacity(sinrs_linear))
         8.04504974084
         """
         sum_capacity = np.sum(np.log2(1 + sinrs))
@@ -421,8 +424,8 @@ class CompExtInt(BlockDiaginalizer):
         total_se = np.sum(se)
         return total_se
 
-    def _perform_comp_no_waterfilling_no_stream_reduction(self, mu_channel):
-        """Function called inside perform_comp_no_waterfilling when no stream
+    def _perform_BD_no_waterfilling_no_stream_reduction(self, mu_channel):
+        """Function called inside perform_BD_no_waterfilling when no stream
         reduction should be performed.
 
         """
@@ -457,8 +460,8 @@ class CompExtInt(BlockDiaginalizer):
 
         return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
-    def _perform_comp_no_waterfilling_fixed_or_naive_reduction(self, mu_channel):
-        """Function called inside perform_comp_no_waterfilling when the naive or
+    def _perform_BD_no_waterfilling_fixed_or_naive_reduction(self, mu_channel):
+        """Function called inside perform_BD_no_waterfilling when the naive or
         the fixed stream reduction should be performed.
 
         For the naive or the fixed stream reduction cases the number of
@@ -528,8 +531,8 @@ class CompExtInt(BlockDiaginalizer):
 
         return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
-    def _perform_comp_no_waterfilling_decide_number_streams(self, mu_channel):
-        """Function called inside perform_comp_no_waterfilling when the stream
+    def _perform_BD_no_waterfilling_decide_number_streams(self, mu_channel):
+        """Function called inside perform_BD_no_waterfilling when the stream
         reduction is performed and the number of sacrificed streams depend
         on the metric used (the function set as self._metric_func)
 
@@ -631,11 +634,11 @@ class CompExtInt(BlockDiaginalizer):
 
         return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
-    def perform_comp_no_waterfilling(self, mu_channel):
+    def perform_BD_no_waterfilling(self, mu_channel):
         """Perform the block diagonalization of `mu_channel` taking the
         external interference into account.
 
-        This is the main method calculating the CoMP algorithm. Two
+        This is the main method calculating the BD algorithm. Two
         important parameters used here are the noise variance (an attribute
         of the `mu_channel` object) and the external interference power
         (the `pe` attribute) attributes.
@@ -665,15 +668,16 @@ class CompExtInt(BlockDiaginalizer):
         # The value of self._metric_func_extra_args is not used for this
         # case
         if self._metric_func_name == "None":
-            return self._perform_comp_no_waterfilling_no_stream_reduction(
+            return self._perform_BD_no_waterfilling_no_stream_reduction(
                 mu_channel)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxx Case where the naive stream reduction is performed xxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if (self._metric_func_name == "naive" or
-            self._metric_func_name == "fixed"):
-            return self._perform_comp_no_waterfilling_fixed_or_naive_reduction(
+           self._metric_func_name == "fixed"):
+
+            return self._perform_BD_no_waterfilling_fixed_or_naive_reduction(
                 mu_channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Case where self._metric_func is used xxxxxxxxxxxxxxxxx
@@ -683,7 +687,7 @@ class CompExtInt(BlockDiaginalizer):
         # function is set in the set_ext_int_handling_metric method, where
         # any extra arguments (besides sinr) that should be passed to this
         # function are set in the _metric_func_extra_args dictionary.
-        return self._perform_comp_no_waterfilling_decide_number_streams(mu_channel)
+        return self._perform_BD_no_waterfilling_decide_number_streams(mu_channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -710,7 +714,7 @@ if __name__ == '__main__1':  # pragma: no cover
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     for userindex in range(num_users):
-        # Code here will be moved to the CompExtInt.perform_comp_no_waterfilling method later
+        # Code here will be moved to the EnhancedBD.perform_BD_no_waterfilling method later
         mtW_bd = np.linalg.pinv(newH)
         mtP = np.dot(mtW_bd, newH)
 

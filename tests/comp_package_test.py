@@ -73,7 +73,7 @@ class CompExtInt(unittest.TestCase):
         pe = 0
 
         # Create the comp object
-        comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
+        comp_obj = comp.EnhancedBD(K, iPu, noise_var, pe)
 
         # xxxxx Test if an assert is raised for invalid arguments xxxxxxxxx
         with self.assertRaises(AttributeError):
@@ -147,9 +147,9 @@ class CompExtInt(unittest.TestCase):
         Heq_k_P2 = np.dot(Heq_k, P2)
         Heq_k_P3 = np.dot(Heq_k, P3)
 
-        W1 = comp.CompExtInt.calc_receive_filter_user_k(Heq_k_P1, P1)
-        W2 = comp.CompExtInt.calc_receive_filter_user_k(Heq_k_P2, P2)
-        W3 = comp.CompExtInt.calc_receive_filter_user_k(Heq_k_P3, P3)
+        W1 = comp.EnhancedBD.calc_receive_filter_user_k(Heq_k_P1, P1)
+        W2 = comp.EnhancedBD.calc_receive_filter_user_k(Heq_k_P2, P2)
+        W3 = comp.EnhancedBD.calc_receive_filter_user_k(Heq_k_P3, P3)
         # Note that since P3 is actually including all streams, then the
         # performance is the same as if we don't reduce streams. However W3
         # and W_full are different matrices, since W3 has to compensate the
@@ -157,7 +157,7 @@ class CompExtInt(unittest.TestCase):
         # does not. The performance is the same because no energy is lost
         # due to stream reduction and the Frobenius norms of W3 and W_full
         # are equal.
-        W_full = comp.CompExtInt.calc_receive_filter_user_k(Heq_k)
+        W_full = comp.EnhancedBD.calc_receive_filter_user_k(Heq_k)
 
         np.testing.assert_array_almost_equal(np.dot(W1, np.dot(Heq_k, P1)),
                                              np.eye(1))
@@ -181,7 +181,7 @@ class CompExtInt(unittest.TestCase):
         # # purposes we can specify a different Wk
         # Wk = np.array([[1, 1], [1.5, 0.5]])
         # Rk = np.array([[0.5, 0.2], [0.25, 0.1]])
-        # SINRs = comp.CompExtInt._calc_linear_SINRs(Heq_k_red, Wk, Rk)
+        # SINRs = comp.EnhancedBD._calc_linear_SINRs(Heq_k_red, Wk, Rk)
         # print SINRs
         pass
 
@@ -190,7 +190,7 @@ class CompExtInt(unittest.TestCase):
         expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
         self.assertAlmostEqual(
             expected_sum_capacity,
-            comp.CompExtInt._calc_shannon_sum_capacity(sinrs_linear))
+            comp.EnhancedBD._calc_shannon_sum_capacity(sinrs_linear))
 
     def test_calc_effective_throughput(self):
         psk_obj = modulators.PSK(8)
@@ -202,7 +202,7 @@ class CompExtInt(unittest.TestCase):
         expected_spectral_efficiency = np.sum(
             psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
 
-        spectral_efficiency = comp.CompExtInt._calc_effective_throughput(
+        spectral_efficiency = comp.EnhancedBD._calc_effective_throughput(
             sinrs_linear, psk_obj, packet_length)
 
         np.testing.assert_array_almost_equal(spectral_efficiency,
@@ -231,13 +231,13 @@ class CompExtInt(unittest.TestCase):
         H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
 
         # Create the comp object
-        comp_obj = comp.CompExtInt(K, iPu, noise_var, pe)
+        comp_obj = comp.EnhancedBD(K, iPu, noise_var, pe)
 
         noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
 
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
-        (Ms_all, Wk_all, Ns_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (Ms_all, Wk_all, Ns_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -263,10 +263,10 @@ class CompExtInt(unittest.TestCase):
 
         # Equivalent sinrs (in linear scale)
         sinrs = np.empty(K, dtype=np.ndarray)
-        sinrs[0] = comp.CompExtInt._calc_linear_SINRs(np.dot(H1, Ms1),
+        sinrs[0] = comp.EnhancedBD._calc_linear_SINRs(np.dot(H1, Ms1),
                                                       Wk_all[0],
                                                       noise_plus_int_cov_matrix[0])
-        sinrs[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, Ms2),
+        sinrs[1] = comp.EnhancedBD._calc_linear_SINRs(np.dot(H2, Ms2),
                                                       Wk_all[1],
                                                       noise_plus_int_cov_matrix[1])
         # Spectral efficiency
@@ -285,7 +285,7 @@ class CompExtInt(unittest.TestCase):
             'naive',
             {'num_streams': num_streams})
 
-        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
         MsPk_naive_1 = MsPk_naive_all[0]
         MsPk_naive_2 = MsPk_naive_all[1]
 
@@ -314,11 +314,11 @@ class CompExtInt(unittest.TestCase):
             0)
 
         sinrs4 = np.empty(K, dtype=np.ndarray)
-        sinrs4[0] = comp.CompExtInt._calc_linear_SINRs(
+        sinrs4[0] = comp.EnhancedBD._calc_linear_SINRs(
             np.dot(H1, MsPk_naive_1),
             Wk_naive_all[0],
             noise_plus_int_cov_matrix[0])
-        sinrs4[1] = comp.CompExtInt._calc_linear_SINRs(
+        sinrs4[1] = comp.EnhancedBD._calc_linear_SINRs(
             np.dot(H2, MsPk_naive_2),
             Wk_naive_all[1],
             noise_plus_int_cov_matrix[1])
@@ -339,7 +339,7 @@ class CompExtInt(unittest.TestCase):
             'fixed',
             {'num_streams': num_streams})
 
-        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
         MsPk_fixed_1 = MsPk_fixed_all[0]
         MsPk_fixed_2 = MsPk_fixed_all[1]
 
@@ -368,11 +368,11 @@ class CompExtInt(unittest.TestCase):
             0)
 
         sinrs5 = np.empty(K, dtype=np.ndarray)
-        sinrs5[0] = comp.CompExtInt._calc_linear_SINRs(
+        sinrs5[0] = comp.EnhancedBD._calc_linear_SINRs(
             np.dot(H1, MsPk_fixed_1),
             Wk_fixed_all[0],
             noise_plus_int_cov_matrix[0])
-        sinrs5[1] = comp.CompExtInt._calc_linear_SINRs(
+        sinrs5[1] = comp.EnhancedBD._calc_linear_SINRs(
             np.dot(H2, MsPk_fixed_2),
             Wk_fixed_all[1],
             noise_plus_int_cov_matrix[1])
@@ -390,7 +390,7 @@ class CompExtInt(unittest.TestCase):
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the capacity metric
         comp_obj.set_ext_int_handling_metric('capacity')
-        (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
         MsPk_cap_1 = MsPk_all[0]
         MsPk_cap_2 = MsPk_all[1]
 
@@ -413,11 +413,11 @@ class CompExtInt(unittest.TestCase):
             np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'), 0)
 
         sinrs2 = np.empty(K, dtype=np.ndarray)
-        sinrs2[0] = comp.CompExtInt._calc_linear_SINRs(
+        sinrs2[0] = comp.EnhancedBD._calc_linear_SINRs(
             np.dot(H1, MsPk_cap_1),
             Wk_cap_all[0],
             noise_plus_int_cov_matrix[0])
-        sinrs2[1] = comp.CompExtInt._calc_linear_SINRs(
+        sinrs2[1] = comp.EnhancedBD._calc_linear_SINRs(
             np.dot(H2, MsPk_cap_2),
             Wk_cap_all[1],
             noise_plus_int_cov_matrix[1])
@@ -439,7 +439,7 @@ class CompExtInt(unittest.TestCase):
             {'modulator': psk_obj,
              'packet_length': packet_length})
 
-        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.perform_comp_no_waterfilling(multiUserChannel)
+        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
 
@@ -466,10 +466,10 @@ class CompExtInt(unittest.TestCase):
             0)
 
         sinrs3 = np.empty(K, dtype=np.ndarray)
-        sinrs3[0] = comp.CompExtInt._calc_linear_SINRs(np.dot(H1, MsPk_effec_1),
+        sinrs3[0] = comp.EnhancedBD._calc_linear_SINRs(np.dot(H1, MsPk_effec_1),
                                                        Wk_effec_all[0],
                                                        noise_plus_int_cov_matrix[0])
-        sinrs3[1] = comp.CompExtInt._calc_linear_SINRs(np.dot(H2, MsPk_effec_2),
+        sinrs3[1] = comp.EnhancedBD._calc_linear_SINRs(np.dot(H2, MsPk_effec_2),
                                                        Wk_effec_all[1],
                                                        noise_plus_int_cov_matrix[1])
         # Spectral efficiency

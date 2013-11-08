@@ -267,7 +267,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
 
         # xxxxx Create the CoMP object with the None metric xxxxxxxxxxxxxxx
-        self.comp_obj_None = comp.CompExtInt(self.num_cells,
+        self.comp_obj_None = comp.EnhancedBD(self.num_cells,
                                              transmit_power,
                                              self.noise_var,
                                              self.pe)
@@ -278,7 +278,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the Naive metric xxxxxxxxxxxxxx
-        self.comp_obj_naive = comp.CompExtInt(self.num_cells,
+        self.comp_obj_naive = comp.EnhancedBD(self.num_cells,
                                               transmit_power,
                                               self.noise_var,
                                               self.pe)
@@ -289,7 +289,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the fixed metric xxxxxxxxxxxxxxx
-        self.comp_obj_fixed = comp.CompExtInt(self.num_cells,
+        self.comp_obj_fixed = comp.EnhancedBD(self.num_cells,
                                               transmit_power,
                                               self.noise_var,
                                               self.pe)
@@ -300,7 +300,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the capacity metric xxxxxxxxxxx
-        self.comp_obj_capacity = comp.CompExtInt(self.num_cells,
+        self.comp_obj_capacity = comp.EnhancedBD(self.num_cells,
                                                  transmit_power,
                                                  self.noise_var,
                                                  self.pe)
@@ -311,7 +311,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xx Create the CoMP object with the effective_throughput metric xx
-        self.comp_obj_effec_throughput = comp.CompExtInt(self.num_cells,
+        self.comp_obj_effec_throughput = comp.EnhancedBD(self.num_cells,
                                                          transmit_power,
                                                          self.noise_var,
                                                          self.pe)
@@ -358,31 +358,31 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # None Metric
         (MsPk_all_users_None,
          Wk_all_users_None,
-         Ns_all_users_None) = self.comp_obj_None.perform_comp_no_waterfilling(
+         Ns_all_users_None) = self.comp_obj_None.perform_BD_no_waterfilling(
              self.multiuser_channel)
 
         # Naive Metric
         (MsPk_all_users_naive,
          Wk_all_users_naive,
-         Ns_all_users_naive) = self.comp_obj_naive.perform_comp_no_waterfilling(
+         Ns_all_users_naive) = self.comp_obj_naive.perform_BD_no_waterfilling(
              self.multiuser_channel)
 
         # Fixed Metric
         (MsPk_all_users_fixed,
          Wk_all_users_fixed,
-         Ns_all_users_fixed) = self.comp_obj_fixed.perform_comp_no_waterfilling(
+         Ns_all_users_fixed) = self.comp_obj_fixed.perform_BD_no_waterfilling(
              self.multiuser_channel)
 
         # Capacity Metric
         (MsPk_all_users_capacity,
          Wk_all_users_capacity,
-         Ns_all_users_capacity) = self.comp_obj_capacity.perform_comp_no_waterfilling(
+         Ns_all_users_capacity) = self.comp_obj_capacity.perform_BD_no_waterfilling(
              self.multiuser_channel)
 
         # effective_throughput Metric
         (MsPk_all_users_effec_throughput,
          Wk_all_users_effec_throughput,
-         Ns_all_users_effec_throughput) = self.comp_obj_effec_throughput.perform_comp_no_waterfilling(
+         Ns_all_users_effec_throughput) = self.comp_obj_effec_throughput.perform_BD_no_waterfilling(
              self.multiuser_channel)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

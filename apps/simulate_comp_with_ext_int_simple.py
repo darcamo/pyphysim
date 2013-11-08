@@ -117,7 +117,7 @@ for rep in range(rep_max):
     multiuser_channel.set_pathloss(pathloss, pathlossInt)
 
     # Create the comp_obj
-    comp_obj = comp.CompExtInt(num_cells, transmit_power, noise_var, pe)
+    comp_obj = comp.EnhancedBD(num_cells, transmit_power, noise_var, pe)
     #comp_obj.set_ext_int_handling_metric('capacity')
     comp_obj.set_ext_int_handling_metric('effective_throughput',
                                          {'modulator': modulator,
@@ -125,7 +125,7 @@ for rep in range(rep_max):
 
     (MsPk_all_users,
      Wk_all_users,
-     Ns_all_users) = comp_obj.perform_comp_no_waterfilling(multiuser_channel)
+     Ns_all_users) = comp_obj.perform_BD_no_waterfilling(multiuser_channel)
 
     # xxxxx Performs the actual transmission for each user xxxxxxxxxxxxxxxx
     # Generate input data and modulate it
