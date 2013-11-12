@@ -2231,10 +2231,10 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 
 
 # TODO: finish implementation
-class ProgressbarZMQText2TestCase(unittest.TestCase):
+class ProgressbarZMQTextTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.output_filename = "ProgressbarZMQText2TestCase.out"
+        self.output_filename = "ProgressbarZMQTextTestCase.out"
 
         self.zmqbar = progressbar.ProgressbarZMQServer(message="Some message", sleep_time=0.1, filename=self.output_filename, port=7755)
         self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
@@ -2292,7 +2292,8 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         #self.zmqbar._sleep_time = 5
         self.zmqbar.start_updater()
         self.proxybar1.progress(5)
-        self.proxybar2.progress(10)
+        self.proxybar2(10)  # We can also use a "call syntax" for the
+                            # progress progressbars
         sleep(0.3)
 
         # Open and read the progress from the file
