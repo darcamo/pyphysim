@@ -697,7 +697,7 @@ if __name__ == '__main__':
     # Since We will use the same progressbar for all simulations, we create
     # the progressbar here and set the _pbar member variable of each
     # runner.
-    pbar = progressbar.ProgressbarZMQServer2(
+    pbar = progressbar.ProgressbarZMQServer(
         progresschar='*',
         message="Elapsed Time: {elapsed_time}",
         sleep_time=1

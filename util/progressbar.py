@@ -1196,7 +1196,7 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarZMQServer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class ProgressbarZMQServer2(ProgressbarDistributedServerBase):
+class ProgressbarZMQServer(ProgressbarDistributedServerBase):
     """
     Distributed "server" progressbar using ZMQ sockets.
 

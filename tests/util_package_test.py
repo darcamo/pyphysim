@@ -2229,14 +2229,6 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.assertEqual(self.mpbar._start_updater_count, 0)
         self.assertFalse(self.mpbar.running.is_set())
 
-    # def test_start_updater_with_no_clients(self):
-    #     from time import sleep
-    #     pbar = progressbar.ProgressbarMultiProcessServer(message="Some message", sleep_time=0.1, filename='output.out')
-    #     pbar.start_updater()
-    #     sleep(0.1)
-
-    #     self.assertTrue(pbar.running.is_set())
-
 
 # TODO: finish implementation
 class ProgressbarZMQText2TestCase(unittest.TestCase):
@@ -2244,7 +2236,7 @@ class ProgressbarZMQText2TestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQText2TestCase.out"
 
-        self.zmqbar = progressbar.ProgressbarZMQServer2(message="Some message", sleep_time=0.1, filename=self.output_filename, port=7755)
+        self.zmqbar = progressbar.ProgressbarZMQServer(message="Some message", sleep_time=0.1, filename=self.output_filename, port=7755)
         self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
         self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 

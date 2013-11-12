@@ -177,7 +177,7 @@ import numpy as np
 from time import time
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
-from util.progressbar import ProgressbarText2, ProgressbarText3, ProgressbarZMQServer2, ProgressbarZMQClient
+from util.progressbar import ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -826,7 +826,7 @@ class SimulationRunner(object):
                 # 'full_params' then it will be replaced by the value of
                 # 'some_param'.
                 message = self.progressbar_message.format(**parameters)
-                self._pbar = ProgressbarZMQServer2(message=message,
+                self._pbar = ProgressbarZMQServer(message=message,
                                                  **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient
