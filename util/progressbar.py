@@ -1383,7 +1383,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
 
 
 # Used by the ProgressbarZMQServer class
-class ProgressbarZMQClient(object):
+class ProgressbarZMQClient(ProgressbarDistributedClientBase):
     """
     Proxy progressbar that behaves like a ProgressbarText object,
     but is actually updating a ProgressbarZMQServer progressbar.
@@ -1395,11 +1395,7 @@ class ProgressbarZMQClient(object):
     """
     def __init__(self, client_id, ip, port):
         """Initializes the ProgressbarZMQClient object."""
-        # We import zmq here inside the class to avoid the whole module not
-        # working if zmq is not available. That means that we will only get
-        # the import error when zmq is not available if we actually try to
-        # instantiate ProgressbarZMQServer.
-        self.client_id = client_id
+        ProgressbarDistributedClientBase.__init__(self, client_id)
         self.ip = ip
         self.port = port
 
