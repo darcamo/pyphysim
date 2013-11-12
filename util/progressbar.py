@@ -156,7 +156,7 @@ class ProgressbarTextBase(object):
 
         self.finalcount = finalcount
         self.progresschar = progresschar
-        self._width = 50  # This should be a multiple of 10 and the lower
+        self.width = 50   # This should be a multiple of 10 and the lower
                           # possible value is 40.
 
         # By default, self._output points to sys.stdout so I can use the
@@ -213,10 +213,11 @@ class ProgressbarTextBase(object):
 
     def _set_width(self, value):
         """Set method for the width property."""
+        # If value is lower than 40, the width will be set to 40.
         # If value is not a multiple of 10, width will be set to the
         # largest multiple of 10 which is lower then value.
         if value < 40:
-            self._width = 40
+            value = 40
         self._width = value - (value % 10)
 
     def _get_width(self):
@@ -366,7 +367,7 @@ class ProgressbarTextBase(object):
     def __str__(self):
         return str(self.prog_bar)
 
-    def _update_iteration(self, count):
+    def _update_iteration(self, count):  # pragma: no cover
         """
         Update the self.prog_bar member variable according with the new
         `count`.
@@ -1292,7 +1293,7 @@ class ProgressbarZMQServer2(ProgressbarDistributedServerBase):
         proxybar = ProgressbarZMQClient(client_id, self.ip, self.port)
         return proxybar
 
-    def _update_progress(self, filename=None, start_delay=0.0):
+    def _update_progress(self, filename=None, start_delay=0.0):  # pragma: no cover
         """
         Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
@@ -1323,7 +1324,11 @@ class ProgressbarZMQServer2(ProgressbarDistributedServerBase):
         self._zmq_pull_socket.bind("tcp://*:%s" % self.port)
         ProgressbarDistributedServerBase._update_progress(self, filename)
 
-    def _update_client_data_list(self):
+    # This method is called in the _update_progress, which is run in a
+    # different process. Therefore, the python coverage program does not
+    # detect that this method is actually run (and it is) and thus we set
+    # the "pragma: no cover" comment here.
+    def _update_client_data_list(self):  # pragma: no cover
         """
         This method process the communication between the client and the
         server.
@@ -1355,7 +1360,10 @@ class ProgressbarZMQServer2(ProgressbarDistributedServerBase):
             except zmq.ZMQError:
                 pending_mensages = False
 
-    def _parse_progress_message(self, message):
+    # This method run in a different process and thus the python coverage
+    # program does not detect it is run even when it is run. Therefore, we
+    # set the "pragma: no cover" comment here.
+    def _parse_progress_message(self, message):  # pragma: no cover
         """
         Parse the message sent from the client proxy progressbars.
 
@@ -1381,7 +1389,9 @@ class ProgressbarZMQServer(object):
                  progresschar='*',
                  message='',
                  sleep_time=2,
-                 filename=None):
+                 filename=None,
+                 ip='localhost',
+                 port=None):
         """
         Initializes the ProgressbarMultiProcessServer object.
 
@@ -1398,6 +1408,11 @@ class ProgressbarZMQServer(object):
             sys.stdout. If it is not None then the progress will be output
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
+        ip : string
+            An string representing the address of the server socket.
+            Ex: '192.168.0.117', 'localhost', etc.
+        port : int
+            The port to bind the socket.
         """
         # total_final_count will be updated each time the register_*
         # function is called
@@ -1421,8 +1436,8 @@ class ProgressbarZMQServer(object):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Server information
-        self._ip = 'localhost'
-        self._port = None
+        self._ip = ip
+        self._port = port
 
         # Bind the server socket
         self._zmq_context = zmq.Context()

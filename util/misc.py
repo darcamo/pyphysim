@@ -725,7 +725,8 @@ def get_principal_component_matrix(A, num_components):
 def get_range_representation(array):
     """
     Get the "range representation" of a numpy array consisting of a
-    arithmetic progression.
+    arithmetic progression. If no valid range representation is exists,
+    return None.
 
     Suppose you have the array
     n = [5, 10, 15, 20, 25, 30, 35, 40]
@@ -741,7 +742,6 @@ def get_range_representation(array):
     -------
     expr : str
         A string expression representing `array`.
-
     """
     if len(array) == 1:
         return None

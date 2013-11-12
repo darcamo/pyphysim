@@ -21,10 +21,11 @@ import unittest
 import doctest
 import numpy as np
 import glob
+from time import sleep
 
 try:
     from IPython.parallel import CompositeError
-except Exception:
+except Exception:  # pragma: no cover
     pass
 
 from util import misc, progressbar, simulations, conversion
@@ -1435,7 +1436,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
-    def test_simulate_in_parallel(self):
+    def test_simulate_in_parallel(self):  # pragma: no cover
         try:
             from IPython.parallel import Client
             cl = Client(profile="tests")
@@ -1748,6 +1749,12 @@ class MiscFunctionsTestCase(unittest.TestCase):
         d = np.array([1, 3, 9, 4])
         self.assertIsNone(misc.get_range_representation(d))
 
+        # Return None when a valid range representation does not exist,
+        # such as when the array has a single element or when the array is
+        # not an arithmetic progression.
+        self.assertIsNone(misc.get_range_representation(np.array([6, 10, 20])))
+        self.assertIsNone(misc.get_range_representation(np.array([10])))
+
     def test_replace_dict_values(self):
         name = "something {value1} - {value2} something else {value3}"
         dictionary = {'value1': 'bla bla', 'value2': np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
@@ -1905,7 +1912,10 @@ class ProgressbarTextTestCase(unittest.TestCase):
        1       2       3       4       5       6       7       8       9       0
 -------0-------0-------0-------0-------0-------0-------0-------0-------0-------0\n""")
 
-        self.pbar2.width = 40
+        # Setting the width to a value below 40 should actually set the width to 40
+        self.pbar2.width = 30
+        self.assertEqual(self.pbar2.width, 40)
+
         self.pbar2._message = "Just a Message"
         self.pbar2._perform_initialization()
         self.assertEqual(self.out2.getvalue(), """------------ Just a Message -----------1
@@ -1913,6 +1923,13 @@ class ProgressbarTextTestCase(unittest.TestCase):
 ---0---0---0---0---0---0---0---0---0---0\n""")
 
     def test_progress(self):
+        # Before the first time the progress method is called, the
+        # _start_time and _stop_time variables used to track the elapsed
+        # time are equal to zero.
+        self.assertEqual(self.pbar.elapsed_time, '0.00s')
+        self.assertEqual(self.pbar._start_time, 0.0)
+        self.assertEqual(self.pbar._stop_time, 0.0)
+
         # Progress 20% (10 is equivalent to 20% of 50)
         self.pbar.progress(10)
         self.assertEqual(
@@ -1923,6 +1940,12 @@ class ProgressbarTextTestCase(unittest.TestCase):
 ----0----0----0----0----0----0----0----0----0----0
 **********""")
 
+        # After calling the "progress" method but before the progress
+        # reaches 100% the _start_time is greater than zero while the
+        # _stop_time is still zero.
+        self.assertTrue(self.pbar._start_time > 0.0)
+        self.assertEqual(self.pbar._stop_time, 0.0)
+
         # Progress to 70%
         self.pbar.progress(35)
         self.assertEqual(
@@ -1932,9 +1955,12 @@ class ProgressbarTextTestCase(unittest.TestCase):
 ----0----0----0----0----0----0----0----0----0----0
 ***********************************""")
 
+        sleep(0.01)
+
         # Progress to 100% -> Note that in the case of 100% a new line is
         # added at the end.
-        self.pbar.progress(50)
+        self.pbar.progress(55)  # Anything greater than or equal the final
+                                # count will set the progress to 100%
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
 """------------ ProgressbarText Unittest -----------1
@@ -1942,6 +1968,14 @@ class ProgressbarTextTestCase(unittest.TestCase):
 ----0----0----0----0----0----0----0----0----0----0
 **************************************************\n""")
 
+        # After progress reaches 100 both _start_time and _stop_time
+        # variables are greater than zero.
+        self.assertTrue(self.pbar._start_time > 0.0)
+        self.assertTrue(self.pbar._stop_time > 0.0)
+        self.assertEqual(self.pbar.elapsed_time,
+                         misc.pretty_time(self.pbar._stop_time - self.pbar._start_time))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with pbar2, which uses the default progress message and the
         # character 'x' to indicate progress.
         self.pbar2.progress(20)
@@ -1951,6 +1985,15 @@ class ProgressbarTextTestCase(unittest.TestCase):
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
+
+    def test_str(self):
+        self.pbar.progress(10)
+        self.assertEqual(str(self.pbar),
+                         '**********                                        ')
+
+        self.pbar.progress(25)
+        self.assertEqual(str(self.pbar),
+                         '*************************                         ')
 
     def test_small_progress_and_zero_finalcount(self):
         # Test the case when the progress is lower then 1%.
