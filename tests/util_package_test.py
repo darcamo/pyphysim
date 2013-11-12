@@ -22,6 +22,11 @@ import doctest
 import numpy as np
 import glob
 
+try:
+    from IPython.parallel import CompositeError
+except Exception:
+    pass
+
 from util import misc, progressbar, simulations, conversion
 from util.simulations import Result, SimulationParameters, SimulationResults, SimulationRunner
 from util.simulations import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
@@ -69,6 +74,7 @@ class _DummyRunner(SimulationRunner):
         self.params.add('extra', np.array([2.2, 4.1]))
         self.params.set_unpack_parameter('SNR')
         self.params.set_unpack_parameter('extra')
+        self.delete_partial_results_bool = True
 
     @staticmethod
     def _run_simulation(current_params):
@@ -527,6 +533,10 @@ class SimulationParametersTestCase(unittest.TestCase):
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
+
+        unpacked_param_list = self.sim_params.get_unpacked_params_list()
+        self.assertEqual(unpacked_param_list, [self.sim_params])
+
         self.sim_params.set_unpack_parameter('third')
         self.sim_params.set_unpack_parameter('fourth')
 
@@ -899,6 +909,18 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
 
+    def test_equal_and_not_equal_operators(self):
+        self.result1.update(10)
+        self.result1.update(7)
+
+        result1 = Result.create("name", Result.SUMTYPE, 17)
+        self.assertTrue(self.result1 == result1)
+        self.assertFalse(self.result1 != result1)
+
+        result1._update_type_code = 1
+        self.assertFalse(self.result1 == result1)
+        self.assertTrue(self.result1 != result1)
+
     def test_calc_confidence_interval(self):
         # Test if an exceptions is raised for a Result object of the
         # MISCTYPE update type.
@@ -1054,6 +1076,52 @@ class SimulationResultsTestCase(unittest.TestCase):
             set(emptyresults.get_result_names()),
             set(['lala', 'lele']))
 
+    def test_equal_and_not_equal_operators(self):
+        #import pudb; pudb.set_trace()  ## DEBUG ##
+        elapsed_time_result = Result.create('elapsed_time', Result.SUMTYPE, 30)
+        self.simresults.add_result(elapsed_time_result)
+
+        simresults = SimulationResults()
+        lala_result = Result('lala', Result.SUMTYPE)
+        lele_result = Result('lele', Result.RATIOTYPE)
+        lala_result.update(3)
+        lala_result.update(10)
+        lele_result.update(7, 13)
+        lele_result.update(4, 7)
+        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
+        simresults.add_result(lala_result)
+        simresults.add_result(lele_result)
+        simresults.add_result(elapsed_time_result2)
+
+        # Note that the elapsed_time result is different, but it is not
+        # accounted
+        self.assertTrue(self.simresults == simresults)
+        self.assertFalse(self.simresults != simresults)
+
+        # Let's change the parameters in the SimulationResults objects to
+        # see if it impacts equality
+        simresults.params.add('value', 10)
+        self.assertFalse(self.simresults == simresults)
+        self.assertTrue(self.simresults != simresults)
+        self.simresults.params.add('value', 10)
+        self.assertTrue(self.simresults == simresults)
+        self.assertFalse(self.simresults != simresults)
+
+        # Let's change one Result in one of them to see if it impacts
+        # equality
+        simresults['lala'][0].update(5)
+        self.assertFalse(self.simresults == simresults)
+        self.assertTrue(self.simresults != simresults)
+        self.simresults['lala'][0].update(5)
+        self.assertTrue(self.simresults == simresults)
+        self.assertFalse(self.simresults != simresults)
+
+        # Lets add a new result to one of them which is not in the other
+        lili_result = Result('lili', Result.SUMTYPE)
+        simresults.add_result(lili_result)
+        self.assertFalse(self.simresults == simresults)
+        self.assertTrue(self.simresults != simresults)
+
     def test_get_result_values_list(self):
         self.simresults.append_all_results(self.other_simresults)
 
@@ -1072,6 +1140,8 @@ class SimulationResultsTestCase(unittest.TestCase):
 
     def test_get_result_values_confidence_intervals(self):
         simresults = SimulationResults()
+        simresults.params.add('P', [1,2])
+        simresults.params.set_unpack_parameter('P')
         result = Result('name', Result.RATIOTYPE, accumulate_values=True)
         result_other = Result('name', Result.RATIOTYPE, accumulate_values=True)
         result.update(3, 10)
@@ -1098,6 +1168,17 @@ class SimulationResultsTestCase(unittest.TestCase):
         for a, b in zip(list_of_confidence_intervals,
                         expected_list_of_confidence_intervals):
             np.testing.assert_array_almost_equal(a, b)
+
+        # xxxxxxxxxx Test for a subset of the parameters xxxxxxxxxxxxxxxxxx
+        c1 = simresults.get_result_values_confidence_intervals('name', P,
+                                                               fixed_params={'P':1.0})
+        c2 = simresults.get_result_values_confidence_intervals('name', P,
+                                                               fixed_params={'P':2.0})
+        np.testing.assert_array_almost_equal(c1[0],
+                                             expected_list_of_confidence_intervals[0])
+        np.testing.assert_array_almost_equal(c2[0],
+                                             expected_list_of_confidence_intervals[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_file(self):
         filename = 'results.pickle'
@@ -1273,6 +1354,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # return True
         self.assertTrue(self.runner._keep_going(None, None, None))
 
+    def test_set_results_filename(self):
+        dummyrunner = _DummyRunner()
+        dummyrunner.set_results_filename()
+        self.assertIsNone(dummyrunner.results_filename)
+
+        dummyrunner.set_results_filename("some_name_{bias}")
+        self.assertEqual(dummyrunner.results_filename, "some_name_1.3.pickle")
+
     def test_simulate(self):
         from tests.util_package_test import _DummyRunner
         dummyrunner = _DummyRunner()
@@ -1305,8 +1394,41 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
         results = SimulationResults.load_from_file(dummyrunner.results_filename)
-        self.assertTrue(results == dummyrunner.results)
+        self.assertEqual(results, dummyrunner.results)
+        _delete_pickle_files()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now we do not set the results filename
+        dummyrunner2 = _DummyRunner()
+        dummyrunner2.simulate()
+        self.assertEqual(dummyrunner.results, dummyrunner2.results)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Repeat the test with wrong partial results xxxxxxxxxxx
+        # First we run a usual simulation and keep the partial results
+        dummyrunner3 = _DummyRunner()
+        dummyrunner3.set_results_filename('dummyrunner3_results')
+        dummyrunner3.delete_partial_results_bool = False
+        dummyrunner3.simulate()
+
+        # Now we change the bias parameter
+        dummyrunner3.params.add('bias', 1.5)
+
+        # If we run a simulation with different parameters it will try to
+        # load the partial results with wrong parameters and an exception
+        # should be raised
+        with self.assertRaises(ValueError):
+            dummyrunner3.simulate()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Repeat the test loading the partial results xxxxxxxxxx
+        dummyrunner4 = _DummyRunner()
+        dummyrunner4.set_results_filename('dummyrunner3_results')
+        dummyrunner4.delete_partial_results_bool = False
+        dummyrunner4.simulate()
+
+        # Delete all *.pickle files in the same folder
         _delete_pickle_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1362,10 +1484,37 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
         results = SimulationResults.load_from_file(runner.results_filename)
-        self.assertTrue(results == runner.results)
+        self.assertEqual(results, runner.results)
         _delete_pickle_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now we do not set the results filename
+        runner2 = _DummyRunner()
+        runner2.simulate_in_parallel(lview)
+        self.assertEqual(results, runner2.results)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Repeat the test with wrong partial results xxxxxxxxxxx
+        runner3 = _DummyRunner()
+        runner3.set_results_filename('runner3_results')
+        runner3.delete_partial_results_bool = False
+        runner3.simulate_in_parallel(lview)
+
+        # Now we change the bias parameter
+        runner3.params.add('bias', 1.5)
+
+        # If we run a simulation with different parameters it will try to
+        # load the partial results with wrong parameters and an exception
+        # should be raised. The raised Exception is an ValueError, but
+        # since they are raised in the IPython engines, IPython itself will
+        # raise a CompositeError exception.
+        with self.assertRaises(CompositeError):
+            runner3.simulate_in_parallel(lview)
+
+        # Delete all *.pickle files in the same folder
+        _delete_pickle_files()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

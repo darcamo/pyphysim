@@ -487,7 +487,7 @@ class SimulationRunner(object):
         self.__toc = 0.0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def set_results_filename(self, filename):
+    def set_results_filename(self, filename=None):
         """
         Set the name of the file where the simulation results will be saved.
 
@@ -565,7 +565,7 @@ class SimulationRunner(object):
             for name in self.__results_base_filename_unpack_list:
                 try:
                     os.remove(name)
-                except Exception:
+                except Exception:  # pragma: no cover
                     pass
             self.__results_base_filename_unpack_list = []
         else:
@@ -782,7 +782,7 @@ class SimulationRunner(object):
         return update_progress_func
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _get_parallel_update_progress_function(self):
+    def _get_parallel_update_progress_function(self):  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -848,7 +848,7 @@ class SimulationRunner(object):
         return self._runned_reps
 
     # This method is called when the SimulationRunner class is pickled
-    def __getstate__(self):
+    def __getstate__(self):  # pragma: no cover
         # We will pickle everything as default, escept for the "_pbar"
         # member variable that will not be pickled. The reason is that it
         # may be a ProgressbarZMQServer object, which cannot be pickled (uses
@@ -857,7 +857,7 @@ class SimulationRunner(object):
         del state['_pbar']
         return state
 
-    def get_runned_reps_fix_params(self, fixed_params_dict=dict()):
+    def get_runned_reps_fix_params(self, fixed_params_dict=dict()):  # pragma: no cover
         """
         Get the number of runned repetitions for a given set of parameters.
 
@@ -1009,7 +1009,7 @@ class SimulationRunner(object):
                 update_progress_func(current_rep)
 
                 # Save partial results each 500 iterations
-                if current_rep % 500 == 0 and self.__results_base_filename is not None:
+                if current_rep % 500 == 0 and self.__results_base_filename is not None:  # pragma: no cover
                     self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
 
             # If the while loop ended before rep_max repetitions (because
@@ -1133,7 +1133,7 @@ class SimulationRunner(object):
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # ----- Function that will be called in each IPython engine -------
-        def simulate_for_current_params(obj, current_params, proxybar_data=None):
+        def simulate_for_current_params(obj, current_params, proxybar_data=None):  # pragma: no cover
             """
             Parameters
             ----------
@@ -1654,7 +1654,7 @@ class SimulationParameters(object):
         iterations to perform and there is no problem when its value is
         different.
         """
-        if self is other:
+        if self is other:  # pragma: no cover
             return True
 
         if self._unpacked_parameters_set != other._unpacked_parameters_set:
@@ -1773,6 +1773,9 @@ class SimulationParameters(object):
         aux.shape = dimensions
         indexes = eval("aux" + "[{0}]".format(",".join(param_indexes)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        if indexes.shape == ():
+            indexes = np.array([indexes])
 
         return indexes
 
@@ -2237,7 +2240,7 @@ class SimulationResults(object):
         other : SimulationResults object
             The other SimulationResults object.
         """
-        if self is other:
+        if self is other:  # pragma: no cover
             return True
 
         aux =  equal_dicts(self.__dict__, other.__dict__, ignore_keys=['elapsed_time', '_results'])
@@ -2845,7 +2848,7 @@ class Result(object):
         other : Result object
             The other Result object.
         """
-        if self is other:
+        if self is other:  # pragma: no cover
             return True
 
         return equal_dicts(self.__dict__, other.__dict__, ignore_keys=['num_updates'])
