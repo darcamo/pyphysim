@@ -801,6 +801,26 @@ def replace_dict_values(name, dictionary):
         new_dict[n] = v
 
     return name.format(**new_dict)
+
+
+# Function taken from
+# http://stackoverflow.com/questions/10480806/compare-dictionaries-ignoring-specific-keys
+def equal_dicts(a, b, ignore_keys):
+    """
+    Test if two dictionaries are equal ignoring certain keys.
+
+    Parameters
+    ----------
+    a : dict
+        The first dictionary
+    b : dict
+        The second dictionary
+    ignore_keys : list or tuple
+        A list or tuple with the keys to be ignored.
+    """
+    ka = set(a).difference(ignore_keys)
+    kb = set(b).difference(ignore_keys)
+    return ka == kb and all(a[k] == b[k] for k in ka)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

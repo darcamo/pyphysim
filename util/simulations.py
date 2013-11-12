@@ -176,7 +176,7 @@ import copy
 import numpy as np
 from time import time
 
-from util.misc import pretty_time, calc_confidence_interval, replace_dict_values
+from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
 from util.progressbar import ProgressbarText2, ProgressbarText3, ProgressbarZMQServer2, ProgressbarZMQClient
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
@@ -487,22 +487,41 @@ class SimulationRunner(object):
         self.__toc = 0.0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def __update__results_base_filename(self, results_filename):
+    def set_results_filename(self, filename):
         """
-        Update the internal __results_base_filename member variable.
+        Set the name of the file where the simulation results will be saved.
 
-        This variable will stores the name of the file where the simulation
-        results will be saved.
+        This must be done before calling the `simulate` of the
+        `simulate_in_parallel` methods.
+
+        The `filename` argument is formatted with the simulation
+        parameters. That is, suppose there are two parameters Nr=2 and
+        Nt=1, then if `filename` is equal to "results_for_{Nr}x{Nt}" the
+        actual name of the file used to stote the simulation results will
+        be "results_for_2x1.pickle".
+
+        The advantage of setting the name of the results file with
+        `set_results_filename` instead of manually saving the results after
+        the simulation is finished is that partial results will also be
+        saved. Therefore the simulation can be stopped and continued later
+        from these partial results.
 
         Parameters
         ----------
-        results_filename : str
+        filename : str
             The name of the file where the simulation results will be
             stored. If not provided the results will not be automatically
             stored. See the notes for more information.
         """
-        if results_filename is not None:
-            self.__results_base_filename = replace_dict_values(results_filename,
+        # xxxxxxxxxx Update the __results_base_filename variable xxxxxxxxxx
+        # The __results_base_filename variable will contain the name of the
+        # file where the simulation results should be saved. It will be
+        # equivalent to the provided `filename` argument after any
+        # parameter replacements.
+        # self.set_results_filename(results_filename)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        if filename is not None:
+            self.__results_base_filename = replace_dict_values(filename,
                                                                self.params.parameters)
         else:
             self.__results_base_filename = None
@@ -854,7 +873,7 @@ class SimulationRunner(object):
         runned_reps_subset = np.array(self.runned_reps)[indexes]
         return runned_reps_subset
 
-    def simulate(self, results_filename=None):
+    def simulate(self):
         """
         Performs the full Monte Carlo simulation (serially).
 
@@ -868,33 +887,10 @@ class SimulationRunner(object):
         specific code of a single iteration is implemented in the
         _run_simulation method in a subclass.
 
-        Parameters
-        ----------
-        results_filename : str
-            The name of the file where the simulation results will be
-            stored. If not provided the results will not be automatically
-            stored. See the notes for more information.
-
-        Notes
-        -----
-        The `results_filename` argument is formatted with the simulation
-        parameters. That is, supose there are two parameters Nr=2 and Nt=1,
-        then if `results_filename` is equal to "results_for_{Nr}x{Nt}" the
-        actual name of the fiel used to stote the simulation parameters
-        will be "results_for_2x1.pickle".
-
         See Also
         --------
         simulate_in_parallel
         """
-        # xxxxxxxxxx Update the __results_base_filename variable xxxxxxxxxx
-        # The __results_base_filename variable will contain the name of the
-        # file where the simulation results should be saved. It will be
-        # equivalent to the provided results_filename argument after any
-        # parameter replacements.
-        self.__update__results_base_filename(results_filename)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # xxxxxxxxxx Iterator to print the current variation xxxxxxxxxxxxxx
         # This local function returns an iterator that prints the current
         # variation each time its "next" method is called.
@@ -1068,7 +1064,7 @@ class SimulationRunner(object):
             self.__delete_partial_results()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def simulate_in_parallel(self, view, wait=True, results_filename=None):
+    def simulate_in_parallel(self, view, wait=True):
         """
         Same as the simulate method, but the different parameters
         configurations are simulated in parallel.
@@ -1112,16 +1108,6 @@ class SimulationRunner(object):
         # dview.execute('import sys')
         # dview.execute('sys.path.append("{0}")'.format(parent_dir))
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Update the __results_base_filename variable xxxxxxxxxx
-        # The __results_base_filename variable will contain the name of the
-        # file where the simulation results should be saved. It will be
-        # equivalent to the provided results_filename argument after any
-        # parameter replacements.
-        self.__update__results_base_filename(results_filename)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        #pbar = ProgressbarMultiProcessServer(sleep_time=5)
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.__tic = time()
@@ -2238,6 +2224,47 @@ class SimulationResults(object):
         # set_parameters method.
         self._params = SimulationParameters()
 
+    def __eq__(self, other):
+        """
+        Compare two SimulationResults objects.
+
+        Two SimulationResults objects are considered equal if all Result
+        objects in both of them are equal, with the exception of the
+        'elapsed_time' Result, which is ignored in the comparison.
+
+        Parameters
+        ----------
+        other : SimulationResults object
+            The other SimulationResults object.
+        """
+        if self is other:
+            return True
+
+        aux =  equal_dicts(self.__dict__, other.__dict__, ignore_keys=['elapsed_time', '_results'])
+        if aux is False:
+            return False
+
+        if self._results.keys() != other._results.keys():
+            return False
+
+        return all([self[k] == other[k] for k in self._results.keys() if k != 'elapsed_time'])
+
+    def __ne__(self, other):
+        """
+        Compare two SimulationResults objects.
+
+        Two SimulationResults objects are considered equal if all Result
+        objects in both of them are equal, with the exception of the
+        'elapsed_time' Result, which is ignored in the comparison.
+
+        Parameters
+        ----------
+        other : SimulationResults object
+            The other SimulationResults object.
+        """
+        return not self.__eq__(other)
+
+
     def _get_params(self):
         """Get method for the params property."""
         return self._params
@@ -2804,6 +2831,39 @@ class Result(object):
         self._accumulate_values_bool = accumulate_values
         self._value_list = []
         self._total_list = []
+
+    def __eq__(self, other):
+        """
+        Compare two Result objects.
+
+        Two Result objects are considered equal if all attributes in both
+        of them are equal, with the exception of the 'num_updates' member
+        variable which is ignored in the comparison.
+
+        Parameters
+        ----------
+        other : Result object
+            The other Result object.
+        """
+        if self is other:
+            return True
+
+        return equal_dicts(self.__dict__, other.__dict__, ignore_keys=['num_updates'])
+
+    def __ne__(self, other):
+        """
+        Compare two Result objects.
+
+        Two Result objects are considered equal if all attributes in both
+        of them are equal, with the exception of the 'num_updates' member
+        variable which is ignored in the comparison.
+
+        Parameters
+        ----------
+        other : Result object
+            The other Result object.
+        """
+        return not self.__eq__(other)
 
     @property
     def accumulate_values_bool(self):

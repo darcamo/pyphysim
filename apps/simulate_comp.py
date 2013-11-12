@@ -147,7 +147,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
         #self.params.set_unpack_parameter('metric')
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 5000  # Maximum number of repetitions for each
+        self.rep_max = 50  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -1212,6 +1212,7 @@ if __name__ == '__main__':
     # File name (without extension) for the figure and result files.
     results_filename = 'comp_results'
     runner = CompSimulationRunner()
+    runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     ## xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1248,10 +1249,10 @@ if __name__ == '__main__':
         # since when the simulation is performed in parallel we get a
         # single progressbar for all the simulation.
         runner.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
-        runner.simulate_in_parallel(lview, results_filename=results_filename)
+        runner.simulate_in_parallel(lview)
     else:
         print("Simulation will be run serially")
-        runner.simulate(results_filename)
+        runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #
     #

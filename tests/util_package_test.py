@@ -20,13 +20,24 @@ current_dir = os.path.abspath(os.path.dirname(__file__))
 import unittest
 import doctest
 import numpy as np
+import glob
 
 from util import misc, progressbar, simulations, conversion
 from util.simulations import Result, SimulationParameters, SimulationResults, SimulationRunner
 from util.simulations import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
 
 
-# This method is used in test methods for the ProgressbarText class (and
+# This function is used in test methods for the SimulationRunner class
+def _delete_pickle_files():
+    """
+    Delete all files with a '.pickle' extension in the current folder.
+    """
+    files = glob.glob('*.pickle')
+    for f in files:
+        os.remove(f)
+
+
+# This function is used in test methods for the ProgressbarText class (and
 # other classes that use ProgressbarText)
 def _get_clear_string_from_stringio_object(mystring):
     """
@@ -635,6 +646,9 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(self.sim_params.get_num_unpacked_variations(),
                          sim_params2.get_num_unpacked_variations())
 
+        # Delete the where the parameters were saved
+        os.remove(filename)
+
     def test_load_from_config_file(self):
         filename = 'test_config_file.txt'
 
@@ -1126,6 +1140,9 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.simresults.params['factor'],
                                simresults2.params['factor'])
 
+        # Delete the where the results were saved
+        os.remove(filename)
+
     def test_save_to_and_load_from_hdf5_file(self):
         filename = 'test_results_hdf5.h5'
         # Let's make sure the file does not exist
@@ -1259,10 +1276,22 @@ class SimulationRunnerTestCase(unittest.TestCase):
     def test_simulate(self):
         from tests.util_package_test import _DummyRunner
         dummyrunner = _DummyRunner()
-        # then we call its simulate method
+
+        # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
+        filename = 'dummyrunner_results_bias_{bias}'
+        dummyrunner.set_results_filename(filename)
+
+        # Remove old file from previous test run
+        _delete_pickle_files()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         dummyrunner.simulate()  # The results will be the SNR values
                                 # multiplied by 1.2. plus the bias
                                 # parameter
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         results_extra_1 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
@@ -1272,6 +1301,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
         np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
+        results = SimulationResults.load_from_file(dummyrunner.results_filename)
+        self.assertTrue(results == dummyrunner.results)
+
+        _delete_pickle_files()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
@@ -1303,6 +1340,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         runner.progressbar_message = 'bla'
         runner.update_progress_function_style = 'text1'
 
+        # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
+        filename = 'runner_results_bias_{bias}'
+        runner.set_results_filename(filename)
+
+        # Remove old file from previous test run
+        _delete_pickle_files()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         runner.simulate_in_parallel(lview)
 
         results_extra_1 = runner.results.get_result_values_list(
@@ -1314,6 +1359,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
         np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
+
+        # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
+        results = SimulationResults.load_from_file(runner.results_filename)
+        self.assertTrue(results == runner.results)
+        _delete_pickle_files()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

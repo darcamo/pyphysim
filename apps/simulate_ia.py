@@ -497,8 +497,8 @@ def simulate_general(runner, results_filename):
     print("IA Solver: {0}".format(runner.ia_solver.__class__))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Replace any parameter mention in results_filename xxxxxxxxxxxxx
-    #results_filename = results_filename.format(**runner.params.parameters)
+    # xxxxxxxxxx Set the filename for the results xxxxxxxxxxxxxxxxxxxxxxxxx
+    runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -536,10 +536,10 @@ def simulate_general(runner, results_filename):
         # single progressbar for all the simulation.
         runner.progressbar_message = runner.progressbar_message.replace(
             " - SNR: {SNR}","")
-        runner.simulate_in_parallel(lview, results_filename=results_filename)
+        runner.simulate_in_parallel(lview)
     else:
         print("Simulation will be run serially")
-        runner.simulate(results_filename)
+        runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
@@ -787,10 +787,8 @@ if __name__ == '__main__':
     if "Closed Form" in algorithms_to_simulate:
         #closed_form_runner._pbar._message = "Simulating Closed Form in parallel"
         closed_form_runner.progressbar_message = "Simulating Closed Form in parallel"
-        closed_form_runner.simulate_in_parallel(
-            lview,
-            wait=False,
-            results_filename='ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        closed_form_runner.set_results_filename('ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        closed_form_runner.simulate_in_parallel(lview, wait=False)
 
     # ---------------------------------------------------------------------
 
@@ -798,30 +796,26 @@ if __name__ == '__main__':
     if "Alt Min" in algorithms_to_simulate:
         #alt_min_runner._pbar._message = "Simulating Alt. Min. in parallel"
         alt_min_runner.progressbar_message = "Simulating Alt. Min. in parallel"
-        alt_min_runner.simulate_in_parallel(
-            lview,
-            wait=False,
-            results_filename='ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        alt_min_runner.set_results_filename(
+        'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        alt_min_runner.simulate_in_parallel(lview, wait=False)
     # ---------------------------------------------------------------------
 
     # ---------- Creates the Max SINR Runner ------------------------------
     if "Max SINR" in algorithms_to_simulate:
         #max_sinrn_runner._pbar._message = "Simulating Max SINR in parallel"
         max_sinrn_runner.progressbar_message = "Simulating Max SINR in parallel"
-        max_sinrn_runner.simulate_in_parallel(
-            lview,
-            wait=False,
-            results_filename='ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        max_sinrn_runner.set_results_filename(
+        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        max_sinrn_runner.simulate_in_parallel(lview, wait=False)
     # ---------------------------------------------------------------------
 
     # ---------- Creates the MMSE Runner ----------------------------------
     if "MMSE" in algorithms_to_simulate:
         #mmse_runner._pbar._message = "Simulating MMSE in parallel"
         mmse_runner.progressbar_message = "Simulating MMSE in parallel"
-        mmse_runner.simulate_in_parallel(
-            lview,
-            wait=False,
-            results_filename='ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        mmse_runner.set_results_filename('ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        mmse_runner.simulate_in_parallel(lview, wait=False)
 
     # ---------------------------------------------------------------------
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
