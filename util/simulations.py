@@ -548,12 +548,14 @@ class SimulationRunner(object):
             unpack_index_str)
         return partial_results_filename
 
-    def __delete_partial_results(self):
+    def __delete_partial_results_maybe(self):
         """
-        Delete the files containing partial results.
+        (maybe) Delete the files containing partial results.
 
         This method is called inside the simulate method after the full
-        results were saved.
+        results were saved. It will only have an effect if the
+        "delete_partial_results_bool" variable is True (thus the 'maybe' in
+        the method's name).
 
         Notes
         -----
@@ -597,7 +599,7 @@ class SimulationRunner(object):
         this method will be run in a different object in an IPython
         engine. Therefore, you will need to manually add, the value of the
         partial_results_filename variable to the list of files to be
-        deleted (the __delete_partial_results variable).
+        deleted (the __results_base_filename_unpack_list variable).
         """
         # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
         # First we add the current parameters to the partial simulation
@@ -974,7 +976,76 @@ class SimulationRunner(object):
         # This function returns a tuple containing the number of
         # iterations run as well as the SimulationResults object.
         return (current_rep, current_sim_results, partial_results_filename)
-    # -----------------------------------------------------------------
+
+    def _simulate_for_current_params_serial(self, current_params, var_print_iter):
+        """
+        Parameters
+        ----------
+        current_params : SimulationParameters object.
+            The current parameters
+        var_print_iter : iterator
+            An iterator obtained from calling the __print_variation_iter method.
+        """
+        # (maybe) Print the current variation. This is something like
+        # ------------- Current Variation: 4/84 ------------
+        next(var_print_iter)
+
+        update_progress_func = self._get_serial_update_progress_function(current_params)
+
+        return self._simulate_for_current_params_common(current_params, update_progress_func)
+
+    @staticmethod
+    def _simulate_for_current_params_parallel(obj, current_params, proxybar_data=None):
+        """
+        Parameters
+        ----------
+        obj : SimulationRunner object.
+            The same as the self parameter in regular methods. The reason
+            that this method is set to static is to allow it to be pickled.
+        current_params : SimulationParameters object.
+            The current parameters
+        proxybar_data : list of 3 elements or None
+                The elements are the "client_id" (and int), the "ip" (a
+                string with an IP address) and the "port". This data should
+                be used to create a ProgressbarZMQClient object that can be
+                used to update the progressbar (via a ZMQ socket)
+        """
+        # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
+        if proxybar_data is None:
+            update_progress_func = lambda value: None
+        else:
+            client_id, ip, port = proxybar_data
+            proxybar = ProgressbarZMQClient(client_id, ip, port)
+            update_progress_func = proxybar.progress
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        return obj._simulate_for_current_params_common(current_params, update_progress_func)
+
+    def __print_variation_iter(self, num_variations):
+        """
+        Returns an iterator that prints the current variation each time it's
+        "next" method is called.
+
+        Create the var_print_iter Iterator Each time the 'next' method of
+        var_print_iter is called it will print something like
+
+        ------------- Current Variation: 4/84 ------------
+
+        which means the variation 4 of 84 variations.
+        """
+        if self.update_progress_function_style is None:
+            for i in itertools.repeat(''):
+                yield 0
+        else:  # pragma: no cover
+            variation_pbar = ProgressbarText3(
+                num_variations,
+                progresschar='-',
+                message="Current Variation:")
+
+            for i in range(1, num_variations + 1):
+                variation_pbar.progress(i)
+                print  # print a new line
+                yield i
 
     def simulate(self):
         """
@@ -994,33 +1065,6 @@ class SimulationRunner(object):
         --------
         simulate_in_parallel
         """
-        # xxxxxxxxxx Iterator to print the current variation xxxxxxxxxxxxxx
-        # This local function returns an iterator that prints the current
-        # variation each time its "next" method is called.
-        def _print_variation_iter(num_variations):
-            if self.update_progress_function_style is None:
-                for i in itertools.repeat(''):
-                    yield 0
-            else:  # pragma: no cover
-                variation_pbar = ProgressbarText3(
-                    num_variations,
-                    progresschar='-',
-                    message="Current Variation:")
-
-                for i in range(1, num_variations + 1):
-                    variation_pbar.progress(i)
-                    print  # print a new line
-                    yield i
-
-        # Create the var_print_iter Iterator
-        # Each time the 'next' method of var_print_iter is called it will
-        # print something like
-        # ------------- Current Variation: 4/84 ------------
-        # which means the variation 4 of 84 variations.
-        var_print_iter = _print_variation_iter(
-            self.params.get_num_unpacked_variations())
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1043,25 +1087,30 @@ class SimulationRunner(object):
         self._on_simulate_start()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # Get the number of variations of the transmit parameters
+        num_variations = self.params.get_num_unpacked_variations()
+
+        ## xxxxx Start of the code unique to the serial version xxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create the var_print_iter Iterator
+        # Each time the 'next' method of var_print_iter is called it will
+        # print something like
+        # ------------- Current Variation: 4/84 ------------
+        # which means the variation 4 of 84 variations.
+        var_print_iter = self.__print_variation_iter(num_variations)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Loop through all the parameters combinations
         for current_params in self.params.get_unpacked_params_list():
-            next(var_print_iter)
-
-            update_progress_func = self._get_serial_update_progress_function(current_params)
-
-            current_rep, current_sim_results, partial_results_filename = self._simulate_for_current_params_common(current_params, update_progress_func)
+            current_rep, current_sim_results, partial_results_filename = self._simulate_for_current_params_serial(current_params, var_print_iter)
 
             # Store the number of repetitions actually ran for the current
             # parameters combination
             self._runned_reps.append(current_rep)
             # Lets append the simulation results for the current parameters
             self.results.append_all_results(current_sim_results)
-
-            # This will add a blank line between the simulations for
-            # different unpacked variations (when there is more then one)
-            if self.params.get_num_unpacked_variations() > 1 and self.update_progress_function_style is not None:
-                print("")  # pragma: no cover
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Implement the _on_simulate_finish method in a subclass if you
@@ -1085,7 +1134,7 @@ class SimulationRunner(object):
             self.results.save_to_file(self.results_filename)
             # Delete the partial results (this will only delete the partial
             # results if self.delete_partial_results_bool is True)
-            self.__delete_partial_results()
+            self.__delete_partial_results_maybe()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def simulate_in_parallel(self, view, wait=True):
@@ -1119,20 +1168,6 @@ class SimulationRunner(object):
         result files won't be automatically deleted after the simulation is
         finished.
         """
-        # # xxxxx Initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # # Get the client which created the view `view` and then get a
-        # # direct_view with the same targets
-        # cl = view.client
-        # dview = cl.direct_view(view.targets)
-        # # Now we can use this direct view to perform some imports
-        # import os
-        # import sys
-        # parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-        # sys.path.append(parent_dir)
-        # dview.execute('import sys')
-        # dview.execute('sys.path.append("{0}")'.format(parent_dir))
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1155,38 +1190,10 @@ class SimulationRunner(object):
         self._on_simulate_start()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # ----- Function that will be called in each IPython engine -------
-        def simulate_for_current_params(obj, current_params, proxybar_data=None):  # pragma: no cover
-            """
-            Parameters
-            ----------
-            current_params : SimulationParameters object.
-                The current parameters
-            proxybar_data : list of 3 elements or None
-                The elements are the "client_id" (and int), the "ip" (a
-                string with an IP address) and the "port". This data should
-                be used to create a ProgressbarZMQClient object that can be
-                used to update the progressbar (via a ZMQ socket)
-            """
-            # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
-            if proxybar_data is None:
-                update_progress_func = lambda value: None
-            else:
-                client_id, ip, port = proxybar_data
-                proxybar = ProgressbarZMQClient(client_id, ip, port)
-                update_progress_func = proxybar.progress
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-            current_rep, current_sim_results, partial_results_filename = obj._simulate_for_current_params_common(current_params, update_progress_func)
-
-            # This function returns a tuple containing the number of
-            # iterations run as well as the SimulationResults object.
-            return (current_rep, current_sim_results, partial_results_filename)
-        # -----------------------------------------------------------------
-
-        # Loop through all the parameters combinations
+        # Get the number of variations of the transmit parameters
         num_variations = self.params.get_num_unpacked_variations()
+
+        ## xxxxx Start of the code unique to the parallel version xxxxxxxxx
 
         # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
         if self.update_progress_function_style is not None:
@@ -1204,7 +1211,8 @@ class SimulationRunner(object):
         # class of 'self' (that is, the subclass of SimulationRunner that
         # you are trying to run) is pickle-able.
         self._async_results = view.map(
-            simulate_for_current_params,
+            #simulate_for_current_params,
+            SimulationRunner._simulate_for_current_params_parallel,
             # We need to pass the SimulationRunner
             # object to the IPython engine ...
             [self] * num_variations,
@@ -1233,19 +1241,11 @@ class SimulationRunner(object):
             # Wait for the tasks (running in the IPython engines) to finish
             self._async_results.wait()
 
-            # Update the elapsed time
-            self._elapsed_time += self._async_results.elapsed
-
             results = self._async_results.get()
-
             for reps, r, filename in results:
                 self._runned_reps.append(reps)
                 self.results.append_all_results(r)
                 self.__results_base_filename_unpack_list.append(filename)
-
-            # xxxxx Save the elapsed time in the SimulationResults object xxxxx
-            self.results.elapsed_time = self._elapsed_time
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # Implement the _on_simulate_finish method in a subclass if you
             # need to run code at the end of the simulate method.
@@ -1256,11 +1256,11 @@ class SimulationRunner(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            # Note that for now the elapsed time does not include the time
-            # spent at the actual simulation. We still need to sum with the
-            # elapsed time from the actual simulation.
             self.__toc = time()
             self._elapsed_time = self.__toc - self.__tic
+
+            # Also save the elapsed time in the SimulationResults object
+            self.results.elapsed_time = self._elapsed_time
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Save the results if results_filename is not None xxxxxxxxxx
@@ -1268,7 +1268,7 @@ class SimulationRunner(object):
                 self.results.save_to_file(self.results_filename)
                 # Delete the partial results (this will only delete the partial
                 # results if self.delete_partial_results_bool is True)
-                self.__delete_partial_results()
+                self.__delete_partial_results_maybe()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # Stop the progressbar updating progress
