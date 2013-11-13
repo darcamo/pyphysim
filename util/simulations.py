@@ -710,6 +710,11 @@ class SimulationRunner(object):
         -------
         result : bool
             True if the simulation should continue or False otherwise.
+
+        Notes
+        -----
+        This method should be simple (it will be run many times) and SHOULD
+        NOT modify the object.
         """
         # If this function is not reimplemented in a subclass it always
         # returns True. Therefore, the simulation will only stop when the
@@ -873,6 +878,104 @@ class SimulationRunner(object):
         runned_reps_subset = np.array(self.runned_reps)[indexes]
         return runned_reps_subset
 
+    def _simulate_for_current_params_common(self, current_params, update_progress_func=lambda value: None):  # pragma: no cover
+        """
+        Parameters
+        ----------
+        current_params : SimulationParameters object.
+            The current parameters
+        update_progress_func : lambda function
+            The function that can be called to update the current progress.
+        """
+        # Implement the _on_simulate_current_params_start method in a
+        # subclass if you need to run code before the _run_simulation
+        # iterations for each combination of simulation parameters.
+        self._on_simulate_current_params_start(current_params)
+
+        # First we try to Load the partial results for the current
+        # parameters.
+        try:
+            # Name of the file where the partial results will be saved
+            if self.__results_base_filename is not None:
+                partial_results_filename = self._get_unpack_result_filename(
+                    current_params)
+            else:
+                # If __results_base_filename is None there is also no
+                # partial results to load. Therefore, lets raise an
+                # IOError here to go to the except catching
+                raise IOError()
+
+            # If loading partial results succeeds, then we will have
+            # partial results. If it fails because the file does not
+            # exist, this will thrown a IOError exception and we will
+            # execute the except block instead.
+            current_sim_results = SimulationResults.load_from_file(
+                partial_results_filename)
+
+            # Note that at this point we have successfully loaded the
+            # partial results from the file. However, we still need to
+            # make sure it matches our current parameters. It it does
+            # not match the user likely used a wrong name and we raise
+            # an exception to stop the simulation.
+            #
+            # NOTE: If the type of this exception is changed in the
+            # future make sure it is not caught in the except block.
+            if not current_params == current_sim_results.params:
+                raise ValueError("Partial results loaded from file does not match current parameters. \nfile: {0}".format(partial_results_filename))
+
+            # The current_rep will be set to the value or run
+            # repetitions in the loaded partial results. This means
+            # that the "while" statement after this try/except block
+            # will have a head start and if current_rep is greater than
+            # or equal to rep_max the while loop won't run at all.
+            current_rep = current_sim_results.current_rep
+
+        # If loading partial results failed then we will run the FIRST
+        # repetition here and the "while" statement after this
+        # try/except block will run as usual.
+        except IOError:
+            # Perform the first iteration of _run_simulation
+            current_sim_results = self.__run_simulation_and_track_elapsed_time(
+                current_params)
+            current_rep = 1
+
+        # Run more iterations until one of the stop criteria is reached
+        while (self._keep_going(current_params, current_sim_results, current_rep)
+               and
+               current_rep < self.rep_max):
+            current_sim_results.merge_all_results(
+                self.__run_simulation_and_track_elapsed_time(current_params))
+
+            current_rep += 1
+            update_progress_func(current_rep)
+
+            # Save partial results each 500 iterations
+            if current_rep % 500 == 0 and self.__results_base_filename is not None:
+                self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+
+        # If the while loop ended before rep_max repetitions (because
+        # _keep_going returned false) then set the progressbar to full.
+        update_progress_func(self.rep_max)
+
+        # Implement the _on_simulate_current_params_finish method in a
+        # subclass if you need to run code after all _run_simulation
+        # iterations for each combination of simulation parameters
+        # finishes.
+        self._on_simulate_current_params_finish(current_params,
+                                               current_sim_results)
+
+        # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
+        if self.__results_base_filename is not None:
+            self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+        else:
+            partial_results_filename = None
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # This function returns a tuple containing the number of
+        # iterations run as well as the SimulationResults object.
+        return (current_rep, current_sim_results, partial_results_filename)
+    # -----------------------------------------------------------------
+
     def simulate(self):
         """
         Performs the full Monte Carlo simulation (serially).
@@ -944,95 +1047,16 @@ class SimulationRunner(object):
         # Loop through all the parameters combinations
         for current_params in self.params.get_unpacked_params_list():
             next(var_print_iter)
-            # Implement the _on_simulate_current_params_start method in a
-            # subclass if you need to run code before the _run_simulation
-            # iterations for each combination of simulation parameters.
-            self._on_simulate_current_params_start(current_params)
-
-            # First we try to Load the partial results for the current
-            # parameters.
-            try:
-                # Name of the file where the partial results will be saved
-                if self.__results_base_filename is not None:
-                    partial_results_filename = self._get_unpack_result_filename(
-                        current_params)
-                else:
-                    # If __results_base_filename is None there is also no
-                    # partial results to load. Therefore, lets raise an
-                    # IOError here to go to the except catching
-                    raise IOError()
-
-                # If loading partial results succeeds, then we will have
-                # partial results. If it fails because the file does not
-                # exist, this will thrown a IOError exception and we will
-                # execute the except block instead.
-                current_sim_results = SimulationResults.load_from_file(
-                    partial_results_filename)
-
-                # Note that at this point we have successfully loaded the
-                # partial results from the file. However, we still need to
-                # make sure it matches our current parameters. It it does
-                # not match the user likely used a wrong name and we raise
-                # an exception to stop the simulation.
-                #
-                # NOTE: If the type of this exception is changed in the
-                # future make sure it is not caught in the except block.
-                if not current_params == current_sim_results.params:
-                    raise ValueError("Partial results loaded from file does not match current parameters. \nfile: {0}".format(partial_results_filename))
-
-                # The current_rep will be set to the value or run
-                # repetitions in the loaded partial results. This means
-                # that the "while" statement after this try/except block
-                # will have a head start and if current_rep is greater than
-                # or equal to rep_max the while loop won't run at all.
-                current_rep = current_sim_results.current_rep
-
-            # If loading partial results failed then we will run the FIRST
-            # repetition here and the "while" statement after this
-            # try/except block will run as usual.
-            except IOError:
-                # Perform the first iteration of _run_simulation
-                current_sim_results = self.__run_simulation_and_track_elapsed_time(
-                    current_params)
-                current_rep = 1
 
             update_progress_func = self._get_serial_update_progress_function(current_params)
-            # Run more iterations until one of the stop criteria is reached
-            while (self._keep_going(current_params, current_sim_results, current_rep)
-                   and
-                   current_rep < self.rep_max):
-                new_sim_results = self.__run_simulation_and_track_elapsed_time(
-                    current_params)
-                current_sim_results.merge_all_results(new_sim_results)
 
-                current_rep += 1
-                update_progress_func(current_rep)
-
-                # Save partial results each 500 iterations
-                if current_rep % 500 == 0 and self.__results_base_filename is not None:  # pragma: no cover
-                    self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
-
-            # If the while loop ended before rep_max repetitions (because
-            # _keep_going returned false) then set the progressbar to full.
-            update_progress_func(self.rep_max)
-
-            # Implement the _on_simulate_current_params_finish method in a
-            # subclass if you need to run code after all _run_simulation
-            # iterations for each combination of simulation parameters
-            # finishes.
-            self._on_simulate_current_params_finish(current_params,
-                                                    current_sim_results)
+            current_rep, current_sim_results, partial_results_filename = self._simulate_for_current_params_common(current_params, update_progress_func)
 
             # Store the number of repetitions actually ran for the current
             # parameters combination
             self._runned_reps.append(current_rep)
             # Lets append the simulation results for the current parameters
             self.results.append_all_results(current_sim_results)
-
-            # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
-            if self.__results_base_filename is not None:
-                self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # This will add a blank line between the simulations for
             # different unpacked variations (when there is more then one)
@@ -1154,88 +1178,7 @@ class SimulationRunner(object):
                 update_progress_func = proxybar.progress
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-            # Implement the _on_simulate_current_params_start method in a
-            # subclass if you need to run code before the _run_simulation
-            # iterations for each combination of simulation parameters.
-            obj._on_simulate_current_params_start(current_params)
-
-            # First we try to Load the partial results for the current
-            # parameters.
-            try:
-                # Name of the file where the partial results will be saved
-                if obj.__results_base_filename is not None:
-                    partial_results_filename = obj._get_unpack_result_filename(
-                        current_params)
-                else:
-                    # If __results_base_filename is None there is also no
-                    # partial results to load. Therefore, lets raise an
-                    # IOError here to go to the except catching
-                    raise IOError()
-
-                # If loading partial results succeeds, then we will have
-                # partial results. If it fails because the file does not
-                # exist, this will thrown a IOError exception and we will
-                # execute the except block instead.
-                current_sim_results = SimulationResults.load_from_file(
-                    partial_results_filename)
-
-                # Note that at this point we have successfully loaded the
-                # partial results from the file. However, we still need to
-                # make sure it matches our current parameters. It it does
-                # not match the user likely used a wrong name and we raise
-                # an exception to stop the simulation.
-                #
-                # NOTE: If the type of this exception is changed in the
-                # future make sure it is not caught in the except block.
-                if not current_params == current_sim_results.params:
-                    raise ValueError("Partial results loaded from file does not match current parameters. \nfile: {0}".format(partial_results_filename))
-
-                # The current_rep will be set to the value or run
-                # repetitions in the loaded partial results. This means
-                # that the "while" statement after this try/except block
-                # will have a head start and if current_rep is greater than
-                # or equal to rep_max the while loop won't run at all.
-                current_rep = current_sim_results.current_rep
-
-            # If loading partial results failed then we will run the FIRST
-            # repetition here and the "while" statement after this
-            # try/except block will run as usual.
-            except IOError:
-                # Perform the first iteration of _run_simulation
-                current_sim_results = obj.__run_simulation_and_track_elapsed_time(
-                    current_params)
-                current_rep = 1
-
-            # Run more iterations until one of the stop criteria is reached
-            while (obj._keep_going(current_params, current_sim_results, current_rep)
-                   and
-                   current_rep < obj.rep_max):
-                current_sim_results.merge_all_results(
-                    obj.__run_simulation_and_track_elapsed_time(current_params))
-                current_rep += 1
-                update_progress_func(current_rep)
-
-                # Save partial results each 500 iterations
-                if current_rep % 500 == 0 and obj.__results_base_filename is not None:
-                    obj.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
-
-            # If the while loop ended before rep_max repetitions (because
-            # _keep_going returned false) then set the progressbar to full.
-            update_progress_func(obj.rep_max)
-
-            # Implement the _on_simulate_current_params_finish method in a
-            # subclass if you need to run code after all _run_simulation
-            # iterations for each combination of simulation parameters
-            # finishes.
-            obj._on_simulate_current_params_finish(current_params,
-                                                   current_sim_results)
-
-            # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
-            if obj.__results_base_filename is not None:
-                obj.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
-            else:
-                partial_results_filename = None
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            current_rep, current_sim_results, partial_results_filename = obj._simulate_for_current_params_common(current_params, update_progress_func)
 
             # This function returns a tuple containing the number of
             # iterations run as well as the SimulationResults object.
@@ -1350,7 +1293,8 @@ class SimulationRunner(object):
         pass
 
     def _on_simulate_current_params_start(self, current_params):
-        """This method is called once for each simulation parameters
+        """
+        This method is called once for each simulation parameters
         combination before any iteration of _run_simulation is performed
         (for that combination of simulation parameters).
 
@@ -1359,6 +1303,14 @@ class SimulationRunner(object):
         current_params : SimulationParameters object
             The current combination of simulation parameters.
 
+        Notes
+        -----
+        Because this method will run inside the _run_simulation method,
+        which is called in a different process when the simulation is
+        performed in parallel, it should only modify member variables that
+        are only used inside _run_simulation. If any other variable is
+        modified these changes WILL NOT be carried back to the original
+        process.
         """
         pass
 
@@ -1376,6 +1328,12 @@ class SimulationRunner(object):
             SimulationResults object with the results for the finished
             simulation with the parameters in current_params.
 
+        Notes
+        -----
+        Because this method will run inside the _run_simulation method,
+        which is called in a different process when the simulation is
+        performed in parallel, it should only modify member variables that
+        are only used inside _run_simulation.
         """
         pass
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

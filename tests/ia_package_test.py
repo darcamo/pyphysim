@@ -19,10 +19,13 @@ sys.path.append(parent_dir)
 import unittest
 import doctest
 import numpy as np
+from numpy.linalg import norm
 
 from comm import channels
 import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, IterativeIASolverBaseClass
+from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
+    MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
+    IterativeIASolverBaseClass
 from util.misc import peig, leig
 
 
@@ -49,7 +52,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # Try to initialize the IASolverBaseClass object with some
         # parameter which is not a MultiUserChannelMatrix object
         with self.assertRaises(ValueError):
-            iasolver = IASolverBaseClass(3)
+            IASolverBaseClass(3)
 
     def test_get_cost(self):
         self.assertEqual(self.iasolver.get_cost(), -1)
@@ -63,7 +66,6 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel.randomize(Nr, Nt, K)
         self.iasolver.randomizeF(Ns, P=None)  # Setting P here will be
                                               # tested in test_randomizeF
-
         # xxxxx Test the properties Nr, Nt and Ns xxxxxxxxxxxxxxxxxxxxxxxxx
         self.assertEqual(self.iasolver.K, K)
         np.testing.assert_array_equal(self.iasolver.Nr, Nr)
@@ -72,11 +74,13 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test getting and setting the P (power) property xxxxxxxxxxx
-        np.testing.assert_array_almost_equal(self.iasolver.P, np.ones(K, dtype=float))
+        np.testing.assert_array_almost_equal(self.iasolver.P,
+                                             np.ones(K, dtype=float))
         self.iasolver.P = 1.5
         np.testing.assert_array_almost_equal(self.iasolver.P, [1.5, 1.5, 1.5])
         self.iasolver.P = [1.3, 1.2, 1.8]
-        np.testing.assert_array_almost_equal(self.iasolver.P, np.array([1.3, 1.2, 1.8]))
+        np.testing.assert_array_almost_equal(self.iasolver.P,
+                                             np.array([1.3, 1.2, 1.8]))
 
         # If we try to set P with a sequency of wrong length (different
         # from the number of users) an exception should be raised.
@@ -121,15 +125,15 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.iasolver.randomizeF(Ns, P)
 
         # The Frobenius norm of the _F variable must be equal to one
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver._F[0], 'fro'), 1.0)
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver._F[1], 'fro'), 1.0)
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver._F[2], 'fro'), 1.0)
+        self.assertAlmostEqual(norm(self.iasolver._F[0], 'fro'), 1.0)
+        self.assertAlmostEqual(norm(self.iasolver._F[1], 'fro'), 1.0)
+        self.assertAlmostEqual(norm(self.iasolver._F[2], 'fro'), 1.0)
 
         # The square of the Frobenius norm of the property bust be equal to
         # the power
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[0], 'fro') ** 2, P[0])
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[1], 'fro') ** 2, P[1])
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[2], 'fro') ** 2, P[2])
+        self.assertAlmostEqual(norm(self.iasolver.full_F[0], 'fro') ** 2, P[0])
+        self.assertAlmostEqual(norm(self.iasolver.full_F[1], 'fro') ** 2, P[1])
+        self.assertAlmostEqual(norm(self.iasolver.full_F[2], 'fro') ** 2, P[2])
 
         # The shape of the precoder is the number of users
         self.assertEqual(self.iasolver._F.shape, (K,))
@@ -303,7 +307,9 @@ class IASolverBaseClassTestCase(unittest.TestCase):
             Hkk = self.iasolver._get_channel(k, k)
             Fk = self.iasolver.F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = self.iasolver.calc_Q(k) + P[k] / Ns[k].astype(float) * np.dot(HkkFk, HkkFk.transpose().conjugate())
+            expected_first_part = self.iasolver.calc_Q(k) + P[k] / \
+                Ns[k].astype(float) * \
+                np.dot(HkkFk, HkkFk.transpose().conjugate())
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -509,9 +515,9 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         V3 = H23.I * H21 * V1
 
         # Normalize the precoders
-        V1 = V1 / np.linalg.norm(V1, 'fro')
-        V2 = V2 / np.linalg.norm(V2, 'fro')
-        V3 = V3 / np.linalg.norm(V3, 'fro')
+        V1 = V1 / norm(V1, 'fro')
+        V2 = V2 / norm(V2, 'fro')
+        V3 = V3 / norm(V3, 'fro')
 
         # The number of streams _Ns is set in the solve method, before
         # _updateF is called. However, since we are testing the _updateF
@@ -525,9 +531,9 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V2, self.iasolver.F[1])
         np.testing.assert_array_almost_equal(V3, self.iasolver.F[2])
 
-        self.assertAlmostEqual(np.linalg.norm(V1, 'fro'), 1.0)
-        self.assertAlmostEqual(np.linalg.norm(V2, 'fro'), 1.0)
-        self.assertAlmostEqual(np.linalg.norm(V3, 'fro'), 1.0)
+        self.assertAlmostEqual(norm(V1, 'fro'), 1.0)
+        self.assertAlmostEqual(norm(V2, 'fro'), 1.0)
+        self.assertAlmostEqual(norm(V3, 'fro'), 1.0)
 
     def test_updateW(self):
         Ns = 1
@@ -907,7 +913,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         H01_F1 = np.dot(
             self.iasolver._get_channel(k, l),
             self.iasolver.F[l])
-        Cost = Cost + np.linalg.norm(
+        Cost = Cost + norm(
             H01_F1 -
             np.dot(
                 np.dot(self.iasolver._C[k], self.iasolver._C[k].transpose().conjugate()),
@@ -918,7 +924,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         H10_F0 = np.dot(
             self.iasolver._get_channel(k, l),
             self.iasolver.F[l])
-        Cost = Cost + np.linalg.norm(
+        Cost = Cost + norm(
             H10_F0 -
             np.dot(
                 np.dot(self.iasolver._C[k], self.iasolver._C[k].transpose().conjugate()),
@@ -1163,7 +1169,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
                 expected_Ukl = np.dot(
                     np.linalg.inv(Bkl_all_l[l]),
                     np.dot(Hkk, F[:, l:l + 1]))
-                expected_Ukl = expected_Ukl / np.linalg.norm(expected_Ukl, 'fro')
+                expected_Ukl = expected_Ukl / norm(expected_Ukl, 'fro')
                 Ukl = self.iasolver._calc_Ukl(Hkk, F, Bkl_all_l[l], k, l)
                 np.testing.assert_array_almost_equal(expected_Ukl, Ukl)
 
@@ -1828,9 +1834,9 @@ class MMSEIASolverTestCase(unittest.TestCase):
         P = 1.0
 
         # This specific channel will yield a degenerated solution solution
-        big_H = np.load("big_H.npy")
-        F = np.load("F.npy")
-        W = np.load("W.npy")
+        big_H = np.load("{0}/tests/big_H.npy".format(parent_dir))
+        F = np.load("{0}/tests/F.npy".format(parent_dir))
+        W = np.load("{0}/tests/W.npy".format(parent_dir))
 
         multi_user_channel = channels.MultiUserChannelMatrix()
         multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
@@ -1865,7 +1871,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
         P = 1.0
 
         # This specific channel will yield a degenerated solution solution
-        big_H = np.load("big_H2.npy")
+        big_H = np.load("{0}/tests/big_H2.npy".format(parent_dir))
         multi_user_channel = channels.MultiUserChannelMatrix()
         multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
 
@@ -1877,15 +1883,15 @@ class MMSEIASolverTestCase(unittest.TestCase):
     def test_updateF(self):
         self.iasolver._updateF()
 
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[0], 'fro') ** 2, 1.0)
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[1], 'fro') ** 2, 1.0)
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.F[2], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[0], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[1], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[2], 'fro') ** 2, 1.0)
 
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[0], 'fro') ** 2,
+        self.assertAlmostEqual(norm(self.iasolver.full_F[0], 'fro') ** 2,
                                self.iasolver.P[0])
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[1], 'fro') ** 2,
+        self.assertAlmostEqual(norm(self.iasolver.full_F[1], 'fro') ** 2,
                                self.iasolver.P[1])
-        self.assertAlmostEqual(np.linalg.norm(self.iasolver.full_F[2], 'fro') ** 2,
+        self.assertAlmostEqual(norm(self.iasolver.full_F[2], 'fro') ** 2,
                                self.iasolver.P[2])
 
         # TODO: implement-me
