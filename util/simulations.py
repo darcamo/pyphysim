@@ -984,7 +984,8 @@ class SimulationRunner(object):
         current_params : SimulationParameters object.
             The current parameters
         var_print_iter : iterator
-            An iterator obtained from calling the __print_variation_iter method.
+            An iterator obtained from calling the
+            __get_print_variation_iterator method.
         """
         # (maybe) Print the current variation. This is something like
         # ------------- Current Variation: 4/84 ------------
@@ -1021,7 +1022,7 @@ class SimulationRunner(object):
 
         return obj._simulate_for_current_params_common(current_params, update_progress_func)
 
-    def __print_variation_iter(self, num_variations):
+    def __get_print_variation_iterator(self, num_variations):
         """
         Returns an iterator that prints the current variation each time it's
         "next" method is called.
@@ -1098,7 +1099,7 @@ class SimulationRunner(object):
         # print something like
         # ------------- Current Variation: 4/84 ------------
         # which means the variation 4 of 84 variations.
-        var_print_iter = self.__print_variation_iter(num_variations)
+        var_print_iter = self.__get_print_variation_iterator(num_variations)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
