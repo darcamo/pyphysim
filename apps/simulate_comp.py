@@ -252,6 +252,9 @@ class CompSimulationRunner(simulations.SimulationRunner):
         parameters.
 
         """
+        # Re-seed the channel and the noise RandomState objects.
+        self.multiuser_channel.re_seed()
+
         # xxxxx Calculates the transmit power at each base station. xxxxxxx
         # Because this value does not change in the different iterations of
         # _run_simulation, but only when the parameters change the

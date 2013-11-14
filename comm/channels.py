@@ -349,7 +349,7 @@ class MultiUserChannelMatrix(object):
                                     # last time any of the corrupt*_data
                                     # methods were called.
 
-    def set_channel_seed(self, seed):
+    def set_channel_seed(self, seed=None):
         """Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
 
@@ -360,7 +360,7 @@ class MultiUserChannelMatrix(object):
             generator. See np.random.RandomState help for more info.
 
         """
-        self._RS_channel.seed(seed)
+        self._RS_channel.seed(seed=None)
 
     def set_noise_seed(self, seed):
         """Set the seed of the RandomState object used to generate the random
@@ -374,6 +374,17 @@ class MultiUserChannelMatrix(object):
 
         """
         self._RS_noise.seed(seed)
+
+    def re_seed(self):
+        """
+        Re-seed the channel and noise RandomState objects randomly.
+
+        If you want to specify the seed for each of them call the
+        `set_channel_seed` and `set_noise_seed` methods and pass the
+        desired seed for each of them.
+        """
+        self.set_channel_seed(None)
+        self.set_noise_seed(None)
 
     # def randn_c(self, RS, *args):
     #     """Generates a random circularly complex gaussian matrix.
