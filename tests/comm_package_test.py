@@ -1576,7 +1576,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
         comp_obj.set_ext_int_handling_metric(None)
-        (Ms_all, Wk_all, Ns_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
+        (Ms_all, Wk_all, Ns_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -1624,7 +1624,7 @@ class EnhancedBDTestCase(unittest.TestCase):
             'naive',
             {'num_streams': num_streams})
 
-        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
+        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_naive_1 = MsPk_naive_all[0]
         MsPk_naive_2 = MsPk_naive_all[1]
 
@@ -1678,7 +1678,7 @@ class EnhancedBDTestCase(unittest.TestCase):
             'fixed',
             {'num_streams': num_streams})
 
-        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
+        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_fixed_1 = MsPk_fixed_all[0]
         MsPk_fixed_2 = MsPk_fixed_all[1]
 
@@ -1729,7 +1729,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the capacity metric
         comp_obj.set_ext_int_handling_metric('capacity')
-        (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
+        (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_cap_1 = MsPk_all[0]
         MsPk_cap_2 = MsPk_all[1]
 
@@ -1778,7 +1778,7 @@ class EnhancedBDTestCase(unittest.TestCase):
             {'modulator': psk_obj,
              'packet_length': packet_length})
 
-        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.perform_BD_no_waterfilling(multiUserChannel)
+        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
 

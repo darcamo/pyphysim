@@ -122,7 +122,6 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.NSymbs = 500
         #SNR = np.linspace(0, 30, 7)
         SNR = np.linspace(0, 30, 16)
-        #SNR = np.array([5])
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
@@ -131,20 +130,9 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # transmit power (in dBm) of the ext. interference
         #Pe_dBm = np.array([-10000, -10, 0, 10, 20])
         Pe_dBm = np.array([-10, 0, 10])
-        #Pe_dBm = np.array([-10])
         self.params.add('Pe_dBm', Pe_dBm)
         self.params.set_unpack_parameter('Pe_dBm')
         self.ext_int_rank = 1  # Rank of the external interference
-
-        # xxxxx Metric used for the stream reduction xxxxxxxxxxxxxxxxxxxxxx
-        # Metric used for the stream reduction decision used by the
-        # CompExtInt class to mitigate external interference.
-
-        #ext_int_comp_metric = [None, 'capacity', 'effective_throughput']
-        #ext_int_comp_metric = [None, 'naive', 'fixed', 'capacity', 'effective_throughput']
-        #ext_int_comp_metric = ['effective_throughput']
-        #self.params.add('metric', ext_int_comp_metric)
-        #self.params.set_unpack_parameter('metric')
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.rep_max = 50  # Maximum number of repetitions for each
@@ -899,30 +887,6 @@ class CompSimulationRunner(simulations.SimulationRunner):
         simResults.add_result(per_result_effec_throughput)
         simResults.add_result(spec_effic_result_effec_throughput)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # print
-        # print "SNR: {0}".format(current_parameters['SNR'])
-        # print "None: {0}".format(effective_spec_effic_None)
-        # print "Naive: {0}".format(effective_spec_effic_naive)
-        # print "Fixed: {0}".format(np.sum(effective_spec_effic_fixed))
-        # print "Capacity: {0}".format(effective_spec_effic_capacity)
-        # print "Effec_Throu: {0}".format(effective_spec_effic_effec_throughput)
-        # print
-        # print "ber_None: {0}".format(ber_result_None.get_result())
-        # print "ber_naive: {0}".format(ber_result_naive.get_result())
-        # print "ber_fixed: {0}".format(ber_result_fixed.get_result())
-        # print "ber_capacity: {0}".format(ber_result_capacity.get_result())
-        # print "ber_effec_throughput: {0}".format(ber_result_effec_throughput.get_result())
-        # print
-        # print "Ns_all_users_None: {0}".format(Ns_all_users_None)
-        # print "Ns_all_users_naive: {0}".format(Ns_all_users_naive)
-        # print "Ns_all_users_effec_throughput: {0}".format(Ns_all_users_effec_throughput)
-        # print "Ns_all_users_fixed: {0}".format(Ns_all_users_fixed)
-        # print "Ns_all_users_capacity: {0}".format(Ns_all_users_capacity)
-
-        # print
-        # print ber_capacity
-        # print ber_effec_throughput
 
         return simResults
 

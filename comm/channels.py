@@ -600,13 +600,13 @@ class MultiUserChannelMatrix(object):
             specified, all users will have that number of receive antennas.
         """
         if isinstance(Nr, int):
-            Nr = np.ones(K) * Nr
+            Nr = np.ones(K, dtype=int) * Nr
         if isinstance(Nt, int):
-            Nt = np.ones(K) * Nt
+            Nt = np.ones(K, dtype=int) * Nt
 
-        self._Nr = Nr
-        self._Nt = Nt
-        self._K = K
+        self._Nr = Nr.astype(int)
+        self._Nt = Nt.astype(int)
+        self._K = int(K)
 
         self._big_H = randn_c_RS(self._RS_channel,
                                  np.sum(self._Nr), np.sum(self._Nt))

@@ -26,7 +26,6 @@ from subspace.projections import calcProjectionMatrix
 __all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
 
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ## xxxxxxxxxx Helper Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -84,6 +83,15 @@ class BlockDiaginalizer(object):
     respected, but the base station will equally divide its power among the
     available dimensions. Note that the result will be similar to
     :meth:`block_diagonalize` in the high SNR regime.
+
+    Parameters
+    ----------
+    num_users : int
+        Number of users.
+    iPu : float
+        Power available for EACH user.
+    noise_var : float
+        Noise variance (power in linear scale).
 
     Examples
     --------
@@ -151,7 +159,8 @@ class BlockDiaginalizer(object):
         """
         self.num_users = num_users
         self.iPu = iPu
-        self.noise_var = noise_var
+        self.noise_var = noise_var  # Noise power is used in the
+                                    # waterfilling calculations
 
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
         """Calculates the modulation matrix "M" that block diagonalizes the
@@ -457,8 +466,20 @@ class BlockDiaginalizer(object):
         return W_bd
 
     def _get_tilde_channel(self, mtChannel, user):
-        """Return the combined channel of all users except `user` .
+        """
+        Return the combined channel of all users except `user` .
 
+        Let $k$ be the index for `user`. If the channel from all
+        transmitters to receiver $k$ is $\mtH_k$, then this method returns
+        $\tilde{\mtH_k} = [\mtH_1^T, \ldots, \mtH_{k-1}^T, \mtH_{k+1}^T, \ldots, \mtH_K]^T$.
+
+        Parameters
+        ----------
+        mt_channel : 2D numpy array
+            Channel of all users
+
+        user : int
+            Index of the user.
         """
         vtAllUserIndexes = np.arange(0, self.num_users)
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
@@ -554,6 +575,8 @@ class EnhancedBD(BlockDiaginalizer):
         # _packet_length attributes)
         self._metric_func = None  # The default metric will be None
 
+        self._metric_func_name = 'None'
+
         # Extra arguments that will be passed to the self._metric_func when
         # it is called.
         self._metric_func_extra_args = {}
@@ -594,8 +617,6 @@ class EnhancedBD(BlockDiaginalizer):
         Differently from the "naive" and "fixed" metrics, the "capacity"
         and "effective_throughput" metrics try to determine this best
         number of sacrificed streams.
-
-
 
         - If `metric` is None, then all streams will be used. That is, no
           streams will be sacrificed and the external interference won't be
@@ -1046,7 +1067,7 @@ class EnhancedBD(BlockDiaginalizer):
 
         return (MsPk_all_users, Wk_all_users, Ns_all_users)
 
-    def perform_BD_no_waterfilling(self, mu_channel):
+    def block_diagonalize_no_waterfilling(self, mu_channel):
         """Perform the block diagonalization of `mu_channel` taking the
         external interference into account.
 
@@ -1101,7 +1122,6 @@ class EnhancedBD(BlockDiaginalizer):
         # function are set in the _metric_func_extra_args dictionary.
         return self._perform_BD_no_waterfilling_decide_number_streams(mu_channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
