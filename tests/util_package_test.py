@@ -1922,6 +1922,33 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertEqual(misc.pretty_time(6137), '1h:42m:17s')
 
 
+    def test_calc_decorrelation_matrix(self):
+        A = misc.randn_c(3, 3)
+
+        # B is symmetric and positive semi-definite
+        B = np.dot(A, A.conjugate().T)
+
+        Wd = misc.calc_decorrelation_matrix(B)
+
+        D = np.dot(np.dot(Wd.conjugate().T, B), Wd)
+
+        # D must be a diagonal matrix
+        np.testing.assert_array_almost_equal(D, np.diag(D.diagonal()))
+
+    def test_calc_whitening_matrix(self):
+        A = misc.randn_c(3, 3)
+
+        # B is symmetric and positive semi-definite
+        B = np.dot(A, A.conjugate().T)
+
+        Wd = misc.calc_whitening_matrix(B)
+
+        D = np.dot(np.dot(Wd.conjugate().T, B), Wd)
+
+        # D must be an identity matrix
+        np.testing.assert_array_almost_equal(D, np.eye(3))
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

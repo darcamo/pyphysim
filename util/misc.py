@@ -821,6 +821,83 @@ def equal_dicts(a, b, ignore_keys):
     ka = set(a).difference(ignore_keys)
     kb = set(b).difference(ignore_keys)
     return ka == kb and all(a[k] == b[k] for k in ka)
+
+
+def calc_decorrelation_matrix(cov_matrix):
+    """
+    Calculates the decorrelation matrix that can be applied to a data
+    vector whose covariance matrix is `cov_matrix` so that the new vector
+    covariance matrix is a diagonal matrix.
+
+    Parameters
+    ----------
+    cov_matrix : 2D numpy array
+        The covariance matrix of the original data that will be
+        decorrelated. This must be a symmetric and positive semi-definite
+        matrix
+
+    Returns
+    -------
+    decorr_matrix : 2D numpy array
+        The decorrelation matrix $\mtW_D$. If the original data is a vector $\vtX$
+        it can be decorrelated with $\mtW_D^T \vtX$.
+
+    Notes
+    -----
+    The returned `decorr_matrix` matrix will make the covariance of the
+    filtered data a diagonal matrix, but not a identity matrix. If you want
+    the covariance matrix of the filtered data to be an identity matrix
+    what you want to calculate is the "whitening matrix" and not simply a
+    "decorrelation matrix". See the `calc_whitening_matrix` function for
+    that.
+
+    See
+    ---
+    calc_whitening_matrix
+    """
+    _, V = np.linalg.eig(cov_matrix)
+    return V
+
+
+def calc_whitening_matrix(cov_matrix):
+    """
+    Calculates the whitening matrix that can be applied to a data vector
+    whose covariance matrix is `cov_matrix` so that the new vector
+    covariance matrix is an identity matrix
+
+    Parameters
+    ----------
+    cov_matrix : 2D numpy array
+        The covariance matrix of the original data that will be
+        decorrelated. This must be a symmetric and positive semi-definite
+        matrix
+
+    Returns
+    -------
+    whitening_matrix : 2D numpy array
+        The whitening matrix $\mtW_W$. If the original data is a vector $\vtX$
+        it can be whitened with $\mtW_W^T \vtX$.
+
+    Notes
+    -----
+    The returned `whitening_matrix` matrix will make the covariance of the
+    filtered data an identity matrix. If you only need the the covariance
+    matrix of the filtered data to be a diagonal matrix (not necessarily an
+    identity matrix) what you want to calculate is the "decorrelation
+    matrix". See the `calc_decorrelation_matrix` function for that.
+
+    See
+    ---
+    calc_decorrelation_matrix
+    """
+    L, V = np.linalg.eig(cov_matrix)
+    W = np.dot(
+        V,
+        np.diag(1. / (L**0.5))
+        )
+    return W
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
