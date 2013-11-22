@@ -20,6 +20,7 @@ __revision__ = "$Revision$"
 
 from collections import Iterable
 import numpy as np
+from scipy.linalg import block_diag
 from util.conversion import single_matrix_to_matrix_of_matrices
 from util.misc import randn_c_RS
 
@@ -348,6 +349,11 @@ class MultiUserChannelMatrix(object):
         self._last_noise_var = 0.0  # Store the noise variance from the
                                     # last time any of the corrupt*_data
                                     # methods were called.
+
+        self._W = None  # Post processing filters (a list of 2D numpy
+                        # arrays) for each user
+        self._big_W = None  # Same as _W, but as a single block diagonal
+                            # matrix.
 
     def set_channel_seed(self, seed=None):
         """Set the seed of the RandomState object used to generate the random
@@ -698,6 +704,35 @@ class MultiUserChannelMatrix(object):
         """
         receive_channels = single_matrix_to_matrix_of_matrices(self.big_H, self.Nr)
         return receive_channels[k]
+
+    def set_post_filter(self, filters):
+        """
+        Set the post-processing filters.
+
+        The post-processing filters will be applyied to the data after if
+        has been currupted by the channel in either the `corrupt_data` or
+        the `corrupt_concatenated_data` methods.
+
+        Parameters
+        ----------
+        filters : List of 2D numpy arrays or a 1D numpy array of 2D numpy
+                  arrays.
+        """
+        self._W = filters
+        self._big_W = None  # This will be set in the get property only
+                            # when required.
+
+    def _get_W(self):
+        """Get method for the post processing filter W."""
+        return self._W
+    W = property(_get_W)
+
+    def _get_big_W(self):
+        """Get method for the big_W property."""
+        if self._big_W is None:
+            self._big_W = block_diag(*self.W)
+        return self._big_W
+    big_W = property(_get_big_W)
 
     def corrupt_concatenated_data(self, data, noise_var=None):
         """Corrupt data passed through the channel.

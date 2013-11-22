@@ -466,6 +466,22 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
 
+    def test_set_post_filter(self):
+        self.multiH.randomize(self.Nr, self.Nt, self.K)
+        self.assertIsNone(self.multiH._W)
+
+        W = [np.random.randn(2,2),
+             np.random.randn(2,2),
+             np.random.randn(2,2)]
+
+        self.multiH.set_post_filter(W)
+
+        import pudb; pudb.set_trace()  ## DEBUG ##
+
+
+        # TODO: Implement-me
+        pass
+
     def test_last_noise_property(self):
         noise_var = 1e-2
         H = np.eye(6)
