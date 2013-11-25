@@ -466,21 +466,77 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
 
-    def test_set_post_filter(self):
+    def test_set_and_get_post_filter(self):
         self.multiH.randomize(self.Nr, self.Nt, self.K)
         self.assertIsNone(self.multiH._W)
+        self.assertIsNone(self.multiH._big_W)
 
-        W = [np.random.randn(2,2),
-             np.random.randn(2,2),
-             np.random.randn(2,2)]
+        self.assertIsNone(self.multiH.W)
+        self.assertIsNone(self.multiH.big_W)
+
+        W = [randn_c(2, 2),
+             randn_c(2, 2),
+             randn_c(2, 2)]
 
         self.multiH.set_post_filter(W)
+        np.testing.assert_array_almost_equal(W, self.multiH._W)
+        np.testing.assert_array_almost_equal(W, self.multiH.W)
 
-        import pudb; pudb.set_trace()  ## DEBUG ##
+        # _big_W is still None
+        self.assertIsNone(self.multiH._big_W)
 
+        expected_big_W = linalg.block_diag(*W)
+        np.testing.assert_array_almost_equal(expected_big_W,
+                                             self.multiH.big_W)
+        self.assertIsNotNone(self.multiH._big_W)
 
-        # TODO: Implement-me
-        pass
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        W2 = [randn_c(2, 2),
+              randn_c(2, 2),
+              randn_c(2, 2)]
+        self.multiH.set_post_filter(W2)
+        np.testing.assert_array_almost_equal(W2, self.multiH._W)
+        np.testing.assert_array_almost_equal(W2, self.multiH.W)
+
+        self.assertIsNone(self.multiH._big_W)
+        expected_big_W2 = linalg.block_diag(*W2)
+        np.testing.assert_array_almost_equal(expected_big_W2,
+                                             self.multiH.big_W)
+        self.assertIsNotNone(self.multiH._big_W)
+
+    def test_corrupt_data_with_post_filter(self):
+        NSymbs = 20
+        # Create some input data for the 3 users
+        input_data = np.zeros(self.K, dtype=np.ndarray)
+        input_data[0] = randn_c(self.Nt[0], NSymbs)
+        input_data[1] = randn_c(self.Nt[1], NSymbs)
+        input_data[2] = randn_c(self.Nt[2], NSymbs)
+
+        # Disable the path loss
+        self.multiH.set_pathloss()
+        self.multiH.randomize(self.Nr, self.Nt, self.K)
+
+        # Set the post processing filter
+        W = [randn_c(self.Nr[0], self.Nr[0]),
+             randn_c(self.Nr[1], self.Nr[1]),
+             randn_c(self.Nr[2], self.Nr[2])]
+        self.multiH.set_post_filter(W)
+
+        output = self.multiH.corrupt_data(input_data)
+
+        # Calculates the expected output (without pathloss)
+        expected_output = np.zeros(self.K, dtype=np.ndarray)
+        for rx in np.arange(self.K):
+            for tx in np.arange(self.K):
+                expected_output[rx] += np.dot(
+                    self.multiH.get_channel(rx, tx), input_data[tx])
+            expected_output[rx] = np.dot(W[rx].conjugate().T,
+                                         expected_output[rx])
+
+        # Test the received data for the 3 users
+        np.testing.assert_array_almost_equal(output[0], expected_output[0])
+        np.testing.assert_array_almost_equal(output[1], expected_output[1])
+        np.testing.assert_array_almost_equal(output[2], expected_output[2])
 
     def test_last_noise_property(self):
         noise_var = 1e-2

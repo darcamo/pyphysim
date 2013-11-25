@@ -730,7 +730,8 @@ class MultiUserChannelMatrix(object):
     def _get_big_W(self):
         """Get method for the big_W property."""
         if self._big_W is None:
-            self._big_W = block_diag(*self.W)
+            if self.W is not None:
+                self._big_W = block_diag(*self.W)
         return self._big_W
     big_W = property(_get_big_W)
 
@@ -773,6 +774,11 @@ class MultiUserChannelMatrix(object):
         else:
             self._last_noise = None
             self._last_noise_var = 0.0
+
+        # Apply the post processing filter (if there is one set)
+        if self.big_W is not None:
+            output = np.dot(self.big_W.conjugate().T, output)
+
         return output
 
     def corrupt_data(self, data, noise_var=None):
