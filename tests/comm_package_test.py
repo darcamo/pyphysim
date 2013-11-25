@@ -821,8 +821,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             # Plus FILTERED interference from second interference source
             +
             np.dot(W[0].conjugate().T,
-                np.dot(self.multiH.get_channel(0, 3),
-                       input_data_extint2[1])))
+                   np.dot(self.multiH.get_channel(0, 3),
+                          input_data_extint2[1])))
 
         received_data2_expected[1] = (
             # Original received data
@@ -1766,12 +1766,15 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Equivalent sinrs (in linear scale)
         sinrs = np.empty(K, dtype=np.ndarray)
-        sinrs[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(np.dot(H1, Ms1),
-                                                      Wk_all[0],
-                                                      noise_plus_int_cov_matrix[0])
-        sinrs[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(np.dot(H2, Ms2),
-                                                      Wk_all[1],
-                                                      noise_plus_int_cov_matrix[1])
+        sinrs[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, Ms1),
+            Wk_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, Ms2),
+            Wk_all[1],
+            noise_plus_int_cov_matrix[1])
+
         # Spectral efficiency
         se = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
             linear2dB(sinrs[0]),
@@ -1969,12 +1972,15 @@ class EnhancedBDTestCase(unittest.TestCase):
             0)
 
         sinrs3 = np.empty(K, dtype=np.ndarray)
-        sinrs3[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(np.dot(H1, MsPk_effec_1),
-                                                       Wk_effec_all[0],
-                                                       noise_plus_int_cov_matrix[0])
-        sinrs3[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(np.dot(H2, MsPk_effec_2),
-                                                       Wk_effec_all[1],
-                                                       noise_plus_int_cov_matrix[1])
+        sinrs3[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, MsPk_effec_1),
+            Wk_effec_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs3[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, MsPk_effec_2),
+            Wk_effec_all[1],
+            noise_plus_int_cov_matrix[1])
+
         # Spectral efficiency
         se3 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
             linear2dB(sinrs3[0]),
