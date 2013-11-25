@@ -384,6 +384,10 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # Since we will use the same data for the external interference no
+        # matter which metric is used, lets create that data here.
+        external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
+
         # Below we will perform the transmission with the CoMP object for
         # each different metric
 
@@ -403,7 +407,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # the external interferece sources' data.
         precoded_data_None = np.dot(np.hstack(MsPk_all_users_None),
                                         symbols_None)
-        external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
+        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
         all_data_None = np.vstack([precoded_data_None,
                                        external_int_data_all_metrics])
 
@@ -894,6 +898,129 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
+
+    def __simulate_for_one_metric(self,
+            Ns_all_users,
+            external_int_data_all_metrics,
+            MsPk_all_users,
+            Wk_all_users,
+            metric_name='None'):
+        """
+        This method is only called inside the _run_simulation method.
+
+        This method has the common code that is execute for each metric
+        inside the _run_simulation method.
+
+        Parameters
+        ----------
+        Ns_all_users : 1D numpy array of size K.
+            Number of streams for each user. This variable controls how
+            many data streams will be generated for each user of the K
+            users.
+        external_int_data_all_metrics : 2D numpy array
+            The data of the external interference sources.
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            The precoders of all users returned by the block diagonalize
+            method for the given metric.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            The receive filter for all users.
+        metric_name : string
+            Metric name. This string will be appended to each result name.
+        """
+        Ns_total = np.sum(Ns_all_users)
+        self.data_RS = np.random.RandomState(self.data_gen_seed)
+        input_data = self.data_RS.randint(
+            0,
+            self.M,
+            [Ns_total, self.NSymbs])
+        symbols = self.modulator.modulate(input_data)
+
+        # Prepare the transmit data. That is, the precoded_data as well as
+        # the external interferece sources' data.
+        precoded_data = np.dot(np.hstack(MsPk_all_users),
+                                        symbols)
+        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
+        all_data = np.vstack([precoded_data,
+                              external_int_data_all_metrics])
+
+        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
+        received_signal = self.multiuser_channel.corrupt_concatenated_data(
+            all_data,
+            self.noise_var
+        )
+
+        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Wk = sp_linalg.block_diag(*Wk_all_users)
+        received_symbols = np.dot(Wk, received_signal)
+
+        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
+        decoded_symbols = self.modulator.demodulate(received_symbols)
+
+        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
+        num_symbol_errors = np.sum(decoded_symbols != input_data, 1)
+        # num_symbol_errors = sum_user_data(num_symbol_errors,
+        #                                            Ns_all_users)
+        num_symbols = np.ones(Ns_total) * input_data.shape[1]
+
+        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
+        num_bit_errors = misc.count_bit_errors(decoded_symbols, input_data, 1)
+        # num_bit_errors = sum_user_data(num_bit_errors,
+        #                                         Ns_all_users)
+
+        num_bits = num_symbols * np.log2(self.M)
+
+        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
+        ber = num_bit_errors / num_bits
+        per = 1. - ((1. - ber) ** self.packet_length)
+        num_packages = num_bits / self.packet_length
+        num_package_errors = per * num_packages
+
+        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
+        # nominal spectral Efficiency per stream
+        nominal_spec_effic = self.modulator.K
+        effective_spec_effic = (1 - per) * nominal_spec_effic
+
+        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
+        num_bit_errors = np.sum(num_bit_errors)
+        num_bits = np.sum(num_bits)
+        num_symbol_errors = np.sum(num_symbol_errors)
+        num_symbols = np.sum(num_symbols)
+        num_package_errors = np.sum(num_package_errors)
+        num_packages = np.sum(num_packages)
+        effective_spec_effic = np.sum(effective_spec_effic)
+
+        # None metric
+        ber_result = simulations.Result.create(
+            'ber_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            num_bit_errors,
+            num_bits)
+        ser_result = simulations.Result.create(
+            'ser_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            num_symbol_errors,
+            num_symbols)
+
+        per_result = simulations.Result.create(
+            'per_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            num_package_errors,
+            num_packages)
+
+        spec_effic_result = simulations.Result.create(
+            'spec_effic_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            effective_spec_effic,
+            1)
+
+        return (num_packages,
+                effective_spec_effic,
+                num_symbols,
+                num_symbol_errors,
+                num_bit_errors,
+                num_bits,
+                num_package_errors)
 
     # def _keep_going(self, current_sim_results, current_rep):
     #     ber_result = current_sim_results['ber'][-1]
