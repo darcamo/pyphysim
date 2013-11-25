@@ -392,33 +392,6 @@ class MultiUserChannelMatrix(object):
         self.set_channel_seed(None)
         self.set_noise_seed(None)
 
-    # def randn_c(self, RS, *args):
-    #     """Generates a random circularly complex gaussian matrix.
-
-    #     This is essentially the same as the the randn_c function from the
-    #     util.misc module. The only difference is that the randn_c function in
-    #     util.misc uses the global RandomState object in numpy, while the
-    #     method here used the randn method from a local RandomState
-    #     object. This allow us greatter control.
-
-    #     Parameters
-    #     ----------
-    #     RS : A numpy.random.RandomState object.
-    #         The RandomState object used to generate the random values.
-    #     *args : variable number of ints
-    #         Variable number of arguments specifying the dimensions of the
-    #         returned array. This is directly passed to the
-    #         numpy.random.randn function.
-
-    #     Returns
-    #     -------
-    #     result : N-dimensional numpy array
-    #         A random N-dimensional numpy array (complex dtype) where the
-    #         `N` is equal to the number of parameters passed to `randn_c`.
-    #     """
-    #     return (1.0 / math.sqrt(2.0)) * (
-    #         RS.randn(*args) + (1j * RS.randn(*args)))
-
     # Property to get the number of receive antennas
     def _get_Nr(self):
         """Get method for the Nr property."""
