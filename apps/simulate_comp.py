@@ -26,8 +26,8 @@ from scipy import linalg as sp_linalg
 
 from util import simulations, conversion, misc
 from cell import cell
-from comp import comp
 from comm import pathloss, channels, modulators
+from comm.blockdiagonalization import EnhancedBD
 
 
 # def sum_user_data(data_all_users, Ns_all_users):
@@ -81,7 +81,7 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         # xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.cell_radius = 1.0  # Cell radius (in Km)
-        #self.min_dist = 0.250   # Minimum allowed distance from a bse
+        #self.min_dist = 0.250  # Minimum allowed distance from a bse
                                 # station and its user (same unit as
                                 # cell_radius)
         #self.users_per_cell = 1  # Number of users in each cell
@@ -240,7 +240,11 @@ class CompSimulationRunner(simulations.SimulationRunner):
         parameters.
 
         """
-        # Re-seed the channel and the noise RandomState objects.
+        # IMPORTANT: Re-seed the channel and the noise RandomState
+        # objects. Without this, when you perform the simulation in
+        # parallel (call the simulate_in_parallel method(from the
+        # SimulationRunner class) you will get the same channel samples and
+        # noise for all parallel process.
         self.multiuser_channel.re_seed()
 
         # xxxxx Calculates the transmit power at each base station. xxxxxxx
@@ -258,10 +262,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
 
         # xxxxx Create the CoMP object with the None metric xxxxxxxxxxxxxxx
-        self.comp_obj_None = comp.EnhancedBD(self.num_cells,
-                                             transmit_power,
-                                             self.noise_var,
-                                             self.pe)
+        self.comp_obj_None = EnhancedBD(self.num_cells,
+                                        transmit_power,
+                                        self.noise_var,
+                                        self.pe)
         self.comp_obj_None.set_ext_int_handling_metric(
             "None", {'modulator': self.modulator,
                      'packet_length': self.packet_length,
@@ -269,10 +273,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the Naive metric xxxxxxxxxxxxxx
-        self.comp_obj_naive = comp.EnhancedBD(self.num_cells,
-                                              transmit_power,
-                                              self.noise_var,
-                                              self.pe)
+        self.comp_obj_naive = EnhancedBD(self.num_cells,
+                                         transmit_power,
+                                         self.noise_var,
+                                         self.pe)
         self.comp_obj_naive.set_ext_int_handling_metric(
             "naive", {'modulator': self.modulator,
                                        'packet_length': self.packet_length,
@@ -280,10 +284,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the fixed metric xxxxxxxxxxxxxxx
-        self.comp_obj_fixed = comp.EnhancedBD(self.num_cells,
-                                              transmit_power,
-                                              self.noise_var,
-                                              self.pe)
+        self.comp_obj_fixed = EnhancedBD(self.num_cells,
+                                         transmit_power,
+                                         self.noise_var,
+                                         self.pe)
         self.comp_obj_fixed.set_ext_int_handling_metric(
             "fixed", {'modulator': self.modulator,
                                        'packet_length': self.packet_length,
@@ -291,10 +295,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the CoMP object with the capacity metric xxxxxxxxxxx
-        self.comp_obj_capacity = comp.EnhancedBD(self.num_cells,
-                                                 transmit_power,
-                                                 self.noise_var,
-                                                 self.pe)
+        self.comp_obj_capacity = EnhancedBD(self.num_cells,
+                                            transmit_power,
+                                            self.noise_var,
+                                            self.pe)
         self.comp_obj_capacity.set_ext_int_handling_metric(
             "capacity", {'modulator': self.modulator,
                          'packet_length': self.packet_length,
@@ -302,10 +306,10 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xx Create the CoMP object with the effective_throughput metric xx
-        self.comp_obj_effec_throughput = comp.EnhancedBD(self.num_cells,
-                                                         transmit_power,
-                                                         self.noise_var,
-                                                         self.pe)
+        self.comp_obj_effec_throughput = EnhancedBD(self.num_cells,
+                                                    transmit_power,
+                                                    self.noise_var,
+                                                    self.pe)
         self.comp_obj_effec_throughput.set_ext_int_handling_metric(
             "effective_throughput", {'modulator': self.modulator,
                                      'packet_length': self.packet_length,
@@ -349,31 +353,31 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # None Metric
         (MsPk_all_users_None,
          Wk_all_users_None,
-         Ns_all_users_None) = self.comp_obj_None.perform_BD_no_waterfilling(
+         Ns_all_users_None) = self.comp_obj_None.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # Naive Metric
         (MsPk_all_users_naive,
          Wk_all_users_naive,
-         Ns_all_users_naive) = self.comp_obj_naive.perform_BD_no_waterfilling(
+         Ns_all_users_naive) = self.comp_obj_naive.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # Fixed Metric
         (MsPk_all_users_fixed,
          Wk_all_users_fixed,
-         Ns_all_users_fixed) = self.comp_obj_fixed.perform_BD_no_waterfilling(
+         Ns_all_users_fixed) = self.comp_obj_fixed.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # Capacity Metric
         (MsPk_all_users_capacity,
          Wk_all_users_capacity,
-         Ns_all_users_capacity) = self.comp_obj_capacity.perform_BD_no_waterfilling(
+         Ns_all_users_capacity) = self.comp_obj_capacity.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # effective_throughput Metric
         (MsPk_all_users_effec_throughput,
          Wk_all_users_effec_throughput,
-         Ns_all_users_effec_throughput) = self.comp_obj_effec_throughput.perform_BD_no_waterfilling(
+         Ns_all_users_effec_throughput) = self.comp_obj_effec_throughput.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
