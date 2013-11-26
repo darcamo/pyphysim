@@ -898,6 +898,29 @@ def calc_whitening_matrix(cov_matrix):
     return W
 
 
+def calc_shannon_sum_capacity(sinrs):
+    """Calculate the sum of the Shannon capacity of the values in `sinrs`
+
+    Parameters
+    ----------
+    sinrs : 1D numpy array or float
+        SINR values (in linear scale).
+
+    Returns
+    -------
+    sum_capacity : float
+        Sum capacity.
+
+    Examples
+    --------
+    >>> sinrs_linear = np.array([11.4, 20.3])
+    >>> print(calc_shannon_sum_capacity(sinrs_linear))
+    8.04504974084
+    """
+    sum_capacity = np.sum(np.log2(1 + sinrs))
+
+    return sum_capacity
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

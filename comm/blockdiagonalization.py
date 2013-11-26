@@ -18,12 +18,70 @@ import numpy as np
 import collections
 #from scipy.linalg import block_diag
 
-from util.misc import least_right_singular_vectors
+from util.misc import least_right_singular_vectors, calc_shannon_sum_capacity
 from comm import waterfilling
 from util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 from subspace.projections import calcProjectionMatrix
 
 __all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+## xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def block_diagonalize(mtChannel, num_users, iPu, noise_var):
+    """Performs the block diagonalization of :attr:`mtChannel`.
+
+    Parameters
+    ----------
+    mtChannel : 2D numpy array
+        Global channel matrix
+    num_users : int
+        Number of users
+    iPu : float
+        Power available for each user
+    noise_var : float
+        Noise variance
+
+    Returns
+    -------
+    (newH, Ms_good) : A tuple of numpy arrays
+        newH is a 2D numpy array corresponding to the Block
+        diagonalized channel, while Ms_good is a 2D numpy array
+        corresponding to the precoder matrix used to block diagonalize
+        the channel.
+
+    Notes
+    -----
+    The block diagonalization algorithm is described in [1]_, where
+    different power allocations are illustrated. The :class:`BlockDiaginalizer`
+    class implement two power allocation methods, a global power
+    allocation, and a 'per transmitter' power allocation.
+
+    .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
+       "Zero-Forcing Methods for Downlink Spatial Multiplexing
+       in Multiuser MIMO Channels," IEEE Transactions on Signal
+       Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
+    """
+    BD = BlockDiaginalizer(num_users, iPu, noise_var)
+    results_tuple = BD.block_diagonalize(mtChannel)
+    return results_tuple
+
+
+def calc_receive_filter(newH):
+    """Calculates the Zero-Forcing receive filter.
+
+    Parameters
+    ----------
+    newH : 2D numpy array
+        The block diagonalized channel.
+
+    Returns
+    -------
+    W_bd : 2D numpy array
+        The zero-forcing matrix to separate each stream of each user.
+    """
+    return BlockDiaginalizer.calc_receive_filter(newH)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -55,11 +113,42 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
     return min_Vs
 
 
+def _calc_effective_throughput(sinrs, modulator, packet_length):
+    """Calculates the effective throughput of the values in `sinrs` considering
+    the given modulator and packet_length.
+
+    The effective throughput is equivalent to the packet error for a
+    specific packet error rate and packet length, times the nominal
+    throughput.
+
+    Parameters
+    ----------
+    sinrs : 1D numpy array or float
+        SINR values (in linear scale).
+    modulator : A modulator object.
+        A modulator object such as M-PSK, M-QAM, etc. See the
+        :mod:`.modulators` module.
+    packet_length: int
+        The package length. That is, the number of bits in each
+        package.
+
+    Returns
+    -------
+    effective_throughput : float
+        Effective throughput that can be obtained.
+
+    """
+    SINRs = linear2dB(sinrs)
+    se = modulator.calcTheoreticalSpectralEfficiency(SINRs, packet_length)
+    total_se = np.sum(se)
+    return total_se
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ## xxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BlockDiaginalizer(object):
-    """Class to perform the block diagonalization algorithm in a joint
+    """
+    Class to perform the block diagonalization algorithm in a joint
     transmission scenario.
 
     In the block diagonalization algorithm either a single base station
@@ -142,7 +231,6 @@ class BlockDiaginalizer(object):
        "Zero-Forcing Methods for Downlink Spatial Multiplexing
        in Multiuser MIMO Channels," IEEE Transactions on Signal
        Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
-
     """
 
     def __init__(self, num_users, iPu, noise_var):
@@ -531,27 +619,14 @@ class BlockDiaginalizer(object):
         return mt_channel[vtIndexes, :]
 
 
-class EnhancedBD(BlockDiaginalizer):
-    """Performs the Coordinated Multipoint transmission also taking into
-    account the external interference.
-
-    The EnhancedBD class performs the block diagonalization characteristic
-    to the joint transmission scenario where multiple base stations act as
-    a single transmitter to send data to the users. However, in addition to
-    what the BlockDiaginalizer class does the EnhancedBD class can also
-    take external interference into account.
-
-    One way to reduce of eliminate the external interference is to
-    sacrifice streams in directions strongly occupied by the external
-    interference.
-
-    Notes
-    -----
-    See the :class:`BlockDiaginalizer` class for details about the block
-    diagonalization process.
-
+class BDWithExtIntBase(BlockDiaginalizer):
     """
+    Class to perform the block diagonalization algorithm in a joint
+    transmission scenario taking into account the external interference.
 
+    This is the base class for any block diagonalization class that takes
+    into account the external interference.
+    """
     def __init__(self, num_users, iPu, noise_var, pe):
         """Initializes the EnhancedBD object.
 
@@ -568,6 +643,44 @@ class EnhancedBD(BlockDiaginalizer):
         """
         BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
+
+
+class EnhancedBD(BDWithExtIntBase):
+    """
+    Class to perform the block diagonalization algorithm in a joint
+    transmission scenario taking into account the external interference.
+
+    The EnhancedBD class performs the block diagonalization characteristic
+    to the joint transmission scenario where multiple base stations act as
+    a single transmitter to send data to the users. However, in addition to
+    what the BlockDiaginalizer class does the EnhancedBD class can also
+    take external interference into account.
+
+    One way to reduce of eliminate the external interference is to
+    sacrifice streams in directions strongly occupied by the external
+    interference.
+
+    Notes
+    -----
+    See the :class:`BlockDiaginalizer` class for details about the block
+    diagonalization process.
+    """
+
+    def __init__(self, num_users, iPu, noise_var, pe):
+        """Initializes the EnhancedBD object.
+
+        Parameters
+        ----------
+        num_users : int
+            Number of users.
+        iPu : float
+            Power available for EACH user (in linear scale).
+        noise_var : float
+            Noise variance (power in linear scale).
+        pe : float
+            Power of the external interference source (in linear scale)
+        """
+        BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
 
         # Function used to decide how many streams will be sacrificed to
         # mitigate external interference. This is set in the
@@ -627,7 +740,7 @@ class EnhancedBD(BlockDiaginalizer):
 
         - If `metric` is 'capacity', then the metric used to decide how
           many streams to sacrifice will be the sum capacity. The function
-          :meth:`._calc_shannon_sum_capacity` will be used to calculate the
+          :meth:`calc_shannon_sum_capacity` will be used to calculate the
           sum capacity metric, and since it only uses the SINR values, no
           extra arguments are required in the metric_func_extra_args_dict
           dictionary.
@@ -670,7 +783,7 @@ class EnhancedBD(BlockDiaginalizer):
 
         elif metric == 'capacity':
             self._metric_func_name = 'capacity'
-            self._metric_func = self._calc_shannon_sum_capacity
+            self._metric_func = calc_shannon_sum_capacity
             self._metric_func_extra_args = {}
 
         elif metric == 'naive':
@@ -700,7 +813,7 @@ class EnhancedBD(BlockDiaginalizer):
 
         elif metric == 'effective_throughput':
             self._metric_func_name = 'effective_throughput'
-            self._metric_func = self._calc_effective_throughput
+            self._metric_func = _calc_effective_throughput
             keys = metric_func_extra_args_dict.keys()
             if ('modulator' not in keys) or ('packet_length' not in keys):
                 raise AttributeError("The 'effective_throughput' metric requires that metric_func_extra_args_dict is provided and has the 'modulator' and package_length' keys")
@@ -801,61 +914,6 @@ class EnhancedBD(BlockDiaginalizer):
 
         sinr = desired_power / (internalInterference + np.abs(external_interference_plus_noise))
         return sinr
-
-    @staticmethod
-    def _calc_shannon_sum_capacity(sinrs):
-        """Calculate the sum of the Shannon capacity of the values in `sinrs`
-
-        Parameters
-        ----------
-        sinrs : 1D numpy array or float
-            SINR values (in linear scale).
-
-        Returns
-        -------
-        sum_capacity : float
-            Sum capacity.
-
-        Examples
-        --------
-        >>> sinrs_linear = np.array([11.4, 20.3])
-        >>> print(EnhancedBD._calc_shannon_sum_capacity(sinrs_linear))
-        8.04504974084
-        """
-        sum_capacity = np.sum(np.log2(1 + sinrs))
-
-        return sum_capacity
-
-    @staticmethod
-    def _calc_effective_throughput(sinrs, modulator, packet_length):
-        """Calculates the effective throughput of the values in `sinrs` considering
-        the given modulator and packet_length.
-
-        The effective throughput is equivalent to the packet error for a
-        specific packet error rate and packet length, times the nominal
-        throughput.
-
-        Parameters
-        ----------
-        sinrs : 1D numpy array or float
-            SINR values (in linear scale).
-        modulator : A modulator object.
-            A modulator object such as M-PSK, M-QAM, etc. See the
-            :mod:`.modulators` module.
-        packet_length: int
-            The package length. That is, the number of bits in each
-            package.
-
-        Returns
-        -------
-        effective_throughput : float
-            Effective throughput that can be obtained.
-
-        """
-        SINRs = linear2dB(sinrs)
-        se = modulator.calcTheoreticalSpectralEfficiency(SINRs, packet_length)
-        total_se = np.sum(se)
-        return total_se
 
     def _perform_BD_no_waterfilling_no_stream_reduction(self, mu_channel):
         """Function called inside perform_BD_no_waterfilling when no stream
@@ -1122,61 +1180,3 @@ class EnhancedBD(BlockDiaginalizer):
         # function are set in the _metric_func_extra_args dictionary.
         return self._perform_BD_no_waterfilling_decide_number_streams(mu_channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-## xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def block_diagonalize(mtChannel, num_users, iPu, noise_var):
-    """Performs the block diagonalization of :attr:`mtChannel`.
-
-    Parameters
-    ----------
-    mtChannel : 2D numpy array
-        Global channel matrix
-    num_users : int
-        Number of users
-    iPu : float
-        Power available for each user
-    noise_var : float
-        Noise variance
-
-    Returns
-    -------
-    (newH, Ms_good) : A tuple of numpy arrays
-        newH is a 2D numpy array corresponding to the Block
-        diagonalized channel, while Ms_good is a 2D numpy array
-        corresponding to the precoder matrix used to block diagonalize
-        the channel.
-
-    Notes
-    -----
-    The block diagonalization algorithm is described in [1]_, where
-    different power allocations are illustrated. The :class:`BlockDiaginalizer`
-    class implement two power allocation methods, a global power
-    allocation, and a 'per transmitter' power allocation.
-
-    .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
-       "Zero-Forcing Methods for Downlink Spatial Multiplexing
-       in Multiuser MIMO Channels," IEEE Transactions on Signal
-       Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
-    """
-    BD = BlockDiaginalizer(num_users, iPu, noise_var)
-    results_tuple = BD.block_diagonalize(mtChannel)
-    return results_tuple
-
-
-def calc_receive_filter(newH):
-    """Calculates the Zero-Forcing receive filter.
-
-    Parameters
-    ----------
-    newH : 2D numpy array
-        The block diagonalized channel.
-
-    Returns
-    -------
-    W_bd : 2D numpy array
-        The zero-forcing matrix to separate each stream of each user.
-    """
-    return BlockDiaginalizer.calc_receive_filter(newH)

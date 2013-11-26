@@ -22,7 +22,7 @@ import numpy as np
 from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
-from util.misc import randn_c, least_right_singular_vectors
+from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity
 from util.conversion import dB2Linear, linear2dB
 from subspace.projections import calcProjectionMatrix
 
@@ -1597,7 +1597,7 @@ class EnhancedBDTestCase(unittest.TestCase):
                                              {'modulator': psk_obj,
                                               'packet_length': 120})
         self.assertEqual(enhancedBD_obj._metric_func,
-                         enhancedBD_obj._calc_effective_throughput)
+                         blockdiagonalization._calc_effective_throughput)
         self.assertEqual(enhancedBD_obj.metric_name, "effective_throughput")
 
         metric_func_extra_args = enhancedBD_obj._metric_func_extra_args
@@ -1608,7 +1608,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
         enhancedBD_obj.set_ext_int_handling_metric('capacity')
         self.assertEqual(enhancedBD_obj._metric_func,
-                         enhancedBD_obj._calc_shannon_sum_capacity)
+                         calc_shannon_sum_capacity)
         self.assertEqual(enhancedBD_obj.metric_name, "capacity")
         # metric_func_extra_args is an empty dictionary for the capacity
         # metric
@@ -1688,13 +1688,6 @@ class EnhancedBDTestCase(unittest.TestCase):
         # print SINRs
         pass
 
-    def test_calc_shannon_sum_capacity(self):
-        sinrs_linear = np.array([11.4, 20.3])
-        expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
-        self.assertAlmostEqual(
-            expected_sum_capacity,
-            blockdiagonalization.EnhancedBD._calc_shannon_sum_capacity(sinrs_linear))
-
     def test_calc_effective_throughput(self):
         psk_obj = modulators.PSK(8)
         packet_length = 60
@@ -1705,7 +1698,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         expected_spectral_efficiency = np.sum(
             psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
 
-        spectral_efficiency = blockdiagonalization.EnhancedBD._calc_effective_throughput(
+        spectral_efficiency = blockdiagonalization._calc_effective_throughput(
             sinrs_linear, psk_obj, packet_length)
 
         np.testing.assert_array_almost_equal(spectral_efficiency,
