@@ -1575,63 +1575,63 @@ class EnhancedBDTestCase(unittest.TestCase):
         noise_var = 1e-4
         pe = 0
 
-        # Create the comp object
-        comp_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
+        # Create the EnhancedBD object
+        enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
 
         # xxxxx Test if an assert is raised for invalid arguments xxxxxxxxx
         with self.assertRaises(AttributeError):
-            comp_obj.set_ext_int_handling_metric('lala')
+            enhancedBD_obj.set_ext_int_handling_metric('lala')
 
         with self.assertRaises(AttributeError):
             # If we set the metric to effective_throughput but not provide
             # the modulator and packet_length attributes.
-            comp_obj.set_ext_int_handling_metric('effective_throughput')
+            enhancedBD_obj.set_ext_int_handling_metric('effective_throughput')
 
         with self.assertRaises(AttributeError):
-            comp_obj.set_ext_int_handling_metric('naive')
+            enhancedBD_obj.set_ext_int_handling_metric('naive')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
         psk_obj = modulators.PSK(4)
-        comp_obj.set_ext_int_handling_metric('effective_throughput',
+        enhancedBD_obj.set_ext_int_handling_metric('effective_throughput',
                                              {'modulator': psk_obj,
                                               'packet_length': 120})
-        self.assertEqual(comp_obj._metric_func,
-                         comp_obj._calc_effective_throughput)
-        self.assertEqual(comp_obj.metric_name, "effective_throughput")
+        self.assertEqual(enhancedBD_obj._metric_func,
+                         enhancedBD_obj._calc_effective_throughput)
+        self.assertEqual(enhancedBD_obj.metric_name, "effective_throughput")
 
-        metric_func_extra_args = comp_obj._metric_func_extra_args
+        metric_func_extra_args = enhancedBD_obj._metric_func_extra_args
         self.assertEqual(metric_func_extra_args['modulator'], psk_obj)
         self.assertEqual(metric_func_extra_args['packet_length'], 120)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
-        comp_obj.set_ext_int_handling_metric('capacity')
-        self.assertEqual(comp_obj._metric_func,
-                         comp_obj._calc_shannon_sum_capacity)
-        self.assertEqual(comp_obj.metric_name, "capacity")
+        enhancedBD_obj.set_ext_int_handling_metric('capacity')
+        self.assertEqual(enhancedBD_obj._metric_func,
+                         enhancedBD_obj._calc_shannon_sum_capacity)
+        self.assertEqual(enhancedBD_obj.metric_name, "capacity")
         # metric_func_extra_args is an empty dictionary for the capacity
         # metric
-        self.assertEqual(comp_obj._metric_func_extra_args, {})
+        self.assertEqual(enhancedBD_obj._metric_func_extra_args, {})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to None xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        comp_obj.set_ext_int_handling_metric(None)
-        self.assertIsNone(comp_obj._metric_func)
-        self.assertEqual(comp_obj.metric_name, "None")
+        enhancedBD_obj.set_ext_int_handling_metric(None)
+        self.assertIsNone(enhancedBD_obj._metric_func)
+        self.assertEqual(enhancedBD_obj.metric_name, "None")
 
         # metric_func_extra_args is an empty dictionary for the None metric
-        self.assertEqual(comp_obj._metric_func_extra_args, {})
+        self.assertEqual(enhancedBD_obj._metric_func_extra_args, {})
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to naive xxxxxxxxxxxxxxxxxxxxxxxxxx
-        comp_obj.set_ext_int_handling_metric('naive',
+        enhancedBD_obj.set_ext_int_handling_metric('naive',
                                              {'num_streams': 2})
-        self.assertIsNone(comp_obj._metric_func)
-        self.assertEqual(comp_obj.metric_name, "naive")
+        self.assertIsNone(enhancedBD_obj._metric_func)
+        self.assertEqual(enhancedBD_obj.metric_name, "naive")
 
-        metric_func_extra_args = comp_obj._metric_func_extra_args
+        metric_func_extra_args = enhancedBD_obj._metric_func_extra_args
         self.assertEqual(metric_func_extra_args['num_streams'], 2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1711,7 +1711,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(spectral_efficiency,
                                              expected_spectral_efficiency)
 
-    def test_perform_comp_no_waterfilling(self):
+    def test_block_diagonalize_no_waterfilling(self):
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size
@@ -1733,14 +1733,14 @@ class EnhancedBDTestCase(unittest.TestCase):
         # Channel from all transmitters to the second receiver
         H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
 
-        # Create the comp object
-        comp_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
+        # Create the enhancedBD object
+        enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
 
         noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
 
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
-        comp_obj.set_ext_int_handling_metric(None)
-        (Ms_all, Wk_all, Ns_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        enhancedBD_obj.set_ext_int_handling_metric(None)
+        (Ms_all, Wk_all, Ns_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -1787,11 +1787,11 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Now with the Naive Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
         num_streams = 1
-        comp_obj.set_ext_int_handling_metric(
+        enhancedBD_obj.set_ext_int_handling_metric(
             'naive',
             {'num_streams': num_streams})
 
-        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_naive_1 = MsPk_naive_all[0]
         MsPk_naive_2 = MsPk_naive_all[1]
 
@@ -1841,11 +1841,11 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Now with the Fixed Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
         num_streams = 1
-        comp_obj.set_ext_int_handling_metric(
+        enhancedBD_obj.set_ext_int_handling_metric(
             'fixed',
             {'num_streams': num_streams})
 
-        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_fixed_1 = MsPk_fixed_all[0]
         MsPk_fixed_2 = MsPk_fixed_all[1]
 
@@ -1895,8 +1895,8 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the capacity metric
-        comp_obj.set_ext_int_handling_metric('capacity')
-        (MsPk_all, Wk_cap_all, Ns_cap_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        enhancedBD_obj.set_ext_int_handling_metric('capacity')
+        (MsPk_all, Wk_cap_all, Ns_cap_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_cap_1 = MsPk_all[0]
         MsPk_cap_2 = MsPk_all[1]
 
@@ -1940,12 +1940,12 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the effective_throughput metric
-        comp_obj.set_ext_int_handling_metric(
+        enhancedBD_obj.set_ext_int_handling_metric(
             'effective_throughput',
             {'modulator': psk_obj,
              'packet_length': packet_length})
 
-        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = comp_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
 
