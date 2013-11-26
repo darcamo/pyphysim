@@ -24,6 +24,11 @@ import glob
 from time import sleep
 
 try:
+    import pandas as pd
+except Exception:
+    pass
+
+try:
     from IPython.parallel import CompositeError
 except Exception:  # pragma: no cover
     pass
@@ -995,6 +1000,34 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
 
+    # def test_to_pandas_series_of_dataframe(self):
+    #     result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+    #     result1.update(20)
+    #     result1.update(13)
+    #     result1.update(14)
+    #     result1.update(11)
+    #     s1 = result1.to_pandas_series_of_dataframe()
+    #     expected_s1 = pd.Series(data=[20,13,14,11])
+    #     self.assertTrue(all(s1 == expected_s1))
+
+    #     result2 = Result('name2', Result.MISCTYPE, accumulate_values=True)
+    #     result2.update('string')
+    #     result2.update(7)
+    #     result2.update(-1)
+    #     result2.update('hum')
+    #     s2 = result2.to_pandas_series_of_dataframe()
+    #     expected_s2 = pd.Series(data=['string',7,-1,'hum'])
+    #     self.assertTrue(all(s2 == expected_s2))
+
+    #     result3 = Result('name3', Result.RATIOTYPE, accumulate_values=True)
+    #     result3.update(20, 30)
+    #     result3.update(13, 15)
+    #     result3.update(14, 20)
+    #     result3.update(11, 22)
+    #     df1 = result3.to_pandas_series_of_dataframe()
+    #     expected_df1 = pd.DataFrame({'t': [30,15,20,22], 'v': [20,13,14,11]})
+    #     self.assertTrue(all(df1 == expected_df1))
+
 
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
@@ -1947,6 +1980,14 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         # D must be an identity matrix
         np.testing.assert_array_almost_equal(D, np.eye(3))
+
+    def test_calc_shannon_sum_capacity(self):
+        sinrs_linear = np.array([11.4, 20.3])
+        expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
+        self.assertAlmostEqual(
+            expected_sum_capacity,
+            misc.calc_shannon_sum_capacity(sinrs_linear))
+
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -176,6 +176,11 @@ import copy
 import numpy as np
 from time import time
 
+try:
+    import pandas as pd
+except Exception:
+    pass
+
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
 from util.progressbar import ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
 
@@ -3187,6 +3192,18 @@ class Result(object):
             r.num_updates = data['num_updates']
             results_list.append(r)
         return results_list
+
+    # def to_pandas_series_of_dataframe(self):
+    #     """
+    #     Convert the Result object to a pandas DataFrame
+    #     """
+    #     if self.type_code == Result.RATIOTYPE:
+    #         df = pd.DataFrame({'v': self._value_list, 't': self._total_list})
+    #         return df
+    #     else:
+    #         s = pd.Series(self._value_list)
+    #         return s
+
 
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
