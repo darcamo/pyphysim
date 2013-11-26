@@ -947,6 +947,12 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return H[:-self._extIntK]
     H = property(_get_H)
 
+    def _get_H_no_ext_int(self):
+        """Get method for the H_no_ext_int property."""
+        H = MultiUserChannelMatrix._get_H(self)
+        return H[:self.K, :self.K]
+    H_no_ext_int = property(_get_H_no_ext_int)
+
     def corrupt_data(self, data, ext_int_data, noise_var=None):
         """Corrupt data passed through the channel.
 

@@ -18,7 +18,7 @@ import numpy as np
 import collections
 #from scipy.linalg import block_diag
 
-from util.misc import least_right_singular_vectors, calc_shannon_sum_capacity
+from util.misc import least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
 from comm import waterfilling
 from util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 from subspace.projections import calcProjectionMatrix
@@ -142,6 +142,7 @@ def _calc_effective_throughput(sinrs, modulator, packet_length):
     se = modulator.calcTheoreticalSpectralEfficiency(SINRs, packet_length)
     total_se = np.sum(se)
     return total_se
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ## xxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -644,6 +645,25 @@ class BDWithExtIntBase(BlockDiaginalizer):
         BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
+    def calc_whitening_matrices(self, mu_channel, noise_var):
+        """
+        Parameters
+        ----------
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as th
+            external interference.
+
+        Returns
+        -------
+        W_all_k : list of 2D numpy arrays
+            The whitening matrices that each receiver should use to whiten
+            the external interference.
+        """
+        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, self.pe)
+        W_all_k = map(calc_whitening_matrix, R_all_k)
+        return W_all_k
+
 
 class EnhancedBD(BDWithExtIntBase):
     """
@@ -919,6 +939,24 @@ class EnhancedBD(BDWithExtIntBase):
         """Function called inside perform_BD_no_waterfilling when no stream
         reduction should be performed.
 
+        Parameters
+        ----------
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as th
+            external interference.
+
+        Returns
+        -------
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the precoder
+            for a user.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
+        Ns_all_users: 1D numpy array of ints
+            Number of streams of each user.
+
         """
         # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         K = mu_channel.K
@@ -965,6 +1003,24 @@ class EnhancedBD(BDWithExtIntBase):
         in the fixed case the reduction matrix P is chosen so that it gets
         as orthogonal to the external interference as possible, while the
         naive case simple chooses P as a submatrix of the diagonal matrix.
+
+        Parameters
+        ----------
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as th
+            external interference.
+
+        Returns
+        -------
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the precoder
+            for a user.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
+        Ns_all_users: 1D numpy array of ints
+            Number of streams of each user.
 
         """
         # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1026,6 +1082,24 @@ class EnhancedBD(BDWithExtIntBase):
         """Function called inside perform_BD_no_waterfilling when the stream
         reduction is performed and the number of sacrificed streams depend
         on the metric used (the function set as self._metric_func)
+
+        Parameters
+        ----------
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as th
+            external interference.
+
+        Returns
+        -------
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the precoder
+            for a user.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
+        Ns_all_users: 1D numpy array of ints
+            Number of streams of each user.
 
         """
         # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

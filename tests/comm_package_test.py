@@ -22,7 +22,7 @@ import numpy as np
 from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
-from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity
+from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
 from util.conversion import dB2Linear, linear2dB
 from subspace.projections import calcProjectionMatrix
 
@@ -654,6 +654,22 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
         np.testing.assert_array_almost_equal(self.multiH.big_H_no_ext_int,
                                              self.multiH.big_H[:, :-2])
+
+    def test_H_no_ext_int_property(self):
+        self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
+        big_H_no_ext_int = self.multiH.big_H_no_ext_int
+
+        H_no_ext_int = self.multiH.H_no_ext_int
+
+        self.assertEqual(H_no_ext_int.shape, (2, 2))
+        np.testing.assert_array_almost_equal(H_no_ext_int[0, 0],
+                                             big_H_no_ext_int[0:2, 0:2])
+        np.testing.assert_array_almost_equal(H_no_ext_int[0, 1],
+                                             big_H_no_ext_int[0:2, 2:])
+        np.testing.assert_array_almost_equal(H_no_ext_int[1, 0],
+                                             big_H_no_ext_int[2:, 0:2])
+        np.testing.assert_array_almost_equal(H_no_ext_int[1, 1],
+                                             big_H_no_ext_int[2:, 2:])
 
     def test_set_pathloss(self):
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
@@ -1561,6 +1577,33 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(np.dot(W_bd, newH),
                                              np.eye(np.sum(self.iNt)))
+
+
+# TODO: finish implementation
+class BDWithExtIntBaseTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_calc_whitening_matrices(self):
+        Nr = np.array([2, 2])
+        Nt = np.array([2, 2])
+        K = Nt.size
+        Nti = 1
+        iPu = 1e-1  # Power for each user (linear scale)
+        pe = 1e-3  # External interference power (in linear scale)
+        noise_var = 1e-4
+
+        # Generate the multi-user channel
+        mu_channel = channels.MultiUserChannelMatrixExtInt()
+        mu_channel.randomize(Nr, Nt, K, Nti)
+
+        bd_obj = blockdiagonalization.BDWithExtIntBase(K, iPu, noise_var, pe)
+        W_all_k = bd_obj.calc_whitening_matrices(mu_channel, noise_var)
+
+        R_all_k =  mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        for W, R in zip(W_all_k, R_all_k):
+            np.testing.assert_array_almost_equal(W, calc_whitening_matrix(R))
 
 
 # TODO: finish implementation
