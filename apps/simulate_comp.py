@@ -75,7 +75,10 @@ from comm.blockdiagonalization import EnhancedBD
 
 
 class BDSimulationRunner(simulations.SimulationRunner):
-    """Implements a simulation runner for a CoMP transmission."""
+    """
+    Implements a simulation runner for a Block Diagonalization
+    transmission.
+    """
 
     def __init__(self, ):
         simulations.SimulationRunner.__init__(self)
@@ -136,7 +139,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.ext_int_rank = 1  # Rank of the external interference
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 50  # Maximum number of repetitions for each
+        self.rep_max = 5  # Maximum number of repetitions for each
                               # unpacked parameters set self.params
                               # self.results
 
@@ -262,7 +265,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # External interference power
         self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
 
-        # xxxxx Create the CoMP object with the None metric xxxxxxxxxxxxxxx
+        # xxxxx Create the BD object with the None metric xxxxxxxxxxxxxxxxx
         self.bd_obj_None = EnhancedBD(self.num_cells,
                                       transmit_power,
                                       self.noise_var,
@@ -273,7 +276,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
                      'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Create the CoMP object with the Naive metric xxxxxxxxxxxxxx
+        # xxxxx Create the BD object with the Naive metric xxxxxxxxxxxxxxxx
         self.bd_obj_naive = EnhancedBD(self.num_cells,
                                        transmit_power,
                                        self.noise_var,
@@ -284,7 +287,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
                                        'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Create the CoMP object with the fixed metric xxxxxxxxxxxxxxx
+        # xxxxx Create the BD object with the fixed metric xxxxxxxxxxxxxxxx
         self.bd_obj_fixed = EnhancedBD(self.num_cells,
                                        transmit_power,
                                        self.noise_var,
@@ -295,7 +298,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
                                        'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Create the CoMP object with the capacity metric xxxxxxxxxxx
+        # xxxxx Create the BD object with the capacity metric xxxxxxxxxxxxx
         self.bd_obj_capacity = EnhancedBD(self.num_cells,
                                           transmit_power,
                                           self.noise_var,
@@ -306,7 +309,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
                          'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xx Create the CoMP object with the effective_throughput metric xx
+        # xx Create the BD object with the effective_throughput metric xxxx
         self.bd_obj_effec_throughput = EnhancedBD(self.num_cells,
                                                   transmit_power,
                                                   self.noise_var,
@@ -900,7 +903,7 @@ if __name__ == '__main__':
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'comp_results'
+    results_filename = 'bd_results'
     runner = BDSimulationRunner()
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -952,7 +955,7 @@ if __name__ == '__main__':
     #
     #
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'comp_results'
+    results_filename = 'com_rpesults'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
