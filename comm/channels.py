@@ -20,6 +20,7 @@ __revision__ = "$Revision$"
 
 from collections import Iterable
 import numpy as np
+from scipy.linalg import block_diag
 from util.conversion import single_matrix_to_matrix_of_matrices
 from util.misc import randn_c_RS
 
@@ -349,7 +350,12 @@ class MultiUserChannelMatrix(object):
                                     # last time any of the corrupt*_data
                                     # methods were called.
 
-    def set_channel_seed(self, seed):
+        self._W = None  # Post processing filters (a list of 2D numpy
+                        # arrays) for each user
+        self._big_W = None  # Same as _W, but as a single block diagonal
+                            # matrix.
+
+    def set_channel_seed(self, seed=None):
         """Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
 
@@ -360,7 +366,7 @@ class MultiUserChannelMatrix(object):
             generator. See np.random.RandomState help for more info.
 
         """
-        self._RS_channel.seed(seed)
+        self._RS_channel.seed(seed=None)
 
     def set_noise_seed(self, seed):
         """Set the seed of the RandomState object used to generate the random
@@ -375,32 +381,16 @@ class MultiUserChannelMatrix(object):
         """
         self._RS_noise.seed(seed)
 
-    # def randn_c(self, RS, *args):
-    #     """Generates a random circularly complex gaussian matrix.
+    def re_seed(self):
+        """
+        Re-seed the channel and noise RandomState objects randomly.
 
-    #     This is essentially the same as the the randn_c function from the
-    #     util.misc module. The only difference is that the randn_c function in
-    #     util.misc uses the global RandomState object in numpy, while the
-    #     method here used the randn method from a local RandomState
-    #     object. This allow us greatter control.
-
-    #     Parameters
-    #     ----------
-    #     RS : A numpy.random.RandomState object.
-    #         The RandomState object used to generate the random values.
-    #     *args : variable number of ints
-    #         Variable number of arguments specifying the dimensions of the
-    #         returned array. This is directly passed to the
-    #         numpy.random.randn function.
-
-    #     Returns
-    #     -------
-    #     result : N-dimensional numpy array
-    #         A random N-dimensional numpy array (complex dtype) where the
-    #         `N` is equal to the number of parameters passed to `randn_c`.
-    #     """
-    #     return (1.0 / math.sqrt(2.0)) * (
-    #         RS.randn(*args) + (1j * RS.randn(*args)))
+        If you want to specify the seed for each of them call the
+        `set_channel_seed` and `set_noise_seed` methods and pass the
+        desired seed for each of them.
+        """
+        self.set_channel_seed(None)
+        self.set_noise_seed(None)
 
     # Property to get the number of receive antennas
     def _get_Nr(self):
@@ -589,13 +579,13 @@ class MultiUserChannelMatrix(object):
             specified, all users will have that number of receive antennas.
         """
         if isinstance(Nr, int):
-            Nr = np.ones(K) * Nr
+            Nr = np.ones(K, dtype=int) * Nr
         if isinstance(Nt, int):
-            Nt = np.ones(K) * Nt
+            Nt = np.ones(K, dtype=int) * Nt
 
-        self._Nr = Nr
-        self._Nt = Nt
-        self._K = K
+        self._Nr = Nr.astype(int)
+        self._Nt = Nt.astype(int)
+        self._K = int(K)
 
         self._big_H = randn_c_RS(self._RS_channel,
                                  np.sum(self._Nr), np.sum(self._Nt))
@@ -688,6 +678,36 @@ class MultiUserChannelMatrix(object):
         receive_channels = single_matrix_to_matrix_of_matrices(self.big_H, self.Nr)
         return receive_channels[k]
 
+    def set_post_filter(self, filters):
+        """
+        Set the post-processing filters.
+
+        The post-processing filters will be applyied to the data after if
+        has been currupted by the channel in either the `corrupt_data` or
+        the `corrupt_concatenated_data` methods.
+
+        Parameters
+        ----------
+        filters : List of 2D numpy arrays or a 1D numpy array of 2D numpy
+                  arrays.
+        """
+        self._W = filters
+        self._big_W = None  # This will be set in the get property only
+                            # when required.
+
+    def _get_W(self):
+        """Get method for the post processing filter W."""
+        return self._W
+    W = property(_get_W)
+
+    def _get_big_W(self):
+        """Get method for the big_W property."""
+        if self._big_W is None:
+            if self.W is not None:
+                self._big_W = block_diag(*self.W)
+        return self._big_W
+    big_W = property(_get_big_W)
+
     def corrupt_concatenated_data(self, data, noise_var=None):
         """Corrupt data passed through the channel.
 
@@ -727,6 +747,11 @@ class MultiUserChannelMatrix(object):
         else:
             self._last_noise = None
             self._last_noise_var = 0.0
+
+        # Apply the post processing filter (if there is one set)
+        if self.big_W is not None:
+            output = np.dot(self.big_W.conjugate().T, output)
+
         return output
 
     def corrupt_data(self, data, noise_var=None):
@@ -921,6 +946,12 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         # sources 'users' (which are in fact empty)
         return H[:-self._extIntK]
     H = property(_get_H)
+
+    def _get_H_no_ext_int(self):
+        """Get method for the H_no_ext_int property."""
+        H = MultiUserChannelMatrix._get_H(self)
+        return H[:self.K, :self.K]
+    H_no_ext_int = property(_get_H_no_ext_int)
 
     def corrupt_data(self, data, ext_int_data, noise_var=None):
         """Corrupt data passed through the channel.

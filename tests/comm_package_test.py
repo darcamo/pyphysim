@@ -22,7 +22,9 @@ import numpy as np
 from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
-from util.misc import randn_c
+from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
+from util.conversion import dB2Linear, linear2dB
+from subspace.projections import calcProjectionMatrix
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -81,6 +83,23 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         RS = np.random.RandomState()
         h3 = channels.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2), RS=RS)
         self.assertEqual(h3.shape, (3, 2, N))
+
+    def test_calc_stream_reduction_matrix(self):
+        Re_k = randn_c(3, 2)
+        Re_k = np.dot(Re_k, Re_k.transpose().conjugate())
+
+        P1 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 1)
+        P2 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 2)
+        P3 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 3)
+
+        (min_Vs, remaining_Vs, S) = least_right_singular_vectors(Re_k, 3)
+        expected_P1 = min_Vs[:, :1]
+        expected_P2 = min_Vs[:, :2]
+        expected_P3 = min_Vs[:, :3]
+
+        np.testing.assert_array_almost_equal(P1, expected_P1)
+        np.testing.assert_array_almost_equal(P2, expected_P2)
+        np.testing.assert_array_almost_equal(P3, expected_P3)
 
 
 class JakesSampleGeneratorTestCase(unittest.TestCase):
@@ -447,6 +466,78 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
 
+    def test_set_and_get_post_filter(self):
+        self.multiH.randomize(self.Nr, self.Nt, self.K)
+        self.assertIsNone(self.multiH._W)
+        self.assertIsNone(self.multiH._big_W)
+
+        self.assertIsNone(self.multiH.W)
+        self.assertIsNone(self.multiH.big_W)
+
+        W = [randn_c(2, 2),
+             randn_c(2, 2),
+             randn_c(2, 2)]
+
+        self.multiH.set_post_filter(W)
+        np.testing.assert_array_almost_equal(W, self.multiH._W)
+        np.testing.assert_array_almost_equal(W, self.multiH.W)
+
+        # _big_W is still None
+        self.assertIsNone(self.multiH._big_W)
+
+        expected_big_W = linalg.block_diag(*W)
+        np.testing.assert_array_almost_equal(expected_big_W,
+                                             self.multiH.big_W)
+        self.assertIsNotNone(self.multiH._big_W)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        W2 = [randn_c(2, 2),
+              randn_c(2, 2),
+              randn_c(2, 2)]
+        self.multiH.set_post_filter(W2)
+        np.testing.assert_array_almost_equal(W2, self.multiH._W)
+        np.testing.assert_array_almost_equal(W2, self.multiH.W)
+
+        self.assertIsNone(self.multiH._big_W)
+        expected_big_W2 = linalg.block_diag(*W2)
+        np.testing.assert_array_almost_equal(expected_big_W2,
+                                             self.multiH.big_W)
+        self.assertIsNotNone(self.multiH._big_W)
+
+    def test_corrupt_data_with_post_filter(self):
+        NSymbs = 20
+        # Create some input data for the 3 users
+        input_data = np.zeros(self.K, dtype=np.ndarray)
+        input_data[0] = randn_c(self.Nt[0], NSymbs)
+        input_data[1] = randn_c(self.Nt[1], NSymbs)
+        input_data[2] = randn_c(self.Nt[2], NSymbs)
+
+        # Disable the path loss
+        self.multiH.set_pathloss()
+        self.multiH.randomize(self.Nr, self.Nt, self.K)
+
+        # Set the post processing filter
+        W = [randn_c(self.Nr[0], self.Nr[0]),
+             randn_c(self.Nr[1], self.Nr[1]),
+             randn_c(self.Nr[2], self.Nr[2])]
+        self.multiH.set_post_filter(W)
+
+        output = self.multiH.corrupt_data(input_data)
+
+        # Calculates the expected output (without pathloss)
+        expected_output = np.zeros(self.K, dtype=np.ndarray)
+        for rx in np.arange(self.K):
+            for tx in np.arange(self.K):
+                expected_output[rx] += np.dot(
+                    self.multiH.get_channel(rx, tx), input_data[tx])
+            expected_output[rx] = np.dot(W[rx].conjugate().T,
+                                         expected_output[rx])
+
+        # Test the received data for the 3 users
+        np.testing.assert_array_almost_equal(output[0], expected_output[0])
+        np.testing.assert_array_almost_equal(output[1], expected_output[1])
+        np.testing.assert_array_almost_equal(output[2], expected_output[2])
+
     def test_last_noise_property(self):
         noise_var = 1e-2
         H = np.eye(6)
@@ -564,6 +655,22 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.multiH.big_H_no_ext_int,
                                              self.multiH.big_H[:, :-2])
 
+    def test_H_no_ext_int_property(self):
+        self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
+        big_H_no_ext_int = self.multiH.big_H_no_ext_int
+
+        H_no_ext_int = self.multiH.H_no_ext_int
+
+        self.assertEqual(H_no_ext_int.shape, (2, 2))
+        np.testing.assert_array_almost_equal(H_no_ext_int[0, 0],
+                                             big_H_no_ext_int[0:2, 0:2])
+        np.testing.assert_array_almost_equal(H_no_ext_int[0, 1],
+                                             big_H_no_ext_int[0:2, 2:])
+        np.testing.assert_array_almost_equal(H_no_ext_int[1, 0],
+                                             big_H_no_ext_int[2:, 0:2])
+        np.testing.assert_array_almost_equal(H_no_ext_int[1, 1],
+                                             big_H_no_ext_int[2:, 2:])
+
     def test_set_pathloss(self):
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
         K = self.multiH.K
@@ -625,7 +732,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # channel
         multiH_no_ext_int = channels.MultiUserChannelMatrix()
         multiH_no_ext_int.init_from_channel_matrix(
-            self.multiH.big_H[:, :4],
+            self.multiH.big_H_no_ext_int,
             Nr,
             Nt,
             K)
@@ -661,6 +768,98 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             np.testing.assert_almost_equal(received_data2[index],
                                            received_data2_expected[index])
 
+    def test_corrupt_data_with_post_filter(self):
+        Nt = np.array([2, 2])
+        Nr = np.array([3, 2])
+        K = len(Nt)
+        NtE = np.array([1, 1])
+
+        # Lets initialize our MultiUserChannelMatrixExtInt object with a
+        # random channel
+        self.multiH.randomize(Nr, Nt, K, NtE)
+
+        # Set the post processing filter
+        W = [randn_c(Nr[0], Nr[0]),
+             randn_c(Nr[1], Nr[1])]
+        self.multiH.set_post_filter(W)
+
+        # User's data (without the external interference source data)
+        input_data = np.empty(2, dtype=np.ndarray)
+        input_data[0] = randn_c(2, 5)
+        input_data[1] = randn_c(2, 5)
+
+        # External interference data: First lets try with only zeros
+        input_data_extint = np.empty(2, dtype=np.ndarray)
+        input_data_extint[0] = np.zeros([1, 5], dtype=complex)
+        input_data_extint[1] = np.zeros([1, 5], dtype=complex)
+
+        # Initialize a MultiUserChannelMatrix object with the same channel
+        # as self.multiH (disregarding the external interference source
+        # channel
+        multiH_no_ext_int = channels.MultiUserChannelMatrix()
+        multiH_no_ext_int.init_from_channel_matrix(
+            self.multiH.big_H_no_ext_int,
+            Nr,
+            Nt,
+            K)
+        multiH_no_ext_int.set_post_filter(W)
+
+        # Test if we receive the same data with and without the external
+        # interference source. Note that the received data must be the same
+        # since the interference zero for now
+        received_data_expected = multiH_no_ext_int.corrupt_data(input_data)
+        received_data = self.multiH.corrupt_data(input_data, input_data_extint)
+
+        self.assertEqual(received_data_expected.shape, received_data.shape)
+        for index in range(received_data.size):
+            np.testing.assert_almost_equal(received_data[index],
+                                           received_data_expected[index])
+
+        # xxxxxxxxxx Now lets test with some external interference
+        input_data_extint2 = np.empty(2, dtype=np.ndarray)
+        input_data_extint2[0] = randn_c(1, 5)
+        input_data_extint2[1] = randn_c(1, 5)
+
+        received_data2_expected = received_data_expected
+
+        received_data2 = self.multiH.corrupt_data(input_data, input_data_extint2)
+
+        # received_data2_expected for now has only the included the user's
+        # signal. Lets add the external interference source's signal.
+        received_data2_expected[0] = (
+            # Original received data
+            received_data2_expected[0]
+            # Plus FILTERED interference from first interference source
+            +
+            np.dot(W[0].conjugate().T,
+                   np.dot(self.multiH.get_channel(0, 2),
+                          input_data_extint2[0]))
+            # Plus FILTERED interference from second interference source
+            +
+            np.dot(W[0].conjugate().T,
+                   np.dot(self.multiH.get_channel(0, 3),
+                          input_data_extint2[1])))
+
+        received_data2_expected[1] = (
+            # Original received data
+            received_data2_expected[1]
+            # Plus FILTERED interference from first interference source
+            +
+            np.dot(W[1].conjugate().T,
+                   np.dot(self.multiH.get_channel(1, 2),
+                          input_data_extint2[0]))
+            # Plus FILTERED interference from second interference source
+            +
+            np.dot(W[1].conjugate().T,
+                   np.dot(self.multiH.get_channel(1, 3),
+                          input_data_extint2[1])))
+
+        # Now lets test if the received_data2 is correct
+        self.assertEqual(received_data2_expected.shape, received_data2.shape)
+        for index in range(received_data2.size):
+            np.testing.assert_almost_equal(received_data2[index],
+                                           received_data2_expected[index])
+
     def test_get_channel_all_transmitters_to_single_receiver(self):
         big_H = np.hstack([self.H, self.extH])
         K = self.K
@@ -671,15 +870,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.init_from_channel_matrix(big_H, Nr, Nt, K, NtE)
 
-        # print
-        # print self.multiH.big_H
-
         expected_H1 = self.multiH.big_H[0:2, :np.sum(Nt)]
         expected_H2 = self.multiH.big_H[2:6, :np.sum(Nt)]
         expected_H3 = self.multiH.big_H[6:, :np.sum(Nt)]
-
-        # print
-        # print expected_H1
 
         # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
@@ -900,8 +1093,6 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
                                      # subcarriers)
-        # print input_signal
-        # print self.ofdm_object._prepare_input_signal(input_signal)
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
@@ -1374,10 +1565,628 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         (newH, Ms) = blockdiagonalization.block_diagonalize(
             channel, num_users, Pu, noise_var)
 
+        # W_bd is a block diagonal matrix, where each "small block" is the
+        # receive filter of one user.
         W_bd = blockdiagonalization.calc_receive_filter(newH)
 
         np.testing.assert_array_almost_equal(np.dot(W_bd, newH),
                                              np.eye(np.sum(self.iNt)))
+
+        # Retest for each individual user
+        W0 = W_bd[0:2, 0:2]
+        newH0 = newH[0:2, 0:2]
+        np.testing.assert_array_almost_equal(np.dot(W0, newH0),
+                                             np.eye(self.iNt/3))
+        W1 = W_bd[2:4, 2:4]
+        newH1 = newH[2:4, 2:4]
+        np.testing.assert_array_almost_equal(np.dot(W1, newH1),
+                                             np.eye(self.iNt/3))
+        W2 = W_bd[4:, 4:]
+        newH2 = newH[4:, 4:]
+        np.testing.assert_array_almost_equal(np.dot(W2, newH2),
+                                             np.eye(self.iNt/3))
+
+
+# TODO: finish implementation
+class BDWithExtIntBaseTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_calc_whitening_matrices(self):
+        Nr = np.array([2, 2])
+        Nt = np.array([2, 2])
+        K = Nt.size
+        Nti = 1
+        iPu = 1e-1  # Power for each user (linear scale)
+        pe = 1e-3  # External interference power (in linear scale)
+        noise_var = 1e-4
+
+        # Generate the multi-user channel
+        mu_channel = channels.MultiUserChannelMatrixExtInt()
+        mu_channel.randomize(Nr, Nt, K, Nti)
+
+        bd_obj = blockdiagonalization.BDWithExtIntBase(K, iPu, noise_var, pe)
+        W_all_k = bd_obj.calc_whitening_matrices(mu_channel, noise_var)
+
+        R_all_k =  mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        for W, R in zip(W_all_k, R_all_k):
+            np.testing.assert_array_almost_equal(
+                W,
+                calc_whitening_matrix(R).conjugate().T)
+
+
+# TODO: finish implementation
+class WhiteningBDTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_block_diagonalize_no_waterfilling(self):
+        Nr = np.array([2, 2])
+        Nt = np.array([2, 2])
+        K = Nt.size
+        Nti = 1
+        iPu = 1e-1  # Power for each user (linear scale)
+        pe = 1e-3  # External interference power (in linear scale)
+        noise_var = 1e-4
+
+        # The modulator and packet_length are required in the
+        # effective_throughput metric case
+        psk_obj = modulators.PSK(4)
+        packet_length = 120
+
+        multiUserChannel = channels.MultiUserChannelMatrixExtInt()
+        multiUserChannel.randomize(Nr, Nt, K, Nti)
+
+        # Channel from all transmitters to the first receiver
+        H1 = multiUserChannel.get_channel_all_tx_to_rx_k(0)
+        # Channel from all transmitters to the second receiver
+        H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
+
+        # Create the whiteningBD object and the regular BD object
+        whiteningBD_obj = blockdiagonalization.WhiteningBD(K, iPu, noise_var, pe)
+
+        #noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+
+        #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
+        (Ms_all, Wk_all, Ns_all) = whiteningBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        Ms1 = Ms_all[0]
+        Ms2 = Ms_all[1]
+
+        self.assertEqual(Ms1.shape[1], Ns_all[0])
+        self.assertEqual(Ms2.shape[1], Ns_all[1])
+
+        # Most likelly only one base station (the one with the worst
+        # channel) will employ a precoder with total power of `Pu`,
+        # while the other base stations will use less power.
+        tol = 1e-10
+        self.assertGreaterEqual(iPu + tol,
+                                np.linalg.norm(Ms1, 'fro') ** 2)
+        # 1e-12 is included to avoid false test fails due to small
+        # precision errors
+        self.assertGreaterEqual(iPu + tol,
+                                np.linalg.norm(Ms2, 'fro') ** 2)
+
+        # Test if the precoder block diagonalizes the channel
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, Ms1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, Ms2), 'fro'), 0)
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, Ms2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, Ms1), 'fro'), 0)
+
+
+        # xxxxxxxxxx Now lets test the receive filter xxxxxxxxxxxxxxxxxxxxx
+        print
+        #print Wk_all
+        np.set_printoptions(precision=4, linewidth=100)
+
+        print np.dot(H1, Ms1)
+        print
+        print np.dot(H2, Ms2)
+        print
+
+        print "big_H"
+        big_H = multiUserChannel.big_H_no_ext_int
+        print big_H
+
+        # print Ms_all[0]
+        # print
+        # print Ms_all[1]
+        # print
+
+        print "Ms"
+        Ms = np.hstack(Ms_all)
+        print Ms
+
+        print
+
+        print "Multiplication"
+        print np.dot(big_H, Ms).round(6)
+        print
+
+        Wk = linalg.block_diag(*Wk_all)
+        print "Wk"
+        print Wk
+        print
+
+        print "Final"
+        print np.dot(Wk, np.dot(big_H, Ms)).round(4)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+
+        # # Equivalent sinrs (in linear scale)
+        # sinrs = np.empty(K, dtype=np.ndarray)
+        # sinrs[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+        #     np.dot(H1, Ms1),
+        #     Wk_all[0],
+        #     noise_plus_int_cov_matrix[0])
+        # sinrs[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+        #     np.dot(H2, Ms2),
+        #     Wk_all[1],
+        #     noise_plus_int_cov_matrix[1])
+
+        # # Spectral efficiency
+        # se = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+        #     linear2dB(sinrs[0]),
+        #     packet_length))
+        #     +
+        #     np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+        #         linear2dB(sinrs[1]),
+        #         packet_length)))
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # xxxxxxxxxx For comparison, lets perform the regular BD xxxxxxxxxx
+        # (newH, Ms_good_regular_bd) = regularBD_obj.block_diagonalize_no_waterfilling(multiUserChannel.big_H_no_ext_int)
+        # Wk_all_regular_bd = regularBD_obj.calc_receive_filter(newH)
+        # regularBD_obj._calc_linear_SINRs
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+
+
+
+        # # Test if the effective_throughput obtains a better spectral
+        # # efficiency then the capacity and not handling interference.
+        # self.assertGreater(se3 + tol, se2)
+        # self.assertGreater(se3 + tol, se)
+
+        # # Note that almost always the capacity criterion will achieve a
+        # # better spectral efficiency then not handling
+        # # interference. However, sometimes it can get a worse spectral
+        # # efficiency. We are not testing this here.
+
+
+# TODO: finish implementation
+class EnhancedBDTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_set_ext_int_handling_metric(self):
+        K = 3
+        iPu = 1e-3  # Power for each user (linear scale)
+        noise_var = 1e-4
+        pe = 0
+
+        # Create the EnhancedBD object
+        enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
+
+        # xxxxx Test if an assert is raised for invalid arguments xxxxxxxxx
+        with self.assertRaises(AttributeError):
+            enhancedBD_obj.set_ext_int_handling_metric('lala')
+
+        with self.assertRaises(AttributeError):
+            # If we set the metric to effective_throughput but not provide
+            # the modulator and packet_length attributes.
+            enhancedBD_obj.set_ext_int_handling_metric('effective_throughput')
+
+        with self.assertRaises(AttributeError):
+            enhancedBD_obj.set_ext_int_handling_metric('naive')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
+        psk_obj = modulators.PSK(4)
+        enhancedBD_obj.set_ext_int_handling_metric('effective_throughput',
+                                             {'modulator': psk_obj,
+                                              'packet_length': 120})
+        self.assertEqual(enhancedBD_obj._metric_func,
+                         blockdiagonalization._calc_effective_throughput)
+        self.assertEqual(enhancedBD_obj.metric_name, "effective_throughput")
+
+        metric_func_extra_args = enhancedBD_obj._metric_func_extra_args
+        self.assertEqual(metric_func_extra_args['modulator'], psk_obj)
+        self.assertEqual(metric_func_extra_args['packet_length'], 120)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
+        enhancedBD_obj.set_ext_int_handling_metric('capacity')
+        self.assertEqual(enhancedBD_obj._metric_func,
+                         calc_shannon_sum_capacity)
+        self.assertEqual(enhancedBD_obj.metric_name, "capacity")
+        # metric_func_extra_args is an empty dictionary for the capacity
+        # metric
+        self.assertEqual(enhancedBD_obj._metric_func_extra_args, {})
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to None xxxxxxxxxxxxxxxxxxxxxxxxxxx
+        enhancedBD_obj.set_ext_int_handling_metric(None)
+        self.assertIsNone(enhancedBD_obj._metric_func)
+        self.assertEqual(enhancedBD_obj.metric_name, "None")
+
+        # metric_func_extra_args is an empty dictionary for the None metric
+        self.assertEqual(enhancedBD_obj._metric_func_extra_args, {})
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test setting the metric to naive xxxxxxxxxxxxxxxxxxxxxxxxxx
+        enhancedBD_obj.set_ext_int_handling_metric('naive',
+                                             {'num_streams': 2})
+        self.assertIsNone(enhancedBD_obj._metric_func)
+        self.assertEqual(enhancedBD_obj.metric_name, "naive")
+
+        metric_func_extra_args = enhancedBD_obj._metric_func_extra_args
+        self.assertEqual(metric_func_extra_args['num_streams'], 2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_receive_filter(self):
+        # Equivalent channel without including stream reduction
+        Heq_k = randn_c(3, 3)
+        Re_k = randn_c(3, 2)
+        Re_k = np.dot(Re_k, Re_k.transpose().conjugate())
+
+        P1 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 1)
+        P2 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 2)
+        P3 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 3)
+
+        # Equivalent channels with the stream reduction
+        Heq_k_P1 = np.dot(Heq_k, P1)
+        Heq_k_P2 = np.dot(Heq_k, P2)
+        Heq_k_P3 = np.dot(Heq_k, P3)
+
+        W1 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k_P1, P1)
+        W2 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k_P2, P2)
+        W3 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k_P3, P3)
+        # Note that since P3 is actually including all streams, then the
+        # performance is the same as if we don't reduce streams. However W3
+        # and W_full are different matrices, since W3 has to compensate the
+        # right multiplication of the equivalent channel by P3 and W_full
+        # does not. The performance is the same because no energy is lost
+        # due to stream reduction and the Frobenius norms of W3 and W_full
+        # are equal.
+        W_full = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k)
+
+        np.testing.assert_array_almost_equal(np.dot(W1, np.dot(Heq_k, P1)),
+                                             np.eye(1))
+        np.testing.assert_array_almost_equal(np.dot(W2, np.dot(Heq_k, P2)),
+                                             np.eye(2))
+        np.testing.assert_array_almost_equal(np.dot(W3, np.dot(Heq_k, P3)),
+                                             np.eye(3))
+        np.testing.assert_array_almost_equal(np.dot(W_full, Heq_k),
+                                             np.eye(3))
+
+        overbar_P2 = calcProjectionMatrix(P2)
+        expected_W2 = np.dot(
+            np.linalg.pinv(np.dot(overbar_P2, np.dot(Heq_k, P2))),
+            overbar_P2)
+        np.testing.assert_array_almost_equal(expected_W2, W2)
+
+    # TODO: Implement-me
+    def test_calc_linear_SINRs(self):
+        # Heq_k_red = np.array([[2, 2], [1, 2]])
+        # # Usually this will be the inverse of Heq_k_red, but for testing
+        # # purposes we can specify a different Wk
+        # Wk = np.array([[1, 1], [1.5, 0.5]])
+        # Rk = np.array([[0.5, 0.2], [0.25, 0.1]])
+        # SINRs = blockdiagonalization.EnhancedBD._calc_linear_SINRs(Heq_k_red, Wk, Rk)
+        # print SINRs
+        pass
+
+    def test_calc_effective_throughput(self):
+        psk_obj = modulators.PSK(8)
+        packet_length = 60
+
+        SINRs_dB = np.array([11.4, 20.3])
+        sinrs_linear = dB2Linear(SINRs_dB)
+
+        expected_spectral_efficiency = np.sum(
+            psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
+
+        spectral_efficiency = blockdiagonalization._calc_effective_throughput(
+            sinrs_linear, psk_obj, packet_length)
+
+        np.testing.assert_array_almost_equal(spectral_efficiency,
+                                             expected_spectral_efficiency)
+
+    def test_block_diagonalize_no_waterfilling(self):
+        Nr = np.array([2, 2])
+        Nt = np.array([2, 2])
+        K = Nt.size
+        Nti = 1
+        iPu = 1e-1  # Power for each user (linear scale)
+        pe = 1e-3  # External interference power (in linear scale)
+        noise_var = 1e-4
+
+        # The modulator and packet_length are required in the
+        # effective_throughput metric case
+        psk_obj = modulators.PSK(4)
+        packet_length = 120
+
+        multiUserChannel = channels.MultiUserChannelMatrixExtInt()
+        multiUserChannel.randomize(Nr, Nt, K, Nti)
+
+        # Channel from all transmitters to the first receiver
+        H1 = multiUserChannel.get_channel_all_tx_to_rx_k(0)
+        # Channel from all transmitters to the second receiver
+        H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
+
+        # Create the enhancedBD object
+        enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
+
+        noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+
+        #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
+        enhancedBD_obj.set_ext_int_handling_metric(None)
+        (Ms_all, Wk_all, Ns_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        Ms1 = Ms_all[0]
+        Ms2 = Ms_all[1]
+
+        self.assertEqual(Ms1.shape[1], Ns_all[0])
+        self.assertEqual(Ms2.shape[1], Ns_all[1])
+
+        # Most likelly only one base station (the one with the worst
+        # channel) will employ a precoder with total power of `Pu`,
+        # while the other base stations will use less power.
+        tol = 1e-10
+        self.assertGreaterEqual(iPu + tol,
+                                np.linalg.norm(Ms1, 'fro') ** 2)
+        # 1e-12 is included to avoid false test fails due to small
+        # precision errors
+        self.assertGreaterEqual(iPu + tol,
+                                np.linalg.norm(Ms2, 'fro') ** 2)
+
+        # Test if the precoder block diagonalizes the channel
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, Ms1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, Ms2), 'fro'), 0)
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, Ms2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, Ms1), 'fro'), 0)
+
+        # Equivalent sinrs (in linear scale)
+        sinrs = np.empty(K, dtype=np.ndarray)
+        sinrs[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, Ms1),
+            Wk_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, Ms2),
+            Wk_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Now with the Naive Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
+        num_streams = 1
+        enhancedBD_obj.set_ext_int_handling_metric(
+            'naive',
+            {'num_streams': num_streams})
+
+        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        MsPk_naive_1 = MsPk_naive_all[0]
+        MsPk_naive_2 = MsPk_naive_all[1]
+
+        self.assertEqual(MsPk_naive_1.shape[1], Ns_naive_all[0])
+        self.assertEqual(MsPk_naive_2.shape[1], Ns_naive_all[1])
+        self.assertEqual(Ns_naive_all[0], num_streams)
+        self.assertEqual(Ns_naive_all[1], num_streams)
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_2, 'fro') ** 2)
+
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_naive_1), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_naive_2), 'fro'),
+            0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_naive_2), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_naive_1), 'fro'),
+            0)
+
+        sinrs4 = np.empty(K, dtype=np.ndarray)
+        sinrs4[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, MsPk_naive_1),
+            Wk_naive_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs4[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, MsPk_naive_2),
+            Wk_naive_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se4 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs4[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs4[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Now with the Fixed Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
+        num_streams = 1
+        enhancedBD_obj.set_ext_int_handling_metric(
+            'fixed',
+            {'num_streams': num_streams})
+
+        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        MsPk_fixed_1 = MsPk_fixed_all[0]
+        MsPk_fixed_2 = MsPk_fixed_all[1]
+
+        self.assertEqual(MsPk_fixed_1.shape[1], Ns_fixed_all[0])
+        self.assertEqual(MsPk_fixed_2.shape[1], Ns_fixed_all[1])
+        self.assertEqual(Ns_fixed_all[0], num_streams)
+        self.assertEqual(Ns_fixed_all[1], num_streams)
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_2, 'fro') ** 2)
+
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_fixed_1), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_fixed_2), 'fro'),
+            0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_fixed_2), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_fixed_1), 'fro'),
+            0)
+
+        sinrs5 = np.empty(K, dtype=np.ndarray)
+        sinrs5[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, MsPk_fixed_1),
+            Wk_fixed_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs5[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, MsPk_fixed_2),
+            Wk_fixed_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se5 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs5[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs5[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Handling external interference using the capacity metric
+        enhancedBD_obj.set_ext_int_handling_metric('capacity')
+        (MsPk_all, Wk_cap_all, Ns_cap_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        MsPk_cap_1 = MsPk_all[0]
+        MsPk_cap_2 = MsPk_all[1]
+
+        self.assertEqual(MsPk_cap_1.shape[1], Ns_cap_all[0])
+        self.assertEqual(MsPk_cap_2.shape[1], Ns_cap_all[1])
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_2, 'fro') ** 2)
+
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_cap_1), 'fro'), 0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_cap_2), 'fro'), 0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_cap_2), 'fro'), 0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'), 0)
+
+        sinrs2 = np.empty(K, dtype=np.ndarray)
+        sinrs2[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, MsPk_cap_1),
+            Wk_cap_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs2[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, MsPk_cap_2),
+            Wk_cap_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se2 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs2[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs2[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Handling external interference using the effective_throughput metric
+        enhancedBD_obj.set_ext_int_handling_metric(
+            'effective_throughput',
+            {'modulator': psk_obj,
+             'packet_length': packet_length})
+
+        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        MsPk_effec_1 = MsPk_effec_all[0]
+        MsPk_effec_2 = MsPk_effec_all[1]
+
+        self.assertEqual(MsPk_effec_1.shape[1], Ns_effec_all[0])
+        self.assertEqual(MsPk_effec_2.shape[1], Ns_effec_all[1])
+
+        # Test if the square of the Frobenius norm of the precoder of each
+        # user is equal to the power available to that user.
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_1, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_2, 'fro') ** 2)
+
+        # Test if MsPk really block diagonalizes the channel
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_effec_1), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_effec_2), 'fro'),
+            0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_effec_2), 'fro'),
+            0)
+        self.assertAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_effec_1), 'fro'),
+            0)
+
+        sinrs3 = np.empty(K, dtype=np.ndarray)
+        sinrs3[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H1, MsPk_effec_1),
+            Wk_effec_all[0],
+            noise_plus_int_cov_matrix[0])
+        sinrs3[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+            np.dot(H2, MsPk_effec_2),
+            Wk_effec_all[1],
+            noise_plus_int_cov_matrix[1])
+
+        # Spectral efficiency
+        se3 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+            linear2dB(sinrs3[0]),
+            packet_length))
+            +
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs3[1]),
+                packet_length)))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Test if the effective_throughput obtains a better spectral
+        # efficiency then the capacity and not handling interference.
+        self.assertGreater(se3 + tol, se2)
+        self.assertGreater(se3 + tol, se)
+
+        # Note that almost always the capacity criterion will achieve a
+        # better spectral efficiency then not handling
+        # interference. However, sometimes it can get a worse spectral
+        # efficiency. We are not testing this here.
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

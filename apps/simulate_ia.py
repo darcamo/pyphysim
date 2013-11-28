@@ -260,7 +260,11 @@ class IASimulationRunner(SimulationRunner):
     # iterative and we need to set the maximum number of iterations of the
     # iterative algorithm. We do this by implementing the
     # _on_simulate_current_params_start method.
+    #
+    # Furthermore, since we create the channel object in the __init__
+    # method, we need to re-seed the channel for each set of parameters.
     def _on_simulate_current_params_start(self, current_params):
+        self.multiUserChannel.re_seed()
         self.ia_solver.max_iterations = current_params['max_iterations']
 
 
@@ -346,8 +350,11 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         self.progressbar_message = "Closed-Form ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # Since we create the channel object in the __init__ method of
+    # IASimulationRunner, we need to re-seed the channel for each set of
+    # parameters.
     def _on_simulate_current_params_start(self, current_params):
-        pass
+        self.multiUserChannel.re_seed()
 
 
 class MinLeakageSimulationRunner(IASimulationRunner):
@@ -674,7 +681,7 @@ def simulate_mmse():
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Performs the simulation in parallel
+## Performs the simulation in parallel
 if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
@@ -686,7 +693,7 @@ if __name__ == '__main__':
     algorithms_to_simulate = [
         "Closed Form",
         "Alt Min",
-        # "Max SINR",
+        "Max SINR",
         "MMSE"
     ]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -865,6 +872,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
     from time import time
     from util.misc import pretty_time
@@ -888,7 +896,9 @@ if __name__ == '__main__1':
     toc = time()
     print "Elapsed Time: {0}".format(pretty_time(toc - tic))
 
-if __name__ == '__main__1':
+
+## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -903,8 +913,12 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]'.format(**params.parameters)
-    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
+    # base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]'.format(**params.parameters)
+    # base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_60]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
+
+
+    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[60]'.format(**params.parameters)
+    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[60]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -929,7 +943,7 @@ if __name__ == '__main__1':
     # SNR_min_leakage = np.array(min_leakage_results.params['SNR'])
     SNR_mmse = np.array(mmse_results.params['SNR'])
 
-    max_iterations = 5
+    max_iterations = 60
 
     ber_alt_min = alt_min_results.get_result_values_list(
         'ber',

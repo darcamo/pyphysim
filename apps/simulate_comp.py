@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Perform the simulation of CoMP transmission (using the BD algorithm).
+"""
+Perform the simulation of the Block Diagonalization (BD) algorithm
+(several variations of the BD algorithm).
 
 Different scenarios can be simulated such as:
 - 'RandomUsers': One user at each cell and users are placed at a random
@@ -11,7 +13,6 @@ Different scenarios can be simulated such as:
 
 The external interference is generated in the
 _prepare_external_interference method.
-
 """
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -26,8 +27,8 @@ from scipy import linalg as sp_linalg
 
 from util import simulations, conversion, misc
 from cell import cell
-from comp import comp
 from comm import pathloss, channels, modulators
+from comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
 # def sum_user_data(data_all_users, Ns_all_users):
@@ -73,15 +74,18 @@ from comm import pathloss, channels, modulators
 #     return data_all_users2
 
 
-class CompSimulationRunner(simulations.SimulationRunner):
-    """Implements a simulation runner for a CoMP transmission."""
+class BDSimulationRunner(simulations.SimulationRunner):
+    """
+    Implements a simulation runner for a Block Diagonalization
+    transmission.
+    """
 
     def __init__(self, ):
         simulations.SimulationRunner.__init__(self)
 
         # xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.cell_radius = 1.0  # Cell radius (in Km)
-        #self.min_dist = 0.250   # Minimum allowed distance from a bse
+        #self.min_dist = 0.250  # Minimum allowed distance from a bse
                                 # station and its user (same unit as
                                 # cell_radius)
         #self.users_per_cell = 1  # Number of users in each cell
@@ -122,7 +126,6 @@ class CompSimulationRunner(simulations.SimulationRunner):
         self.NSymbs = 500
         #SNR = np.linspace(0, 30, 7)
         SNR = np.linspace(0, 30, 16)
-        #SNR = np.array([5])
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
         self.N0 = -116.4  # Noise power (in dBm)
@@ -131,25 +134,14 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # transmit power (in dBm) of the ext. interference
         #Pe_dBm = np.array([-10000, -10, 0, 10, 20])
         Pe_dBm = np.array([-10, 0, 10])
-        #Pe_dBm = np.array([-10])
         self.params.add('Pe_dBm', Pe_dBm)
         self.params.set_unpack_parameter('Pe_dBm')
         self.ext_int_rank = 1  # Rank of the external interference
 
-        # xxxxx Metric used for the stream reduction xxxxxxxxxxxxxxxxxxxxxx
-        # Metric used for the stream reduction decision used by the
-        # CompExtInt class to mitigate external interference.
-
-        #ext_int_comp_metric = [None, 'capacity', 'effective_throughput']
-        #ext_int_comp_metric = [None, 'naive', 'fixed', 'capacity', 'effective_throughput']
-        #ext_int_comp_metric = ['effective_throughput']
-        #self.params.add('metric', ext_int_comp_metric)
-        #self.params.set_unpack_parameter('metric')
-
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 50  # Maximum number of repetitions for each
-                              # unpacked parameters set self.params
-                              # self.results
+        self.rep_max = 5000  # Maximum number of repetitions for each
+                             # unpacked parameters set self.params
+                             # self.results
 
         # max_bit_errors is used in the _keep_going method to stop the
         # simulation earlier if possible. We stop the simulation if the
@@ -252,12 +244,19 @@ class CompSimulationRunner(simulations.SimulationRunner):
         parameters.
 
         """
+        # IMPORTANT: Re-seed the channel and the noise RandomState
+        # objects. Without this, when you perform the simulation in
+        # parallel (call the simulate_in_parallel method(from the
+        # SimulationRunner class) you will get the same channel samples and
+        # noise for all parallel process.
+        self.multiuser_channel.re_seed()
+
         # xxxxx Calculates the transmit power at each base station. xxxxxxx
         # Because this value does not change in the different iterations of
         # _run_simulation, but only when the parameters change the
         # calculation is performed here in the
         # _on_simulate_current_params_start.
-        transmit_power = CompSimulationRunner._calc_transmit_power(
+        transmit_power = BDSimulationRunner._calc_transmit_power(
             current_params['SNR'],
             self.N0,
             self.cell_radius,
@@ -266,59 +265,66 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # External interference power
         self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
 
-        # xxxxx Create the CoMP object with the None metric xxxxxxxxxxxxxxx
-        self.comp_obj_None = comp.EnhancedBD(self.num_cells,
-                                             transmit_power,
-                                             self.noise_var,
-                                             self.pe)
-        self.comp_obj_None.set_ext_int_handling_metric(
+        # xxxxx Create the BD object with the None metric xxxxxxxxxxxxxxxxx
+        self.bd_obj_None = EnhancedBD(self.num_cells,
+                                      transmit_power,
+                                      self.noise_var,
+                                      self.pe)
+        self.bd_obj_None.set_ext_int_handling_metric(
             "None", {'modulator': self.modulator,
                      'packet_length': self.packet_length,
                      'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Create the CoMP object with the Naive metric xxxxxxxxxxxxxx
-        self.comp_obj_naive = comp.EnhancedBD(self.num_cells,
-                                              transmit_power,
-                                              self.noise_var,
-                                              self.pe)
-        self.comp_obj_naive.set_ext_int_handling_metric(
+        # xxxxx Create the BD object with the Naive metric xxxxxxxxxxxxxxxx
+        self.bd_obj_naive = EnhancedBD(self.num_cells,
+                                       transmit_power,
+                                       self.noise_var,
+                                       self.pe)
+        self.bd_obj_naive.set_ext_int_handling_metric(
             "naive", {'modulator': self.modulator,
                                        'packet_length': self.packet_length,
                                        'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Create the CoMP object with the fixed metric xxxxxxxxxxxxxxx
-        self.comp_obj_fixed = comp.EnhancedBD(self.num_cells,
-                                              transmit_power,
-                                              self.noise_var,
-                                              self.pe)
-        self.comp_obj_fixed.set_ext_int_handling_metric(
+        # xxxxx Create the BD object with the fixed metric xxxxxxxxxxxxxxxx
+        self.bd_obj_fixed = EnhancedBD(self.num_cells,
+                                       transmit_power,
+                                       self.noise_var,
+                                       self.pe)
+        self.bd_obj_fixed.set_ext_int_handling_metric(
             "fixed", {'modulator': self.modulator,
                                        'packet_length': self.packet_length,
                                        'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Create the CoMP object with the capacity metric xxxxxxxxxxx
-        self.comp_obj_capacity = comp.EnhancedBD(self.num_cells,
-                                                 transmit_power,
-                                                 self.noise_var,
-                                                 self.pe)
-        self.comp_obj_capacity.set_ext_int_handling_metric(
+        # xxxxx Create the BD object with the capacity metric xxxxxxxxxxxxx
+        self.bd_obj_capacity = EnhancedBD(self.num_cells,
+                                          transmit_power,
+                                          self.noise_var,
+                                          self.pe)
+        self.bd_obj_capacity.set_ext_int_handling_metric(
             "capacity", {'modulator': self.modulator,
                          'packet_length': self.packet_length,
                          'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xx Create the CoMP object with the effective_throughput metric xx
-        self.comp_obj_effec_throughput = comp.EnhancedBD(self.num_cells,
-                                                         transmit_power,
-                                                         self.noise_var,
-                                                         self.pe)
-        self.comp_obj_effec_throughput.set_ext_int_handling_metric(
+        # xx Create the BD object with the effective_throughput metric xxxx
+        self.bd_obj_effec_throughput = EnhancedBD(self.num_cells,
+                                                  transmit_power,
+                                                  self.noise_var,
+                                                  self.pe)
+        self.bd_obj_effec_throughput.set_ext_int_handling_metric(
             "effective_throughput", {'modulator': self.modulator,
                                      'packet_length': self.packet_length,
                                      'num_streams': 1})
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Create the BD object with whitening xxxxxxxxxxxxxxxxxxxxxxx
+        self.bd_obj_whitening = WhiteningBD(self.num_cells,
+                                      transmit_power,
+                                      self.noise_var,
+                                      self.pe)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -358,512 +364,112 @@ class CompSimulationRunner(simulations.SimulationRunner):
         # None Metric
         (MsPk_all_users_None,
          Wk_all_users_None,
-         Ns_all_users_None) = self.comp_obj_None.perform_BD_no_waterfilling(
+         Ns_all_users_None) = self.bd_obj_None.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # Naive Metric
         (MsPk_all_users_naive,
          Wk_all_users_naive,
-         Ns_all_users_naive) = self.comp_obj_naive.perform_BD_no_waterfilling(
+         Ns_all_users_naive) = self.bd_obj_naive.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # Fixed Metric
         (MsPk_all_users_fixed,
          Wk_all_users_fixed,
-         Ns_all_users_fixed) = self.comp_obj_fixed.perform_BD_no_waterfilling(
+         Ns_all_users_fixed) = self.bd_obj_fixed.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # Capacity Metric
         (MsPk_all_users_capacity,
          Wk_all_users_capacity,
-         Ns_all_users_capacity) = self.comp_obj_capacity.perform_BD_no_waterfilling(
+         Ns_all_users_capacity) = self.bd_obj_capacity.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
         # effective_throughput Metric
         (MsPk_all_users_effec_throughput,
          Wk_all_users_effec_throughput,
-         Ns_all_users_effec_throughput) = self.comp_obj_effec_throughput.perform_BD_no_waterfilling(
+         Ns_all_users_effec_throughput) = self.bd_obj_effec_throughput.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
 
+        (Ms_all_users_Whitening,
+         Wk_all_users_Whitening,
+         Ns_all_users_Whitening) = self.bd_obj_whitening.block_diagonalize_no_waterfilling(self.multiuser_channel)
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Below we will perform the transmission with the CoMP object for
-        # each different metric
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxx None Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
-        Ns_total_None = np.sum(Ns_all_users_None)
-        self.data_RS = np.random.RandomState(self.data_gen_seed)
-        input_data_None = self.data_RS.randint(
-            0,
-            self.M,
-            [Ns_total_None, self.NSymbs])
-        symbols_None = self.modulator.modulate(input_data_None)
-
-        # Prepare the transmit data. That is, the precoded_data as well as
-        # the external interferece sources' data.
-        precoded_data_None = np.dot(np.hstack(MsPk_all_users_None),
-                                        symbols_None)
+        # Since we will use the same data for the external interference no
+        # matter which metric is used, lets create that data here.
         external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
-        all_data_None = np.vstack([precoded_data_None,
-                                       external_int_data_all_metrics])
-
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        self.multiuser_channel.set_noise_seed(self.noise_seed)
-        received_signal_None = self.multiuser_channel.corrupt_concatenated_data(
-            all_data_None,
-            self.noise_var
-        )
-
-        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk_None = sp_linalg.block_diag(*Wk_all_users_None)
-        received_symbols_None = np.dot(Wk_None, received_signal_None)
-
-        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
-        decoded_symbols_None = self.modulator.demodulate(received_symbols_None)
-
-        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors_None = np.sum(decoded_symbols_None != input_data_None, 1)
-        # num_symbol_errors_None = sum_user_data(num_symbol_errors_None,
-        #                                            Ns_all_users_None)
-        num_symbols_None = np.ones(Ns_total_None) * input_data_None.shape[1]
-
-        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
-        num_bit_errors_None = misc.count_bit_errors(decoded_symbols_None, input_data_None, 1)
-        # num_bit_errors_None = sum_user_data(num_bit_errors_None,
-        #                                         Ns_all_users_None)
-
-        num_bits_None = num_symbols_None * np.log2(self.M)
-
-        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
-        ber_None = num_bit_errors_None / num_bits_None
-        per_None = 1. - ((1. - ber_None) ** self.packet_length)
-        num_packages_None = num_bits_None / self.packet_length
-        num_package_errors_None = per_None * num_packages_None
-
-        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
-        # nominal spectral Efficiency per stream
-        nominal_spec_effic_None = self.modulator.K
-        effective_spec_effic_None = (1 - per_None) * nominal_spec_effic_None
-
-        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
-        num_bit_errors_None = np.sum(num_bit_errors_None)
-        num_bits_None = np.sum(num_bits_None)
-        num_symbol_errors_None = np.sum(num_symbol_errors_None)
-        num_symbols_None = np.sum(num_symbols_None)
-        num_package_errors_None = np.sum(num_package_errors_None)
-        num_packages_None = np.sum(num_packages_None)
-        effective_spec_effic_None = np.sum(effective_spec_effic_None)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxx naive Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
-        Ns_total_naive = np.sum(Ns_all_users_naive)
-        self.data_RS = np.random.RandomState(self.data_gen_seed)
-        input_data_naive = self.data_RS.randint(
-            0,
-            self.M,
-            [Ns_total_naive, self.NSymbs])
-        symbols_naive = self.modulator.modulate(input_data_naive)
-
-        # Prepare the transmit data. That is, the precoded_data as well as
-        # the external interferece sources' data.
-        precoded_data_naive = np.dot(np.hstack(MsPk_all_users_naive),
-                                        symbols_naive)
-        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c(
-        #     self.ext_int_rank, self.NSymbs)
-        all_data_naive = np.vstack([precoded_data_naive,
-                                       external_int_data_all_metrics])
-
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        self.multiuser_channel.set_noise_seed(self.noise_seed)
-        received_signal_naive = self.multiuser_channel.corrupt_concatenated_data(
-            all_data_naive,
-            self.noise_var
-        )
-
-        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk_naive = sp_linalg.block_diag(*Wk_all_users_naive)
-        received_symbols_naive = np.dot(Wk_naive, received_signal_naive)
-
-        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
-        decoded_symbols_naive = self.modulator.demodulate(received_symbols_naive)
-
-        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors_naive = np.sum(decoded_symbols_naive != input_data_naive, 1)
-        # num_symbol_errors_naive = sum_user_data(num_symbol_errors_naive,
-        #                                            Ns_all_users_naive)
-        num_symbols_naive = np.ones(Ns_total_naive) * input_data_naive.shape[1]
-
-        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
-        num_bit_errors_naive = misc.count_bit_errors(decoded_symbols_naive, input_data_naive, 1)
-        # num_bit_errors_naive = sum_user_data(num_bit_errors_naive,
-        #                                         Ns_all_users_naive)
-
-        num_bits_naive = num_symbols_naive * np.log2(self.M)
-
-        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
-        ber_naive = num_bit_errors_naive / num_bits_naive
-        per_naive = 1. - ((1. - ber_naive) ** self.packet_length)
-        num_packages_naive = num_bits_naive / self.packet_length
-        num_package_errors_naive = per_naive * num_packages_naive
-
-        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
-        # nominal spectral Efficiency per stream
-        nominal_spec_effic_naive = self.modulator.K
-        effective_spec_effic_naive = (1 - per_naive) * nominal_spec_effic_naive
-
-        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
-        num_bit_errors_naive = np.sum(num_bit_errors_naive)
-        num_bits_naive = np.sum(num_bits_naive)
-        num_symbol_errors_naive = np.sum(num_symbol_errors_naive)
-        num_symbols_naive = np.sum(num_symbols_naive)
-        num_package_errors_naive = np.sum(num_package_errors_naive)
-        num_packages_naive = np.sum(num_packages_naive)
-        effective_spec_effic_naive = np.sum(effective_spec_effic_naive)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxx fixed Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
-        Ns_total_fixed = np.sum(Ns_all_users_fixed)
-        self.data_RS = np.random.RandomState(self.data_gen_seed)
-        input_data_fixed = self.data_RS.randint(
-            0,
-            self.M,
-            [Ns_total_fixed, self.NSymbs])
-        symbols_fixed = self.modulator.modulate(input_data_fixed)
-
-        # Prepare the transmit data. That is, the precoded_data as well as
-        # the external interferece sources' data.
-        precoded_data_fixed = np.dot(np.hstack(MsPk_all_users_fixed),
-                                        symbols_fixed)
-        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c(
-        #     self.ext_int_rank, self.NSymbs)
-        all_data_fixed = np.vstack([precoded_data_fixed,
-                                       external_int_data_all_metrics])
-
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        self.multiuser_channel.set_noise_seed(self.noise_seed)
-        received_signal_fixed = self.multiuser_channel.corrupt_concatenated_data(
-            all_data_fixed,
-            self.noise_var
-        )
-
-        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk_fixed = sp_linalg.block_diag(*Wk_all_users_fixed)
-        received_symbols_fixed = np.dot(Wk_fixed, received_signal_fixed)
-
-        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
-        decoded_symbols_fixed = self.modulator.demodulate(received_symbols_fixed)
-
-        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors_fixed = np.sum(decoded_symbols_fixed != input_data_fixed, 1)
-        # num_symbol_errors_fixed = sum_user_data(num_symbol_errors_fixed,
-        #                                            Ns_all_users_fixed)
-        num_symbols_fixed = np.ones(Ns_total_fixed) * input_data_fixed.shape[1]
-
-        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
-        num_bit_errors_fixed = misc.count_bit_errors(decoded_symbols_fixed, input_data_fixed, 1)
-        # num_bit_errors_fixed = sum_user_data(num_bit_errors_fixed,
-        #                                         Ns_all_users_fixed)
-
-        num_bits_fixed = num_symbols_fixed * np.log2(self.M)
-
-        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
-        ber_fixed = num_bit_errors_fixed / num_bits_fixed
-        per_fixed = 1. - ((1. - ber_fixed) ** self.packet_length)
-        num_packages_fixed = num_bits_fixed / self.packet_length
-        num_package_errors_fixed = per_fixed * num_packages_fixed
-
-        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
-        # nominal spectral Efficiency per stream
-        nominal_spec_effic_fixed = self.modulator.K
-        effective_spec_effic_fixed = (1 - per_fixed) * nominal_spec_effic_fixed
-
-        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
-        num_bit_errors_fixed = np.sum(num_bit_errors_fixed)
-        num_bits_fixed = np.sum(num_bits_fixed)
-        num_symbol_errors_fixed = np.sum(num_symbol_errors_fixed)
-        num_symbols_fixed = np.sum(num_symbols_fixed)
-        num_package_errors_fixed = np.sum(num_package_errors_fixed)
-        num_packages_fixed = np.sum(num_packages_fixed)
-        effective_spec_effic_fixed = np.sum(effective_spec_effic_fixed)
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxx capacity Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
-        Ns_total_capacity = np.sum(Ns_all_users_capacity)
-        self.data_RS = np.random.RandomState(self.data_gen_seed)
-        input_data_capacity = self.data_RS.randint(
-            0,
-            self.M,
-            [Ns_total_capacity, self.NSymbs])
-        symbols_capacity = self.modulator.modulate(input_data_capacity)
-
-        # Prepare the transmit data. That is, the precoded_data as well as
-        # the external interferece sources' data.
-        precoded_data_capacity = np.dot(np.hstack(MsPk_all_users_capacity),
-                                        symbols_capacity)
-        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c(
-        #     self.ext_int_rank, self.NSymbs)
-        all_data_capacity = np.vstack([precoded_data_capacity,
-                                       external_int_data_all_metrics])
-
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        self.multiuser_channel.set_noise_seed(self.noise_seed)
-        received_signal_capacity = self.multiuser_channel.corrupt_concatenated_data(
-            all_data_capacity,
-            self.noise_var
-        )
-
-        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk_capacity = sp_linalg.block_diag(*Wk_all_users_capacity)
-        received_symbols_capacity = np.dot(Wk_capacity, received_signal_capacity)
-
-        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
-        decoded_symbols_capacity = self.modulator.demodulate(received_symbols_capacity)
-
-        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors_capacity = np.sum(decoded_symbols_capacity != input_data_capacity, 1)
-        # num_symbol_errors_capacity = sum_user_data(num_symbol_errors_capacity,
-        #                                            Ns_all_users_capacity)
-        num_symbols_capacity = np.ones(Ns_total_capacity) * input_data_capacity.shape[1]
-
-        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
-        num_bit_errors_capacity = misc.count_bit_errors(decoded_symbols_capacity, input_data_capacity, 1)
-        # num_bit_errors_capacity = sum_user_data(num_bit_errors_capacity,
-        #                                         Ns_all_users_capacity)
-
-        num_bits_capacity = num_symbols_capacity * np.log2(self.M)
-
-        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
-        ber_capacity = num_bit_errors_capacity / num_bits_capacity
-        per_capacity = 1. - ((1. - ber_capacity) ** self.packet_length)
-        num_packages_capacity = num_bits_capacity / self.packet_length
-        num_package_errors_capacity = per_capacity * num_packages_capacity
-
-        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
-        # nominal spectral Efficiency per stream
-        nominal_spec_effic_capacity = self.modulator.K
-        effective_spec_effic_capacity = (1 - per_capacity) * nominal_spec_effic_capacity
-
-        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
-        num_bit_errors_capacity = np.sum(num_bit_errors_capacity)
-        num_bits_capacity = np.sum(num_bits_capacity)
-        num_symbol_errors_capacity = np.sum(num_symbol_errors_capacity)
-        num_symbols_capacity = np.sum(num_symbols_capacity)
-        num_package_errors_capacity = np.sum(num_package_errors_capacity)
-        num_packages_capacity = np.sum(num_packages_capacity)
-        effective_spec_effic_capacity = np.sum(effective_spec_effic_capacity)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxx effec_throughput Case xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxx Generate the transmit symbols xxxxxxxxxxxxxxxxxxxxxxxx
-        Ns_total_effec_throughput = np.sum(Ns_all_users_effec_throughput)
-        self.data_RS = np.random.RandomState(self.data_gen_seed)
-        input_data_effec_throughput = self.data_RS.randint(
-            0,
-            self.M,
-            [Ns_total_effec_throughput, self.NSymbs])
-        symbols_effec_throughput = self.modulator.modulate(input_data_effec_throughput)
-
-        # Prepare the transmit data. That is, the precoded_data as well as
-        # the external interferece sources' data.
-        precoded_data_effec_throughput = np.dot(np.hstack(MsPk_all_users_effec_throughput),
-                                        symbols_effec_throughput)
-        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c(
-        #     self.ext_int_rank, self.NSymbs)
-        all_data_effec_throughput = np.vstack([precoded_data_effec_throughput,
-                                       external_int_data_all_metrics])
-
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
-        self.multiuser_channel.set_noise_seed(self.noise_seed)
-        received_signal_effec_throughput = self.multiuser_channel.corrupt_concatenated_data(
-            all_data_effec_throughput,
-            self.noise_var
-        )
-
-        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk_effec_throughput = sp_linalg.block_diag(*Wk_all_users_effec_throughput)
-        received_symbols_effec_throughput = np.dot(Wk_effec_throughput, received_signal_effec_throughput)
-
-        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
-        decoded_symbols_effec_throughput = self.modulator.demodulate(received_symbols_effec_throughput)
-
-        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
-        num_symbol_errors_effec_throughput = np.sum(decoded_symbols_effec_throughput != input_data_effec_throughput, 1)
-        # num_symbol_errors_effec_throughput = sum_user_data(num_symbol_errors_effec_throughput,
-        #                                            Ns_all_users_effec_throughput)
-        num_symbols_effec_throughput = np.ones(Ns_total_effec_throughput) * input_data_effec_throughput.shape[1]
-
-        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
-        num_bit_errors_effec_throughput = misc.count_bit_errors(decoded_symbols_effec_throughput, input_data_effec_throughput, 1)
-        # num_bit_errors_effec_throughput = sum_user_data(num_bit_errors_effec_throughput,
-        #                                         Ns_all_users_effec_throughput)
-
-        num_bits_effec_throughput = num_symbols_effec_throughput * np.log2(self.M)
-
-        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
-        ber_effec_throughput = num_bit_errors_effec_throughput / num_bits_effec_throughput
-        per_effec_throughput = 1. - ((1. - ber_effec_throughput) ** self.packet_length)
-        num_packages_effec_throughput = num_bits_effec_throughput / self.packet_length
-        num_package_errors_effec_throughput = per_effec_throughput * num_packages_effec_throughput
-
-        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
-        # nominal spectral Efficiency per stream
-        nominal_spec_effic_effec_throughput = self.modulator.K
-        effective_spec_effic_effec_throughput = (1 - per_effec_throughput) * nominal_spec_effic_effec_throughput
-
-        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
-        num_bit_errors_effec_throughput = np.sum(num_bit_errors_effec_throughput)
-        num_bits_effec_throughput = np.sum(num_bits_effec_throughput)
-        num_symbol_errors_effec_throughput = np.sum(num_symbol_errors_effec_throughput)
-        num_symbols_effec_throughput = np.sum(num_symbols_effec_throughput)
-        num_package_errors_effec_throughput = np.sum(num_package_errors_effec_throughput)
-
-        num_packages_effec_throughput = np.sum(num_packages_effec_throughput)
-        effective_spec_effic_effec_throughput = np.sum(effective_spec_effic_effec_throughput)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxx Return the Simulation results for this iteration xxxxxxxxxx
+        # xxx Run the Simulation and get the results for each metric xxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # None metric
-        ber_result_None = simulations.Result.create(
-            'ber_None',
-            simulations.Result.RATIOTYPE,
-            num_bit_errors_None,
-            num_bits_None)
-        ser_result_None = simulations.Result.create(
-            'ser_None',
-            simulations.Result.RATIOTYPE,
-            num_symbol_errors_None,
-            num_symbols_None)
+        (ber_result_None,
+         ser_result_None,
+         per_result_None,
+         spec_effic_result_None) = self.__simulate_for_one_metric(
+             Ns_all_users_None,
+             external_int_data_all_metrics,
+             MsPk_all_users_None,
+             Wk_all_users_None,
+             'None')
 
-        per_result_None = simulations.Result.create(
-            'per_None',
-            simulations.Result.RATIOTYPE,
-            num_package_errors_None,
-            num_packages_None)
+        # naive metric
+        (ber_result_naive,
+         ser_result_naive,
+         per_result_naive,
+         spec_effic_result_naive) = self.__simulate_for_one_metric(
+             Ns_all_users_naive,
+             external_int_data_all_metrics,
+             MsPk_all_users_naive,
+             Wk_all_users_naive,
+             'naive')
 
-        spec_effic_result_None = simulations.Result.create(
-            'spec_effic_None',
-            simulations.Result.RATIOTYPE,
-            effective_spec_effic_None,
-            1)
+        # fixed metric
+        (ber_result_fixed,
+         ser_result_fixed,
+         per_result_fixed,
+         spec_effic_result_fixed) = self.__simulate_for_one_metric(
+             Ns_all_users_fixed,
+             external_int_data_all_metrics,
+             MsPk_all_users_fixed,
+             Wk_all_users_fixed,
+             'fixed')
 
-        # Naive metric
-        ber_result_naive = simulations.Result.create(
-            'ber_naive',
-            simulations.Result.RATIOTYPE,
-            num_bit_errors_naive,
-            num_bits_naive)
-        ser_result_naive = simulations.Result.create(
-            'ser_naive',
-            simulations.Result.RATIOTYPE,
-            num_symbol_errors_naive,
-            num_symbols_naive)
+        # capacity metric
+        (ber_result_capacity,
+         ser_result_capacity,
+         per_result_capacity,
+         spec_effic_result_capacity) = self.__simulate_for_one_metric(
+             Ns_all_users_capacity,
+             external_int_data_all_metrics,
+             MsPk_all_users_capacity,
+             Wk_all_users_capacity,
+             'capacity')
 
-        per_result_naive = simulations.Result.create(
-            'per_naive',
-            simulations.Result.RATIOTYPE,
-            num_package_errors_naive,
-            num_packages_naive)
+        # effective throughput metric
+        (ber_result_effec_throughput,
+         ser_result_effec_throughput,
+         per_result_effec_throughput,
+         spec_effic_result_effec_throughput) = self.__simulate_for_one_metric(
+             Ns_all_users_effec_throughput,
+             external_int_data_all_metrics,
+             MsPk_all_users_effec_throughput,
+             Wk_all_users_effec_throughput,
+             'effec_throughput')
 
-        spec_effic_result_naive = simulations.Result.create(
-            'spec_effic_naive',
-            simulations.Result.RATIOTYPE,
-            effective_spec_effic_naive,
-            1)
-
-        # Fixed metric
-        ber_result_fixed = simulations.Result.create(
-            'ber_fixed',
-            simulations.Result.RATIOTYPE,
-            num_bit_errors_fixed,
-            num_bits_fixed)
-        ser_result_fixed = simulations.Result.create(
-            'ser_fixed',
-            simulations.Result.RATIOTYPE,
-            num_symbol_errors_fixed,
-            num_symbols_fixed)
-
-        per_result_fixed = simulations.Result.create(
-            'per_fixed',
-            simulations.Result.RATIOTYPE,
-            num_package_errors_fixed,
-            num_packages_fixed)
-
-        spec_effic_result_fixed = simulations.Result.create(
-            'spec_effic_fixed',
-            simulations.Result.RATIOTYPE,
-            effective_spec_effic_fixed,
-            1)
-
-        # Capacity metric
-        ber_result_capacity = simulations.Result.create(
-            'ber_capacity',
-            simulations.Result.RATIOTYPE,
-            num_bit_errors_capacity,
-            num_bits_capacity)
-        ser_result_capacity = simulations.Result.create(
-            'ser_capacity',
-            simulations.Result.RATIOTYPE,
-            num_symbol_errors_capacity,
-            num_symbols_capacity)
-
-        per_result_capacity = simulations.Result.create(
-            'per_capacity',
-            simulations.Result.RATIOTYPE,
-            num_package_errors_capacity,
-            num_packages_capacity)
-
-        spec_effic_result_capacity = simulations.Result.create(
-            'spec_effic_capacity',
-            simulations.Result.RATIOTYPE,
-            effective_spec_effic_capacity,
-            1)
-
-        # Effective Throughput metric
-        ber_result_effec_throughput = simulations.Result.create(
-            'ber_effec_throughput',
-            simulations.Result.RATIOTYPE,
-            num_bit_errors_effec_throughput,
-            num_bits_effec_throughput)
-        ser_result_effec_throughput = simulations.Result.create(
-            'ser_effec_throughput',
-            simulations.Result.RATIOTYPE,
-            num_symbol_errors_effec_throughput,
-            num_symbols_effec_throughput)
-
-        per_result_effec_throughput = simulations.Result.create(
-            'per_effec_throughput',
-            simulations.Result.RATIOTYPE,
-            num_package_errors_effec_throughput,
-            num_packages_effec_throughput)
-
-        spec_effic_result_effec_throughput = simulations.Result.create(
-            'spec_effic_effec_throughput',
-            simulations.Result.RATIOTYPE,
-            effective_spec_effic_effec_throughput,
-            1)
+        # Whitening BD
+        (ber_result_Whitening,
+         ser_result_Whitening,
+         per_result_Whitening,
+         spec_effic_result_Whitening) = self.__simulate_for_one_metric(
+             Ns_all_users_Whitening,
+             external_int_data_all_metrics,
+             Ms_all_users_Whitening,
+             Wk_all_users_Whitening,
+             'Whitening')
 
         simResults = simulations.SimulationResults()
         # Add the 'None' results
@@ -895,33 +501,142 @@ class CompSimulationRunner(simulations.SimulationRunner):
         simResults.add_result(ser_result_effec_throughput)
         simResults.add_result(per_result_effec_throughput)
         simResults.add_result(spec_effic_result_effec_throughput)
+
+        # Add the 'Whitening' results
+        simResults.add_result(ber_result_Whitening)
+        simResults.add_result(ser_result_Whitening)
+        simResults.add_result(per_result_Whitening)
+        simResults.add_result(spec_effic_result_Whitening)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # print
-        # print "SNR: {0}".format(current_parameters['SNR'])
-        # print "None: {0}".format(effective_spec_effic_None)
-        # print "Naive: {0}".format(effective_spec_effic_naive)
-        # print "Fixed: {0}".format(np.sum(effective_spec_effic_fixed))
-        # print "Capacity: {0}".format(effective_spec_effic_capacity)
-        # print "Effec_Throu: {0}".format(effective_spec_effic_effec_throughput)
-        # print
-        # print "ber_None: {0}".format(ber_result_None.get_result())
-        # print "ber_naive: {0}".format(ber_result_naive.get_result())
-        # print "ber_fixed: {0}".format(ber_result_fixed.get_result())
-        # print "ber_capacity: {0}".format(ber_result_capacity.get_result())
-        # print "ber_effec_throughput: {0}".format(ber_result_effec_throughput.get_result())
-        # print
-        # print "Ns_all_users_None: {0}".format(Ns_all_users_None)
-        # print "Ns_all_users_naive: {0}".format(Ns_all_users_naive)
-        # print "Ns_all_users_effec_throughput: {0}".format(Ns_all_users_effec_throughput)
-        # print "Ns_all_users_fixed: {0}".format(Ns_all_users_fixed)
-        # print "Ns_all_users_capacity: {0}".format(Ns_all_users_capacity)
-
-        # print
-        # print ber_capacity
-        # print ber_effec_throughput
-
         return simResults
+
+    def __simulate_for_one_metric(self,
+            Ns_all_users,
+            external_int_data_all_metrics,
+            MsPk_all_users,
+            Wk_all_users,
+            metric_name='None'):
+        """
+        This method is only called inside the _run_simulation method.
+
+        This method has the common code that is execute for each metric
+        inside the _run_simulation method.
+
+        Parameters
+        ----------
+        Ns_all_users : 1D numpy array of size K.
+            Number of streams for each user. This variable controls how
+            many data streams will be generated for each user of the K
+            users.
+        external_int_data_all_metrics : 2D numpy array
+            The data of the external interference sources.
+        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            The precoders of all users returned by the block diagonalize
+            method for the given metric.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            The receive filter for all users.
+        metric_name : string
+            Metric name. This string will be appended to each result name.
+        """
+        Ns_total = np.sum(Ns_all_users)
+        self.data_RS = np.random.RandomState(self.data_gen_seed)
+        input_data = self.data_RS.randint(
+            0,
+            self.M,
+            [Ns_total, self.NSymbs])
+        symbols = self.modulator.modulate(input_data)
+
+        # Prepare the transmit data. That is, the precoded_data as well as
+        # the external interferece sources' data.
+        precoded_data = np.dot(np.hstack(MsPk_all_users),
+                                        symbols)
+        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
+        all_data = np.vstack([precoded_data,
+                              external_int_data_all_metrics])
+
+        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
+        self.multiuser_channel.set_noise_seed(self.noise_seed)
+        received_signal = self.multiuser_channel.corrupt_concatenated_data(
+            all_data,
+            self.noise_var
+        )
+
+        # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Wk = sp_linalg.block_diag(*Wk_all_users)
+        received_symbols = np.dot(Wk, received_signal)
+
+        # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
+        decoded_symbols = self.modulator.demodulate(received_symbols)
+
+        # xxxxxxxxxx Calculates the Symbol Error Rate xxxxxxxxxxxxxxxxxxxxx
+        num_symbol_errors = np.sum(decoded_symbols != input_data, 1)
+        # num_symbol_errors = sum_user_data(num_symbol_errors,
+        #                                            Ns_all_users)
+        num_symbols = np.ones(Ns_total) * input_data.shape[1]
+
+        # xxxxxxxxxx Calculates the Bit Error Rate xxxxxxxxxxxxxxxxxxxxxxxx
+        num_bit_errors = misc.count_bit_errors(decoded_symbols, input_data, 1)
+        # num_bit_errors = sum_user_data(num_bit_errors,
+        #                                         Ns_all_users)
+
+        num_bits = num_symbols * np.log2(self.M)
+
+        # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
+        ber = num_bit_errors / num_bits
+        per = 1. - ((1. - ber) ** self.packet_length)
+        num_packages = num_bits / self.packet_length
+        num_package_errors = per * num_packages
+
+        # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
+        # nominal spectral Efficiency per stream
+        nominal_spec_effic = self.modulator.K
+        effective_spec_effic = (1 - per) * nominal_spec_effic
+
+        # xxxxx Map the per stream metric to a global metric xxxxxxxxxxxxxx
+        num_bit_errors = np.sum(num_bit_errors)
+        num_bits = np.sum(num_bits)
+        num_symbol_errors = np.sum(num_symbol_errors)
+        num_symbols = np.sum(num_symbols)
+        num_package_errors = np.sum(num_package_errors)
+        num_packages = np.sum(num_packages)
+        effective_spec_effic = np.sum(effective_spec_effic)
+
+        # None metric
+        ber_result = simulations.Result.create(
+            'ber_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            num_bit_errors,
+            num_bits)
+        ser_result = simulations.Result.create(
+            'ser_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            num_symbol_errors,
+            num_symbols)
+
+        per_result = simulations.Result.create(
+            'per_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            num_package_errors,
+            num_packages)
+
+        spec_effic_result = simulations.Result.create(
+            'spec_effic_{0}'.format(metric_name),
+            simulations.Result.RATIOTYPE,
+            effective_spec_effic,
+            1)
+
+        return (ber_result,
+                ser_result,
+                per_result,
+                spec_effic_result)
+        # return (num_packages,
+        #         effective_spec_effic,
+        #         num_symbols,
+        #         num_symbol_errors,
+        #         num_bit_errors,
+        #         num_bits,
+        #         num_package_errors)
 
     # def _keep_going(self, current_sim_results, current_rep):
     #     ber_result = current_sim_results['ber'][-1]
@@ -930,7 +645,8 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
     @staticmethod
     def _calc_transmit_power(SNR_dB, N0_dBm, cell_radius, path_loss_obj):
-        """Calculates the required transmit power (in linear scale) to
+        """
+        Calculates the required transmit power (in linear scale) to
         achieve the desired mean SNR value at the cell border.
 
         This method calculates the path loss at the cell border and
@@ -939,10 +655,15 @@ class CompSimulationRunner(simulations.SimulationRunner):
 
         Parameters
         ----------
-        SNR_dB : SNR value (in dB)
-        N0_dBm : Noise power (in dBm)
-        cell_radius : Cell radius (in Km)
-        path_loss_obj : Object of a pathloss class used to calculate the path loss.
+        SNR_dB : float
+            SNR value (in dB)
+        N0_dBm : float
+            Noise power (in dBm)
+        cell_radius : float
+            Cell radius (in Km)
+        path_loss_obj : Path Loss object
+            Object of a pathloss class used to calculate the path loss (see
+            `comm.pathloss`.
 
         Returns
         -------
@@ -1105,6 +826,8 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
     spec_effic_fixed = np.array(results.get_result_values_list('spec_effic_fixed'))
     spec_effic_capacity = np.array(results.get_result_values_list('spec_effic_capacity'))
     spec_effic_effective_throughput = np.array(results.get_result_values_list('spec_effic_effec_throughput'))
+    spec_effic_Whitening = np.array(results.get_result_values_list('spec_effic_Whitening'))
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -1136,6 +859,11 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
             'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
+    ax.plot(SNR, spec_effic_Whitening[result_indexes],
+            'c-^', label='Whitening BD')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     plt.xlabel('SNR (dB)')
     plt.ylabel('Spectral Efficiency (bits/channel use)')
     ax.set_title('Enhanced BD simulation: Spectral Efficiency')
@@ -1156,6 +884,7 @@ def plot_per_all_metrics(results, Pe_dBm):
     per_fixed = np.array(results.get_result_values_list('per_fixed'))
     per_capacity = np.array(results.get_result_values_list('per_capacity'))
     per_effective_throughput = np.array(results.get_result_values_list('per_effec_throughput'))
+    per_effective_whitening = np.array(results.get_result_values_list('per_Whitening'))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -1187,6 +916,11 @@ def plot_per_all_metrics(results, Pe_dBm):
             'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
+    ax.plot(SNR, per_effective_whitening[result_indexes],
+            'c-^', label='Whitening BD')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     plt.xlabel('SNR (dB)')
     plt.ylabel('Packet Error Rate')
     ax.set_title('Enhanced BD simulation: Packet Error Rate')
@@ -1206,12 +940,12 @@ if __name__ == '__main__':
     except ImportError:
         _MATPLOTLIB_AVAILABLE = False
 
-    from apps.simulate_comp import CompSimulationRunner
+    from apps.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'comp_results'
-    runner = CompSimulationRunner()
+    results_filename = 'bd_results'
+    runner = BDSimulationRunner()
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1262,7 +996,7 @@ if __name__ == '__main__':
     #
     #
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'comp_results'
+    results_filename = 'bd_results'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 

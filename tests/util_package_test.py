@@ -24,6 +24,11 @@ import glob
 from time import sleep
 
 try:
+    import pandas as pd
+except Exception:
+    pass
+
+try:
     from IPython.parallel import CompositeError
 except Exception:  # pragma: no cover
     pass
@@ -77,16 +82,57 @@ class _DummyRunner(SimulationRunner):
         self.params.set_unpack_parameter('extra')
         self.delete_partial_results_bool = True
 
-    @staticmethod
-    def _run_simulation(current_params):
+    def _run_simulation(self, current_params):
         SNR = current_params['SNR']
         bias = current_params['bias']
         extra = current_params['extra']
         sim_results = SimulationResults()
 
         value = 1.2 * SNR + bias + extra
-        # The correct result will be SNR * 1.2
+        # The correct result will be SNR * 1.2 + 1.3 + extra
         sim_results.add_new_result('lala', Result.RATIOTYPE, value, 1)
+        return sim_results
+
+
+class _DummyRunnerRandom(SimulationRunner):
+    def __init__(self):
+        SimulationRunner.__init__(self)
+        # Set the progress bar message to None to avoid print the
+        # progressbar in these testes.
+        self.rep_max = 2
+        self.update_progress_function_style = None
+        # Now we add a dummy parameter to our runner object
+        self.params.add('P', np.array([2., 2., 2., 2., 2.]))
+        self.params.set_unpack_parameter('P')
+        self.delete_partial_results_bool = True
+
+        self.rs = np.random.RandomState()
+        self.rs2 = np.random.RandomState()
+
+    def _on_simulate_current_params_start(self, current_params):
+        # Ideally we should re-seed any random number sources stored in a
+        # SimulationRunner object. However, for testing purposes we will
+        # only re-seed self.rs2 here.
+        self.rs2.seed()
+
+    def _run_simulation(self, current_params):
+        P = current_params['P']
+        sim_results = SimulationResults()
+
+        # This will have a different value for eacn simulation parameters
+        random_value = np.random.rand()
+        value = 1.2 * P + random_value
+        sim_results.add_new_result('result1', Result.RATIOTYPE, value, 1)
+
+        random_value2 = self.rs.rand()
+        value2 = 1.2 * P + random_value2
+        sim_results.add_new_result('result2', Result.RATIOTYPE, value2, 1)
+
+        #self.rs2.seed()
+        random_value3 = self.rs2.rand()
+        value3 = 1.2 * P + random_value3
+        sim_results.add_new_result('result3', Result.RATIOTYPE, value3, 1)
+
         return sim_results
 
 
@@ -954,6 +1000,34 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
 
+    # def test_to_pandas_series_of_dataframe(self):
+    #     result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+    #     result1.update(20)
+    #     result1.update(13)
+    #     result1.update(14)
+    #     result1.update(11)
+    #     s1 = result1.to_pandas_series_of_dataframe()
+    #     expected_s1 = pd.Series(data=[20,13,14,11])
+    #     self.assertTrue(all(s1 == expected_s1))
+
+    #     result2 = Result('name2', Result.MISCTYPE, accumulate_values=True)
+    #     result2.update('string')
+    #     result2.update(7)
+    #     result2.update(-1)
+    #     result2.update('hum')
+    #     s2 = result2.to_pandas_series_of_dataframe()
+    #     expected_s2 = pd.Series(data=['string',7,-1,'hum'])
+    #     self.assertTrue(all(s2 == expected_s2))
+
+    #     result3 = Result('name3', Result.RATIOTYPE, accumulate_values=True)
+    #     result3.update(20, 30)
+    #     result3.update(13, 15)
+    #     result3.update(14, 20)
+    #     result3.update(11, 22)
+    #     df1 = result3.to_pandas_series_of_dataframe()
+    #     expected_df1 = pd.DataFrame({'t': [30,15,20,22], 'v': [20,13,14,11]})
+    #     self.assertTrue(all(df1 == expected_df1))
+
 
 class SimulationResultsTestCase(unittest.TestCase):
     """Unit-tests for the SimulationResults class in the simulations
@@ -1448,7 +1522,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
             # We use block=True to ensure that all engines have modified
             # their path to include the folder with the simulator before we
             # create the load lanced view in the following.
-            dview.execute('sys.path.append("{0}")'.format(current_dir), block=True)
+            dview.execute('sys.path.append("{0}")'.format(current_dir),
+                          block=True)
 
             lview = cl.load_balanced_view()
             if len(lview) == 0:
@@ -1461,7 +1536,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         from util_package_test import _DummyRunner
         runner = _DummyRunner()
         runner.progressbar_message = 'bla'
-        runner.update_progress_function_style = 'text1'
+        #runner.update_progress_function_style = 'text1'
 
         # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
         filename = 'runner_results_bias_{bias}'
@@ -1516,6 +1591,91 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Delete all *.pickle files in the same folder
         _delete_pickle_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+    # This test method is normally skipped, unless you have started an
+    # IPython cluster with a "tests" profile so that you have at least one
+    # engine running.
+    def test_simulate_in_parallel_with_random_values(self):
+        try:
+            from IPython.parallel import Client
+            cl = Client(profile="tests")
+
+            dview = cl.direct_view()
+            dview.execute('%reset')  # Reset the engines so that we don't have
+                                     # variables there from last computations
+            dview.execute('import sys')
+            # We use block=True to ensure that all engines have modified
+            # their path to include the folder with the simulator before we
+            # create the load lanced view in the following.
+            dview.execute('sys.path.append("{0}")'.format(current_dir),
+                          block=True)
+
+            lview = cl.load_balanced_view()
+            if len(lview) == 0:
+                self.skipTest("At least one IPython engine must be running.")
+        except Exception:
+            self.skipTest("The IPython engines were not found.")
+        #
+        #
+        # This test is intended to clarify some special care that must be
+        # taken regarding random sources when using the
+        # simulate_in_parallel method.
+        #
+        # The _DummyRunnerRandom class will generate three results which
+        # are generated as a sum of one element of the 'P' parameter and a
+        # random value. The 'P' parameter is an array with 5 elements, all
+        # of them equal to 2.0. That means that if we didn't have a random
+        # part all elements in the returned results would be equal.
+        from util_package_test import _DummyRunnerRandom
+        dummyrunnerrandom = _DummyRunnerRandom()
+        dummyrunnerrandom.simulate_in_parallel(lview)
+
+        # For the result1 the random part is generated by calling the
+        # numpy.random.rand function inside _run_simulation. Because we are
+        # using the module level function 'rand' we are using the global
+        # RandomState object in numpy. This global RandomState object will
+        # be naturally different in each ipython engine and thus each
+        # element in result1 will be different.
+        result1 = dummyrunnerrandom.results.get_result_values_list('result1')
+        self.assertNotAlmostEqual(result1[0], result1[1])
+        self.assertNotAlmostEqual(result1[1], result1[2])
+        self.assertNotAlmostEqual(result1[2], result1[3])
+        self.assertNotAlmostEqual(result1[3], result1[4])
+        self.assertEqual(len(set(result1)), 5)  # 5 different elements
+        # print; print result1
+
+        # For result2 the random part is generated by calling the rand
+        # method of a RandomState object created in the __init__ method of
+        # the _DummyRunnerRandom object. The problem is that each ipython
+        # engine will receive a copy of the _DummyRunnerRandom object and
+        # thus of the RandomState object. That means that for each value of
+        # the parameter 'P' the same random value will be generated and
+        # thus 'result2' will have 5 equal elements.
+        result2 = dummyrunnerrandom.results.get_result_values_list('result2')
+        self.assertAlmostEqual(result2[0], result2[1])
+        self.assertAlmostEqual(result2[1], result2[2])
+        self.assertAlmostEqual(result2[2], result2[3])
+        self.assertAlmostEqual(result2[3], result2[4])
+        self.assertEqual(len(set(result2)), 1)  # 5 equal elements
+        # print; print result2
+
+        # For result3 the random part is generated by calling the rand
+        # method of a RandomState object created in the __init__ method of
+        # the _DummyRunnerRandom object. However, in the
+        # _on_simulate_current_params_start method we re-seed this
+        # RandomState object. Since _on_simulate_current_params_start is
+        # called once for each different value of the 'P' parameter, then
+        # the random value will be different for each value in 'P' and thus
+        # result3 will have 5 different values.
+        result3 = dummyrunnerrandom.results.get_result_values_list('result3')
+        self.assertNotAlmostEqual(result3[0], result3[1])
+        self.assertNotAlmostEqual(result3[1], result3[2])
+        self.assertNotAlmostEqual(result3[2], result3[3])
+        self.assertNotAlmostEqual(result3[3], result3[4])
+        self.assertEqual(len(set(result3)), 5)  # 5 different elements
+        # print; print result3
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1793,6 +1953,41 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertEqual(misc.pretty_time(6135), '1h:42m:15s')
 
         self.assertEqual(misc.pretty_time(6137), '1h:42m:17s')
+
+
+    def test_calc_decorrelation_matrix(self):
+        A = misc.randn_c(3, 3)
+
+        # B is symmetric and positive semi-definite
+        B = np.dot(A, A.conjugate().T)
+
+        Wd = misc.calc_decorrelation_matrix(B)
+
+        D = np.dot(np.dot(Wd.conjugate().T, B), Wd)
+
+        # D must be a diagonal matrix
+        np.testing.assert_array_almost_equal(D, np.diag(D.diagonal()))
+
+    def test_calc_whitening_matrix(self):
+        A = misc.randn_c(3, 3)
+
+        # B is symmetric and positive semi-definite
+        B = np.dot(A, A.conjugate().T)
+
+        Wd = misc.calc_whitening_matrix(B)
+
+        D = np.dot(np.dot(Wd.conjugate().T, B), Wd)
+
+        # D must be an identity matrix
+        np.testing.assert_array_almost_equal(D, np.eye(3))
+
+    def test_calc_shannon_sum_capacity(self):
+        sinrs_linear = np.array([11.4, 20.3])
+        expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
+        self.assertAlmostEqual(
+            expected_sum_capacity,
+            misc.calc_shannon_sum_capacity(sinrs_linear))
+
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
