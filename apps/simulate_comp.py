@@ -816,7 +816,7 @@ def plot_spec_effic(results, Pe_dBm, metric):
     return fig
 
 
-def plot_spectral_efficience_all_metrics(results, Pe_dBm):
+def plot_spectral_efficience_all_metrics(results, Pe_dBm, ax=None):
     from matplotlib import pyplot as plt
 
     params = results.params
@@ -828,9 +828,12 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
     spec_effic_effective_throughput = np.array(results.get_result_values_list('spec_effic_effec_throughput'))
     spec_effic_Whitening = np.array(results.get_result_values_list('spec_effic_Whitening'))
 
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    if ax is None:
+        fig, ax = plt.subplots(nrows=1, ncols=1)
+    else:
+        fig = ax.get_figure()
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
 
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm})
@@ -864,17 +867,17 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
             'c-D', label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    plt.xlabel('SNR (dB)')
-    plt.ylabel('Spectral Efficiency (bits/channel use)')
+    ax.set_xlabel('SNR (dB)')
+    ax.set_ylabel('Spectral Efficiency (bits/channel use)')
     ax.set_title('Spectral Efficiency for Pe: {0}dBm'.format(Pe_dBm))
-    plt.legend(loc=0)
+    ax.legend(loc=0)
 
-    plt.grid(True, which='both', axis='both')
+    ax.grid(True, which='both', axis='both')
 
     return fig
 
 
-def plot_per_all_metrics(results, Pe_dBm):
+def plot_per_all_metrics(results, Pe_dBm, ax=None):
     from matplotlib import pyplot as plt
 
     params = results.params
@@ -886,8 +889,12 @@ def plot_per_all_metrics(results, Pe_dBm):
     per_effective_throughput = np.array(results.get_result_values_list('per_effec_throughput'))
     per_effective_whitening = np.array(results.get_result_values_list('per_Whitening'))
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    if ax is None:
+        fig, ax = plt.subplots(nrows=1, ncols=1)
+    else:
+        fig = ax.get_figure()
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
 
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm})
@@ -921,12 +928,12 @@ def plot_per_all_metrics(results, Pe_dBm):
             'c-D', label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    plt.xlabel('SNR (dB)')
-    plt.ylabel('Packet Error Rate')
+    ax.set_xlabel('SNR (dB)')
+    ax.set_ylabel('Packet Error Rate')
     ax.set_title('Packet Error Rate for Pe: {0}dBm'.format(Pe_dBm))
-    plt.legend(loc=0)
+    ax.legend(loc=0)
 
-    plt.grid(True, which='both', axis='both')
+    ax.grid(True, which='both', axis='both')
 
     return fig
 
