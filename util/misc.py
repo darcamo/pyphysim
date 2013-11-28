@@ -876,7 +876,7 @@ def calc_whitening_matrix(cov_matrix):
     -------
     whitening_matrix : 2D numpy array
         The whitening matrix $\mtW_W$. If the original data is a vector $\vtX$
-        it can be whitened with $\mtW_W^T \vtX$.
+        it can be whitened with $\mtW_W^H \vtX$.
 
     Notes
     -----

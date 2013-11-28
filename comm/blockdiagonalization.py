@@ -16,7 +16,7 @@ __revision__ = "$Revision$"
 
 import numpy as np
 import collections
-#from scipy.linalg import block_diag
+from scipy.linalg import block_diag
 
 from util.misc import least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
 from comm import waterfilling
@@ -658,11 +658,125 @@ class BDWithExtIntBase(BlockDiaginalizer):
         -------
         W_all_k : list of 2D numpy arrays
             The whitening matrices that each receiver should use to whiten
-            the external interference.
+            the external interference. Each element in W_all_k is the
+            whitening filter (with the conjugate transpose already applied)
+            for a receiver.
         """
+        K = mu_channel.K
         R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, self.pe)
-        W_all_k = map(calc_whitening_matrix, R_all_k)
+        W_all_k = [calc_whitening_matrix(R_all_k[k]).conjugate().T for k in range(K)]
         return W_all_k
+
+
+class WhiteningBD(BDWithExtIntBase):
+    """
+    Class to perform the block diagonalization algorithm in a joint
+    transmission scenario taking into account the external interference.
+    """
+
+    def __init__(self, num_users, iPu, noise_var, pe):
+        """Initializes the EnhancedBD object.
+
+        Parameters
+        ----------
+        num_users : int
+            Number of users.
+        iPu : float
+            Power available for EACH user (in linear scale).
+        noise_var : float
+            Noise variance (power in linear scale).
+        pe : float
+            Power of the external interference source (in linear scale)
+        """
+        BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
+
+    @staticmethod
+    def _calc_receive_filter_with_whitening(newH, whitening_filter, Nr, Nt):
+        """
+        Calculates the Zero-Forcing receive filter of all users.
+
+        Parameters
+        ----------
+        newH : 2D numpy array
+            The block diagonalized channel (with the whitening applied).
+        whitening_filter : 2D numpy array
+            The whitening filter of all users. This is a block diagonal
+            matrix where each "block" is the whitening filter of a user.
+        Nr : 1D numpy array
+            The number of receive antennas of each user.
+        Nt : 1D numpy array
+            The number of transmit antennas of each user.
+
+        Returns
+        -------
+        Wk_all_users : 1D numpy array of 2D numpy array
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
+        """
+        # W = np.linalg.inv(np.dot(whitening_filter_k.conjugate().T, Heq_k))
+        K = Nr.size
+        big_W = np.dot(BlockDiaginalizer.calc_receive_filter(newH), whitening_filter)
+        Wk_all_users = np.empty(K, dtype=np.ndarray)
+        aux = single_matrix_to_matrix_of_matrices(big_W, Nr, Nt)
+        for userindex in range(K):
+            Wk_all_users[userindex] = aux[userindex, userindex]
+
+        return Wk_all_users
+
+    def block_diagonalize_no_waterfilling(self, mu_channel):
+        """Perform the block diagonalization of `mu_channel` taking the
+        external interference into account.
+
+        Parameters
+        ----------
+        mu_channel : MultiUserChannelMatrixExtInt object.
+            A MultiUserChannelMatrixExtInt object, which has the channel
+            from all the transmitters to all the receivers, as well as the
+            external interference.
+
+        Returns
+        -------
+        Ms_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the precoder
+            for a user.
+        Wk_all_users : 1D numpy array of 2D numpy arrays
+            A 1D numpy array where each element corresponds to the receive
+            filter for a user.
+        Ns_all_users: 1D numpy array of ints
+            Number of streams of each user.
+
+        """
+        Nr = mu_channel.Nr
+        Nt = mu_channel.Nt
+        # Re = mu_channel.calc_cov_matrix_extint_plus_noise(
+        #     self.noise_var, self.pe)
+        H_matrix = mu_channel.big_H_no_ext_int
+
+        # Get the whitening filters. This is a list of 2D numpy arrays
+        whitening_filter_all_k = self.calc_whitening_matrices(mu_channel,
+                                                              self.noise_var)
+
+        # Creates a block diagonal matrix with the whitening filters for
+        # each user in the "diagonal" of this block diagonal matrix.
+        big_whitening_filter = block_diag(*whitening_filter_all_k)
+
+        # Equivalent big channel matrix after applying the whitening filter
+        H_matrix_equiv = np.dot(big_whitening_filter, H_matrix)
+
+        # We will now apply the regular block diagonalization algorithm in
+        # this equivalent channel matrix.
+        (newH, Ms) = BlockDiaginalizer.block_diagonalize_no_waterfilling(
+            self, H_matrix_equiv)
+
+        # xxxxxxxxxx Calculates the precoder for each transmitter xxxxxxxxx
+        Ms_all_users = single_matrix_to_matrix_of_matrices(Ms, None, Nt)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Calculate the receive filter xxxxxxxxxxxxxxxxxxxxxxxxx
+        Wk_all_users = self._calc_receive_filter_with_whitening(newH, big_whitening_filter, Nr, Nt)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        return (Ms_all_users, Wk_all_users, Nt.copy())
 
 
 class EnhancedBD(BDWithExtIntBase):
@@ -855,8 +969,9 @@ class EnhancedBD(BDWithExtIntBase):
 
     @staticmethod
     def calc_receive_filter_user_k(Heq_k_P, P=None):
-        """Calculates the Zero-Forcing receive filter of a single user `k`
-        with or without the stream reduction.
+        """
+        Calculates the Zero-Forcing receive filter of a single user `k` with or
+        without the stream reduction.
 
         Parameters
         ----------
@@ -881,7 +996,6 @@ class EnhancedBD(BDWithExtIntBase):
         `P`. Since `P` was calculated to be in the directions with weaker
         (or no) external interference then the receive filter `W` will
         mitigate the external interference.
-
         """
         if P is None:
             W = np.linalg.pinv(Heq_k_P)
@@ -1212,7 +1326,7 @@ class EnhancedBD(BDWithExtIntBase):
         ----------
         mu_channel : MultiUserChannelMatrixExtInt object.
             A MultiUserChannelMatrixExtInt object, which has the channel
-            from all the transmitters to all the receivers, as well as th
+            from all the transmitters to all the receivers, as well as the
             external interference.
 
         Returns

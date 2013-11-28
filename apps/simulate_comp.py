@@ -28,7 +28,7 @@ from scipy import linalg as sp_linalg
 from util import simulations, conversion, misc
 from cell import cell
 from comm import pathloss, channels, modulators
-from comm.blockdiagonalization import EnhancedBD
+from comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
 # def sum_user_data(data_all_users, Ns_all_users):
@@ -139,9 +139,9 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.ext_int_rank = 1  # Rank of the external interference
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 5  # Maximum number of repetitions for each
-                              # unpacked parameters set self.params
-                              # self.results
+        self.rep_max = 5000  # Maximum number of repetitions for each
+                             # unpacked parameters set self.params
+                             # self.results
 
         # max_bit_errors is used in the _keep_going method to stop the
         # simulation earlier if possible. We stop the simulation if the
@@ -319,6 +319,13 @@ class BDSimulationRunner(simulations.SimulationRunner):
                                      'packet_length': self.packet_length,
                                      'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Create the BD object with whitening xxxxxxxxxxxxxxxxxxxxxxx
+        self.bd_obj_whitening = WhiteningBD(self.num_cells,
+                                      transmit_power,
+                                      self.noise_var,
+                                      self.pe)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _run_simulation(self, current_parameters):
@@ -383,6 +390,10 @@ class BDSimulationRunner(simulations.SimulationRunner):
          Wk_all_users_effec_throughput,
          Ns_all_users_effec_throughput) = self.bd_obj_effec_throughput.block_diagonalize_no_waterfilling(
              self.multiuser_channel)
+
+        (Ms_all_users_Whitening,
+         Wk_all_users_Whitening,
+         Ns_all_users_Whitening) = self.bd_obj_whitening.block_diagonalize_no_waterfilling(self.multiuser_channel)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -449,6 +460,17 @@ class BDSimulationRunner(simulations.SimulationRunner):
              Wk_all_users_effec_throughput,
              'effec_throughput')
 
+        # Whitening BD
+        (ber_result_Whitening,
+         ser_result_Whitening,
+         per_result_Whitening,
+         spec_effic_result_Whitening) = self.__simulate_for_one_metric(
+             Ns_all_users_Whitening,
+             external_int_data_all_metrics,
+             Ms_all_users_Whitening,
+             Wk_all_users_Whitening,
+             'Whitening')
+
         simResults = simulations.SimulationResults()
         # Add the 'None' results
         simResults.add_result(ber_result_None)
@@ -479,6 +501,12 @@ class BDSimulationRunner(simulations.SimulationRunner):
         simResults.add_result(ser_result_effec_throughput)
         simResults.add_result(per_result_effec_throughput)
         simResults.add_result(spec_effic_result_effec_throughput)
+
+        # Add the 'Whitening' results
+        simResults.add_result(ber_result_Whitening)
+        simResults.add_result(ser_result_Whitening)
+        simResults.add_result(per_result_Whitening)
+        simResults.add_result(spec_effic_result_Whitening)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
@@ -798,6 +826,8 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
     spec_effic_fixed = np.array(results.get_result_values_list('spec_effic_fixed'))
     spec_effic_capacity = np.array(results.get_result_values_list('spec_effic_capacity'))
     spec_effic_effective_throughput = np.array(results.get_result_values_list('spec_effic_effec_throughput'))
+    spec_effic_Whitening = np.array(results.get_result_values_list('spec_effic_Whitening'))
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -829,6 +859,11 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
             'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
+    ax.plot(SNR, spec_effic_Whitening[result_indexes],
+            'c-^', label='Whitening BD')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     plt.xlabel('SNR (dB)')
     plt.ylabel('Spectral Efficiency (bits/channel use)')
     ax.set_title('Enhanced BD simulation: Spectral Efficiency')
@@ -849,6 +884,7 @@ def plot_per_all_metrics(results, Pe_dBm):
     per_fixed = np.array(results.get_result_values_list('per_fixed'))
     per_capacity = np.array(results.get_result_values_list('per_capacity'))
     per_effective_throughput = np.array(results.get_result_values_list('per_effec_throughput'))
+    per_effective_whitening = np.array(results.get_result_values_list('per_Whitening'))
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -878,6 +914,11 @@ def plot_per_all_metrics(results, Pe_dBm):
     # xxxxx Plot the Spec. Effic. with fixed metric xxxxxxxxxxxxxxxxxxxxxxx
     ax.plot(SNR, per_fixed[result_indexes],
             'r-^', label='Fixed Case')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
+    ax.plot(SNR, per_effective_whitening[result_indexes],
+            'c-^', label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.xlabel('SNR (dB)')
@@ -955,7 +996,7 @@ if __name__ == '__main__':
     #
     #
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'com_rpesults'
+    results_filename = 'bd_results'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
