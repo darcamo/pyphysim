@@ -861,12 +861,12 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm):
 
     # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
     ax.plot(SNR, spec_effic_Whitening[result_indexes],
-            'c-^', label='Whitening BD')
+            'c-D', label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.xlabel('SNR (dB)')
     plt.ylabel('Spectral Efficiency (bits/channel use)')
-    ax.set_title('Enhanced BD simulation: Spectral Efficiency')
+    ax.set_title('Spectral Efficiency for Pe: {0}dBm'.format(Pe_dBm))
     plt.legend(loc=0)
 
     plt.grid(True, which='both', axis='both')
@@ -918,12 +918,12 @@ def plot_per_all_metrics(results, Pe_dBm):
 
     # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
     ax.plot(SNR, per_effective_whitening[result_indexes],
-            'c-^', label='Whitening BD')
+            'c-D', label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.xlabel('SNR (dB)')
     plt.ylabel('Packet Error Rate')
-    ax.set_title('Enhanced BD simulation: Packet Error Rate')
+    ax.set_title('Packet Error Rate for Pe: {0}dBm'.format(Pe_dBm))
     plt.legend(loc=0)
 
     plt.grid(True, which='both', axis='both')
@@ -932,14 +932,7 @@ def plot_per_all_metrics(results, Pe_dBm):
 
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    # Lets import matplotlib if it is available
-    try:
-        from matplotlib import pyplot as plt
-        _MATPLOTLIB_AVAILABLE = True
-    except ImportError:
-        _MATPLOTLIB_AVAILABLE = False
-
+if __name__ == '__main__1':
     from apps.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -995,6 +988,15 @@ if __name__ == '__main__':
     #
     #
     #
+
+
+if __name__ == '__main__':
+    try:
+        from matplotlib import pyplot as plt
+        _MATPLOTLIB_AVAILABLE = True
+    except ImportError:
+        _MATPLOTLIB_AVAILABLE = False
+
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results_filename = 'bd_results'
     results = simulations.SimulationResults.load_from_file(
