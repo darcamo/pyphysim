@@ -31,49 +31,6 @@ from comm import pathloss, channels, modulators
 from comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
-# def sum_user_data(data_all_users, Ns_all_users):
-#     """Sum the data from the same user.
-
-#     The multiple rows of `data_all_users` correspond to streams of the
-#     different users. The `sum_user_data` function sum the data in the
-#     different streams of each user (but not from different users) and
-#     return a new matrix where each row corresponds to the summed data of a
-#     user.
-
-#     Parameters
-#     ----------
-#     data_all_users : 2D numpy array
-#         Data from all users, with dimension sum(Ns) x num_data
-#     Ns_all_users : 1D numpy array
-#         An array containing the number of streams of each user.
-
-#     Returns
-#     -------
-#     data_all_users2 : 2D numpy array
-#         Data from all users, but with the data of each user summed.
-
-#     Examples
-#     --------
-#     >>> data_all_users = np.array([285, 3, 1, 20, 7])
-#     >>> Ns_all_users = np.array([2, 1, 2])
-#     >>> print data_all_users
-#     [285   3  13  20   7]
-#     >>> data_all_users2 = sum_user_data(data_all_users, Ns_all_users)
-#     >>> print data_all_users2
-#     [288  13  27]
-#     """
-#     num_users = Ns_all_users.size
-#     cum_Ns = np.hstack([0, np.cumsum(Ns_all_users)])
-
-#     shape = Ns_all_users.shape
-#     data_all_users2 = np.empty(shape, dtype=data_all_users.dtype)
-
-#     for userindex in range(num_users):
-#         data_all_users2[userindex] = np.sum(data_all_users[cum_Ns[userindex]:cum_Ns[userindex + 1]])
-
-#     return data_all_users2
-
-
 class BDSimulationRunner(simulations.SimulationRunner):
     """
     Implements a simulation runner for a Block Diagonalization
@@ -116,14 +73,13 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # self.AlphaValues = 0.2;
-        # self.BetaValues = 0;
         self.path_loss_obj = pathloss.PathLoss3GPP1()
         self.multiuser_channel = channels.MultiUserChannelMatrixExtInt()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx RandomState objects seeds xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # This is only useful to reproduce a simulation for debugging purposed
+        # This is only useful to reproduce a simulation for debugging
+        # purposed
         channel_seed = None  # 22522
         self.noise_seed = None  # 4445
         self.data_gen_seed = np.random.randint(10000)  # 2105
@@ -144,38 +100,18 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.modulator = modulator_options[self.params['modulator']](M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Number of symbols (per stream per user simulated at each
-        # iteration of _run_simulation
-        # self.NSymbs = 500
-        # #SNR = np.linspace(0, 30, 7)
-        # SNR = np.linspace(0, 30, 16)
-        # self.params.add('SNR', SNR)
-        # self.params.set_unpack_parameter('SNR')
-        # self.N0 = -116.4  # Noise power (in dBm)
-
-        # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxx
-        # transmit power (in dBm) of the ext. interference
-        #Pe_dBm = np.array([-10000, -10, 0, 10, 20])
-        # Pe_dBm = np.array([-10, 0, 10])
-        # self.params.add('Pe_dBm', Pe_dBm)
-        # self.params.set_unpack_parameter('Pe_dBm')
-        # self.ext_int_rank = 1  # Rank of the external interference
-
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Maximum number of repetitions for each unpacked parameters set
+        # self.params self.results
         self.rep_max = self.params['rep_max']
-        # self.rep_max = 5000  # Maximum number of repetitions for each
-        #                      # unpacked parameters set self.params
-        #                      # self.results
 
-        # max_bit_errors is used in the _keep_going method to stop the
-        # simulation earlier if possible. We stop the simulation if the
-        # accumulated number of bit errors becomes greater then 5% of the
-        # total number of simulated bits
-        NSymbs = self.params['NSymbs']
-        M = self.params['M']
-        self.max_bit_errors = self.rep_max * NSymbs * 5. / 100.
-        self.progressbar_message = "SNR: {{SNR}}, Pe_dBm: {{Pe_dBm}}".format(M)
+        # # max_bit_errors is used in the _keep_going method to stop the
+        # # simulation earlier if possible. We stop the simulation if the
+        # # accumulated number of bit errors becomes greater then 5% of the
+        # # total number of simulated bits
+        # self.max_bit_errors = self.rep_max * NSymbs * 5. / 100.
+
+        self.progressbar_message = "SNR: {SNR}, Pe_dBm: {Pe_dBm}"
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
@@ -193,15 +129,6 @@ class BDSimulationRunner(simulations.SimulationRunner):
                                        self.params['num_cells'],
                                        self.params['cell_radius'])
         self.noise_var = conversion.dBm2Linear(self.params['N0'])
-
-        # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
-        # This must be either 'Symmetric Far Away' of 'Random'
-        #self._scenario = self.params['user_positioning_method']
-
-        # the scenario specific variables are created by running the
-        # _create_users_according_to_scenario method. Depending on the
-        # value of self._scenario _create_users_according_to_scenario will
-        # call the appropriated method.
 
     def _create_users_according_to_scenario(self, current_params):
         scenario = current_params['user_positioning_method']
@@ -279,7 +206,6 @@ class BDSimulationRunner(simulations.SimulationRunner):
     def _on_simulate_current_params_start(self, current_params):
         """This method is called once for each combination of transmit
         parameters.
-
         """
         # IMPORTANT: Re-seed the channel and the noise RandomState
         # objects. Without this, when you perform the simulation in
@@ -685,13 +611,6 @@ class BDSimulationRunner(simulations.SimulationRunner):
                 ser_result,
                 per_result,
                 spec_effic_result)
-        # return (num_packages,
-        #         effective_spec_effic,
-        #         num_symbols,
-        #         num_symbol_errors,
-        #         num_bit_errors,
-        #         num_bits,
-        #         num_package_errors)
 
     # def _keep_going(self, current_sim_results, current_rep):
     #     ber_result = current_sim_results['ber'][-1]
@@ -735,161 +654,28 @@ class BDSimulationRunner(simulations.SimulationRunner):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def get_result_data(results, Pe_dBm, metric):
-    """Get the result data (SNR, BER, SER, PER, Spec_Effic) for a specific
-    Pe_dBm and metric
-
-    Parameters
-    ----------
-    results : SimulationResults object
-        The simulation results.
-    Pe_dBm : float
-        The desired external interference power in dB. Must be one of the
-        values specified in `results.params`
-    metric : str
-        The metric used for external interference handling.
-
-    Returns
-    -------
-    SNR : 1D numpy Array
-        The SNR values
-    BER : 1D numpy Array
-        Bit Error Rate for each SNR value.
-    SER : 1D numpy Array
-        Symbol Error Rate for each SNR value.
-    PER : 1D numpy Array
-        Package Error Rate for each SNR value.
-    Spec_Effic : 1D numpy Array
-        Spec_Effic for each SNR value.
-
-    """
-    params = results.params
-    SNR = params['SNR']
-
-    ber_string = "ber_{0}".format(metric)
-    ser_string = "ser_{0}".format(metric)
-    per_string = "per_{0}".format(metric)
-    spec_effic_string = "spec_effic_{0}".format(metric)
-
-    ber_all = np.array(results.get_result_values_list(ber_string))
-    ser_all = np.array(results.get_result_values_list(ser_string))
-    per_all = np.array(results.get_result_values_list(per_string))
-    spec_effic = np.array(results.get_result_values_list(spec_effic_string))
-
-    result_indexes = params.get_pack_indexes(
-        {'Pe_dBm': Pe_dBm, 'metric': metric})
-
-    BER = ber_all[result_indexes]
-    SER = ser_all[result_indexes]
-    PER = per_all[result_indexes]
-    Spec_Effic = spec_effic[result_indexes]
-    reps = results.runned_reps
-
-    # SNR, BER, SER, PER, Spectral Efficiency, number of simulated repetitions
-    return (SNR, BER, SER, PER, Spec_Effic, reps)
-
-
-def plot_error_results_fixed_Pe_metric(results, Pe_dBm, metric):
-    """Plot the error results for a specified Pe_dBm and metric.
-
-    Parameters
-    ----------
-    results : SimulationResults object
-        The simulation results.
-    Pe_dBm : float
-        The desired external interference power in dB. Must be one of the
-        values specified in `results.params`
-    metric : str
-        The metric used for external interference handling. Must be one of
-        the values specified in `results.params`
-
-    Returns
-    -------
-    fig : A Matplotlib figure
-
-        A Matplotlib figure with the plot of the error rates. You can call
-        the 'save' method of `fig` to save the figure to a file.
-
-    fig_data : A tuple
-        A tuple with the data used to plot the figure.
-
-    """
-    from matplotlib import pyplot as plt
-
-    (SNR, BER, SER, PER, Spec_Effic, reps) = get_result_data(results,
-                                                             Pe_dBm,
-                                                             metric)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Plot the Error rates (SER, BER and PER)
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    # Plot the Symbol Error Rate
-    ax.semilogy(SNR, SER, 'g-s', label='SER')
-    ax.hold(True)
-
-    # Plot the Bit Error Rate
-    ax.semilogy(SNR, BER, 'b-^', label='BER')
-
-    # Plot the Package Error Rate
-    ax.semilogy(SNR, PER, 'k-o', label='PER')
-
-    plt.xlabel('SNR')
-    plt.ylabel('Error Rate')
-    ax.set_title('Enhanced BD simulation: Error Rates x SNR')
-    plt.legend()
-
-    plt.grid(True, which='both', axis='both')
-
-    return fig  # , (SNR, BER, SER, PER, Spec_Effic, reps)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-def plot_spec_effic(results, Pe_dBm, metric):
-    from matplotlib import pyplot as plt
-
-    (SNR, BER, SER, PER, Spec_Effic, reps) = get_result_data(results,
-                                                             Pe_dBm,
-                                                             metric)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Plot The Spectral Efficiency
-    fig = plt.figure()
-    ax2 = fig.add_subplot(111)
-
-    # Plot the Symbol Error Rate
-    ax2.plot(SNR, Spec_Effic, 'g-*', label='Spectral Efficiency')
-
-    plt.xlabel('SNR')
-    plt.ylabel('Spectral Efficiency')
-    ax2.set_title('Enhanced BD simulation (Pe: {0} dBm, metric: {1})'.format(
-        Pe_dBm,
-        metric))
-    #plt.legend()
-
-    plt.grid(True, which='both', axis='both')
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    return fig
-
-
 def plot_spectral_efficience_all_metrics(results, Pe_dBm, ax=None):
     from matplotlib import pyplot as plt
 
     params = results.params
     SNR = params['SNR']
-    spec_effic_None = np.array(results.get_result_values_list('spec_effic_None'))
-    spec_effic_naive = np.array(results.get_result_values_list('spec_effic_naive'))
-    spec_effic_fixed = np.array(results.get_result_values_list('spec_effic_fixed'))
-    spec_effic_capacity = np.array(results.get_result_values_list('spec_effic_capacity'))
-    spec_effic_effective_throughput = np.array(results.get_result_values_list('spec_effic_effec_throughput'))
-    spec_effic_Whitening = np.array(results.get_result_values_list('spec_effic_Whitening'))
+    spec_effic_None = np.array(
+        results.get_result_values_list('spec_effic_None'))
+    spec_effic_naive = np.array(
+        results.get_result_values_list('spec_effic_naive'))
+    spec_effic_fixed = np.array(
+        results.get_result_values_list('spec_effic_fixed'))
+    spec_effic_capacity = np.array(
+        results.get_result_values_list('spec_effic_capacity'))
+    spec_effic_effective_throughput = np.array(
+        results.get_result_values_list('spec_effic_effec_throughput'))
+    spec_effic_Whitening = np.array(
+        results.get_result_values_list('spec_effic_Whitening'))
 
     if ax is None:
         fig, ax = plt.subplots(nrows=1, ncols=1)
     else:
         fig = ax.get_figure()
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
 
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm})
@@ -949,8 +735,6 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
         fig, ax = plt.subplots(nrows=1, ncols=1)
     else:
         fig = ax.get_figure()
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
 
     result_indexes = params.get_pack_indexes(
         {'Pe_dBm': Pe_dBm})
@@ -995,12 +779,12 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
 
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from apps.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'bd_results_APAGAR'
+    results_filename = 'bd_results_{Nr}x{Nt}'
     runner = BDSimulationRunner()
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1044,13 +828,9 @@ if __name__ == '__main__':
         print("Simulation will be run serially")
         runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #
-    #
+
     print "Runned iterations: {0}".format(runner.runned_reps)
     print "Elapsed Time: {0}".format(runner.elapsed_time)
-    #
-    #
-    #
 
 
 if __name__ == '__main__':
@@ -1060,31 +840,18 @@ if __name__ == '__main__':
     except ImportError:
         _MATPLOTLIB_AVAILABLE = False
 
+    # xxxxxxxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    params = simulations.SimulationParameters.load_from_config_file('bd_config_file.txt')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'bd_results_APAGAR'
+    results_filename = 'bd_results_{Nr}x{Nt}'.format(**params.parameters)
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
     SNR = results.params['SNR']
     if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
         Pe_dBm = 10
-
-        # error_None_fig = plot_error_results_fixed_Pe_metric(
-        #     results, Pe_dBm, 'None')
-        # error_capacity_fig = plot_error_results_fixed_Pe_metric(
-        #     results, Pe_dBm, 'capacity')
-        # error_fixed_fig = plot_error_results_fixed_Pe_metric(
-        #     results, Pe_dBm, 'fixed')
-        # error_naive_fig = plot_error_results_fixed_Pe_metric(
-        #     results, Pe_dBm, 'naive')
-        # error_effec_throughput_fig = plot_error_results_fixed_Pe_metric(
-        #     results, Pe_dBm, 'effec_throughput')
-
-        # plot_spec_effic(results, Pe_dBm, None)
-        # plot_spec_effic(results, Pe_dBm, 'naive')
-        # plot_spec_effic(results, Pe_dBm, 'fixed')
-        # plot_spec_effic(results, Pe_dBm, 'capacity')
-        # plot_spec_effic(results, Pe_dBm, 'effec_throughput')
 
         # Save the Spectral Efficiency curve for the given Pe_dBm
         spec_fig = plot_spectral_efficience_all_metrics(results, Pe_dBm)
@@ -1096,13 +863,5 @@ if __name__ == '__main__':
         # per_all_fig.tight_layout()
         per_all_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
         per_all_fig.savefig('{0}_Pe_{1}_per_all.pdf'.format(results_filename, Pe_dBm))
-
-
-        # # Save the Error rates curves for each metric for the given Pe_dBm
-        # error_None_fig.savefig('{0}_Pe_{1}_error_rates_None.pgf'.format(results_filename, Pe_dBm))
-        # error_naive_fig.savefig('{0}_Pe_{1}_error_rates_naive.pgf'.format(results_filename, Pe_dBm))
-        # error_fixed_fig.savefig('{0}_Pe_{1}_error_rates_fixed.pgf'.format(results_filename, Pe_dBm))
-        # error_capacity_fig.savefig('{0}_Pe_{1}_error_rates_capacity.pgf'.format(results_filename, Pe_dBm))
-        # error_effec_throughput_fig.savefig('{0}_Pe_{1}_error_rates_spec_eff.pgf'.format(results_filename, Pe_dBm))
 
         plt.show()
