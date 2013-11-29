@@ -1217,6 +1217,11 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             interference sources will be the len(NtE).
 
         """
+        if isinstance(Nr, int):
+            Nr = np.ones(K, dtype=int) * Nr
+        if isinstance(Nt, int):
+            Nt = np.ones(K, dtype=int) * Nt
+
         (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
 
         self._extIntK = extIntK

@@ -66,10 +66,10 @@ class CommDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ModuleFunctionsTestCase(unittest.TestCase):
     def test_generate_jakes_samples(self):
-        Fd = 5  # Doppler frequency (in Hz)
-        Ts = 1e-3  # Sampling interval (in seconds)
+        Fd = 5    # Doppler frequency (in Hz)
+        Ts = 1e-3 # Sampling interval (in seconds)
         N = 1000  # Number of samples
-        NRays = 8  # Number of rays for the Jakes model
+        NRays = 8 # Number of rays for the Jakes model
 
         # Test generating channel samples for a SISO scenario
         h = channels.generate_jakes_samples(Fd, Ts, N, NRays)
@@ -105,9 +105,9 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 class JakesSampleGeneratorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        Fd = 5  # Doppler frequency (in Hz)
-        Ts = 1e-3  # Sampling interval (in seconds)
-        NRays = 8  # Number of rays for the Jakes model
+        Fd = 5    # Doppler frequency (in Hz)
+        Ts = 1e-3 # Sampling interval (in seconds)
+        NRays = 8 # Number of rays for the Jakes model
 
         self.obj = channels.JakesSampleGenerator(Fd, Ts, NRays)
         self.obj2 = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=(3, 2))
@@ -649,6 +649,16 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.multiH.K, self.K)
         np.testing.assert_array_equal(self.multiH.extIntK, len(self.NtE))
         np.testing.assert_array_equal(self.multiH.extIntNt, self.NtE)
+
+        # Now test when the number of transmit/receive antennas is the same
+        # in each node
+        self.multiH.randomize(3, 2, 4, 1)
+        np.testing.assert_array_equal(self.multiH.Nr, np.array([3, 3, 3, 3]))
+        np.testing.assert_array_equal(self.multiH.Nt, np.array([2, 2, 2, 2]))
+        self.assertEqual(self.multiH.K, 4)
+        self.assertEqual(self.multiH.extIntK, 1)
+        np.testing.assert_array_equal(self.multiH.extIntNt, np.array([1]))
+
 
     def test_big_H_no_ext_int_property(self):
         self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)

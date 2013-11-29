@@ -83,24 +83,44 @@ class BDSimulationRunner(simulations.SimulationRunner):
     def __init__(self, ):
         simulations.SimulationRunner.__init__(self)
 
-        # xxxxxxxxxx Cell and Grid Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.cell_radius = 1.0  # Cell radius (in Km)
-        #self.min_dist = 0.250  # Minimum allowed distance from a bse
-                                # station and its user (same unit as
-                                # cell_radius)
-        #self.users_per_cell = 1  # Number of users in each cell
-        self.num_cells = 3
-        self.num_clusters = 1
+        # xxxxxxxxxx DARLAN xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        spec = """[Grid]
+        cell_radius=float(min=0.01, default=1.0)
+        num_cells=integer(min=3,default=3)
+        num_clusters=integer(min=1,default=1)
+
+        [Scenario]
+        NSymbs=integer(min=10, max=1000000, default=500)
+        SNR=real_numpy_array(min=-50, max=100, default=0:3:31)
+        Pe_dBm=real_numpy_array(min=-50, max=100, default=[-10. 0. 10.])
+        Nr=integer(default=2)
+        Nt=integer(default=2)
+        N0=float(default=-116.4)
+        ext_int_rank=integer(min=1,default=1)
+        user_positioning_method=option("Random", 'Symmetric Far Away', default="Symmetric Far Away")
+
+        [Modulation]
+        M=integer(min=4, max=512, default=4)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
+        packet_length=integer(min=1,default=60)
+
+        [General]
+        rep_max=integer(min=1, default=5000)
+        unpacked_parameters=string_list(default=list('SNR','Pe_dBm'))
+
+        """.split("\n")
+        self.params = simulations.SimulationParameters.load_from_config_file(
+            'bd_config_file.txt',
+            spec,
+            save_parsed_file=True)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.Nr = np.ones(self.num_cells, dtype=int) * 2  # N. of Rx antennas
-        self.Nt = np.ones(self.num_cells, dtype=int) * 2  # N. of Tx antennas
-
-        self.Ns_BD = self.Nt  # Number of streams (per user) in the BD alg.
         # self.AlphaValues = 0.2;
         # self.BetaValues = 0;
         self.path_loss_obj = pathloss.PathLoss3GPP1()
         self.multiuser_channel = channels.MultiUserChannelMatrixExtInt()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx RandomState objects seeds xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # This is only useful to reproduce a simulation for debugging purposed
@@ -115,40 +135,47 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.ext_data_RS = np.random.RandomState(ext_data_gen_seed)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Modulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.M = 4
-        self.modulator = modulators.PSK(self.M)
-        self.packet_length = 60
+        # xxxxxxxxxx Creates the modulator object xxxxxxxxxxxxxxxxxxxxxxxxx
+        M = self.params['M']
+        modulator_options = {'PSK': modulators.PSK,
+                             'QPSK': modulators.QPSK,
+                             'QAM': modulators.QAM,
+                             'BPSK': modulators.BPSK}
+        self.modulator = modulator_options[self.params['modulator']](M)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Number of symbols (per stream per user simulated at each
         # iteration of _run_simulation
-        self.NSymbs = 500
-        #SNR = np.linspace(0, 30, 7)
-        SNR = np.linspace(0, 30, 16)
-        self.params.add('SNR', SNR)
-        self.params.set_unpack_parameter('SNR')
-        self.N0 = -116.4  # Noise power (in dBm)
+        # self.NSymbs = 500
+        # #SNR = np.linspace(0, 30, 7)
+        # SNR = np.linspace(0, 30, 16)
+        # self.params.add('SNR', SNR)
+        # self.params.set_unpack_parameter('SNR')
+        # self.N0 = -116.4  # Noise power (in dBm)
 
         # xxxxxxxxxx External Interference Parameters xxxxxxxxxxxxxxxxxxxxx
         # transmit power (in dBm) of the ext. interference
         #Pe_dBm = np.array([-10000, -10, 0, 10, 20])
-        Pe_dBm = np.array([-10, 0, 10])
-        self.params.add('Pe_dBm', Pe_dBm)
-        self.params.set_unpack_parameter('Pe_dBm')
-        self.ext_int_rank = 1  # Rank of the external interference
+        # Pe_dBm = np.array([-10, 0, 10])
+        # self.params.add('Pe_dBm', Pe_dBm)
+        # self.params.set_unpack_parameter('Pe_dBm')
+        # self.ext_int_rank = 1  # Rank of the external interference
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.rep_max = 5000  # Maximum number of repetitions for each
-                             # unpacked parameters set self.params
-                             # self.results
+        self.rep_max = self.params['rep_max']
+        # self.rep_max = 5000  # Maximum number of repetitions for each
+        #                      # unpacked parameters set self.params
+        #                      # self.results
 
         # max_bit_errors is used in the _keep_going method to stop the
         # simulation earlier if possible. We stop the simulation if the
         # accumulated number of bit errors becomes greater then 5% of the
         # total number of simulated bits
-        self.max_bit_errors = self.rep_max * self.NSymbs * 5. / 100.
-        self.progressbar_message = "SNR: {{SNR}}, Pe_dBm: {{Pe_dBm}}".format(self.M)
+        NSymbs = self.params['NSymbs']
+        M = self.params['M']
+        self.max_bit_errors = self.rep_max * NSymbs * 5. / 100.
+        self.progressbar_message = "SNR: {{SNR}}, Pe_dBm: {{Pe_dBm}}".format(M)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
@@ -158,28 +185,35 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.pe = 0
 
         # Path loss (in linear scale) from the cell center to
-        self.path_loss_border = self.path_loss_obj.calc_path_loss(self.cell_radius)
+        # self.path_loss_border = self.path_loss_obj.calc_path_loss(self.cell_radius)
+
         # Cell Grid
         self.cell_grid = cell.Grid()
-        self.cell_grid.create_clusters(self.num_clusters, self.num_cells, self.cell_radius)
-        self.noise_var = conversion.dBm2Linear(self.N0)
+        self.cell_grid.create_clusters(self.params['num_clusters'],
+                                       self.params['num_cells'],
+                                       self.params['cell_radius'])
+        self.noise_var = conversion.dBm2Linear(self.params['N0'])
 
         # xxxxxxxxxx Scenario specific variables xxxxxxxxxxxxxxxxxxxxxxxxxx
         # This must be either 'Symmetric Far Away' of 'Random'
-        self._scenario = 'Symmetric Far Away'
+        #self._scenario = self.params['user_positioning_method']
 
         # the scenario specific variables are created by running the
         # _create_users_according_to_scenario method. Depending on the
         # value of self._scenario _create_users_according_to_scenario will
         # call the appropriated method.
 
-    def _create_users_according_to_scenario(self):
-        if self._scenario == 'Symmetric Far Away':
-            self._create_symmetric_far_away_users_scenario()
-        elif self._scenario == 'Random':
-            self._create_random_users_scenario()
+    def _create_users_according_to_scenario(self, current_params):
+        scenario = current_params['user_positioning_method']
+        if scenario == 'Symmetric Far Away':
+            self._create_symmetric_far_away_users_scenario(current_params)
+        elif scenario == 'Random':
+            self._create_random_users_scenario(current_params)
+        else:
+            raise RuntimeError(
+                "Invalid scenario: {0}".format(self._scenario))
 
-    def _create_random_users_scenario(self):
+    def _create_random_users_scenario(self, current_params):
         """Run this method to set variables specific to the 'RandomUsers'
         scenario.
 
@@ -188,11 +222,11 @@ class BDSimulationRunner(simulations.SimulationRunner):
 
         """
         cluster0 = self.cell_grid._clusters[0]
-        cell_ids = np.arange(1, self.num_cells + 1)
+        cell_ids = np.arange(1, current_params['num_cells'] + 1)
         cluster0.remove_all_users()
         cluster0.add_random_users(cell_ids)
 
-    def _create_symmetric_far_away_users_scenario(self):
+    def _create_symmetric_far_away_users_scenario(self, current_params):
         """Run this method to set variables specific to the 'FarAwayUsers70%'
         scenario.
 
@@ -202,12 +236,12 @@ class BDSimulationRunner(simulations.SimulationRunner):
 
         """
         cluster0 = self.cell_grid._clusters[0]
-        cell_ids = np.arange(1, self.num_cells + 1)
+        cell_ids = np.arange(1, current_params['num_cells'] + 1)
         angles = np.array([210, -30, 90])
         cluster0.remove_all_users()
         cluster0.add_border_users(cell_ids, angles, 0.7)
 
-    def _create_users_channels(self):
+    def _create_users_channels(self, current_params):
         """Create the channels of all the users.
 
         The users must have already been created.
@@ -233,10 +267,13 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # The number of rows is equal to the number of receivers, while the
         # cumber of columns is equal to the number of external interference
         # sources.
-        pathlossInt.shape = (self.num_cells, 1)
+        pathlossInt.shape = (current_params['num_cells'], 1)
 
         # Generate a random channel and set the path loss
-        self.multiuser_channel.randomize(self.Nr, self.Nt, self.num_cells, self.ext_int_rank)
+        self.multiuser_channel.randomize(current_params['Nr'],
+                                         current_params['Nt'],
+                                         current_params['num_cells'],
+                                         current_params['ext_int_rank'])
         self.multiuser_channel.set_pathloss(pathloss, pathlossInt)
 
     def _on_simulate_current_params_start(self, current_params):
@@ -258,70 +295,76 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # _on_simulate_current_params_start.
         transmit_power = BDSimulationRunner._calc_transmit_power(
             current_params['SNR'],
-            self.N0,
-            self.cell_radius,
+            current_params['N0'],
+            current_params['cell_radius'],
             self.path_loss_obj)
 
         # External interference power
         self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
 
         # xxxxx Create the BD object with the None metric xxxxxxxxxxxxxxxxx
-        self.bd_obj_None = EnhancedBD(self.num_cells,
+        self.bd_obj_None = EnhancedBD(current_params['num_cells'],
                                       transmit_power,
                                       self.noise_var,
                                       self.pe)
         self.bd_obj_None.set_ext_int_handling_metric(
-            "None", {'modulator': self.modulator,
-                     'packet_length': self.packet_length,
-                     'num_streams': 1})
+            "None",
+            {'modulator': self.modulator,
+             'packet_length': current_params['packet_length'],
+             'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with the Naive metric xxxxxxxxxxxxxxxx
-        self.bd_obj_naive = EnhancedBD(self.num_cells,
+        self.bd_obj_naive = EnhancedBD(current_params['num_cells'],
                                        transmit_power,
                                        self.noise_var,
                                        self.pe)
         self.bd_obj_naive.set_ext_int_handling_metric(
-            "naive", {'modulator': self.modulator,
-                                       'packet_length': self.packet_length,
-                                       'num_streams': 1})
+            "naive",
+            {'modulator': self.modulator,
+             'packet_length': current_params['packet_length'],
+             'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with the fixed metric xxxxxxxxxxxxxxxx
-        self.bd_obj_fixed = EnhancedBD(self.num_cells,
+        self.bd_obj_fixed = EnhancedBD(current_params['num_cells'],
                                        transmit_power,
                                        self.noise_var,
                                        self.pe)
         self.bd_obj_fixed.set_ext_int_handling_metric(
-            "fixed", {'modulator': self.modulator,
-                                       'packet_length': self.packet_length,
-                                       'num_streams': 1})
+            "fixed",
+            {'modulator': self.modulator,
+             'packet_length': current_params['packet_length'],
+             'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with the capacity metric xxxxxxxxxxxxx
-        self.bd_obj_capacity = EnhancedBD(self.num_cells,
+        self.bd_obj_capacity = EnhancedBD(current_params['num_cells'],
                                           transmit_power,
                                           self.noise_var,
                                           self.pe)
         self.bd_obj_capacity.set_ext_int_handling_metric(
-            "capacity", {'modulator': self.modulator,
-                         'packet_length': self.packet_length,
-                         'num_streams': 1})
+            "capacity",
+            {'modulator': self.modulator,
+             'packet_length': current_params['packet_length'],
+             'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xx Create the BD object with the effective_throughput metric xxxx
-        self.bd_obj_effec_throughput = EnhancedBD(self.num_cells,
-                                                  transmit_power,
-                                                  self.noise_var,
-                                                  self.pe)
+        self.bd_obj_effec_throughput = EnhancedBD(
+            current_params['num_cells'],
+            transmit_power,
+            self.noise_var,
+            self.pe)
         self.bd_obj_effec_throughput.set_ext_int_handling_metric(
-            "effective_throughput", {'modulator': self.modulator,
-                                     'packet_length': self.packet_length,
-                                     'num_streams': 1})
+            "effective_throughput",
+            {'modulator': self.modulator,
+             'packet_length': current_params['packet_length'],
+             'num_streams': 1})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with whitening xxxxxxxxxxxxxxxxxxxxxxx
-        self.bd_obj_whitening = WhiteningBD(self.num_cells,
+        self.bd_obj_whitening = WhiteningBD(current_params['num_cells'],
                                       transmit_power,
                                       self.noise_var,
                                       self.pe)
@@ -349,7 +392,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # scenario (random locations or not), calculate the path loss and
         # generate a new random channel (in the self.multiuser_channel
         # variable).
-        self._create_users_according_to_scenario()
+        self._create_users_according_to_scenario(current_parameters)
 
         # This will calculate pathloss and generate random channels from
         # all transmitters to all receivers as well as from the external
@@ -357,7 +400,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # after the _create_users_according_to_scenario method so that the
         # users are already created (we need their positions for the
         # pathloss)
-        self._create_users_channels()
+        self._create_users_channels(current_parameters)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the block diagonalization for each metric xxxxxxxxx
@@ -400,7 +443,12 @@ class BDSimulationRunner(simulations.SimulationRunner):
 
         # Since we will use the same data for the external interference no
         # matter which metric is used, lets create that data here.
-        external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
+        external_int_data_all_metrics = (
+            np.sqrt(self.pe) *
+            misc.randn_c_RS(
+                self.ext_data_RS,
+                current_parameters['ext_int_rank'],
+                current_parameters['NSymbs']))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxx Run the Simulation and get the results for each metric xxxxxx
@@ -414,7 +462,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
              external_int_data_all_metrics,
              MsPk_all_users_None,
              Wk_all_users_None,
-             'None')
+             'None',
+             current_parameters)
 
         # naive metric
         (ber_result_naive,
@@ -425,7 +474,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
              external_int_data_all_metrics,
              MsPk_all_users_naive,
              Wk_all_users_naive,
-             'naive')
+             'naive',
+             current_parameters)
 
         # fixed metric
         (ber_result_fixed,
@@ -436,7 +486,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
              external_int_data_all_metrics,
              MsPk_all_users_fixed,
              Wk_all_users_fixed,
-             'fixed')
+             'fixed',
+             current_parameters)
 
         # capacity metric
         (ber_result_capacity,
@@ -447,7 +498,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
              external_int_data_all_metrics,
              MsPk_all_users_capacity,
              Wk_all_users_capacity,
-             'capacity')
+             'capacity',
+             current_parameters)
 
         # effective throughput metric
         (ber_result_effec_throughput,
@@ -458,7 +510,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
              external_int_data_all_metrics,
              MsPk_all_users_effec_throughput,
              Wk_all_users_effec_throughput,
-             'effec_throughput')
+             'effec_throughput',
+             current_parameters)
 
         # Whitening BD
         (ber_result_Whitening,
@@ -469,7 +522,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
              external_int_data_all_metrics,
              Ms_all_users_Whitening,
              Wk_all_users_Whitening,
-             'Whitening')
+             'Whitening',
+             current_parameters)
 
         simResults = simulations.SimulationResults()
         # Add the 'None' results
@@ -512,11 +566,12 @@ class BDSimulationRunner(simulations.SimulationRunner):
         return simResults
 
     def __simulate_for_one_metric(self,
-            Ns_all_users,
-            external_int_data_all_metrics,
-            MsPk_all_users,
-            Wk_all_users,
-            metric_name='None'):
+                                  Ns_all_users,
+                                  external_int_data_all_metrics,
+                                  MsPk_all_users,
+                                  Wk_all_users,
+                                  metric_name,
+                                  current_parameters):
         """
         This method is only called inside the _run_simulation method.
 
@@ -543,8 +598,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.data_RS = np.random.RandomState(self.data_gen_seed)
         input_data = self.data_RS.randint(
             0,
-            self.M,
-            [Ns_total, self.NSymbs])
+            current_parameters['M'],
+            [Ns_total, current_parameters['NSymbs']])
         symbols = self.modulator.modulate(input_data)
 
         # Prepare the transmit data. That is, the precoded_data as well as
@@ -580,12 +635,12 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # num_bit_errors = sum_user_data(num_bit_errors,
         #                                         Ns_all_users)
 
-        num_bits = num_symbols * np.log2(self.M)
+        num_bits = num_symbols * np.log2(current_parameters['M'])
 
         # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
         ber = num_bit_errors / num_bits
-        per = 1. - ((1. - ber) ** self.packet_length)
-        num_packages = num_bits / self.packet_length
+        per = 1. - ((1. - ber) ** current_parameters['packet_length'])
+        num_packages = num_bits / current_parameters['packet_length']
         num_package_errors = per * num_packages
 
         # xxxxxxxxxx Calculates the Spectral Efficiency xxxxxxxxxxxxxxxxxxx
@@ -670,6 +725,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         transmit_power : float
             Desired transmit power (in linear scale).
         """
+        # Path loss (in linear scale) from the cell center to
         path_loss_border = path_loss_obj.calc_path_loss(cell_radius)
         snr = conversion.dB2Linear(SNR_dB)
         pt = snr * conversion.dBm2Linear(N0_dBm) / path_loss_border
@@ -939,12 +995,12 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
 
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from apps.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'bd_results'
+    results_filename = 'bd_results_APAGAR'
     runner = BDSimulationRunner()
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1005,7 +1061,7 @@ if __name__ == '__main__':
         _MATPLOTLIB_AVAILABLE = False
 
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'bd_results'
+    results_filename = 'bd_results_APAGAR'
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
@@ -1034,12 +1090,12 @@ if __name__ == '__main__':
         spec_fig = plot_spectral_efficience_all_metrics(results, Pe_dBm)
         # spec_fig.tight_layout()
         spec_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
-        spec_fig.savefig('{0}_Pe_{1}_spec_effic.pgf'.format(results_filename, Pe_dBm))
+        spec_fig.savefig('{0}_Pe_{1}_spec_effic.pdf'.format(results_filename, Pe_dBm))
 
         per_all_fig = plot_per_all_metrics(results, Pe_dBm)
         # per_all_fig.tight_layout()
         per_all_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
-        per_all_fig.savefig('{0}_Pe_{1}_per_all.pgf'.format(results_filename, Pe_dBm))
+        per_all_fig.savefig('{0}_Pe_{1}_per_all.pdf'.format(results_filename, Pe_dBm))
 
 
         # # Save the Error rates curves for each metric for the given Pe_dBm
