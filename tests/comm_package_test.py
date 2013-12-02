@@ -23,7 +23,7 @@ from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
 from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
-from util.conversion import dB2Linear, linear2dB
+from util.conversion import dB2Linear, linear2dB, single_matrix_to_matrix_of_matrices
 from subspace.projections import calcProjectionMatrix
 
 
@@ -659,7 +659,6 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         self.assertEqual(self.multiH.extIntK, 1)
         np.testing.assert_array_equal(self.multiH.extIntNt, np.array([1]))
 
-
     def test_big_H_no_ext_int_property(self):
         self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
         np.testing.assert_array_almost_equal(self.multiH.big_H_no_ext_int,
@@ -716,6 +715,32 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         self.multiH.set_pathloss()
         self.assertIsNone(self.multiH.pathloss)
         self.assertIsNone(self.multiH._pathloss_big_matrix)
+
+    def test_get_H_property(self):
+        # test the get_H property when there is pathloss
+        self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
+        K = self.multiH.K
+        extIntK = self.multiH.extIntK
+
+        pathloss = np.reshape(np.r_[1:K * K + 1], [K, K])
+        pathloss_extint = np.reshape(np.r_[50:K * extIntK + 50], [K, extIntK])
+        self.multiH.set_pathloss(pathloss, pathloss_extint)
+
+        self.assertEqual(self.multiH.H.shape, (3, 5))
+
+        # xxxxxxxxxx Sanity check xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # This will check if the H property matches the big_H property.
+        expected_H = single_matrix_to_matrix_of_matrices(
+            self.multiH.big_H,
+            self.multiH.Nr,
+            np.hstack([self.multiH.Nt, self.multiH.extIntNt]))
+
+        nrows, ncols = expected_H.shape
+        for r in range(nrows):
+            for c in range(ncols):
+                np.testing.assert_array_almost_equal(expected_H[r, c],
+                                                     self.multiH.H[r, c])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_corrupt_data(self):
         Nt = np.array([2, 2])
@@ -1685,43 +1710,43 @@ class WhiteningBDTestCase(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.norm(np.dot(H2, Ms1), 'fro'), 0)
 
 
-        # xxxxxxxxxx Now lets test the receive filter xxxxxxxxxxxxxxxxxxxxx
-        print
-        #print Wk_all
-        np.set_printoptions(precision=4, linewidth=100)
-
-        print np.dot(H1, Ms1)
-        print
-        print np.dot(H2, Ms2)
-        print
-
-        print "big_H"
-        big_H = multiUserChannel.big_H_no_ext_int
-        print big_H
-
-        # print Ms_all[0]
+        # # xxxxxxxxxx Now lets test the receive filter xxxxxxxxxxxxxxxxxxxxx
         # print
-        # print Ms_all[1]
+        # #print Wk_all
+        # np.set_printoptions(precision=4, linewidth=100)
+
+        # print np.dot(H1, Ms1)
+        # print
+        # print np.dot(H2, Ms2)
         # print
 
-        print "Ms"
-        Ms = np.hstack(Ms_all)
-        print Ms
+        # print "big_H"
+        # big_H = multiUserChannel.big_H_no_ext_int
+        # print big_H
 
-        print
+        # # print Ms_all[0]
+        # # print
+        # # print Ms_all[1]
+        # # print
 
-        print "Multiplication"
-        print np.dot(big_H, Ms).round(6)
-        print
+        # print "Ms"
+        # Ms = np.hstack(Ms_all)
+        # print Ms
 
-        Wk = linalg.block_diag(*Wk_all)
-        print "Wk"
-        print Wk
-        print
+        # print
 
-        print "Final"
-        print np.dot(Wk, np.dot(big_H, Ms)).round(4)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # print "Multiplication"
+        # print np.dot(big_H, Ms).round(6)
+        # print
+
+        # Wk = linalg.block_diag(*Wk_all)
+        # print "Wk"
+        # print Wk
+        # print
+
+        # print "Final"
+        # print np.dot(Wk, np.dot(big_H, Ms)).round(4)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 

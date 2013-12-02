@@ -291,9 +291,9 @@ class BDSimulationRunner(simulations.SimulationRunner):
 
         # xxxxx Create the BD object with whitening xxxxxxxxxxxxxxxxxxxxxxx
         self.bd_obj_whitening = WhiteningBD(current_params['num_cells'],
-                                      transmit_power,
-                                      self.noise_var,
-                                      self.pe)
+                                            transmit_power,
+                                            self.noise_var,
+                                            self.pe)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -779,12 +779,12 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
 
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from apps.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
-    results_filename = 'bd_results_{Nr}x{Nt}'
+    results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'
     runner = BDSimulationRunner()
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -845,7 +845,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'bd_results_{Nr}x{Nt}'.format(**params.parameters)
+    results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'.format(**params.parameters)
     results = simulations.SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 

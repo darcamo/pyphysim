@@ -938,13 +938,18 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
     def _get_H(self):
         """Get method for the H property."""
-        # Call the _get_H method from the base class, which will apply the
-        # path loss if any.
-        H = MultiUserChannelMatrix._get_H(self)
-        # Now all we need to do is ignore the last _extIntK "lines" since
-        # they correspond to the receive antennas of the interference
-        # sources 'users' (which are in fact empty)
-        return H[:-self._extIntK]
+        # We only care about the first self.K "rows". The remaining rows
+        # are the channels from all transmitters to the "external
+        # interference user".
+        H = self._H[0:self.K]
+        if self._pathloss_matrix is None:
+            # No path loss
+            return H
+        else:
+            # Apply path loss. Note that the _pathloss_big_matrix matrix
+            # has the same dimension as the self._big_H matrix and we are
+            # performing element-wise multiplication here.
+            return H * np.sqrt(self._pathloss_matrix)
     H = property(_get_H)
 
     def _get_H_no_ext_int(self):
