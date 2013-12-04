@@ -499,6 +499,8 @@ def simulate_general(runner, results_filename):
         `results_filename` is equal to "results for {Nr}x{Nt}" then
         "results for 2x1.pickle" will be used.
     """
+    import os
+
     # xxxxxxxxxx Print the simulation parameters xxxxxxxxxxxxxxxxxxxxxxxxxx
     pprint(runner.params.parameters)
     print("IA Solver: {0}".format(runner.ia_solver.__class__))
@@ -546,7 +548,11 @@ def simulate_general(runner, results_filename):
         runner.simulate_in_parallel(lview)
     else:
         print("Simulation will be run serially")
-        runner.simulate()
+
+        # This will be None unless this script is running as part of a job
+        # array in a PBS cluster.
+        variation_index = os.getenv("PBS_ARRAY_INDEX")
+        runner.simulate(variation_index)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx

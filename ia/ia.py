@@ -449,15 +449,16 @@ class IASolverBaseClass(object):
 
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
-        interfering_users = set(range(self.K)) - set([k])
-        Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
+        # interfering_users = set(range(self.K)) - set([k])
+        # Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
-        for l in interfering_users:
-            Hkl_F = np.dot(
-                self._get_channel(k, l),
-                self.full_F[l])
-            Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
+        # for l in interfering_users:
+        #     Hkl_F = np.dot(
+        #         self._get_channel(k, l),
+        #         self.full_F[l])
+        #     Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
 
+        Qk = self._multiUserChannel.calc_Q(k, self.full_F)
         return Qk
 
     # This method must be tested in a subclass of IASolverBaseClass, since

@@ -1053,7 +1053,7 @@ class SimulationRunner(object):
                 print  # print a new line
                 yield i
 
-    def simulate(self):
+    def simulate(self, param_variation_index=None):
         """
         Performs the full Monte Carlo simulation (serially).
 
@@ -1066,6 +1066,16 @@ class SimulationRunner(object):
         class, more specifically in the `simulate` method, while the
         specific code of a single iteration is implemented in the
         _run_simulation method in a subclass.
+
+        Parameters
+        ----------
+        param_variation_index : int (default is None)
+            If not provided, the full simulation will be run. If this is
+            provided the simulation will be run only for the parameters
+            variation with index given by `param_variation_index`. In that
+            case, calling the set_results_filename method before the
+            simulate method is required since only the partial results will
+            be saved.
 
         See Also
         --------
@@ -1094,7 +1104,10 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Get the number of variations of the transmit parameters
-        num_variations = self.params.get_num_unpacked_variations()
+        if param_variation_index is None:
+            num_variations = self.params.get_num_unpacked_variations()
+        else:
+            num_variations = 1
 
         ## xxxxx Start of the code unique to the serial version xxxxxxxxxxx
 
@@ -1107,41 +1120,62 @@ class SimulationRunner(object):
         var_print_iter = self.__get_print_variation_iterator(num_variations)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Loop through all the parameters combinations
-        for current_params in self.params.get_unpacked_params_list():
-            current_rep, current_sim_results, partial_results_filename = self._simulate_for_current_params_serial(current_params, var_print_iter)
+        # Here we can either simulate for a single combination of
+        # parameters, if param_variation_index was provided, or for all
+        # combinations if it is not provided.
+        if param_variation_index is not None:
+            if self.__results_base_filename is None:
+                raise RuntimeError('The results filename must be set before calling the "simulate" method.')
+            param_comb_list = self.params.get_unpacked_params_list()
+            if param_variation_index > 0 and param_variation_index < len(param_comb_list):
+                current_params = param_comb_list[param_variation_index]
+                self._simulate_for_current_params_serial(current_params,
+                                                         var_print_iter)
+            # Now that we run the simulation for the parameters
+            # configuration indicated by param_variation_index let's exit
+            # the program
+            exit()
 
-            # Store the number of repetitions actually ran for the current
-            # parameters combination
-            self._runned_reps.append(current_rep)
-            # Lets append the simulation results for the current parameters
-            self.results.append_all_results(current_sim_results)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # If param_variation_index is None we will run for all parameters
+        # combinations
+        else:
+            # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Loop through all the parameters combinations
+            for current_params in self.params.get_unpacked_params_list():
+                current_rep, current_sim_results, partial_results_filename = self._simulate_for_current_params_serial(current_params, var_print_iter)
 
-        # Implement the _on_simulate_finish method in a subclass if you
-        # need to run code at the end of the simulate method.
-        self._on_simulate_finish()
+                # Store the number of repetitions actually ran for the
+                # current parameters combination
+                self._runned_reps.append(current_rep)
+                # Lets append the simulation results for the current
+                # parameters
+                self.results.append_all_results(current_sim_results)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
-        self.results.runned_reps = self._runned_reps
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Implement the _on_simulate_finish method in a subclass if you
+            # need to run code at the end of the simulate method.
+            self._on_simulate_finish()
 
-        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.__toc = time()
-        self._elapsed_time = self.__toc - self.__tic
+            # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxx
+            self.results.runned_reps = self._runned_reps
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Also save the elapsed time in the SimulationResults object
-        self.results.elapsed_time = self._elapsed_time
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            self.__toc = time()
+            self._elapsed_time = self.__toc - self.__tic
 
-        # xxxxx Save the results if results_filename is not None xxxxxxxxxx
-        if self.__results_base_filename is not None:
-            self.results.save_to_file(self.results_filename)
-            # Delete the partial results (this will only delete the partial
-            # results if self.delete_partial_results_bool is True)
-            self.__delete_partial_results_maybe()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Also save the elapsed time in the SimulationResults object
+            self.results.elapsed_time = self._elapsed_time
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Save the results if results_filename is not None xxxxxx
+            if self.__results_base_filename is not None:
+                self.results.save_to_file(self.results_filename)
+                # Delete the partial results (this will only delete the
+                # partial results if self.delete_partial_results_bool is
+                # True)
+                self.__delete_partial_results_maybe()
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def simulate_in_parallel(self, view, wait=True):
         """
