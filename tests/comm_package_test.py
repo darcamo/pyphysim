@@ -22,6 +22,7 @@ import numpy as np
 from scipy import linalg
 
 from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
+from ia.ia import ClosedFormIASolver
 from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
 from util.conversion import dB2Linear, linear2dB, single_matrix_to_matrix_of_matrices
 from subspace.projections import calcProjectionMatrix
@@ -564,6 +565,414 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(corrupted_data, data)
         self.assertIsNone(self.multiH.last_noise)
         self.assertAlmostEqual(self.multiH.last_noise_var, 0.0)
+
+    # TODO: Finish the implementation
+    def test_calc_Q(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([2, 2, 2])
+        Ns = np.array([1, 1, 1])
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        F_all_k = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F_all_k[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+
+        # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
+        k = 0
+        H01_F1 = np.dot(
+            self.multiH.get_channel(k, 1),
+            F_all_k[1]
+        )
+        H02_F2 = np.dot(
+            self.multiH.get_channel(k, 2),
+            F_all_k[2]
+        )
+        expected_Q0 = np.dot(H01_F1,
+                             H01_F1.transpose().conjugate()) + \
+            np.dot(H02_F2,
+                   H02_F2.transpose().conjugate())
+
+        Qk = self.multiH.calc_Q(k, F_all_k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
+        k = 1
+        H10_F0 = np.dot(
+            self.multiH.get_channel(k, 0),
+            F_all_k[0]
+        )
+        H12_F2 = np.dot(
+            self.multiH.get_channel(k, 2),
+            F_all_k[2]
+        )
+        expected_Q1 = np.dot(H10_F0,
+                             H10_F0.transpose().conjugate()) + \
+            np.dot(H12_F2,
+                   H12_F2.transpose().conjugate())
+
+        Qk = self.multiH.calc_Q(k, F_all_k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
+        k = 2
+        H20_F0 = np.dot(
+            self.multiH.get_channel(k, 0),
+            F_all_k[0]
+        )
+        H21_F1 = np.dot(
+            self.multiH.get_channel(k, 1),
+            F_all_k[1]
+        )
+        expected_Q2 = np.dot(H20_F0,
+                             H20_F0.transpose().conjugate()) + \
+            np.dot(H21_F1,
+                   H21_F1.transpose().conjugate())
+
+        Qk = self.multiH.calc_Q(k, F_all_k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_Bkl_cov_matrix_first_part(self):
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        # For ones stream the expected Bkl is equivalent to the Q matrix
+        # plus the direct channel part.
+        for k in range(K):
+            Hkk = self.multiH.get_channel(k, k)
+            Fk = F[k]
+            HkkFk = np.dot(Hkk, Fk)
+            expected_first_part = self.multiH.calc_Q(k, F) + np.dot(HkkFk, HkkFk.conjugate().T)
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = np.ones(3, dtype=int) * 2
+
+        self.multiH.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            expected_first_part = 0.0  # First part in the equation of Bkl
+                                       # (the double summation)
+
+            # The inner for loop will calculate
+            # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
+            for j in range(K):
+                aux = 0.0
+                Hkj = self.multiH.get_channel(k, j)
+                Hkj_H = Hkj.conjugate().transpose()
+
+                # Calculates individually for each stream
+                for d in range(Ns[k]):
+                    Vjd = F[j][:, d:d + 1]
+                    Vjd_H = Vjd.conjugate().transpose()
+                    aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
+
+                expected_first_part = expected_first_part + aux
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_Bkl_cov_matrix_second_part(self):
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            Hkk = self.multiH.get_channel(k, k)
+            Hkk_H = Hkk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hkk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        K = 3
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            Hkk = self.multiH.get_channel(k, k)
+            Hkk_H = Hkk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hkk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for all streams
+        K = 3
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 4
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            Hkk = self.multiH.get_channel(k, k)
+            Hkk_H = Hkk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hkk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
+
+    def test_calc_Bkl(self):
+        # For the case of a single stream oer user Bkl (which only has l=0)
+        # is equal to Qk plus I (identity matrix)
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        P = np.array([1.2, 1.5, 0.9])
+        noise_power = 0.568
+
+        self.multiH.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            # We only have the stream 0
+            expected_Bk0 = self.multiH.calc_Q(k, F) + (noise_power * np.eye(Nr[k]))
+            Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, noise_power=noise_power)[0]
+            np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
+
+    def test_underline_calc_SINR_k(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        #iasolver = MaxSinrIASolver(multiUserChannel)
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        multiUserChannel.randomize(Nr, Nt, K)
+        F = np.empty(K, dtype=np.ndarray)
+        U = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+            U[k] = randn_c(Nr[k], Ns[k])
+
+        for k in range(K):
+            Hkk = multiUserChannel.get_channel(k, k)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, noise_power=0.0)
+            Uk = U[k]
+            Fk = F[k]
+            # Uk_H = iasolver.full_W_H[k]
+
+            SINR_k_all_l = multiUserChannel._calc_SINR_k(k, Fk, Uk, Bkl_all_l)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hkk, Vkl))
+
+                expectedSINRkl = np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+                )
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
+
+        # xxxxxxxxxx Repeat the tests, but now using an IA solution xxxxxxx
+        iasolver = ClosedFormIASolver(multiUserChannel)
+        iasolver.solve(Ns=2)
+        F = iasolver.full_F
+        U = iasolver.full_W
+
+        for k in range(K):
+            Hkk = multiUserChannel.get_channel(k, k)
+            Uk = U[k]
+            Fk = F[k]
+
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, noise_power=0.0001)
+            SINR_k_all_l = multiUserChannel._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hkk, Vkl))
+
+                expectedSINRkl = abs(np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
+                )
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
+
+    def test_calc_SINR(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver = ClosedFormIASolver(multiUserChannel)
+        iasolver.solve(Ns, P)
+        F = iasolver.full_F
+        U = iasolver.full_W
+
+        SINR_all_users = multiUserChannel.calc_SINR(F, U, noise_power=0.0)
+
+        # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # k = 0
+        B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=0,
+            noise_power=0.0)
+        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
+                                                       F[0],
+                                                       U[0],
+                                                       B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=1,
+            noise_power=0.0)
+        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
+                                                       F[1],
+                                                       U[1],
+                                                       B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 1
+        B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=2,
+            noise_power=0.0)
+        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
+                                                       F[2],
+                                                       U[2],
+                                                       B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # k = 0
+        iasolver.noise_var = 0.1
+        SINR_all_users = multiUserChannel.calc_SINR(F, U, noise_power=0.1)
+        B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=0,
+            noise_power=0.1)
+        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
+                                                       F[0],
+                                                       U[0],
+                                                       B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=1,
+            noise_power=0.1)
+        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
+                                                       F[1],
+                                                       U[1],
+                                                       B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 2
+        B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=2,
+            noise_power=0.1)
+        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
+                                                       F[2],
+                                                       U[2],
+                                                       B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):

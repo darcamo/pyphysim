@@ -334,31 +334,31 @@ class BDSimulationRunner(simulations.SimulationRunner):
         (MsPk_all_users_None,
          Wk_all_users_None,
          Ns_all_users_None) = self.bd_obj_None.block_diagonalize_no_waterfilling(
-             self.multiuser_channel)
+            self.multiuser_channel)
 
         # Naive Metric
         (MsPk_all_users_naive,
          Wk_all_users_naive,
          Ns_all_users_naive) = self.bd_obj_naive.block_diagonalize_no_waterfilling(
-             self.multiuser_channel)
+            self.multiuser_channel)
 
         # Fixed Metric
         (MsPk_all_users_fixed,
          Wk_all_users_fixed,
          Ns_all_users_fixed) = self.bd_obj_fixed.block_diagonalize_no_waterfilling(
-             self.multiuser_channel)
+            self.multiuser_channel)
 
         # Capacity Metric
         (MsPk_all_users_capacity,
          Wk_all_users_capacity,
          Ns_all_users_capacity) = self.bd_obj_capacity.block_diagonalize_no_waterfilling(
-             self.multiuser_channel)
+            self.multiuser_channel)
 
         # effective_throughput Metric
         (MsPk_all_users_effec_throughput,
          Wk_all_users_effec_throughput,
          Ns_all_users_effec_throughput) = self.bd_obj_effec_throughput.block_diagonalize_no_waterfilling(
-             self.multiuser_channel)
+            self.multiuser_channel)
 
         (Ms_all_users_Whitening,
          Wk_all_users_Whitening,
@@ -384,72 +384,72 @@ class BDSimulationRunner(simulations.SimulationRunner):
          ser_result_None,
          per_result_None,
          spec_effic_result_None) = self.__simulate_for_one_metric(
-             Ns_all_users_None,
-             external_int_data_all_metrics,
-             MsPk_all_users_None,
-             Wk_all_users_None,
-             'None',
-             current_parameters)
+            Ns_all_users_None,
+            external_int_data_all_metrics,
+            MsPk_all_users_None,
+            Wk_all_users_None,
+            'None',
+            current_parameters)
 
         # naive metric
         (ber_result_naive,
          ser_result_naive,
          per_result_naive,
          spec_effic_result_naive) = self.__simulate_for_one_metric(
-             Ns_all_users_naive,
-             external_int_data_all_metrics,
-             MsPk_all_users_naive,
-             Wk_all_users_naive,
-             'naive',
-             current_parameters)
+            Ns_all_users_naive,
+            external_int_data_all_metrics,
+            MsPk_all_users_naive,
+            Wk_all_users_naive,
+            'naive',
+            current_parameters)
 
         # fixed metric
         (ber_result_fixed,
          ser_result_fixed,
          per_result_fixed,
          spec_effic_result_fixed) = self.__simulate_for_one_metric(
-             Ns_all_users_fixed,
-             external_int_data_all_metrics,
-             MsPk_all_users_fixed,
-             Wk_all_users_fixed,
-             'fixed',
-             current_parameters)
+            Ns_all_users_fixed,
+            external_int_data_all_metrics,
+            MsPk_all_users_fixed,
+            Wk_all_users_fixed,
+            'fixed',
+            current_parameters)
 
         # capacity metric
         (ber_result_capacity,
          ser_result_capacity,
          per_result_capacity,
          spec_effic_result_capacity) = self.__simulate_for_one_metric(
-             Ns_all_users_capacity,
-             external_int_data_all_metrics,
-             MsPk_all_users_capacity,
-             Wk_all_users_capacity,
-             'capacity',
-             current_parameters)
+            Ns_all_users_capacity,
+            external_int_data_all_metrics,
+            MsPk_all_users_capacity,
+            Wk_all_users_capacity,
+            'capacity',
+            current_parameters)
 
         # effective throughput metric
         (ber_result_effec_throughput,
          ser_result_effec_throughput,
          per_result_effec_throughput,
          spec_effic_result_effec_throughput) = self.__simulate_for_one_metric(
-             Ns_all_users_effec_throughput,
-             external_int_data_all_metrics,
-             MsPk_all_users_effec_throughput,
-             Wk_all_users_effec_throughput,
-             'effec_throughput',
-             current_parameters)
+            Ns_all_users_effec_throughput,
+            external_int_data_all_metrics,
+            MsPk_all_users_effec_throughput,
+            Wk_all_users_effec_throughput,
+            'effec_throughput',
+            current_parameters)
 
         # Whitening BD
         (ber_result_Whitening,
          ser_result_Whitening,
          per_result_Whitening,
          spec_effic_result_Whitening) = self.__simulate_for_one_metric(
-             Ns_all_users_Whitening,
-             external_int_data_all_metrics,
-             Ms_all_users_Whitening,
-             Wk_all_users_Whitening,
-             'Whitening',
-             current_parameters)
+            Ns_all_users_Whitening,
+            external_int_data_all_metrics,
+            Ms_all_users_Whitening,
+            Wk_all_users_Whitening,
+            'Whitening',
+            current_parameters)
 
         simResults = simulations.SimulationResults()
         # Add the 'None' results
@@ -531,7 +531,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
         # Prepare the transmit data. That is, the precoded_data as well as
         # the external interferece sources' data.
         precoded_data = np.dot(np.hstack(MsPk_all_users),
-                                        symbols)
+                               symbols)
         # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
         all_data = np.vstack([precoded_data,
                               external_int_data_all_metrics])
@@ -856,12 +856,12 @@ if __name__ == '__main__':
         # Save the Spectral Efficiency curve for the given Pe_dBm
         spec_fig = plot_spectral_efficience_all_metrics(results, Pe_dBm)
         # spec_fig.tight_layout()
-        spec_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
+        spec_fig.subplots_adjust(bottom=0.08, right=0.98, top=0.95, left=0.07)
         spec_fig.savefig('{0}_Pe_{1}_spec_effic.pdf'.format(results_filename, Pe_dBm))
 
         per_all_fig = plot_per_all_metrics(results, Pe_dBm)
         # per_all_fig.tight_layout()
-        per_all_fig.subplots_adjust(bottom=0.08,right=0.98,top=0.95,left=0.07)
+        per_all_fig.subplots_adjust(bottom=0.08, right=0.98, top=0.95, left=0.07)
         per_all_fig.savefig('{0}_Pe_{1}_per_all.pdf'.format(results_filename, Pe_dBm))
 
         plt.show()
