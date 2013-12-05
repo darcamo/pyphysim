@@ -1027,7 +1027,7 @@ class SimulationRunner(object):
 
         return obj._simulate_for_current_params_common(current_params, update_progress_func)
 
-    def __get_print_variation_iterator(self, num_variations):
+    def __get_print_variation_iterator(self, num_variations, start=1):
         """
         Returns an iterator that prints the current variation each time it's
         "next" method is called.
@@ -1038,6 +1038,13 @@ class SimulationRunner(object):
         ------------- Current Variation: 4/84 ------------
 
         which means the variation 4 of 84 variations.
+
+        Parameters
+        ----------
+        num_variations : int
+            The number of different variations.
+        start : int (default is 1)
+            The index of the first variation.
         """
         if self.update_progress_function_style is None:
             for i in itertools.repeat(''):
@@ -1048,7 +1055,7 @@ class SimulationRunner(object):
                 progresschar='-',
                 message="Current Variation:")
 
-            for i in range(1, num_variations + 1):
+            for i in range(start, num_variations + 1):
                 variation_pbar.progress(i)
                 print  # print a new line
                 yield i
@@ -1081,6 +1088,13 @@ class SimulationRunner(object):
         --------
         simulate_in_parallel
         """
+        #
+        if param_variation_index is not None:
+            # Maybe even though param_variation_index is a valid integer it
+            # was passed as a string. Let's try to convert whatever we have
+            # to an integer.
+            param_variation_index = int(param_variation_index)
+
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1104,10 +1118,7 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Get the number of variations of the transmit parameters
-        if param_variation_index is None:
-            num_variations = self.params.get_num_unpacked_variations()
-        else:
-            num_variations = 1
+        num_variations = self.params.get_num_unpacked_variations()
 
         ## xxxxx Start of the code unique to the serial version xxxxxxxxxxx
 
@@ -1117,7 +1128,12 @@ class SimulationRunner(object):
         # print something like
         # ------------- Current Variation: 4/84 ------------
         # which means the variation 4 of 84 variations.
-        var_print_iter = self.__get_print_variation_iterator(num_variations)
+        if param_variation_index is None:
+            var_print_iter = self.__get_print_variation_iterator(
+                num_variations)
+        else:
+            var_print_iter = self.__get_print_variation_iterator(
+                num_variations, param_variation_index)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Here we can either simulate for a single combination of
@@ -1127,7 +1143,7 @@ class SimulationRunner(object):
             if self.__results_base_filename is None:
                 raise RuntimeError('The results filename must be set before calling the "simulate" method.')
             param_comb_list = self.params.get_unpacked_params_list()
-            if param_variation_index > 0 and param_variation_index < len(param_comb_list):
+            if param_variation_index >= 0 and param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
                 self._simulate_for_current_params_serial(current_params,
                                                          var_print_iter)
