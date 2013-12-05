@@ -173,6 +173,7 @@ import cPickle as pickle
 from collections import OrderedDict, Iterable
 import itertools
 import copy
+import sys
 import numpy as np
 from time import time
 
@@ -182,7 +183,7 @@ except Exception:
     pass
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
-from util.progressbar import ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -438,8 +439,13 @@ class SimulationRunner(object):
         # --- When the simulation is performed in parallel ----------------
         # - If it is None then no progressbar will be used
         # - If it is not None then a socket progressbar will be used, which
-        #   employes the same style as 'text1'
-        self.update_progress_function_style = 'text1'
+        #   employes the same style as 'text2'
+        self.update_progress_function_style = 'text2'
+
+        # This can be either 'screen' or 'file'. If it is 'file' then the
+        # progressbar will write the progress to a file with appropriated
+        # filename
+        self.progress_output_type = 'screen'
 
         # Dictionary with extra arguments that will be passed to the
         # __init__ method of the progressbar class. For instance, when
@@ -540,10 +546,47 @@ class SimulationRunner(object):
         return results_filename
     results_filename = property(_get_results_filename)
 
-    def _get_unpack_result_filename(self, current_params):
+    def _get_progress_output_sinc(self, param_variation_index):
         """
-        Get the name of the file where the partial result will be saved for the
-        unpackated result with index `unpack_index`.
+        Get the output sinc for the progressbars.
+
+        If 'self.progress_output_type' is equal to 'screen' this method
+        will simple return sys.stdout.
+
+        Parameters
+        ----------
+        param_variation_index : int or a string that can be converted to int
+            If this is provided and 'self.progress_output_type' is 'file',
+            this will be used in the filename of the progress output file.
+
+        Returns
+        -------
+        out : sys.stdout or a file object
+        """
+        out = sys.stdout
+        if self.progress_output_type == 'screen':
+            pass
+        else:
+            total_unpacks = self.params.get_num_unpacked_variations()
+            num_digits = len(str(total_unpacks))
+            unpack_index_str = str(param_variation_index).zfill(num_digits)
+            filename = '{0}_progress_{1}_of_{2}.txt'.format(
+                self.__results_base_filename,
+                unpack_index_str,
+                total_unpacks)
+            out = open(filename, 'w')
+
+        return out
+
+    def _get_partial_results_filename(self, current_params):
+        """
+        Get the name of the file where the partial result will be saved for
+        the unpackated result with index `unpack_index`.
+
+        Parameters
+        ----------
+        current_params : SimulationParameters object
+            The current parameters.
         """
         total_unpacks = current_params._original_sim_params.get_num_unpacked_variations()
         num_digits = len(str(total_unpacks))
@@ -770,16 +813,26 @@ class SimulationRunner(object):
         # nothing
         update_progress_func = lambda value: None
 
-        # If the self.update_progress_function_style attribute matches one of the
-        # available styles, then update_progress_func will be appropriately
-        # set.
+        # If self.progress_output_type is equal to 'screen', this will be
+        # sys.stdout, otherwise it will be a file object. Note that
+        # self.progress_output_type is used when
+        # self.update_progress_function_style is either 'text1' or 'text2'.
+        output_progress_sinc = self._get_progress_output_sinc(current_params._unpack_index)
+
+        # If the self.update_progress_function_style attribute matches one
+        # of the available styles, then update_progress_func will be
+        # appropriately set.
         if self.update_progress_function_style == 'text1':  # pragma: no cover
             # We will use the ProgressbarText class
-            self._pbar = ProgressbarText2(self.rep_max, '*', message)
+            self._pbar = ProgressbarText(self.rep_max, '*', message,
+                                         output=output_progress_sinc,
+                                         **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
         elif self.update_progress_function_style == 'text2':  # pragma: no cover
             # We will use the ProgressbarText2 class
-            self._pbar = ProgressbarText2(self.rep_max, '*', message)
+            self._pbar = ProgressbarText2(self.rep_max, '*', message,
+                                          output=output_progress_sinc,
+                                          **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
         elif callable(self.update_progress_function_style) is True:
             # We will use a custom function to update the progress. Note
@@ -838,7 +891,15 @@ class SimulationRunner(object):
                 # 'full_params' then it will be replaced by the value of
                 # 'some_param'.
                 message = self.progressbar_message.format(**parameters)
+
+                if self.progress_output_type == 'screen':
+                    filename = None
+                else:
+                    filename = '{0}_progress.txt'.format(
+                        self.__results_base_filename)
+
                 self._pbar = ProgressbarZMQServer(message=message,
+                                                  filename=filename,
                                                  **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient
@@ -904,7 +965,7 @@ class SimulationRunner(object):
         try:
             # Name of the file where the partial results will be saved
             if self.__results_base_filename is not None:
-                partial_results_filename = self._get_unpack_result_filename(
+                partial_results_filename = self._get_partial_results_filename(
                     current_params)
             else:
                 # If __results_base_filename is None there is also no
@@ -1046,7 +1107,7 @@ class SimulationRunner(object):
         start : int (default is 1)
             The index of the first variation.
         """
-        if self.update_progress_function_style is None:
+        if self.update_progress_function_style is None or self.progress_output_type != 'screen':
             for i in itertools.repeat(''):
                 yield 0
         else:  # pragma: no cover
@@ -1121,19 +1182,22 @@ class SimulationRunner(object):
         num_variations = self.params.get_num_unpacked_variations()
 
         ## xxxxx Start of the code unique to the serial version xxxxxxxxxxx
-
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create the var_print_iter Iterator
         # Each time the 'next' method of var_print_iter is called it will
         # print something like
         # ------------- Current Variation: 4/84 ------------
         # which means the variation 4 of 84 variations.
+
+        # However, this will only be printed if self.progress_output_type is
+        # equal to 'screen'
         if param_variation_index is None:
             var_print_iter = self.__get_print_variation_iterator(
                 num_variations)
         else:
             var_print_iter = self.__get_print_variation_iterator(
-                num_variations, param_variation_index)
+                num_variations,
+                start=param_variation_index)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Here we can either simulate for a single combination of
@@ -1150,7 +1214,7 @@ class SimulationRunner(object):
             # Now that we run the simulation for the parameters
             # configuration indicated by param_variation_index let's exit
             # the program
-            exit()
+            sys.exit()
 
         # If param_variation_index is None we will run for all parameters
         # combinations
