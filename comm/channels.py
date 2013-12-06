@@ -837,7 +837,7 @@ class MultiUserChannelMatrix(object):
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
-    def calc_Q(self, k, F_all_users):
+    def calc_Q(self, k, F_all_users, noise_var=0.0):
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver.
@@ -857,6 +857,8 @@ class MultiUserChannelMatrix(object):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
+        noise_var : flot (default is 0.0)
+            The noise variance.
 
         Returns
         -------
@@ -877,6 +879,7 @@ class MultiUserChannelMatrix(object):
                 F_all_users[l])
             Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
 
+        Qk = Qk + np.eye(self.Nr[k]) * noise_var
         return Qk
 
     def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k):
@@ -1552,12 +1555,64 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             matrix of the external interference plus noise at one receiver.
 
         """
+        # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H + \sigma_n^2 \mtI$$
+        # where $Ke$ is the number of external interference sources and
+        # ${e_j}$ is the j-th external interference source
+
         R = np.empty(self.Nr.size, dtype=np.ndarray)
         cum_Nr = np.hstack([0, np.cumsum(self.Nr)])
 
-        # import pudb
-        # pudb.set_trace()
         for ii in range(self.Nr.size):
             extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
             R[ii] = pe * np.dot(extH, extH.transpose().conjugate()) + np.eye(self.Nr[ii]) * noise_var
         return R
+
+    def calc_Q(self, k, F_all_users, noise_var=0.0, pe=1.0):
+        """
+        Calculates the interference covariance matrix at the
+        :math:`k`-th receiver.
+
+        The interference covariance matrix at the :math:`k`-th receiver,
+        :math:`\mtQ k`, is given by
+
+            :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
+
+        where :math:`P_j` is the transmit power of transmitter :math:`j`,
+        and :math:`Ns_j` is the number of streams for user :math:`j`.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired receiver.
+        F_all_users : 1D numpy array of 2D numpy array
+            The precoder of all users (already taking into account the
+            transmit power).
+        noise_var : flot (default is 0.0)
+            The noise variance.
+        pe : float
+            The power of the external interference source(s).
+
+        Returns
+        -------
+        Qk : 2D numpy complex array.
+            The interference covariance matrix at receiver :math:`k`.
+
+        Notes
+        -----
+        This is impacted by the self.P attribute.
+        """
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \mtR_e$$
+        interfering_users = set(range(self.K)) - set([k])
+        Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
+
+        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+
+        for l in interfering_users:
+            Hkl_F = np.dot(
+                self.get_channel(k, l),
+                F_all_users[l])
+            Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
+
+        Qk = Qk + Rek[k]
+
+        return Qk

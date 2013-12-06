@@ -566,7 +566,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.assertIsNone(self.multiH.last_noise)
         self.assertAlmostEqual(self.multiH.last_noise_var, 0.0)
 
-    # TODO: Finish the implementation
     def test_calc_Q(self):
         K = 3
         Nt = np.array([2, 2, 2])
@@ -600,6 +599,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q0)
+
+        # Now with noise variance different of 0
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        np.testing.assert_array_almost_equal(Qk, expected_Q0 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
@@ -620,6 +624,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q1)
+
+        # Now with noise variance different of 0
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        np.testing.assert_array_almost_equal(Qk, expected_Q1 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
@@ -640,6 +649,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
+
+        # Now with noise variance different of 0
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        np.testing.assert_array_almost_equal(Qk, expected_Q2 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_Bkl_cov_matrix_first_part(self):
@@ -1395,6 +1409,143 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                                              expected_cov_int_plus_noise[1])
         np.testing.assert_array_almost_equal(cov_int_plus_noise[2],
                                              expected_cov_int_plus_noise[2])
+
+    def test_calc_Q(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([2, 2, 2])
+        Ns = np.array([1, 1, 1])
+        NtE = np.array([1, 2])
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K, NtE)
+
+        F_all_k = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F_all_k[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+
+        # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
+        k = 0
+        H01_F1 = np.dot(
+            self.multiH.get_channel(k, 1),
+            F_all_k[1]
+        )
+        H02_F2 = np.dot(
+            self.multiH.get_channel(k, 2),
+            F_all_k[2]
+        )
+        R0_e0 = self.multiH.get_channel(0, 3)
+        R0_e1 = self.multiH.get_channel(0, 4)
+
+        expected_Q0_no_ext_int_or_noise = (
+            # Internal interference part
+            np.dot(H01_F1,
+                   H01_F1.transpose().conjugate()) +
+            np.dot(H02_F2,
+                   H02_F2.transpose().conjugate())
+            # # External interference part
+            # np.dot(R0_e0, R0_e0.conjugate().T) +
+            # np.dot(R0_e1, R0_e1.conjugate().T)
+            )
+
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0_no_ext_int_or_noise)
+
+        # Now with external interference
+        expected_Q0_no_noise = (expected_Q0_no_ext_int_or_noise +
+                                np.dot(R0_e0, R0_e0.conjugate().T) +
+                                np.dot(R0_e1, R0_e1.conjugate().T))
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0_no_noise)
+
+        # Now with external interference and noise
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        expected_Q0 = expected_Q0_no_noise + np.eye(2) * noise_var
+        np.testing.assert_array_almost_equal(Qk, expected_Q0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
+        k = 1
+        H10_F0 = np.dot(
+            self.multiH.get_channel(k, 0),
+            F_all_k[0]
+        )
+        H12_F2 = np.dot(
+            self.multiH.get_channel(k, 2),
+            F_all_k[2]
+        )
+        R1_e0 = self.multiH.get_channel(1, 3)
+        R1_e1 = self.multiH.get_channel(1, 4)
+
+        expected_Q1_no_ext_int_or_noise = (
+            np.dot(H10_F0,
+                   H10_F0.transpose().conjugate()) +
+            np.dot(H12_F2,
+                   H12_F2.transpose().conjugate())
+            )
+
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1_no_ext_int_or_noise)
+
+        # Now with external interference
+        expected_Q1_no_noise = (expected_Q1_no_ext_int_or_noise +
+                                np.dot(R1_e0, R1_e0.conjugate().T) +
+                                np.dot(R1_e1, R1_e1.conjugate().T))
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1_no_noise)
+
+        # Now with external interference and noise
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        expected_Q1 = expected_Q1_no_noise + np.eye(2) * noise_var
+        np.testing.assert_array_almost_equal(Qk, expected_Q1)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
+        k = 2
+        H20_F0 = np.dot(
+            self.multiH.get_channel(k, 0),
+            F_all_k[0]
+        )
+        H21_F1 = np.dot(
+            self.multiH.get_channel(k, 1),
+            F_all_k[1]
+        )
+        R2_e0 = self.multiH.get_channel(2, 3)
+        R2_e1 = self.multiH.get_channel(2, 4)
+
+        expected_Q2_no_ext_int_or_noise = (
+            np.dot(H20_F0,
+                   H20_F0.transpose().conjugate()) +
+            np.dot(H21_F1,
+                   H21_F1.transpose().conjugate())
+            )
+
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2_no_ext_int_or_noise)
+
+        # Now with external interference
+        expected_Q2_no_noise = (expected_Q2_no_ext_int_or_noise +
+                                np.dot(R2_e0, R2_e0.conjugate().T) +
+                                np.dot(R2_e1, R2_e1.conjugate().T))
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2_no_noise)
+
+        # Now with external interference and noise
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
+        np.testing.assert_array_almost_equal(Qk, expected_Q2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
