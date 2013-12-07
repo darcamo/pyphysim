@@ -663,6 +663,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Ns = np.ones(K, dtype=int) * 1
         P = np.array([1.2, 1.5, 0.9])
 
+        noise_power = 0.1
+
         self.multiH.randomize(Nr, Nt, K)
         F = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -676,10 +678,17 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
             expected_first_part = self.multiH.calc_Q(k, F) + np.dot(HkkFk, HkkFk.conjugate().T)
+            expected_first_part_with_noise = self.multiH.calc_Q(k, F, noise_power) + np.dot(HkkFk, HkkFk.conjugate().T)
 
+            # Test without noise
             np.testing.assert_array_almost_equal(
                 expected_first_part,
                 self.multiH._calc_Bkl_cov_matrix_first_part(F, k))
+
+            # Test with noise
+            np.testing.assert_array_almost_equal(
+                expected_first_part_with_noise,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k, noise_power))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -713,9 +722,17 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expected_first_part = expected_first_part + aux
 
+            expected_first_part_with_noise = expected_first_part + np.eye(Nr[k]) * noise_power
+
+            # Test without noise
             np.testing.assert_array_almost_equal(
                 expected_first_part,
                 self.multiH._calc_Bkl_cov_matrix_first_part(F, k))
+
+            # Test with noise
+            np.testing.assert_array_almost_equal(
+                expected_first_part_with_noise,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k, noise_power))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_Bkl_cov_matrix_second_part(self):
@@ -1546,6 +1563,124 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_Bkl_cov_matrix_first_part(self):
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        NtE = np.array([1])
+
+        P = np.array([1.2, 1.5, 0.9])
+        Pe = 0.7
+
+        self.multiH.randomize(Nr, Nt, K, NtE)
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=0.0, pe=Pe)
+
+        # For ones stream the expected Bkl is equivalent to the Q matrix
+        # plus the direct channel part.
+        for k in range(K):
+            Hkk = self.multiH.get_channel(k, k)
+            Fk = F[k]
+            HkkFk = np.dot(Hkk, Fk)
+            expected_first_part = self.multiH.calc_Q(k, F, pe=Pe) + np.dot(HkkFk, HkkFk.conjugate().T)
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k, Re[k]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with noise variance different from zero
+        noise_var = 0.13
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_var, pe=Pe)
+
+        # For ones stream the expected Bkl is equivalent to the Q matrix
+        # plus the direct channel part.
+        for k in range(K):
+            Hkk = self.multiH.get_channel(k, k)
+            Fk = F[k]
+            HkkFk = np.dot(Hkk, Fk)
+            expected_first_part = self.multiH.calc_Q(k, F, noise_var=noise_var, pe=Pe) + np.dot(HkkFk, HkkFk.conjugate().T)
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k, Re[k]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = np.ones(3, dtype=int) * 2
+        NtE = np.array([1, 1])
+
+        self.multiH.randomize(Nr, Nt, K, NtE)
+
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_var, pe=Pe)
+
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            expected_first_part = 0.0  # First part in the equation of Bkl
+                                       # (the double summation)
+
+            # The inner for loop will calculate
+            # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
+            for j in range(K):
+                aux = 0.0
+                Hkj = self.multiH.get_channel(k, j)
+                Hkj_H = Hkj.conjugate().transpose()
+
+                # Calculates individually for each stream
+                for d in range(Ns[k]):
+                    Vjd = F[j][:, d:d + 1]
+                    Vjd_H = Vjd.conjugate().transpose()
+                    aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
+
+                expected_first_part = expected_first_part + aux
+            expected_first_part = expected_first_part + Re[k]
+
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_Bkl_cov_matrix_first_part(F, k, Re[k]))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_Bkl(self):
+        # For the case of a single stream oer user Bkl (which only has l=0)
+        # is equal to Qk
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
+        NtE = np.array([1])
+        P = np.array([1.2, 1.5, 0.9])
+        Pe = 0.7
+        noise_power = 0.568
+
+        self.multiH.randomize(Nr, Nt, K, NtE)
+
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_power, pe=Pe)
+
+        F = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+
+        for k in range(K):
+            # We only have the stream 0
+            expected_Bk0 = self.multiH.calc_Q(k, F, noise_var=noise_power, pe=Pe)
+            Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, Re[k])[0]
+            np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

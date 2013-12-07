@@ -882,7 +882,7 @@ class MultiUserChannelMatrix(object):
         Qk = Qk + np.eye(self.Nr[k]) * noise_var
         return Qk
 
-    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k):
+    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, noise_power=0.0):
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_.
@@ -900,9 +900,11 @@ class MultiUserChannelMatrix(object):
             transmit power).
         k : int
             Index of the desired user.
+        noise_power : float
+            The noise power.
         """
         # The first part in Bkl is given by
-        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtI_{N^{[k]}}$$
         # Note that here the power is already included in `Fk`.
         first_part = 0.0
         for j in range(self.K):
@@ -917,6 +919,7 @@ class MultiUserChannelMatrix(object):
                     np.dot(Vj,
                            Vj_H),
                     Hkj_H))
+        first_part = first_part + (noise_power * np.eye(self.Nr[k]))
 
         return first_part
 
@@ -1005,11 +1008,11 @@ class MultiUserChannelMatrix(object):
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
         Ns_k = F_all_users[k].shape[1]
         Bkl_all_l = np.empty(Ns_k, dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k)
+        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k, noise_power)
         for l in range(Ns_k):
             second_part = self._calc_Bkl_cov_matrix_second_part(
                 F_all_users[k], k, l)
-            Bkl_all_l[l] = first_part - second_part + (noise_power * np.eye(self.Nr[k]))
+            Bkl_all_l[l] = first_part - second_part
 
         return Bkl_all_l
 
@@ -1616,3 +1619,104 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         Qk = Qk + Rek[k]
 
         return Qk
+
+    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, Rek):
+        """
+        Calculates the first part in the equation of the Blk covariance matrix
+        in equation (28) of [Cadambe2008]_.
+
+        The first part is given by
+
+            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
+
+        Note that it only depends on the value of :math:`k`.
+
+        Parameters
+        ----------
+        F_all_users : 1D numpy array of 2D numpy array
+            The precoder of all users (already taking into account the
+            transmit power).
+        k : int
+            Index of the desired user.
+        Rek : 2D numpy array
+            Covariance matrix of the external interference plus noise for user k.
+        """
+        # The first part in Bkl is given by
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtR e_k$$
+        # Note that here the power is already included in `Fk`.
+        first_part = 0.0
+        for j in range(self.K):
+            Hkj = self.get_channel(k, j)
+            Hkj_H = Hkj.conjugate().transpose()
+            Vj = F_all_users[j]
+            Vj_H = Vj.conjugate().transpose()
+
+            first_part = first_part + np.dot(
+                Hkj,
+                np.dot(
+                    np.dot(Vj,
+                           Vj_H),
+                    Hkj_H))
+
+        first_part = first_part + Rek
+
+        return first_part
+
+    def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, Rek):
+        """Calculates the interference-plus-noise covariance matrix for all
+        streams at receiver :math:`k` according to equation (28) in
+        [Cadambe2008]_.
+
+        The interference-plus-noise covariance matrix for stream :math:`l`
+        of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
+        which is reproduced below
+
+            :math:`\\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}`
+
+        where :math:`P^{[k]}` is the transmit power of transmitter
+        :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
+        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
+        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
+        l}` is the :math:`l`-th column of the precoder of user :math:`k`
+        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
+        the number of receive antennas of receiver :math:`k`.
+
+        Parameters
+        ----------
+        F_all_users : 1D numpy array of 2D numpy array
+            The precoder of all users (already taking into account the
+            transmit power).
+        k : int
+            Index of the desired user.
+        Rek : 2D numpy array
+            Covariance matrix of the external interference plus noise for user k.
+
+        Returns
+        -------
+        Bkl : 1D numpy array of 2D numpy arrays
+            Covariance matrix of all streams of user k. Each element of the
+            returned 1D numpy array is a 2D numpy complex array
+            corresponding to the covariance matrix of one stream of user k.
+
+        Notes
+        -----
+
+        To be simple, a function that returns the covariance matrix of only
+        a single stream "l" of the desired user "k" could be implemented,
+        but in the order to calculate the max SINR algorithm we need the
+        covariance matrix of all streams and returning them in single
+        function as is done here allows us to calculate the first part in
+        equation (28) of [Cadambe2008]_ only once, since it is the same for
+        all streams.
+
+        """
+        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtR e_k$$
+        Ns_k = F_all_users[k].shape[1]
+        Bkl_all_l = np.empty(Ns_k, dtype=np.ndarray)
+        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k, Rek)
+        for l in range(Ns_k):
+            second_part = self._calc_Bkl_cov_matrix_second_part(
+                F_all_users[k], k, l)
+            Bkl_all_l[l] = first_part - second_part
+
+        return Bkl_all_l
