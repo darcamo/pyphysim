@@ -1681,6 +1681,203 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, Re[k])[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
+    def test_underline_calc_SINR_k(self):
+        multiUserChannel = channels.MultiUserChannelMatrixExtInt()
+        #iasolver = MaxSinrIASolver(multiUserChannel)
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+        NtE = np.array([1])
+        Pe = 0.7
+        noise_power = 0.568
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        multiUserChannel.randomize(Nr, Nt, K, NtE)
+
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_power, pe=Pe)
+
+        F = np.empty(K, dtype=np.ndarray)
+        U = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
+            U[k] = randn_c(Nr[k], Ns[k])
+
+        for k in range(K):
+            Hkk = multiUserChannel.get_channel(k, k)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
+            Uk = U[k]
+            Fk = F[k]
+            # Uk_H = iasolver.full_W_H[k]
+
+            SINR_k_all_l = multiUserChannel._calc_SINR_k(k, Fk, Uk, Bkl_all_l)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hkk, Vkl))
+
+                expectedSINRkl = np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))
+                )
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
+
+        # xxxxxxxxxx Repeat the tests, but now using an IA solution xxxxxxx
+        iasolver = ClosedFormIASolver(multiUserChannel)
+        iasolver.solve(Ns=2)
+        F = iasolver.full_F
+        U = iasolver.full_W
+
+        Pe = 0.01
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
+            noise_var=0.0001, pe=Pe)
+
+        for k in range(K):
+            Hkk = multiUserChannel.get_channel(k, k)
+            Uk = U[k]
+            Fk = F[k]
+
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
+            SINR_k_all_l = multiUserChannel._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hkk, Vkl))
+
+                expectedSINRkl = abs(np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
+                )
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
+
+    def test_calc_SINR(self):
+        multiUserChannel = channels.MultiUserChannelMatrixExtInt()
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+        NtE = np.array([1])
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        multiUserChannel.randomize(Nr, Nt, K, NtE)
+
+        iasolver = ClosedFormIASolver(multiUserChannel)
+        iasolver.solve(Ns, P)
+        F = iasolver.full_F
+        U = iasolver.full_W
+
+        # xxxxxxxxxx Noise Variance = 0.0 and Pe = 0 xxxxxxxxxxxxxxxxxxxxxx
+        Pe = 0.00
+        noise_power = 0.00
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_power, pe=Pe)
+
+        SINR_all_users = multiUserChannel.calc_SINR(
+            F, U, noise_power=noise_power, pe=Pe)
+
+        # SINR of all users should be super high (inf)
+        self.assertTrue(np.all(SINR_all_users[0] > 1e10))
+        self.assertTrue(np.all(SINR_all_users[1] > 1e10))
+        self.assertTrue(np.all(SINR_all_users[2] > 1e10))
+
+        # k = 0
+        B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=0,
+            Rek=Re[0])
+        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
+                                                       F[0],
+                                                       U[0],
+                                                       B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=1,
+            Rek=Re[1])
+        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
+                                                       F[1],
+                                                       U[1],
+                                                       B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 2
+        B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=2,
+            Rek=Re[2])
+        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
+                                                       F[2],
+                                                       U[2],
+                                                       B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Noise Variance = 0.01 and Pe = 0.63 xxxxxxxxxxxxxxxxxxxxxx
+        Pe = 0.01
+        noise_power = 0.63
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_power, pe=Pe)
+
+        SINR_all_users = multiUserChannel.calc_SINR(
+            F, U, noise_power=noise_power, pe=Pe)
+
+        # SINR should lower than 10 for these values of noise variance and Pe
+        self.assertTrue(np.all(SINR_all_users[0] < 10))
+        self.assertTrue(np.all(SINR_all_users[1] < 10))
+        self.assertTrue(np.all(SINR_all_users[2] < 10))
+
+        # k = 0
+        B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=0,
+            Rek=Re[0])
+        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
+                                                       F[0],
+                                                       U[0],
+                                                       B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=1,
+            Rek=Re[1])
+        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
+                                                       F[1],
+                                                       U[1],
+                                                       B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 2
+        B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+            F,
+            k=2,
+            Rek=Re[2])
+        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
+                                                       F[2],
+                                                       U[2],
+                                                       B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

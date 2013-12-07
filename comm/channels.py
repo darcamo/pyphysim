@@ -1720,3 +1720,38 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             Bkl_all_l[l] = first_part - second_part
 
         return Bkl_all_l
+
+    def calc_SINR(self, F, U, noise_power=0.0, pe=1.0):
+        """
+        Calculates the SINR values (in linear scale) of all streams of all
+        users with the current IA solution.
+
+        The noise variance used will be the value of the noise_var
+        property, which, if not explicitly set, will use the
+        last_noise_var property of the multiuserchannel object.
+
+        Parameters
+        ----------
+        F : 1D numpy array of 2D numpy arrays
+            The precoders of all users.
+        U : 1D numpy array of 2D numpy arrays
+            The receive filters of all users.
+        noise_power : float
+            The noise power.
+        pe : float
+            Power of the external interference source.
+
+        Returns
+        -------
+        SINRs : 1D numpy array of 1D numpy arrays (of floats)
+            The SINR (in linear scale) of all streams of all users.
+        """
+        K = self.K
+        SINRs = np.empty(K, dtype=np.ndarray)
+
+        Re = self.calc_cov_matrix_extint_plus_noise(noise_power, pe)
+
+        for k in range(self.K):
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
+            SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
+        return SINRs
