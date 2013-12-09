@@ -123,15 +123,15 @@ if __name__ == '__main__':
     # print "SINR_2: {0}".format(SINR_2)
 
     # xxxxxxxxxx Debug info xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    H00 = multi_user_channel.get_channel(0, 0)
-    H01 = multi_user_channel.get_channel(0, 1)
-    H02 = multi_user_channel.get_channel(0, 2)
-    H10 = multi_user_channel.get_channel(1, 0)
-    H11 = multi_user_channel.get_channel(1, 1)
-    H12 = multi_user_channel.get_channel(1, 2)
-    H20 = multi_user_channel.get_channel(2, 0)
-    H21 = multi_user_channel.get_channel(2, 1)
-    H22 = multi_user_channel.get_channel(2, 2)
+    H00 = multi_user_channel.get_Hkl(0, 0)
+    H01 = multi_user_channel.get_Hkl(0, 1)
+    H02 = multi_user_channel.get_Hkl(0, 2)
+    H10 = multi_user_channel.get_Hkl(1, 0)
+    H11 = multi_user_channel.get_Hkl(1, 1)
+    H12 = multi_user_channel.get_Hkl(1, 2)
+    H20 = multi_user_channel.get_Hkl(2, 0)
+    H21 = multi_user_channel.get_Hkl(2, 1)
+    H22 = multi_user_channel.get_Hkl(2, 2)
 
     F0 = ia_solver.F[0]
     F1 = ia_solver.F[1]

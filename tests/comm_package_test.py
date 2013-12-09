@@ -264,39 +264,39 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test get_channel without Pathloss xxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
-            self.multiH.get_channel(0, 0),
+            self.multiH.get_Hkl(0, 0),
             np.ones([2, 2]) * 0)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(0, 1),
+            self.multiH.get_Hkl(0, 1),
             np.ones([2, 3]) * 1)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(0, 2),
+            self.multiH.get_Hkl(0, 2),
             np.ones([2, 5]) * 2)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(1, 0),
+            self.multiH.get_Hkl(1, 0),
             np.ones([4, 2]) * 3)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(1, 1),
+            self.multiH.get_Hkl(1, 1),
             np.ones([4, 3]) * 4)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(1, 2),
+            self.multiH.get_Hkl(1, 2),
             np.ones([4, 5]) * 5)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(2, 0),
+            self.multiH.get_Hkl(2, 0),
             np.ones([6, 2]) * 6)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(2, 1),
+            self.multiH.get_Hkl(2, 1),
             np.ones([6, 3]) * 7)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(2, 2),
+            self.multiH.get_Hkl(2, 2),
             np.ones([6, 5]) * 8)
 
         # xxxxxxxxxx Test get_channel with Pathloss xxxxxxxxxxxxxxxxxxxxxxx
@@ -304,39 +304,39 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         pathloss = np.abs(np.random.randn(self.K, self.K))
         self.multiH.set_pathloss(pathloss)
         np.testing.assert_array_equal(
-            self.multiH.get_channel(0, 0),
+            self.multiH.get_Hkl(0, 0),
             np.sqrt(self.multiH.pathloss[0, 0]) * np.ones([2, 2]) * 0)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(0, 1),
+            self.multiH.get_Hkl(0, 1),
             np.sqrt(self.multiH.pathloss[0, 1]) * np.ones([2, 3]) * 1)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(0, 2),
+            self.multiH.get_Hkl(0, 2),
             np.sqrt(self.multiH.pathloss[0, 2]) * np.ones([2, 5]) * 2)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(1, 0),
+            self.multiH.get_Hkl(1, 0),
             np.sqrt(self.multiH.pathloss[1, 0]) * np.ones([4, 2]) * 3)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(1, 1),
+            self.multiH.get_Hkl(1, 1),
             np.sqrt(self.multiH.pathloss[1, 1]) * np.ones([4, 3]) * 4)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(1, 2),
+            self.multiH.get_Hkl(1, 2),
             np.sqrt(self.multiH.pathloss[1, 2]) * np.ones([4, 5]) * 5)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(2, 0),
+            self.multiH.get_Hkl(2, 0),
             np.sqrt(self.multiH.pathloss[2, 0]) * np.ones([6, 2]) * 6)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(2, 1),
+            self.multiH.get_Hkl(2, 1),
             np.sqrt(self.multiH.pathloss[2, 1]) * np.ones([6, 3]) * 7)
 
         np.testing.assert_array_equal(
-            self.multiH.get_channel(2, 2),
+            self.multiH.get_Hkl(2, 2),
             np.sqrt(self.multiH.pathloss[2, 2]) * np.ones([6, 5]) * 8)
 
     def test_get_channel_all_transmitters_to_single_receiver(self):
@@ -352,15 +352,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(0),
+            self.multiH.get_Hk(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(1),
+            self.multiH.get_Hk(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(2),
+            self.multiH.get_Hk(2),
             expected_H3
         )
 
@@ -371,15 +371,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         expected_H2 = self.multiH.big_H[2:6, :]
         expected_H3 = self.multiH.big_H[6:, :]
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(0),
+            self.multiH.get_Hk(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(1),
+            self.multiH.get_Hk(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(2),
+            self.multiH.get_Hk(2),
             expected_H3
         )
 
@@ -400,10 +400,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             for col in range(K):
                 # Test the 'H' property
                 np.testing.assert_array_equal(
-                    self.multiH.get_channel(row, col), self.multiH.H[row, col])
+                    self.multiH.get_Hkl(row, col), self.multiH.H[row, col])
                 # Test the 'big_H' property
                 np.testing.assert_array_equal(
-                    self.multiH.get_channel(row, col),
+                    self.multiH.get_Hkl(row, col),
                     self.multiH.big_H[cumNr[row]:cumNr[row + 1], cumNt[col]:cumNt[col + 1]])
 
     def test_corrupt_data(self):
@@ -428,7 +428,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for rx in np.arange(self.K):
             for tx in np.arange(self.K):
                 expected_output[rx] += np.dot(
-                    self.multiH.get_channel(rx, tx), input_data[tx])
+                    self.multiH.get_Hkl(rx, tx), input_data[tx])
 
         # Test the received data for the 3 users
         np.testing.assert_array_almost_equal(output[0], expected_output[0])
@@ -451,7 +451,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             for tx in np.arange(self.K):
                 expected_output2[rx] += np.dot(
                     # Note that get_channel is affected by the pathloss
-                    self.multiH.get_channel(rx, tx), input_data[tx])
+                    self.multiH.get_Hkl(rx, tx), input_data[tx])
 
         # Test the received data for the 3 users, but now with pathloss
         np.testing.assert_array_almost_equal(output2[0], expected_output2[0])
@@ -530,7 +530,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for rx in np.arange(self.K):
             for tx in np.arange(self.K):
                 expected_output[rx] += np.dot(
-                    self.multiH.get_channel(rx, tx), input_data[tx])
+                    self.multiH.get_Hkl(rx, tx), input_data[tx])
             expected_output[rx] = np.dot(W[rx].conjugate().T,
                                          expected_output[rx])
 
@@ -584,11 +584,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
         H01_F1 = np.dot(
-            self.multiH.get_channel(k, 1),
+            self.multiH.get_Hkl(k, 1),
             F_all_k[1]
         )
         H02_F2 = np.dot(
-            self.multiH.get_channel(k, 2),
+            self.multiH.get_Hkl(k, 2),
             F_all_k[2]
         )
         expected_Q0 = np.dot(H01_F1,
@@ -609,11 +609,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
         k = 1
         H10_F0 = np.dot(
-            self.multiH.get_channel(k, 0),
+            self.multiH.get_Hkl(k, 0),
             F_all_k[0]
         )
         H12_F2 = np.dot(
-            self.multiH.get_channel(k, 2),
+            self.multiH.get_Hkl(k, 2),
             F_all_k[2]
         )
         expected_Q1 = np.dot(H10_F0,
@@ -634,11 +634,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
         k = 2
         H20_F0 = np.dot(
-            self.multiH.get_channel(k, 0),
+            self.multiH.get_Hkl(k, 0),
             F_all_k[0]
         )
         H21_F1 = np.dot(
-            self.multiH.get_channel(k, 1),
+            self.multiH.get_Hkl(k, 1),
             F_all_k[1]
         )
         expected_Q2 = np.dot(H20_F0,
@@ -674,7 +674,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
         for k in range(K):
-            Hkk = self.multiH.get_channel(k, k)
+            Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
             expected_first_part = self.multiH.calc_Q(k, F) + np.dot(HkkFk, HkkFk.conjugate().T)
@@ -711,7 +711,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
             for j in range(K):
                 aux = 0.0
-                Hkj = self.multiH.get_channel(k, j)
+                Hkj = self.multiH.get_Hkl(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
                 # Calculates individually for each stream
@@ -749,7 +749,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
         for k in range(K):
-            Hkk = self.multiH.get_channel(k, k)
+            Hkk = self.multiH.get_Hkl(k, k)
             Hkk_H = Hkk.transpose().conjugate()
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
@@ -778,7 +778,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
         for k in range(K):
-            Hkk = self.multiH.get_channel(k, k)
+            Hkk = self.multiH.get_Hkl(k, k)
             Hkk_H = Hkk.transpose().conjugate()
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
@@ -807,7 +807,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
         for k in range(K):
-            Hkk = self.multiH.get_channel(k, k)
+            Hkk = self.multiH.get_Hkl(k, k)
             Hkk_H = Hkk.transpose().conjugate()
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
@@ -863,7 +863,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             U[k] = randn_c(Nr[k], Ns[k])
 
         for k in range(K):
-            Hkk = multiUserChannel.get_channel(k, k)
+            Hkk = multiUserChannel.get_Hkl(k, k)
             Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, noise_power=0.0)
             Uk = U[k]
             Fk = F[k]
@@ -893,7 +893,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         U = iasolver.full_W
 
         for k in range(K):
-            Hkk = multiUserChannel.get_channel(k, k)
+            Hkk = multiUserChannel.get_Hkl(k, k)
             Uk = U[k]
             Fk = F[k]
 
@@ -1234,8 +1234,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # received_data2_expected for now has only the included the user's
         # signal. Lets add the external interference source's signal.
-        received_data2_expected[0] = received_data2_expected[0] + np.dot(self.multiH.get_channel(0, 2), input_data_extint2[0]) + np.dot(self.multiH.get_channel(0, 3), input_data_extint2[1])
-        received_data2_expected[1] = received_data2_expected[1] + np.dot(self.multiH.get_channel(1, 2), input_data_extint2[0]) + np.dot(self.multiH.get_channel(1, 3), input_data_extint2[1])
+        received_data2_expected[0] = received_data2_expected[0] + np.dot(self.multiH.get_Hkl(0, 2), input_data_extint2[0]) + np.dot(self.multiH.get_Hkl(0, 3), input_data_extint2[1])
+        received_data2_expected[1] = received_data2_expected[1] + np.dot(self.multiH.get_Hkl(1, 2), input_data_extint2[0]) + np.dot(self.multiH.get_Hkl(1, 3), input_data_extint2[1])
 
         # Now lets test if the received_data2 is correct
         self.assertEqual(received_data2_expected.shape, received_data2.shape)
@@ -1307,12 +1307,12 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             # Plus FILTERED interference from first interference source
             +
             np.dot(W[0].conjugate().T,
-                   np.dot(self.multiH.get_channel(0, 2),
+                   np.dot(self.multiH.get_Hkl(0, 2),
                           input_data_extint2[0]))
             # Plus FILTERED interference from second interference source
             +
             np.dot(W[0].conjugate().T,
-                   np.dot(self.multiH.get_channel(0, 3),
+                   np.dot(self.multiH.get_Hkl(0, 3),
                           input_data_extint2[1])))
 
         received_data2_expected[1] = (
@@ -1321,12 +1321,12 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             # Plus FILTERED interference from first interference source
             +
             np.dot(W[1].conjugate().T,
-                   np.dot(self.multiH.get_channel(1, 2),
+                   np.dot(self.multiH.get_Hkl(1, 2),
                           input_data_extint2[0]))
             # Plus FILTERED interference from second interference source
             +
             np.dot(W[1].conjugate().T,
-                   np.dot(self.multiH.get_channel(1, 3),
+                   np.dot(self.multiH.get_Hkl(1, 3),
                           input_data_extint2[1])))
 
         # Now lets test if the received_data2 is correct
@@ -1351,15 +1351,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(0),
+            self.multiH.get_Hk_without_ext_int(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(1),
+            self.multiH.get_Hk_without_ext_int(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(2),
+            self.multiH.get_Hk_without_ext_int(2),
             expected_H3
         )
 
@@ -1371,15 +1371,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_H2 = self.multiH.big_H[2:6, :np.sum(Nt)]
         expected_H3 = self.multiH.big_H[6:, :np.sum(Nt)]
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(0),
+            self.multiH.get_Hk_without_ext_int(0),
             expected_H1
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(1),
+            self.multiH.get_Hk_without_ext_int(1),
             expected_H2
         )
         np.testing.assert_array_equal(
-            self.multiH.get_channel_all_tx_to_rx_k(2),
+            self.multiH.get_Hk_without_ext_int(2),
             expected_H3
         )
 
@@ -1446,15 +1446,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
         H01_F1 = np.dot(
-            self.multiH.get_channel(k, 1),
+            self.multiH.get_Hkl(k, 1),
             F_all_k[1]
         )
         H02_F2 = np.dot(
-            self.multiH.get_channel(k, 2),
+            self.multiH.get_Hkl(k, 2),
             F_all_k[2]
         )
-        R0_e0 = self.multiH.get_channel(0, 3)
-        R0_e1 = self.multiH.get_channel(0, 4)
+        R0_e0 = self.multiH.get_Hkl(0, 3)
+        R0_e1 = self.multiH.get_Hkl(0, 4)
 
         expected_Q0_no_ext_int_or_noise = (
             # Internal interference part
@@ -1489,15 +1489,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
         k = 1
         H10_F0 = np.dot(
-            self.multiH.get_channel(k, 0),
+            self.multiH.get_Hkl(k, 0),
             F_all_k[0]
         )
         H12_F2 = np.dot(
-            self.multiH.get_channel(k, 2),
+            self.multiH.get_Hkl(k, 2),
             F_all_k[2]
         )
-        R1_e0 = self.multiH.get_channel(1, 3)
-        R1_e1 = self.multiH.get_channel(1, 4)
+        R1_e0 = self.multiH.get_Hkl(1, 3)
+        R1_e1 = self.multiH.get_Hkl(1, 4)
 
         expected_Q1_no_ext_int_or_noise = (
             np.dot(H10_F0,
@@ -1528,15 +1528,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
         k = 2
         H20_F0 = np.dot(
-            self.multiH.get_channel(k, 0),
+            self.multiH.get_Hkl(k, 0),
             F_all_k[0]
         )
         H21_F1 = np.dot(
-            self.multiH.get_channel(k, 1),
+            self.multiH.get_Hkl(k, 1),
             F_all_k[1]
         )
-        R2_e0 = self.multiH.get_channel(2, 3)
-        R2_e1 = self.multiH.get_channel(2, 4)
+        R2_e0 = self.multiH.get_Hkl(2, 3)
+        R2_e1 = self.multiH.get_Hkl(2, 4)
 
         expected_Q2_no_ext_int_or_noise = (
             np.dot(H20_F0,
@@ -1585,7 +1585,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
         for k in range(K):
-            Hkk = self.multiH.get_channel(k, k)
+            Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
             expected_first_part = self.multiH.calc_Q(k, F, pe=Pe) + np.dot(HkkFk, HkkFk.conjugate().T)
@@ -1603,7 +1603,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
         for k in range(K):
-            Hkk = self.multiH.get_channel(k, k)
+            Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
             expected_first_part = self.multiH.calc_Q(k, F, noise_var=noise_var, pe=Pe) + np.dot(HkkFk, HkkFk.conjugate().T)
@@ -1637,7 +1637,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
             for j in range(K):
                 aux = 0.0
-                Hkj = self.multiH.get_channel(k, j)
+                Hkj = self.multiH.get_Hkl(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
                 # Calculates individually for each stream
@@ -1708,7 +1708,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             U[k] = randn_c(Nr[k], Ns[k])
 
         for k in range(K):
-            Hkk = multiUserChannel.get_channel(k, k)
+            Hkk = multiUserChannel.get_Hkl(k, k)
             Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
             Uk = U[k]
             Fk = F[k]
@@ -1742,7 +1742,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             noise_var=0.0001, pe=Pe)
 
         for k in range(K):
-            Hkk = multiUserChannel.get_channel(k, k)
+            Hkk = multiUserChannel.get_Hkl(k, k)
             Uk = U[k]
             Fk = F[k]
 
@@ -2567,9 +2567,9 @@ class WhiteningBDTestCase(unittest.TestCase):
         multiUserChannel.randomize(Nr, Nt, K, Nti)
 
         # Channel from all transmitters to the first receiver
-        H1 = multiUserChannel.get_channel_all_tx_to_rx_k(0)
+        H1 = multiUserChannel.get_Hk_without_ext_int(0)
         # Channel from all transmitters to the second receiver
-        H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
+        H2 = multiUserChannel.get_Hk_without_ext_int(1)
 
         # Create the whiteningBD object and the regular BD object
         whiteningBD_obj = blockdiagonalization.WhiteningBD(K, iPu, noise_var, pe)
@@ -2843,9 +2843,9 @@ class EnhancedBDTestCase(unittest.TestCase):
         multiUserChannel.randomize(Nr, Nt, K, Nti)
 
         # Channel from all transmitters to the first receiver
-        H1 = multiUserChannel.get_channel_all_tx_to_rx_k(0)
+        H1 = multiUserChannel.get_Hk_without_ext_int(0)
         # Channel from all transmitters to the second receiver
-        H2 = multiUserChannel.get_channel_all_tx_to_rx_k(1)
+        H2 = multiUserChannel.get_Hk_without_ext_int(1)
 
         # Create the enhancedBD object
         enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)

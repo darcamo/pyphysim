@@ -35,7 +35,7 @@ if __name__ == '__main__':
     for ij in all_possibilities:
         i, j = ij
         print "Hij: H{0}{1}".format(i, j)
-        Hij = multiuserchannel.get_channel(i, j)
+        Hij = multiuserchannel.get_Hkl(i, j)
         Hij_eff = np.dot(alt.W[i], np.dot(Hij, alt.F[j]))
         print "Eigenvalus: {0}".format(np.linalg.svd(Hij_eff)[1].round(6)[0])
         print "Eigenvector: {0}".format(np.linalg.svd(Hij_eff)[0].round(6)[0][0])

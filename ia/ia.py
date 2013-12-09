@@ -387,7 +387,7 @@ class IASolverBaseClass(object):
         H : 2D numpy array
             The channel matrix between transmitter l and receiver k.
         """
-        return self._multiUserChannel.get_channel(k, l)
+        return self._multiUserChannel.get_Hkl(k, l)
 
     def _get_channel_rev(self, k, l):
         """Get the channel from transmitter l to receiver k in the reverse

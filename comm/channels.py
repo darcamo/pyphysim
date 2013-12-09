@@ -319,7 +319,7 @@ class MultiUserChannelMatrix(object):
     `init_from_channel_matrix` method.
 
     In order to get the channel matrix of a specific user `k` to another
-    user `l`, call the `get_channel` method.
+    user `l`, call the `get_Hkl` method.
 
     """
 
@@ -597,8 +597,8 @@ class MultiUserChannelMatrix(object):
         self._big_H.setflags(write=False)
         self._H.setflags(write=False)
 
-    def get_channel(self, k, l):
-        """Get the channel from user `l` to user `k`.
+    def get_Hkl(self, k, l):
+        """Get the channel matrix from user `l` to user `k`.
 
         Parameters
         ----------
@@ -614,7 +614,7 @@ class MultiUserChannelMatrix(object):
 
         See also
         --------
-        get_channel_all_tx_to_rx_k
+        get_Hk
 
         Examples
         --------
@@ -628,10 +628,10 @@ class MultiUserChannelMatrix(object):
          [ 4  5  6  7]
          [ 8  9 10 11]
          [12 13 14 15]]
-        >>> print multiH.get_channel(0, 0)
+        >>> print multiH.get_Hkl(0, 0)
         [[0 1]
          [4 5]]
-        >>> print multiH.get_channel(1, 0)
+        >>> print multiH.get_Hkl(1, 0)
         [[ 8  9]
          [12 13]]
         """
@@ -639,7 +639,7 @@ class MultiUserChannelMatrix(object):
                           # applies the path loss (of there is any)
         return channel[k, l]
 
-    def get_channel_all_tx_to_rx_k(self, k):
+    def get_Hk(self, k):
         """Get the channel from all transmitters to receiver `k`.
 
         Parameters
@@ -654,7 +654,7 @@ class MultiUserChannelMatrix(object):
 
         See also
         --------
-        get_channel
+        get_Hkl
 
         Examples
         --------
@@ -668,10 +668,10 @@ class MultiUserChannelMatrix(object):
          [ 4  5  6  7]
          [ 8  9 10 11]
          [12 13 14 15]]
-        >>> print multiH.get_channel_all_tx_to_rx_k(0)
+        >>> print multiH.get_Hk(0)
         [[0 1 2 3]
          [4 5 6 7]]
-        >>> print multiH.get_channel_all_tx_to_rx_k(1)
+        >>> print multiH.get_Hk(1)
         [[ 8  9 10 11]
          [12 13 14 15]]
         """
@@ -802,7 +802,7 @@ class MultiUserChannelMatrix(object):
     def set_pathloss(self, pathloss_matrix=None):
         """Set the path loss from each transmitter to each receiver.
 
-        The path loss will be accounted when calling the get_channel, the
+        The path loss will be accounted when calling the get_Hkl, get_Hk, the
         corrupt_concatenated_data and the corrupt_data methods.
 
         If you want to disable the path loss, set `pathloss_matrix` to None.
@@ -875,7 +875,7 @@ class MultiUserChannelMatrix(object):
 
         for l in interfering_users:
             Hkl_F = np.dot(
-                self.get_channel(k, l),
+                self.get_Hkl(k, l),
                 F_all_users[l])
             Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
 
@@ -908,7 +908,7 @@ class MultiUserChannelMatrix(object):
         # Note that here the power is already included in `Fk`.
         first_part = 0.0
         for j in range(self.K):
-            Hkj = self.get_channel(k, j)
+            Hkj = self.get_Hkl(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = F_all_users[j]
             Vj_H = Vj.conjugate().transpose()
@@ -948,7 +948,7 @@ class MultiUserChannelMatrix(object):
 
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
-        Hkk = self.get_channel(k, k)
+        Hkk = self.get_Hkl(k, k)
         Hkk_H = Hkk.transpose().conjugate()
 
         Vkl = Fk[:, l:l + 1]
@@ -1037,7 +1037,7 @@ class MultiUserChannelMatrix(object):
             The SINR for the different streams of user k.
 
         """
-        Hkk = self.get_channel(k, k)
+        Hkk = self.get_Hkl(k, k)
         Vk = Fk
         Ns_k = Fk.shape[1]
 
@@ -1280,7 +1280,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
                                                                 data,
                                                                 noise_var)
 
-    def get_channel_all_tx_to_rx_k(self, k):
+    def get_Hk_without_ext_int(self, k):
         """Get the channel from all transmitters (without including the
         external interference sources) to receiver `k`.
 
@@ -1296,8 +1296,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         See also
         --------
-        get_channel,
-        get_channel_all_tx_with_extint_to_rx_k
+        get_Hkl,
+        get_Hk,
+        get_Hk_with_ext_int
 
         Examples
         --------
@@ -1314,10 +1315,10 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
          [ 5  6  7  8  9]
          [10 11 12 13 14]
          [15 16 17 18 19]]
-        >>> print multiH.get_channel_all_tx_to_rx_k(0)
+        >>> print multiH.get_Hk_without_ext_int(0)
         [[0 1 2 3]
          [5 6 7 8]]
-        >>> print multiH.get_channel_all_tx_to_rx_k(1)
+        >>> print multiH.get_Hk_without_ext_int(1)
         [[10 11 12 13]
          [15 16 17 18]]
 
@@ -1327,11 +1328,13 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return receive_channels[k]
 
     # This is exactly the same as the
-    # get_channel_all_tx_to_rx_k method from the
+    # get_Hk_without_ext_int method from the
     # MultiUserChannelMatrix class. therefore, we don't need to test it.
-    def get_channel_all_tx_with_extint_to_rx_k(self, k):
+    def get_Hk_with_ext_int(self, k):
         """Get the channel from all transmitters (including the external
         interference sources) to receiver `k`.
+
+        This method is essentially the same as the get_Hk method.
 
         Parameters
         ----------
@@ -1345,8 +1348,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         See also
         --------
-        get_channel,
-        get_channel_all_tx_to_rx_k
+        get_Hkl,
+        get_Hk,
+        get_Hk_without_ext_int
 
         Examples
         --------
@@ -1363,15 +1367,15 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
          [ 5  6  7  8  9]
          [10 11 12 13 14]
          [15 16 17 18 19]]
-        >>> print multiH.get_channel_all_tx_with_extint_to_rx_k(0)
+        >>> print multiH.get_Hk_with_ext_int(0)
         [[0 1 2 3 4]
          [5 6 7 8 9]]
-        >>> print multiH.get_channel_all_tx_with_extint_to_rx_k(1)
+        >>> print multiH.get_Hk_with_ext_int(1)
         [[10 11 12 13 14]
          [15 16 17 18 19]]
 
         """
-        return MultiUserChannelMatrix.get_channel_all_tx_to_rx_k(self, k)  # pragma: no cover
+        return MultiUserChannelMatrix.get_Hk(self, k)  # pragma: no cover
 
     @staticmethod
     def _prepare_input_parans(Nr, Nt, K, NtE):
@@ -1491,12 +1495,13 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         MultiUserChannelMatrix.randomize(self, full_Nr, full_Nt, full_K)
 
     def set_pathloss(self, pathloss_matrix=None, ext_int_pathloss=None):
-        """Set the path loss from each transmitter to each receiver, as well
+        """
+        Set the path loss from each transmitter to each receiver, as well
         as the path loss from the external interference source(s) to each
         receiver.
 
-        The path loss will be accounted when calling the get_channel, the
-        corrupt_concatenated_data and the corrupt_data methods.
+        The path loss will be accounted when calling the get_Hkl, get_Hk,
+        the corrupt_concatenated_data and the corrupt_data methods.
 
         Note that path loss is a power relation, which means that the
         channel coefficients will be multiplied by the square root of
@@ -1516,7 +1521,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             receiver. The number of rows of ext_int_pathloss must be equal
             to the number of receives, while the number of columns must be
             equal to the number of external interference sources.
-
         """
         # A matrix with the path loss from each transmitter to each
         # receiver.
@@ -1612,7 +1616,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         for l in interfering_users:
             Hkl_F = np.dot(
-                self.get_channel(k, l),
+                self.get_Hkl(k, l),
                 F_all_users[l])
             Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
 
@@ -1646,7 +1650,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         # Note that here the power is already included in `Fk`.
         first_part = 0.0
         for j in range(self.K):
-            Hkj = self.get_channel(k, j)
+            Hkj = self.get_Hkl(k, j)
             Hkj_H = Hkj.conjugate().transpose()
             Vj = F_all_users[j]
             Vj_H = Vj.conjugate().transpose()
