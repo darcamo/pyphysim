@@ -1205,7 +1205,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             else:
                 # If both self._W and self._W_H are not None then something
                 # wrong happened. Maybe you called the self.W or the self.W_H
-                # properties by mistake.
+                # properties by mistake before _solve_finalize is called
+                # (in the solve method).
                 raise Exception("I should not be here.")
 
     @classmethod

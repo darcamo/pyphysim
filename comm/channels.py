@@ -19,6 +19,9 @@ model is shown in the Figure below.
 __revision__ = "$Revision$"
 
 from collections import Iterable
+# The "Number" class is a base class that we can use to check with
+# isinstance to see if something is a number
+from numbers import Number
 import numpy as np
 from scipy.linalg import block_diag
 from util.conversion import single_matrix_to_matrix_of_matrices
@@ -837,9 +840,28 @@ class MultiUserChannelMatrix(object):
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
+    def _calc_Q(self, k, F_all_users):
+        """
+        Calculates the interference covariance matrix (without any noise) at
+        the :math:`k`-th receiver.
+
+        See the documentation of the calc_Q method.
+        """
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
+        interfering_users = set(range(self.K)) - set([k])
+        Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
+
+        for l in interfering_users:
+            Hkl_F = np.dot(
+                self.get_Hkl(k, l),
+                F_all_users[l])
+            Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
+
+        return Qk
+
     def calc_Q(self, k, F_all_users, noise_var=0.0):
         """
-        Calculates the interference covariance matrix at the
+        Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver.
 
         The interference covariance matrix at the :math:`k`-th receiver,
@@ -865,22 +887,32 @@ class MultiUserChannelMatrix(object):
         Qk : 2D numpy complex array.
             The interference covariance matrix at receiver :math:`k`.
         """
-        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \sigma_n^2 \mtI_{N_k}$$
+        Qk = self._calc_Q(k, F_all_users) + np.eye(self.Nr[k]) * noise_var
+        return Qk
+
+    def _calc_JP_Q(self, k, F_all_users):
+        """
+        Calculates the interference covariance matrix (without any noise) at
+        the :math:`k`-th receiver with a joint processing scheme.
+
+        See the documentation of the calc_JP_Q method.
+        """
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
         for l in interfering_users:
-            Hkl_F = np.dot(
-                self.get_Hkl(k, l),
+            Hk_F = np.dot(
+                self.get_Hk(k),
                 F_all_users[l])
-            Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
+            Qk = Qk + np.dot(Hk_F, Hk_F.transpose().conjugate())
 
-        Qk = Qk + np.eye(self.Nr[k]) * noise_var
         return Qk
 
     def calc_JP_Q(self, k, F_all_users, noise_var=0.0):
         """
-        Calculates the interference covariance matrix at the
+        Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
 
         The interference covariance matrix at the :math:`k`-th receiver,
@@ -906,20 +938,11 @@ class MultiUserChannelMatrix(object):
         Qk : 2D numpy complex array.
             The interference covariance matrix at receiver :math:`k`.
         """
-        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
-        interfering_users = set(range(self.K)) - set([k])
-        Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
-
-        for l in interfering_users:
-            Hk_F = np.dot(
-                self.get_Hk(k),
-                F_all_users[l])
-            Qk = Qk + np.dot(Hk_F, Hk_F.transpose().conjugate())
-
-        Qk = Qk + np.eye(self.Nr[k]) * noise_var
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \sigma_n^2 \mtI_{N_k}$$
+        Qk = self._calc_JP_Q(k, F_all_users) + np.eye(self.Nr[k]) * noise_var
         return Qk
 
-    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, noise_power=0.0):
+    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, N0_or_Rek=0.0):
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_.
@@ -937,12 +960,25 @@ class MultiUserChannelMatrix(object):
             transmit power).
         k : int
             Index of the desired user.
-        noise_power : float
-            The noise power.
+        N0_or_Rek : float or a 2D numpy array
+            If this is a 2D numpy array, it is interpreted as the
+            covariance matrix of any external interference plus noise. If
+            this is a number, it is interpreted as the noise power, in
+            which case the covariance matrix will be an identity matrix
+            times this noise power.
         """
         # The first part in Bkl is given by
-        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtI_{N^{[k]}}$$
+        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtR e_k$$
+        # where $\mtR e_k$ is the covariance matrix of the (external
+        # interference plus) noise.
         # Note that here the power is already included in `Fk`.
+
+        if isinstance(N0_or_Rek, Number):
+            noise_power = N0_or_Rek
+            Rek = (noise_power * np.eye(self.Nr[k]))
+        else:
+            Rek = N0_or_Rek
+
         first_part = 0.0
         for j in range(self.K):
             Hkj = self.get_Hkl(k, j)
@@ -956,7 +992,7 @@ class MultiUserChannelMatrix(object):
                     np.dot(Vj,
                            Vj_H),
                     Hkj_H))
-        first_part = first_part + (noise_power * np.eye(self.Nr[k]))
+        first_part = first_part + Rek
 
         return first_part
 
@@ -996,7 +1032,7 @@ class MultiUserChannelMatrix(object):
 
         return second_part
 
-    def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, noise_power=0):
+    def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
         [Cadambe2008]_.
@@ -1022,6 +1058,12 @@ class MultiUserChannelMatrix(object):
             transmit power).
         k : int
             Index of the desired user.
+        N0_or_Rek : float or a 2D numpy array
+            If this is a 2D numpy array, it is interpreted as the
+            covariance matrix of any external interference plus noise. If
+            this is a number, it is interpreted as the noise power, in
+            which case the covariance matrix will be an identity matrix
+            times this noise power.
 
         Returns
         -------
@@ -1043,9 +1085,10 @@ class MultiUserChannelMatrix(object):
 
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
+
         Ns_k = F_all_users[k].shape[1]
         Bkl_all_l = np.empty(Ns_k, dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k, noise_power)
+        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k, N0_or_Rek)
         for l in range(Ns_k):
             second_part = self._calc_Bkl_cov_matrix_second_part(
                 F_all_users[k], k, l)
@@ -1857,18 +1900,21 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \mtR_e$$
+        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        Qk = self._calc_Q(k, F_all_users) + Rek[k]
+
+        return Qk
+
+    def _calc_JP_Q(self, k, F_all_users):
+        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
-        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
-
         for l in interfering_users:
-            Hkl_F = np.dot(
-                self.get_Hkl(k, l),
+            Hk_F = np.dot(
+                self.get_Hk_without_ext_int(k),
                 F_all_users[l])
-            Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
-
-        Qk = Qk + Rek[k]
+            Qk = Qk + np.dot(Hk_F, Hk_F.transpose().conjugate())
 
         return Qk
 
@@ -1903,121 +1949,10 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \mtR_e$$
-        interfering_users = set(range(self.K)) - set([k])
-        Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
-
         Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
-
-        for l in interfering_users:
-            Hk_F = np.dot(
-                self.get_Hk_without_ext_int(k),
-                F_all_users[l])
-            Qk = Qk + np.dot(Hk_F, Hk_F.transpose().conjugate())
-
-        Qk = Qk + Rek[k]
+        Qk = self._calc_JP_Q(k, F_all_users) + Rek[k]
 
         return Qk
-
-    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, Rek):
-        """
-        Calculates the first part in the equation of the Blk covariance matrix
-        in equation (28) of [Cadambe2008]_.
-
-        The first part is given by
-
-            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
-
-        Note that it only depends on the value of :math:`k`.
-
-        Parameters
-        ----------
-        F_all_users : 1D numpy array of 2D numpy array
-            The precoder of all users (already taking into account the
-            transmit power).
-        k : int
-            Index of the desired user.
-        Rek : 2D numpy array
-            Covariance matrix of the external interference plus noise for user k.
-        """
-        # The first part in Bkl is given by
-        # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtR e_k$$
-        # Note that here the power is already included in `Fk`.
-        first_part = 0.0
-        for j in range(self.K):
-            Hkj = self.get_Hkl(k, j)
-            Hkj_H = Hkj.conjugate().transpose()
-            Vj = F_all_users[j]
-            Vj_H = Vj.conjugate().transpose()
-
-            first_part = first_part + np.dot(
-                Hkj,
-                np.dot(
-                    np.dot(Vj,
-                           Vj_H),
-                    Hkj_H))
-
-        first_part = first_part + Rek
-
-        return first_part
-
-    def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, Rek):
-        """Calculates the interference-plus-noise covariance matrix for all
-        streams at receiver :math:`k` according to equation (28) in
-        [Cadambe2008]_.
-
-        The interference-plus-noise covariance matrix for stream :math:`l`
-        of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
-        which is reproduced below
-
-            :math:`\\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}`
-
-        where :math:`P^{[k]}` is the transmit power of transmitter
-        :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
-        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
-        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
-        l}` is the :math:`l`-th column of the precoder of user :math:`k`
-        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
-        the number of receive antennas of receiver :math:`k`.
-
-        Parameters
-        ----------
-        F_all_users : 1D numpy array of 2D numpy array
-            The precoder of all users (already taking into account the
-            transmit power).
-        k : int
-            Index of the desired user.
-        Rek : 2D numpy array
-            Covariance matrix of the external interference plus noise for user k.
-
-        Returns
-        -------
-        Bkl : 1D numpy array of 2D numpy arrays
-            Covariance matrix of all streams of user k. Each element of the
-            returned 1D numpy array is a 2D numpy complex array
-            corresponding to the covariance matrix of one stream of user k.
-
-        Notes
-        -----
-
-        To be simple, a function that returns the covariance matrix of only
-        a single stream "l" of the desired user "k" could be implemented,
-        but in the order to calculate the max SINR algorithm we need the
-        covariance matrix of all streams and returning them in single
-        function as is done here allows us to calculate the first part in
-        equation (28) of [Cadambe2008]_ only once, since it is the same for
-        all streams.
-
-        """
-        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtR e_k$$
-        Ns_k = F_all_users[k].shape[1]
-        Bkl_all_l = np.empty(Ns_k, dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k, Rek)
-        for l in range(Ns_k):
-            second_part = self._calc_Bkl_cov_matrix_second_part(
-                F_all_users[k], k, l)
-            Bkl_all_l[l] = first_part - second_part
-
-        return Bkl_all_l
 
     def calc_SINR(self, F, U, noise_power=0.0, pe=1.0):
         """

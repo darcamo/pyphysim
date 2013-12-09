@@ -69,7 +69,8 @@ def block_diagonalize(mtChannel, num_users, iPu, noise_var):
 
 
 def calc_receive_filter(newH):
-    """Calculates the Zero-Forcing receive filter.
+    """
+    Calculates the Zero-Forcing receive filter.
 
     Parameters
     ----------
@@ -78,8 +79,10 @@ def calc_receive_filter(newH):
 
     Returns
     -------
-    W_bd : 2D numpy array
-        The zero-forcing matrix to separate each stream of each user.
+    W_bd_H : 2D numpy array
+        The zero-forcing matrix to separate each stream of each user. Note
+        that W_bd_H is directly applied to the received signals (no need
+        to calculate the conjugate transpose).
     """
     return BlockDiaginalizer.calc_receive_filter(newH)
 

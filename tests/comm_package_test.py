@@ -930,7 +930,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             # We only have the stream 0
             expected_Bk0 = self.multiH.calc_Q(k, F) + (noise_power * np.eye(Nr[k]))
-            Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, noise_power=noise_power)[0]
+            Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=noise_power)[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
     def test_underline_calc_SINR_k(self):
@@ -954,7 +954,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         for k in range(K):
             Hkk = multiUserChannel.get_Hkl(k, k)
-            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, noise_power=0.0)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=0.0)
             Uk = U[k]
             Fk = F[k]
             # Uk_H = iasolver.full_W_H[k]
@@ -987,7 +987,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Uk = U[k]
             Fk = F[k]
 
-            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, noise_power=0.0001)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=0.0001)
             SINR_k_all_l = multiUserChannel._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
 
             for l in range(Ns[k]):
@@ -1028,7 +1028,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=0,
-            noise_power=0.0)
+            N0_or_Rek=0.0)
         expected_SINR0 = multiUserChannel._calc_SINR_k(0,
                                                        F[0],
                                                        U[0],
@@ -1039,7 +1039,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=1,
-            noise_power=0.0)
+            N0_or_Rek=0.0)
         expected_SINR1 = multiUserChannel._calc_SINR_k(1,
                                                        F[1],
                                                        U[1],
@@ -1050,7 +1050,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=2,
-            noise_power=0.0)
+            N0_or_Rek=0.0)
         expected_SINR2 = multiUserChannel._calc_SINR_k(2,
                                                        F[2],
                                                        U[2],
@@ -1065,7 +1065,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=0,
-            noise_power=0.1)
+            N0_or_Rek=0.1)
         expected_SINR0 = multiUserChannel._calc_SINR_k(0,
                                                        F[0],
                                                        U[0],
@@ -1076,7 +1076,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=1,
-            noise_power=0.1)
+            N0_or_Rek=0.1)
         expected_SINR1 = multiUserChannel._calc_SINR_k(1,
                                                        F[1],
                                                        U[1],
@@ -1087,7 +1087,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=2,
-            noise_power=0.1)
+            N0_or_Rek=0.1)
         expected_SINR2 = multiUserChannel._calc_SINR_k(2,
                                                        F[2],
                                                        U[2],
@@ -2356,7 +2356,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=0,
-            Rek=Re[0])
+            N0_or_Rek=Re[0])
         expected_SINR0 = multiUserChannel._calc_SINR_k(0,
                                                        F[0],
                                                        U[0],
@@ -2367,7 +2367,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=1,
-            Rek=Re[1])
+            N0_or_Rek=Re[1])
         expected_SINR1 = multiUserChannel._calc_SINR_k(1,
                                                        F[1],
                                                        U[1],
@@ -2378,7 +2378,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=2,
-            Rek=Re[2])
+            N0_or_Rek=Re[2])
         expected_SINR2 = multiUserChannel._calc_SINR_k(2,
                                                        F[2],
                                                        U[2],
@@ -2404,7 +2404,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=0,
-            Rek=Re[0])
+            N0_or_Rek=Re[0])
         expected_SINR0 = multiUserChannel._calc_SINR_k(0,
                                                        F[0],
                                                        U[0],
@@ -2415,7 +2415,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=1,
-            Rek=Re[1])
+            N0_or_Rek=Re[1])
         expected_SINR1 = multiUserChannel._calc_SINR_k(1,
                                                        F[1],
                                                        U[1],
@@ -2426,7 +2426,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F,
             k=2,
-            Rek=Re[2])
+            N0_or_Rek=Re[2])
         expected_SINR2 = multiUserChannel._calc_SINR_k(2,
                                                        F[2],
                                                        U[2],
