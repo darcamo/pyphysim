@@ -23,9 +23,9 @@ import numpy as np
 import glob
 from time import sleep
 
-try:
+try:  # pragma: no cover
     import pandas as pd
-except Exception:
+except Exception:  # pragma: no cover
     pass
 
 try:
@@ -45,6 +45,14 @@ def _delete_pickle_files():
     """
     files = glob.glob('*.pickle')
     for f in files:
+        os.remove(f)
+
+
+def _delete_progressbar_output_files():
+    """Delete all the files with *results*.txt names in the current folder.
+    """
+    progressbar_files = glob.glob('*results*.txt')
+    for f in progressbar_files:
         os.remove(f)
 
 
@@ -94,7 +102,7 @@ class _DummyRunner(SimulationRunner):
         return sim_results
 
 
-class _DummyRunnerRandom(SimulationRunner):
+class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
     def __init__(self):
         SimulationRunner.__init__(self)
         # Set the progress bar message to None to avoid print the
@@ -1444,9 +1452,13 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
         filename = 'dummyrunner_results_bias_{bias}'
         dummyrunner.set_results_filename(filename)
+        # This will make the progressbar print to a file, instead of stdout
+        dummyrunner.progress_output_type = 'file'  # Default is 'screen'
 
         # Remove old file from previous test run
         _delete_pickle_files()
+
+        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1471,6 +1483,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         results = SimulationResults.load_from_file(dummyrunner.results_filename)
         self.assertEqual(results, dummyrunner.results)
         _delete_pickle_files()
+        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1505,7 +1518,38 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         # Delete all *.pickle files in the same folder
         _delete_pickle_files()
+
+        # Delete all the *results*.txt files (created by the progressbar)
+        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_simulate_with_param_variation_index(self):
+        # Test the "simulate" method when the param_variation_index
+        # argument is specified.
+        from tests.util_package_test import _DummyRunner
+        dummyrunner = _DummyRunner()
+
+        # Try to simulate for a given param_variation_index before setting
+        # the filename. This should raise an exception.
+        with self.assertRaises(RuntimeError):
+            dummyrunner.simulate(3)
+
+        # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
+        filename = 'dummyrunner_results_bias_{bias}'
+        dummyrunner.set_results_filename(filename)
+        # This will make the progressbar print to a file, instead of stdout
+        dummyrunner.progress_output_type = 'file'  # Default is 'screen'
+
+        _delete_pickle_files()
+        _delete_progressbar_output_files()
+        # Now we perform the simulation
+        dummyrunner.simulate(param_variation_index=4)
+        pr = SimulationResults.load_from_file('dummyrunner_results_bias_1.3_unpack_04.pickle')
+        self.assertEqual(len(pr['lala']), 1)
+        self.assertAlmostEqual(pr['lala'][0].get_result(), 15.5)
+
+        _delete_pickle_files()
+        _delete_progressbar_output_files()
 
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
@@ -1542,8 +1586,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         filename = 'runner_results_bias_{bias}'
         runner.set_results_filename(filename)
 
+        # This will make the progressbar print to a file, instead of stdout
+        runner.progress_output_type = 'file'  # Default is 'screen'
+
         # Remove old file from previous test run
         _delete_pickle_files()
+
+        # Delete all the *results*.txt files (created by the progressbar)
+        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         runner.simulate_in_parallel(lview)
@@ -1562,6 +1612,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         results = SimulationResults.load_from_file(runner.results_filename)
         self.assertEqual(results, runner.results)
         _delete_pickle_files()
+        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1590,8 +1641,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         # Delete all *.pickle files in the same folder
         _delete_pickle_files()
+        # Delete all the *results*.txt files (created by the progressbar)
+        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
@@ -1612,9 +1664,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
                           block=True)
 
             lview = cl.load_balanced_view()
-            if len(lview) == 0:
+            if len(lview) == 0:  # pragma: no cover
                 self.skipTest("At least one IPython engine must be running.")
-        except Exception:
+        except Exception:  # pragma: no cover
             self.skipTest("The IPython engines were not found.")
         #
         #
@@ -1674,7 +1726,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertNotAlmostEqual(result3[2], result3[3])
         self.assertNotAlmostEqual(result3[3], result3[4])
         self.assertEqual(len(set(result3)), 5)  # 5 different elements
-        # print; print result3
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -177,9 +177,9 @@ import sys
 import numpy as np
 from time import time
 
-try:
+try:  # pragma: no cover
     import pandas as pd
-except Exception:
+except Exception:  # pragma: no cover
     pass
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
@@ -1061,8 +1061,12 @@ class SimulationRunner(object):
 
         return self._simulate_for_current_params_common(current_params, update_progress_func)
 
+    # This method is run in another process. Therefore, the python coverage
+    # program cannot see that it is actually used (it is used when the
+    # simulate_in_parallel method is tested). Because of that we add the
+    # pragma line here.
     @staticmethod
-    def _simulate_for_current_params_parallel(obj, current_params, proxybar_data=None):
+    def _simulate_for_current_params_parallel(obj, current_params, proxybar_data=None):  # pragma: no cover
         """
         Parameters
         ----------
@@ -1150,7 +1154,7 @@ class SimulationRunner(object):
         simulate_in_parallel
         """
         #
-        if param_variation_index is not None:
+        if param_variation_index is not None:  # pragma: no cover
             # Maybe even though param_variation_index is a valid integer it
             # was passed as a string. Let's try to convert whatever we have
             # to an integer.
@@ -1214,7 +1218,7 @@ class SimulationRunner(object):
             # Now that we run the simulation for the parameters
             # configuration indicated by param_variation_index let's exit
             # the program
-            sys.exit()
+            #sys.exit()
 
         # If param_variation_index is None we will run for all parameters
         # combinations
@@ -1316,7 +1320,7 @@ class SimulationRunner(object):
         ## xxxxx Start of the code unique to the parallel version xxxxxxxxx
 
         # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
-        if self.update_progress_function_style is not None:
+        if self.update_progress_function_style is not None:  # pragma: no cover
             # Create the proxy progressbars
             proxybar_data_list = []
             for i in range(num_variations):
@@ -1343,7 +1347,7 @@ class SimulationRunner(object):
             block=False)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if self._pbar is not None:
+        if self._pbar is not None:  # pragma: no cover
             self._pbar.start_updater()
 
         if wait is True:
@@ -1392,7 +1396,7 @@ class SimulationRunner(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # Stop the progressbar updating progress
-            if self.update_progress_function_style is not None:
+            if self.update_progress_function_style is not None:  # pragma: no cover
                 self._pbar.stop_updater()
 
             # Erase the self._async_results object, since we already got all

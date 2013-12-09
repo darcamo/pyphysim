@@ -656,6 +656,96 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_calc_JP_Q(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([2, 2, 2])
+        Ns = np.array([1, 1, 1])
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        F_all_k = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F_all_k[k] = randn_c(np.sum(Nt), Ns[k]) * np.sqrt(P[k])
+            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+
+        # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
+        k = 0
+        H0_F1 = np.dot(
+            self.multiH.get_Hk(k),
+            F_all_k[1]
+        )
+        H0_F2 = np.dot(
+            self.multiH.get_Hk(k),
+            F_all_k[2]
+        )
+        expected_Q0 = np.dot(H0_F1,
+                             H0_F1.transpose().conjugate()) + \
+            np.dot(H0_F2,
+                   H0_F2.transpose().conjugate())
+
+        Qk = self.multiH.calc_JP_Q(k, F_all_k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0)
+
+        # Now with noise variance different of 0
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
+        np.testing.assert_array_almost_equal(Qk, expected_Q0 + noise_var * np.eye(2))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
+        k = 1
+        H1_F0 = np.dot(
+            self.multiH.get_Hk(k),
+            F_all_k[0]
+        )
+        H1_F2 = np.dot(
+            self.multiH.get_Hk(k),
+            F_all_k[2]
+        )
+        expected_Q1 = np.dot(H1_F0,
+                             H1_F0.transpose().conjugate()) + \
+            np.dot(H1_F2,
+                   H1_F2.transpose().conjugate())
+
+        Qk = self.multiH.calc_JP_Q(k, F_all_k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1)
+
+        # Now with noise variance different of 0
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
+        np.testing.assert_array_almost_equal(Qk, expected_Q1 + noise_var * np.eye(2))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
+        k = 2
+        H2_F0 = np.dot(
+            self.multiH.get_Hk(k),
+            F_all_k[0]
+        )
+        H2_F1 = np.dot(
+            self.multiH.get_Hk(k),
+            F_all_k[1]
+        )
+        expected_Q2 = np.dot(H2_F0,
+                             H2_F0.transpose().conjugate()) + \
+            np.dot(H2_F1,
+                   H2_F1.transpose().conjugate())
+
+        Qk = self.multiH.calc_JP_Q(k, F_all_k)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2)
+
+        # Now with noise variance different of 0
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
+        np.testing.assert_array_almost_equal(Qk, expected_Q2 + noise_var * np.eye(2))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_calc_Bkl_cov_matrix_first_part(self):
         K = 3
         Nr = np.ones(K, dtype=int) * 2
@@ -1002,6 +1092,341 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                                                        F[2],
                                                        U[2],
                                                        B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_JP_Bkl_cov_matrix_first_part(self):
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = Nt
+        iPu = 1.2
+        noise_power = 0.1
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, noise_power)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+
+        # For ones stream the expected Bkl is equivalent to the Q matrix
+        # plus the direct channel part.
+        for k in range(K):
+            Hk = self.multiH.get_Hk(k)
+            Fk = F[k]
+            HkFk = np.dot(Hk, Fk)
+            expected_first_part = self.multiH.calc_JP_Q(k, F) + np.dot(HkFk, HkFk.conjugate().T)
+            expected_first_part_with_noise = self.multiH.calc_JP_Q(k, F, noise_power) + np.dot(HkFk, HkFk.conjugate().T)
+
+            # Test without noise
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k))
+
+            # Test with noise
+            np.testing.assert_array_almost_equal(
+                expected_first_part_with_noise,
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = Nt
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, noise_power)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+
+        for k in range(K):
+            expected_first_part = 0.0  # First part in the equation of Bkl
+                                       # (the double summation)
+
+            # The inner for loop will calculate
+            # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
+            Hk = self.multiH.get_Hk(k)
+            Hk_H = Hk.conjugate().transpose()
+            for j in range(K):
+                aux = 0.0
+                # Calculates individually for each stream
+                for d in range(Ns[k]):
+                    Vjd = F[j][:, d:d + 1]
+                    Vjd_H = Vjd.conjugate().transpose()
+                    aux = aux + np.dot(np.dot(Hk, np.dot(Vjd, Vjd_H)), Hk_H)
+
+                expected_first_part = expected_first_part + aux
+
+            expected_first_part_with_noise = expected_first_part + np.eye(Nr[k]) * noise_power
+
+            # Test without noise
+            np.testing.assert_array_almost_equal(
+                expected_first_part,
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k))
+
+            # Test with noise
+            np.testing.assert_array_almost_equal(
+                expected_first_part_with_noise,
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_JP_Bkl_cov_matrix_second_part(self):
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = Nt
+        iPu = 1.2
+        noise_power = 0.1
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, noise_power)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+
+        for k in range(K):
+            Hk = self.multiH.get_Hk(k)
+            Hk_H = Hk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hk_H))
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test for more streams
+        K = 3
+        Nr = np.ones(K, dtype=int) * 4
+        Nt = np.ones(K, dtype=int) * 4
+        Ns = Nt
+        iPu = 1.2
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, noise_power)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+
+        for k in range(K):
+            Hk = self.multiH.get_Hk(k)
+            Hk_H = Hk.transpose().conjugate()
+            for l in range(Ns[k]):
+                # Calculate the second part in Equation (28). The second part
+                # is different for each value of l and is given by
+                # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
+                Vkl = F[k][:, l:l + 1]
+                Vkl_H = Vkl.transpose().conjugate()
+                expected_second_part = np.dot(Hk,
+                                              np.dot(np.dot(Vkl, Vkl_H), Hk_H))
+                np.testing.assert_array_almost_equal(
+                    expected_second_part,
+                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l))
+
+    def test_calc_JP_Bkl(self):
+        # For the case of a single stream oer user Bkl (which only has l=0)
+        # is equal to Qk plus I (identity matrix)
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = Nt
+        iPu = 1.2
+        noise_power = 0.23
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, noise_power)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+
+        for k in range(K):
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power)
+            first_part = self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power)
+            for l in range(Ns[k]):
+                second_part = self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l)
+                expected_Bkl = first_part - second_part
+
+                np.testing.assert_array_almost_equal(expected_Bkl, Bkl_all_l[l])
+
+    def test_underline_calc_SINR_k_with_JP(self):
+        # Test the _calc_SINR_k method when joint processing is used.
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = Nt
+        iPu = 1.2
+        noise_power = 0.001
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        # xxxxxxxxxx Test with random precoder and receive filter xxxxxxxxx
+        F = np.empty(K, dtype=np.ndarray)
+        U = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F[k] = randn_c(np.sum(Nt), Ns[k])
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(3 * iPu)
+            U[k] = randn_c(Nr[k], Ns[k])
+
+        for k in range(K):
+            Hk = self.multiH.get_Hk(k)
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power=noise_power)
+            Uk = U[k]
+            Fk = F[k]
+
+            SINR_k_all_l = self.multiH._calc_JP_SINR_k(k, Fk, Uk, Bkl_all_l)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hk, Vkl))
+
+                expectedSINRkl = np.abs(np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))))
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Repeat the test, but now using a BD solution xxxxxxxxx
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, 0.0)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+        big_U = blockdiagonalization.calc_receive_filter(newH)
+        aux = single_matrix_to_matrix_of_matrices(big_U, Ns, Nr)
+        U = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            U[k] = aux[k, k].conjugate().T
+
+        for k in range(K):
+            Hk = self.multiH.get_Hk(k)
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power=noise_power)
+            Uk = U[k]
+            Fk = F[k]
+
+            SINR_k_all_l = self.multiH._calc_JP_SINR_k(k, Fk, Uk, Bkl_all_l)
+
+            for l in range(Ns[k]):
+                Ukl = Uk[:, l:l + 1]
+                Ukl_H = Ukl.transpose().conjugate()
+                Vkl = F[k][:, l:l + 1]
+                aux = np.dot(Ukl_H,
+                             np.dot(Hk, Vkl))
+
+                expectedSINRkl = np.abs(np.asscalar(
+                    np.dot(aux, aux.transpose().conjugate()) / np.dot(
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))))
+
+                np.testing.assert_array_almost_equal(expectedSINRkl,
+                                                     SINR_k_all_l[l])
+
+    def test_calc_SINR_with_JP(self):
+        # Test the _calc_SINR_k method when joint processing is used.
+        K = 3
+        Nr = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Ns = Nt
+        iPu = 1.2
+        noise_power = 0.001
+
+        self.multiH.randomize(Nr, Nt, K)
+
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+                                                                 K, iPu, 0.0)
+
+        F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
+        big_U = blockdiagonalization.calc_receive_filter(newH)
+        aux = single_matrix_to_matrix_of_matrices(big_U, Ns, Nr)
+        U = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            U[k] = aux[k, k].conjugate().T
+
+
+        SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=0.0)
+
+        # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # k = 0
+        B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+            F,
+            k=0,
+            noise_power=0.0)
+        expected_SINR0 = self.multiH._calc_JP_SINR_k(0,
+                                                     F[0],
+                                                     U[0],
+                                                     B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+            F,
+            k=1,
+            noise_power=0.0)
+        expected_SINR1 = self.multiH._calc_JP_SINR_k(1,
+                                                     F[1],
+                                                     U[1],
+                                                     B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 1
+        B2l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+            F,
+            k=2,
+            noise_power=0.0)
+        expected_SINR2 = self.multiH._calc_JP_SINR_k(2,
+                                                     F[2],
+                                                     U[2],
+                                                     B2l_all_l)
+        np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # k = 0
+        SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=0.1)
+        B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+            F,
+            k=0,
+            noise_power=0.1)
+        expected_SINR0 = self.multiH._calc_JP_SINR_k(0,
+                                                     F[0],
+                                                     U[0],
+                                                     B0l_all_l)
+        np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+
+        # k = 1
+        B1l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+            F,
+            k=1,
+            noise_power=0.1)
+        expected_SINR1 = self.multiH._calc_JP_SINR_k(1,
+                                                     F[1],
+                                                     U[1],
+                                                     B1l_all_l)
+        np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+
+        # k = 2
+        B2l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+            F,
+            k=2,
+            noise_power=0.1)
+        expected_SINR2 = self.multiH._calc_JP_SINR_k(2,
+                                                     F[2],
+                                                     U[2],
+                                                     B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1560,6 +1985,137 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Now with external interference and noise
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
+        np.testing.assert_array_almost_equal(Qk, expected_Q2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_JP_Q(self):
+        K = 3
+        Nt = np.array([2, 2, 2])
+        Nr = np.array([2, 2, 2])
+        Ns = np.array([1, 1, 1])
+        NtE = np.array([1, 2])
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        self.multiH.randomize(Nr, Nt, K, NtE)
+
+        F_all_k = np.empty(K, dtype=np.ndarray)
+        for k in range(K):
+            F_all_k[k] = randn_c(np.sum(Nt), Ns[k]) * np.sqrt(P[k])
+            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Pe = round(np.random.rand(), 4)
+
+        Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=0.0,
+            pe=Pe)
+        Re_with_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_var,
+            pe=Pe)
+
+        # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
+        k = 0
+        H0_F1 = np.dot(
+            self.multiH.get_Hk_without_ext_int(k),
+            F_all_k[1]
+        )
+        H0_F2 = np.dot(
+            self.multiH.get_Hk_without_ext_int(k),
+            F_all_k[2]
+        )
+
+        expected_Q0_no_ext_int_or_noise = (
+            # Internal interference part
+            np.dot(H0_F1,
+                   H0_F1.transpose().conjugate()) +
+            np.dot(H0_F2,
+                   H0_F2.transpose().conjugate()))
+
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0_no_ext_int_or_noise)
+
+        # Now with external interference
+        expected_Q0_no_noise = (expected_Q0_no_ext_int_or_noise +
+                                Re_no_noise[0])
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=Pe)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q0_no_noise)
+
+        # Now with external interference and noise
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var, pe=Pe)
+        expected_Q0 = expected_Q0_no_noise + np.eye(2) * noise_var
+        np.testing.assert_array_almost_equal(Qk, expected_Q0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
+        k = 1
+        H1_F0 = np.dot(
+            self.multiH.get_Hk_without_ext_int(k),
+            F_all_k[0]
+        )
+        H1_F2 = np.dot(
+            self.multiH.get_Hk_without_ext_int(k),
+            F_all_k[2]
+        )
+
+        expected_Q1_no_ext_int_or_noise = (
+            np.dot(H1_F0,
+                   H1_F0.transpose().conjugate()) +
+            np.dot(H1_F2,
+                   H1_F2.transpose().conjugate())
+            )
+
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1_no_ext_int_or_noise)
+
+        # Now with external interference
+        expected_Q1_no_noise = (expected_Q1_no_ext_int_or_noise +
+                                Re_no_noise[1])
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=Pe)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q1_no_noise)
+
+        # Now with external interference and noise
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var, pe=Pe)
+        expected_Q1 = expected_Q1_no_noise + np.eye(2) * noise_var
+        np.testing.assert_array_almost_equal(Qk, expected_Q1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
+        k = 2
+        H2_F0 = np.dot(
+            self.multiH.get_Hk_without_ext_int(k),
+            F_all_k[0]
+        )
+        H2_F1 = np.dot(
+            self.multiH.get_Hk_without_ext_int(k),
+            F_all_k[1]
+        )
+
+        expected_Q2_no_ext_int_or_noise = (
+            np.dot(H2_F0,
+                   H2_F0.transpose().conjugate()) +
+            np.dot(H2_F1,
+                   H2_F1.transpose().conjugate())
+            )
+
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2_no_ext_int_or_noise)
+
+        # Now with external interference
+        expected_Q2_no_noise = (expected_Q2_no_ext_int_or_noise +
+                                Re_no_noise[2])
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=Pe)
+        # Test if Qk is equal to the expected output
+        np.testing.assert_array_almost_equal(Qk, expected_Q2_no_noise)
+
+        # Now with external interference and noise
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var, pe=Pe)
         expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
