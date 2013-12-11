@@ -2353,7 +2353,7 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********\n")
+        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********")
 
         # Test with no message (use default message)
         self.pbar2.progress(40)
