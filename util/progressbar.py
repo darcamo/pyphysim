@@ -180,6 +180,9 @@ class ProgressbarTextBase(object):
         # method. It will be used for tracking the elapsed time.
         self._stop_time = 0.0
 
+        # If true, an empty line will be printed when the progress finishes
+        self._print_empty_line_at_the_end = True
+
     def _get_elapsed_time(self):
         """Get method for the elapsed_time property."""
         from util.misc import pretty_time
@@ -309,9 +312,10 @@ class ProgressbarTextBase(object):
         if self._finalized is False:
             self._stop_time = time.time()
 
-            # Print an empty line after the last iteration to be consistent
-            # with the ProgressbarText class
-            self._output.write("\n")
+            if self._print_empty_line_at_the_end is True:
+                # Print an empty line after the last iteration to be consistent
+                # with the ProgressbarText class
+                self._output.write("\n")
 
             # When progress reaches 100% we set the internal variable
             # to True so that any subsequent calls to the `progress`
@@ -649,6 +653,11 @@ class ProgressbarText3(ProgressbarTextBase):
             output.
         """
         ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
+
+        # The ProgressbarText3 class already prints an empty line after
+        # each update. Therefore, there is no need to print an empty line
+        # after all the progress has been finished.
+        self._print_empty_line_at_the_end = False
 
     def _update_iteration(self, count):
         """

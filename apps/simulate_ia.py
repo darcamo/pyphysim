@@ -37,26 +37,20 @@ class IASimulationRunner(SimulationRunner):
     IaSolverClass : The class of the IA solver object
         The IA solver class, which should be a derived class from
         ia.IASolverBaseClass
-    config_filename : string
+    default_config_file : string
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values in the `spec`.
     spec : List of strings
         The specification used to read the simulation configuration
-        from the file `config_filename`. See the validation part in the
+        from the file `default_config_file`. See the validation part in the
         docummentation of the configobj module for details.
     """
 
-    def __init__(self, IaSolverClass, config_filename, spec):
-        SimulationRunner.__init__(self)
+    def __init__(self, IaSolverClass, default_config_file, spec, description=None):
+        SimulationRunner.__init__(self, default_config_file, spec, description)
 
-        # Read the simulation configuration from the file. What is read and
-        self.params = SimulationParameters.load_from_config_file(
-            config_filename,
-            spec,
-            save_parsed_file=True)
-
-        # Set the max_bit_errors and rep_max attributes
+      # Set the max_bit_errors and rep_max attributes
         self.max_bit_errors = self.params['max_bit_errors']
         self.rep_max = self.params['rep_max']
 
@@ -83,6 +77,16 @@ class IASimulationRunner(SimulationRunner):
         # solvers.
         if isinstance(self.ia_solver, ia.ClosedFormIASolver):
             self.ia_solver._runned_iterations = 0.0
+
+        # This can be either 'screen' or 'file'. If it is 'file' then the
+        # progressbar will write the progress to a file with appropriated
+        # filename
+        self.progress_output_type = 'screen'
+
+        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.progressbar_message = "SNR: {{SNR}}".format(
+            self.modulator.name)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
@@ -275,13 +279,13 @@ class AlternatingSimulationRunner(IASimulationRunner):
 
     Parameters
     ----------
-    config_filename : string
+    default_config_file : string
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, default_config_file):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -299,15 +303,15 @@ class AlternatingSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
+        description = 'Simulates a transmission using the Alternating Min. IA Algorithm.'
+
         IASimulationRunner.__init__(self,
                                     ia.AlternatingMinIASolver,
-                                    config_filename,
-                                    spec)
+                                    default_config_file,
+                                    spec,
+                                    description)
+
         #self.update_progress_function_style = None
-        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "Alternating Min. ({0} mod.) - SNR: {{SNR}}".format(
-            self.modulator.name)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class ClosedFormSimulationRunner(IASimulationRunner):
@@ -317,13 +321,13 @@ class ClosedFormSimulationRunner(IASimulationRunner):
 
     Parameters
     ----------
-    config_filename : string
+    default_config_file : string
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, default_config_file):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -341,14 +345,13 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
+        description = 'Simulates a transmission using the Closed Form. IA Algorithm.'
+
         IASimulationRunner.__init__(self,
                                     ia.ClosedFormIASolver,
-                                    config_filename,
-                                    spec)
-
-        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "Closed-Form ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                    default_config_file,
+                                    spec,
+                                    description)
 
     # Since we create the channel object in the __init__ method of
     # IASimulationRunner, we need to re-seed the channel for each set of
@@ -364,13 +367,13 @@ class MinLeakageSimulationRunner(IASimulationRunner):
 
     Parameters:
     -----------
-    config_filename : str
+    default_config_file : str
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, default_config_file):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -388,14 +391,13 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
+        description = 'Simulates a transmission using the Min Leakage IA Algorithm.'
+
         IASimulationRunner.__init__(self,
                                     ia.MinLeakageIASolver,
-                                    config_filename,
-                                    spec)
-
-        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "Min Leakage ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                    default_config_file,
+                                    spec,
+                                    description)
 
 
 class MaxSINRSimulationRunner(IASimulationRunner):
@@ -405,12 +407,12 @@ class MaxSINRSimulationRunner(IASimulationRunner):
 
     Parameters:
     -----------
-    config_filename : str
+    default_config_file : str
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
     """
-    def __init__(self, config_filename):
+    def __init__(self, default_config_file):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -428,14 +430,13 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
+        description = 'Simulates a transmission using the Max SINR IA Algorithm.'
+
         IASimulationRunner.__init__(self,
                                     ia.MaxSinrIASolver,
-                                    config_filename,
-                                    spec)
-
-        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "Max SINR ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                    default_config_file,
+                                    spec,
+                                    description)
 
 
 class MMSESimulationRunner(IASimulationRunner):
@@ -445,12 +446,12 @@ class MMSESimulationRunner(IASimulationRunner):
 
     Parameters:
     -----------
-    config_filename : str
+    default_config_file : str
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
     """
-    def __init__(self, config_filename):
+    def __init__(self, default_config_file):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -468,14 +469,13 @@ class MMSESimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
+        description = 'Simulates a transmission using the MMSE IA Algorithm.'
+
         IASimulationRunner.__init__(self,
                                     ia.MMSEIASolver,
-                                    config_filename,
-                                    spec)
-
-        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "MMSE ({0} mod.) - SNR: {{SNR}}".format(self.modulator.name)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                                    default_config_file,
+                                    spec,
+                                    description)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -688,7 +688,7 @@ def simulate_mmse():
 # xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ## Performs the simulation in parallel
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from time import time
     from util.misc import pretty_time
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
@@ -879,7 +879,7 @@ if __name__ == '__main__':
 
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__1':
+if __name__ == '__main__':
     from time import time
     from util.misc import pretty_time
     tic = time()
@@ -904,7 +904,7 @@ if __name__ == '__main__1':
 
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
+if __name__ == '__main__1':
     from matplotlib import pyplot as plt
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

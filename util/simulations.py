@@ -169,6 +169,7 @@ The the IPython documentation to understand more.
 
 __revision__ = "$Revision$"
 
+import argparse
 import cPickle as pickle
 from collections import OrderedDict, Iterable
 import itertools
@@ -408,17 +409,69 @@ class SimulationRunner(object):
     With that, all there is left to run the simulation is to create a
     SomeSimulator object and call its :meth:`simulate` method.
 
+    Parameters
+    ----------
+    default_config_file : string
+        Name of the config file. This will be parsed with configobj.
+    config_spec : list of strings
+        Configuration specification to validade the config file.
+    description : string
+        A string describing the simulator.
+
     See Also
     --------
     SimulationResults : Class to store simulation results.
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
     """
-    def __init__(self):
+    def __init__(self, default_config_file=None, config_spec=None, description=None):
         self.rep_max = 1
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
-        self.params = SimulationParameters()
+
+        self._config_filename = None
+        # Configobj specification (to validate parameters read from the config file)
+        self._configobj_spec = config_spec
+
+        # xxxxx Parse command line arguments (get config filename) xxxxxxxx
+        parser = argparse.ArgumentParser(description=description)
+
+        parser.add_argument('-i',      # short version to specify the option
+                            '--index', # Long version to specify the option
+                            help='An index for the parameters variations. If provided, only that variation will be simulated.',
+                            metavar='VARIATION INDEX',
+                            type=int,
+                            nargs='?')
+
+        parser.add_argument('-c',      # short version to specify the option
+                            '--config', # Long version to specify the option
+                            help='Name of the file with the simulation parameters',
+                            metavar='CONFIG FILENAME',
+                            type=str,
+                            nargs='?')
+
+        # This member variable will store all the parsed command line arguments
+        self._command_line_args = parser.parse_args()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Get the config filename if it was provided, or use the default value
+        if self._command_line_args.config is None:
+            self._config_filename = default_config_file
+        else:
+            self._config_filename = self._command_line_args.config
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
+        if self._config_filename is None:
+            self.params = SimulationParameters()
+        else:
+            self.params = SimulationParameters.load_from_config_file(
+                self._config_filename,
+                self._configobj_spec,
+                save_parsed_file=True)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         self.results = SimulationResults()
 
         self._pbar = None  # This variable will be used later to store the
@@ -1092,7 +1145,7 @@ class SimulationRunner(object):
 
         return obj._simulate_for_current_params_common(current_params, update_progress_func)
 
-    def __get_print_variation_iterator(self, num_variations, start=1):
+    def __get_print_variation_iterator(self, num_variations, start=0):
         """
         Returns an iterator that prints the current variation each time it's
         "next" method is called.
@@ -1120,8 +1173,8 @@ class SimulationRunner(object):
                 progresschar='-',
                 message="Current Variation:")
 
-            for i in range(start, num_variations + 1):
-                variation_pbar.progress(i)
+            for i in range(start, num_variations):
+                variation_pbar.progress(i + 1)
                 print  # print a new line
                 yield i
 
@@ -1460,6 +1513,70 @@ class SimulationRunner(object):
         are only used inside _run_simulation.
         """
         pass
+
+    def simulate_do_what_i_mean(self, folder=None):
+        """
+        This will either call the simulate method or the simulate_in_parallel
+        method as appropriated.
+
+        If the 'parameters variation index' was specified in the command
+        line, then the 'simulate' method will be called with that index. If
+        not, then the simulate method will be called without any index or,
+        if there is an ipython cluster running, the simulate_in_parallel
+        method will be called.
+
+        Parameters
+        ----------
+        folder : string
+            Foder to be added to the python path
+        """
+        if self._command_line_args.index is not None:
+            # Perform the simulation (serially) for the desired index
+            print("Simulation will be run for the parameters variation: {0}".format(
+                self._command_line_args.index))
+
+            self.simulate(self._command_line_args.index)
+
+        else:
+            run_in_parallel = True
+            try:
+                # If we can get an IPython view that means that the IPython engines
+                # are running. In that case we will perform the simulation in
+                # parallel
+                from IPython.parallel import Client
+                # cl = Client(profile="ssh")
+                cl = Client(profile="default")
+
+                if folder is not None:
+                    # We create a direct view to run coe in all engines
+                    dview = cl.direct_view()
+                    dview.execute('%reset')  # Reset the engines so that we don't have
+                                             # variables there from last computations
+                    dview.execute('import sys')
+                    # We use block=True to ensure that all engines have modified their
+                    # path to include the folder with the simulator before we create
+                    # the load lanced view in the following.
+                    dview.execute('sys.path.append("{0}")'.format(folder), block=True)
+
+                #
+                # But for the actual simulation we are better using a load balanced view
+                lview = cl.load_balanced_view()
+            except Exception:
+                # If we can't get an IPython view then we will perform the
+                # simulation serially
+                run_in_parallel = False
+
+            if run_in_parallel is True:
+                print("Simulation will be run in Parallel")
+
+                # Remove the " - SNR: {SNR}" string in the progressbar message,
+                # since when the simulation is performed in parallel we get a
+                # single progressbar for all the simulation.
+                self.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
+                self.simulate_in_parallel(lview)
+            else:
+                print("Simulation will be run serially")
+                self.simulate()
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

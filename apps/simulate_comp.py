@@ -25,22 +25,24 @@ sys.path.append(parent_dir)
 import numpy as np
 from scipy import linalg as sp_linalg
 
-from util import simulations, conversion, misc
+from util.simulations import SimulationRunner, SimulationResults, Result
+from util.conversion import dB2Linear, dBm2Linear
+from util import misc
 from cell import cell
 from comm import pathloss, channels, modulators
 from comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
-class BDSimulationRunner(simulations.SimulationRunner):
+class BDSimulationRunner(SimulationRunner):
     """
-    Implements a simulation runner for a Block Diagonalization
-    transmission.
+    Simulation runner for a Block Diagonalization transmission.
     """
 
     def __init__(self, ):
-        simulations.SimulationRunner.__init__(self)
+        default_config_file = 'bd_config_file.txt'
+        description = 'Perform the simulation for a Block Diagonalization transmission.'
 
-        # xxxxxxxxxx DARLAN xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Simulation Parameters Specification xxxxxxxxxxxxxxxxxx
         spec = """[Grid]
         cell_radius=float(min=0.01, default=1.0)
         num_cells=integer(min=3,default=3)
@@ -66,10 +68,15 @@ class BDSimulationRunner(simulations.SimulationRunner):
         unpacked_parameters=string_list(default=list('SNR','Pe_dBm'))
 
         """.split("\n")
-        self.params = simulations.SimulationParameters.load_from_config_file(
-            'bd_config_file.txt',
-            spec,
-            save_parsed_file=True)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Initialize parameters configuration xxxxxxxxxxxxxxxxxx
+        # Among other things, this will create the self.params object with
+        # the simulation parameters read from the config file.
+        SimulationRunner.__init__(self,
+                                  default_config_file=default_config_file,
+                                  config_spec=spec,
+                                  description=description)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -128,7 +135,12 @@ class BDSimulationRunner(simulations.SimulationRunner):
         self.cell_grid.create_clusters(self.params['num_clusters'],
                                        self.params['num_cells'],
                                        self.params['cell_radius'])
-        self.noise_var = conversion.dBm2Linear(self.params['N0'])
+        self.noise_var = dBm2Linear(self.params['N0'])
+
+        # This can be either 'screen' or 'file'. If it is 'file' then the
+        # progressbar will write the progress to a file with appropriated
+        # filename
+        self.progress_output_type = 'screen'
 
     def _create_users_according_to_scenario(self, current_params):
         scenario = current_params['user_positioning_method']
@@ -226,7 +238,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
             self.path_loss_obj)
 
         # External interference power
-        self.pe = conversion.dBm2Linear(current_params['Pe_dBm'])
+        self.pe = dBm2Linear(current_params['Pe_dBm'])
 
         # xxxxx Create the BD object with the None metric xxxxxxxxxxxxxxxxx
         self.bd_obj_None = EnhancedBD(current_params['num_cells'],
@@ -451,7 +463,7 @@ class BDSimulationRunner(simulations.SimulationRunner):
             'Whitening',
             current_parameters)
 
-        simResults = simulations.SimulationResults()
+        simResults = SimulationResults()
         # Add the 'None' results
         simResults.add_result(ber_result_None)
         simResults.add_result(ser_result_None)
@@ -584,26 +596,26 @@ class BDSimulationRunner(simulations.SimulationRunner):
         effective_spec_effic = np.sum(effective_spec_effic)
 
         # None metric
-        ber_result = simulations.Result.create(
+        ber_result = Result.create(
             'ber_{0}'.format(metric_name),
-            simulations.Result.RATIOTYPE,
+            Result.RATIOTYPE,
             num_bit_errors,
             num_bits)
-        ser_result = simulations.Result.create(
+        ser_result = Result.create(
             'ser_{0}'.format(metric_name),
-            simulations.Result.RATIOTYPE,
+            Result.RATIOTYPE,
             num_symbol_errors,
             num_symbols)
 
-        per_result = simulations.Result.create(
+        per_result = Result.create(
             'per_{0}'.format(metric_name),
-            simulations.Result.RATIOTYPE,
+            Result.RATIOTYPE,
             num_package_errors,
             num_packages)
 
-        spec_effic_result = simulations.Result.create(
+        spec_effic_result = Result.create(
             'spec_effic_{0}'.format(metric_name),
-            simulations.Result.RATIOTYPE,
+            Result.RATIOTYPE,
             effective_spec_effic,
             1)
 
@@ -646,8 +658,8 @@ class BDSimulationRunner(simulations.SimulationRunner):
         """
         # Path loss (in linear scale) from the cell center to
         path_loss_border = path_loss_obj.calc_path_loss(cell_radius)
-        snr = conversion.dB2Linear(SNR_dB)
-        pt = snr * conversion.dBm2Linear(N0_dBm) / path_loss_border
+        snr = dB2Linear(SNR_dB)
+        pt = snr * dBm2Linear(N0_dBm) / path_loss_border
         return pt
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -790,55 +802,75 @@ if __name__ == '__main__':
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    ## xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # The simulation will be run either in parallel or serially depending
-    # if the IPython engines are running or not.
-    run_in_parallel = True
-    try:
-        # If we can get an IPython view that means that the IPython engines
-        # are running. In that case we will perform the simulation in
-        # parallel
-        from IPython.parallel import Client
-        # cl = Client(profile="ssh")
-        cl = Client(profile="default")
-        # We create a direct view to run coe in all engines
-        dview = cl.direct_view()
-        dview.execute('%reset')  # Reset the engines so that we don't have
-                                 # variables there from last computations
-        dview.execute('import sys')
-        # We use block=True to ensure that all engines have modified their
-        # path to include the folder with the simulator before we create
-        # the load lanced view in the following.
-        dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+    runner.simulate_do_what_i_mean('/home/darlan/cvs_files/pyphysim')
 
-        # But for the actual simulation we are better using a load balanced view
-        lview = cl.load_balanced_view()
-    except Exception:
-        # If we can't get an IPython view then we will perform the
-        # simulation serially
-        run_in_parallel = False
-
-    if run_in_parallel is True:
-        print("Simulation will be run in Parallel")
-        # Remove the " - SNR: {SNR}" string in the progressbar message,
-        # since when the simulation is performed in parallel we get a
-        # single progressbar for all the simulation.
-        runner.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
-        runner.simulate_in_parallel(lview)
-    else:
-        print("Simulation will be run serially")
-
-        # This will be None unless this script is running as part of a job
-        # array in a PBS cluster.
-        variation_index = os.getenv("PBS_ARRAY_INDEX")
-        runner.simulate(variation_index)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    print "Runned iterations: {0}".format(runner.runned_reps)
-    print "Elapsed Time: {0}".format(runner.elapsed_time)
+    if runner._command_line_args.index is None:
+        print ("Runned iterations: {0}".format(runner.runned_reps))
+        print ("Elapsed Time: {0}".format(runner.elapsed_time))
 
 
-if __name__ == '__main__':
+# ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# if __name__ == '__main__1':
+#     import os
+#     from apps.simulate_comp import BDSimulationRunner
+
+#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#     # File name (without extension) for the figure and result files.
+#     results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'
+#     runner = BDSimulationRunner()
+#     runner.set_results_filename(results_filename)
+#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#     ## xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#     # The simulation will be run either in parallel or serially depending
+#     # if the IPython engines are running or not.
+#     run_in_parallel = True
+#     try:
+#         # If we can get an IPython view that means that the IPython engines
+#         # are running. In that case we will perform the simulation in
+#         # parallel
+#         from IPython.parallel import Client
+#         # cl = Client(profile="ssh")
+#         cl = Client(profile="default")
+#         # We create a direct view to run coe in all engines
+#         dview = cl.direct_view()
+#         dview.execute('%reset')  # Reset the engines so that we don't have
+#                                  # variables there from last computations
+#         dview.execute('import sys')
+#         # We use block=True to ensure that all engines have modified their
+#         # path to include the folder with the simulator before we create
+#         # the load lanced view in the following.
+#         dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+
+#         # But for the actual simulation we are better using a load balanced view
+#         lview = cl.load_balanced_view()
+#     except Exception:
+#         # If we can't get an IPython view then we will perform the
+#         # simulation serially
+#         run_in_parallel = False
+
+#     if run_in_parallel is True:
+#         print("Simulation will be run in Parallel")
+#         # Remove the " - SNR: {SNR}" string in the progressbar message,
+#         # since when the simulation is performed in parallel we get a
+#         # single progressbar for all the simulation.
+#         runner.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
+#         runner.simulate_in_parallel(lview)
+#     else:
+#         print("Simulation will be run serially")
+
+#         # This will be None unless this script is running as part of a job
+#         # array in a PBS cluster.
+#         variation_index = os.getenv("PBS_ARRAY_INDEX")
+#         runner.simulate(variation_index)
+#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#     print "Runned iterations: {0}".format(runner.runned_reps)
+#     print "Elapsed Time: {0}".format(runner.elapsed_time)
+
+
+## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__1':
     try:
         from matplotlib import pyplot as plt
         _MATPLOTLIB_AVAILABLE = True
@@ -846,12 +878,12 @@ if __name__ == '__main__':
         _MATPLOTLIB_AVAILABLE = False
 
     # xxxxxxxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    params = simulations.SimulationParameters.load_from_config_file('bd_config_file.txt')
+    params = SimulationParameters.load_from_config_file('bd_config_file.txt')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'.format(**params.parameters)
-    results = simulations.SimulationResults.load_from_file(
+    results = SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
     SNR = results.params['SNR']
