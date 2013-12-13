@@ -25,7 +25,7 @@ sys.path.append(parent_dir)
 import numpy as np
 from scipy import linalg as sp_linalg
 
-from util.simulations import SimulationRunner, SimulationResults, Result, simulate_do_what_i_mean
+from util.simulations import SimulationRunner, SimulationResults, Result, SimulationParameters, simulate_do_what_i_mean
 from util.conversion import dB2Linear, dBm2Linear
 from util import misc
 from cell import cell
