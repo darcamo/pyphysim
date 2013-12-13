@@ -809,66 +809,6 @@ if __name__ == '__main__':
         print ("Elapsed Time: {0}".format(runner.elapsed_time))
 
 
-# ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# if __name__ == '__main__1':
-#     import os
-#     from apps.simulate_comp import BDSimulationRunner
-
-#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-#     # File name (without extension) for the figure and result files.
-#     results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'
-#     runner = BDSimulationRunner()
-#     runner.set_results_filename(results_filename)
-#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-#     ## xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-#     # The simulation will be run either in parallel or serially depending
-#     # if the IPython engines are running or not.
-#     run_in_parallel = True
-#     try:
-#         # If we can get an IPython view that means that the IPython engines
-#         # are running. In that case we will perform the simulation in
-#         # parallel
-#         from IPython.parallel import Client
-#         # cl = Client(profile="ssh")
-#         cl = Client(profile="default")
-#         # We create a direct view to run coe in all engines
-#         dview = cl.direct_view()
-#         dview.execute('%reset')  # Reset the engines so that we don't have
-#                                  # variables there from last computations
-#         dview.execute('import sys')
-#         # We use block=True to ensure that all engines have modified their
-#         # path to include the folder with the simulator before we create
-#         # the load lanced view in the following.
-#         dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
-
-#         # But for the actual simulation we are better using a load balanced view
-#         lview = cl.load_balanced_view()
-#     except Exception:
-#         # If we can't get an IPython view then we will perform the
-#         # simulation serially
-#         run_in_parallel = False
-
-#     if run_in_parallel is True:
-#         print("Simulation will be run in Parallel")
-#         # Remove the " - SNR: {SNR}" string in the progressbar message,
-#         # since when the simulation is performed in parallel we get a
-#         # single progressbar for all the simulation.
-#         runner.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
-#         runner.simulate_in_parallel(lview)
-#     else:
-#         print("Simulation will be run serially")
-
-#         # This will be None unless this script is running as part of a job
-#         # array in a PBS cluster.
-#         variation_index = os.getenv("PBS_ARRAY_INDEX")
-#         runner.simulate(variation_index)
-#     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-#     print "Runned iterations: {0}".format(runner.runned_reps)
-#     print "Elapsed Time: {0}".format(runner.elapsed_time)
-
-
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
     try:
