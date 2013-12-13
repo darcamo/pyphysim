@@ -186,7 +186,50 @@ except Exception:  # pragma: no cover
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
 from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient, ProgressbarZMQServer
 
-__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
+__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result', 'get_global_parser']
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Command Line Argument Parser xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def get_common_parser():
+    """
+    Get the command line parser that can be used.
+
+    The global parser is a singleton object of the argparse.Argumentparser
+    class which is used in the `simulate_do_what_i_mean` function to parse
+    command line arguments.
+
+    It already has two arguments, "index" and "config" configured. If you
+    need more then that, you can get the global parser object by calling
+    this function and then calling the `add_argument` method of the
+    returned object. See the documentation of argparse.Argumentparser for
+    more.
+    """
+    if get_common_parser._parser is None:
+        parser = argparse.ArgumentParser()
+        group = parser.add_argument_group('General')
+
+        group.add_argument('-i',      # short version to specify the option
+                           '--index', # Long version to specify the option
+                           help='An index for the parameters variations. If provided, only that variation will be simulated.',
+                           metavar='VARIATION INDEX',
+                           type=int,
+                           nargs='?')
+
+        group.add_argument('-c',      # short version to specify the option
+                           '--config', # Long version to specify the option
+                           help='Name of the file with the simulation parameters',
+                           metavar='CONFIG FILENAME',
+                           #default=default_config_file,
+                           type=str,
+                           nargs='?')
+        get_common_parser._parser = parser
+
+    return get_common_parser._parser
+
+get_common_parser._parser = None
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -587,21 +630,8 @@ class SimulationRunner(object):
         self._configobj_spec = config_spec
 
         # xxxxx Parse command line arguments (get config filename) xxxxxxxx
-        parser = argparse.ArgumentParser(description=description)
-
-        parser.add_argument('-i',      # short version to specify the option
-                            '--index', # Long version to specify the option
-                            help='An index for the parameters variations. If provided, only that variation will be simulated.',
-                            metavar='VARIATION INDEX',
-                            type=int,
-                            nargs='?')
-
-        parser.add_argument('-c',      # short version to specify the option
-                            '--config', # Long version to specify the option
-                            help='Name of the file with the simulation parameters',
-                            metavar='CONFIG FILENAME',
-                            type=str,
-                            nargs='?')
+        # Note that the get_common_parser always return the same object
+        parser = get_common_parser()
 
         # This member variable will store all the parsed command line arguments
         self._command_line_args = parser.parse_args()

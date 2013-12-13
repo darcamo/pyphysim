@@ -15,7 +15,7 @@ sys.path.append(parent_dir)
 
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result, simulate_do_what_i_mean
+from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result, simulate_do_what_i_mean, get_common_parser
 from comm import modulators, channels
 from util.conversion import dB2Linear
 from util import misc, progressbar
@@ -489,12 +489,49 @@ if __name__ == '__main__':
 
     tic = time()
 
-    algorithms_to_simulate = [
-        "Closed Form",
-        "Alt Min",
-        "Max SINR",
-        "MMSE"
-    ]
+    # xxxxxxxxxx Command Line options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # The returned parser already has two possiblr arguments: "config" and
+    # "index".
+    parser = get_common_parser()
+    parser.description = "Simulate several Interference Alignment Algorithms"
+    group = parser.add_argument_group('IA Algorithms to Simulate. Default is all of them.')
+    group.add_argument('--closed_form', action="store_true", default=False, help="Simulate the Closed Form algorithm.")
+    group.add_argument('--alt_min', action="store_true", default=False, help="Simulate the Alternating Minimizations algorithm.")
+    group.add_argument('--max_sinr', action="store_true", default=False, help="Simulate the Max SINR algorithm.")
+    group.add_argument('--mmse', action="store_true", default=False, help="Simulate the MMSE algorithm.")
+
+    args = parser.parse_args()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Determine which algorithms should be simulated xxxxxxxxxxx
+    algorithms_to_simulate = []
+
+    simulate_all_algorithms = True
+    if args.closed_form is True:
+        algorithms_to_simulate.append("Closed Form")
+        simulate_all_algorithms = False
+
+    if args.alt_min is True:
+        algorithms_to_simulate.append("Alt Min")
+        simulate_all_algorithms = False
+
+    if args.max_sinr is True:
+        algorithms_to_simulate.append("Max SINR")
+        simulate_all_algorithms = False
+
+    if args.mmse is True:
+        algorithms_to_simulate.append("MMSE")
+        simulate_all_algorithms = False
+
+    if simulate_all_algorithms is True:
+        algorithms_to_simulate = [
+            "Closed Form",
+            "Alt Min",
+            "Max SINR",
+            "MMSE"]
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     all_simulation_runner_objs = []
 
     # xxxxxxxxxx Closed Form Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
