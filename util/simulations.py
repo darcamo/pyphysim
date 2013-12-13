@@ -184,7 +184,7 @@ except Exception:  # pragma: no cover
     pass
 
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
+from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient, ProgressbarZMQServer
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result']
 
@@ -192,6 +192,159 @@ __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Res
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):
+    """
+    This will either call the simulate method or the simulate_in_parallel
+    method as appropriated.
+
+    If the 'parameters variation index' was specified in the command
+    line, then the 'simulate' method will be called with that index. If
+    not, then the simulate method will be called without any index or,
+    if there is an ipython cluster running, the simulate_in_parallel
+    method will be called.
+
+    Parameters
+    ----------
+    runner_or_list_of_runners : SimulationRunner object of a list of them.
+        The SimulationRunner object for which either the 'simulate' or the
+        'simulate_in_parallel' method will be called. If this is a list,
+        then we just call this method individually for each member of the
+        list.
+    folder : string
+        Foder to be added to the python path. This should be the main pyphysim folder
+    """
+    if isinstance(runner_or_list_of_runners, list):
+        # If we have a list of SimulationRunner objects, we want two
+        # things. First, we want to use the same progressbar for all of
+        # them. Second, we want to use 'block=False' for all of them and
+        # only later call the wait_parallel_simulation method for each
+        # runner.
+
+        # xxxxxxxxxx Create the shared progressbar object xxxxxxxxxxxxxxxxx
+        pbar = ProgressbarZMQServer(
+            progresschar='*',
+            message="Elapsed Time: {elapsed_time}",
+            sleep_time=1
+        )
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Start the simulation for each runner xxxxxxxxxxxxxxxxx
+        add_folder_to_path = True
+        for runner in runner_or_list_of_runners:
+            runner._pbar = pbar
+            if add_folder_to_path is True:
+                _simulate_do_what_i_mean(runner, folder, block=False)
+                add_folder_to_path = False
+            else:
+                _simulate_do_what_i_mean(runner, None, block=False)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Wait for the simulation of each runner to finish xxxxxxxxxx
+        for runner in runner_or_list_of_runners:
+            runner.wait_parallel_simulation()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    else:
+        # xxxxxxxxxx We only have one SimulationRunner obj xxxxxxxxxxxxxxxx
+        runner = runner_or_list_of_runners
+        _simulate_do_what_i_mean(runner, folder, block=True)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+def _add_folder_to_ipython_engines_path(client, folder):
+    """
+    Add a folder to sys.path of each ipython engine.
+
+    The list of engines is get as a direct view from 'client'.
+
+    This will also add the folder to the local python path.
+
+    Parameters
+    ----------
+    client : Ipython parallel Client object.
+        The client from which we will get a direct view to access the engines.
+    folder : string
+        The folder to be added to the python path at each engine.
+    """
+    # Add the folder to the python path of the main application
+    sys.path.append(folder)
+
+    # We create a direct view to run coe in all engines
+    dview = client.direct_view()
+    dview.execute('%reset')  # Reset the engines so that we don't have
+                             # variables there from last computations
+    dview.execute('import sys')
+    # Add the folder to the python path of each engine. We use
+    # block=True to ensure that all engines have modified their
+    # path to include the folder with the simulator before we
+    # continue.
+    dview.execute('sys.path.append("{0}")'.format(folder), block=True)
+
+
+def _simulate_do_what_i_mean(runner, folder=None, block=True):
+    """
+    This will either call the simulate method or the simulate_in_parallel
+    method as appropriated.
+
+    If the 'parameters variation index' was specified in the command
+    line, then the 'simulate' method will be called with that index. If
+    not, then the simulate method will be called without any index or,
+    if there is an ipython cluster running, the simulate_in_parallel
+    method will be called.
+
+    Parameters
+    ----------
+    runner : SimulationRunner object
+        The SimulationRunner object for which either the 'simulate' or the
+        'simulate_in_parallel' method will be called.
+    folder : string
+        Foder to be added to the python path. This should be the main pyphysim folder
+    block : bool
+        Passed to the simulate_in_parallel method when the simulation is
+        performed in parallel. If this is false, you need to call the
+        method 'wait_parallel_simulation' of the runner object at some
+        point.
+    """
+    if runner._command_line_args.index is not None:
+        # Perform the simulation (serially) for the desired index
+        print("Simulation will be run for the parameters variation: {0}".format(
+            runner._command_line_args.index))
+
+        runner.simulate(runner._command_line_args.index)
+
+    else:
+        run_in_parallel = True
+        try:
+            # If we can get an IPython view that means that the IPython engines
+            # are running. In that case we will perform the simulation in
+            # parallel
+            from IPython.parallel import Client
+            # cl = Client(profile="ssh")
+            cl = Client(profile="default")
+
+            if folder is not None:
+                _add_folder_to_ipython_engines_path(cl, folder)
+
+            # For the actual simulation we are better using a load balanced view
+            lview = cl.load_balanced_view()
+        except Exception:
+            # If we can't get an IPython view then we will perform the
+            # simulation serially
+            run_in_parallel = False
+
+        if run_in_parallel is True:
+            print("Simulation will be run in Parallel")
+
+            # Remove the " - SNR: {SNR}" string in the progressbar message,
+            # since when the simulation is performed in parallel we get a
+            # single progressbar for all the simulation.
+            runner.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
+            runner.simulate_in_parallel(lview, wait=block)
+        else:
+            print("Simulation will be run serially")
+            runner.simulate()
+
+
 def _parse_range_expr(value, converter=float):
     """
     Parse a string in the form of min:max or min:step:max and return a
@@ -1513,70 +1666,6 @@ class SimulationRunner(object):
         are only used inside _run_simulation.
         """
         pass
-
-    def simulate_do_what_i_mean(self, folder=None):
-        """
-        This will either call the simulate method or the simulate_in_parallel
-        method as appropriated.
-
-        If the 'parameters variation index' was specified in the command
-        line, then the 'simulate' method will be called with that index. If
-        not, then the simulate method will be called without any index or,
-        if there is an ipython cluster running, the simulate_in_parallel
-        method will be called.
-
-        Parameters
-        ----------
-        folder : string
-            Foder to be added to the python path
-        """
-        if self._command_line_args.index is not None:
-            # Perform the simulation (serially) for the desired index
-            print("Simulation will be run for the parameters variation: {0}".format(
-                self._command_line_args.index))
-
-            self.simulate(self._command_line_args.index)
-
-        else:
-            run_in_parallel = True
-            try:
-                # If we can get an IPython view that means that the IPython engines
-                # are running. In that case we will perform the simulation in
-                # parallel
-                from IPython.parallel import Client
-                # cl = Client(profile="ssh")
-                cl = Client(profile="default")
-
-                if folder is not None:
-                    # We create a direct view to run coe in all engines
-                    dview = cl.direct_view()
-                    dview.execute('%reset')  # Reset the engines so that we don't have
-                                             # variables there from last computations
-                    dview.execute('import sys')
-                    # We use block=True to ensure that all engines have modified their
-                    # path to include the folder with the simulator before we create
-                    # the load lanced view in the following.
-                    dview.execute('sys.path.append("{0}")'.format(folder), block=True)
-
-                #
-                # But for the actual simulation we are better using a load balanced view
-                lview = cl.load_balanced_view()
-            except Exception:
-                # If we can't get an IPython view then we will perform the
-                # simulation serially
-                run_in_parallel = False
-
-            if run_in_parallel is True:
-                print("Simulation will be run in Parallel")
-
-                # Remove the " - SNR: {SNR}" string in the progressbar message,
-                # since when the simulation is performed in parallel we get a
-                # single progressbar for all the simulation.
-                self.progressbar_message = 'Elapsed Time: {{elapsed_time}}'
-                self.simulate_in_parallel(lview)
-            else:
-                print("Simulation will be run serially")
-                self.simulate()
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

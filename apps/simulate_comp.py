@@ -25,7 +25,7 @@ sys.path.append(parent_dir)
 import numpy as np
 from scipy import linalg as sp_linalg
 
-from util.simulations import SimulationRunner, SimulationResults, Result
+from util.simulations import SimulationRunner, SimulationResults, Result, simulate_do_what_i_mean
 from util.conversion import dB2Linear, dBm2Linear
 from util import misc
 from cell import cell
@@ -802,7 +802,7 @@ if __name__ == '__main__':
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    runner.simulate_do_what_i_mean('/home/darlan/cvs_files/pyphysim')
+    simulate_do_what_i_mean(runner, parent_dir)
 
     if runner._command_line_args.index is None:
         print ("Runned iterations: {0}".format(runner.runned_reps))
