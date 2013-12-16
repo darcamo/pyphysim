@@ -186,7 +186,7 @@ except Exception:  # pragma: no cover
 from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
 from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient, ProgressbarZMQServer
 
-__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result', 'get_global_parser']
+__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result', 'get_common_parser']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -395,7 +395,8 @@ class BDSimulationRunner(SimulationRunner):
         (ber_result_None,
          ser_result_None,
          per_result_None,
-         spec_effic_result_None) = self.__simulate_for_one_metric(
+         spec_effic_result_None,
+         sinr_result_None) = self.__simulate_for_one_metric(
             Ns_all_users_None,
             external_int_data_all_metrics,
             MsPk_all_users_None,
@@ -407,7 +408,8 @@ class BDSimulationRunner(SimulationRunner):
         (ber_result_naive,
          ser_result_naive,
          per_result_naive,
-         spec_effic_result_naive) = self.__simulate_for_one_metric(
+         spec_effic_result_naive,
+         sinr_result_naive) = self.__simulate_for_one_metric(
             Ns_all_users_naive,
             external_int_data_all_metrics,
             MsPk_all_users_naive,
@@ -419,7 +421,8 @@ class BDSimulationRunner(SimulationRunner):
         (ber_result_fixed,
          ser_result_fixed,
          per_result_fixed,
-         spec_effic_result_fixed) = self.__simulate_for_one_metric(
+         spec_effic_result_fixed,
+         sinr_result_fixed) = self.__simulate_for_one_metric(
             Ns_all_users_fixed,
             external_int_data_all_metrics,
             MsPk_all_users_fixed,
@@ -431,7 +434,8 @@ class BDSimulationRunner(SimulationRunner):
         (ber_result_capacity,
          ser_result_capacity,
          per_result_capacity,
-         spec_effic_result_capacity) = self.__simulate_for_one_metric(
+         spec_effic_result_capacity,
+         sinr_result_capacity) = self.__simulate_for_one_metric(
             Ns_all_users_capacity,
             external_int_data_all_metrics,
             MsPk_all_users_capacity,
@@ -443,7 +447,8 @@ class BDSimulationRunner(SimulationRunner):
         (ber_result_effec_throughput,
          ser_result_effec_throughput,
          per_result_effec_throughput,
-         spec_effic_result_effec_throughput) = self.__simulate_for_one_metric(
+         spec_effic_result_effec_throughput,
+         sinr_result_effec_throughput) = self.__simulate_for_one_metric(
             Ns_all_users_effec_throughput,
             external_int_data_all_metrics,
             MsPk_all_users_effec_throughput,
@@ -455,7 +460,8 @@ class BDSimulationRunner(SimulationRunner):
         (ber_result_Whitening,
          ser_result_Whitening,
          per_result_Whitening,
-         spec_effic_result_Whitening) = self.__simulate_for_one_metric(
+         spec_effic_result_Whitening,
+         sinr_result_Whitening) = self.__simulate_for_one_metric(
             Ns_all_users_Whitening,
             external_int_data_all_metrics,
             Ms_all_users_Whitening,
@@ -469,36 +475,42 @@ class BDSimulationRunner(SimulationRunner):
         simResults.add_result(ser_result_None)
         simResults.add_result(per_result_None)
         simResults.add_result(spec_effic_result_None)
+        simResults.add_result(sinr_result_None)
 
         # Add the naive results
         simResults.add_result(ber_result_naive)
         simResults.add_result(ser_result_naive)
         simResults.add_result(per_result_naive)
         simResults.add_result(spec_effic_result_naive)
+        simResults.add_result(sinr_result_naive)
 
         # Add the fixed results
         simResults.add_result(ber_result_fixed)
         simResults.add_result(ser_result_fixed)
         simResults.add_result(per_result_fixed)
         simResults.add_result(spec_effic_result_fixed)
+        simResults.add_result(sinr_result_fixed)
 
         # Add the capacity results
         simResults.add_result(ber_result_capacity)
         simResults.add_result(ser_result_capacity)
         simResults.add_result(per_result_capacity)
         simResults.add_result(spec_effic_result_capacity)
+        simResults.add_result(sinr_result_capacity)
 
         # Add the effective thoughput results
         simResults.add_result(ber_result_effec_throughput)
         simResults.add_result(ser_result_effec_throughput)
         simResults.add_result(per_result_effec_throughput)
         simResults.add_result(spec_effic_result_effec_throughput)
+        simResults.add_result(sinr_result_effec_throughput)
 
         # Add the 'Whitening' results
         simResults.add_result(ber_result_Whitening)
         simResults.add_result(ser_result_Whitening)
         simResults.add_result(per_result_Whitening)
         simResults.add_result(spec_effic_result_Whitening)
+        simResults.add_result(sinr_result_Whitening)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
@@ -531,6 +543,10 @@ class BDSimulationRunner(SimulationRunner):
             The receive filter for all users.
         metric_name : string
             Metric name. This string will be appended to each result name.
+
+        Returns
+        -------
+        TODO: Write the rest of the docstring
         """
         Ns_total = np.sum(Ns_all_users)
         self.data_RS = np.random.RandomState(self.data_gen_seed)
@@ -595,6 +611,16 @@ class BDSimulationRunner(SimulationRunner):
         num_packages = np.sum(num_packages)
         effective_spec_effic = np.sum(effective_spec_effic)
 
+        # xxxxx Calculate teh SINR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Uk_all_users = np.empty(Wk_all_users.size, dtype=np.ndarray)
+        for ii in range(Wk_all_users.size):
+            Uk_all_users[ii] = Wk_all_users[ii].conjugate().T
+        SINR_all_k = self.multiuser_channel.calc_JP_SINR(MsPk_all_users,
+                                                         Uk_all_users,
+                                                         self.noise_var)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
         # None metric
         ber_result = Result.create(
             'ber_{0}'.format(metric_name),
@@ -619,10 +645,21 @@ class BDSimulationRunner(SimulationRunner):
             effective_spec_effic,
             1)
 
+        sinr_result = Result(
+            'sinr_{0}'.format(metric_name),
+            Result.RATIOTYPE,
+            accumulate_values=True)
+
+        for k in range(Wk_all_users.size):
+            sinr_k = SINR_all_k[k]
+            for value in sinr_k:
+                sinr_result.update(value, 1)
+
         return (ber_result,
                 ser_result,
                 per_result,
-                spec_effic_result)
+                spec_effic_result,
+                sinr_result)
 
     # def _keep_going(self, current_sim_results, current_rep):
     #     ber_result = current_sim_results['ber'][-1]
