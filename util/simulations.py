@@ -210,15 +210,15 @@ def get_common_parser():
         parser = argparse.ArgumentParser()
         group = parser.add_argument_group('General')
 
-        group.add_argument('-i',      # short version to specify the option
-                           '--index', # Long version to specify the option
+        group.add_argument('-i',       # short version to specify the option
+                           '--index',  # Long version to specify the option
                            help='An index for the parameters variations. If provided, only that variation will be simulated.',
                            metavar='VARIATION INDEX',
                            type=int,
                            nargs='?')
 
-        group.add_argument('-c',      # short version to specify the option
-                           '--config', # Long version to specify the option
+        group.add_argument('-c',        # short version to specify the option
+                           '--config',  # Long version to specify the option
                            help='Name of the file with the simulation parameters',
                            metavar='CONFIG FILENAME',
                            #default=default_config_file,
@@ -934,8 +934,8 @@ class SimulationRunner(object):
         current_sim_results = self._run_simulation(current_parameters)
         toc = time()
         elapsed_time_result = Result.create('elapsed_time',
-                                                    Result.SUMTYPE,
-                                                    toc - tic)
+                                            Result.SUMTYPE,
+                                            toc - tic)
         current_sim_results.add_result(elapsed_time_result)
 
         return current_sim_results
@@ -1136,7 +1136,7 @@ class SimulationRunner(object):
 
                 self._pbar = ProgressbarZMQServer(message=message,
                                                   filename=filename,
-                                                 **self.progressbar_extra_args)
+                                                  **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient
             # class, but it behaves like a function.
@@ -1266,7 +1266,7 @@ class SimulationRunner(object):
         # iterations for each combination of simulation parameters
         # finishes.
         self._on_simulate_current_params_finish(current_params,
-                                               current_sim_results)
+                                                current_sim_results)
 
         # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
         if self.__results_base_filename is not None:
@@ -2561,7 +2561,7 @@ class SimulationResults(object):
         if self is other:  # pragma: no cover
             return True
 
-        aux =  equal_dicts(self.__dict__, other.__dict__, ignore_keys=['elapsed_time', '_results'])
+        aux = equal_dicts(self.__dict__, other.__dict__, ignore_keys=['elapsed_time', '_results'])
         if aux is False:
             return False
 
@@ -2584,7 +2584,6 @@ class SimulationResults(object):
             The other SimulationResults object.
         """
         return not self.__eq__(other)
-
 
     def _get_params(self):
         """Get method for the params property."""
