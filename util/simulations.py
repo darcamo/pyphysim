@@ -178,13 +178,15 @@ import sys
 import numpy as np
 from time import time
 
-try:  # pragma: no cover
-    import pandas as pd
-except Exception:  # pragma: no cover
-    pass
+# try:  # pragma: no cover
+#     import pandas as pd
+# except Exception:  # pragma: no cover
+#     pass
 
-from util.misc import pretty_time, calc_confidence_interval, replace_dict_values, equal_dicts
-from util.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient, ProgressbarZMQServer
+from util.misc import pretty_time, calc_confidence_interval, \
+    replace_dict_values, equal_dicts
+from util.progressbar import ProgressbarText, ProgressbarText2, \
+    ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
 
 __all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result', 'get_common_parser']
 
@@ -254,7 +256,8 @@ def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):
         then we just call this method individually for each member of the
         list.
     folder : string
-        Foder to be added to the python path. This should be the main pyphysim folder
+        Foder to be added to the python path. This should be the main
+        pyphysim folder
     """
     if isinstance(runner_or_list_of_runners, list):
         # If we have a list of SimulationRunner objects, we want two
@@ -341,7 +344,8 @@ def _simulate_do_what_i_mean(runner, folder=None, block=True):
         The SimulationRunner object for which either the 'simulate' or the
         'simulate_in_parallel' method will be called.
     folder : string
-        Foder to be added to the python path. This should be the main pyphysim folder
+        Foder to be added to the python path. This should be the main
+        pyphysim folder
     block : bool
         Passed to the simulate_in_parallel method when the simulation is
         performed in parallel. If this is false, you need to call the
@@ -349,10 +353,10 @@ def _simulate_do_what_i_mean(runner, folder=None, block=True):
         point.
     """
     if runner._command_line_args.index is not None:
-        # Perform the simulation (serially) for the desired index
-        print("Simulation will be run for the parameters variation: {0}".format(
-            runner._command_line_args.index))
+        msg = "Simulation will be run for the parameters variation: {0}"
+        print(msg.format(runner._command_line_args.index))
 
+        # Perform the simulation (serially) for the desired index
         runner.simulate(runner._command_line_args.index)
 
     else:
@@ -368,7 +372,8 @@ def _simulate_do_what_i_mean(runner, folder=None, block=True):
             if folder is not None:
                 _add_folder_to_ipython_engines_path(cl, folder)
 
-            # For the actual simulation we are better using a load balanced view
+            # For the actual simulation we are better using a
+            # load_balanced_view
             lview = cl.load_balanced_view()
         except Exception:
             # If we can't get an IPython view then we will perform the
@@ -453,9 +458,9 @@ def _real_numpy_array_check(value, min=None, max=None):
     # Test if it is a list or not
     if isinstance(value, list):
         # If it is a list, each element can be either a number of a 'range
-        # expression' that can be parsed with _parse_float_range_expr. We simple
-        # apply _real_numpy_array_check on each element in the list to do
-        # the work and stack horizontally all the results.
+        # expression' that can be parsed with _parse_float_range_expr. We
+        # simple apply _real_numpy_array_check on each element in the list
+        # to do the work and stack horizontally all the results.
         value = [_real_numpy_array_check(a, min, max) for a in value]
         value = np.hstack(value)
 
@@ -598,7 +603,7 @@ class SimulationRunner(object):
            # Save the results of this iteration to a SimulationResults
            # object and return it
            simResults = SimulationResults()
-           simResults.add_new_result(...)  # Each result is some metric of interest
+           simResults.add_new_result(...)  # Each one is a metric of interest
            simResults.add_new_result(...)
            return simResults
 
@@ -620,13 +625,17 @@ class SimulationRunner(object):
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
     """
-    def __init__(self, default_config_file=None, config_spec=None, description=None):
+    def __init__(self,
+                 default_config_file=None,
+                 config_spec=None,
+                 description=None):
         self.rep_max = 1
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
 
         self._config_filename = None
-        # Configobj specification (to validate parameters read from the config file)
+        # Configobj specification (to validate parameters read from the
+        # config file)
         self._configobj_spec = config_spec
 
         # xxxxx Parse command line arguments (get config filename) xxxxxxxx
@@ -768,17 +777,21 @@ class SimulationRunner(object):
         # self.set_results_filename(results_filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if filename is not None:
-            self.__results_base_filename = replace_dict_values(filename,
-                                                               self.params.parameters)
+            self.__results_base_filename = replace_dict_values(
+                filename,
+                self.params.parameters)
         else:
             self.__results_base_filename = None
 
     def _get_results_filename(self):
-        """Get name of the file where the last simulation results were stored."""
+        """
+        Get name of the file where the last simulation results were stored.
+        """
         if self.__results_base_filename is None:
             results_filename = None
         else:
-            results_filename = '{0}.pickle'.format(self.__results_base_filename)
+            results_filename = '{0}.pickle'.format(
+                self.__results_base_filename)
         return results_filename
     results_filename = property(_get_results_filename)
 
@@ -824,7 +837,8 @@ class SimulationRunner(object):
         current_params : SimulationParameters object
             The current parameters.
         """
-        total_unpacks = current_params._original_sim_params.get_num_unpacked_variations()
+        original_sim_params = current_params._original_sim_params
+        total_unpacks = original_sim_params.get_num_unpacked_variations()
         num_digits = len(str(total_unpacks))
         unpack_index_str = str(current_params._unpack_index).zfill(num_digits)
         partial_results_filename = '{0}_unpack_{1}.pickle'.format(
@@ -858,7 +872,8 @@ class SimulationRunner(object):
             # Do nothing if self.delete_partial_results_bool is not True
             pass
 
-    def __save_partial_results(self, current_rep, current_params, current_sim_results, partial_results_filename):
+    def __save_partial_results(self, current_rep, current_params,
+                               current_sim_results, partial_results_filename):
         """
         Save the partial simulation results to a file.
 
@@ -968,7 +983,8 @@ class SimulationRunner(object):
             the run iteration.
 
         """
-        raise NotImplementedError("'_run_simulation' must be implemented in a subclass of SimulationRunner")
+        raise NotImplementedError("'_run_simulation' must be implemented in"
+                                  " a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
     def _keep_going(self, current_params, current_sim_results, current_rep):
@@ -1053,7 +1069,8 @@ class SimulationRunner(object):
         # sys.stdout, otherwise it will be a file object. Note that
         # self.progress_output_type is used when
         # self.update_progress_function_style is either 'text1' or 'text2'.
-        output_progress_sinc = self._get_progress_output_sinc(current_params._unpack_index)
+        unpack_index = current_params._unpack_index
+        output_progress_sinc = self._get_progress_output_sinc(unpack_index)
 
         # If the self.update_progress_function_style attribute matches one
         # of the available styles, then update_progress_func will be
@@ -1140,7 +1157,8 @@ class SimulationRunner(object):
 
             # Note that this will be an object of the ProgressbarZMQClient
             # class, but it behaves like a function.
-            proxybar = self._pbar.register_client_and_get_proxy_progressbar(self.rep_max)
+            proxybar = self._pbar.register_client_and_get_proxy_progressbar(
+                self.rep_max)
             proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
 
         return proxybar_data
@@ -1182,7 +1200,10 @@ class SimulationRunner(object):
         runned_reps_subset = np.array(self.runned_reps)[indexes]
         return runned_reps_subset
 
-    def _simulate_for_current_params_common(self, current_params, update_progress_func=lambda value: None):  # pragma: no cover
+    def _simulate_for_current_params_common(
+            self,
+            current_params,
+            update_progress_func=lambda value: None):  # pragma: no cover
         """
         Parameters
         ----------
@@ -1225,7 +1246,9 @@ class SimulationRunner(object):
             # NOTE: If the type of this exception is changed in the
             # future make sure it is not caught in the except block.
             if not current_params == current_sim_results.params:
-                raise ValueError("Partial results loaded from file does not match current parameters. \nfile: {0}".format(partial_results_filename))
+                err_msg = ("Partial results loaded from file does not match"
+                           " current parameters. \nfile: {0}")
+                raise ValueError(err_msg.format(partial_results_filename))
 
             # The current_rep will be set to the value or run
             # repetitions in the loaded partial results. This means
@@ -1244,7 +1267,9 @@ class SimulationRunner(object):
             current_rep = 1
 
         # Run more iterations until one of the stop criteria is reached
-        while (self._keep_going(current_params, current_sim_results, current_rep)
+        while (self._keep_going(current_params,
+                                current_sim_results,
+                                current_rep)
                and
                current_rep < self.rep_max):
             current_sim_results.merge_all_results(
@@ -1255,7 +1280,10 @@ class SimulationRunner(object):
 
             # Save partial results each 500 iterations
             if current_rep % 500 == 0 and self.__results_base_filename is not None:
-                self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+                self.__save_partial_results(current_rep,
+                                            current_params,
+                                            current_sim_results,
+                                            partial_results_filename)
 
         # If the while loop ended before rep_max repetitions (because
         # _keep_going returned false) then set the progressbar to full.
@@ -1270,7 +1298,10 @@ class SimulationRunner(object):
 
         # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
         if self.__results_base_filename is not None:
-            self.__save_partial_results(current_rep, current_params, current_sim_results, partial_results_filename)
+            self.__save_partial_results(current_rep,
+                                        current_params,
+                                        current_sim_results,
+                                        partial_results_filename)
         else:
             partial_results_filename = None
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1279,7 +1310,9 @@ class SimulationRunner(object):
         # iterations run as well as the SimulationResults object.
         return (current_rep, current_sim_results, partial_results_filename)
 
-    def _simulate_for_current_params_serial(self, current_params, var_print_iter):
+    def _simulate_for_current_params_serial(self,
+                                            current_params,
+                                            var_print_iter):
         """
         Parameters
         ----------
@@ -1293,16 +1326,20 @@ class SimulationRunner(object):
         # ------------- Current Variation: 4/84 ------------
         next(var_print_iter)
 
-        update_progress_func = self._get_serial_update_progress_function(current_params)
+        update_progress_func = self._get_serial_update_progress_function(
+            current_params)
 
-        return self._simulate_for_current_params_common(current_params, update_progress_func)
+        return self._simulate_for_current_params_common(current_params,
+                                                        update_progress_func)
 
     # This method is run in another process. Therefore, the python coverage
     # program cannot see that it is actually used (it is used when the
     # simulate_in_parallel method is tested). Because of that we add the
     # pragma line here.
     @staticmethod
-    def _simulate_for_current_params_parallel(obj, current_params, proxybar_data=None):  # pragma: no cover
+    def _simulate_for_current_params_parallel(obj,
+                                              current_params,
+                                              proxybar_data=None):  # pragma: no cover
         """
         Parameters
         ----------
@@ -1326,7 +1363,8 @@ class SimulationRunner(object):
             update_progress_func = proxybar.progress
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        return obj._simulate_for_current_params_common(current_params, update_progress_func)
+        return obj._simulate_for_current_params_common(current_params,
+                                                       update_progress_func)
 
     def __get_print_variation_iterator(self, num_variations, start=0):
         """
@@ -1445,7 +1483,9 @@ class SimulationRunner(object):
         # combinations if it is not provided.
         if param_variation_index is not None:
             if self.__results_base_filename is None:
-                raise RuntimeError('The results filename must be set before calling the "simulate" method.')
+                err_msg = ('The results filename must be set before calling '
+                           'the "simulate" method.')
+                raise RuntimeError(err_msg)
             param_comb_list = self.params.get_unpacked_params_list()
             if param_variation_index >= 0 and param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
@@ -1989,7 +2029,8 @@ class SimulationParameters(object):
                 if np.any(self.parameters[key] != other.parameters[key]):
                     return False
 
-        # If we didn't return until we reach this point then the objects are equal
+        # If we didn't return until we reach this point then the objects
+        # are equal
         return True
 
     def __ne__(self, other):
@@ -2098,8 +2139,9 @@ class SimulationParameters(object):
         return indexes
 
     def get_unpacked_params_list(self):
-        """Get a list of SimulationParameters objects, each one
-        corresponding to a possible combination of (unpacked) parameters.
+        """
+        Get a list of SimulationParameters objects, each one corresponding to a
+        possible combination of (unpacked) parameters.
 
         Returns
         -------
@@ -2136,7 +2178,6 @@ class SimulationParameters(object):
             {'a': 1, 'c': 3, 'b': 2, 'd': 6},
             {'a': 1, 'c': 4, 'b': 2, 'd': 5},
             {'a': 1, 'c': 4, 'b': 2, 'd': 6}]
-
         """
         # If unpacked_parameters is empty, return self
         if not self._unpacked_parameters_set:
