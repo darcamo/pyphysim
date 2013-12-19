@@ -188,7 +188,8 @@ from util.misc import pretty_time, calc_confidence_interval, \
 from util.progressbar import ProgressbarText, ProgressbarText2, \
     ProgressbarText3, ProgressbarZMQServer, ProgressbarZMQClient
 
-__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults', 'Result', 'get_common_parser']
+__all__ = ['SimulationRunner', 'SimulationParameters', 'SimulationResults',
+           'Result', 'get_common_parser']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -212,16 +213,19 @@ def get_common_parser():
         parser = argparse.ArgumentParser()
         group = parser.add_argument_group('General')
 
+        help_msg = ('An index for the parameters variations. If provided, ',
+                    'only that variation will be simulated.')
         group.add_argument('-i',       # short version to specify the option
                            '--index',  # Long version to specify the option
-                           help='An index for the parameters variations. If provided, only that variation will be simulated.',
+                           help=help_msg,
                            metavar='VARIATION INDEX',
                            type=int,
                            nargs='?')
 
+        help_msg = 'Name of the file with the simulation parameters'
         group.add_argument('-c',        # short version to specify the option
                            '--config',  # Long version to specify the option
-                           help='Name of the file with the simulation parameters',
+                           help=help_msg,
                            metavar='CONFIG FILENAME',
                            #default=default_config_file,
                            type=str,
@@ -353,13 +357,9 @@ def _simulate_do_what_i_mean(runner, folder=None, block=True):
         point.
     """
     if runner.command_line_args.index is not None:
-        msg = "Simulation will be run for the parameters variation: {0}"
-        print(msg.format(runner._command_line_args.index))
-
         # Perform the simulation (serially) for the desired index
         msg = "Simulation will be run for the parameters variation: {0}"
         print(msg.format(runner.command_line_args.index))
-
         runner.simulate(runner.command_line_args.index)
 
     else:
@@ -378,7 +378,7 @@ def _simulate_do_what_i_mean(runner, folder=None, block=True):
             # For the actual simulation we are better using a
             # load_balanced_view
             lview = cl.load_balanced_view()
-        except Exception:
+        except IOError:
             # If we can't get an IPython view then we will perform the
             # simulation serially
             run_in_parallel = False
@@ -430,13 +430,13 @@ def _parse_int_range_expr(value):
     """
     return _parse_range_expr(value, int)
 
-
-def _real_numpy_array_check(value, min_value=None, max_value=None):
+# pylint: disable= W0622
+def _real_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a numpy array (of floats).
 
     Value can be either a single number, a range expression in the form of
-    min_value:max_value or min_value:step:max_value, or even a list containing numbers and range
+    min:max or min:step:max, or even a list containing numbers and range
     expressions.
 
     Notes
@@ -464,7 +464,7 @@ def _real_numpy_array_check(value, min_value=None, max_value=None):
         # expression' that can be parsed with _parse_float_range_expr. We
         # simple apply _real_numpy_array_check on each element in the list
         # to do the work and stack horizontally all the results.
-        value = [_real_numpy_array_check(a, min_value, max_value) for a in value]
+        value = [_real_numpy_array_check(a, min, max) for a in value]
         value = np.hstack(value)
 
     else:
@@ -477,30 +477,30 @@ def _real_numpy_array_check(value, min_value=None, max_value=None):
             value = _parse_float_range_expr(value)
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
-    if min_value is not None:
-        # maybe "min_value" was passed as a string and thus we need to convert it
+    if min is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
         # to a float
-        min_value = float(min_value)
-        if value.min() < min_value:
+        min = float(min)
+        if value.min() < min:
             raise validate.VdtValueTooSmallError(value.min())
 
-    if max_value is not None:
-        # maybe "min_value" was passed as a string and thus we need to convert it
+    if max is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
         # to a float
-        max_value = float(max_value)
-        if value.max() > max_value:
+        max = float(max)
+        if value.max() > max:
             raise validate.VdtValueTooBigError(value.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return value
 
 
-def _integer_numpy_array_check(value, min_value=None, max_value=None):
+def _integer_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a numpy array (of integers).
 
     Value can be either a single number, a range expression in the form of
-    min_value:max_value or min_value:step:max_value, or even a list
+    min:max or min:step:max, or even a list
     containing numbers and range expressions.
 
     Notes
@@ -528,7 +528,7 @@ def _integer_numpy_array_check(value, min_value=None, max_value=None):
         # expression' that can be parsed with _parse_int_range_expr. We simple
         # apply _integer_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
-        value = [_integer_numpy_array_check(a, min_value, max_value) for a in value]
+        value = [_integer_numpy_array_check(a, min, max) for a in value]
         value = np.hstack(value)
 
     else:
@@ -541,18 +541,18 @@ def _integer_numpy_array_check(value, min_value=None, max_value=None):
             value = _parse_int_range_expr(value)
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
-    if min_value is not None:
-        # maybe "min_value" was passed as a string and thus we need to convert it
+    if min is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
         # to a integer
-        min_value = int(min_value)
-        if value.min() < min_value:
+        min = int(min)
+        if value.min() < min:
             raise validate.VdtValueTooSmallError(value.min())
 
-    if max_value is not None:
-        # maybe "min_value" was passed as a string and thus we need to convert it
+    if max is not None:
+        # maybe "min" was passed as a string and thus we need to convert it
         # to a integer
-        max_value = int(max_value)
-        if value.max() > max_value:
+        max = int(max)
+        if value.max() > max:
             raise validate.VdtValueTooBigError(value.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -563,7 +563,7 @@ def _integer_numpy_array_check(value, min_value=None, max_value=None):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# pylint: disable=R0921
+# pylint: disable=R0921,R0902
 class SimulationRunner(object):
     """
     Base class to run Monte Carlo simulations.
@@ -837,8 +837,9 @@ class SimulationRunner(object):
         current_params : SimulationParameters object
             The current parameters.
         """
-        original_sim_params = current_params._original_sim_params
-        total_unpacks = original_sim_params.get_num_unpacked_variations()
+        # This will get the number of unpacked variations of the parent
+        # SimulationParameters object.
+        total_unpacks = current_params.get_num_unpacked_variations()
         num_digits = len(str(total_unpacks))
         unpack_index_str = str(current_params.unpack_index).zfill(num_digits)
         partial_results_filename = '{0}_unpack_{1}.pickle'.format(
@@ -865,7 +866,7 @@ class SimulationRunner(object):
             for name in self.__results_base_filename_unpack_list:
                 try:
                     os.remove(name)
-                except Exception:  # pragma: no cover
+                except OSError:  # pragma: no cover
                     pass
             self.__results_base_filename_unpack_list = []
         else:
@@ -1153,9 +1154,10 @@ class SimulationRunner(object):
                     filename = '{0}_progress.txt'.format(
                         self.__results_base_filename)
 
-                self._pbar = ProgressbarZMQServer(message=message,
-                                                  filename=filename,
-                                                  **self.progressbar_extra_args)
+                self._pbar = ProgressbarZMQServer(
+                    message=message,
+                    filename=filename,
+                    **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient
             # class, but it behaves like a function.
@@ -1186,21 +1188,30 @@ class SimulationRunner(object):
         del state['_pbar']
         return state
 
-    def get_runned_reps_fix_params(self, fixed_params_dict=dict()):  # pragma: no cover
-        """
-        Get the number of runned repetitions for a given set of parameters.
+    # def get_runned_reps_fix_params(
+    #         self,
+    #         fixed_params_dict=None):  # pragma: no cover
+    #     """
+    #     Get the number of runned repetitions for a given set of parameters.
 
-        You can get a list of the number of repetitions combination of
-        transmit parameters with the "runned_reps" property. However, if
-        you have more then one transmit parameter set to be unpacked it
-        might be difficult knowing which element in the list corresponds to
-        the simulation for a given set of transmit parameters. By using the
-        get_runned_reps_fix_params method you will be the number
-        repetitions for the desired set of transmit parameters.
-        """
-        indexes = self.params.get_pack_indexes(fixed_params_dict)
-        runned_reps_subset = np.array(self.runned_reps)[indexes]
-        return runned_reps_subset
+    #     You can get a list of the number of repetitions combination of
+    #     transmit parameters with the "runned_reps" property. However, if
+    #     you have more then one transmit parameter set to be unpacked it
+    #     might be difficult knowing which element in the list corresponds to
+    #     the simulation for a given set of transmit parameters. By using the
+    #     get_runned_reps_fix_params method you will be the number
+    #     repetitions for the desired set of transmit parameters.
+
+    #     Parameters
+    #     ----------
+    #     fixed_params_dict : dictionary
+    #     """
+    #     if fixed_params_dict is None:
+    #         fixed_params_dict = dict()
+
+    #     indexes = self.params.get_pack_indexes(fixed_params_dict)
+    #     runned_reps_subset = np.array(self.runned_reps)[indexes]
+    #     return runned_reps_subset
 
     def _simulate_for_current_params_common(
             self,
@@ -1365,6 +1376,7 @@ class SimulationRunner(object):
             update_progress_func = proxybar.progress
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # pylint: disable= W0212
         return obj._simulate_for_current_params_common(current_params,
                                                        update_progress_func)
 
@@ -1602,7 +1614,8 @@ class SimulationRunner(object):
             # Create the proxy progressbars
             proxybar_data_list = []
             for i in range(num_variations):
-                proxybar_data_list.append(self._get_parallel_update_progress_function())
+                proxybar_data_list.append(
+                    self._get_parallel_update_progress_function())
         else:  # self.update_progress_function_style is None
             # Create the dummy update progress functions
             proxybar_data_list = [None] * num_variations
@@ -2611,6 +2624,8 @@ class SimulationResults(object):
         # that resulted in the results. This should be set by calling the
         # set_parameters method.
         self._params = SimulationParameters()
+        self.rep_max = -1  # This will be set to a positive integer in the
+                           # SimulationRunner class.
 
     def __eq__(self, other):
         """
@@ -2822,7 +2837,7 @@ class SimulationResults(object):
         """
         return self._results.keys()
 
-    def get_result_values_list(self, result_name, fixed_params={}):
+    def get_result_values_list(self, result_name, fixed_params=None):
         """
         Get the values for the results with name `result_name`.
 
@@ -2862,6 +2877,9 @@ class SimulationResults(object):
         'third': 'C'}" then a single result will be provided instead of a
         list.
         """
+        if fixed_params is None:
+            fixed_params = {}
+
         # If the fictionary is not empty
         if fixed_params:
             # TODO: Test this part
@@ -2877,7 +2895,7 @@ class SimulationResults(object):
     def get_result_values_confidence_intervals(self,
                                                result_name,
                                                P=95,
-                                               fixed_params={}):
+                                               fixed_params=None):
         """
         Get the values for the results with name `result_name`.
 
@@ -2910,6 +2928,9 @@ class SimulationResults(object):
         --------
         util.misc.calc_confidence_interval
         """
+        if fixed_params is None:
+            fixed_params = {}
+
         if fixed_params:
             # TODO: Test this part
             indexes = self.params.get_pack_indexes(fixed_params)
@@ -2998,9 +3019,10 @@ class SimulationResults(object):
             obj = pickle.load(inputfile)
         return obj
 
-    def save_to_hdf5_file(self, filename, attrs={}):
-        """Save the SimulationResults to the file `filename` using the HDF5
-        format standard.
+    def save_to_hdf5_file(self, filename, attrs=None):
+        """
+        Save the SimulationResults to the file `filename` using the HDF5 format
+        standard.
 
         Parameters
         ----------
@@ -3013,6 +3035,9 @@ class SimulationResults(object):
         --------
         load_from_hdf5_file
         """
+        if attrs is None:
+            attrs = {}
+
         import h5py
         fid = h5py.File(filename, 'w')
 
@@ -3047,7 +3072,13 @@ class SimulationResults(object):
 
     # TODO: Test if this method saves all the information that the
     # save_to_hdf5_file method saves.
-    def save_to_pytables_file(self, filename, attrs={}):
+    def save_to_pytables_file(self, filename, attrs=None):
+        """
+        Save the SimulationResults to the file `filename` using pytables.
+        """
+        if attrs is None:
+            attrs = {}
+
         import tables as tb
         fid = tb.openFile(filename, 'w', title='Simulation Results file')
 
@@ -3555,6 +3586,7 @@ class Result(object):
     @staticmethod
     def save_to_pytables_table(parent, results_list):
         """
+        Save the Result object.
         """
         import tables as tb
         pytables_file = parent._v_file
@@ -3563,6 +3595,8 @@ class Result(object):
         table = pytables_file.createTable(parent, name, description,
                                           title=name)
         row = table.row
+
+        r = None
         for r in results_list:
             row['_value'] = r._value
             row['_total'] = r._total

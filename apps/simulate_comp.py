@@ -839,7 +839,7 @@ if __name__ == '__main__':
 
     simulate_do_what_i_mean(runner, parent_dir)
 
-    if runner._command_line_args.index is None:
+    if runner.command_line_args.index is None:
         print ("Runned iterations: {0}".format(runner.runned_reps))
         print ("Elapsed Time: {0}".format(runner.elapsed_time))
 

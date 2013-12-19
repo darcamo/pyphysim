@@ -40,7 +40,9 @@ except ImportError:  # pragma: no cover
     # ProgressbarZMQClient classes require it
     pass
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessServer', 'ProgressbarZMQServer', 'center_message']
+__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2',
+           'ProgressbarText3', 'ProgressbarMultiProcessServer',
+           'ProgressbarZMQServer', 'center_message']
 
 
 # TODO: Move this function to the misc module.
@@ -130,10 +132,36 @@ class DummyProgressbar(object):  # pragma: no cover
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # The code here and in some of the derived classes is inspired in the code
 # located in
-# http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/examples/notebooks/Progress%20Bars.ipynb
+# http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/
+# /examples/notebooks/Progress%20Bars.ipynb
+#
 class ProgressbarTextBase(object):
-    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
-        """Initializes the progressbar object.
+    """
+    Base class for Text progressbars.
+
+    Parameters
+    ----------
+    finalcount : int
+        The total amount that corresponds to 100%. Each time the progress
+        method is called with a number that number is added with the
+        current amount in the progressbar. When the amount becomes equal to
+        `finalcount` the bar will be 100% complete.
+    progresschar : str, optional (default to '*')
+        The character used to represent progress.
+    message : str, optional
+        A message to be shown in the top of the progressbar.
+    output : File like object
+        Object with a 'write' method, which controls where the progress-bar
+        will be printed. By default sys.stdout is used, which means that
+        the progress will be printed in the standard output.
+    """
+    def __init__(self,
+                 finalcount,
+                 progresschar='*',
+                 message='',
+                 output=sys.stdout):
+        """
+        Initializes the progressbar object.
 
         Parameters
         ----------
@@ -156,8 +184,8 @@ class ProgressbarTextBase(object):
 
         self.finalcount = finalcount
         self.progresschar = progresschar
-        self.width = 50   # This should be a multiple of 10 and the lower
-                          # possible value is 40.
+        self._width = 50   # This should be a multiple of 10 and the lower
+                           # possible value is 40.
 
         # By default, self._output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
@@ -197,7 +225,8 @@ class ProgressbarTextBase(object):
     elapsed_time = property(_get_elapsed_time)
 
     def _count_to_percent(self, count):
-        """Convert a given count into the equivalent percentage.
+        """
+        Convert a given count into the equivalent percentage.
 
         Parameters
         ----------
@@ -209,7 +238,8 @@ class ProgressbarTextBase(object):
         Returns
         -------
         percentage : float
-            The percentage that `count` is of self.finalcount (between 0 and 100)
+            The percentage that `count` is of self.finalcount (between 0
+            and 100)
         """
         percentage = (count / float(self.finalcount)) * 100.0
         return percentage
@@ -229,7 +259,11 @@ class ProgressbarTextBase(object):
 
     width = property(_get_width, _set_width)
 
-    def _get_percentage_representation(self, percent, central_message='{percent}%', left_side='[', right_side=']'):
+    def _get_percentage_representation(self,
+                                       percent,
+                                       central_message='{percent}%',
+                                       left_side='[',
+                                       right_side=']'):
         """
         Parameters
         ----------
@@ -244,7 +278,8 @@ class ProgressbarTextBase(object):
             since it hides the progresschars.
         left_side : str
             The left side of the bar.
-        - `right_side`:
+        right_side : str
+            The right side of the bar.
 
         Returns
         -------
@@ -270,12 +305,15 @@ class ProgressbarTextBase(object):
         # `percend_done` value
         num_hashes = int((percent_done / 100.0) * all_full)
 
-        prog_bar = left_side + self.progresschar * num_hashes + ' ' * (all_full - num_hashes) + right_side
+        prog_bar = (left_side + self.progresschar * num_hashes + ' ' *
+                    (all_full - num_hashes) + right_side)
 
         # Replace the center of prog_bar with the message
-        central_message = central_message.format(percent=percent_done, elapsed_time=elapsed_time)
+        central_message = central_message.format(
+            percent=percent_done, elapsed_time=elapsed_time)
         pct_place = (len(prog_bar) // 2) - (len(str(central_message)) // 2)
-        prog_bar = prog_bar[0:pct_place] + central_message + prog_bar[pct_place + len(central_message):]
+        prog_bar = prog_bar[0:pct_place] + central_message + prog_bar[
+            pct_place + len(central_message):]
 
         return prog_bar
 
@@ -371,6 +409,7 @@ class ProgressbarTextBase(object):
     def __str__(self):
         return str(self.prog_bar)
 
+    # pylint:disable=R0201,W0613
     def _update_iteration(self, count):  # pragma: no cover
         """
         Update the self.prog_bar member variable according with the new
@@ -383,14 +422,16 @@ class ProgressbarTextBase(object):
             progressbar represents this count as a percent value of
             self.finalcount
         """
-        raise NotImplemented("Implement this method in a subclass")
+        raise NotImplementedError("Implement this method in a subclass")
 # xxxxxxxxxx ProgressbarTextBase - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarText - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# http://code.activestate.com/recipes/299207-console-text-progress-indicator-class/
+# http://
+# code.activestate.com/recipes/299207-console-text-progress-indicator-class/
+#
 # CLASS NAME: ProgressbarText
 #
 # Original Author of the ProgressbarText class:
@@ -400,8 +441,8 @@ class ProgressbarTextBase(object):
 # Modified by Darlan Cavalcante Moreira in 10/18/2011
 # Released under: GNU GENERAL PUBLIC LICENSE
 class ProgressbarText(ProgressbarTextBase):
-    """Class that prints a representation of the current progress as
-    text.
+    """
+    Class that prints a representation of the current progress as text.
 
     You can set the final count for the progressbar, the character that
     will be printed to represent progress and a small message indicating
@@ -433,8 +474,13 @@ class ProgressbarText(ProgressbarTextBase):
     >> pb.progress(100)
     oooooooooooooooooooooooooooooooooooooooooooooooooo
     """
-    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
-        """Initializes the ProgressbarText object.
+    def __init__(self,
+                 finalcount,
+                 progresschar='*',
+                 message='',
+                 output=sys.stdout):
+        """
+        Initializes the ProgressbarText object.
 
         Parameters
         ----------
@@ -453,7 +499,8 @@ class ProgressbarText(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
+                                     output)
 
         self.progresscharcount = 0  # stores how many characters where
                                     # already printed in a previous call to
@@ -531,7 +578,8 @@ class ProgressbarText(ProgressbarTextBase):
 
         # Set the self.prog_bar variable simply as a string containing as
         # many self.progresschar characters as necessary.
-        self.prog_bar = self._get_percentage_representation(percentage, left_side='', right_side='', central_message='')
+        self.prog_bar = self._get_percentage_representation(
+            percentage, left_side='', right_side='', central_message='')
 
     # def _write_progress(self, count):
     #     # Make sure I don't try to go off the end (e.g. >100%)
@@ -554,7 +602,9 @@ class ProgressbarText(ProgressbarTextBase):
     #         # already printed in previous calls to the `progress`
     #         # function. Therefore, we only need to print the remaining
     #         # characters until we reach `progresscharcount`.
-    #         for i in range(self.progresscharcount, progresscharcount):  # pylint:disable=W0612
+    #         for i in range(
+    #                 self.progresscharcount,
+    #                 progresscharcount):  # pylint:disable=W0612
     #             self._output.write(self.progresschar)
     #             self._output.flush()
     #         # Update self.progresscharcount
@@ -570,7 +620,43 @@ class ProgressbarText(ProgressbarTextBase):
 # xxxxxxxxxxxxxxx ProgressbarText2 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarText2(ProgressbarTextBase):
-    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
+    """
+    Class that prints a representation of the current progress as text.
+
+    You can set the final count for the progressbar, the character that
+    will be printed to represent progress and a small message indicating
+    what the progress is related to.
+
+    In order to use this class, create an object outsize a loop and inside
+    the loop call the `progress` function with the number corresponding to
+    the progress (between 0 and finalcount). Each time the `progress`
+    function is called a number of characters will be printed to show the
+    progress. Note that the number of printed characters correspond is
+    equivalent to the progress minus what was already printed.
+
+    Parameters
+    ----------
+    finalcount : int
+        The total amount that corresponds to 100%. Each time the progress
+        method is called with a number that number is added with the
+        current amount in the progressbar. When the amount becomes equal to
+        `finalcount` the bar will be 100% complete.
+    progresschar : str, optional (default to '*')
+        The character used to represent progress.
+    message : str, optional
+        A message to be shown in the right of the progressbar. If this
+        message contains "{elapsed_time}" it will be replaced by the
+        elapsed time.
+    output : File like object
+        Object with a 'write' method, which controls where the progress-bar
+        will be printed. By default sys.stdout is used, which means that
+        the progress will be printed in the standard output.
+    """
+    def __init__(self,
+                 finalcount,
+                 progresschar='*',
+                 message='',
+                 output=sys.stdout):
         """
         Initializes the progressbar object.
 
@@ -593,7 +679,8 @@ class ProgressbarText2(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
+                                     output)
 
     def _update_iteration(self, count):
         """
@@ -620,6 +707,7 @@ class ProgressbarText2(ProgressbarTextBase):
             self.prog_bar += '  %d of %d complete' % (count, self.finalcount)
 
     def _update_prog_bar(self, count):
+        """Updates the self.prog_bar member variable."""
         self.prog_bar = self._get_percentage_representation(
             count,
             central_message='{percent}%',
@@ -632,8 +720,43 @@ class ProgressbarText2(ProgressbarTextBase):
 # xxxxxxxxxxxxxxx ProgressbarText3 - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarText3(ProgressbarTextBase):
-    def __init__(self, finalcount, progresschar='*', message='', output=sys.stdout):
-        """Initializes the progressbar object.
+    """
+    Class that prints a representation of the current progress as text.
+
+    You can set the final count for the progressbar, the character that
+    will be printed to represent progress and a small message indicating
+    what the progress is related to.
+
+    In order to use this class, create an object outsize a loop and inside
+    the loop call the `progress` function with the number corresponding to
+    the progress (between 0 and finalcount). Each time the `progress`
+    function is called a number of characters will be printed to show the
+    progress. Note that the number of printed characters correspond is
+    equivalent to the progress minus what was already printed.
+
+     Parameters
+    ----------
+    finalcount : int
+        The total amount that corresponds to 100%. Each time the progress
+        method is called with a number that number is added with the
+        current amount in the progressbar. When the amount becomes equal to
+        `finalcount` the bar will be 100% complete.
+    progresschar : str, optional (default to '*')
+        The character used to represent progress.
+    message : str, optional
+        A message to be shown in the progressbar.
+    output : File like object
+        Object with a 'write' method, which controls where the progress-bar
+        will be printed. By default sys.stdout is used, which means that
+        the progress will be printed in the standard output.
+    """
+    def __init__(self,
+                 finalcount,
+                 progresschar='*',
+                 message='',
+                 output=sys.stdout):
+        """
+        Initializes the progressbar object.
 
         Parameters
         ----------
@@ -652,7 +775,8 @@ class ProgressbarText3(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message, output)
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
+                                     output)
 
         # The ProgressbarText3 class already prints an empty line after
         # each update. Therefore, there is no need to print an empty line
@@ -689,6 +813,7 @@ class ProgressbarText3(ProgressbarTextBase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarServerBase xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# pylint:disable=R0902
 class ProgressbarDistributedServerBase(object):
     """
     Base class for progressbars for distributed computations.
@@ -867,7 +992,9 @@ class ProgressbarDistributedServerBase(object):
     # coverage program does not see that this method in run in the test code
     # even though we know it is run (otherwise no output would
     # appear). Therefore, we put the "pragma: no cover" line in it
-    def _update_progress(self, filename=None, start_delay=0.0):  # pragma: no cover
+    def _update_progress(self,
+                         filename=None,
+                         start_delay=0.0):  # pragma: no cover
         """
         Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
@@ -891,7 +1018,6 @@ class ProgressbarDistributedServerBase(object):
             warnings.warn('No clients registered in the progressbar')
 
         if filename is None:
-            import sys
             output = sys.stdout
         else:
             output = open(filename, 'w')
@@ -960,7 +1086,11 @@ class ProgressbarDistributedServerBase(object):
             # that we don't get errors if the program closes before the
             # process updating the progressbar ends (because the user
             # forgot to call the stop_updater method).
-            self._update_process = multiprocessing.Process(name="ProgressBarUpdater", target=self._update_progress, args=[self._filename, start_delay])
+            self._update_process = multiprocessing.Process(
+                name="ProgressBarUpdater",
+                target=self._update_progress,
+                args=[self._filename, start_delay])
+
             self._update_process.daemon = True
 
             self.running.set()
@@ -1132,8 +1262,9 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
         """
-        ProgressbarDistributedServerBase.__init__(self,
-                                            progresschar, message, sleep_time, filename)
+        ProgressbarDistributedServerBase.__init__(
+            self,
+            progresschar, message, sleep_time, filename)
 
     def _update_client_data_list(self):
         """
@@ -1276,8 +1407,9 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         port : int
             The port to bind the socket.
         """
-        ProgressbarDistributedServerBase.__init__(self,
-                                            progresschar, message, sleep_time, filename)
+        ProgressbarDistributedServerBase.__init__(
+            self,
+            progresschar, message, sleep_time, filename)
 
         # Create a Multiprocessing namespace
         self._ns = self._manager.Namespace()
@@ -1286,6 +1418,11 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         # the socket will be created in a different process
         self._ns.ip = ip
         self._ns.port = port
+
+        # This will be set to a ZMQ Context in the _update_progress method
+        self._zmq_context = None
+        # This will be set to a ZMQ Socket in the _update_progress method
+        self._zmq_pull_socket = None
 
     def _get_ip(self):
         """Get method for the ip property."""
@@ -1302,7 +1439,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         proxybar = ProgressbarZMQClient(client_id, self.ip, self.port)
         return proxybar
 
-    def _update_progress(self, filename=None, start_delay=0.0):  # pragma: no cover
+    def _update_progress(self,
+                         filename=None, start_delay=0.0):  # pragma: no cover
         """
         Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
@@ -1468,7 +1606,8 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         """
         self._zmq_context = zmq.Context()
         self._zmq_push_socket = self._zmq_context.socket(zmq.PUSH)
-        self._zmq_push_socket.connect("tcp://{0}:{1}".format(self.ip, self.port))
+        self._zmq_push_socket.connect("tcp://{0}:{1}".format(self.ip,
+                                                             self.port))
 
         # The default LINGER value for a ZMQ socket is -1, which means
         # "wait forever". That means that if the message was not received

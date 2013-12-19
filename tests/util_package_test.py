@@ -406,28 +406,28 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         import validate
 
         array_string = "[0 5 10:15]"
-        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -437,40 +437,40 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
             parsed_array = _real_numpy_array_check(array_string,
-                                                   min_value=4,
-                                                   max_value=30)
+                                                   min=4,
+                                                   max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
             parsed_array = _real_numpy_array_check(array_string,
-                                                   min_value=0,
-                                                   max_value=15)
+                                                   min=0,
+                                                   max=15)
 
     def test_integer_numpy_array_check(self):
         import validate
 
         array_string = "[0 5 10:15]"
-        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
+        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -480,13 +480,13 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
             parsed_array = _integer_numpy_array_check(array_string,
-                                                      min_value=4,
-                                                      max_value=30)
+                                                      min=4,
+                                                      max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
             parsed_array = _integer_numpy_array_check(array_string,
-                                                      min_value=0,
-                                                      max_value=15)
+                                                      min=0,
+                                                      max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
