@@ -19,12 +19,15 @@ sys.path.append(parent_dir)
 import unittest
 import doctest
 import numpy as np
-from scipy import linalg
+from scipy.linalg import block_diag
 
-from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, waterfilling, channels
+from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, \
+    waterfilling, channels
 from ia.ia import ClosedFormIASolver
-from util.misc import randn_c, least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
-from util.conversion import dB2Linear, linear2dB, single_matrix_to_matrix_of_matrices
+from util.misc import randn_c, least_right_singular_vectors, \
+    calc_shannon_sum_capacity, calc_whitening_matrix
+from util.conversion import dB2Linear, linear2dB, \
+    single_matrix_to_matrix_of_matrices
 from subspace.projections import calcProjectionMatrix
 
 
@@ -67,10 +70,10 @@ class CommDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ModuleFunctionsTestCase(unittest.TestCase):
     def test_generate_jakes_samples(self):
-        Fd = 5    # Doppler frequency (in Hz)
-        Ts = 1e-3 # Sampling interval (in seconds)
-        N = 1000  # Number of samples
-        NRays = 8 # Number of rays for the Jakes model
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1e-3  # Sampling interval (in seconds)
+        N = 1000   # Number of samples
+        NRays = 8  # Number of rays for the Jakes model
 
         # Test generating channel samples for a SISO scenario
         h = channels.generate_jakes_samples(Fd, Ts, N, NRays)
@@ -82,7 +85,8 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 
         # Test with a given RandomState object.
         RS = np.random.RandomState()
-        h3 = channels.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2), RS=RS)
+        h3 = channels.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2),
+                                             RS=RS)
         self.assertEqual(h3.shape, (3, 2, N))
 
     def test_calc_stream_reduction_matrix(self):
@@ -93,7 +97,7 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         P2 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 2)
         P3 = blockdiagonalization._calc_stream_reduction_matrix(Re_k, 3)
 
-        (min_Vs, remaining_Vs, S) = least_right_singular_vectors(Re_k, 3)
+        (min_Vs, _, _) = least_right_singular_vectors(Re_k, 3)
         expected_P1 = min_Vs[:, :1]
         expected_P2 = min_Vs[:, :2]
         expected_P3 = min_Vs[:, :3]
@@ -106,9 +110,9 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 class JakesSampleGeneratorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        Fd = 5    # Doppler frequency (in Hz)
-        Ts = 1e-3 # Sampling interval (in seconds)
-        NRays = 8 # Number of rays for the Jakes model
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1e-3  # Sampling interval (in seconds)
+        NRays = 8  # Number of rays for the Jakes model
 
         self.obj = channels.JakesSampleGenerator(Fd, Ts, NRays)
         self.obj2 = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=(3, 2))
@@ -486,7 +490,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # _big_W is still None
         self.assertIsNone(self.multiH._big_W)
 
-        expected_big_W = linalg.block_diag(*W)
+        expected_big_W = block_diag(*W)
         np.testing.assert_array_almost_equal(expected_big_W,
                                              self.multiH.big_W)
         self.assertIsNotNone(self.multiH._big_W)
@@ -500,7 +504,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(W2, self.multiH.W)
 
         self.assertIsNone(self.multiH._big_W)
-        expected_big_W2 = linalg.block_diag(*W2)
+        expected_big_W2 = block_diag(*W2)
         np.testing.assert_array_almost_equal(expected_big_W2,
                                              self.multiH.big_W)
         self.assertIsNotNone(self.multiH._big_W)
@@ -554,7 +558,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         expected_corrupted_data = data + last_noise
 
-        np.testing.assert_array_almost_equal(expected_corrupted_data, corrupted_data)
+        np.testing.assert_array_almost_equal(expected_corrupted_data,
+                                             corrupted_data)
 
         last_noise_var = self.multiH.last_noise_var
         self.assertAlmostEqual(noise_var, last_noise_var)
@@ -603,7 +608,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
-        np.testing.assert_array_almost_equal(Qk, expected_Q0 + noise_var * np.eye(2))
+        np.testing.assert_array_almost_equal(
+            Qk,
+            expected_Q0 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
@@ -628,7 +635,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
-        np.testing.assert_array_almost_equal(Qk, expected_Q1 + noise_var * np.eye(2))
+        np.testing.assert_array_almost_equal(
+            Qk,
+            expected_Q1 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
@@ -653,7 +662,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
-        np.testing.assert_array_almost_equal(Qk, expected_Q2 + noise_var * np.eye(2))
+        np.testing.assert_array_almost_equal(
+            Qk,
+            expected_Q2 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_JP_Q(self):
@@ -693,7 +704,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
-        np.testing.assert_array_almost_equal(Qk, expected_Q0 + noise_var * np.eye(2))
+        np.testing.assert_array_almost_equal(
+            Qk,
+            expected_Q0 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected Q[1] after one step xxxxxxxxxxxxxxxx
@@ -718,7 +731,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
-        np.testing.assert_array_almost_equal(Qk, expected_Q1 + noise_var * np.eye(2))
+        np.testing.assert_array_almost_equal(
+            Qk,
+            expected_Q1 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected Q[2] after one step xxxxxxxxxxxxxxxx
@@ -1105,7 +1120,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
                                                                  K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
@@ -1138,7 +1153,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
                                                                  K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
@@ -1184,7 +1199,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
                                                                  K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
@@ -1214,7 +1229,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
                                                                  K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
@@ -1246,7 +1261,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
                                                                  K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
@@ -2446,7 +2461,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H_no_ext_int,
             K, iPu, noise_power)
 
@@ -2509,7 +2524,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H_no_ext_int,
             K, iPu, noise_power)
 
@@ -2541,7 +2556,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H_no_ext_int,
             K, iPu, noise_power)
 
@@ -2574,7 +2589,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H_no_ext_int,
             K, iPu, noise_power)
 
@@ -3202,7 +3217,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # Now let's test if newH is really a block diagonal matrix.
         # First we create a 'mask'
         A = np.ones([self.iNrk, self.iNtk])
-        mask = linalg.block_diag(A, A, A)
+        mask = block_diag(A, A, A)
 
         # With the mask we can create a masked array of the block
         # diagonalized channel which effectively removes the elements in
@@ -3230,13 +3245,13 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
         # The square of the Frobenius norm of Ms_good must be equal to the
         # total available power
-        self.assertAlmostEqual(linalg.norm(Ms_good, 'fro') ** 2,
+        self.assertAlmostEqual(np.linalg.norm(Ms_good, 'fro') ** 2,
                                total_power)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Ms_good must still be able to block diagonalize the channel
         A = np.ones([self.iNrk, self.iNtk])
-        mask = linalg.block_diag(A, A, A)
+        mask = block_diag(A, A, A)
         newH = np.dot(channel, Ms_good)
 
         # With the mask we can create a masked array of the block
@@ -3294,7 +3309,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # diagonal.
 
         A = np.ones([self.iNrk, self.iNtk])
-        mask = linalg.block_diag(A, A, A)
+        mask = block_diag(A, A, A)
 
         # With the mask we can create a masked array of the block
         # diagonalized channel
@@ -3338,7 +3353,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # diagonal.
 
         A = np.ones([self.iNrk, self.iNtk])
-        mask = linalg.block_diag(A, A, A)
+        mask = block_diag(A, A, A)
 
         # With the mask we can create a masked array of the block
         # diagonalized channel
@@ -3376,7 +3391,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         #num_antenas = self.num_antenas
         channel = randn_c(self.iNr, self.iNt)
 
-        (newH, Ms) = blockdiagonalization.block_diagonalize(
+        (_, Ms) = blockdiagonalization.block_diagonalize(
             channel, num_users, Pu, noise_var)
 
         # W_bd is a block diagonal matrix, where each "small block" is the
@@ -3518,7 +3533,7 @@ class WhiteningBDTestCase(unittest.TestCase):
         # print np.dot(big_H, Ms).round(6)
         # print
 
-        # Wk = linalg.block_diag(*Wk_all)
+        # Wk = block_diag(*Wk_all)
         # print "Wk"
         # print Wk
         # print

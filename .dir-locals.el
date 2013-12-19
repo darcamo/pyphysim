@@ -1,5 +1,7 @@
 ;;; Directory Local Variables
-;;; See Info node `(emacs) Directory Variables' for more information.
+;;; For more information see (info "(emacs) Directory Variables")
 
 ((python-mode
+  (flycheck-checker . python-pylint)
   (mode . auto-revert)))
+

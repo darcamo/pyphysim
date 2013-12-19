@@ -50,7 +50,8 @@ class MimoBase(object):
         -----
         This method must be implemented in each subclass of `MimoBase`.
         """
-        raise NotImplementedError('getNumberOfLayers still needs to be implemented in the {0} class'.format(self.__class__.__name__))
+        m = 'getNumberOfLayers still needs to be implemented in the {0} class'
+        raise NotImplementedError(m.format(self.__class__.__name__))
 
     @staticmethod
     def _calcZeroForceFilter(channel):
@@ -98,10 +99,12 @@ class MimoBase(object):
         return W
 
     def encode(self, transmit_data):  # pragma: no cover
-        raise NotImplementedError('encode still needs to be implemented in the {0} class'.format(self.__class__.__name__))
+        msg = 'encode still needs to be implemented in the {0} class'
+        raise NotImplementedError(msg.format(self.__class__.__name__))
 
     def decode(self, received_data, channel):  # pragma: no cover
-        raise NotImplementedError('decode still needs to be implemented in the {0} class'.format(self.__class__.__name__))
+        msg = 'decode still needs to be implemented in the {0} class'
+        raise NotImplementedError(msg.format(self.__class__.__name__))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -159,7 +162,9 @@ class Blast(MimoBase):
         """
         self.noise_var = noise_var
         if noise_var > 0:
-            self.calc_filter = lambda H: MimoBase._calcMMSEFilter(H, self.noise_var)
+            self.calc_filter = lambda H: MimoBase._calcMMSEFilter(
+                H,
+                self.noise_var)
         else:
             self.calc_filter = MimoBase._calcZeroForceFilter
 
@@ -195,9 +200,13 @@ class Blast(MimoBase):
         """
         num_elements = transmit_data.size
         if num_elements % self.nStreams != 0:
-            raise ValueError("Input array number of elements must be a multiple of the number of transmit antennas")
+            # Note this is a single string
+            msg = ("Input array number of elements must be a multiple of the"
+                   " number of transmit antennas")
+            raise ValueError(msg)
 
-        return transmit_data.reshape(self.nStreams, num_elements / self.nStreams, order='F')
+        return transmit_data.reshape(
+            self.nStreams, num_elements / self.nStreams, order='F')
 
     def encode(self, transmit_data):
         """Encode the transmit data array to be transmitted using the BLAST
@@ -223,7 +232,8 @@ class Blast(MimoBase):
         return self._encode(transmit_data) / np.sqrt(self.nStreams)
 
     def _decode(self, received_data, channel):
-        """Decode the received data array, but does not compensate for the power
+        """
+        Decode the received data array, but does not compensate for the power
         division among transmit antennas.
 
         The idea is that the decode method will call _decode and perform
@@ -246,11 +256,11 @@ class Blast(MimoBase):
         See also
         --------
         decode
-
         """
         Ns = received_data.shape[1]
         W = self.calc_filter(channel)
-        decoded_data = W.dot(received_data).reshape(self.nStreams * Ns, order='F')
+        decoded_data = W.dot(received_data).reshape(self.nStreams * Ns,
+                                                    order='F')
         return decoded_data
 
     def decode(self, received_data, channel):
@@ -386,9 +396,14 @@ class Alamouti(MimoBase):
         h1_conj = channel[:, 1].conjugate()
 
         for i in range(0, number_of_blocks):
-            # decoded_data[2 * i] = np.dot(channel[:, 0].conjugate(), received_data[:, 2 * i]) + np.dot(channel[:, 1], received_data[:, 2 * i + 1].conjugate())
-            decoded_data[2 * i] = np.dot(h0_conj, received_data[:, 2 * i]) + np.dot(h1, received_data[:, 2 * i + 1].conjugate())
-            decoded_data[2 * i + 1] = np.dot(h1_conj, received_data[:, 2 * i]) + np.dot(minus_h0, received_data[:, 2 * i + 1].conjugate())
+            decoded_data[2 * i] = (
+                np.dot(h0_conj, received_data[:, 2 * i]) +
+                np.dot(h1, received_data[:, 2 * i + 1].conjugate())
+            )
+            decoded_data[2 * i + 1] = (
+                np.dot(h1_conj, received_data[:, 2 * i]) +
+                np.dot(minus_h0, received_data[:, 2 * i + 1].conjugate())
+            )
 
         # The Alamouti code gives a gain of the square of the frobenius
         # norm of the channel. We need to compensate that gain.

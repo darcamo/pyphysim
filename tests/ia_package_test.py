@@ -269,7 +269,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         Qk = self.iasolver.calc_Q(k)
         pk = self.iasolver.calc_remaining_interference_percentage(k, Qk)
 
-        [V, D] = leig(Qk, Ns[k])
+        [_, D] = leig(Qk, Ns[k])
         expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
         self.assertAlmostEqual(pk, expected_pk)
 
@@ -278,7 +278,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         Qk = self.iasolver.calc_Q(k)
         pk = self.iasolver.calc_remaining_interference_percentage(k)
 
-        [V, D] = leig(Qk, Ns[k])
+        [_, D] = leig(Qk, Ns[k])
         expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
         self.assertAlmostEqual(pk, expected_pk)
 
@@ -500,7 +500,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
     def test_updateF(self):
         Ns = 1
         E = self.iasolver._calc_E()
-        [eigenvalues, eigenvectors] = np.linalg.eig(E)
+        [_, eigenvectors] = np.linalg.eig(E)
         # V1 is the expected precoder for the first user
         V1 = np.matrix(eigenvectors[:, 0:Ns])
 
@@ -1470,7 +1470,6 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         # import pudb; pudb.set_trace()  ## DEBUG ##y
 
         # TODO: DARLAN -> Implement-me
-        pass
 
 
 # TODO: Finish the implementation
@@ -1531,21 +1530,21 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxx First User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         k = 0
         Qk = self.iasolver.calc_Q(k)
-        [expected_Uk0, D0] = leig(Qk, self.Ns[k])
+        [expected_Uk0, _] = leig(Qk, self.Ns[k])
         np.testing.assert_array_almost_equal(expected_Uk0, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Second User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         k = 1
         Qk = self.iasolver.calc_Q(k)
-        [expected_Uk1, D1] = leig(Qk, self.Ns[k])
+        [expected_Uk1, _] = leig(Qk, self.Ns[k])
         np.testing.assert_array_almost_equal(expected_Uk1, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Third user xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         k = 2
         Qk = self.iasolver.calc_Q(k)
-        [expected_Uk2, D2] = leig(Qk, self.Ns[k])
+        [expected_Uk2, _] = leig(Qk, self.Ns[k])
         np.testing.assert_array_almost_equal(expected_Uk2, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1558,21 +1557,21 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxx First User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         k = 0
         Qk_rev = self.iasolver.calc_Q_rev(k)
-        [expected_Uk0_rev, D0] = leig(Qk_rev, self.Ns[k])
+        [expected_Uk0_rev, _] = leig(Qk_rev, self.Ns[k])
         np.testing.assert_array_almost_equal(expected_Uk0_rev, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Second User xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         k = 1
         Qk_rev = self.iasolver.calc_Q_rev(k)
-        [expected_Uk1_rev, D1] = leig(Qk_rev, self.Ns[k])
+        [expected_Uk1_rev, _] = leig(Qk_rev, self.Ns[k])
         np.testing.assert_array_almost_equal(expected_Uk1_rev, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Third user xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         k = 2
         Qk_rev = self.iasolver.calc_Q_rev(k)
-        [expected_Uk2_rev, D2] = leig(Qk_rev, self.Ns[k])
+        [expected_Uk2_rev, _] = leig(Qk_rev, self.Ns[k])
         np.testing.assert_array_almost_equal(expected_Uk2_rev, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
