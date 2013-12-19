@@ -40,7 +40,6 @@ class BDSimulationRunner(SimulationRunner):
 
     def __init__(self, ):
         default_config_file = 'bd_config_file.txt'
-        description = 'Perform the simulation for a Block Diagonalization transmission.'
 
         # xxxxxxxxxx Simulation Parameters Specification xxxxxxxxxxxxxxxxxx
         spec = """[Grid]
@@ -75,8 +74,7 @@ class BDSimulationRunner(SimulationRunner):
         # the simulation parameters read from the config file.
         SimulationRunner.__init__(self,
                                   default_config_file=default_config_file,
-                                  config_spec=spec,
-                                  description=description)
+                                  config_spec=spec)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -47,8 +47,8 @@ class IASimulationRunner(SimulationRunner):
         docummentation of the configobj module for details.
     """
 
-    def __init__(self, IaSolverClass, default_config_file, spec, description=None):
-        SimulationRunner.__init__(self, default_config_file, spec, description)
+    def __init__(self, IaSolverClass, default_config_file, spec):
+        SimulationRunner.__init__(self, default_config_file, spec)
 
       # Set the max_bit_errors and rep_max attributes
         self.max_bit_errors = self.params['max_bit_errors']
@@ -303,13 +303,10 @@ class AlternatingSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        description = 'Simulates a transmission using the Alternating Min. IA Algorithm.'
-
         IASimulationRunner.__init__(self,
                                     ia.AlternatingMinIASolver,
                                     default_config_file,
-                                    spec,
-                                    description)
+                                    spec)
 
         #self.update_progress_function_style = None
 
@@ -345,13 +342,10 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        description = 'Simulates a transmission using the Closed Form. IA Algorithm.'
-
         IASimulationRunner.__init__(self,
                                     ia.ClosedFormIASolver,
                                     default_config_file,
-                                    spec,
-                                    description)
+                                    spec)
 
     # Since we create the channel object in the __init__ method of
     # IASimulationRunner, we need to re-seed the channel for each set of
@@ -391,13 +385,10 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        description = 'Simulates a transmission using the Min Leakage IA Algorithm.'
-
         IASimulationRunner.__init__(self,
                                     ia.MinLeakageIASolver,
                                     default_config_file,
-                                    spec,
-                                    description)
+                                    spec)
 
 
 class MaxSINRSimulationRunner(IASimulationRunner):
@@ -430,13 +421,10 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        description = 'Simulates a transmission using the Max SINR IA Algorithm.'
-
         IASimulationRunner.__init__(self,
                                     ia.MaxSinrIASolver,
                                     default_config_file,
-                                    spec,
-                                    description)
+                                    spec)
 
 
 class MMSESimulationRunner(IASimulationRunner):
@@ -469,13 +457,10 @@ class MMSESimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        description = 'Simulates a transmission using the MMSE IA Algorithm.'
-
         IASimulationRunner.__init__(self,
                                     ia.MMSEIASolver,
                                     default_config_file,
-                                    spec,
-                                    description)
+                                    spec)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

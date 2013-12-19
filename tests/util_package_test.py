@@ -406,28 +406,28 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         import validate
 
         array_string = "[0 5 10:15]"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _real_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -437,40 +437,40 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
             parsed_array = _real_numpy_array_check(array_string,
-                                                   min=4,
-                                                   max=30)
+                                                   min_value=4,
+                                                   max_value=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
             parsed_array = _real_numpy_array_check(array_string,
-                                                   min=0,
-                                                   max=15)
+                                                   min_value=0,
+                                                   max_value=15)
 
     def test_integer_numpy_array_check(self):
         import validate
 
         array_string = "[0 5 10:15]"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = _integer_numpy_array_check(array_string, min_value=0, max_value=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -480,13 +480,13 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
             parsed_array = _integer_numpy_array_check(array_string,
-                                                      min=4,
-                                                      max=30)
+                                                      min_value=4,
+                                                      max_value=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
             parsed_array = _integer_numpy_array_check(array_string,
-                                                      min=0,
-                                                      max=15)
+                                                      min_value=0,
+                                                      max_value=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -518,7 +518,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.set_unpack_parameter('fourth')
 
         # One unpacked param with four values and other with two will give
-        # us 4x2=8 unpacked variations.
+        # us 4x2=8 unpacked variations. Let's test the
+        # get_num_unpacked_variations() method.
         self.assertEqual(self.sim_params.get_num_unpacked_variations(), 8)
         # We make the unpacked_parameters and the expected value sets
         # because the order does not matter
@@ -620,6 +621,29 @@ class SimulationParametersTestCase(unittest.TestCase):
         for i in range(self.sim_params.get_num_unpacked_variations()):
             self.assertEqual(unpacked_param_list[i]._unpack_index, i)
             self.assertTrue(unpacked_param_list[i]._original_sim_params is self.sim_params)
+
+    def test_get_num_unpacked_variations(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # One unpacked param with four values and other with two will give
+        # us 4x2=8 unpacked variations. Let's test the
+        # get_num_unpacked_variations() method.
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(), 8)
+
+        # Get the unpacked params list.
+        unpacked_params_list = self.sim_params.get_unpacked_params_list()
+
+        # If we call the get_num_unpacked_variations method of a unpacked
+        # SimulationParameters object, it should returd the number of
+        # unpacked variations of the PARENT object, instead just returning
+        # 1.
+        for u in unpacked_params_list:
+            self.assertEqual(self.sim_params.get_num_unpacked_variations(),
+                             u.get_num_unpacked_variations())
 
     def test_get_pack_indexes(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))

@@ -180,7 +180,7 @@ from time import time
 
 # try:  # pragma: no cover
 #     import pandas as pd
-# except Exception:  # pragma: no cover
+# except ImportError:  # pragma: no cover
 #     pass
 
 from util.misc import pretty_time, calc_confidence_interval, \
@@ -208,7 +208,7 @@ def get_common_parser():
     returned object. See the documentation of argparse.Argumentparser for
     more.
     """
-    if get_common_parser._parser is None:
+    if get_common_parser.parser is None:
         parser = argparse.ArgumentParser()
         group = parser.add_argument_group('General')
 
@@ -226,11 +226,11 @@ def get_common_parser():
                            #default=default_config_file,
                            type=str,
                            nargs='?')
-        get_common_parser._parser = parser
+        get_common_parser.parser = parser
 
-    return get_common_parser._parser
+    return get_common_parser.parser
 
-get_common_parser._parser = None
+get_common_parser.parser = None
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -352,12 +352,15 @@ def _simulate_do_what_i_mean(runner, folder=None, block=True):
         method 'wait_parallel_simulation' of the runner object at some
         point.
     """
-    if runner._command_line_args.index is not None:
+    if runner.command_line_args.index is not None:
         msg = "Simulation will be run for the parameters variation: {0}"
         print(msg.format(runner._command_line_args.index))
 
         # Perform the simulation (serially) for the desired index
-        runner.simulate(runner._command_line_args.index)
+        msg = "Simulation will be run for the parameters variation: {0}"
+        print(msg.format(runner.command_line_args.index))
+
+        runner.simulate(runner.command_line_args.index)
 
     else:
         run_in_parallel = True
@@ -428,12 +431,12 @@ def _parse_int_range_expr(value):
     return _parse_range_expr(value, int)
 
 
-def _real_numpy_array_check(value, min=None, max=None):
+def _real_numpy_array_check(value, min_value=None, max_value=None):
     """
     Parse and validate `value` as a numpy array (of floats).
 
     Value can be either a single number, a range expression in the form of
-    min:max or min:step:max, or even a list containing numbers and range
+    min_value:max_value or min_value:step:max_value, or even a list containing numbers and range
     expressions.
 
     Notes
@@ -461,7 +464,7 @@ def _real_numpy_array_check(value, min=None, max=None):
         # expression' that can be parsed with _parse_float_range_expr. We
         # simple apply _real_numpy_array_check on each element in the list
         # to do the work and stack horizontally all the results.
-        value = [_real_numpy_array_check(a, min, max) for a in value]
+        value = [_real_numpy_array_check(a, min_value, max_value) for a in value]
         value = np.hstack(value)
 
     else:
@@ -474,31 +477,31 @@ def _real_numpy_array_check(value, min=None, max=None):
             value = _parse_float_range_expr(value)
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
-    if min is not None:
-        # maybe "min" was passed as a string and thus we need to convert it
+    if min_value is not None:
+        # maybe "min_value" was passed as a string and thus we need to convert it
         # to a float
-        min = float(min)
-        if value.min() < min:
+        min_value = float(min_value)
+        if value.min() < min_value:
             raise validate.VdtValueTooSmallError(value.min())
 
-    if max is not None:
-        # maybe "min" was passed as a string and thus we need to convert it
+    if max_value is not None:
+        # maybe "min_value" was passed as a string and thus we need to convert it
         # to a float
-        max = float(max)
-        if value.max() > max:
+        max_value = float(max_value)
+        if value.max() > max_value:
             raise validate.VdtValueTooBigError(value.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return value
 
 
-def _integer_numpy_array_check(value, min=None, max=None):
+def _integer_numpy_array_check(value, min_value=None, max_value=None):
     """
     Parse and validate `value` as a numpy array (of integers).
 
     Value can be either a single number, a range expression in the form of
-    min:max or min:step:max, or even a list containing numbers and range
-    expressions.
+    min_value:max_value or min_value:step:max_value, or even a list
+    containing numbers and range expressions.
 
     Notes
     -----
@@ -525,7 +528,7 @@ def _integer_numpy_array_check(value, min=None, max=None):
         # expression' that can be parsed with _parse_int_range_expr. We simple
         # apply _integer_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
-        value = [_integer_numpy_array_check(a, min, max) for a in value]
+        value = [_integer_numpy_array_check(a, min_value, max_value) for a in value]
         value = np.hstack(value)
 
     else:
@@ -538,18 +541,18 @@ def _integer_numpy_array_check(value, min=None, max=None):
             value = _parse_int_range_expr(value)
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
-    if min is not None:
-        # maybe "min" was passed as a string and thus we need to convert it
+    if min_value is not None:
+        # maybe "min_value" was passed as a string and thus we need to convert it
         # to a integer
-        min = int(min)
-        if value.min() < min:
+        min_value = int(min_value)
+        if value.min() < min_value:
             raise validate.VdtValueTooSmallError(value.min())
 
-    if max is not None:
-        # maybe "min" was passed as a string and thus we need to convert it
+    if max_value is not None:
+        # maybe "min_value" was passed as a string and thus we need to convert it
         # to a integer
-        max = int(max)
-        if value.max() > max:
+        max_value = int(max_value)
+        if value.max() > max_value:
             raise validate.VdtValueTooBigError(value.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -625,10 +628,7 @@ class SimulationRunner(object):
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
     """
-    def __init__(self,
-                 default_config_file=None,
-                 config_spec=None,
-                 description=None):
+    def __init__(self, default_config_file=None, config_spec=None):
         self.rep_max = 1
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
@@ -643,15 +643,15 @@ class SimulationRunner(object):
         parser = get_common_parser()
 
         # This member variable will store all the parsed command line arguments
-        self._command_line_args = parser.parse_args()
+        self.command_line_args = parser.parse_args()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Get the config filename if it was provided, or use the default value
-        if self._command_line_args.config is None:
+        if self.command_line_args.config is None:
             self._config_filename = default_config_file
         else:
-            self._config_filename = self._command_line_args.config
+            self._config_filename = self.command_line_args.config
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
@@ -840,7 +840,7 @@ class SimulationRunner(object):
         original_sim_params = current_params._original_sim_params
         total_unpacks = original_sim_params.get_num_unpacked_variations()
         num_digits = len(str(total_unpacks))
-        unpack_index_str = str(current_params._unpack_index).zfill(num_digits)
+        unpack_index_str = str(current_params.unpack_index).zfill(num_digits)
         partial_results_filename = '{0}_unpack_{1}.pickle'.format(
             self.__results_base_filename,
             unpack_index_str)
@@ -1069,8 +1069,8 @@ class SimulationRunner(object):
         # sys.stdout, otherwise it will be a file object. Note that
         # self.progress_output_type is used when
         # self.update_progress_function_style is either 'text1' or 'text2'.
-        unpack_index = current_params._unpack_index
-        output_progress_sinc = self._get_progress_output_sinc(unpack_index)
+        output_progress_sinc = self._get_progress_output_sinc(
+            current_params.unpack_index)
 
         # If the self.update_progress_function_style attribute matches one
         # of the available styles, then update_progress_func will be
@@ -1094,6 +1094,8 @@ class SimulationRunner(object):
             # progress. That is, the function stored in
             # self.update_progress_function_style should basically do what
             # _get_update_progress_function is supposed to do.
+
+            #pylint: disable=E1102
             update_progress_func = self.update_progress_function_style(
                 self.rep_max, self.progressbar_message)  # pragma: no cover
 
@@ -1821,6 +1823,11 @@ class SimulationParameters(object):
         self._unpack_index = -1
         self._original_sim_params = None
 
+    def _get_unpack_index(self):
+        """Get method for the unpack_index property."""
+        return self._unpack_index
+    unpack_index = property(_get_unpack_index)
+
     @property
     def unpacked_parameters(self):
         """Names of the parameters marked to be unpacked."""
@@ -1859,7 +1866,9 @@ class SimulationParameters(object):
         sim_params.parameters = copy.deepcopy(params_dict)
         if unpack_index < 0:
             unpack_index = -1
+        # pylint: disable=W0212
         sim_params._unpack_index = unpack_index
+        # pylint: disable=W0212
         sim_params._original_sim_params = original_sim_params
         return sim_params
 
@@ -2037,24 +2046,38 @@ class SimulationParameters(object):
         return not self.__eq__(other)
 
     def get_num_unpacked_variations(self):
-        """Get the number of variations when the parameters are unpacked.
+        """
+        Get the number of variations when the parameters are unpacked.
 
         If no parameter was marked to be unpacked, then return 1.
+
+        If this SimulationParameters object is actually a 'unpacked
+        variation' of another SimulationParameters object, return the
+        number of variations of the parent SimulationParameters object
+        instead.
 
         Returns
         -------
         num : int
             The number of variations when the parameters are unpacked.
-
         """
+        # If self._original_sim_params is not None, that means that this
+        # SimulationParameters object is in fact one of the unpacked
+        # variations of another Simulationparameters object. In that case,
+        # we return the number of unpacked variations of the original
+        # object.
+        if self._original_sim_params is not None:
+            return self._original_sim_params.get_num_unpacked_variations()
+
         if len(self._unpacked_parameters_set) == 0:
             return 1
         else:
             # Generator for the lengths of the parameters set to be unpacked
             gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
             # Just multiply all the lengths
-            from functools import reduce
-            return reduce(lambda x, y: x * y, gen_values)
+            import operator
+            import functools
+            return functools.reduce(operator.mul, gen_values)
 
     def get_pack_indexes(self, fixed_params_dict=dict()):
         """When you call the function get_unpacked_params_list you get a
@@ -2261,7 +2284,7 @@ class SimulationParameters(object):
         return obj
 
     @staticmethod
-    def load_from_config_file(filename, spec=[], save_parsed_file=False):
+    def load_from_config_file(filename, spec=None, save_parsed_file=False):
         """
         Load the SimulationParameters from a config file using the configobj
         module.
@@ -2274,8 +2297,8 @@ class SimulationParameters(object):
         ----------
         filename : src
             Name of the file from where the results will be loaded.
-        spec : A list of stringsstr
-            A list of strings with the confog spec. See "validation" in the
+        spec : A list of strings
+            A list of strings with the config spec. See "validation" in the
             configobj module documentation for more info.
         save_parsed_file : bool
             If `save_parsed_file` is True, then the parsed config file will
@@ -2296,6 +2319,9 @@ class SimulationParameters(object):
         """
         from configobj import ConfigObj, flatten_errors
         from validate import Validator
+
+        if spec is None:
+            spec = []
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         def add_params(simulation_params, config):
