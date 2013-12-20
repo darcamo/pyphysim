@@ -178,6 +178,17 @@ import sys
 import numpy as np
 from time import time
 
+try:
+    from configobj import ConfigObj, flatten_errors
+    from validate import Validator
+except ImportError:
+    pass
+
+try:
+    import tables as tb
+except ImportError:
+    pass
+
 # try:  # pragma: no cover
 #     import pandas as pd
 # except ImportError:  # pragma: no cover
@@ -281,7 +292,7 @@ def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):
         # xxxxxxxxxx Start the simulation for each runner xxxxxxxxxxxxxxxxx
         add_folder_to_path = True
         for runner in runner_or_list_of_runners:
-            runner._pbar = pbar
+            runner._pbar = pbar  # pylint: disable= W0212
             if add_folder_to_path is True:
                 _simulate_do_what_i_mean(runner, folder, block=False)
                 add_folder_to_path = False
@@ -1516,7 +1527,7 @@ class SimulationRunner(object):
             # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             # Loop through all the parameters combinations
             for current_params in self.params.get_unpacked_params_list():
-                current_rep, current_sim_results, partial_results_filename = self._simulate_for_current_params_serial(current_params, var_print_iter)
+                (current_rep, current_sim_results, _) = self._simulate_for_current_params_serial(current_params, var_print_iter)
 
                 # Store the number of repetitions actually ran for the
                 # current parameters combination
@@ -1587,7 +1598,7 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
-        self.results.rep_max = self.rep_max
+        self.results.rep_max = self.rep_max  # pylint: disable=W0201
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1613,7 +1624,7 @@ class SimulationRunner(object):
         if self.update_progress_function_style is not None:  # pragma: no cover
             # Create the proxy progressbars
             proxybar_data_list = []
-            for i in range(num_variations):
+            for _ in range(num_variations):
                 proxybar_data_list.append(
                     self._get_parallel_update_progress_function())
         else:  # self.update_progress_function_style is None
@@ -1667,7 +1678,7 @@ class SimulationRunner(object):
             self._on_simulate_finish()
 
             # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxxxxxx
-            self.results.runned_reps = self._runned_reps
+            self.results.runned_reps = self._runned_reps  # pylint: disable=W0201
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1675,7 +1686,7 @@ class SimulationRunner(object):
             self._elapsed_time = self.__toc - self.__tic
 
             # Also save the elapsed time in the SimulationResults object
-            self.results.elapsed_time = self._elapsed_time
+            self.results.elapsed_time = self._elapsed_time  # pylint: disable=W0201
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Save the results if results_filename is not None xxxxxxxxxx
@@ -2037,6 +2048,7 @@ class SimulationParameters(object):
         if self is other:  # pragma: no cover
             return True
 
+        # pylint: disable=W0212
         if self._unpacked_parameters_set != other._unpacked_parameters_set:
             return False
 
@@ -2092,7 +2104,7 @@ class SimulationParameters(object):
             import functools
             return functools.reduce(operator.mul, gen_values)
 
-    def get_pack_indexes(self, fixed_params_dict=dict()):
+    def get_pack_indexes(self, fixed_params_dict=None):
         """When you call the function get_unpacked_params_list you get a
         list of SimulationParameters objects corresponding to all
         combinations of the parameters. The function get_pack_indexes
@@ -2142,6 +2154,9 @@ class SimulationParameters(object):
         >>> params.get_pack_indexes(fixed)
         array([2, 5])
         """
+        if fixed_params_dict is None:
+            fixed_params_dict = {}
+
         # Get the only parameter that was not fixed
         varying_param = list(
             self._unpacked_parameters_set - set(fixed_params_dict.keys()))
@@ -2330,9 +2345,6 @@ class SimulationParameters(object):
             SNR=0,5,10,15:20
         for instance.
         """
-        from configobj import ConfigObj, flatten_errors
-        from validate import Validator
-
         if spec is None:
             spec = []
 
@@ -2534,6 +2546,7 @@ class SimulationParameters(object):
         for name, ds in group.iteritems():
             params.add(name, ds.value)
 
+        # pylint: disable=W0212
         params._unpacked_parameters_set = set(group.attrs['_unpacked_parameters_set'])
         return params
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2624,8 +2637,6 @@ class SimulationResults(object):
         # that resulted in the results. This should be set by calling the
         # set_parameters method.
         self._params = SimulationParameters()
-        self.rep_max = -1  # This will be set to a positive integer in the
-                           # SimulationRunner class.
 
     def __eq__(self, other):
         """
@@ -2647,6 +2658,7 @@ class SimulationResults(object):
         if aux is False:
             return False
 
+        # pylint: disable=W0212
         if self._results.keys() != other._results.keys():
             return False
 
@@ -2770,8 +2782,8 @@ class SimulationResults(object):
 
         """
         if result.name in self._results.keys():
-            update_type_code = self._results[result.name][0]._update_type_code
-            if update_type_code == result._update_type_code:
+            update_type_code = self._results[result.name][0].type_code
+            if update_type_code == result.type_code:
                 self._results[result.name].append(result)
             else:
                 raise ValueError("Can only append to results of the same type")
@@ -3130,7 +3142,9 @@ class SimulationResults(object):
 
         for result_name in rg:
             ds = rg[result_name]
-            simresults._results[result_name] = Result.load_from_hdf5_dataset(ds)
+            #simresults._results[result_name] = Result.load_from_hdf5_dataset(ds)
+            result = Result.load_from_hdf5_dataset(ds)[-1]
+            simresults.add_result(result)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Parameters grop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3138,7 +3152,8 @@ class SimulationResults(object):
             # We only set the simulation parameters if it was stored in the
             # hdf5 file.
             pg = fid['parameters']
-            simresults._params = SimulationParameters.load_from_hdf5_group(pg)
+            # simresults._params = SimulationParameters.load_from_hdf5_group(pg)
+            simresults.set_parameters(SimulationParameters.load_from_hdf5_group(pg))
         except KeyError:
             pass
 
@@ -3466,7 +3481,7 @@ class Result(object):
             Another Result object.
         """
         # Both objects must be set to either accumulate or not accumulate
-        assert self._accumulate_values_bool == other._accumulate_values_bool, (
+        assert self._accumulate_values_bool == other.accumulate_values_bool, (
             "Both objects must either accumulate or not accumulate values")
 
         # pylint: disable=W0212
@@ -3573,10 +3588,13 @@ class Result(object):
         size = len(results_list)
         ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
 
+        r = None
         for i, r in enumerate(results_list):
+            # pylint: disable=W0212
             ds[i] = (r._value, r._total, r.num_updates)
 
-        ds.attrs.create('update_type_code', data=r._update_type_code)
+        if r is not None:
+            ds.attrs.create('update_type_code', data=r.type_code)
         # Save the TITTLE attribute to be more consistent with what
         # Pytables would do.
         ds.attrs.create("TITLE", name)
@@ -3588,9 +3606,9 @@ class Result(object):
         """
         Save the Result object.
         """
-        import tables as tb
         pytables_file = parent._v_file
         name = results_list[0].name
+        # pylint: disable= E1101
         description = {'_value': tb.FloatCol(), '_total': tb.FloatCol(), 'num_updates': tb.IntCol()}
         table = pytables_file.createTable(parent, name, description,
                                           title=name)
@@ -3598,12 +3616,13 @@ class Result(object):
 
         r = None
         for r in results_list:
+            # pylint: disable=W0212
             row['_value'] = r._value
             row['_total'] = r._total
             row['num_updates'] = r.num_updates
             row.append()
 
-        pytables_file.setNodeAttr(table, 'update_type_code', r._update_type_code)
+        pytables_file.setNodeAttr(table, 'update_type_code', r.type_code)
         table.flush()
 
     @staticmethod

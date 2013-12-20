@@ -284,6 +284,7 @@ class CircleTestCase(unittest.TestCase):
         angles = np.linspace(0,
                              (num_vertexes - 1.) / num_vertexes * 360,
                              num_vertexes)
+        # pylint: disable=E1103
         expected_vertexes = np.array(
             list(map(self.C1.get_border_point,
                      angles, np.ones(angles.shape)))) - self.C1.pos
@@ -673,11 +674,13 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C3.cell_radius, 1.0)
 
     def test_iterator_cells_in_the_cluster(self):
-        for i,c in enumerate(self.C1):
+        i = -1  # Initialize the i variable
+        for i, c in enumerate(self.C1):
             self.assertTrue(isinstance(c, cell.Cell))
         self.assertEqual(i, 2)
 
-        for i,c in enumerate(self.C2):
+        i = -1  # Initialize the i variable
+        for i, c in enumerate(self.C2):
             self.assertTrue(isinstance(c, cell.Cell))
         self.assertEqual(i, 6)
 
@@ -733,6 +736,7 @@ class GridTestCase(unittest.TestCase):
     def test_iterator_for_clusters(self):
         G1 = cell.Grid()
         G1.create_clusters(2, 2, 0.5)
+        i = -1  # Initialize the i variable
         for i, c in enumerate(G1):
             self.assertTrue(isinstance(c, cell.Cluster))
         self.assertEqual(i, 1)

@@ -3391,7 +3391,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         #num_antenas = self.num_antenas
         channel = randn_c(self.iNr, self.iNt)
 
-        (_, Ms) = blockdiagonalization.block_diagonalize(
+        (newH, _) = blockdiagonalization.block_diagonalize(
             channel, num_users, Pu, noise_var)
 
         # W_bd is a block diagonal matrix, where each "small block" is the

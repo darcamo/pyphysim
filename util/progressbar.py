@@ -875,6 +875,7 @@ class ProgressbarDistributedServerBase(object):
         # to this value to be seem by the other updating process even after
         # start_updater has been called if we are still in the
         # 'start_delay' time.
+        # pylint: disable=E1101
         self._total_final_count = self._manager.Value('L', 0)
 
         # self._update_process will store the process responsible to update
@@ -1412,6 +1413,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
             progresschar, message, sleep_time, filename)
 
         # Create a Multiprocessing namespace
+        # pylint: disable=E1101
         self._ns = self._manager.Namespace()
 
         # We store the IP and port of the socket in the Namespace, since

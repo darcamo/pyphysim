@@ -10,7 +10,7 @@ __revision__ = "$Revision$"
 import math
 import numpy as np
 from scipy.special import erfc
-from scipy import signal
+
 #import math.erf
 # erf can also be found in the scipy.special library
 # erf can also be found in the math library -> python 2.7 ou above
@@ -588,6 +588,7 @@ def update_inv_sum_diag(invA, diagonal):
     # vectors "u" and "v" are equal and correspond to a column of the
     # identity matrix multiplied by a constant (only one element is
     # different of zero).
+    # pylint: disable=C0111
     def calc_update_term(inv_matrix, index, indexed_element, diagonal_element):
         return (
             diagonal_element * np.outer(inv_matrix[:, index],
@@ -932,8 +933,9 @@ def calc_shannon_sum_capacity(sinrs):
 try:
     # If the misc_c.so extension was compiled then any method defined there
     # will replace the corresponding method defined here.
+    # pylint: disable=E0611,F0401
     from c_extensions.misc_c import *
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

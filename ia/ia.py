@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=R0902,R0904
 
 """
 Module with implementation of Interference Alignment (IA) algorithms.
@@ -136,7 +137,7 @@ class IASolverBaseClass(object):
 
         # Don't clear the self._noise_var attribute
 
-    def get_cost(self):
+    def get_cost(self):  # pylint: disable=R0201
         """
         Get the current cost of the IA Solution.
 
@@ -340,7 +341,7 @@ class IASolverBaseClass(object):
         Nt : 1D numpy array
             Number of transmit antennas of all users.
         """
-        return self._multiUserChannel._Nt
+        return self._multiUserChannel.Nt
 
     def randomizeF(self, Ns, P=None):
         """Generates a random precoder for each user.
@@ -426,7 +427,7 @@ class IASolverBaseClass(object):
         :math:`k`-th receiver.
 
         The interference covariance matrix at the :math:`k`-th receiver,
-        :math:`\mtQ k`, is given by
+        :math:`\\mtQ k`, is given by
 
             :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
 
@@ -531,7 +532,7 @@ class IASolverBaseClass(object):
         if Qk is None:
             Qk = self.calc_Q(k)
 
-        [V, D] = leig(Qk, self.Ns[k])
+        [_, D] = leig(Qk, self.Ns[k])
         pk = np.sum(np.abs(D)) / np.trace(np.abs(Qk))
         return pk
 
@@ -571,6 +572,7 @@ class IASolverBaseClass(object):
                 else:
                     denominator = denominator + aux
 
+            # pylint: disable=E1103
             denominator = np.dot(denominator,
                                  denominator.transpose().conjugate())
             noise_power = self.noise_var * np.dot(
@@ -691,10 +693,10 @@ class IASolverBaseClass(object):
 
         where :math:`P^{[k]}` is the transmit power of transmitter
         :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
-        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
-        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
+        user :math:`k`, :math:`\\mtH^{[kj]}` is the channel between
+        transmitter :math:`j` and receiver :math:`k`, :math:`\\mtV_{\\star
         l}` is the :math:`l`-th column of the precoder of user :math:`k`
-        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
+        and :math:`\\mtI_{N^{k}}` is an identity matrix with size equal to
         the number of receive antennas of receiver :math:`k`.
 
         Parameters
@@ -1157,7 +1159,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             # discarded. If only one stream is transmitted then the
             # condition number is always equal to 1.
             if self.Ns[k] > 1:
-                [U, S, V_H] = np.linalg.svd(self._F[k])
+                [_, S, _] = np.linalg.svd(self._F[k])
                 # If the condition number os large, then there is some
                 # dimension with zero energy
                 cond = S.max() / S.min()
@@ -1299,6 +1301,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # This will be used to detect of the precoder did not
         # significativelly change
         old_F = self._F
+        i = -1  # Initialize the i variable in case the for loop is not run
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self._step()
@@ -1436,7 +1439,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         Ck contains the orthogonal basis of the interference subspace of
         user k. It corresponds to the Nk-Sk dominant eigenvectors of
 
-            :math:`\\sum_{l \\neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H`.
+            :math:`\\sum_{l \\neq k} \\mtH_{k,l} \\mtF_l \\mtF_l^H \\mtH_{k,l}^H`.
 
         Notes
         -----
@@ -1607,7 +1610,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         for k in range(self.K):
             Qk = self.calc_Q(k)
-            [V, D] = leig(Qk, self.Ns[k])
+            [V, _] = leig(Qk, self.Ns[k])
             Uk[k] = V
         return Uk
 
@@ -1619,7 +1622,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         Uk_rev = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
             Qk_rev = self.calc_Q_rev(k)
-            [V, D] = leig(Qk_rev, self.Ns[k])
+            [V, _] = leig(Qk_rev, self.Ns[k])
             Uk_rev[k] = V
         return Uk_rev
 
@@ -1987,8 +1990,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         self._clear_receive_filter()
 
         self._closed_form_ia_solver.solve(Ns, P)
-        self._F = self._closed_form_ia_solver._F
-        self._W = self._closed_form_ia_solver._W
+        self._F = self._closed_form_ia_solver.F
+        self._W = self._closed_form_ia_solver.W
         self._mu = np.zeros(3, dtype=float)
 
     def _solve_init(self, Ns, P):
@@ -2124,7 +2127,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         # Calculates the SVD of sum_term so that we can calculate the
         # condition number.
-        [U, S, V_H] = np.linalg.svd(sum_term)
+        [_, S, _] = np.linalg.svd(sum_term)
         cond = cond = S.max() / S.min()
         load_factor = 0.0
         # If the condition number is larger than 1e8 we consider sum_term
@@ -2134,6 +2137,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # Calculates the load_factor (arbitrarily choosen as 1/100 the
             # mean of the current singular values of sum_term).
             load_factor = S.mean() / 100.0
+            # pylint: disable= E1103
             sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
 
         # At this point we are guaranteed that sum_term has an inverse
@@ -2164,7 +2168,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                     (np.log(max_mu_i - min_mu_i) - np.log(tol)) / np.log(2)))
 
                 # Perform the bisection
-                for ii in range(max_iter):
+                for _ in range(max_iter):
                     mu_i = (max_mu_i + min_mu_i) / 2.0
                     cost = (np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U), 'fro') ** 2) - self.P[i]
                     if cost > 0:

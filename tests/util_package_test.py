@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1103
+
 """Tests for the modules in the util package.
 
 Each module has doctests for its functions and all we need to do is run all
@@ -23,14 +25,14 @@ import numpy as np
 import glob
 from time import sleep
 
-try:  # pragma: no cover
-    import pandas as pd
-except Exception:  # pragma: no cover
-    pass
+# try:  # pragma: no cover
+#     import pandas as pd
+# except ImportError:  # pragma: no cover
+#     pass
 
 try:
     from IPython.parallel import CompositeError
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     pass
 
 from util import misc, progressbar, simulations, conversion
@@ -59,8 +61,6 @@ def _delete_progressbar_output_files():
 # This function is used in test methods for the ProgressbarText class (and
 # other classes that use ProgressbarText)
 def _get_clear_string_from_stringio_object(mystring):
-    """
-    """
     from StringIO import StringIO
     if isinstance(mystring, StringIO):
         # mystring is actually a StringIO object
@@ -1247,7 +1247,7 @@ class SimulationResultsTestCase(unittest.TestCase):
 
     def test_get_result_values_confidence_intervals(self):
         simresults = SimulationResults()
-        simresults.params.add('P', [1,2])
+        simresults.params.add('P', [1, 2])
         simresults.params.set_unpack_parameter('P')
         result = Result('name', Result.RATIOTYPE, accumulate_values=True)
         result_other = Result('name', Result.RATIOTYPE, accumulate_values=True)
@@ -1596,12 +1596,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
             lview = cl.load_balanced_view()
             if len(lview) == 0:
                 self.skipTest("At least one IPython engine must be running.")
-        except Exception:
+        except IOError:
             self.skipTest("The IPython engines were not found.")
 
         dview.execute('import util_package_test', block=True)
 
-        from util_package_test import _DummyRunner
+        from tests.util_package_test import _DummyRunner
         runner = _DummyRunner()
         runner.progressbar_message = 'bla'
         #runner.update_progress_function_style = 'text1'
@@ -1690,7 +1690,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
             lview = cl.load_balanced_view()
             if len(lview) == 0:  # pragma: no cover
                 self.skipTest("At least one IPython engine must be running.")
-        except Exception:  # pragma: no cover
+        except IOError:  # pragma: no cover
             self.skipTest("The IPython engines were not found.")
         #
         #
@@ -1703,7 +1703,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # random value. The 'P' parameter is an array with 5 elements, all
         # of them equal to 2.0. That means that if we didn't have a random
         # part all elements in the returned results would be equal.
-        from util_package_test import _DummyRunnerRandom
+        from tests.util_package_test import _DummyRunnerRandom
         dummyrunnerrandom = _DummyRunnerRandom()
         dummyrunnerrandom.simulate_in_parallel(lview)
 
@@ -2420,13 +2420,10 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
     # amount of time required to run all tests. Unfortunatelly, this is a
     # necessary cost.
     def test_updater(self):
-        import os
-        import time
-
         # Remove old file from previous test run
         try:
             os.remove(self.output_filename)
-        except Exception:  # Pragma: no cover
+        except OSError:  # Pragma: no cover
             pass
 
         # Suppose that the first process already started and called the
@@ -2448,10 +2445,10 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         # Sleep for a very short time so that the
         # ProgressbarMultiProcessServer object has time to create the file
         # with the current progress
-        time.sleep(0.01)
+        sleep(0.01)
 
         # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        time.sleep(0.04)
+        sleep(0.04)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.mpbar.stop_updater(0)
@@ -2473,7 +2470,6 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 # ************************"""
 
     def test_start_and_stop_updater_process(self):
-        from time import sleep
         self.assertFalse(self.mpbar.running.is_set())
         self.assertEqual(self.mpbar._start_updater_count, 0)
         self.mpbar.start_updater()
@@ -2558,8 +2554,6 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
 
     def test_update_progress(self):
-        from time import sleep
-        #self.zmqbar._sleep_time = 5
         self.zmqbar.start_updater()
         self.proxybar1.progress(5)
         self.proxybar2(10)  # We can also use a "call syntax" for the

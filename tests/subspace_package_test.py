@@ -34,7 +34,6 @@ class SubspaceDoctestsTestCase(unittest.TestCase):
     def test_projections(self):
         """Run projections doctests"""
         doctest.testmod(projections)
-        pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
