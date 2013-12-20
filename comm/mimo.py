@@ -98,11 +98,19 @@ class MimoBase(object):
         W = np.dot(np.linalg.inv(np.dot(H_H, H) + noise_var * np.eye(Nt)), H_H)
         return W
 
-    def encode(self, transmit_data):  # pragma: no cover
+    def encode(self, transmit_data):  # pragma: no cover, pylint: disable=W0613
+        """
+        Method to encode the transmit data array to be transmitted using some
+        MIMO shceme. This method must be implemented in a subclass.
+        """
         msg = 'encode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
-    def decode(self, received_data, channel):  # pragma: no cover
+    def decode(self, received_data, channel):  # pragma: no cover, pylint: disable=W0613
+        """
+        Method to decode the transmit data array to be transmitted using some
+        MIMO shceme. This method must be implemented in a subclass.
+        """
         msg = 'decode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
@@ -308,7 +316,8 @@ class Alamouti(MimoBase):
         """
         return 1
 
-    def _encode(self, transmit_data):
+    @staticmethod
+    def _encode(transmit_data):
         """Perform the Alamouti encoding, but without dividing the power
         among the transmit antennas.
 
@@ -354,7 +363,8 @@ class Alamouti(MimoBase):
         """
         return self._encode(transmit_data) / np.sqrt(2)
 
-    def _decode(self, received_data, channel):
+    @staticmethod
+    def _decode(received_data, channel):
         """Perform the decoding of the received_data for the Alamouit
         scheme with the channel `channel`, but does not compensate for the
         power division among transmit antennas.

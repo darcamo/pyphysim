@@ -18,7 +18,7 @@ sys.path.append(parent_dir)
 from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result, simulate_do_what_i_mean, get_common_parser
 from comm import modulators, channels
 from util.conversion import dB2Linear
-from util import misc, progressbar
+from util import misc
 from ia import ia
 import numpy as np
 from pprint import pprint
@@ -88,7 +88,7 @@ class IASimulationRunner(SimulationRunner):
             self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _run_simulation(self, current_parameters):
+    def _run_simulation(self, current_parameters):  # pylint: disable=R0914,R0915
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]

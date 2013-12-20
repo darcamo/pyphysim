@@ -77,7 +77,7 @@ class Node(shapes.Coordinate):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Cell classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class CellBase(Node, shapes.Shape):
+class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
     """Base class for all cell types.
     """
 
@@ -245,7 +245,7 @@ class CellBase(Node, shapes.Shape):
             the generated random user. The value must be between 0 and 0.7.
 
         """
-        for k in range(num_users):
+        for _ in range(num_users):
             self.add_random_user(user_color, min_dist_ratio)
 
     def _plot_common_part(self, ax):  # pragma: no cover
@@ -873,8 +873,9 @@ class Cluster(shapes.Shape):
             for data in all_data:
                 self.add_random_users(*data)
         else:
-            for index in range(num_users):
-                # Note that here cell_ids will be a single value, as well as user_color and min_dist_ratio
+            for _ in range(num_users):
+                # Note that here cell_ids will be a single value, as well
+                # as user_color and min_dist_ratio
                 self._cells[cell_ids - 1].add_random_user(user_color, min_dist_ratio)
 
     def add_border_users(self, cell_ids, angles, ratios=None, user_color=None):
@@ -1057,6 +1058,17 @@ class Grid(object):
         # Surrounding cells in the grid, which are not part of any cluster
         self._surrounding_cells = []
 
+    def get_cluster_from_index(self, index):
+        """
+        Return the cluster object with index `index` in the Grid.
+
+        Parameters
+        ----------
+        index : int
+            The index of the desirable cluster.
+        """
+        return self._clusters[index]
+
     def _get_num_clusters(self):
         """Get method for the num_clusters property."""
         return len(self._clusters)
@@ -1103,7 +1115,7 @@ class Grid(object):
         # Method to calculate the central position of the next cluster
         calc_pos = options[num_cells]
 
-        for index in range(num_clusters):
+        for _ in range(num_clusters):
             central_pos = calc_pos()
             # cell_radius, num_cells, pos=0 + 0j, cluster_id=None
             new_cluster = Cluster(cell_radius,

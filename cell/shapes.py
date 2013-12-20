@@ -175,7 +175,7 @@ class Shape(Coordinate):
         # import matplotlib.nxutils as mnx
         # return mnx.pnpoly(point.real, point.imag, from_complex_array_to_real_matrix(self.vertices)) == 1
 
-    def get_border_point(self, angle, ratio):
+    def get_border_point(self, angle, ratio):  # pylint: disable=R0914
         """Calculates the coordinate of the point that intercepts the
         border of the shape if we go from the origin with a given angle
         (in degrees).

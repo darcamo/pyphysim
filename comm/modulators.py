@@ -75,6 +75,7 @@ class Modulator(object):
 
     @property
     def name(self):
+        """Get method for the 'name' property."""
         return "{0:d}-{1:s}".format(self._M, self.__class__.__name__)
 
     def _get_M(self):
@@ -621,7 +622,8 @@ class QAM(Modulator):
         # Set the constellation
         self.setConstellation(symbols)
 
-    def _createConstellation(self, M):
+    @staticmethod
+    def _createConstellation(M):
         """Generates the Constellation for the (SQUARE) M-QAM modulation
         scheme.
 
@@ -649,7 +651,8 @@ class QAM(Modulator):
         # equal to one.
         return symbols / math.sqrt(average_energy)
 
-    def _calculateGrayMappingIndexQAM(self, L):
+    @staticmethod
+    def _calculateGrayMappingIndexQAM(L):
         """Calculates the indexes that should be applied to the
         constellation created by _createConstellation in order to
         correspond to Gray mapping.
@@ -780,13 +783,3 @@ class QAM(Modulator):
         ber = (2. * Psc) / k
         return ber
 # xxxxx End of QAM Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxx Tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def testGrayCodeConversion(maxNum=8):  # pragma: no cover
-    for i in range(0, maxNum):
-        grayNumber = binary2gray(i)
-        print ("Normal: ({0:2}) {0:0=4b} | Gray: ({1:2}) {1:0=4b} -> Converted {2:2}").format(i, grayNumber, gray2binary(grayNumber))
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -246,7 +246,7 @@ class PathLossFreeSpace(PathLossBase):
 class PathLoss3GPP1(PathLossBase):
     """Class to calculate the Path Loss according to the model from 3GPP
     (scenario 1). That is, the Path Loss (in dB) is equal to
-    $128.1 + 37.6*\log10(d)$.
+    $128.1 + 37.6*\\log10(d)$.
 
     This model is valid for LTE assumptions and at 2GHz frequency, where
     the distance is in Km.

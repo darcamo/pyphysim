@@ -23,7 +23,7 @@ sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
-from scipy import linalg as sp_linalg
+from scipy.linalg import block_diag
 
 from util.simulations import SimulationRunner, SimulationResults, Result, SimulationParameters, simulate_do_what_i_mean
 from util.conversion import dB2Linear, dBm2Linear
@@ -33,7 +33,7 @@ from comm import pathloss, channels, modulators
 from comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
-class BDSimulationRunner(SimulationRunner):
+class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
     """
     Simulation runner for a Block Diagonalization transmission.
     """
@@ -141,6 +141,12 @@ class BDSimulationRunner(SimulationRunner):
         self.progress_output_type = 'screen'
 
     def _create_users_according_to_scenario(self, current_params):
+        """
+        Create the users according to the
+        current_params['user_positioning_method'] parameter.
+
+        This method will call one of the "_create*_scenario" methods.
+        """
         scenario = current_params['user_positioning_method']
         if scenario == 'Symmetric Far Away':
             self._create_symmetric_far_away_users_scenario(current_params)
@@ -148,7 +154,7 @@ class BDSimulationRunner(SimulationRunner):
             self._create_random_users_scenario(current_params)
         else:
             raise RuntimeError(
-                "Invalid scenario: {0}".format(self._scenario))
+                "Invalid scenario: {0}".format(scenario))
 
     def _create_random_users_scenario(self, current_params):
         """Run this method to set variables specific to the 'RandomUsers'
@@ -158,13 +164,13 @@ class BDSimulationRunner(SimulationRunner):
         each cell.
 
         """
-        cluster0 = self.cell_grid._clusters[0]
+        cluster0 = self.cell_grid.get_cluster_from_index(0)
         cell_ids = np.arange(1, current_params['num_cells'] + 1)
         cluster0.remove_all_users()
         cluster0.add_random_users(cell_ids)
 
     def _create_symmetric_far_away_users_scenario(self, current_params):
-        """Run this method to set variables specific to the 'FarAwayUsers70%'
+        """Run this method to set variables specific to the 'FarAwayUsers'
         scenario.
 
         The 'FarAwayUsers70%' scenario place a user in each cell at a the
@@ -172,7 +178,7 @@ class BDSimulationRunner(SimulationRunner):
         center to the cell border equivalent to 70% of the cell radius.
 
         """
-        cluster0 = self.cell_grid._clusters[0]
+        cluster0 = self.cell_grid.get_cluster_from_index(0)
         cell_ids = np.arange(1, current_params['num_cells'] + 1)
         angles = np.array([210, -30, 90])
         cluster0.remove_all_users()
@@ -183,7 +189,7 @@ class BDSimulationRunner(SimulationRunner):
 
         The users must have already been created.
         """
-        cluster0 = self.cell_grid._clusters[0]
+        cluster0 = self.cell_grid.get_cluster_from_index(0)
 
         # xxxxx Distances between each transmitter and each receiver xxxxxx
         # This `dists` matrix may be indexed as dists[user, cell].
@@ -217,6 +223,8 @@ class BDSimulationRunner(SimulationRunner):
         """This method is called once for each combination of transmit
         parameters.
         """
+        # pylint: disable=W0201
+
         # IMPORTANT: Re-seed the channel and the noise RandomState
         # objects. Without this, when you perform the simulation in
         # parallel (call the simulate_in_parallel method(from the
@@ -307,7 +315,7 @@ class BDSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _run_simulation(self, current_parameters):
+    def _run_simulation(self, current_parameters):  # pylint: disable=R0914
         """The _run_simulation method is where the actual code to simulate
         the system is.
 
@@ -546,6 +554,7 @@ class BDSimulationRunner(SimulationRunner):
         -------
         TODO: Write the rest of the docstring
         """
+        # pylint: disable=R0914
         Ns_total = np.sum(Ns_all_users)
         self.data_RS = np.random.RandomState(self.data_gen_seed)
         input_data = self.data_RS.randint(
@@ -570,7 +579,7 @@ class BDSimulationRunner(SimulationRunner):
         )
 
         # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk = sp_linalg.block_diag(*Wk_all_users)
+        Wk = block_diag(*Wk_all_users)
         received_symbols = np.dot(Wk, received_signal)
 
         # xxxxxxxxxx Demodulate the filtered symbols xxxxxxxxxxxxxxxxxxxxxx
@@ -702,6 +711,10 @@ class BDSimulationRunner(SimulationRunner):
 
 
 def plot_spectral_efficience_all_metrics(results, Pe_dBm, ax=None):
+    """
+    Plot the spectral efficiency from the `results` object for all metrics
+    given a desirable external interference power `Pe_dBm`
+    """
     from matplotlib import pyplot as plt
 
     params = results.params
@@ -767,6 +780,10 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm, ax=None):
 
 
 def plot_per_all_metrics(results, Pe_dBm, ax=None):
+    """
+    Plot the packet error rate from the `results` object for all metrics
+    given a desirable external interference power `Pe_dBm`
+    """
     from matplotlib import pyplot as plt
 
     params = results.params
@@ -827,7 +844,6 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
 
 ## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
-    import os
     from apps.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

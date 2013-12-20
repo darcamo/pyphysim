@@ -369,7 +369,7 @@ class MultiUserChannelMatrix(object):
             generator. See np.random.RandomState help for more info.
 
         """
-        self._RS_channel.seed(seed=None)
+        self._RS_channel.seed(seed=seed)
 
     def set_noise_seed(self, seed):
         """Set the seed of the RandomState object used to generate the random
@@ -865,7 +865,7 @@ class MultiUserChannelMatrix(object):
         :math:`k`-th receiver.
 
         The interference covariance matrix at the :math:`k`-th receiver,
-        :math:`\mtQ k`, is given by
+        :math:`\\mtQ k`, is given by
 
             :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
 
@@ -917,7 +917,7 @@ class MultiUserChannelMatrix(object):
         :math:`k`-th receiver with a joint processing scheme.
 
         The interference covariance matrix at the :math:`k`-th receiver,
-        :math:`\mtQ k`, is given by
+        :math:`\\mtQ k`, is given by
 
             :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{k} \\mtF_j \\mtF_j^H \\mtH_{k}^H`
 
@@ -1046,10 +1046,10 @@ class MultiUserChannelMatrix(object):
 
         where :math:`P^{[k]}` is the transmit power of transmitter
         :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
-        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
-        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
+        user :math:`k`, :math:`\\mtH^{[kj]}` is the channel between
+        transmitter :math:`j` and receiver :math:`k`, :math:`\\mtV_{\\star
         l}` is the :math:`l`-th column of the precoder of user :math:`k`
-        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
+        and :math:`\\mtI_{N^{k}}` is an identity matrix with size equal to
         the number of receive antennas of receiver :math:`k`.
 
         Parameters
@@ -1097,7 +1097,7 @@ class MultiUserChannelMatrix(object):
 
         return Bkl_all_l
 
-    def _calc_JP_Bkl_cov_matrix_first_part_impl(self, HK, F_all_users, k, Rek):
+    def _calc_JP_Bkl_cov_matrix_first_part_impl(self, HK, F_all_users, Rek):
         """
         Common implementation of the _calc_JP_Bkl_cov_matrix_first_part.
 
@@ -1160,9 +1160,10 @@ class MultiUserChannelMatrix(object):
 
         Rek = (noise_power * np.eye(self.Nr[k]))
         Hk = self.get_Hk(k)
-        return self._calc_JP_Bkl_cov_matrix_first_part_impl(Hk, F_all_users, k, Rek)
+        return self._calc_JP_Bkl_cov_matrix_first_part_impl(Hk, F_all_users, Rek)
 
-    def _calc_JP_Bkl_cov_matrix_second_part_impl(self, Hk, Fk, k, l):
+    @staticmethod
+    def _calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l):
         """Common implementation of the _calc_JP_Bkl_cov_matrix_second_part method."""
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[k]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[k]\dagger}$$
         Hk_H = Hk.transpose().conjugate()
@@ -1201,7 +1202,7 @@ class MultiUserChannelMatrix(object):
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[k]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[k]\dagger}$$
         Hk = self.get_Hk(k)
-        return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, k, l)
+        return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
     def _calc_JP_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
         """Calculates the interference-plus-noise covariance matrix for all
@@ -1216,10 +1217,10 @@ class MultiUserChannelMatrix(object):
 
         where :math:`P^{[k]}` is the transmit power of transmitter
         :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
-        user :math:`k`, :math:`\mtH^{[kj]}` is the channel between
-        transmitter :math:`j` and receiver :math:`k`, :math:`\mtV_{\star
+        user :math:`k`, :math:`\\mtH^{[kj]}` is the channel between
+        transmitter :math:`j` and receiver :math:`k`, :math:`\\mtV_{\\star
         l}` is the :math:`l`-th column of the precoder of user :math:`k`
-        and :math:`\mtI_{N^{k}}` is an identity matrix with size equal to
+        and :math:`\\mtI_{N^{k}}` is an identity matrix with size equal to
         the number of receive antennas of receiver :math:`k`.
 
         Parameters
@@ -1266,7 +1267,6 @@ class MultiUserChannelMatrix(object):
 
         return Bkl_all_l
 
-
     def _calc_SINR_k(self, k, Fk, Uk, Bkl_all_l):
         """
         Calculates the SINR of all streams of user 'k'.
@@ -1289,21 +1289,18 @@ class MultiUserChannelMatrix(object):
         SINR_k : 1D numpy array
             The SINR for the different streams of user k.
         """
-        Hkk = self.get_Hkl(k, k)
-        Vk = Fk
         Ns_k = Fk.shape[1]
-
-        #Uk_H = self.full_W_H[k]
 
         SINR_k = np.empty(Ns_k, dtype=float)
 
         for l in range(Ns_k):
-            Vkl = Vk[:, l:l + 1]
+            Fkl = Fk[:, l:l + 1]
             Ukl = Uk[:, l:l + 1]
             Ukl_H = Ukl.conj().T
 
             aux = np.dot(Ukl_H,
-                         np.dot(Hkk, Vkl))
+                         np.dot(self.get_Hkl(k, k),
+                                Fkl))
             numerator = np.dot(aux,
                                aux.transpose().conjugate())
             denominator = np.dot(Ukl_H,
@@ -1345,19 +1342,32 @@ class MultiUserChannelMatrix(object):
             SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
-    def _calc_JP_SINR_k_impl(self, Hk, Fk, Uk, Bkl_all_l):
-        Vk = Fk
+    @staticmethod
+    def _calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l):
+        """
+        Implementation of the :meth:`_calc_JP_SINR_k method`.
+
+        Notes
+        -----
+
+        The implementation of the _calc_JP_SINR_k method is almost the same
+        for the MultiuserChannelMatrix and MultiuserChannelMatrixExtint
+        class, except for the `Hk` argument. Therefore, the common code was
+        put here and in each class the :meth:`_calc_JP_SINR_k` is
+        implemented as simply getting the correct `Hk` argument and then
+        calling :meth:`_calc_JP_SINR_k_impl`.
+        """
         Ns_k = Fk.shape[1]
 
         SINR_k = np.empty(Ns_k, dtype=float)
 
         for l in range(Ns_k):
-            Vkl = Vk[:, l:l + 1]
+            Fkl = Fk[:, l:l + 1]
             Ukl = Uk[:, l:l + 1]
             Ukl_H = Ukl.conj().T
 
             aux = np.dot(Ukl_H,
-                         np.dot(Hk, Vkl))
+                         np.dot(Hk, Fkl))
             numerator = np.dot(aux,
                                aux.transpose().conjugate())
             denominator = np.dot(Ukl_H,
@@ -1911,7 +1921,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         :math:`k`-th receiver.
 
         The interference covariance matrix at the :math:`k`-th receiver,
-        :math:`\mtQ k`, is given by
+        :math:`\\mtQ k`, is given by
 
             :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
 
@@ -1942,6 +1952,23 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return Qk
 
     def _calc_JP_Q(self, k, F_all_users):
+        """
+        Calculates the interference covariance matrix at the :math:`k`-th
+        receiver with a joint processing scheme (not including the
+        covariance matrix of the external interference plus noise)
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired receiver.
+        F_all_users : 1D numpy array of 2D numpy array
+            The precoder of all users (already taking into account the
+            transmit power).
+
+        See also
+        --------
+        calc_JP_Q
+        """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
         interfering_users = set(range(self.K)) - set([k])
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
@@ -1960,7 +1987,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         :math:`k`-th receiver with a joint processing scheme.
 
         The interference covariance matrix at the :math:`k`-th receiver,
-        :math:`\mtQ k`, is given by
+        :math:`\\mtQ k`, is given by
 
             :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{k} \\mtF_j \\mtF_j^H \\mtH_{k}^H`
 
@@ -2025,6 +2052,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
+    # pylint: disable=W0222
     def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users, k, Rek):
         """
         Calculates the first part in the equation of the Blk covariance matrix
@@ -2051,7 +2079,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         # Note that here the power is already included in `Fk`.
 
         Hk = self.get_Hk_without_ext_int(k)
-        return self._calc_JP_Bkl_cov_matrix_first_part_impl(Hk, F_all_users, k, Rek)
+        return self._calc_JP_Bkl_cov_matrix_first_part_impl(Hk, F_all_users, Rek)
 
     def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
         """Calculates the second part in the equation of the Blk covariance
@@ -2079,7 +2107,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[k]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[k]\dagger}$$
         Hk = self.get_Hk_without_ext_int(k)
-        return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, k, l)
+        return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
     def _calc_JP_SINR_k(self, k, Fk, Uk, Bkl_all_l):
         """Calculates the SINR of all streams of user 'k'.

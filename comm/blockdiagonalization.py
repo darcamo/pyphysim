@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=R0914
+
 """Module implementing the block diagonalization algorithm.
 
 There are two ways to use this module. You can either use the
@@ -262,7 +264,7 @@ class BlockDiaginalizer(object):
         block diagonal structure and it is the first part in the Block
         Diagonalization algorithm. The returned modulation matrix is
         equivalent to Equation (12) of [1]_ but without the power scaling
-        matrix $\Lambda$. Therefore, for the complete BD algorithm it is
+        matrix $\\Lambda$. Therefore, for the complete BD algorithm it is
         still necessary to perform this power scalling in the output of
         _calc_BD_matrix_no_power_scaling.
 
@@ -518,7 +520,7 @@ class BlockDiaginalizer(object):
 
         # Calculates the modulation matrix and the singular values of the
         # effective channel when this modulation matrix is applied.
-        (Ms_bad, Sigma) = self._calc_BD_matrix_no_power_scaling(mtChannel)
+        (Ms_bad, _) = self._calc_BD_matrix_no_power_scaling(mtChannel)
 
         # Scale the power of this modulation assuring the power restriction
         # is not violated in any of the base stations.
@@ -562,8 +564,8 @@ class BlockDiaginalizer(object):
         Return the combined channel of all users except `user` .
 
         Let $k$ be the index for `user`. If the channel from all
-        transmitters to receiver $k$ is $\mtH_k$, then this method returns
-        $\tilde{\mtH_k} = [\mtH_1^T, \ldots, \mtH_{k-1}^T, \mtH_{k+1}^T, \ldots, \mtH_K]^T$.
+        transmitters to receiver $k$ is $\\mtH_k$, then this method returns
+        $\\tilde{\\mtH_k} = [\\mtH_1^T, \\ldots, \\mtH_{k-1}^T, \\mtH_{k+1}^T, \\ldots, \\mtH_K]^T$.
 
         Parameters
         ----------
@@ -832,7 +834,7 @@ class EnhancedBD(BDWithExtIntBase):
         self._metric_func_extra_args = {}
 
     def set_ext_int_handling_metric(self, metric,
-                                    metric_func_extra_args_dict={}):
+                                    metric_func_extra_args_dict=None):
         """Set the metric used to decide how many streams to sacrifice for
         external interference handling.
 
@@ -913,6 +915,9 @@ class EnhancedBD(BDWithExtIntBase):
             keywords.
 
         """
+        if metric_func_extra_args_dict is None:
+            metric_func_extra_args_dict = {}
+
         if metric is None or metric == 'None':
             self._metric_func_name = 'None'
             self._metric_func = None
@@ -1158,7 +1163,7 @@ class EnhancedBD(BDWithExtIntBase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
+        Ms_bad, _ = self._calc_BD_matrix_no_power_scaling(H_matrix)
         Ms_bad_ks = single_matrix_to_matrix_of_matrices(Ms_bad, None, Nt)
         H_all_ks = single_matrix_to_matrix_of_matrices(H_matrix, Nr)
 
@@ -1237,7 +1242,7 @@ class EnhancedBD(BDWithExtIntBase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Ms_bad, Sigma = self._calc_BD_matrix_no_power_scaling(H_matrix)
+        Ms_bad, _ = self._calc_BD_matrix_no_power_scaling(H_matrix)
 
         # The k-th 'element' in Ms_bad_ks is a matrix containing the
         # columns of Ms_bad of the k-th user.
