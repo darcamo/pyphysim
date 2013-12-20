@@ -566,7 +566,7 @@ def update_inv_sum_diag(invA, diagonal):
 
     This calculation is performed using the Sherman–Morrison formula, given
     my
-          :math:`"(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u},`
+          :math:`(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \\over 1 + v^T A^{-1}u},`
     where `u` and `v` are vectors.
 
     Parameters
@@ -840,8 +840,8 @@ def calc_decorrelation_matrix(cov_matrix):
     Returns
     -------
     decorr_matrix : 2D numpy array
-        The decorrelation matrix $\mtW_D$. If the original data is a vector $\vtX$
-        it can be decorrelated with $\mtW_D^T \vtX$.
+        The decorrelation matrix :math:`\\mtW_D`. If the original data is a
+        vector $\vtX$ it can be decorrelated with :math:`\\mtW_D^T \\vtX`.
 
     Notes
     -----
@@ -876,8 +876,8 @@ def calc_whitening_matrix(cov_matrix):
     Returns
     -------
     whitening_matrix : 2D numpy array
-        The whitening matrix $\mtW_W$. If the original data is a vector $\vtX$
-        it can be whitened with $\mtW_W^H \vtX$.
+        The whitening matrix :math:`\\mtW_W`. If the original data is a vector $\vtX$
+        it can be whitened with :math:`\\mtW_W^H \\vtX`.
 
     Notes
     -----
