@@ -170,13 +170,17 @@ The the IPython documentation to understand more.
 __revision__ = "$Revision$"
 
 import argparse
-import cPickle as pickle
 from collections import OrderedDict, Iterable
 import itertools
 import copy
 import sys
 import numpy as np
 from time import time
+
+try:
+    import cPickle as pickle
+except ImportError as e:
+    import pickle
 
 try:
     from configobj import ConfigObj, flatten_errors

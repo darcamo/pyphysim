@@ -24,6 +24,7 @@ import doctest
 import numpy as np
 import glob
 from time import sleep
+from io import StringIO
 
 # try:  # pragma: no cover
 #     import pandas as pd
@@ -61,7 +62,6 @@ def _delete_progressbar_output_files():
 # This function is used in test methods for the ProgressbarText class (and
 # other classes that use ProgressbarText)
 def _get_clear_string_from_stringio_object(mystring):
-    from StringIO import StringIO
     if isinstance(mystring, StringIO):
         # mystring is actually a StringIO object
         value = mystring.getvalue()
@@ -69,7 +69,7 @@ def _get_clear_string_from_stringio_object(mystring):
         # mystring is a regular string
         value = mystring
 
-    value = value.split('\r')
+    value = value.split(u'\r')
     return value[0] + value[-1].strip(' ')
 
 
@@ -1339,6 +1339,11 @@ class SimulationResultsTestCase(unittest.TestCase):
         except OSError:  # pragma: no cover
             pass
 
+        try:
+            import h5py
+        except ImportError as e:
+            self.skipTest("The h5py module is not installed")
+
         # Set sime simulation parameters
         self.simresults.params.add('factor', [0.5, 0.6])
         self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
@@ -1769,7 +1774,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
             misc.peig(A, 4)
 
         # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        [V_n3, D_n3] = misc.peig(A, 3)
+        [V_n3, _] = misc.peig(A, 3)
 
         expected_V_n3 = np.array(
             [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j, 0.69593520],
@@ -1778,7 +1783,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        [V_n2, D_n2] = misc.peig(A, 2)
+        [V_n2, _] = misc.peig(A, 2)
 
         expected_V_n2 = np.array(
             [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j],
@@ -1787,7 +1792,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V_n2, expected_V_n2)
 
         # xxxxx Test for n==1 (one column) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        [V_n1, D_n1] = misc.peig(A, 1)
+        [V_n1, _] = misc.peig(A, 1)
 
         expected_V_n1 = np.array(
             [[0.27354856 + 0.54286421j],
@@ -1807,7 +1812,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
             misc.leig(A, 4)
 
         # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        [V_n3, D_n3] = misc.leig(A, 3)
+        [V_n3, _] = misc.leig(A, 3)
 
         expected_V_n3 = np.array(
             [[0.69593520, 0.15266747 - 0.35048035j, 0.27354856 + 0.54286421j],
@@ -1816,7 +1821,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        [V_n2, D_n2] = misc.leig(A, 2)
+        [V_n2, _] = misc.leig(A, 2)
 
         expected_V_n2 = np.array(
             [[0.69593520, 0.15266747 - 0.35048035j],
@@ -1825,7 +1830,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V_n2, expected_V_n2)
 
         # xxxxx Test for n==1 (one column) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        [V_n1, D_n1] = misc.leig(A, 1)
+        [V_n1, _] = misc.leig(A, 1)
 
         expected_V_n1 = np.array(
             [[0.69593520],
@@ -2164,7 +2169,6 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
 class ProgressbarTextTestCase(unittest.TestCase):
     def setUp(self):
-        from StringIO import StringIO
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
@@ -2285,7 +2289,6 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
 
 class ProgressbarText2TestCase(unittest.TestCase):
     def setUp(self):
-        from StringIO import StringIO
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
@@ -2358,7 +2361,6 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
 class ProgressbarText3TestCase(unittest.TestCase):
     def setUp(self):
-        from StringIO import StringIO
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
@@ -2566,7 +2568,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         progress_output_file.close()
 
         # Expected string with the progress output
-        expected_progress_string = """[***********************60%**                    ]  Some message"""
+        expected_progress_string = u"""[***********************60%**                    ]  Some message"""
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string),
             expected_progress_string)
@@ -2579,7 +2581,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         progress_output_file2 = open(self.output_filename)
         progress_string2 = progress_output_file2.read()
         progress_output_file2.close()
-        expected_progress_string2 = """[**********************100%**********************]  Some message\n"""
+        expected_progress_string2 = u"""[**********************100%**********************]  Some message\n"""
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string2),
             expected_progress_string2)

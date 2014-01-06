@@ -997,7 +997,7 @@ class ClosedFormIASolver(IASolverBaseClass):
                 # Array with the sum capacity of each user
                 sum_capacity = map(calc_capacity, sinr_all_k)
                 # Total sum capacity
-                total_sum_capacity = np.sum(sum_capacity)
+                total_sum_capacity = np.sum(list(sum_capacity))
 
                 if total_sum_capacity > best_sum_capacity:
                     best_sum_capacity = total_sum_capacity

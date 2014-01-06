@@ -626,15 +626,15 @@ class MultiUserChannelMatrix(object):
         >>> Nt = np.array([2, 2])
         >>> Nr = np.array([2, 2])
         >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2)
-        >>> print multiH.big_H
+        >>> print(multiH.big_H)
         [[ 0  1  2  3]
          [ 4  5  6  7]
          [ 8  9 10 11]
          [12 13 14 15]]
-        >>> print multiH.get_Hkl(0, 0)
+        >>> print(multiH.get_Hkl(0, 0))
         [[0 1]
          [4 5]]
-        >>> print multiH.get_Hkl(1, 0)
+        >>> print(multiH.get_Hkl(1, 0))
         [[ 8  9]
          [12 13]]
         """
@@ -666,15 +666,15 @@ class MultiUserChannelMatrix(object):
         >>> Nt = np.array([2, 2])
         >>> Nr = np.array([2, 2])
         >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2)
-        >>> print multiH.big_H
+        >>> print(multiH.big_H)
         [[ 0  1  2  3]
          [ 4  5  6  7]
          [ 8  9 10 11]
          [12 13 14 15]]
-        >>> print multiH.get_Hk(0)
+        >>> print(multiH.get_Hk(0))
         [[0 1 2 3]
          [4 5 6 7]]
-        >>> print multiH.get_Hk(1)
+        >>> print(multiH.get_Hk(1))
         [[ 8  9 10 11]
          [12 13 14 15]]
         """
@@ -1651,15 +1651,15 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2, 1)
         >>> # Note that the last column of multiH.big_H corresponds to the
         >>> # external interference source
-        >>> print multiH.big_H
+        >>> print(multiH.big_H)
         [[ 0  1  2  3  4]
          [ 5  6  7  8  9]
          [10 11 12 13 14]
          [15 16 17 18 19]]
-        >>> print multiH.get_Hk_without_ext_int(0)
+        >>> print(multiH.get_Hk_without_ext_int(0))
         [[0 1 2 3]
          [5 6 7 8]]
-        >>> print multiH.get_Hk_without_ext_int(1)
+        >>> print(multiH.get_Hk_without_ext_int(1))
         [[10 11 12 13]
          [15 16 17 18]]
 
@@ -1703,15 +1703,15 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         >>> multiH.init_from_channel_matrix(H, Nr, Nt, 2, 1)
         >>> # Note that the last column of multiH.big_H corresponds to the
         >>> # external interference source
-        >>> print multiH.big_H
+        >>> print(multiH.big_H)
         [[ 0  1  2  3  4]
          [ 5  6  7  8  9]
          [10 11 12 13 14]
          [15 16 17 18 19]]
-        >>> print multiH.get_Hk_with_ext_int(0)
+        >>> print(multiH.get_Hk_with_ext_int(0))
         [[0 1 2 3 4]
          [5 6 7 8 9]]
-        >>> print multiH.get_Hk_with_ext_int(1)
+        >>> print(multiH.get_Hk_with_ext_int(1))
         [[10 11 12 13 14]
          [15 16 17 18 19]]
 

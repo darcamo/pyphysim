@@ -80,7 +80,7 @@ def center_message(message, length=50, fill_char=' ', left='', right=''):
     left_fill_size = fill_size // 2 + (fill_size % 2)
     right_fill_size = (fill_size // 2)
 
-    new_message = "{0}{1} {2} {3}{4}".format(
+    new_message = u"{0}{1} {2} {3}{4}".format(
         left,
         fill_char * left_fill_size,
         message,
@@ -353,7 +353,7 @@ class ProgressbarTextBase(object):
             if self._print_empty_line_at_the_end is True:
                 # Print an empty line after the last iteration to be consistent
                 # with the ProgressbarText class
-                self._output.write("\n")
+                self._output.write(u"\n")
 
             # When progress reaches 100% we set the internal variable
             # to True so that any subsequent calls to the `progress`
@@ -394,8 +394,8 @@ class ProgressbarTextBase(object):
 
             # We simple change the cursor to the beginning of the line and
             # write the string representation of the prog_bar variable.
-            self._output.write('\r')
-            self._output.write(str(self.prog_bar))
+            self._output.write(u'\r')
+            self._output.write(u'{0}'.format((self.prog_bar)))
 
             # If count is equal to self.finalcount we have reached 100%. In
             # that case, we also write a final newline character.
@@ -558,10 +558,10 @@ class ProgressbarText(ProgressbarTextBase):
         values2 = ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0']
 
         line1sep = ' ' * (steps - 1)
-        line1 = '{0}{1}\n'.format(line1sep, line1sep.join(values1))
+        line1 = u'{0}{1}\n'.format(line1sep, line1sep.join(values1))
 
         line2sep = '-' * (steps - 1)
-        line2 = '{0}{1}\n'.format(line2sep, line2sep.join(values2))
+        line2 = u'{0}{1}\n'.format(line2sep, line2sep.join(values2))
 
         return (line1, line2)
 
@@ -1470,7 +1470,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         # socket to the respective ip:port.
         self._zmq_context = zmq.Context()
         self._zmq_pull_socket = self._zmq_context.socket(zmq.PULL)
-        self._zmq_pull_socket.bind("tcp://*:%s" % self.port)
+        self._zmq_pull_socket.bind(u"tcp://*:%s" % self.port)
         ProgressbarDistributedServerBase._update_progress(self, filename)
 
     # This method is called in the _update_progress, which is run in a

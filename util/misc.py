@@ -252,7 +252,7 @@ def level2bits(n):
 
     Examples
     --------
-    >>> map(level2bits,range(1,20))
+    >>> list(map(level2bits,range(1,20)))
     [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
     """
     if n < 1:
@@ -275,7 +275,7 @@ def int2bits(n):
 
     Examples
     --------
-    >>> map(int2bits, range(0,19))
+    >>> list(map(int2bits, range(0,19)))
     [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5]
     """
     if n < 0:
