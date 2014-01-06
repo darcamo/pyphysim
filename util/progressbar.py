@@ -552,7 +552,7 @@ class ProgressbarText(ProgressbarTextBase):
         This method is only a helper method called in the
         `_write_initialization` method.
         """
-        steps = self.width / 10  # This division must be exact
+        steps = self.width // 10  # This division must be exact
 
         values1 = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
         values2 = ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0']
@@ -1062,6 +1062,9 @@ class ProgressbarDistributedServerBase(object):
         # mean that the progressbar is not running).
         self.running.clear()
         # self._toc.value = time.time()
+
+        if self._filename is not None:
+            output.close()
 
     def start_updater(self, start_delay=0.0):
         """

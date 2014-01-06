@@ -2248,7 +2248,7 @@ class SimulationParameters(object):
         unpacked_params_iter_dict = OrderedDict()
         for i in self._unpacked_parameters_set:
             unpacked_params_iter_dict[i] = get_iter_from_name(i)
-        keys = unpacked_params_iter_dict.keys()
+        keys = list(unpacked_params_iter_dict.keys())
 
         # Using itertools.product we can convert the multiple iterators
         # (for the different parameters marked to be unpacked) to a single
@@ -3239,7 +3239,7 @@ class Result(object):
       25
       >>> result2.get_result()
       0.5
-      >>> print result2_other
+      >>> print(result2_other)
       Result -> name2: 10/25 -> 0.4
 
     - Example of the MISCTYPE result.

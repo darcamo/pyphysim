@@ -748,6 +748,15 @@ def get_range_representation(array):
         return None
 
     step = array[1] - array[0]
+
+    # Change step from numpy.int64 or numpy.float64 to a regular int or
+    # float. In the case of float, we round to 12 decimal digits. All of
+    # this is only important in Python3.
+    if step.dtype == int:
+        step = int(step)
+    elif step.dtype == float:
+        step = round(float(step), 12)
+
     if np.allclose(array[1:] - step, array[0:-1]):
         # array is an arithmetic progression
         return "{0}:{1}:{2}".format(array[0], step, array[-1])

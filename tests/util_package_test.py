@@ -58,6 +58,22 @@ def _delete_progressbar_output_files():
     for f in progressbar_files:
         os.remove(f)
 
+# This function is used in test methods of progressbars. It simply opens a
+# file and return its content as a string.
+def _get_progress_string_from_file(filename):
+    try:
+        fid = open(filename, 'r', newlines='\n')
+    except Exception as _:
+        fid = open(filename, 'r')
+    finally:
+        content_string = fid.read()
+        fid.close()
+
+    output = content_string.split('\n')[-1]
+    if output == '':
+        output = "{0}\n".format(content_string.split('\n')[-2])
+    return output
+
 
 # This function is used in test methods for the ProgressbarText class (and
 # other classes that use ProgressbarText)
@@ -69,8 +85,15 @@ def _get_clear_string_from_stringio_object(mystring):
         # mystring is a regular string
         value = mystring
 
-    value = value.split(u'\r')
-    return value[0] + value[-1].strip(' ')
+    output = value.split('\r')
+    if len(output) > 1:
+        output = output[0] + output[-1].strip(' ')
+    else:
+        # This will be the case when this file is run in Python 3, since
+        # there will be no '\r' character in mystring.
+        output = output[0]
+
+    return output
 
 
 # Define a _DummyRunner class for the testing the simulate and
@@ -365,7 +388,11 @@ class ConversionTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationsModuleFunctionsTestCase(unittest.TestCase):
     def test_parse_range_expr(self):
-        import validate
+        try:
+            import validate
+        except ImportError as _:
+            self.skipTest("The validate module is not installed")
+
 
         expr = "10:15"
         expected_parsed_expr = np.r_[10:15]
@@ -403,7 +430,10 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_real_numpy_array_check(self):
-        import validate
+        try:
+            import validate
+        except ImportError as _:
+            self.skipTest("The validate module is not installed")
 
         array_string = "[0 5 10:15]"
         parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
@@ -446,7 +476,10 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
                                                    max=15)
 
     def test_integer_numpy_array_check(self):
-        import validate
+        try:
+            import validate
+        except ImportError as _:
+            self.skipTest("The validate module is not installed")
 
         array_string = "[0 5 10:15]"
         parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
@@ -651,9 +684,14 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.set_unpack_parameter('third')
         self.sim_params.set_unpack_parameter('fourth')
 
+        unpacked_list = self.sim_params.get_unpacked_params_list()
+
         # The parameters 'third' and 'fourth' are marked to be unpacked,
         # while the parameters 'first' and 'second' will always be the
-        # same. The combinations after unpacking are shown below
+        # same. The combinations after unpacking are shown below (the order
+        # might be different depending on which version of the python
+        # interpreter was used)
+        #
         #   {'second': 20, 'fourth': A, 'third': 1, 'first': 10}
         #   {'second': 20, 'fourth': A, 'third': 3, 'first': 10}
         #   {'second': 20, 'fourth': A, 'third': 2, 'first': 10}
@@ -669,29 +707,29 @@ class SimulationParametersTestCase(unittest.TestCase):
         # parameter equal to 2. We create a dictionary
         fixed_third_2 = {'third': 2}
 
-        # The desired indexes are [2, 6]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_third_2),
-            [2, 6])
+        # Get the indexes where the third parameter has a value of 2.
+        fixed_third_2_indexes = self.sim_params.get_pack_indexes(fixed_third_2)
+
+        # Now we test if for these indexes the value of the third parameter
+        # is really 2
+        for i in fixed_third_2_indexes:
+            self.assertEqual(unpacked_list[i]['third'], 2)
 
         fixed_third_5 = {'third': 5}
-        # The desired indexes are [3, 7]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_third_5),
-            [3, 7])
+        fixed_third_5_indexes = self.sim_params.get_pack_indexes(fixed_third_5)
+        for i in fixed_third_5_indexes:
+            self.assertEqual(unpacked_list[i]['third'], 5)
 
-        # Now lets fix the 'fourth' parameter and let the 'third' vary.
+        # now lets fix the 'fourth' parameter and let the 'third' vary.
         fixed_fourth_A = {'fourth': 'A'}
-        # The desired indexes are [0, 1, 2, 3]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_fourth_A),
-            [0, 1, 2, 3])
+        fixed_fourth_A_indexes = self.sim_params.get_pack_indexes(fixed_fourth_A)
+        for i in fixed_fourth_A_indexes:
+            self.assertEqual(unpacked_list[i]['fourth'], 'A')
 
         fixed_fourth_B = {'fourth': 'B'}
-        # The desired indexes are [4, 5, 6, 7]
-        np.testing.assert_array_equal(
-            self.sim_params.get_pack_indexes(fixed_fourth_B),
-            [4, 5, 6, 7])
+        fixed_fourth_B_indexes = self.sim_params.get_pack_indexes(fixed_fourth_B)
+        for i in fixed_fourth_B_indexes:
+            self.assertEqual(unpacked_list[i]['fourth'], 'B')
 
         # Lets try to fix some invalid value to see if an exception is
         # raised
@@ -739,6 +777,12 @@ class SimulationParametersTestCase(unittest.TestCase):
         os.remove(filename)
 
     def test_load_from_config_file(self):
+        try:
+            import configobj
+            import validate
+        except ImportError:
+            self.skipTest("This configobj and validate modules must be installed.")
+
         filename = 'test_config_file.txt'
 
         # xxxxxxxxxx Write the config file xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1184,7 +1228,6 @@ class SimulationResultsTestCase(unittest.TestCase):
             set(['lala', 'lele']))
 
     def test_equal_and_not_equal_operators(self):
-        #import pudb; pudb.set_trace()  ## DEBUG ##
         elapsed_time_result = Result.create('elapsed_time', Result.SUMTYPE, 30)
         self.simresults.add_result(elapsed_time_result)
 
@@ -1574,8 +1617,17 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Now we perform the simulation
         dummyrunner.simulate(param_variation_index=4)
         pr = SimulationResults.load_from_file('dummyrunner_results_bias_1.3_unpack_04.pickle')
+
+        #  Get the parameters from the laoded result
+        bias = pr.params['bias']
+        snr = pr.params['SNR']
+        extra = pr.params['extra']
+
+        # Calculate the expected value
+        expected_value = 1.2 * snr + bias + extra
+
         self.assertEqual(len(pr['lala']), 1)
-        self.assertAlmostEqual(pr['lala'][0].get_result(), 15.5)
+        self.assertAlmostEqual(pr['lala'][0].get_result(), expected_value)
 
         _delete_pickle_files()
         _delete_progressbar_output_files()
@@ -1976,6 +2028,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         b = np.array([2.3, 2.6, 2.9, 3.2, 3.5, 3.8, 4.1, 4.4, 4.7])
         expr_b = misc.get_range_representation(b)
+        misc.get_range_representation(b)
         expected_expr_b = "2.3:0.3:4.7"
         self.assertEqual(expr_b, expected_expr_b)
 
@@ -2456,8 +2509,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.mpbar.stop_updater(0)
 
         # Open and read the progress from the file
-        progress_output_file = open(self.output_filename)
-        progress_string = progress_output_file.read()
+        progress_string = _get_progress_string_from_file(self.output_filename)
 
         # Expected string with the progress output
         expected_progress_string = """[**************         30%                      ]  Some message"""
@@ -2562,13 +2614,13 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
                             # progress progressbars
         sleep(0.3)
 
-        # Open and read the progress from the file
-        progress_output_file = open(self.output_filename)
-        progress_string = progress_output_file.read()
-        progress_output_file.close()
+        # Open and read the progress from the file. We open in binary mode
+        # to avoid a possible conversion of '\r' to '\n' by the 'read'
+        # method.
+        progress_string = _get_progress_string_from_file(self.output_filename)
 
         # Expected string with the progress output
-        expected_progress_string = u"""[***********************60%**                    ]  Some message"""
+        expected_progress_string = """[***********************60%**                    ]  Some message"""
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string),
             expected_progress_string)
@@ -2578,10 +2630,8 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         # ------------------------
 
         # After the stop_updater method the progressbar should be full
-        progress_output_file2 = open(self.output_filename)
-        progress_string2 = progress_output_file2.read()
-        progress_output_file2.close()
-        expected_progress_string2 = u"""[**********************100%**********************]  Some message\n"""
+        progress_string2 = _get_progress_string_from_file(self.output_filename)
+        expected_progress_string2 = """[**********************100%**********************]  Some message\n"""
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string2),
             expected_progress_string2)
