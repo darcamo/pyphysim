@@ -228,7 +228,7 @@ def get_common_parser():
         parser = argparse.ArgumentParser()
         group = parser.add_argument_group('General')
 
-        help_msg = ('An index for the parameters variations. If provided, ',
+        help_msg = ('An index for the parameters variations. If provided, '
                     'only that variation will be simulated.')
         group.add_argument('-i',       # short version to specify the option
                            '--index',  # Long version to specify the option
@@ -634,8 +634,8 @@ class SimulationRunner(object):
         Name of the config file. This will be parsed with configobj.
     config_spec : list of strings
         Configuration specification to validade the config file.
-    description : string
-        A string describing the simulator.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
 
     See Also
     --------
@@ -643,7 +643,7 @@ class SimulationRunner(object):
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
     """
-    def __init__(self, default_config_file=None, config_spec=None):
+    def __init__(self, default_config_file=None, config_spec=None, read_command_line_args=True):
         self.rep_max = 1
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
@@ -654,11 +654,12 @@ class SimulationRunner(object):
         self._configobj_spec = config_spec
 
         # xxxxx Parse command line arguments (get config filename) xxxxxxxx
-        # Note that the get_common_parser always return the same object
-        parser = get_common_parser()
+        if read_command_line_args is True:
+            # Note that the get_common_parser always return the same object
+            parser = get_common_parser()
 
-        # This member variable will store all the parsed command line arguments
-        self.command_line_args = parser.parse_args()
+            # This member variable will store all the parsed command line arguments
+            self.command_line_args = parser.parse_args()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
