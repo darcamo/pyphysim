@@ -1080,6 +1080,8 @@ class SimulationRunner(object):
         # By default, the returned function is a dummy function that does
         # nothing
         update_progress_func = lambda value: None
+        if self.update_progress_function_style is None:
+            return update_progress_func
 
         # If self.progress_output_type is equal to 'screen', this will be
         # sys.stdout, otherwise it will be a file object. Note that
@@ -2109,7 +2111,8 @@ class SimulationParameters(object):
             return functools.reduce(operator.mul, gen_values)
 
     def get_pack_indexes(self, fixed_params_dict=None):
-        """When you call the function get_unpacked_params_list you get a
+        """
+        When you call the function get_unpacked_params_list you get a
         list of SimulationParameters objects corresponding to all
         combinations of the parameters. The function get_pack_indexes
         allows you to provided all parameters marked to be unpacked except
@@ -2137,11 +2140,11 @@ class SimulationParameters(object):
         >>> params.set_unpack_parameter('p2')
 
         If we call params.get_unpacked_params_list we will get a list of
-        SimulationParameters objects, one for each combination of the
+        six SimulationParameters objects, one for each combination of the
         values of p1 and p2. That is,
 
-        >>> params.get_unpacked_params_list()
-        [{'p2': a, 'p3': 15, 'p1': 1}, {'p2': a, 'p3': 15, 'p1': 2}, {'p2': a, 'p3': 15, 'p1': 3}, {'p2': b, 'p3': 15, 'p1': 1}, {'p2': b, 'p3': 15, 'p1': 2}, {'p2': b, 'p3': 15, 'p1': 3}]
+        >>> len(params.get_unpacked_params_list())
+        6
 
         Likewise, in the simulation the SimulationRunner object will return
         a list of results in the order corresponding to the order of the
@@ -2220,10 +2223,10 @@ class SimulationParameters(object):
         >>> simparams.set_unpack_parameter('d')
 
         Then get_unpacked_params_list would return a list of four
-        SimulationParameters objects as below (the order may be different)
+        SimulationParameters objects as below
 
-        >>> simparams.get_unpacked_params_list()
-        [{'a': 1, 'c': 3, 'b': 2, 'd': 5}, {'a': 1, 'c': 3, 'b': 2, 'd': 6}, {'a': 1, 'c': 4, 'b': 2, 'd': 5}, {'a': 1, 'c': 4, 'b': 2, 'd': 6}]
+        >>> len(simparams.get_unpacked_params_list())
+        4
 
         That is
 
