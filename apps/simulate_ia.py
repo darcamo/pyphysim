@@ -45,10 +45,15 @@ class IASimulationRunner(SimulationRunner):
         The specification used to read the simulation configuration
         from the file `default_config_file`. See the validation part in the
         docummentation of the configobj module for details.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, IaSolverClass, default_config_file, spec):
-        SimulationRunner.__init__(self, default_config_file, spec)
+    def __init__(self, IaSolverClass, default_config_file, spec, read_command_line_args=True):
+        SimulationRunner.__init__(self,
+                                  default_config_file,
+                                  spec,
+                                  read_command_line_args)
 
       # Set the max_bit_errors and rep_max attributes
         self.max_bit_errors = self.params['max_bit_errors']
@@ -283,9 +288,11 @@ class AlternatingSimulationRunner(IASimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, default_config_file):
+    def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -306,7 +313,8 @@ class AlternatingSimulationRunner(IASimulationRunner):
         IASimulationRunner.__init__(self,
                                     ia.AlternatingMinIASolver,
                                     default_config_file,
-                                    spec)
+                                    spec,
+                                    read_command_line_args)
 
         #self.update_progress_function_style = None
 
@@ -322,9 +330,11 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, default_config_file):
+    def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -345,7 +355,8 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         IASimulationRunner.__init__(self,
                                     ia.ClosedFormIASolver,
                                     default_config_file,
-                                    spec)
+                                    spec,
+                                    read_command_line_args)
 
     # Since we create the channel object in the __init__ method of
     # IASimulationRunner, we need to re-seed the channel for each set of
@@ -365,9 +376,11 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, default_config_file):
+    def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -388,7 +401,8 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         IASimulationRunner.__init__(self,
                                     ia.MinLeakageIASolver,
                                     default_config_file,
-                                    spec)
+                                    spec,
+                                    read_command_line_args)
 
 
 class MaxSINRSimulationRunner(IASimulationRunner):
@@ -402,8 +416,10 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
-    def __init__(self, default_config_file):
+    def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -424,7 +440,8 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         IASimulationRunner.__init__(self,
                                     ia.MaxSinrIASolver,
                                     default_config_file,
-                                    spec)
+                                    spec,
+                                    read_command_line_args)
 
 
 class MMSESimulationRunner(IASimulationRunner):
@@ -438,8 +455,10 @@ class MMSESimulationRunner(IASimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
-    def __init__(self, default_config_file):
+    def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
@@ -460,7 +479,8 @@ class MMSESimulationRunner(IASimulationRunner):
         IASimulationRunner.__init__(self,
                                     ia.MMSEIASolver,
                                     default_config_file,
-                                    spec)
+                                    spec,
+                                    read_command_line_args)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

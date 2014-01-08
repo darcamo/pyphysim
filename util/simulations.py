@@ -658,16 +658,24 @@ class SimulationRunner(object):
             # Note that the get_common_parser always return the same object
             parser = get_common_parser()
 
-            # This member variable will store all the parsed command line arguments
+            # This member variable will store all the parsed command line
+            # arguments
             self.command_line_args = parser.parse_args()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Get the config filename if it was provided, or use the default value
-        if self.command_line_args.config is None:
-            self._config_filename = default_config_file
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Get the config filename if it was provided in the command
+            # line. If not, use the default value.
+            if self.command_line_args.config is None:
+                self._config_filename = default_config_file
+            else:
+                self._config_filename = self.command_line_args.config
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         else:
-            self._config_filename = self.command_line_args.config
+            # Since we are not parsing command line arguments, the config
+            # file will be the provided default_config_file
+            self._config_filename = default_config_file
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
