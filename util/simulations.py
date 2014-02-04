@@ -179,18 +179,18 @@ from time import time
 
 try:
     import cPickle as pickle
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     import pickle
 
 try:
     from configobj import ConfigObj, flatten_errors
     from validate import Validator
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 try:
     import tables as tb
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 # try:  # pragma: no cover
@@ -256,7 +256,7 @@ get_common_parser.parser = None
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):
+def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):  # pragma: no cover
     """
     This will either call the simulate method or the simulate_in_parallel
     method as appropriated.
@@ -316,7 +316,7 @@ def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def _add_folder_to_ipython_engines_path(client, folder):
+def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
     """
     Add a folder to sys.path of each ipython engine.
 
@@ -346,7 +346,7 @@ def _add_folder_to_ipython_engines_path(client, folder):
     dview.execute('sys.path.append("{0}")'.format(folder), block=True)
 
 
-def _simulate_do_what_i_mean(runner, folder=None, block=True):
+def _simulate_do_what_i_mean(runner, folder=None, block=True):  # pragma: no cover
     """
     This will either call the simulate method or the simulate_in_parallel
     method as appropriated.
@@ -654,7 +654,7 @@ class SimulationRunner(object):
         self._configobj_spec = config_spec
 
         # xxxxx Parse command line arguments (get config filename) xxxxxxxx
-        if read_command_line_args is True:
+        if read_command_line_args is True:  # pragma: no cover
             # Note that the get_common_parser always return the same object
             parser = get_common_parser()
 
@@ -668,11 +668,11 @@ class SimulationRunner(object):
             # line. If not, use the default value.
             if self.command_line_args.config is None:
                 self._config_filename = default_config_file
-            else:
+            else:  # pragma: no cover
                 self._config_filename = self.command_line_args.config
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        else:
+        else:  # pragma: no cover
             # Since we are not parsing command line arguments, the config
             # file will be the provided default_config_file
             self._config_filename = default_config_file
@@ -681,7 +681,7 @@ class SimulationRunner(object):
         # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
         if self._config_filename is None:
             self.params = SimulationParameters()
-        else:
+        else: # pragma: no cover
             self.params = SimulationParameters.load_from_config_file(
                 self._config_filename,
                 self._configobj_spec,
@@ -819,7 +819,7 @@ class SimulationRunner(object):
         return results_filename
     results_filename = property(_get_results_filename)
 
-    def _get_progress_output_sinc(self, param_variation_index):
+    def _get_progress_output_sinc(self, param_variation_index):  # pragma: no cover
         """
         Get the output sinc for the progressbars.
 
@@ -1048,7 +1048,7 @@ class SimulationRunner(object):
         # maximum number of allowed iterations is reached.
         return True
 
-    def _get_serial_update_progress_function(self, current_params):
+    def _get_serial_update_progress_function(self, current_params):  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -1577,7 +1577,9 @@ class SimulationRunner(object):
                 self.__delete_partial_results_maybe()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def simulate_in_parallel(self, view, wait=True):
+    # The unittests for this method only run if an ipython cluster is
+    # started with a profile called "tests".
+    def simulate_in_parallel(self, view, wait=True):  # pragma: no cover
         """
         Same as the simulate method, but the different parameters
         configurations are simulated in parallel.
@@ -1670,7 +1672,7 @@ class SimulationRunner(object):
         if wait is True:
             self.wait_parallel_simulation()
 
-    def wait_parallel_simulation(self):
+    def wait_parallel_simulation(self):  # pragma: no cover
         """
         Wait for the parallel simulation to finish and then update the
         self.results variable (as well as other internal variables).
@@ -2170,7 +2172,7 @@ class SimulationParameters(object):
         >>> params.get_pack_indexes(fixed)
         array([2, 5])
         """
-        if fixed_params_dict is None:
+        if fixed_params_dict is None:  # pragma: no cover
             fixed_params_dict = {}
 
         # Get the only parameter that was not fixed
@@ -2197,11 +2199,12 @@ class SimulationParameters(object):
         dimensions = [len(self.parameters[i]) for i in self.unpacked_parameters]
         aux = np.arange(0, self.get_num_unpacked_variations())
         aux.shape = dimensions
-        indexes = eval("aux" + "[{0}]".format(",".join(param_indexes)))
+        indexes = eval("aux" + "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if indexes.shape == ():
-            indexes = np.array([indexes])
+        # if indexes.shape == ():
+        #     print("simulations.py: Create a unittest when the code reaches this branch.")
+        #     indexes = np.array([indexes])
 
         return indexes
 
@@ -3170,7 +3173,7 @@ class SimulationResults(object):
             pg = fid['parameters']
             # simresults._params = SimulationParameters.load_from_hdf5_group(pg)
             simresults.set_parameters(SimulationParameters.load_from_hdf5_group(pg))
-        except KeyError:
+        except KeyError:  # pragma: no cover
             pass
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

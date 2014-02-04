@@ -55,7 +55,7 @@ def _delete_progressbar_output_files():
     """Delete all the files with *results*.txt names in the current folder.
     """
     progressbar_files = glob.glob('*results*.txt')
-    for f in progressbar_files:
+    for f in progressbar_files:  # pragma: no cover
         os.remove(f)
 
 # This function is used in test methods of progressbars. It simply opens a
@@ -77,7 +77,7 @@ def _get_progress_string_from_file(filename):
 
 # This function is used in test methods for the ProgressbarText class (and
 # other classes that use ProgressbarText)
-def _get_clear_string_from_stringio_object(mystring):
+def _get_clear_string_from_stringio_object(mystring):  # pragma: no cover
     if isinstance(mystring, StringIO):
         # mystring is actually a StringIO object
         value = mystring.getvalue()
@@ -100,7 +100,7 @@ def _get_clear_string_from_stringio_object(mystring):
 # simulate_in_parallel methods in the SimulationRunner class.
 class _DummyRunner(SimulationRunner):
     def __init__(self):
-        SimulationRunner.__init__(self)
+        SimulationRunner.__init__(self, read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
         # progressbar in these testes.
         self.rep_max = 2
@@ -127,7 +127,7 @@ class _DummyRunner(SimulationRunner):
 
 class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
     def __init__(self):
-        SimulationRunner.__init__(self)
+        SimulationRunner.__init__(self, read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
         # progressbar in these testes.
         self.rep_max = 2
@@ -387,10 +387,15 @@ class ConversionTestCase(unittest.TestCase):
 # xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationsModuleFunctionsTestCase(unittest.TestCase):
+    def test_get_common_parser(self):
+        p = simulations.get_common_parser()
+        p2 = simulations.get_common_parser()
+        self.assertTrue(p is p2)
+
     def test_parse_range_expr(self):
         try:
             import validate
-        except ImportError as _:
+        except ImportError as _:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
 
@@ -432,7 +437,7 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
     def test_real_numpy_array_check(self):
         try:
             import validate
-        except ImportError as _:
+        except ImportError as _:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
         array_string = "[0 5 10:15]"
@@ -478,7 +483,7 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
     def test_integer_numpy_array_check(self):
         try:
             import validate
-        except ImportError as _:
+        except ImportError as _:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
         array_string = "[0 5 10:15]"
@@ -681,8 +686,10 @@ class SimulationParametersTestCase(unittest.TestCase):
     def test_get_pack_indexes(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.add('fifth', ['Z', 'X', 'W'])
         self.sim_params.set_unpack_parameter('third')
         self.sim_params.set_unpack_parameter('fourth')
+        self.sim_params.set_unpack_parameter('fifth')
 
         unpacked_list = self.sim_params.get_unpacked_params_list()
 
@@ -739,14 +746,19 @@ class SimulationParametersTestCase(unittest.TestCase):
             # has no value 'C'
             self.sim_params.get_pack_indexes(fixed_fourth_invalid)
 
-        # Now lets fix the third and the fourth parameter. This should get
-        # me a single index.
+        # Now lets fix the third, fourth and fifth parameters. This should
+        # get me a single index.
         self.assertEqual(
-            self.sim_params.get_pack_indexes({'third': 5, 'fourth': 'B'}),
-            7)
+            self.sim_params.get_pack_indexes(
+                {'third': 5, 'fourth': 'B', 'fifth': 'Z'}), 7)
+
         self.assertEqual(
-            self.sim_params.get_pack_indexes({'third': 5, 'fourth': 'B'}),
-            7)
+            self.sim_params.get_pack_indexes(
+                {'third': 5, 'fourth': 'B', 'fifth': 'X'}), 15)
+
+        self.assertEqual(
+            self.sim_params.get_pack_indexes(
+                {'third': 2, 'fourth': 'A', 'fifth': 'Z'}), 2)
 
     def test_save_to_and_load_from_file(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -780,7 +792,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         try:
             import configobj
             import validate
-        except ImportError:
+        except ImportError:  # pragma: no cover
             self.skipTest("This configobj and validate modules must be installed.")
 
         filename = 'test_config_file.txt'
@@ -1384,7 +1396,7 @@ class SimulationResultsTestCase(unittest.TestCase):
 
         try:
             import h5py
-        except ImportError as e:
+        except ImportError as e:  # pragma: no cover
             self.skipTest("The h5py module is not installed")
 
         # Set sime simulation parameters
@@ -1482,9 +1494,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
     """Unit-tests for the SimulationRunner class in the simulations
     module.
     """
-
     def setUp(self):
-        self.runner = SimulationRunner()
+        self.runner = SimulationRunner(read_command_line_args=False)
 
     # Test if the SimulationRunner sets a few default attributs in its init
     # method.
@@ -1729,7 +1740,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
-    def test_simulate_in_parallel_with_random_values(self):
+    def test_simulate_in_parallel_with_random_values(self):  # pragma: no cover
         try:
             from IPython.parallel import Client
             cl = Client(profile="tests")

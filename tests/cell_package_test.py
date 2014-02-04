@@ -733,6 +733,12 @@ class GridTestCase(unittest.TestCase):
                       -1.73205081 + 1.5j, -2.16506351 - 0.75j,
                       -0.43301270 - 2.25j, 1.73205081 - 1.5j]))
 
+    def test_get_cluster_from_index(self):
+        G1 = cell.Grid()
+        G1.create_clusters(7, 3, 0.5)
+        for i in range(7):
+            self.assertTrue(G1._clusters[i] is G1.get_cluster_from_index(i))
+
     def test_iterator_for_clusters(self):
         G1 = cell.Grid()
         G1.create_clusters(2, 2, 0.5)

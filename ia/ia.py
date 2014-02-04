@@ -1142,7 +1142,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.randomizeF(Ns, P)
         self._updateW()
 
-    def _solve_finalize(self):
+    def _solve_finalize(self):  # pragma: no cover
         """Perform any post processing after the solution has been found.
         """
         # Some of the found precoders may be a singular matrix. In that
@@ -1865,7 +1865,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         -------
         Uk : 2D numpy array.
             The receive filver for all streams of user k.
-
         """
         num_streams = Bkl_all_l.size
         num_Rx = Bkl_all_l[0].shape[0]
@@ -2043,26 +2042,26 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         for k in range(self.K):
             self._W[k] = self._calc_Uk(k)
 
-    def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
-        """
-        Calculates the value of Vi for the given parameters.
+    # def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
+    #     """
+    #     Calculates the value of Vi for the given parameters.
 
-        This method is called inside _calc_Vi.
+    #     This method is called inside _calc_Vi.
 
-        Parameters
-        ----------
-        sum_term : numpy array
-            The sumation term in the formula to calculate the precoder.
-        mu_i : float
-            The value of the lagrange multiplier
-        H_herm_U : numpy array
-            The value of :math:`H_ii^H U_i`
-        """
-        N = sum_term.shape[0]
-        Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
-                    H_herm_U)
+    #     Parameters
+    #     ----------
+    #     sum_term : numpy array
+    #         The sumation term in the formula to calculate the precoder.
+    #     mu_i : float
+    #         The value of the lagrange multiplier
+    #     H_herm_U : numpy array
+    #         The value of :math:`H_ii^H U_i`
+    #     """
+    #     N = sum_term.shape[0]
+    #     Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
+    #                 H_herm_U)
 
-        return Vi
+    #     return Vi
 
     def _calc_Vi_for_a_given_mu2(self, inv_sum_term, mu_i, H_herm_U):
         """
