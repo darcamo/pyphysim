@@ -17,8 +17,8 @@ of the test coverage in PyPhysim (see :doc:`writing_unittests` for details
 about writting unittests for PyPhysim).
 
 
-Modules in PyPhysim
--------------------
+Packages in PyPhysim
+--------------------
 
 A summary of the available packages in PyPhysim is shown below.
 
@@ -27,10 +27,9 @@ A summary of the available packages in PyPhysim is shown below.
 
    cell
    comm
-   comp
    ia
    MATLAB
+   plot
    subspace
    util
-   plot
 

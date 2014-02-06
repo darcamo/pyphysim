@@ -38,7 +38,7 @@ except ImportError:  # pragma: no cover
 
 from util import misc, progressbar, simulations, conversion
 from util.simulations import Result, SimulationParameters, SimulationResults, SimulationRunner
-from util.simulations import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
+from util.configobjvalidation import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
 
 
 # This function is used in test methods for the SimulationRunner class
@@ -384,13 +384,13 @@ class ConversionTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx configobjvalidation Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class SimulationsModuleFunctionsTestCase(unittest.TestCase):
-    def test_get_common_parser(self):
-        p = simulations.get_common_parser()
-        p2 = simulations.get_common_parser()
-        self.assertTrue(p is p2)
+# TODO: finish implementation
+class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
 
     def test_parse_range_expr(self):
         try:
@@ -526,6 +526,16 @@ class SimulationsModuleFunctionsTestCase(unittest.TestCase):
                                                       min=0,
                                                       max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx simulations Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SimulationsModuleFunctionsTestCase(unittest.TestCase):
+    def test_get_common_parser(self):
+        p = simulations.get_common_parser()
+        p2 = simulations.get_common_parser()
+        self.assertTrue(p is p2)
 
 
 class SimulationParametersTestCase(unittest.TestCase):
