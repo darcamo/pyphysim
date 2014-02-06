@@ -1,0 +1,16 @@
+[Scenario]
+        SNR = [-10.  -5.   0.   5.  10.  15.  20.  25.  30.]
+        M = 4
+        modulator = PSK
+        NSymbs = 100
+        K = 3
+        Nr = 4
+        Nt = 4
+        Ns = 2
+[IA Algorithm]
+        max_iterations = [60]
+[General]
+        max_bit_errors = 3000
+        unpacked_parameters = SNR, max_iterations
+        rep_max = 500
+        
