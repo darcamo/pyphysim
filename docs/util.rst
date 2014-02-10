@@ -13,5 +13,3 @@ Modules in the util package
 
    conversion
    misc
-   progressbar
-   simulations

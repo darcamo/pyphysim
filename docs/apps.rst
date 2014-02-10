@@ -14,7 +14,7 @@ Applications in PyPhysim
    simulate_alamouti
    simulate_bpsk
    simulate_comp
-   simulate_ia_alt_min
+   simulate_ia
    simulate_psk
    simulate_qam
    simulate_qam_with_traits
