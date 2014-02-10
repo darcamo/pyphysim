@@ -23,7 +23,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
-from util.simulations import SimulationResults, Result, SimulationRunner, SimulationParameters
+from simulations.core import SimulationResults, Result, SimulationRunner, SimulationParameters
 from util import misc
 from util.conversion import dB2Linear
 import comm.modulators as mod

@@ -13,7 +13,7 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from util.simulations import *
+from simulations.core import *
 from comm import modulators
 from util.conversion import dB2Linear
 from util import misc

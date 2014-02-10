@@ -25,8 +25,8 @@ sys.path.append(parent_dir)
 import numpy as np
 from scipy.linalg import block_diag
 
-from util.simulations import SimulationRunner, SimulationResults, Result, SimulationParameters
-from util.simulationhelpers import simulate_do_what_i_mean
+from simulations.core import SimulationRunner, SimulationResults, Result, SimulationParameters
+from simulations.simulationhelpers import simulate_do_what_i_mean
 from util.conversion import dB2Linear, dBm2Linear
 from util import misc
 from cell import cell

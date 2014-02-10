@@ -15,8 +15,8 @@ sys.path.append(parent_dir)
 
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result, get_common_parser
-from util.simulationhelpers import simulate_do_what_i_mean
+from simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result, get_common_parser
+from simulations.simulationhelpers import simulate_do_what_i_mean
 from comm import modulators, channels
 from util.conversion import dB2Linear
 from util import misc

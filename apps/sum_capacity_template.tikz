@@ -1,0 +1,63 @@
+\def\maxiterations{MAXITER}  % Mude para o número máximo de iterações
+\pgfmathsetmacro{\rightaxisymax}{1.1*\maxiterations}
+\def\secondrightaxisytick{SECONDTICK}  % The first tick is at 0.
+
+\def\lefttaxisymax{YMAX}
+
+\begin{tikzpicture}[every pin/.append style={pin style}, trim axis right]
+  \begin{axis}[%
+    width=\plotwidth,   %\smallplotwidth,
+    height=\plotheight,  %\smallplotheight,
+    scale only axis,
+    xmin=-10,
+    xmax=30,
+    xtick={-10, -5, ..., 30},
+    xlabel={SNR (in dB)},
+    ymin=0,
+    ymax=\lefttaxisymax,
+    ylabel={Sum Capacity (bits/channel use)},
+    % legend style={draw=black,fill=white,legend cell align=left, at={(0.97,0.03)}, anchor=south east, font=\footnotesize},
+    legend style={draw=black,fill=white,legend cell align=left, at={(0.03,0.5)}, anchor=west, font=\footnotesize},
+    grid=both,
+    ]
+
+SUM_CAPACITY_ALL_ALGS
+  \end{axis}
+
+  \begin{axis}
+    [%
+    width=\plotwidth,   %\smallplotwidth,
+    height=\plotheight,  %\smallplotheight,
+    scale only axis,
+    xmin=-10,
+    xmax=30,
+    xtick=\empty,  % We don't need xticks, since the ther axis already put them
+    axis y line=right,
+    ymin=0,
+    ymax=\rightaxisymax,  % Max iterations * 1.1
+    ytick={0, \secondrightaxisytick, ..., \rightaxisymax},
+    ylabel={Mean Iterations},
+    %legend style={draw=black,fill=white,legend cell align=left, legend pos=south west},
+    %grid=both,
+    ]
+
+ITER_ALL_ALGS
+
+\addplot[black]
+plot[]
+coordinates{(-10.0, \maxiterations)
+(-5.0, \maxiterations.0)
+(0.0, \maxiterations.0)
+(5.0, \maxiterations.0)
+(10.0, \maxiterations.0)
+(15.0, \maxiterations)
+(20.0, \maxiterations)
+(25.0, \maxiterations)
+(30.0, \maxiterations)};
+
+% \node[coordinate,pin=80:{Maximum Number of iterations: \maxiterations}]
+% at (axis cs:0.0,\maxiterations) {};
+
+  \end{axis}
+
+\end{tikzpicture}

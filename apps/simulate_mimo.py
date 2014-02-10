@@ -15,8 +15,8 @@ sys.path.append(parent_dir)
 
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result
-from comm import modulators, channels, mimo
+from simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result
+from comm import modulators, mimo
 from util.conversion import dB2Linear
 from util import misc
 import numpy as np
