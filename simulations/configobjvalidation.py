@@ -56,11 +56,26 @@ def _real_numpy_array_check(value, min=None, max=None):
     min:max or min:step:max, or even a list containing numbers and range
     expressions.
 
+    Parameters
+    ----------
+    value : str
+        The string to be converted. This can be either a single number, a
+        range expression in the form of min:max or min:step:max, or even a
+        list containing numbers and range expressions.
+    min : int
+        The minimum allowed value. If the converted value is (or have)
+        lower than `min` then the VdtValueTooSmallError exception will be
+        raised.
+    max : int
+        The maximum allowed value. If the converted value is (or have)
+        greater than `man` then the VdtValueTooSmallError exception will be
+        raised.
+
     Notes
     -----
     You can either separate the values with commas or spaces (any comma
     will have the same effect as a space). However, if you separate with
-    spaces the values should be brackets, while if you separate with
+    spaces the values should be in brackets, while if you separate with
     commands there should be no brackets.
     .. code::
         SNR = 0,5,10:20
@@ -82,34 +97,34 @@ def _real_numpy_array_check(value, min=None, max=None):
         # simple apply _real_numpy_array_check on each element in the list
         # to do the work and stack horizontally all the results.
         value = [_real_numpy_array_check(a, min, max) for a in value]
-        value = np.hstack(value)
+        out = np.hstack(value)
 
     else:
         # It its not a list, it can be either a single number of a 'range
         # expression' that can be parsed with _parse_float_range_expr
         try:
             value = validate.is_float(value)
-            value = np.array([value])
+            out = np.array([value])
         except validate.VdtTypeError:
-            value = _parse_float_range_expr(value)
+            out = _parse_float_range_expr(value)
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
     if min is not None:
         # maybe "min" was passed as a string and thus we need to convert it
         # to a float
         min = float(min)
-        if value.min() < min:
-            raise validate.VdtValueTooSmallError(value.min())
+        if out.min() < min:
+            raise validate.VdtValueTooSmallError(out.min())
 
     if max is not None:
         # maybe "min" was passed as a string and thus we need to convert it
         # to a float
         max = float(max)
-        if value.max() > max:
-            raise validate.VdtValueTooBigError(value.max())
+        if out.max() > max:
+            raise validate.VdtValueTooBigError(out.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    return value
+    return out
 
 
 def _integer_numpy_array_check(value, min=None, max=None):
@@ -146,31 +161,31 @@ def _integer_numpy_array_check(value, min=None, max=None):
         # apply _integer_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
         value = [_integer_numpy_array_check(a, min, max) for a in value]
-        value = np.hstack(value)
+        out = np.hstack(value)
 
     else:
         # It its not a list, it can be either a single number of a 'range
         # expression' that can be parsed with _parse_int_range_expr
         try:
             value = validate.is_integer(value)
-            value = np.array([value])
+            out = np.array([value])
         except validate.VdtTypeError:
-            value = _parse_int_range_expr(value)
+            out = _parse_int_range_expr(value)
 
     # xxxxxxxxxx Validate if minimum and maximum allowed values xxxxxxxxxxx
     if min is not None:
         # maybe "min" was passed as a string and thus we need to convert it
         # to a integer
         min = int(min)
-        if value.min() < min:
-            raise validate.VdtValueTooSmallError(value.min())
+        if out.min() < min:
+            raise validate.VdtValueTooSmallError(out.min())
 
     if max is not None:
         # maybe "min" was passed as a string and thus we need to convert it
         # to a integer
         max = int(max)
-        if value.max() > max:
-            raise validate.VdtValueTooBigError(value.max())
+        if out.max() > max:
+            raise validate.VdtValueTooBigError(out.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    return value
+    return out

@@ -136,6 +136,16 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         except ImportError as _:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
+        # Test when the input is a list of strings (with the numbers)
+        list_of_strings = ['0', '6', '17']
+        parsed_array = _real_numpy_array_check(list_of_strings, min=0, max=30)
+        expected_parsed_array = np.array([0., 6., 17.])
+        self.assertTrue(parsed_array.dtype is np.dtype('float'))
+        np.testing.assert_array_almost_equal(parsed_array,
+                                             expected_parsed_array)
+
+        # Test when the input is a string representation of a list with
+        # numbers and range expressions.
         array_string = "[0 5 10:15]"
         parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
@@ -171,6 +181,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
                                                    min=4,
                                                    max=30)
 
+        # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         with self.assertRaises(validate.VdtValueTooBigError):
             parsed_array = _real_numpy_array_check(array_string,
                                                    min=0,
@@ -491,6 +502,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         try:
             import configobj
             import validate
+            del configobj
+            del validate
         except ImportError:  # pragma: no cover
             self.skipTest("This configobj and validate modules must be installed.")
 
@@ -1098,7 +1111,8 @@ class SimulationResultsTestCase(unittest.TestCase):
 
         try:
             import h5py
-        except ImportError as e:  # pragma: no cover
+            del h5py
+        except ImportError as _:  # pragma: no cover
             self.skipTest("The h5py module is not installed")
 
         # Set sime simulation parameters
@@ -1463,9 +1477,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
         except IOError:
             self.skipTest("The IPython engines were not found.")
 
-        dview.execute('import util_package_test', block=True)
-
         from tests.simulations_package_test import _DummyRunner
+        dview.execute('from tests import simulations_package_test', block=True)
+
         runner = _DummyRunner()
         runner.progressbar_message = 'bla'
         #runner.update_progress_function_style = 'text1'
@@ -1623,8 +1637,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
 # file and return its content as a string.
 def _get_progress_string_from_file(filename):
     try:
-        fid = open(filename, 'r', newlines='\n')
-    except Exception as _:
+    #     fid = open(filename, 'r', newlines='\n')
+    # except Exception as _:
         fid = open(filename, 'r')
     finally:
         content_string = fid.read()
