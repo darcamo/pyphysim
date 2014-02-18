@@ -11,8 +11,6 @@ PACKAGENAME_package_test should simple run the doctests for each module in
 the PACKAGENAME package. Then you should create TestCases for each class in
 each module.
 
-See http://infinitemonkeycorps.net/docs/pph/#unittesting
-
 * Running the tests
 
 Each package test script should have in its __main__ the line below

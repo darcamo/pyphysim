@@ -8,7 +8,7 @@
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from setuptools import find_packages
-from cx_Freeze import setup, Executable
+from setuptools import setup
 
 
 import os
@@ -29,53 +29,6 @@ misc_c = Extension(name="misc_c", sources=["util/misc_c.pyx"],
 # of writing the name of the packages directly guarantees that we won't
 # forget a package which is added in the future.
 packages = find_packages(where='.', exclude=[])
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxx General Configuration for cx_freeze xxxxxxxxxxxxxxxxxxxxxxxxxx
-# cx_freeze allow us to create executables (already containing the required
-# libraries) that we can run on other machines.
-#
-# Extra files to be included in the same directory where the executable
-# will be created
-includefiles = ['README']
-# Modules we don't want to include (note that cx_freeze has a bug and is
-# not working with matplotlib right now)
-excludes = ['matplotlib',
-            'Tkinter',
-            'wx',
-            'traits',
-            'traitsui',
-            'kiva',
-            'chaco',
-            'PIL',
-            'PyQt4',
-            'enable',
-            'apport',
-            'email',
-            'distutils']
-# Path where cx_freeze will look for the modules
-path = []  # Note that if you put something here then the default sys.path
-           # won't be used. Therefore, uncomment the line below to also
-           # include sys.path path.extend(sys.path)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxx Target executables for cx_freeze xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# There will be one executable for each app in the project.
-simulate_comp = Executable(
-    #script="apps/hello.py",
-    script="apps/simulate_comp.py",
-    initScript="Console",
-    #base=None,
-    #targetDir="build/exe",
-    #targetName="helloexecutable.exe",
-    compress=True,
-    copyDependentFiles=True,
-    appendScriptToExe=False,
-    appendScriptToLibrary=False,
-    icon=None,
-    includes="glib")
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -117,34 +70,16 @@ setup(
     ],
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #requires=["setuptools", "numpy", "nose"],
-
     # Scripts for the regular build
     scripts=["bin/run_python_coverage.sh",
-             "bin/py-physim"],
+             "bin/py-physim",
+             "count_lines_of_code.sh"],
 
     #py_modules=['modulators', 'simulations'],
     packages=packages,
-    package_data={'': ["README", "Makefile", "LICENSE.txt"],
-                  'tests': ["README"],
-                  'util': ["README"]},
-    #data_files=['py-physim.org'],
-
-    #windows=[{"script": "gui.py"}],
-
-    setup_requires=['nose>=1.0'],
-
-    # xxxxxxxxxx CX_FREEZE stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    options={
-        'build_exe': {
-            'excludes': excludes,
-            #'packages': ['numpy.core._internal', 'numpy'],
-            'packages': packages,
-            'include_files': includefiles,
-            'path': path,
-        }},
-    executables=[simulate_comp],
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    package_data={'': ["README", "LICENSE.txt"],
+                  'tests': ["README"]},
+    #setup_requires=['nose>=1.0'],
 
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ext_modules=[misc_c],
