@@ -36,14 +36,14 @@ all: regular_diagrams simple_diagrams
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Regular version diagrams for all targets
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-regular_diagrams: classes_cell.pdf classes_cell.pdf classes_comp.pdf classes_ia.pdf classes_MATLAB.pdf classes_plot.pdf classes_subspace.pdf classes_util.pdf
+regular_diagrams: classes_cell.pdf classes_comm.pdf classes_ia.pdf classes_MATLAB.pdf classes_plot.pdf classes_simulations.pdf classes_subspace.pdf classes_util.pdf
 	@echo All regular diagrams generated
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Simple version diagrams for all targets
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-simple_diagrams: classes_simple_cell.pdf classes_simple_comm.pdf classes_simple_comp.pdf classes_simple_ia.pdf classes_simple_MATLAB.pdf classes_simple_plot.pdf classes_simple_subspace.pdf classes_simple_util.pdf
+simple_diagrams: classes_simple_cell.pdf classes_simple_comm.pdf classes_simple_ia.pdf classes_simple_MATLAB.pdf classes_simple_plot.pdf classes_simple_simulations.pdf classes_simple_subspace.pdf classes_simple_util.pdf
 	@echo All simple diagrams generated
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -51,18 +51,18 @@ simple_diagrams: classes_simple_cell.pdf classes_simple_comm.pdf classes_simple_
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # General Rule to generate the regular diagrams
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-classes_%.pdf: ../%/*.py
+classes_%.pdf: ../pyphysim/%/*.py
 	@echo Generating regular diagrams for the $(subst .pdf,,$(subst classes_,,$@)) package
-	@$(COMMON_COMPILE_PART) ../$(subst .pdf,,$(subst classes_,,$@)) -p $(subst .pdf,,$(subst classes_,,$@)) > /dev/null
+	@$(COMMON_COMPILE_PART) ../pyphysim/$(subst .pdf,,$(subst classes_,,$@)) -p $(subst .pdf,,$(subst classes_,,$@)) > /dev/null
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # General Rule to generate the simple diagrams
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-classes_simple_%.pdf: ../%/*.py
+classes_simple_%.pdf: ../pyphysim/%/*.py
 	@echo Generating simple diagrams for the $(subst .pdf,,$(subst classes_simple_,,$@)) package
-	@$(COMMON_SIMPLE_COMPILE_PART) ../$(subst .pdf,,$(subst classes_simple_,,$@)) -p simple_$(subst .pdf,,$(subst classes_simple_,,$@)) > /dev/null
+	@$(COMMON_SIMPLE_COMPILE_PART) ../pyphysim/$(subst .pdf,,$(subst classes_simple_,,$@)) -p simple_$(subst .pdf,,$(subst classes_simple_,,$@)) > /dev/null
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
