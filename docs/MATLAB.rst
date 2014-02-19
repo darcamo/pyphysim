@@ -1,7 +1,7 @@
 MATLAB Package
 ==============
 
-.. automodule:: MATLAB
+.. automodule:: pyphysim.MATLAB
     :members:
     :undoc-members:
     :show-inheritance:
@@ -9,7 +9,7 @@ MATLAB Package
 Functions in the :mod:`python2MATLAB` Module
 --------------------------------------------
 
-.. automodule:: MATLAB.python2MATLAB
+.. automodule:: pyphysim.MATLAB.python2MATLAB
     :members:
     :undoc-members:
     :show-inheritance:

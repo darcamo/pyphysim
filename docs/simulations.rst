@@ -1,7 +1,7 @@
 simulations Package
 ===================
 
-.. automodule:: simulations
+.. automodule:: pyphysim.simulations
     :members:
 
 Modules in the simulations package
@@ -11,6 +11,7 @@ Modules in the simulations package
    :toctree: autosummary_folder/util
    :template: module_template.txt
 
+   core
    configobjvalidation
    parameters
    progressbar

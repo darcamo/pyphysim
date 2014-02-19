@@ -1,7 +1,7 @@
 ia Package
 ==========
 
-.. automodule:: ia
+.. automodule:: pyphysim.ia
    :members:
 
 Modules in the ia package
@@ -11,4 +11,4 @@ Modules in the ia package
    :toctree: autosummary_folder/ia
    :template: module_template.txt
 
-   ia.ia
+   ia

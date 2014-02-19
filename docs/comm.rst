@@ -1,7 +1,7 @@
 comm Package
 ============
 
-.. automodule:: comm
+.. automodule:: pyphysim.comm
     :members:
 
 Modules in the comm package

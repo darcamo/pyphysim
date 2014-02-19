@@ -1,7 +1,7 @@
 cell Package
 ============
 
-.. automodule:: cell
+.. automodule:: pyphysim.cell
     :members:
 
 Modules in the cell package

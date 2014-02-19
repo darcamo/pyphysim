@@ -1,7 +1,7 @@
 subspace Package
 ================
 
-.. automodule:: subspace
+.. automodule:: pyphysim.subspace
     :members:
 
 Modules in the subspace package

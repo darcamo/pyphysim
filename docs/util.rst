@@ -1,7 +1,7 @@
 util Package
 ============
 
-.. automodule:: util
+.. automodule:: pyphysim.util
     :members:
 
 Modules in the util package

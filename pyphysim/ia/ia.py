@@ -15,7 +15,7 @@ the noise variance.
 __revision__ = "$Revision$"
 
 import numpy as np
-from itertools import combinations, permutations
+import itertools
 
 from ..util.misc import peig, leig, randn_c, update_inv_sum_diag, get_principal_component_matrix
 from ..comm import channels
@@ -878,7 +878,7 @@ class ClosedFormIASolver(IASolverBaseClass):
 
         all_subsets = []
 
-        for comb_index in combinations(range(num_eigenvectors), Ns):
+        for comb_index in itertools.combinations(range(num_eigenvectors), Ns):
             all_subsets.append(eigenvectors[:, comb_index])
 
         return all_subsets
@@ -1385,7 +1385,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # This will get all combinations of (k,l) without repetition. This
         # is equivalent to two nested for loops with an if statement to
         # only execute the code only when `k` is different of `l`.
-        all_kl_indexes = permutations(range(self.K), 2)
+        all_kl_indexes = itertools.permutations(range(self.K), 2)
 
         for kl in all_kl_indexes:
             (k, l) = kl
@@ -1499,7 +1499,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # This will get all combinations of (l,k) without repetition. This
         # is equivalent to two nested for loops with an if statement to
         # only execute the code only when `l` is different of `k`
-        all_lk_indexes = permutations(range(self.K), 2)
+        all_lk_indexes = itertools.permutations(range(self.K), 2)
 
         # This code will store in newF[l] the equivalent of
         # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)H_{k,l}$

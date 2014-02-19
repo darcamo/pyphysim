@@ -24,6 +24,7 @@ The complete list of articles in the PyPhysim documentation is shown below.
 
    description
    simulators
+   monte_carlo
    writing_documentation
    writing_unittests
    speedup

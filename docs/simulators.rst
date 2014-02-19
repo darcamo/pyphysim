@@ -18,10 +18,10 @@ A few other classes in the simulations module complete the framework by
 handling simulation parameters and simulation results. The classes in the
 framwork consist of
 
-- :class:`.SimulationRunner`
-- :class:`.SimulationParameters`
-- :class:`.SimulationResults`
-- :class:`.Result`
+- :class:`.simulations.SimulationRunner`
+- :class:`.simulations.SimulationParameters`
+- :class:`.simulations.SimulationResults`
+- :class:`.simulations.Result`
 
 For a description of how to implement Monte Carlo simulations using the
 clases defined in the :mod:`.simulations` module see
