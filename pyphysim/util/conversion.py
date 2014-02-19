@@ -8,7 +8,7 @@ linear to dB, binary to gray code, as well as the inverse of them.
 __revision__ = "$Revision$"
 
 import numpy as np
-from util.misc import xor
+from .misc import xor
 
 
 def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):

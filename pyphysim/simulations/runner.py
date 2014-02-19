@@ -10,12 +10,12 @@ from time import time
 import sys
 import itertools
 
-from simulations.simulationhelpers import get_common_parser
-from simulations.parameters import SimulationParameters
-from simulations.results import SimulationResults, Result
+from .simulationhelpers import get_common_parser
+from .parameters import SimulationParameters
+from .results import SimulationResults, Result
 
-from util.misc import replace_dict_values, pretty_time
-from simulations.progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer
+from ..util.misc import replace_dict_values, pretty_time
+from .progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -20,10 +20,10 @@ import numpy as np
 import collections
 from scipy.linalg import block_diag
 
-from util.misc import least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
-from comm import waterfilling
-from util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
-from subspace.projections import calcProjectionMatrix
+from . import waterfilling
+from ..util.misc import least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
+from ..util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
+from ..subspace.projections import calcProjectionMatrix
 
 __all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
 

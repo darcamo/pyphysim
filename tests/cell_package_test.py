@@ -21,7 +21,7 @@ import unittest
 import doctest
 import numpy as np
 
-from cell import shapes, cell
+from pyphysim.cell import shapes, cell
 
 
 # def positivy_angle_rad(angle):

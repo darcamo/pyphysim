@@ -21,7 +21,7 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
-from configobjvalidation import _real_numpy_array_check, _integer_numpy_array_check
+from .configobjvalidation import _real_numpy_array_check, _integer_numpy_array_check
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx

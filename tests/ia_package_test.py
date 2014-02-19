@@ -21,12 +21,12 @@ import doctest
 import numpy as np
 from numpy.linalg import norm
 
-from comm import channels
-import ia  # Import the package ia
-from ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
+from pyphysim.comm import channels
+import pyphysim.ia  # Import the package ia
+from pyphysim.ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
     MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
     IterativeIASolverBaseClass
-from util.misc import peig, leig
+from pyphysim.util.misc import peig, leig
 
 
 # UPDATE THIS CLASS if another module is added to the ia package
@@ -36,7 +36,7 @@ class IaDoctestsTestCase(unittest.TestCase):
 
     def test_ia(self):
         """Run doctests in the ia module."""
-        doctest.testmod(ia)
+        doctest.testmod(pyphysim.ia)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

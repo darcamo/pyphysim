@@ -40,6 +40,8 @@ except ImportError:  # pragma: no cover
     # ProgressbarZMQClient classes require it
     pass
 
+from ..util.misc import pretty_time
+
 __all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2',
            'ProgressbarText3', 'ProgressbarMultiProcessServer',
            'ProgressbarZMQServer', 'center_message']
@@ -213,8 +215,6 @@ class ProgressbarTextBase(object):
 
     def _get_elapsed_time(self):
         """Get method for the elapsed_time property."""
-        from util.misc import pretty_time
-
         elapsed_time = 0.0
         if self._initialized is True:
             if self._finalized is False:

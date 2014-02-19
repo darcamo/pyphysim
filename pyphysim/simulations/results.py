@@ -8,8 +8,8 @@ __revision__ = "$Revision$"
 
 import numpy as np
 
-from parameters import SimulationParameters
-from util.misc import calc_confidence_interval, equal_dicts
+from .parameters import SimulationParameters
+from ..util.misc import calc_confidence_interval, equal_dicts
 
 try:
     import cPickle as pickle

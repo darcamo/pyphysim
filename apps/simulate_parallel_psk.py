@@ -17,11 +17,12 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from simulations.core import *
-from comm import modulators
-from util.conversion import dB2Linear
-from util import misc
 import numpy as np
+
+from pyphysim.simulations.core import *
+from pyphysim.comm import modulators
+from pyphysim.util.conversion import dB2Linear
+from pyphysim.util import misc
 
 
 class VerySimplePskSimulationRunner(SimulationRunner):

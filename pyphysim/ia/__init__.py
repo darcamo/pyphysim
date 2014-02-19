@@ -2,5 +2,3 @@
 # -*- coding: utf-8 -*-
 
 """Package with Interference Alignment algorithms."""
-
-# import ia

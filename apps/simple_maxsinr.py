@@ -14,11 +14,11 @@ sys.path.append(parent_dir)
 
 import numpy as np
 
-from ia import ia
-from comm import modulators, channels
-from util.conversion import dB2Linear
-from util import misc
-from util.progressbar import ProgressbarText
+from pyphysim.ia import ia
+from pyphysim.comm import modulators, channels
+from pyphysim.util.conversion import dB2Linear
+from pyphysim.util import misc
+from pyphysim.simulations.progressbar import ProgressbarText
 
 
 if __name__ == '__main__':

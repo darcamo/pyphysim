@@ -10,8 +10,8 @@ import os
 parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 
-from ia import ia
-from comm.channels import MultiUserChannelMatrix
+from pyphysim.ia import ia
+from pyphysim.comm.channels import MultiUserChannelMatrix
 
 
 if __name__ == '__main__':

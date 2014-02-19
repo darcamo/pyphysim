@@ -16,7 +16,7 @@ sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
-from comm import waterfilling
+from pyphysim.comm import waterfilling
 
 
 def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):

@@ -17,9 +17,10 @@ calc_path_loss methods to actually calculate the path loss.
 
 __revision__ = "$Revision$"
 
-from util import conversion
 import numpy as np
 from collections import Iterable
+
+from ..util import conversion
 
 __all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1']
 

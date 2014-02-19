@@ -25,13 +25,13 @@ sys.path.append(parent_dir)
 import numpy as np
 from scipy.linalg import block_diag
 
-from simulations.core import SimulationRunner, SimulationResults, Result, SimulationParameters
-from simulations.simulationhelpers import simulate_do_what_i_mean
-from util.conversion import dB2Linear, dBm2Linear
-from util import misc
-from cell import cell
-from comm import pathloss, channels, modulators
-from comm.blockdiagonalization import EnhancedBD, WhiteningBD
+from pyphysim.simulations.core import SimulationRunner, SimulationResults, Result, SimulationParameters
+from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
+from pyphysim.util.conversion import dB2Linear, dBm2Linear
+from pyphysim.util import misc
+from pyphysim.cell import cell
+from pyphysim.comm import pathloss, channels, modulators
+from pyphysim.comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
 class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902

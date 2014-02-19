@@ -14,7 +14,7 @@ sys.path.append(parent_dir)
 from configobj import ConfigObj, flatten_errors
 from validate import Validator
 
-from simulations.core import _real_numpy_array_check
+from pyphysim.simulations.configobjvalidation import _real_numpy_array_check
 
 
 if __name__ == '__main__':

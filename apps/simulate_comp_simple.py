@@ -14,9 +14,10 @@ sys.path.append(parent_dir)
 import numpy as np
 from time import time
 
-from util import conversion, misc, progressbar
-from cell import cell
-from comm import pathloss, channels, modulators, blockdiagonalization
+from pyphysim.util import conversion, misc
+from pyphysim.simulations import progressbar
+from pyphysim.cell import cell
+from pyphysim.comm import pathloss, channels, modulators, blockdiagonalization
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

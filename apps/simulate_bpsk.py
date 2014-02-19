@@ -12,9 +12,10 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from simulate_psk import VerySimplePskSimulationRunner
-from comm import modulators
 import numpy as np
+
+from simulate_psk import VerySimplePskSimulationRunner
+from pyphysim.comm import modulators
 
 
 class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):

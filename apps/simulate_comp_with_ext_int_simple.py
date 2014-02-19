@@ -15,10 +15,11 @@ import numpy as np
 from scipy import linalg as sp_linalg
 from time import time
 
-from util import conversion, misc, progressbar
-from cell import cell
-from comp import comp
-from comm import pathloss, channels, modulators
+from pyphysim.util import conversion, misc
+from pyphysim.simulations import progressbar
+from pyphysim.cell import cell
+from pyphysim.comm import blockdiagonalization
+from pyphysim.comm import pathloss, channels, modulators
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -117,7 +118,7 @@ for rep in range(rep_max):
     multiuser_channel.set_pathloss(pathloss, pathlossInt)
 
     # Create the comp_obj
-    comp_obj = comp.EnhancedBD(num_cells, transmit_power, noise_var, pe)
+    comp_obj = blockdiagonalization.EnhancedBD(num_cells, transmit_power, noise_var, pe)
     #comp_obj.set_ext_int_handling_metric('capacity')
     comp_obj.set_ext_int_handling_metric('effective_throughput',
                                          {'modulator': modulator,

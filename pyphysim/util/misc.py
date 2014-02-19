@@ -943,7 +943,7 @@ try:
     # If the misc_c.so extension was compiled then any method defined there
     # will replace the corresponding method defined here.
     # pylint: disable=E0611,F0401
-    from c_extensions.misc_c import *
+    from ..c_extensions.misc_c import *
 except ImportError:  # pragma: no cover
     pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

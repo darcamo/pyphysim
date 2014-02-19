@@ -15,9 +15,10 @@ the noise variance.
 __revision__ = "$Revision$"
 
 import numpy as np
-import itertools
+from itertools import combinations, permutations
 
-from util.misc import peig, leig, randn_c, update_inv_sum_diag, get_principal_component_matrix
+from ..util.misc import peig, leig, randn_c, update_inv_sum_diag, get_principal_component_matrix
+from ..comm import channels
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver']
@@ -66,7 +67,6 @@ class IASolverBaseClass(object):
         multiUserChannel : A MultiUserChannelMatrix object.
             The multiuser channel.
         """
-        from comm import channels
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
         if not isinstance(multiUserChannel, channels.MultiUserChannelMatrix):
             raise ValueError("multiUserChannel must be an object of the comm.channels.MultiUserChannelMatrix class (or a subclass).")
@@ -872,7 +872,6 @@ class ClosedFormIASolver(IASolverBaseClass):
             All possible subsets (with size Ns) of the eigenvectors of the
             matrix E
         """
-        from itertools import combinations
         E = self._calc_E()
         eigenvectors = np.linalg.eig(E)[1]
         num_eigenvectors = eigenvectors.shape[1]
@@ -1386,7 +1385,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # This will get all combinations of (k,l) without repetition. This
         # is equivalent to two nested for loops with an if statement to
         # only execute the code only when `k` is different of `l`.
-        all_kl_indexes = itertools.permutations(range(self.K), 2)
+        all_kl_indexes = permutations(range(self.K), 2)
 
         for kl in all_kl_indexes:
             (k, l) = kl
@@ -1500,7 +1499,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # This will get all combinations of (l,k) without repetition. This
         # is equivalent to two nested for loops with an if statement to
         # only execute the code only when `l` is different of `k`
-        all_lk_indexes = itertools.permutations(range(self.K), 2)
+        all_lk_indexes = permutations(range(self.K), 2)
 
         # This code will store in newF[l] the equivalent of
         # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)H_{k,l}$

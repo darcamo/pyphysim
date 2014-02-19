@@ -20,7 +20,7 @@ import unittest
 import doctest
 import numpy as np
 
-from MATLAB import python2MATLAB
+from pyphysim.MATLAB import python2MATLAB
 
 
 class MATLABDoctestsTestCase(unittest.TestCase):

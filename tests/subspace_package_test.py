@@ -20,7 +20,7 @@ import unittest
 import doctest
 import numpy as np
 
-from subspace import metrics, projections
+from pyphysim.subspace import metrics, projections
 
 
 class SubspaceDoctestsTestCase(unittest.TestCase):

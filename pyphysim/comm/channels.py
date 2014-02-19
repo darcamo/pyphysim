@@ -24,8 +24,8 @@ from collections import Iterable
 from numbers import Number
 import numpy as np
 from scipy.linalg import block_diag
-from util.conversion import single_matrix_to_matrix_of_matrices
-from util.misc import randn_c_RS
+from ..util.conversion import single_matrix_to_matrix_of_matrices
+from ..util.misc import randn_c_RS
 
 __all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt', 'JakesSampleGenerator', 'generate_jakes_samples']
 

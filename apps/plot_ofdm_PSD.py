@@ -14,7 +14,8 @@ import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
 
-import comm.ofdm
+from pyphysim import comm
+import pyphysim.comm.ofdm
 
 
 if __name__ == '__main__':

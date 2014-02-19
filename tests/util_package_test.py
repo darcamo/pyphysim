@@ -23,7 +23,7 @@ import unittest
 import doctest
 import numpy as np
 
-from util import misc, conversion
+from pyphysim.util import misc, conversion
 
 
 class UtilDoctestsTestCase(unittest.TestCase):

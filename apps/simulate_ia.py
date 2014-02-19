@@ -15,14 +15,15 @@ sys.path.append(parent_dir)
 
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result, get_common_parser
-from simulations.simulationhelpers import simulate_do_what_i_mean
-from comm import modulators, channels
-from util.conversion import dB2Linear
-from util import misc
-from ia import ia
 import numpy as np
 from pprint import pprint
+
+from pyphysim.simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result, get_common_parser
+from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
+from pyphysim.comm import modulators, channels
+from pyphysim.util.conversion import dB2Linear
+from pyphysim.util import misc
+from pyphysim.ia import ia
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -490,7 +491,7 @@ class MMSESimulationRunner(IASimulationRunner):
 ## xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     from time import time
-    from util.misc import pretty_time
+    from pyphysim.util.misc import pretty_time
     from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
 
     tic = time()

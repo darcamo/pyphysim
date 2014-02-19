@@ -14,11 +14,11 @@ from setuptools import setup
 import os
 
 # xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from distutils.extension import Extension
-from Cython.Distutils import build_ext
+#from distutils.extension import Extension
+from Cython.Distutils import build_ext, Extension
 import numpy
 
-misc_c = Extension(name="misc_c", sources=["util/misc_c.pyx"],
+misc_c = Extension(name="misc_c", sources=["pyphysim/util/misc_c.pyx"],
                    include_dirs=[numpy.get_include()])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -28,7 +28,8 @@ misc_c = Extension(name="misc_c", sources=["util/misc_c.pyx"],
 # within directory (except the excluded ones). Using find_packages instead
 # of writing the name of the packages directly guarantees that we won't
 # forget a package which is added in the future.
-packages = find_packages(where='.', exclude=[])
+#packages = find_packages(where='pyphysim', exclude=[])
+packages = find_packages(where='.', exclude=['tests', 'apps'])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -73,9 +74,8 @@ setup(
     # Scripts for the regular build
     scripts=["bin/run_python_coverage.sh",
              "bin/py-physim",
-             "count_lines_of_code.sh"],
+             "bin/count_lines_of_code.sh"],
 
-    #py_modules=['modulators', 'simulations'],
     packages=packages,
     package_data={'': ["README", "LICENSE.txt"],
                   'tests': ["README"]},

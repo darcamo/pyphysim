@@ -8,7 +8,7 @@ __revision__ = "$Revision$"
 import numpy as np
 import math
 
-from subspace.projections import calcProjectionMatrix
+from .projections import calcProjectionMatrix
 
 
 # TODO: I think calcPrincipalAngles is not correct when matrix1 e matrix2

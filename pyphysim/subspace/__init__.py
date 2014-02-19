@@ -4,6 +4,3 @@
 """Subspace related stuff.
 
 This includes projections and metrics for subspaces."""
-
-# import metrics
-# import projections

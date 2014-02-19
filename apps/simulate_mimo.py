@@ -15,12 +15,13 @@ sys.path.append(parent_dir)
 
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result
-from comm import modulators, mimo
-from util.conversion import dB2Linear
-from util import misc
 import numpy as np
 from pprint import pprint
+
+from pyphysim.simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result
+from pyphysim.comm import modulators, mimo
+from pyphysim.util.conversion import dB2Linear
+from pyphysim.util import misc
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # TODO: Implement-me

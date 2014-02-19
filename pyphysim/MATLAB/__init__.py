@@ -8,5 +8,3 @@ vice-verse. That way you can print a numpy array, copy the output and past
 in MATLAB for further analysis.
 
 """
-
-#import python2MATLAB

@@ -20,16 +20,19 @@ import unittest
 import doctest
 import numpy as np
 from scipy.linalg import block_diag
+from matplotlib import pylab
+from matplotlib import pyplot as plt
 
-from comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, \
+from pyphysim.comm.ofdm import OFDM
+from pyphysim.comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, \
     waterfilling, channels
-from ia.ia import ClosedFormIASolver
-from util.misc import randn_c, least_right_singular_vectors, \
+from pyphysim.ia.ia import ClosedFormIASolver
+from pyphysim.util.misc import randn_c, least_right_singular_vectors, \
     calc_shannon_sum_capacity, calc_whitening_matrix
-from util.conversion import dB2Linear, linear2dB, \
+from pyphysim.util.conversion import dB2Linear, linear2dB, \
     single_matrix_to_matrix_of_matrices
-from subspace.projections import calcProjectionMatrix
-
+from pyphysim.subspace.projections import calcProjectionMatrix
+from pyphysim.comm.mimo import Blast, Alamouti
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class CommDoctestsTestCase(unittest.TestCase):
@@ -2790,7 +2793,6 @@ class OfdmTestCase(unittest.TestCase):
     """Unittests for the OFDM class in the ofdm module."""
     def setUp(self):
         """Called before each test."""
-        from comm.ofdm import OFDM
         self.ofdm_object = OFDM(64, 16, 52)
 
     def test_ofdm_set_parameters(self):
@@ -2975,9 +2977,6 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     visualize that the modulate method of the OFDM class is working as it
     should.
     """
-    from matplotlib import pylab
-    from matplotlib import pyplot as plt
-
     # xxxxxxxxxx OFDM Details xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     fft_size = 64
     cp_size = 12
@@ -3034,11 +3033,9 @@ class BlastTestCase(unittest.TestCase):
     """
     def setUp(self):
         """Called before each test."""
-        from comm.mimo import Blast
         self.blast_object = Blast(3)
 
     def test_getNumberOfLayers(self):
-        from comm.mimo import Blast
         self.assertEqual(self.blast_object.getNumberOfLayers(), 3)
         blast2 = Blast(5)
         self.assertEqual(blast2.getNumberOfLayers(), 5)
@@ -3093,7 +3090,6 @@ class AlamoutiTestCase(unittest.TestCase):
 
     def setUp(self):
         """Called before each test."""
-        from comm.mimo import Alamouti
         self.alamouti_object = Alamouti()
 
     def test_getNumberOfLayers(self):

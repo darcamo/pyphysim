@@ -13,7 +13,7 @@ sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from simulate_psk import VerySimplePskSimulationRunner
-from comm import modulators
+from pyphysim.comm import modulators
 
 
 class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):

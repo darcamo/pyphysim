@@ -8,7 +8,7 @@ __revision__ = "$Revision$"
 import sys
 import argparse
 
-from simulations.progressbar import ProgressbarZMQServer
+from .progressbar import ProgressbarZMQServer
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

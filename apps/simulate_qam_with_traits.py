@@ -11,11 +11,11 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+from traits.api import Instance, on_trait_change
+
 import simulate_psk_with_traits
 from simulate_psk_with_traits import PskSimulationRunner
-import comm.modulators as mod
-
-from traits.api import Instance, on_trait_change
+import pyphysim.comm.modulators as mod
 
 
 class QamSimulationRunner(PskSimulationRunner):

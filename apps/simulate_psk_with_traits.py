@@ -22,14 +22,14 @@ from configobj import ConfigObj
 from matplotlib import pyplot as plt
 
 import numpy as np
-
-from simulations.core import SimulationResults, Result, SimulationRunner, SimulationParameters
-from util import misc
-from util.conversion import dB2Linear
-import comm.modulators as mod
 from traits.api import HasTraits, Int, Float, Array, Instance, ListFloat, Property
 from traits.api import on_trait_change
 from traitsui.api import View, Item, Group, ArrayEditor, ListEditor, TabularEditor, CustomEditor, Action, Handler, Controller, ModelView
+
+from pyphysim.simulations.core import SimulationResults, Result, SimulationRunner, SimulationParameters
+from pyphysim.util import misc
+from pyphysim.util.conversion import dB2Linear
+import pyphysim.comm.modulators as mod
 
 
 # class SimplePskSimulationRunnerHandler(Controller):

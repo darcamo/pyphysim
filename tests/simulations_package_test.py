@@ -31,13 +31,13 @@ try:
 except ImportError:  # pragma: no cover
     pass
 
-from simulations import configobjvalidation, parameters, progressbar, results, runner, simulationhelpers
-from simulations.configobjvalidation import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
-from simulations.simulationhelpers import get_common_parser
-from simulations.parameters import SimulationParameters
-from simulations.results import Result, SimulationResults
-from simulations.runner import SimulationRunner
-from util import misc
+from pyphysim.simulations import configobjvalidation, parameters, progressbar, results, runner, simulationhelpers
+from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
+from pyphysim.simulations.simulationhelpers import get_common_parser
+from pyphysim.simulations.parameters import SimulationParameters
+from pyphysim.simulations.results import Result, SimulationResults
+from pyphysim.simulations.runner import SimulationRunner
+from pyphysim.util import misc
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

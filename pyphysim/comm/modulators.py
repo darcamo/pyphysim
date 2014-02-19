@@ -25,8 +25,8 @@ except ImportError:  # pragma: no cover
 import numpy as np
 import math
 
-from util.misc import level2bits, qfunc
-from util.conversion import gray2binary, binary2gray, dB2Linear
+from ..util.misc import level2bits, qfunc
+from ..util.conversion import gray2binary, binary2gray, dB2Linear
 
 PI = np.pi
 
