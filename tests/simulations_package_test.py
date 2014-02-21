@@ -195,31 +195,31 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
 
         array_string = "[0 5 10:15]"
         parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
-        expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
+        expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_almost_equal(parsed_array,
-                                             expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array,
+                                      expected_parsed_array)
 
         array_string = "10:15"
         parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
-        expected_parsed_array = np.array([10., 11., 12., 13., 14.])
+        expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_almost_equal(parsed_array,
-                                             expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array,
+                                      expected_parsed_array)
 
         array_string = "[10:15]"
         parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
-        expected_parsed_array = np.array([10., 11., 12., 13., 14.])
+        expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_almost_equal(parsed_array,
-                                             expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array,
+                                      expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
         parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
-        expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
+        expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_almost_equal(parsed_array,
-                                             expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array,
+                                      expected_parsed_array)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
@@ -1477,8 +1477,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         except IOError:
             self.skipTest("The IPython engines were not found.")
 
-        from tests.simulations_package_test import _DummyRunner
-        dview.execute('from tests import simulations_package_test', block=True)
+        from simulations_package_test import _DummyRunner
+        dview.execute('import simulations_package_test', block=True)
 
         runner = _DummyRunner()
         runner.progressbar_message = 'bla'
@@ -1581,7 +1581,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # random value. The 'P' parameter is an array with 5 elements, all
         # of them equal to 2.0. That means that if we didn't have a random
         # part all elements in the returned results would be equal.
-        from tests.simulations_package_test import _DummyRunnerRandom
+        from simulations_package_test import _DummyRunnerRandom
         dummyrunnerrandom = _DummyRunnerRandom()
         dummyrunnerrandom.simulate_in_parallel(lview)
 

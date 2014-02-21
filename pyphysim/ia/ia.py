@@ -1293,7 +1293,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         if isinstance(Ns, int):
             Ns = np.ones(self.K, dtype=int) * Ns
         else:
-            assert len(Ns) == 3
+            assert len(Ns) == self.K
 
         self._Ns = Ns
 
@@ -1880,7 +1880,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         for k in range(self.K):
             Hkk = self._get_channel(k, k)
-            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k)
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k, self.noise_var)
             Uk[k] = self._calc_Uk(Hkk, self._F[k], Bkl_all_l, k)
         return Uk
 

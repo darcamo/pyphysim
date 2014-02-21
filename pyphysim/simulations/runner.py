@@ -835,6 +835,8 @@ class SimulationRunner(object):
                 be used to create a ProgressbarZMQClient object that can be
                 used to update the progressbar (via a ZMQ socket)
         """
+        from pyphysim.simulations.progressbar import ProgressbarZMQClient
+
         # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
         if proxybar_data is None:
             update_progress_func = lambda value: None

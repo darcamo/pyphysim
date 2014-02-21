@@ -17,6 +17,17 @@ def _parse_range_expr(value, converter=float):
     """
     Parse a string in the form of min:max or min:step:max and return a
     numpy array.
+
+    Parameters
+    ----------
+    value : str
+        The string to be parsed.
+    converter : function that converts a string representation to a number.
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
     """
     import validate
     try:
@@ -36,6 +47,16 @@ def _parse_float_range_expr(value):
     """
     Parse a string in the form of min:max or min:step:max and return a
     numpy array (of floats).
+
+    Parameters
+    ----------
+    value : str
+        The string to be parsed.
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
     """
     return _parse_range_expr(value, float)
 
@@ -44,6 +65,16 @@ def _parse_int_range_expr(value):
     """
     Parse a string in the form of min:max or min:step:max and return a
     numpy array (of integers).
+
+    Parameters
+    ----------
+    value : str
+        The string to be parsed.
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
     """
     return _parse_range_expr(value, int)
 
@@ -70,6 +101,11 @@ def _real_numpy_array_check(value, min=None, max=None):
         The maximum allowed value. If the converted value is (or have)
         greater than `man` then the VdtValueTooSmallError exception will be
         raised.
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
 
     Notes
     -----
@@ -134,6 +170,27 @@ def _integer_numpy_array_check(value, min=None, max=None):
     Value can be either a single number, a range expression in the form of
     min:max or min:step:max, or even a list
     containing numbers and range expressions.
+
+    Parameters
+    ----------
+    value : str
+        The string to be converted. This can be either a single number, a
+        range expression in the form of min:max or min:step:max, or even a
+        list containing numbers and range expressions.
+    min : int
+        The minimum allowed value. If the converted value is (or have)
+        lower than `min` then the VdtValueTooSmallError exception will be
+        raised.
+    max : int
+        The maximum allowed value. If the converted value is (or have)
+        greater than `man` then the VdtValueTooSmallError exception will be
+        raised.
+
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
 
     Notes
     -----

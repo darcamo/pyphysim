@@ -489,6 +489,7 @@ class MMSESimulationRunner(IASimulationRunner):
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ## xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# This will perform the simulation
 if __name__ == '__main__':
     from time import time
     from pyphysim.util.misc import pretty_time
@@ -594,6 +595,7 @@ if __name__ == '__main__':
 
 
 ## xxxxxxxxxx Plot xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# This will read results from a previous simulation and draw some plots
 if __name__ == '__main__1':
     from matplotlib import pyplot as plt
 
@@ -609,8 +611,8 @@ if __name__ == '__main__1':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_15]'.format(**params.parameters)
-    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[5_(5)_15]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
+    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[120]'.format(**params.parameters)
+    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[120]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -635,7 +637,7 @@ if __name__ == '__main__1':
     # SNR_min_leakage = np.array(min_leakage_results.params['SNR'])
     SNR_mmse = np.array(mmse_results.params['SNR'])
 
-    max_iterations = 15
+    max_iterations = 120
 
     ber_alt_min = alt_min_results.get_result_values_list(
         'ber',
