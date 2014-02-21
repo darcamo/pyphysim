@@ -15,9 +15,9 @@ from pyphysim.comm.channels import MultiUserChannelMatrix
 
 
 if __name__ == '__main__':
-    K = 3
-    Nr = np.ones(K) * 2
-    Nt = np.ones(K) * 2
+    K = 5
+    Nr = np.ones(K) * 3
+    Nt = np.ones(K) * 3
     Ns = np.ones(K) * 1
 
     multiuserchannel = MultiUserChannelMatrix()
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     alt.randomizeF(Ns)
     alt.max_iterations = 100
 
-    alt.solve()
+    alt.solve(Ns)
 
     print "Final_Cost: {0}\n".format(alt.get_cost())
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         i, j = ij
         print "Hij: H{0}{1}".format(i, j)
         Hij = multiuserchannel.get_Hkl(i, j)
-        Hij_eff = np.dot(alt.W[i], np.dot(Hij, alt.F[j]))
+        Hij_eff = np.dot(alt.W_H[i], np.dot(Hij, alt.F[j]))
         print "Eigenvalus: {0}".format(np.linalg.svd(Hij_eff)[1].round(6)[0])
         print "Eigenvector: {0}".format(np.linalg.svd(Hij_eff)[0].round(6)[0][0])
         print
