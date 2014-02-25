@@ -7,10 +7,7 @@
 # - Run the command "python setup.py build_exe" to create the executables
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from setuptools import find_packages
-from setuptools import setup
-
-
+from setuptools import setup, find_packages
 import os
 
 # xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -22,6 +19,13 @@ misc_c = Extension(name="misc_c", sources=["pyphysim/util/misc_c.pyx"],
                    include_dirs=[numpy.get_include()])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+# xxxxxxxxxx Get the project version xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def get_version():
+    """Get the project version.
+    """
+    import pyphysim
+    return pyphysim.__version__
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Get a listof the packages in the project xxxxxxxxxxxxxxxxxxxxx
 # The find_packages method returns a list with all Python packages found
@@ -48,7 +52,7 @@ def read(fname):
 setup(
     # xxxxxxxxxx Basic Package Information xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     name="PyPhySim",
-    version="0.1",
+    version=get_version(),
 
     # Metadata for PyPI
     author="Darlan Cavalcante Moreira",
