@@ -683,24 +683,42 @@ class ResultTestCase(unittest.TestCase):
         # Test merge of Results of SUMTYPE
         self.result1.update(13)
         self.result1.update(30)
+        result_sum_before1 = self.result1._result_sum
+        result_sum_sqr_before1 = self.result1._result_squared_sum
+
         result1_other = Result.create("name", Result.SUMTYPE, 11)
+        expected_result_sum1 = result_sum_before1 + result1_other._result_sum
+        expected_result_sqr_sum1 = result_sum_sqr_before1 + \
+                                  result1_other._result_squared_sum
+
         self.result1.merge(result1_other)
         self.assertEqual(self.result1.name, "name")
         self.assertEqual(self.result1.get_result(), 54)
         self.assertEqual(self.result1.num_updates, 3)
+        self.assertEqual(self.result1._result_sum, expected_result_sum1)
+        self.assertEqual(self.result1._result_squared_sum, expected_result_sqr_sum1)
 
         # Test merge of Results of RATIOTYPE
         self.result2.update(3, 10)
         self.result2.update(6, 7)
         self.result2.update(1, 15)
+        result_sum_before2 = self.result2._result_sum
+        result_sum_sqr_before2 = self.result2._result_squared_sum
+
         result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50)
         result2_other.update(12, 18)
+        expected_result_sum2 = result_sum_before2 + result2_other._result_sum
+        expected_result_sqr_sum2 = result_sum_sqr_before2 + \
+                                  result2_other._result_squared_sum
+
         self.result2.merge(result2_other)
         self.assertEqual(self.result2.name, "name2")
         self.assertEqual(self.result2._value, 56)
         self.assertEqual(self.result2._total, 100)
         self.assertEqual(self.result2.get_result(), 0.56)
         self.assertEqual(self.result2.num_updates, 5)
+        self.assertEqual(self.result2._result_sum, expected_result_sum2)
+        self.assertEqual(self.result2._result_squared_sum, expected_result_sqr_sum2)
 
         # Test merge of Results of MISCTYPE
         # There is no merge for misc type and an exception should be raised
@@ -745,6 +763,61 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result2.get_result(), 0.56)
         self.assertEqual(result2.num_updates, 5)
 
+        # Test if an exception is raised if we try to merge with a Result
+        # object which does not have the accumulate_values property set to
+        # True
+        result3 = Result('name2', Result.RATIOTYPE, accumulate_values=False)
+        result3.update(2, 6)
+        result3.update(7, 15)
+        result3.update(2, 5)
+        with self.assertRaises(AssertionError):
+            result2.merge(result3)
+
+        # Not that the opposite is possible. That is, a Result object
+        # without accumulated values can be merged with a Result object
+        # with accumulated values. In that case, the accumulated values of
+        # the second object will be ignored.
+        result3.merge(result2)
+        self.assertEqual(result3._value, 67)
+        self.assertEqual(result3._total, 126)
+        self.assertEqual(result3._value_list, [])
+        self.assertEqual(result3._total_list, [])
+
+    def test_get_result_mean_and_var(self):
+        # Test for Result.SUMTYPE
+        result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
+        result1.update(13)
+        result1.update(30)
+        result1_other = Result.create("name", Result.SUMTYPE, 11, accumulate_values=True)
+        result1_other.update(22)
+        result1_other.update(4)
+        result1.merge(result1_other)
+        self.assertEqual(result1.get_result(), 80)
+
+        expected_mean1 = np.array(result1._value_list, dtype=float).mean()
+        self.assertAlmostEqual(result1.get_result_mean(), expected_mean1)
+
+        expected_var1 = np.array(result1._value_list).var()
+        self.assertAlmostEqual(result1.get_result_var(), expected_var1)
+
+        # Test for Result.RATIOTYPE
+        result2 = Result('name2', Result.RATIOTYPE, accumulate_values=True)
+        result2.update(3, 10)
+        result2.update(6, 7)
+        result2.update(1, 15)
+
+        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50, accumulate_values=True)
+        result2_other.update(12, 18)
+        result2.merge(result2_other)
+
+        aux2 = (np.array(result2._value_list, dtype=float) /
+                np.array(result2._total_list, dtype=float))
+        expected_mean2 = aux2.mean()
+        self.assertAlmostEqual(result2.get_result_mean(), expected_mean2)
+
+        expected_var2 = aux2.var()
+        self.assertAlmostEqual(result2.get_result_var(), expected_var2)
+
     def test_representation(self):
         self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
@@ -763,7 +836,8 @@ class ResultTestCase(unittest.TestCase):
         self.result1.update(10)
         self.result1.update(7)
 
-        result1 = Result.create("name", Result.SUMTYPE, 17)
+        result1 = Result.create("name", Result.SUMTYPE, 7)
+        result1.update(10)
         self.assertTrue(self.result1 == result1)
         self.assertFalse(self.result1 != result1)
 
@@ -780,15 +854,15 @@ class ResultTestCase(unittest.TestCase):
             # the accumulate_values option and never accumulates any value.
             self.result3.get_confidence_interval()
 
-        # Test if an exception is raised if the accumulate_values option
-        # was not set to True
-        with self.assertRaises(RuntimeError):
-            self.result1.get_confidence_interval()
+        # # Test if an exception is raised if the accumulate_values option
+        # # was not set to True
+        # with self.assertRaises(RuntimeError):
+        #     self.result1.get_confidence_interval()
 
         result = Result('name', Result.RATIOTYPE, accumulate_values=True)
-        # Test if an exception is raised if there are not stored values yet
-        with self.assertRaises(RuntimeError):
-            result.get_confidence_interval()
+        # # Test if an exception is raised if there are not stored values yet
+        # with self.assertRaises(RuntimeError):
+        #     result.get_confidence_interval()
 
         # Now lets finally store some values.
         result.update(10, 30)
@@ -961,10 +1035,9 @@ class SimulationResultsTestCase(unittest.TestCase):
         simresults = SimulationResults()
         lala_result = Result('lala', Result.SUMTYPE)
         lele_result = Result('lele', Result.RATIOTYPE)
-        lala_result.update(3)
-        lala_result.update(10)
-        lele_result.update(7, 13)
-        lele_result.update(4, 7)
+        lala_result.update(13)
+        lele_result.update(8, 10)
+        lele_result.update(3, 10)
         elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
         simresults.add_result(lala_result)
         simresults.add_result(lele_result)
@@ -1951,7 +2024,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         # Sleep for a very short time so that the
         # ProgressbarMultiProcessServer object has time to create the file
         # with the current progress
-        sleep(0.01)
+        sleep(0.02)
 
         # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         sleep(0.04)

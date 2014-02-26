@@ -703,6 +703,8 @@ class IASolverBaseClass(object):
         ----------
         k : int
             Index of the desired user.
+        noise_power : float
+            Noise power (variance).
 
         Returns
         -------
@@ -1065,6 +1067,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                                      # precoder is reinitialized.
         self.max_iterations = 50  # Number of times the step method is
                                   # called in the solve method.
+
+    def _get_runned_iterations(self):
+        """Get method for the runned_iterations property."""
+        return self._runned_iterations
+    runned_iterations = property(_get_runned_iterations)
 
     def clear(self):
         """

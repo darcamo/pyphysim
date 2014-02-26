@@ -16,6 +16,10 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
+try:
+    import tables as tb
+except ImportError as e:
+    pass
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationResults - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -709,6 +713,11 @@ class Result(object):
       current stored value with the new value.
 
     """
+    # Since we only expect to have some very specific attributes for any
+    # object of the Result class, we define the attributes here. This can
+    # save memory when you have a lot of Result objects.
+    #__slots__ = ('name', '_update_type_code', '_value', '_total', 'num_updates', '_accumulate_values_bool', '_value_list', '_total_list', '_result_sum', '_result_squared_sum')
+
     # Like an Enumeration for the type of results.
     (SUMTYPE, RATIOTYPE, MISCTYPE) = range(3)
     _all_types = {
@@ -722,10 +731,15 @@ class Result(object):
         self._update_type_code = update_type_code
         self._value = 0
         self._total = 0
+        self._result_sum = 0.0  # At each update the current result will be
+                                # added to this variable
+        self._result_squared_sum = 0.0  # At each update the square of the
+                                        # current result will be added to
+                                        # this variable.
         self.num_updates = 0  # Number of times the Result object was
                               # updated
 
-        # Accumulation of values
+        # Accumulation of values: This is useful for debugging/testing
         self._accumulate_values_bool = accumulate_values
         self._value_list = []
         self._total_list = []
@@ -743,10 +757,17 @@ class Result(object):
         other : Result object
             The other Result object.
         """
+        # All class attributes with the exception of num_updates
+        attributes = ['name', '_update_type_code', '_value', '_total', '_accumulate_values_bool', '_value_list', '_total_list', '_result_squared_sum', '_result_sum']
         if self is other:  # pragma: no cover
             return True
 
-        return equal_dicts(self.__dict__, other.__dict__, ignore_keys=['num_updates'])
+        result = True
+        for att in attributes:
+            if getattr(self, att) != getattr(other, att):
+                result = False
+
+        return result
 
     def __ne__(self, other):
         """
@@ -796,7 +817,8 @@ class Result(object):
             accumulated in the `update` (and merge) method(s). This means
             that the Result object will use more memory as more and more
             values are accumulated, but having all values sometimes is
-            useful to perform statistical calculations.
+            useful to perform statistical calculations. This is useful for
+            debugging/testing.
 
         Returns
         -------
@@ -897,6 +919,8 @@ class Result(object):
         def __update_SUMTYPE_value(value, dummy):
             """Update the Result object when its type is SUMTYPE."""
             self._value += value
+            self._result_sum += value
+            self._result_squared_sum += value**2
             if self._accumulate_values_bool is True:
                 self._value_list.append(value)
 
@@ -913,6 +937,10 @@ class Result(object):
 
             self._value += value
             self._total += total
+
+            result = float(value) / float(total)
+            self._result_sum += result
+            self._result_squared_sum += result**2
 
             if self._accumulate_values_bool is True:
                 self._value_list.append(value)
@@ -945,10 +973,6 @@ class Result(object):
         other : Result object
             Another Result object.
         """
-        # Both objects must be set to either accumulate or not accumulate
-        assert self._accumulate_values_bool == other.accumulate_values_bool, (
-            "Both objects must either accumulate or not accumulate values")
-
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
@@ -956,13 +980,20 @@ class Result(object):
             "Cannot merge results of the MISCTYPE type")
         assert self.name == other.name, (
             "Can only merge two objects with the same name and type")
-        self.num_updates += other.num_updates
-        self._value += other._value  # pylint: disable=W0212
-        self._total += other._total  # pylint: disable=W0212
 
         if self._accumulate_values_bool is True:
+            # The second object must also have been set to accumulate values
+            assert other.accumulate_values_bool == True, (
+            "The merged Result also must have been set to accumulate values.")
+
             self._value_list.extend(other._value_list)
             self._total_list.extend(other._total_list)
+
+        self.num_updates += other.num_updates
+        self._value += other._value
+        self._total += other._total
+        self._result_sum += other._result_sum
+        self._result_squared_sum += other._result_squared_sum
 
     def get_result(self):
         """Get the result stored in the Result object.
@@ -983,6 +1014,39 @@ class Result(object):
                 return float(self._value) / self._total
             else:
                 return self._value
+
+    # # Remove this in the future
+    # def _fix_old_version(self):
+    #     """
+    #     """
+    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - START xxxxxxxxxxxxxxxxxxxx
+    #     try:
+    #         self._result_sum
+    #     except AttributeError as _:
+    #         if self.type_code == Result.RATIOTYPE:
+    #             n = np.array(self._value_list, dtype=float)
+    #             d = np.array(self._total_list, dtype=float)
+    #             r = n / d
+    #         elif self.type_code == Result.SUMTYPE:
+    #             r = np.array(self._value_list, dtype=float)
+    #         self._result_sum = np.sum(r)
+    #         self._result_squared_sum = np.sum(r**2)
+    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - END xxxxxxxxxxxxxxxxxxxxxx
+
+    def get_result_mean(self):
+        """Get the mean of all the updated results.
+        """
+        # self._fix_old_version()  # Remove this line in the future
+
+        return float(self._result_sum) / self.num_updates
+
+    def get_result_var(self):
+        """
+        Get the variance of all updated results.
+        """
+        # self._fix_old_version()  # Remove this line in the future
+
+        return (float(self._result_squared_sum) / self.num_updates) - (self.get_result_mean())**2
 
     def get_confidence_interval(self, P=95):
         """
@@ -1005,22 +1069,57 @@ class Result(object):
         --------
         util.misc.calc_confidence_interval
         """
-        if len(self._value_list) == 0:
-            if self._accumulate_values_bool is False:
-                message = "get_confidence_interval: The accumulate_values option must be set to True."
-            else:
-                message = "get_confidence_interval: There are no stored values yet."
+        if self._update_type_code == Result.MISCTYPE:
+            message = "Calling get_confidence_interval is not valid for the MISC update type."
             raise RuntimeError(message)
 
-        values = np.array(self._value_list, dtype=float)
-        if self._update_type_code == Result.RATIOTYPE:
-            values = values / np.array(self._total_list, dtype=float)
-
-        mean = values.mean()
-        std = values.std()
-        n = values.size
-
+        mean = self.get_result_mean()
+        std = np.sqrt(self.get_result_var())
+        n = self.num_updates
         return calc_confidence_interval(mean, std, n, P)
+
+    # # Remove this in the future
+    # def get_confidence_interval_old(self, P=95):
+    #     """
+    #     Get the confidence inteval that contains the true result with a given
+    #     probability `P`.
+
+    #     Parameters
+    #     ----------
+    #     P : float
+    #         The desired confidence (probability in %) that true value is
+    #         inside the calculated interval. The possible values are
+    #         described in the documentaiton of the
+    #         `util.misc.calc_confidence_interval` function`
+
+    #     Returns
+    #     -------
+    #     Interval : Numpy (float) array with two elements.
+
+    #     See also
+    #     --------
+    #     util.misc.calc_confidence_interval
+    #     """
+    #     if self._update_type_code == Result.MISCTYPE:
+    #         message = "Calling get_confidence_interval is not valid for the MISC update type."
+    #         raise RuntimeError(message)
+
+    #     if len(self._value_list) == 0:
+    #         if self._accumulate_values_bool is False:
+    #             message = "get_confidence_interval: The accumulate_values option must be set to True."
+    #         else:
+    #             message = "get_confidence_interval: There are no stored values yet."
+    #         raise RuntimeError(message)
+
+    #     values = np.array(self._value_list, dtype=float)
+    #     if self._update_type_code == Result.RATIOTYPE:
+    #         values = values / np.array(self._total_list, dtype=float)
+
+    #     mean = values.mean()
+    #     std = values.std()
+    #     n = values.size
+
+    #     return calc_confidence_interval(mean, std, n, P)
 
     # TODO: Save the _value_list, _total_list and _accumulate_values_bool
     # variables

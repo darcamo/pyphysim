@@ -83,7 +83,7 @@ class IASimulationRunner(SimulationRunner):
         # object just to make the code in _run_simulation equal for all
         # solvers.
         if isinstance(self.ia_solver, ia.ClosedFormIASolver):
-            self.ia_solver._runned_iterations = 0.0
+            self.ia_solver.runned_iterations = 0.0
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
         # progressbar will write the progress to a file with appropriated
@@ -179,7 +179,7 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         #xxxxxxxxxx Number of iterations of the IA algorithm xxxxxxxxxxxxxx
-        ia_runned_iterations = self.ia_solver._runned_iterations
+        ia_runned_iterations = self.ia_solver.runned_iterations
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -194,20 +194,20 @@ class IASimulationRunner(SimulationRunner):
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
         berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits,
-                                  accumulate_values=True)
+                                  accumulate_values=False)
 
         serResult = Result.create(
-            "ser", Result.RATIOTYPE, symbolErrors, numSymbols, accumulate_values=True)
+            "ser", Result.RATIOTYPE, symbolErrors, numSymbols, accumulate_values=False)
 
         ia_costResult = Result.create(
-            "ia_cost", Result.RATIOTYPE, ia_cost, 1, accumulate_values=True)
+            "ia_cost", Result.RATIOTYPE, ia_cost, 1, accumulate_values=False)
 
         sum_capacityResult = Result.create(
             "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1,
-            accumulate_values=True)
+            accumulate_values=False)
 
         ia_runned_iterationsResult = Result.create(
-            "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1, accumulate_values=True)
+            "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1, accumulate_values=False)
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)

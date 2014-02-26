@@ -1052,7 +1052,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         self.assertIsNone(self.iasolver.W)
         self.assertIsNone(self.iasolver.W_H)
         self.assertIsNone(self.iasolver.full_W_H)
-        self.assertAlmostEqual(self.iasolver._runned_iterations, 0.0)
+        self.assertAlmostEqual(self.iasolver.runned_iterations, 0.0)
 
 
 class MaxSinrIASolerTestCase(unittest.TestCase):
@@ -1445,6 +1445,9 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
         self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
         self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+
+        #self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H01, F[1]))[0][0], 0.0)
+
 
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H01, F[1]))[0][0], 0.0)
         # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H02, F[2]))[0][0], 0.0)
