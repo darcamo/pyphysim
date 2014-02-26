@@ -1194,6 +1194,10 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.params.add('age', 3)
         self.simresults.params.set_unpack_parameter('temperature')
         self.simresults.params.set_unpack_parameter('factor')
+        self.simresults['lala'][0].update(4)
+        self.simresults['lala'][0].update(21)
+        self.simresults['lele'][0].update(12, 24)
+        self.simresults['lele'][0].update(5, 7)
 
         # Save to the file
         self.simresults.save_to_hdf5_file(filename)
@@ -1214,6 +1218,10 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
                                simresults2['lele'][0].get_result(),)
 
+        for r1, r2 in zip(self.simresults, simresults2):
+            for elem1, elem2 in zip(r1, r2):
+                self.assertTrue(elem1 == elem2)
+
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
                          simresults2.params['age'])
@@ -1221,6 +1229,7 @@ class SimulationResultsTestCase(unittest.TestCase):
                                        simresults2.params['factor'])
         np.testing.assert_almost_equal(self.simresults.params['temperature'],
                                        simresults2.params['temperature'])
+        self.assertTrue(self.simresults.params, simresults2.params)
 
         # Test if the unpacked parameters where also saved
         self.assertEqual(self.simresults.params.unpacked_parameters[0],

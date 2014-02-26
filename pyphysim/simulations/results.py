@@ -551,36 +551,36 @@ class SimulationResults(object):
 
         fid.close()
 
-    # TODO: Test if this method saves all the information that the
-    # save_to_hdf5_file method saves.
-    def save_to_pytables_file(self, filename, attrs=None):
-        """
-        Save the SimulationResults to the file `filename` using pytables.
-        """
-        if attrs is None:
-            attrs = {}
+    # # TODO: Test if this method saves all the information that the
+    # # save_to_hdf5_file method saves.
+    # def save_to_pytables_file(self, filename, attrs=None):
+    #     """
+    #     Save the SimulationResults to the file `filename` using pytables.
+    #     """
+    #     if attrs is None:
+    #         attrs = {}
 
-        import tables as tb
-        fid = tb.openFile(filename, 'w', title='Simulation Results file')
+    #     import tables as tb
+    #     fid = tb.openFile(filename, 'w', title='Simulation Results file')
 
-        # Add the attributes, if any
-        if isinstance(attrs, dict):  # pragma: no cover
-            # attr is a dictionary of attributes
-            for name, value in attrs.items():
-                fid.setNodeAttr(fid.root, name, value)
+    #     # Add the attributes, if any
+    #     if isinstance(attrs, dict):  # pragma: no cover
+    #         # attr is a dictionary of attributes
+    #         for name, value in attrs.items():
+    #             fid.setNodeAttr(fid.root, name, value)
 
-        # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
-        g = fid.createGroup(fid.root, 'results', title="Simulation Results")
-        for r in self:
-            Result.save_to_pytables_table(g, r)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
+    #     g = fid.createGroup(fid.root, 'results', title="Simulation Results")
+    #     for r in self:
+    #         Result.save_to_pytables_table(g, r)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
-        pg = fid.createGroup(fid.root, 'parameters', title="Simulation Parameters")
-        self.params.save_to_pytables_group(pg)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
+    #     pg = fid.createGroup(fid.root, 'parameters', title="Simulation Parameters")
+    #     self.params.save_to_pytables_group(pg)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        fid.close()
+    #     fid.close()
 
     @staticmethod
     def load_from_hdf5_file(filename):
@@ -1147,7 +1147,8 @@ class Result(object):
         load_from_hdf5_dataset
 
         """
-        dtype = [('_value', float), ('_total', float), ('num_updates', int)]
+        dtype = [('_value', float), ('_total', float), ('num_updates', int),
+                 ('_result_sum', float), ('_result_squared_sum', float)]
         name = results_list[0].name
         size = len(results_list)
         ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
@@ -1155,7 +1156,7 @@ class Result(object):
         r = None
         for i, r in enumerate(results_list):
             # pylint: disable=W0212
-            ds[i] = (r._value, r._total, r.num_updates)
+            ds[i] = (r._value, r._total, r.num_updates, r._result_sum, r._result_squared_sum)
 
         if r is not None:
             ds.attrs.create('update_type_code', data=r.type_code)
@@ -1163,31 +1164,36 @@ class Result(object):
         # Pytables would do.
         ds.attrs.create("TITLE", name)
 
-    # TODO: Save the _value_list, _total_list and _accumulate_values_bool
-    # variables
-    @staticmethod
-    def save_to_pytables_table(parent, results_list):
-        """
-        Save the Result object.
-        """
-        pytables_file = parent._v_file
-        name = results_list[0].name
-        # pylint: disable= E1101
-        description = {'_value': tb.FloatCol(), '_total': tb.FloatCol(), 'num_updates': tb.IntCol()}
-        table = pytables_file.createTable(parent, name, description,
-                                          title=name)
-        row = table.row
+    # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # # variables
+    # @staticmethod
+    # def save_to_pytables_table(parent, results_list):
+    #     """
+    #     Save the Result object.
+    #     """
+    #     pytables_file = parent._v_file
+    #     name = results_list[0].name
+    #     # pylint: disable= E1101
+    #     description = {
+    #         '_value': tb.FloatCol(), '_total': tb.FloatCol(),
+    #         'num_updates': tb.IntCol(), '_result_sum': tb.FloatCol(),
+    #         '_result_squared_sum': tb.FloatCol()}
+    #     table = pytables_file.createTable(parent, name, description,
+    #                                       title=name)
+    #     row = table.row
 
-        r = None
-        for r in results_list:
-            # pylint: disable=W0212
-            row['_value'] = r._value
-            row['_total'] = r._total
-            row['num_updates'] = r.num_updates
-            row.append()
+    #     r = None
+    #     for r in results_list:
+    #         # pylint: disable=W0212
+    #         row['_value'] = r._value
+    #         row['_total'] = r._total
+    #         row['num_updates'] = r.num_updates
+    #         row['_result_sum'] = r._result_sum
+    #         row['_result_squared_sum'] = r._result_squared_sum
+    #         row.append()
 
-        pytables_file.setNodeAttr(table, 'update_type_code', r.type_code)
-        table.flush()
+    #     pytables_file.setNodeAttr(table, 'update_type_code', r.type_code)
+    #     table.flush()
 
     @staticmethod
     def load_from_hdf5_dataset(ds):
@@ -1227,18 +1233,9 @@ class Result(object):
                               data['_value'],
                               data['_total'])
             r.num_updates = data['num_updates']
+            r._result_sum = data['_result_sum']
+            r._result_squared_sum = data['_result_squared_sum']
             results_list.append(r)
         return results_list
-
-    # def to_pandas_series_of_dataframe(self):
-    #     """
-    #     Convert the Result object to a pandas DataFrame
-    #     """
-    #     if self.type_code == Result.RATIOTYPE:
-    #         df = pd.DataFrame({'v': self._value_list, 't': self._total_list})
-    #         return df
-    #     else:
-    #         s = pd.Series(self._value_list)
-    #         return s
 
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
