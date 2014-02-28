@@ -630,7 +630,6 @@ class SimulationParameters(object):
             for s in config.sections:
                 add_params(simulation_params, config[s])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         conf_file_parser = ConfigObj(
             filename,
             list_values=True,
@@ -669,6 +668,12 @@ class SimulationParameters(object):
             # The exception will only describe the error for the first
             # incorrect parameter.
             if first_error[2] is False:
+                # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                from pprint import pprint
+                params = SimulationParameters()
+                add_params(params, conf_file_parser)
+                pprint(params.parameters)
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                 raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' must be provided.".format(filename, first_error[1], first_error[0][0]))
             else:
                 raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' is invalid. {3}".format(filename, first_error[1], first_error[0][0], first_error[2].message.capitalize()))

@@ -616,14 +616,18 @@ class SimulationRunner(object):
                 # 'some_param'.
                 message = self.progressbar_message.format(**parameters)
 
+                sleep_time = 1.0
                 if self.progress_output_type == 'screen':
                     filename = None
                 else:
+                    sleep_time = 30.0  # Lets update the progress every 30
+                                       # seconds
                     filename = '{0}_progress.txt'.format(
                         self.__results_base_filename)
 
                 self._pbar = ProgressbarZMQServer(
                     message=message,
+                    sleep_time=sleep_time,
                     filename=filename,
                     **self.progressbar_extra_args)
 
