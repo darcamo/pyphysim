@@ -669,9 +669,9 @@ class SimulationParameters(object):
             # The exception will only describe the error for the first
             # incorrect parameter.
             if first_error[2] is False:
-                raise Exception("Parameter '{0}' in section '{1}' must be provided.".format(first_error[1], first_error[0][0]))
+                raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' must be provided.".format(filename, first_error[1], first_error[0][0]))
             else:
-                raise Exception("Parameter '{0}' in section '{1}' is invalid. {2}".format(first_error[1], first_error[0][0], first_error[2].message.capitalize()))
+                raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' is invalid. {3}".format(filename, first_error[1], first_error[0][0], first_error[2].message.capitalize()))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Finally add the parsed parameters to the params object xxxx
