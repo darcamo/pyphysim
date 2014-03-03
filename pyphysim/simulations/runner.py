@@ -78,6 +78,10 @@ class SimulationRunner(object):
         Configuration specification to validade the config file.
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
+    save_parsed_file : bool
+        If True, the config file will be saved after it is saved. This is
+        useful to add the default parameters to the config file so that
+        they can be easily changed later.
 
     See Also
     --------
@@ -85,7 +89,7 @@ class SimulationRunner(object):
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
     """
-    def __init__(self, default_config_file=None, config_spec=None, read_command_line_args=True):
+    def __init__(self, default_config_file=None, config_spec=None, read_command_line_args=True, save_parsed_file=False):
         self.rep_max = 1
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
@@ -127,7 +131,7 @@ class SimulationRunner(object):
             self.params = SimulationParameters.load_from_config_file(
                 self._config_filename,
                 self._configobj_spec,
-                save_parsed_file=True)
+                save_parsed_file=save_parsed_file)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.results = SimulationResults()
