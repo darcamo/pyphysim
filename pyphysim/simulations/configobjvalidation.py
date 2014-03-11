@@ -12,6 +12,8 @@ are used in the "simulations" module.
 __revision__ = "$Revision$"
 
 import numpy as np
+import validate
+
 
 def _parse_range_expr(value, converter=float):
     """
@@ -29,7 +31,6 @@ def _parse_range_expr(value, converter=float):
     out : numpy array
         The parsed numpy array.
     """
-    import validate
     try:
         limits = value.split(':')
         limits = [converter(i) for i in limits]
@@ -79,7 +80,7 @@ def _parse_int_range_expr(value):
     return _parse_range_expr(value, int)
 
 # pylint: disable= W0622
-def _real_numpy_array_check(value, min=None, max=None):
+def real_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a numpy array (of floats).
 
@@ -117,7 +118,6 @@ def _real_numpy_array_check(value, min=None, max=None):
         SNR = 0,5,10:20
         SNR = [0 5 10:20]
     """
-    import validate
     if isinstance(value, str):
         # Remove '[' and ']' if they exist.
         if value[0] == '[' and value[-1] == ']':
@@ -130,9 +130,9 @@ def _real_numpy_array_check(value, min=None, max=None):
     if isinstance(value, list):
         # If it is a list, each element can be either a number of a 'range
         # expression' that can be parsed with _parse_float_range_expr. We
-        # simple apply _real_numpy_array_check on each element in the list
+        # simple apply real_numpy_array_check on each element in the list
         # to do the work and stack horizontally all the results.
-        value = [_real_numpy_array_check(a, min, max) for a in value]
+        value = [real_numpy_array_check(a, min, max) for a in value]
         out = np.hstack(value)
 
     else:
@@ -163,7 +163,58 @@ def _real_numpy_array_check(value, min=None, max=None):
     return out
 
 
-def _integer_numpy_array_check(value, min=None, max=None):
+# pylint: disable= W0622
+def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
+    """
+    Parse and validate `value` as a floar number if possible and, if not,
+    parse it as a numpy array (of floats).
+
+    Value can be either a single number, a range expression in the form of
+    min:max or min:step:max, or even a list containing numbers and range
+    expressions. The difference regarding the `real_numpy_array_check`
+    function is that if value is a single number it will be parsed as a
+    single float value, instead of being parsed as a real numpy array with
+    a single element.
+
+    Parameters
+    ----------
+    value : str
+        The string to be converted. This can be either a single number, a
+        range expression in the form of min:max or min:step:max, or even a
+        list containing numbers and range expressions.
+    min : int
+        The minimum allowed value. If the converted value is (or have)
+        lower than `min` then the VdtValueTooSmallError exception will be
+        raised.
+    max : int
+        The maximum allowed value. If the converted value is (or have)
+        greater than `man` then the VdtValueTooSmallError exception will be
+        raised.
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
+
+    Notes
+    -----
+    You can either separate the values with commas or spaces (any comma
+    will have the same effect as a space). However, if you separate with
+    spaces the values should be in brackets, while if you separate with
+    commands there should be no brackets.
+    .. code::
+        SNR = 0,5,10:20
+        SNR = [0 5 10:20]
+    """
+    try:
+        value = validate.is_float(value, min, max)
+    except validate.VdtTypeError as e:
+        value = real_numpy_array_check(value, min, max)
+
+    return value
+
+
+def integer_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a numpy array (of integers).
 
@@ -202,7 +253,6 @@ def _integer_numpy_array_check(value, min=None, max=None):
         max_iter = 5,10:20
         max_iter = [0 5 10:20]
     """
-    import validate
     if isinstance(value, str):
         # Remove '[' and ']' if they exist.
         if value[0] == '[' and value[-1] == ']':
@@ -215,9 +265,9 @@ def _integer_numpy_array_check(value, min=None, max=None):
     if isinstance(value, list):
         # If it is a list, each element can be either a number of a 'range
         # expression' that can be parsed with _parse_int_range_expr. We simple
-        # apply _integer_numpy_array_check on each element in the list to do
+        # apply integer_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
-        value = [_integer_numpy_array_check(a, min, max) for a in value]
+        value = [integer_numpy_array_check(a, min, max) for a in value]
         out = np.hstack(value)
 
     else:
@@ -246,3 +296,54 @@ def _integer_numpy_array_check(value, min=None, max=None):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return out
+
+
+def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
+    """
+    Parse and validate `value` as an integer number if possible and, if not,
+    parse it as a numpy array (of integers).
+
+    Value can be either a single number, a range expression in the form of
+    min:max or min:step:max, or even a list containing numbers and range
+    expressions. The difference regarding the `integer_numpy_array_check`
+    function is that if value is a single number it will be parsed as a
+    single integer value, instead of being parsed as an integer numpy array
+    with a single element.
+
+    Parameters
+    ----------
+    value : str
+        The string to be converted. This can be either a single number, a
+        range expression in the form of min:max or min:step:max, or even a
+        list containing numbers and range expressions.
+    min : int
+        The minimum allowed value. If the converted value is (or have)
+        lower than `min` then the VdtValueTooSmallError exception will be
+        raised.
+    max : int
+        The maximum allowed value. If the converted value is (or have)
+        greater than `man` then the VdtValueTooSmallError exception will be
+        raised.
+
+
+    Results
+    -------
+    out : numpy array
+        The parsed numpy array.
+
+    Notes
+    -----
+    You can either separate the values with commas or spaces (any comma
+    will have the same effect as a space). However, if you separate with
+    spaces the values should be brackets, while if you separate with
+    commands there should be no brackets.
+    .. code::
+        max_iter = 5,10:20
+        max_iter = [0 5 10:20]
+    """
+    try:
+        value = validate.is_integer(value, min, max)
+    except validate.VdtTypeError as e:
+        value = integer_numpy_array_check(value, min, max)
+
+    return value

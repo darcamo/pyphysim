@@ -14,7 +14,7 @@ sys.path.append(parent_dir)
 from configobj import ConfigObj, flatten_errors
 from validate import Validator
 
-from pyphysim.simulations.configobjvalidation import _real_numpy_array_check
+from pyphysim.simulations.configobjvalidation import real_numpy_array_check
 
 
 if __name__ == '__main__':
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     #conf_file_parser.write()
 
     # Dictionary with custom validation functions
-    fdict = {'real_numpy_array': _real_numpy_array_check}
+    fdict = {'real_numpy_array': real_numpy_array_check}
     validator = Validator(fdict)
 
     # The 'copy' argument indicates that if we save the ConfigObj object to

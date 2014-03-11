@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Module to find good codebooks"""
+
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
@@ -9,7 +11,7 @@ sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from configobj import ConfigObj
-from exceptions import IOError
+#from exceptions import IOError
 from itertools import combinations
 from optparse import OptionParser
 from time import time
@@ -18,11 +20,9 @@ import multiprocessing
 import numpy as np
 import scipy.io
 
-from subspace.metrics import calcChordalDistanceFromPrincipalAngles, calcPrincipalAngles
-from util import progressbar
-from util.misc import pretty_time
-
-"""Module to find good codebooks"""
+from pyphysim.subspace.metrics import calcChordalDistanceFromPrincipalAngles, calcPrincipalAngles
+from pyphysim.simulations import progressbar
+from pyphysim.util.misc import pretty_time
 
 
 class CodebookFinder(object):

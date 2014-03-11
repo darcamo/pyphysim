@@ -21,6 +21,7 @@ import doctest
 import numpy as np
 
 from pyphysim.subspace import metrics, projections
+from pyphysim.util.misc import randn_c
 
 
 class SubspaceDoctestsTestCase(unittest.TestCase):
@@ -124,6 +125,20 @@ class MetricsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             metrics.calcChordalDistanceFromPrincipalAngles(principal_angles),
             expected_chord_dist)
+
+        # xxxxxxxxxx Now let's test with complex values xxxxxxxxxxxxxxxxxxx
+        A = randn_c(3,2)
+        B = randn_c(3,2)
+        principal_angles2 = metrics.calcPrincipalAngles(A, B)
+        dist1 = metrics.calcChordalDistance(A, B)
+        dist2 = metrics.calcChordalDistance2(A, B)
+        dist3 = metrics.calcChordalDistanceFromPrincipalAngles(
+            principal_angles2)
+
+        self.assertAlmostEqual(dist1, dist2)
+        self.assertAlmostEqual(dist3, dist2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

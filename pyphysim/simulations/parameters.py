@@ -21,7 +21,7 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
-from .configobjvalidation import _real_numpy_array_check, _integer_numpy_array_check
+from .configobjvalidation import real_numpy_array_check, integer_numpy_array_check
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -637,8 +637,8 @@ class SimulationParameters(object):
 
         # Dictionary with custom validation functions. Here we add a
         # validation function for numpy float arrays.
-        fdict = {'real_numpy_array': _real_numpy_array_check,
-                 'integer_numpy_array': _integer_numpy_array_check}
+        fdict = {'real_numpy_array': real_numpy_array_check,
+                 'integer_numpy_array': integer_numpy_array_check}
         validator = Validator(fdict)
 
         # The 'copy' argument indicates that if we save the ConfigObj
@@ -668,12 +668,12 @@ class SimulationParameters(object):
             # The exception will only describe the error for the first
             # incorrect parameter.
             if first_error[2] is False:
-                # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                from pprint import pprint
-                params = SimulationParameters()
-                add_params(params, conf_file_parser)
-                pprint(params.parameters)
-                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # from pprint import pprint
+                # params = SimulationParameters()
+                # add_params(params, conf_file_parser)
+                # pprint(params.parameters)
+                # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                 raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' must be provided.".format(filename, first_error[1], first_error[0][0]))
             else:
                 raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' is invalid. {3}".format(filename, first_error[1], first_error[0][0], first_error[2].message.capitalize()))

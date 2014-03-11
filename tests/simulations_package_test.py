@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover
     pass
 
 from pyphysim.simulations import configobjvalidation, parameters, progressbar, results, runner, simulationhelpers
-from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, _real_numpy_array_check, _integer_numpy_array_check
+from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, real_numpy_array_check, integer_numpy_array_check, real_scalar_or_real_numpy_array_check, integer_scalar_or_integer_numpy_array_check
 from pyphysim.simulations.simulationhelpers import get_common_parser
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import Result, SimulationResults
@@ -130,15 +130,41 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             _parse_float_range_expr(expr)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_real_numpy_array_check(self):
+    # Note: Since the "real_scalar_or_real_numpy_array_check" function will
+    # call the "real_numpy_array_check" function we only need a test case
+    # for the "real_scalar_or_real_numpy_array_check" function.
+    def test_real_scalar_or_real_numpy_array_check(self):
         try:
             import validate
         except ImportError as _:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
+        # xxxxxxxxxx Try to parse float scalar values xxxxxxxxxxxxxxxxxxxxx
+        value = "4.6"
+        expected_parsed_value = 4.6
+        self.assertAlmostEqual(real_scalar_or_real_numpy_array_check(value),
+                               expected_parsed_value)
+        self.assertTrue(isinstance(real_scalar_or_real_numpy_array_check(value), float))
+
+        value = "76.21"
+        expected_parsed_value = 76.21
+        self.assertAlmostEqual(real_scalar_or_real_numpy_array_check(value),
+                               expected_parsed_value)
+        self.assertTrue(isinstance(real_scalar_or_real_numpy_array_check(value), float))
+
+        # Test validation against the minimum and maximum allowed value
+        value = "5.7"
+        with self.assertRaises(validate.VdtValueTooSmallError):
+            real_scalar_or_real_numpy_array_check(value, min=10.0)
+
+        with self.assertRaises(validate.VdtValueTooBigError):
+            real_scalar_or_real_numpy_array_check(value, max=5.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         # Test when the input is a list of strings (with the numbers)
         list_of_strings = ['0', '6', '17']
-        parsed_array = _real_numpy_array_check(list_of_strings, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(list_of_strings, min=0, max=30)
         expected_parsed_array = np.array([0., 6., 17.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -147,28 +173,28 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # Test when the input is a string representation of a list with
         # numbers and range expressions.
         array_string = "[0 5 10:15]"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = _real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -177,45 +203,73 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            parsed_array = _real_numpy_array_check(array_string,
+            parsed_array = real_scalar_or_real_numpy_array_check(array_string,
                                                    min=4,
                                                    max=30)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         with self.assertRaises(validate.VdtValueTooBigError):
-            parsed_array = _real_numpy_array_check(array_string,
+            parsed_array = real_scalar_or_real_numpy_array_check(array_string,
                                                    min=0,
                                                    max=15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_integer_numpy_array_check(self):
+    # Note: Since the "integer_scalar_or_integer_numpy_array_check"
+    # function will call the "integer_numpy_array_check" function we only
+    # need a test case for the
+    # "integer_scalar_or_integer_numpy_array_check" function.
+    def test_integer_scalar_or_integer_numpy_array_check(self):
         try:
             import validate
         except ImportError as _:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
+        # xxxxxxxxxx Try to parse float scalar values xxxxxxxxxxxxxxxxxxxxx
+        value = "4"
+        expected_parsed_value = 4
+        self.assertAlmostEqual(integer_scalar_or_integer_numpy_array_check(value),
+                               expected_parsed_value)
+        self.assertTrue(isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+
+        value = "76"
+        expected_parsed_value = 76
+        self.assertAlmostEqual(integer_scalar_or_integer_numpy_array_check(value),
+                               expected_parsed_value)
+        self.assertTrue(isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+
+        # Test validation against the minimum and maximum allowed value
+        value = "6"
+        with self.assertRaises(validate.VdtValueTooSmallError):
+            integer_scalar_or_integer_numpy_array_check(value, min=10.0)
+
+        with self.assertRaises(validate.VdtValueTooBigError):
+            integer_scalar_or_integer_numpy_array_check(value, max=5.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         array_string = "[0 5 10:15]"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
                                       expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
                                       expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
                                       expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = _integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
@@ -224,12 +278,12 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            parsed_array = _integer_numpy_array_check(array_string,
+            parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
                                                       min=4,
                                                       max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
-            parsed_array = _integer_numpy_array_check(array_string,
+            parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
                                                       min=0,
                                                       max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

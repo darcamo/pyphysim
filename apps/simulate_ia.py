@@ -305,7 +305,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1)
+        max_iterations=integer_numpy_array(min=1, default=60)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -347,7 +347,7 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1)
+        max_iterations=integer_numpy_array(min=1, default=60)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -393,7 +393,7 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1)
+        max_iterations=integer_numpy_array(min=1, default=60)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -432,7 +432,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1)
+        max_iterations=integer_numpy_array(min=1, default=60)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -471,7 +471,7 @@ class MMSESimulationRunner(IASimulationRunner):
         Nt=integer(min=2,default=2)
         Ns=integer(min=1,default=1)
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1)
+        max_iterations=integer_numpy_array(min=1, default=60)
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -547,7 +547,11 @@ if __name__ == '__main__':
         print "Simulating Closed Form algorithm"
         closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
         #del closed_form_runner.params.parameters['max_iterations']
-        closed_form_runner.params.set_unpack_parameter('max_iterations', False)
+        try:
+            closed_form_runner.params.set_unpack_parameter('max_iterations', False)
+        except KeyError as e:
+            pass
+
         pprint(closed_form_runner.params.parameters)
         print("IA Solver: {0}\n".format(closed_form_runner.ia_solver.__class__))
         closed_form_runner.set_results_filename('ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
