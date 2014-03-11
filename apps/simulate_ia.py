@@ -100,9 +100,9 @@ class IASimulationRunner(SimulationRunner):
         M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]
         K = current_parameters["K"]
-        Nr = np.ones(K, dtype=int) * current_parameters["Nr"]
-        Nt = np.ones(K, dtype=int) * current_parameters["Nt"]
-        Ns = np.ones(K, dtype=int) * current_parameters["Ns"]
+        Nr = current_parameters["Nr"]
+        Nt = current_parameters["Nt"]
+        Ns = current_parameters["Ns"]
         SNR = current_parameters["SNR"]
 
         # Dependent parameters
@@ -122,6 +122,13 @@ class IASimulationRunner(SimulationRunner):
         self.ia_solver.noise_var = noise_var
         self.ia_solver.clear()
         self.ia_solver.solve(Ns)
+
+        # If any of the Nr, Nt or Ns variables were integers (meaning all
+        # users have the same value) we will convert them by numpy arrays
+        # with correct size (K).
+        Nr = self.ia_solver.Nr
+        Nt = self.ia_solver.Nt
+        Ns = self.ia_solver.Ns
 
         cumNs = np.cumsum(self.ia_solver.Ns)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -301,9 +308,9 @@ class AlternatingSimulationRunner(IASimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
         K=integer(min=2,default=3)
-        Nr=integer(min=2,default=2)
-        Nt=integer(min=2,default=2)
-        Ns=integer(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
         [General]
@@ -343,9 +350,9 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
         K=integer(min=2,default=3)
-        Nr=integer(min=2,default=2)
-        Nt=integer(min=2,default=2)
-        Ns=integer(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
         [General]
@@ -389,9 +396,9 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
         K=integer(min=2,default=3)
-        Nr=integer(min=2,default=2)
-        Nt=integer(min=2,default=2)
-        Ns=integer(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
         [General]
@@ -428,9 +435,9 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
         K=integer(min=2,default=3)
-        Nr=integer(min=2,default=2)
-        Nt=integer(min=2,default=2)
-        Ns=integer(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
         [General]
@@ -467,9 +474,9 @@ class MMSESimulationRunner(IASimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
         NSymbs=integer(min=10, max=1000000, default=200)
         K=integer(min=2,default=3)
-        Nr=integer(min=2,default=2)
-        Nt=integer(min=2,default=2)
-        Ns=integer(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
         [General]

@@ -21,7 +21,7 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
-from .configobjvalidation import real_numpy_array_check, integer_numpy_array_check
+from .configobjvalidation import real_numpy_array_check, integer_numpy_array_check, integer_scalar_or_integer_numpy_array_check, real_scalar_or_real_numpy_array_check
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -637,8 +637,11 @@ class SimulationParameters(object):
 
         # Dictionary with custom validation functions. Here we add a
         # validation function for numpy float arrays.
-        fdict = {'real_numpy_array': real_numpy_array_check,
-                 'integer_numpy_array': integer_numpy_array_check}
+        fdict = {
+            'real_numpy_array': real_numpy_array_check,
+            'integer_numpy_array': integer_numpy_array_check,
+            'integer_scalar_or_integer_numpy_array_check': integer_scalar_or_integer_numpy_array_check,
+            'real_scalar_or_real_numpy_array_check': real_scalar_or_real_numpy_array_check}
         validator = Validator(fdict)
 
         # The 'copy' argument indicates that if we save the ConfigObj
