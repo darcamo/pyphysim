@@ -1418,9 +1418,9 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
     def test_solve(self):
         K = 3
-        Nt = np.ones(K, dtype=int) * 4
-        Nr = np.ones(K, dtype=int) * 4
-        Ns = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Nr = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
 
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
@@ -1429,11 +1429,10 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         multiUserChannel.randomize(Nr, Nt, K)
 
         iasolver = MaxSinrIASolver(multiUserChannel)
-        iasolver.P = P
-        iasolver.noise_var = 1e-20
+        iasolver.noise_var = 1e-50
         #iasolver.max_iterations = 200
 
-        iasolver.solve(Ns)
+        iasolver.solve(Ns, P)
 
         H00 = np.matrix(iasolver._get_channel(0, 0))
         H11 = np.matrix(iasolver._get_channel(1, 1))
@@ -1453,28 +1452,25 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         full_W_H2 = iasolver.full_W_H[2]
 
         # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(full_W_H0 * H00 * F0, np.eye(2))
-        np.testing.assert_array_almost_equal(full_W_H1 * H11 * F1, np.eye(2))
-        np.testing.assert_array_almost_equal(full_W_H2 * H22 * F2, np.eye(2))
+        np.testing.assert_array_almost_equal(full_W_H0 * H00 * F0, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H1 * H11 * F1, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H2 * H22 * F2, 1.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # W_H0 = np.matrix(self.iasolver.W_H[0])
-        # W_H1 = np.matrix(self.iasolver.W_H[1])
-        # W_H2 = np.matrix(self.iasolver.W_H[2])
-
-        # H00 = np.matrix(iasolver._get_channel(0,0))
-        # H01 = np.matrix(iasolver._get_channel(0,1))
-        # H02 = np.matrix(iasolver._get_channel(0,2))
-        # H10 = np.matrix(iasolver._get_channel(1,0))
-        # H11 = np.matrix(iasolver._get_channel(1,1))
-        # H12 = np.matrix(iasolver._get_channel(1,2))
-        # H20 = np.matrix(iasolver._get_channel(2,0))
-        # H21 = np.matrix(iasolver._get_channel(2,1))
-        # H22 = np.matrix(iasolver._get_channel(2,2))
-
-        # import pudb; pudb.set_trace()  ## DEBUG ##y
-
-        # TODO: DARLAN -> Implement-me
+        # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H0 * H01 * F1), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H0 * H02 * F2), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H1 * H10 * F0), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H1 * H12 * F2), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H2 * H20 * F0), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H2 * H21 * F1), 0.0, decimal=1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # TODO: Finish the implementation
@@ -1739,6 +1735,8 @@ class MMSEIASolverTestCase(unittest.TestCase):
     def test_calc_Vi(self):
         # For now we use an arbitrarily chosen value
         mu = np.array([0.9, 1.1, 0.8])
+        self.iasolver.initialize_with_closed_form = True
+        self.iasolver._solve_init(self.Ns, self.P)
 
         U0 = self.iasolver.W[0]
         U1 = self.iasolver.W[1]
@@ -1872,7 +1870,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
         Nt = 3 * np.ones(K)
         Nr = 3 * np.ones(K)
         Ns = 2
-        P = 1.0
+        #P = 1.0
 
         # This specific channel will yield a degenerated solution solution
         big_H = np.load("{0}/tests/big_H2.npy".format(parent_dir))
@@ -1906,8 +1904,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.iasolver.P = 1.0
         Ns = self.Ns
         #self.iasolver.max_iterations = 200
-        self.iasolver.noise_var = 1e-20
-
+        self.iasolver.noise_var = 1e-50
         self.iasolver.solve(Ns)
 
         F0 = np.matrix(self.iasolver.F[0])
@@ -1935,38 +1932,19 @@ class MMSEIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(full_W_H0 * H01 * F1, 0.0,
-                                             decimal=2)
-        np.testing.assert_array_almost_equal(full_W_H0 * H02 * F2, 0.0,
-                                             decimal=2)
-        np.testing.assert_array_almost_equal(full_W_H1 * H10 * F0, 0.0,
-                                             decimal=2)
-        np.testing.assert_array_almost_equal(full_W_H1 * H12 * F2, 0.0,
-                                             decimal=2)
-        np.testing.assert_array_almost_equal(full_W_H2 * H20 * F0, 0.0,
-                                             decimal=2)
-        np.testing.assert_array_almost_equal(full_W_H2 * H21 * F1, 0.0,
-                                             decimal=2)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H0 * H01 * F1), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H0 * H02 * F2), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H1 * H10 * F0), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H1 * H12 * F2), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H2 * H20 * F0), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H2 * H21 * F1), 0.0, decimal=1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # # Tesf if the solution aligns the interference
-        # for l in range(3):
-        #     for k in range(3):
-        #         Hlk = self.iasolver._get_channel(l, k)
-        #         Wl_H = self.iasolver.W_H[l]
-        #         Fk = self.iasolver.F[k]
-        #         s = np.dot(Wl_H, np.dot(Hlk, Fk))[0][0]
-        #         if l == k:
-        #             Hk_eq = self.iasolver._calc_equivalent_channel(k)
-        #             s2 = s / Hk_eq[0, 0]  # We only have one stream -> the
-        #                                   # equivalent channel is an scalar.
-        #             self.assertAlmostEqual(1.0, s2)
-        #         # else:
-        #         #     # Test if the interference is equal to 0.0
-        #         #     self.assertAlmostEqual(0.0, s)
-
-        # TODO: Implement-me
-        pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

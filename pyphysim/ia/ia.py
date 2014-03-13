@@ -1073,6 +1073,15 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.max_iterations = 50  # Number of times the step method is
                                   # called in the solve method.
 
+        # We can use the closed form IA solver to initialize the iterative
+        # algorithm. This can reduce the number of iterations required for
+        # convergence. Note that this will be done only if
+        # initialize_with_closed_form is True when the solve method is
+        # called.
+        self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
+                                                         use_best_init=True)
+        self.initialize_with_closed_form = False
+
     def _get_runned_iterations(self):
         """Get method for the runned_iterations property."""
         return self._runned_iterations
@@ -1142,6 +1151,43 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def _initialize_F_randomly_and_find_W(self, Ns, P):
+        """
+        Initialize the IA Solution from a random matrix.
+
+        The implementation here simple initializes the precoder variable
+        and then calculates the initial receive filter.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+        """
+        self.randomizeF(Ns, P)
+        self._updateW()
+
+    def _initialize_F_and_W_from_closed_form(self, Ns, P):
+        """Initialize the IA Solution from the closed form IA solver.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+        """
+        # Clear all precoders and receive filters
+        self._clear_precoder_filter()
+        self._clear_receive_filter()
+
+        self._closed_form_ia_solver.solve(Ns, P)
+        self._F = self._closed_form_ia_solver.F
+        self._W = self._closed_form_ia_solver.W
+
     def _solve_init(self, Ns, P):
         """
         Code run in the `solve` method before the loop that run the `step`
@@ -1149,9 +1195,19 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         The implementation here simple initializes the precoder variable
         and then calculates the initial receive filter.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
         """
-        self.randomizeF(Ns, P)
-        self._updateW()
+        if self.initialize_with_closed_form is True:
+            self._initialize_F_and_W_from_closed_form(Ns, P)
+        else:
+            self._initialize_F_randomly_and_find_W(Ns, P)
 
     def _solve_finalize(self):  # pragma: no cover
         """Perform any post processing after the solution has been found.
@@ -1979,15 +2035,15 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
-        # We use the closed form ia solver to initialize the MMSE
-        # solver. This will reduce the number of iterations required for
-        # convergence of the MMSE IA solver.
-        self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
-                                                         use_best_init=True)
         self._mu = None
 
-    def _initialize_F_and_W_from_closed_form(self, Ns, P):
-        """Initialize the IA Solution from the closed form IA solver.
+    def _solve_init(self, Ns, P):
+        """
+        Code run in the `solve` method before the loop that run the `step`
+        method.
+
+        The implementation here simple initializes the precoder variable
+        and then calculates the initial receive filter.
 
         Parameters
         ----------
@@ -1997,24 +2053,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
-        # Clear all precoders and receive filters
-        self._clear_precoder_filter()
-        self._clear_receive_filter()
-
-        self._closed_form_ia_solver.solve(Ns, P)
-        self._F = self._closed_form_ia_solver.F
-        self._W = self._closed_form_ia_solver.W
-        self._mu = np.zeros(3, dtype=float)
-
-    def _solve_init(self, Ns, P):
-        """
-        Code run in the `solve` method before the loop that run the `step`
-        method.
-
-        The implementation here simple initializes the precoder variable
-        and then calculates the initial receive filter.
-        """
-        self._initialize_F_and_W_from_closed_form(Ns, P)
+        self._mu = np.zeros(self.K, dtype=float)
+        IterativeIASolverBaseClass._solve_init(self, Ns, P)
 
     def _calc_Uk(self, k):
         """Calculates the receive filter of the k-th user.
