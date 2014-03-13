@@ -1427,48 +1427,50 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
+
         iasolver = MaxSinrIASolver(multiUserChannel)
         iasolver.P = P
         iasolver.noise_var = 1e-20
-        # iasolver.max_iterations = 200
+        #iasolver.max_iterations = 200
 
         iasolver.solve(Ns)
 
-        full_W_H = iasolver.full_W_H
-        F = iasolver.F
-        H00 = iasolver._get_channel(0, 0)
-        H11 = iasolver._get_channel(1, 1)
-        H22 = iasolver._get_channel(2, 2)
+        H00 = np.matrix(iasolver._get_channel(0, 0))
+        H11 = np.matrix(iasolver._get_channel(1, 1))
+        H22 = np.matrix(iasolver._get_channel(2, 2))
+        H01 = np.matrix(iasolver._get_channel(0, 1))
+        H02 = np.matrix(iasolver._get_channel(0, 2))
+        H10 = np.matrix(iasolver._get_channel(1, 0))
+        H12 = np.matrix(iasolver._get_channel(1, 2))
+        H20 = np.matrix(iasolver._get_channel(2, 0))
+        H21 = np.matrix(iasolver._get_channel(2, 1))
 
-        H01 = iasolver._get_channel(0, 1)
-        # xxxxx Test the remaining interference xxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+        F0 = iasolver.F[0]
+        F1 = iasolver.F[1]
+        F2 = iasolver.F[2]
+        full_W_H0 = iasolver.full_W_H[0]
+        full_W_H1 = iasolver.full_W_H[1]
+        full_W_H2 = iasolver.full_W_H[2]
 
-        #self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H01, F[1]))[0][0], 0.0)
-
-
-        # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H01, F[1]))[0][0], 0.0)
-        # self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H02, F[2]))[0][0], 0.0)
-
-        # F0 = np.matrix(self.iasolver._F[0])
-        # F1 = np.matrix(self.iasolver._F[1])
-        # F2 = np.matrix(self.iasolver._F[2])
+        # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(full_W_H0 * H00 * F0, np.eye(2))
+        np.testing.assert_array_almost_equal(full_W_H1 * H11 * F1, np.eye(2))
+        np.testing.assert_array_almost_equal(full_W_H2 * H22 * F2, np.eye(2))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # W_H0 = np.matrix(self.iasolver.W_H[0])
         # W_H1 = np.matrix(self.iasolver.W_H[1])
         # W_H2 = np.matrix(self.iasolver.W_H[2])
 
-        # H00 = np.matrix(self.iasolver._get_channel(0,0))
-        # H01 = np.matrix(self.iasolver._get_channel(0,1))
-        # H02 = np.matrix(self.iasolver._get_channel(0,2))
-        # H10 = np.matrix(self.iasolver._get_channel(1,0))
-        # H11 = np.matrix(self.iasolver._get_channel(1,1))
-        # H12 = np.matrix(self.iasolver._get_channel(1,2))
-        # H20 = np.matrix(self.iasolver._get_channel(2,0))
-        # H21 = np.matrix(self.iasolver._get_channel(2,1))
-        # H22 = np.matrix(self.iasolver._get_channel(2,2))
+        # H00 = np.matrix(iasolver._get_channel(0,0))
+        # H01 = np.matrix(iasolver._get_channel(0,1))
+        # H02 = np.matrix(iasolver._get_channel(0,2))
+        # H10 = np.matrix(iasolver._get_channel(1,0))
+        # H11 = np.matrix(iasolver._get_channel(1,1))
+        # H12 = np.matrix(iasolver._get_channel(1,2))
+        # H20 = np.matrix(iasolver._get_channel(2,0))
+        # H21 = np.matrix(iasolver._get_channel(2,1))
+        # H22 = np.matrix(iasolver._get_channel(2,2))
 
         # import pudb; pudb.set_trace()  ## DEBUG ##y
 
@@ -1659,7 +1661,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-        self.iasolver._initialize_F_and_W(1, 1)
+        self.iasolver._initialize_F_and_W_from_closed_form(1, 1)
         self.iasolver.P = self.P
 
         self.iasolver.noise_var = 1e-3
@@ -1846,7 +1848,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
         iasolver = MMSEIASolver(multi_user_channel)
         iasolver.noise_var=10  # Set a very high noise variance (that is, a
                                # very low SINR)
-        #iasolver._initialize_F_and_W(Ns, P)
+        #iasolver._initialize_F_and_W_from_closed_form(Ns, P)
 
         # iasolver._F = F
         # iasolver._W = W
@@ -1907,28 +1909,45 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.iasolver.noise_var = 1e-20
 
         self.iasolver.solve(Ns)
-        # print self.iasolver.calc_SINR_old()
 
-        F0 = np.matrix(self.iasolver._F[0])
-        F1 = np.matrix(self.iasolver._F[1])
-        F2 = np.matrix(self.iasolver._F[2])
+        F0 = np.matrix(self.iasolver.F[0])
+        F1 = np.matrix(self.iasolver.F[1])
+        F2 = np.matrix(self.iasolver.F[2])
 
-        W_H0 = np.matrix(self.iasolver.W_H[0])
-        W_H1 = np.matrix(self.iasolver.W_H[1])
-        W_H2 = np.matrix(self.iasolver.W_H[2])
+        full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
+        full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
+        full_W_H2 = np.matrix(self.iasolver.full_W_H[2])
 
-        H00 = np.matrix(self.iasolver._get_channel(0,0))
-        H01 = np.matrix(self.iasolver._get_channel(0,1))
-        H02 = np.matrix(self.iasolver._get_channel(0,2))
-        H10 = np.matrix(self.iasolver._get_channel(1,0))
-        H11 = np.matrix(self.iasolver._get_channel(1,1))
-        H12 = np.matrix(self.iasolver._get_channel(1,2))
-        H20 = np.matrix(self.iasolver._get_channel(2,0))
-        H21 = np.matrix(self.iasolver._get_channel(2,1))
-        H22 = np.matrix(self.iasolver._get_channel(2,2))
+        H00 = np.matrix(self.iasolver._get_channel(0, 0))
+        H01 = np.matrix(self.iasolver._get_channel(0, 1))
+        H02 = np.matrix(self.iasolver._get_channel(0, 2))
+        H10 = np.matrix(self.iasolver._get_channel(1, 0))
+        H11 = np.matrix(self.iasolver._get_channel(1, 1))
+        H12 = np.matrix(self.iasolver._get_channel(1, 2))
+        H20 = np.matrix(self.iasolver._get_channel(2, 0))
+        H21 = np.matrix(self.iasolver._get_channel(2, 1))
+        H22 = np.matrix(self.iasolver._get_channel(2, 2))
 
-        # import pudb; pudb.set_trace()  ## DEBUG ##
+        # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(full_W_H0 * H00 * F0, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H1 * H11 * F1, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H2 * H22 * F2, 1.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(full_W_H0 * H01 * F1, 0.0,
+                                             decimal=2)
+        np.testing.assert_array_almost_equal(full_W_H0 * H02 * F2, 0.0,
+                                             decimal=2)
+        np.testing.assert_array_almost_equal(full_W_H1 * H10 * F0, 0.0,
+                                             decimal=2)
+        np.testing.assert_array_almost_equal(full_W_H1 * H12 * F2, 0.0,
+                                             decimal=2)
+        np.testing.assert_array_almost_equal(full_W_H2 * H20 * F0, 0.0,
+                                             decimal=2)
+        np.testing.assert_array_almost_equal(full_W_H2 * H21 * F1, 0.0,
+                                             decimal=2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # # Tesf if the solution aligns the interference
         # for l in range(3):

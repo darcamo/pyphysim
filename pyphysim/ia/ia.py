@@ -17,7 +17,8 @@ __revision__ = "$Revision$"
 import numpy as np
 import itertools
 
-from ..util.misc import peig, leig, randn_c, update_inv_sum_diag, get_principal_component_matrix
+from ..util.misc import peig, leig, randn_c, update_inv_sum_diag, \
+    get_principal_component_matrix
 from ..comm import channels
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
@@ -69,7 +70,9 @@ class IASolverBaseClass(object):
         """
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
         if not isinstance(multiUserChannel, channels.MultiUserChannelMatrix):
-            raise ValueError("multiUserChannel must be an object of the comm.channels.MultiUserChannelMatrix class (or a subclass).")
+            raise ValueError("multiUserChannel must be an object of the"
+                             " comm.channels.MultiUserChannelMatrix class"
+                             " (or a subclass).")
         # Channel of all users
         self._multiUserChannel = multiUserChannel
 
@@ -217,8 +220,8 @@ class IASolverBaseClass(object):
             if self.W_H is not None:
                 self._full_W_H = np.empty(self.K, dtype=np.ndarray)
                 for k in range(self.K):
-                    # Equivalent channel with the effect of the precoder, channel
-                    # and receive filter
+                    # Equivalent channel with the effect of the precoder,
+                    # channel and receive filter
                     Hieq = self._calc_equivalent_channel(k)
                     Hieq_inv = np.linalg.inv(Hieq)
                     self._full_W_H[k] = Hieq_inv.dot(self.W_H[k])
@@ -495,7 +498,7 @@ class IASolverBaseClass(object):
             Hkl_F_rev = np.dot(
                 self._get_channel_rev(k, l),
                 self._W[l])
-            Qk = Qk + np.dot(P[l] * Hkl_F_rev, Hkl_F_rev.transpose().conjugate())
+            Qk = Qk + np.dot(P[l] * Hkl_F_rev, Hkl_F_rev.conjugate().T)
 
         return Qk
 
@@ -730,7 +733,8 @@ class IASolverBaseClass(object):
         first_part = self._calc_Bkl_cov_matrix_first_part(k)
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
-            Bkl_all_l[l] = first_part - second_part + (noise_power * np.eye(self.Nr[k]))
+            Bkl_all_l[l] = first_part - second_part + (
+                noise_power * np.eye(self.Nr[k]))
 
         return Bkl_all_l
 
@@ -969,7 +973,8 @@ class ClosedFormIASolver(IASolverBaseClass):
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
-        assert self.K == 3, 'The ClosedFormIASolver class only works in a MIMO-IC scenario with 3 users.'
+        assert self.K == 3, ('The ClosedFormIASolver class only works'
+                             ' in a MIMO-IC scenario with 3 users.')
 
         if isinstance(Ns, int):
             Ns = np.ones(3, dtype=int) * Ns
@@ -1812,7 +1817,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
-            Bkl_all_l_rev[l] = first_part - second_part + (self.noise_var * np.eye(self.Nt[k]))
+            Bkl_all_l_rev[l] = first_part - second_part + (
+                self.noise_var * np.eye(self.Nt[k]))
 
         return Bkl_all_l_rev
 
@@ -1876,7 +1882,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         num_Rx = Bkl_all_l[0].shape[0]
         Uk = np.zeros([num_Rx, num_streams], dtype=complex)
         for l in range(num_streams):
-            Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
+            Uk[:, l] = MaxSinrIASolver._calc_Ukl(
+                Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
 
         return Uk / np.linalg.norm(Uk, 'fro')
 
@@ -1973,13 +1980,13 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         # We use the closed form ia solver to initialize the MMSE
-        # solver. This will reduce the nyumber of iterations required for
+        # solver. This will reduce the number of iterations required for
         # convergence of the MMSE IA solver.
         self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
                                                          use_best_init=True)
         self._mu = None
 
-    def _initialize_F_and_W(self, Ns, P):
+    def _initialize_F_and_W_from_closed_form(self, Ns, P):
         """Initialize the IA Solution from the closed form IA solver.
 
         Parameters
@@ -2007,7 +2014,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         The implementation here simple initializes the precoder variable
         and then calculates the initial receive filter.
         """
-        self._initialize_F_and_W(Ns, P)
+        self._initialize_F_and_W_from_closed_form(Ns, P)
 
     def _calc_Uk(self, k):
         """Calculates the receive filter of the k-th user.
@@ -2154,13 +2161,18 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         if mu_i is None:
             min_mu_i = 0
             max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
-            max_norm = np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, min_mu_i, Hii_herm_U), 'fro')
+            max_norm = np.linalg.norm(
+                self._calc_Vi_for_a_given_mu2(inv_sum_term,
+                                              min_mu_i,
+                                              Hii_herm_U),
+                'fro')
 
             # If the square of max_norm is lower then the maximum power
             # then we can use the value of mu_i to min_mu_i and we're done:
             if self.P[i] > (max_norm ** 2):
                 mu_i = min_mu_i
-                Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu2(
+                    inv_sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
             else:
                 # If we are not done yet then we need to perform the
@@ -2175,7 +2187,12 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # Perform the bisection
                 for _ in range(max_iter):
                     mu_i = (max_mu_i + min_mu_i) / 2.0
-                    cost = (np.linalg.norm(self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U), 'fro') ** 2) - self.P[i]
+                    cost = (
+                        np.linalg.norm(
+                            self._calc_Vi_for_a_given_mu2(inv_sum_term,
+                                                          mu_i,
+                                                          Hii_herm_U),
+                            'fro') ** 2) - self.P[i]
                     if cost > 0:
                         # The current value of mu_i yields a precoder with
                         # a power higher then the allowed value. Lets
@@ -2190,7 +2207,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                         break
 
                 # Now that we have the best value for mu_i, lets calculate Vi
-                Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu2(
+                    inv_sum_term, mu_i, Hii_herm_U)
 
                 # If any load_factor was added (in case the original
                 # sum_term is a singular matrix) we will add it to the
