@@ -176,7 +176,7 @@ def _simulate_do_what_i_mean_single_runner(runner, folder=None, block=True):
             # For the actual simulation we are better using a
             # load_balanced_view
             lview = cl.load_balanced_view()
-        except IOError:
+        except (IOError, ImportError):
             # If we can't get an IPython view then we will perform the
             # simulation serially
             run_in_parallel = False
