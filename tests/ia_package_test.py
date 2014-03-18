@@ -20,6 +20,7 @@ import unittest
 import doctest
 import numpy as np
 from numpy.linalg import norm
+import copy
 
 from pyphysim.comm import channels
 import pyphysim.ia  # Import the package ia
@@ -1423,7 +1424,7 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         Ns = np.ones(K, dtype=int) * 1
 
         # Transmit power of all users
-        P = np.array([1.2, 1.5, 0.9])
+        P = np.array([2.0, 1.5, 0.9])
 
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
@@ -1471,6 +1472,43 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             np.abs(full_W_H2 * H21 * F1), 0.0, decimal=1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_solve_finalize(self):
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+
+        original_Ns = copy.copy(Ns)
+
+        # Transmit power of all users. We set the power of the first user
+        # to a very low value so that the ia solver sets 0 energy to one of
+        # the streams (due to the waterfilling algorithm deciding is is
+        # better to focus all the energy into one stream). This will make
+        # the code in the _solve_finalize method to reduce the number of
+        # streams of the first user, which we will test here.
+        P = np.array([0.0001, 100.8, 230.0])
+
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.randomize(Nr, Nt, K)
+
+        iasolver = MaxSinrIASolver(multiUserChannel)
+        iasolver.noise_var = 1e-50
+
+        iasolver.solve(Ns, P)
+
+        self.assertEqual(iasolver.F[0].shape, (4, 1))
+        self.assertEqual(iasolver.F[1].shape, (4, 2))
+        self.assertEqual(iasolver.F[2].shape, (4, 2))
+
+        self.assertEqual(iasolver.W[0].shape, (4, 1))
+        self.assertEqual(iasolver.W[1].shape, (4, 2))
+        self.assertEqual(iasolver.W[2].shape, (4, 2))
+
+        np.testing.assert_array_equal(iasolver.Ns, np.array([1,2,2]))
+        # The Ns array passed to the IA solver object should not be
+        # changed.
+        np.testing.assert_array_equal(Ns, np.array([2,2,2]))
 
 
 # TODO: Finish the implementation
