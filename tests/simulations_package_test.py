@@ -1926,6 +1926,56 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         # pbar4.progress(1)
         # self.assertEqual(self.out2.getvalue(), """------------------- % Progress ------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
 
+    def test_deleting_progress_file_after_progress_finished(self):
+        out = open('test_progress_file1.txt', 'w')
+        pbar = progressbar.ProgressbarText(
+            50, '*', 'Progress message', output=out)
+
+        out2 = open('test_progress_file2.txt', 'w')
+        pbar2 = progressbar.ProgressbarText(
+            25, 'x', 'Progress message', output=out2)
+
+        out3 = open('test_progress_file3.txt', 'w')
+        pbar3 = progressbar.ProgressbarText(
+            30, 'o', 'Progress message', output=out3)
+
+        pbar.delete_progress_file_after_completion = True
+        pbar.progress(15)
+        pbar.progress(37)
+        pbar.progress(50)  # Progress finishes and there is not explicit
+                           # call to the stop method.
+
+        pbar2.delete_progress_file_after_completion = True
+        pbar2.progress(7)
+        pbar2.progress(21)
+        pbar2.stop()  # Explicitly call the stop method to finish the
+                      # progress.
+
+        pbar3.delete_progress_file_after_completion = True
+        pbar3.progress(10)
+        pbar3.progress(21)
+        pbar3.progress(28)
+        del pbar3 # Progress will not finish, but we will explicitly delete
+                  # pbar3 here to test if the file it is writing to is
+                  # delete in that case.
+
+        # The first progressbar was marked to erase the file after the
+        # progress finishes. therefore, if we try to delete it here python
+        # should raise an OSError exception.
+        with self.assertRaises(OSError):
+            os.remove('test_progress_file1.txt')
+
+        # The second progressbar was marked to erase the file after the
+        # progress finishes. therefore, if we try to delete it here python
+        # should raise an OSError exception.
+        with self.assertRaises(OSError):
+            os.remove('test_progress_file2.txt')
+
+        # The third progressbar was marked to erase the file after the
+        # progress finishes. therefore, if we try to delete it here python
+        # should raise an OSError exception.
+        with self.assertRaises(OSError):
+            os.remove('test_progress_file3.txt')
 
 class ProgressbarText2TestCase(unittest.TestCase):
     def setUp(self):

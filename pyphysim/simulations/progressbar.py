@@ -30,6 +30,7 @@ from __future__ import print_function
 __revision__ = "$Revision$"
 
 import sys
+import os
 import multiprocessing
 import time
 
@@ -186,6 +187,11 @@ class ProgressbarTextBase(object):
 
         self.finalcount = finalcount
         self.progresschar = progresschar
+
+        # If output points to a file (and not to stdout) and this is set to
+        # True, then the file will be erased after the progress finishes.
+        self.delete_progress_file_after_completion = False
+
         self._width = 50   # This should be a multiple of 10 and the lower
                            # possible value is 40.
 
@@ -212,6 +218,20 @@ class ProgressbarTextBase(object):
 
         # If true, an empty line will be printed when the progress finishes
         self._print_empty_line_at_the_end = True
+
+    def __del__(self):
+        """
+        Delete the output file if there is any and
+        delete_progress_file_after_completion was set to True when the
+        progressbar object is deleted.
+        """
+        # In case the progressbar object is deleted before the progress
+        # finishes the `stop` method will not be called and thus the output
+        # file (if there is any) would not be deleted even if
+        # delete_progress_file_after_completion was set to True. Therefore,
+        # we implement the __del__ method here to call the
+        # _maybe_delete_output_file method to do that.
+        self._maybe_delete_output_file()
 
     def _get_elapsed_time(self):
         """Get method for the elapsed_time property."""
@@ -339,6 +359,32 @@ class ProgressbarTextBase(object):
             self._perform_initialization()
             self._initialized = True
 
+    def _maybe_delete_output_file(self):
+        """
+        Delete the output file (if there is any) when
+        delete_progress_file_after_completion is set to True.
+        """
+        if self.delete_progress_file_after_completion is True:
+            # Try to get the file name associated with the output. If we
+            # can get an actual file and
+            # delete_progress_file_after_completion is set to True we will
+            # delete that file
+            try:
+                name = self._output.name
+                # We will only delete a file if the name does not point to
+                # stdout.
+                if name != '<stdout>':
+                    try:
+                        os.remove(name)
+                    except OSError:  # Pragma: no cover
+                        pass
+
+            except AttributeError:
+                # If an attribute error was raised then the output is not a
+                # file like object and therefore we don't need to delete
+                # any file
+                pass
+
     def stop(self):
         """
         Stop the progressbar.
@@ -354,11 +400,19 @@ class ProgressbarTextBase(object):
                 # Print an empty line after the last iteration to be consistent
                 # with the ProgressbarText class
                 self._output.write(u"\n")
+                self._output.flush()  # Flush everything to guarantee that
+                                      # at this point everything is written
+                                      # to the output.
 
             # When progress reaches 100% we set the internal variable
             # to True so that any subsequent calls to the `progress`
             # method will be ignored.
             self._finalized = True
+
+            # This will only delete the output file if self._output
+            # actually points to a file and if
+            # self.delete_progress_file_after_completion is set to True
+            self._maybe_delete_output_file()
 
     def progress(self, count):
         """
@@ -407,14 +461,15 @@ class ProgressbarTextBase(object):
                 self._output.write(u'\r')
                 self._output.write(u'{0}'.format((self.prog_bar)))
 
-                # If count is equal to self.finalcount we have reached 100%. In
-                # that case, we also write a final newline character.
+                # Flush everything to guarantee that at this point
+                # everything is written to the output.
+                self._output.flush()
+
+                # If count is equal to self.finalcount we have reached
+                # 100%. In that case, we also write a final newline
+                # character.
                 if count == self.finalcount:
                     self.stop()
-
-                # Flush everything to guarantee that at this point everything is
-                # written to the output.
-                self._output.flush()
 
     def __str__(self):
         return str(self.prog_bar)
