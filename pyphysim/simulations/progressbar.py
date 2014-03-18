@@ -389,22 +389,32 @@ class ProgressbarTextBase(object):
             if count > self.finalcount:
                 count = self.finalcount
 
-            # Update the prog_bar variable
+            # Save the current prog_bar variable before it is updated in
+            # the _update_iteration method.
+            old_prog_bar = self.prog_bar
+
+            # Update the prog_bar variable. Note that the _update_iteration
+            # method is implemented in a subclass.
             self._update_iteration(count)
 
-            # We simple change the cursor to the beginning of the line and
-            # write the string representation of the prog_bar variable.
-            self._output.write(u'\r')
-            self._output.write(u'{0}'.format((self.prog_bar)))
+            # We will only write the progress if it actually changed since
+            # the last time. This is specially useful when the output is a
+            # file and it will avoid writing many unnecessary equal lines to
+            # the file.
+            if old_prog_bar != self.prog_bar:
+                # We simple change the cursor to the beginning of the line and
+                # write the string representation of the prog_bar variable.
+                self._output.write(u'\r')
+                self._output.write(u'{0}'.format((self.prog_bar)))
 
-            # If count is equal to self.finalcount we have reached 100%. In
-            # that case, we also write a final newline character.
-            if count == self.finalcount:
-                self.stop()
+                # If count is equal to self.finalcount we have reached 100%. In
+                # that case, we also write a final newline character.
+                if count == self.finalcount:
+                    self.stop()
 
-            # Flush everything to guarantee that at this point everything is
-            # written to the output.
-            self._output.flush()
+                # Flush everything to guarantee that at this point everything is
+                # written to the output.
+                self._output.flush()
 
     def __str__(self):
         return str(self.prog_bar)
