@@ -372,7 +372,11 @@ class IASolverBaseClass(object):
         for k in range(self.K):
             self._F[k] = normalized(randn_c(self.Nt[k], Ns[k]))
         #self._F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
-        self._Ns = Ns
+
+        self._Ns = np.array(Ns)  # This will create a new array so that we
+                                 # can modify self._Ns internally without
+                                 # changing the original Ns variable passed
+                                 # to the randomizeF method.
 
     # This method is just an alias for the get_channel method of the
     # multiuserchannel object associated with the IA Solver.xs
@@ -980,7 +984,10 @@ class ClosedFormIASolver(IASolverBaseClass):
             Ns = np.ones(3, dtype=int) * Ns
         else:
             assert len(Ns) == 3
-        self._Ns = Ns
+        self._Ns = np.array(Ns)  # This will create a new array so that we
+                                 # can modify self._Ns internally without
+                                 # changing the original Ns variable passed
+                                 # to the solve method.
 
         self.P = P
 
@@ -1363,7 +1370,10 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         else:
             assert len(Ns) == self.K
 
-        self._Ns = Ns
+        self._Ns = np.array(Ns)  # This will create a new array so that we
+                                 # can modify self._Ns internally without
+                                 # changing the original Ns variable passed
+                                 # to the randomizeF method.
 
         # This will be used to detect of the precoder did not
         # significativelly change
