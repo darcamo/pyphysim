@@ -554,12 +554,14 @@ class SimulationRunner(object):
                                          output=output_progress_sinc,
                                          **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
+            self._pbar.delete_progress_file_after_completion = True
         elif self.update_progress_function_style == 'text2':  # pragma: no cover
             # We will use the ProgressbarText2 class
             self._pbar = ProgressbarText2(self.rep_max, '*', message,
                                           output=output_progress_sinc,
                                           **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
+            self._pbar.delete_progress_file_after_completion = True
         elif callable(self.update_progress_function_style) is True:
             # We will use a custom function to update the progress. Note
             # that we call self.update_progress_function_style to return

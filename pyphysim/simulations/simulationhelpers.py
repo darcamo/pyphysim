@@ -6,6 +6,7 @@
 __revision__ = "$Revision$"
 
 import sys
+import os
 import argparse
 
 from .progressbar import ProgressbarZMQServer
@@ -226,11 +227,23 @@ def _simulate_do_what_i_mean_multiple_runners(list_of_runners,
     # only later call the wait_parallel_simulation method for each
     # runner.
 
+    # First we will check the progress_output_type variable of the first
+    # runner. If it is 'screen' we will create a progressbar that prints
+    # the progress to the terminal, otherwise we will create a progressbar
+    # the prints the progress to a file.
+    if list_of_runners[0].progress_output_type == 'screen':
+        # Progress will be printed to the screen
+        filename = None
+    else:
+        # Progress will be printed to this file
+        filename = 'multiple_runners_progress.txt'
+
     # xxxxxxxxxx Create the shared progressbar object xxxxxxxxxxxxxxxxx
     pbar = ProgressbarZMQServer(
         progresschar='*',
         message="Elapsed Time: {elapsed_time}",
-        sleep_time=1
+        sleep_time=1,
+        filename=filename
     )
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
