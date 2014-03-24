@@ -6,7 +6,8 @@
 __revision__ = "$Revision$"
 
 try:
-    from matplotlib import pylab, patches
+    from matplotlib import patches
+    from matplotlib import pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
@@ -14,6 +15,7 @@ except ImportError:  # pragma: no cover
 from collections import Iterable
 import numpy as np
 import itertools
+from io import BytesIO
 
 from . import shapes
 
@@ -56,7 +58,7 @@ class Node(shapes.Coordinate):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = pylab.axes()
+            ax = plt.axes()
             stand_alone_plot = True
 
         ax.plot(self.pos.real,
@@ -67,7 +69,7 @@ class Node(shapes.Coordinate):
 
         if stand_alone_plot is True:
             ax.plot()
-            pylab.show()
+            plt.show()
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -265,7 +267,7 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
         else:
             # If self.id is not None, plot the cell ID at the center of the
             # cell
-            pylab.text(self.pos.real,
+            plt.text(self.pos.real,
                        self.pos.imag,
                        '{0}'.format(self.id),
                        color=self.marker_color,
@@ -355,7 +357,7 @@ class Cell(shapes.Hexagon, CellBase):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = pylab.axes()
+            ax = plt.axes()
             stand_alone_plot = True
 
         # Plot the shape part
@@ -365,7 +367,7 @@ class Cell(shapes.Hexagon, CellBase):
 
         if stand_alone_plot is True:
             ax.plot()
-            pylab.show()
+            plt.show()
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -778,7 +780,7 @@ class Cluster(shapes.Shape):
         stand_alone_plot = False
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = pylab.axes()
+            ax = plt.axes()
             stand_alone_plot = True
 
         # self.fill_face_bool = False
@@ -795,7 +797,7 @@ class Cluster(shapes.Shape):
 
         if stand_alone_plot is True:
             ax.plot()
-            pylab.show()
+            plt.show()
 
     def plot_border(self, ax=None):  # pragma: no cover
         """Plot only the border of the Cluster.
@@ -814,7 +816,7 @@ class Cluster(shapes.Shape):
             stand_alone_plot = False
             if (ax is None):
                 # This is a stand alone plot. Lets create a new axes.
-                ax = pylab.axes()
+                ax = plt.axes()
                 stand_alone_plot = True
 
             polygon_edges = patches.Polygon(
@@ -827,7 +829,7 @@ class Cluster(shapes.Shape):
 
             if stand_alone_plot is True:
                 ax.plot()
-                pylab.show()
+                plt.show()
 
     def add_random_users(self, cell_ids, num_users=1, user_color=None, min_dist_ratio=0):
         """Adds one or more users to the Cells with the specified cell IDs (the
@@ -1208,7 +1210,7 @@ class Grid(object):
         stand_alone_plot = False
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = pylab.axes()
+            ax = plt.axes()
             stand_alone_plot = True
 
         for cluster in self._clusters:
@@ -1216,7 +1218,50 @@ class Grid(object):
 
         if stand_alone_plot is True:
             ax.plot()
-            pylab.show()
+            plt.show()
+
+    # This method is the same in the Shape class
+    def _repr_some_format_(self, extension='png', axis_option='equal'):
+        """
+        Return the representation of the shape in the desired format.
+
+        Parameters
+        ----------
+        extension : str
+            The extension of the desired format. This should be something
+            that the savefig method in a matplotlib figure can understandm,
+            such as 'png', 'svg', stc.
+        axis_option : str
+            Option to be given to the ax.axis function.
+        """
+        plt.ioff() # turn off interactive mode
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_axis_off()
+
+        output = BytesIO()
+        self.plot(ax)
+        ax.axis(axis_option)
+        fig.savefig(output, format=extension)
+        output.seek(0)
+        plt.close(fig)
+        plt.ion() # turn on interactive mode
+
+        return output.getvalue()
+
+    # This method is the same in the Shape class
+    def _repr_png_(self):
+        """
+        Return the PNG representation of the shape.
+        """
+        return self._repr_some_format_('png')
+
+    # This method is the same in the Shape class
+    def _repr_svg_(self):
+        """
+        Return the SVG representation of the shape.
+        """
+        return self._repr_some_format_('svg')
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1254,7 +1299,7 @@ if __name__ == '__main__1':  # pragma: no cover
 
 if __name__ == '__main__1':  # pragma: no cover
     from matplotlib import pyplot as plt
-    ax = pylab.axes()
+    ax = plt.axes()
     cell_radius = 1
     num_cells = 19
     node_pos = 3 + 15j
@@ -1288,7 +1333,7 @@ if __name__ == '__main__1':  # pragma: no cover
 
 if __name__ == '__main__1':  # pragma: no cover
     from matplotlib import pyplot as plt
-    ax = pylab.axes()
+    ax = plt.axes()
     cell_radius = 1
     num_cells = 7
     num_clusters = 7

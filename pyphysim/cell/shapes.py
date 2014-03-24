@@ -10,12 +10,14 @@ __revision__ = "$Revision$"
 
 try:
     from matplotlib import pylab
+    from matplotlib import pyplot as plt
     from matplotlib import patches, path
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
 import numpy as np
+from io import BytesIO
 
 __all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
 
@@ -286,7 +288,7 @@ class Shape(Coordinate):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = pylab.axes()
+            ax = plt.axes()
             stand_alone_plot = True
 
         if self.fill_face_bool:
@@ -311,7 +313,47 @@ class Shape(Coordinate):
 
         if stand_alone_plot is True:
             ax.plot()
-            pylab.show()
+            plt.show()
+
+    def _repr_some_format_(self, extension='png', axis_option='equal'):
+        """
+        Return the representation of the shape in the desired format.
+
+        Parameters
+        ----------
+        extension : str
+            The extension of the desired format. This should be something
+            that the savefig method in a matplotlib figure can understandm,
+            such as 'png', 'svg', stc.
+        axis_option : str
+            Option to be given to the ax.axis function.
+        """
+        plt.ioff() # turn off interactive mode
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_axis_off()
+
+        output = BytesIO()
+        self.plot(ax)
+        ax.axis(axis_option)
+        fig.savefig(output, format=extension)
+        output.seek(0)
+        plt.close(fig)
+        plt.ion() # turn on interactive mode
+
+        return output.getvalue()
+
+    def _repr_png_(self):
+        """
+        Return the PNG representation of the shape.
+        """
+        return self._repr_some_format_('png')
+
+    def _repr_svg_(self):
+        """
+        Return the SVG representation of the shape.
+        """
+        return self._repr_some_format_('svg')
 
     @staticmethod
     def _rotate(cur_pos, angle):
@@ -430,6 +472,27 @@ class Rectangle(Shape):
         vertex_positions[3] = complex(A.real, B.imag)
         return vertex_positions
 
+    def _repr_some_format_(self, extension='png'):
+        """
+        Return the representation of the shape in the desired format.
+
+        Parameters
+        ----------
+        extension : str
+            The extension of the desired format. This should be something
+            that the savefig method in a matplotlib figure can understandm,
+            such as 'png', 'svg', stc.
+        axis_option : str
+            Option to be given to the ax.axis function.
+
+        Notes
+        -----
+        We only subclass the _repr_some_format_ method from the Shape class
+        here so that we can change the axis_option to 'tight' (default in
+        the Shape class is 'equal').
+        """
+        return Shape._repr_some_format_(self, extension=extension, axis_option='tight')
+
 
 class Circle(Shape):
     """Circle shape class.
@@ -533,7 +596,7 @@ class Circle(Shape):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = pylab.axes()
+            ax = plt.axes()
             stand_alone_plot = True
 
         if self.fill_face_bool:
@@ -557,7 +620,7 @@ class Circle(Shape):
 
         if stand_alone_plot is True:
             ax.plot()
-            pylab.show()
+            plt.show()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -604,7 +667,7 @@ def from_complex_array_to_real_matrix(a):
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':  # pragma: no cover
-    ax = pylab.axes()
+    ax = plt.axes()
     h = Hexagon(2 + 3j, 2, 30)
 
     #print "Border Point is: {0}".format(point)
@@ -626,17 +689,17 @@ if __name__ == '__main__1':  # pragma: no cover
 
     #print h.vertices
     ax.axis('equal')
-    pylab.show()
+    plt.show()
 
-if __name__ == '__main__1':  # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     from matplotlib import pyplot as plt
-    ax = pylab.axes()
+    ax = plt.axes()
 
     h = Hexagon(0, 1)
     h.rotation = 30
     h.fill_face_bool = True
 
-    pylab.hold(True)
+    plt.hold(True)
     r = Rectangle(0, 2 + 1j, 0)
     r.rotation = 15
     r.fill_face_bool = True
@@ -655,7 +718,7 @@ if __name__ == '__main__1':  # pragma: no cover
     plt.show()
 
 if __name__ == '__main__1':  # pragma: no cover
-    ax = pylab.axes()
+    ax = plt.axes()
     c = Circle(2 + 3j, 2)
 
     #print "Border Point is: {0}".format(point)
@@ -668,4 +731,4 @@ if __name__ == '__main__1':  # pragma: no cover
 
     #print c.vertices
     ax.axis('equal')
-    pylab.show()
+    plt.show()
