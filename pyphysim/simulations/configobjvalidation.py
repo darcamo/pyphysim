@@ -343,7 +343,7 @@ def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
     """
     try:
         value = validate.is_integer(value, min, max)
-    except validate.VdtTypeError as e:
+    except validate.VdtTypeError:
         value = integer_numpy_array_check(value, min, max)
 
     return value

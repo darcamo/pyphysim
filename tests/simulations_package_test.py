@@ -31,8 +31,11 @@ try:
 except ImportError:  # pragma: no cover
     pass
 
-from pyphysim.simulations import configobjvalidation, parameters, progressbar, results, runner, simulationhelpers
-from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, real_numpy_array_check, integer_numpy_array_check, real_scalar_or_real_numpy_array_check, integer_scalar_or_integer_numpy_array_check
+from pyphysim.simulations import configobjvalidation, parameters, progressbar,\
+    results, runner, simulationhelpers
+from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, \
+    real_scalar_or_real_numpy_array_check, \
+    integer_scalar_or_integer_numpy_array_check
 from pyphysim.simulations.simulationhelpers import get_common_parser
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import Result, SimulationResults
@@ -82,7 +85,6 @@ class SimulationHelpersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx configobjvalidation Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: finish implementation
 class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -91,9 +93,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     def test_parse_range_expr(self):
         try:
             import validate
-        except ImportError as _:  # pragma: no cover
+        except ImportError:  # pragma: no cover
             self.skipTest("The validate module is not installed")
-
 
         expr = "10:15"
         expected_parsed_expr = np.r_[10:15]
@@ -136,7 +137,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     def test_real_scalar_or_real_numpy_array_check(self):
         try:
             import validate
-        except ImportError as _:  # pragma: no cover
+        except ImportError:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
         # xxxxxxxxxx Try to parse float scalar values xxxxxxxxxxxxxxxxxxxxx
@@ -144,13 +145,15 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         expected_parsed_value = 4.6
         self.assertAlmostEqual(real_scalar_or_real_numpy_array_check(value),
                                expected_parsed_value)
-        self.assertTrue(isinstance(real_scalar_or_real_numpy_array_check(value), float))
+        self.assertTrue(
+            isinstance(real_scalar_or_real_numpy_array_check(value), float))
 
         value = "76.21"
         expected_parsed_value = 76.21
         self.assertAlmostEqual(real_scalar_or_real_numpy_array_check(value),
                                expected_parsed_value)
-        self.assertTrue(isinstance(real_scalar_or_real_numpy_array_check(value), float))
+        self.assertTrue(
+            isinstance(real_scalar_or_real_numpy_array_check(value), float))
 
         # Test validation against the minimum and maximum allowed value
         value = "5.7"
@@ -164,7 +167,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         # Test when the input is a list of strings (with the numbers)
         list_of_strings = ['0', '6', '17']
-        parsed_array = real_scalar_or_real_numpy_array_check(list_of_strings, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(
+            list_of_strings, min=0, max=30)
         expected_parsed_array = np.array([0., 6., 17.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -173,28 +177,32 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # Test when the input is a string representation of a list with
         # numbers and range expressions.
         array_string = "[0 5 10:15]"
-        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = real_scalar_or_real_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -203,15 +211,13 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            parsed_array = real_scalar_or_real_numpy_array_check(array_string,
-                                                   min=4,
-                                                   max=30)
+            parsed_array = real_scalar_or_real_numpy_array_check(
+                array_string, min=4, max=30)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         with self.assertRaises(validate.VdtValueTooBigError):
-            parsed_array = real_scalar_or_real_numpy_array_check(array_string,
-                                                   min=0,
-                                                   max=15)
+            parsed_array = real_scalar_or_real_numpy_array_check(
+                array_string, min=0, max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Note: Since the "integer_scalar_or_integer_numpy_array_check"
@@ -221,21 +227,25 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     def test_integer_scalar_or_integer_numpy_array_check(self):
         try:
             import validate
-        except ImportError as _:  # pragma: no cover
+        except ImportError:  # pragma: no cover
             self.skipTest("The validate module is not installed")
 
         # xxxxxxxxxx Try to parse float scalar values xxxxxxxxxxxxxxxxxxxxx
         value = "4"
         expected_parsed_value = 4
-        self.assertAlmostEqual(integer_scalar_or_integer_numpy_array_check(value),
-                               expected_parsed_value)
-        self.assertTrue(isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+        self.assertAlmostEqual(
+            integer_scalar_or_integer_numpy_array_check(value),
+            expected_parsed_value)
+        self.assertTrue(
+            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
 
         value = "76"
         expected_parsed_value = 76
-        self.assertAlmostEqual(integer_scalar_or_integer_numpy_array_check(value),
-                               expected_parsed_value)
-        self.assertTrue(isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+        self.assertAlmostEqual(
+            integer_scalar_or_integer_numpy_array_check(value),
+            expected_parsed_value)
+        self.assertTrue(
+            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
 
         # Test validation against the minimum and maximum allowed value
         value = "6"
@@ -248,28 +258,32 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         array_string = "[0 5 10:15]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
                                       expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
                                       expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
                                       expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array,
@@ -278,14 +292,12 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
-                                                      min=4,
-                                                      max=30)
+            parsed_array = integer_scalar_or_integer_numpy_array_check(
+                array_string, min=4, max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
-            parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
-                                                      min=0,
-                                                      max=15)
+            parsed_array = integer_scalar_or_integer_numpy_array_check(
+                array_string, min=0, max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -349,7 +361,9 @@ class SimulationParametersTestCase(unittest.TestCase):
             # object. Note that the parameters that are marked for
             # unpacking have '*' appended to their name.
             # THIS TEST WILL NOT BE PERFORMED IN PYTHON 3
-            self.assertEqual(self.sim_params.__repr__(), """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
+            self.assertEqual(
+                self.sim_params.__repr__(),
+                """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
 
         # Test if we can unset a parameter that was previously set to be
         # unpacked.
@@ -422,7 +436,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         # variables are correct for each unpacked variation
         for i in range(self.sim_params.get_num_unpacked_variations()):
             self.assertEqual(unpacked_param_list[i]._unpack_index, i)
-            self.assertTrue(unpacked_param_list[i]._original_sim_params is self.sim_params)
+            self.assertTrue(
+                unpacked_param_list[i]._original_sim_params is self.sim_params)
 
     def test_get_num_unpacked_variations(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -559,7 +574,8 @@ class SimulationParametersTestCase(unittest.TestCase):
             del configobj
             del validate
         except ImportError:  # pragma: no cover
-            self.skipTest("This configobj and validate modules must be installed.")
+            self.skipTest(
+                "This configobj and validate modules must be installed.")
 
         filename = 'test_config_file.txt'
 
@@ -704,7 +720,8 @@ class ResultTestCase(unittest.TestCase):
 
     def test_update_with_accumulate(self):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
-        self.assertEqual(result1.accumulate_values_bool, result1._accumulate_values_bool)
+        self.assertEqual(result1.accumulate_values_bool,
+                         result1._accumulate_values_bool)
         result1.update(13)
         result1.update(30)
         self.assertEqual(result1._value, 43)
@@ -750,7 +767,8 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result1.get_result(), 54)
         self.assertEqual(self.result1.num_updates, 3)
         self.assertEqual(self.result1._result_sum, expected_result_sum1)
-        self.assertEqual(self.result1._result_squared_sum, expected_result_sqr_sum1)
+        self.assertEqual(self.result1._result_squared_sum,
+                         expected_result_sqr_sum1)
 
         # Test merge of Results of RATIOTYPE
         self.result2.update(3, 10)
@@ -772,7 +790,8 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result2.get_result(), 0.56)
         self.assertEqual(self.result2.num_updates, 5)
         self.assertEqual(self.result2._result_sum, expected_result_sum2)
-        self.assertEqual(self.result2._result_squared_sum, expected_result_sqr_sum2)
+        self.assertEqual(self.result2._result_squared_sum,
+                         expected_result_sqr_sum2)
 
         # Test merge of Results of MISCTYPE
         # There is no merge for misc type and an exception should be raised
@@ -794,7 +813,8 @@ class ResultTestCase(unittest.TestCase):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         result1.update(13)
         result1.update(30)
-        result1_other = Result.create("name", Result.SUMTYPE, 11, accumulate_values=True)
+        result1_other = Result.create("name", Result.SUMTYPE, 11,
+                                      accumulate_values=True)
         result1_other.update(22)
         result1_other.update(4)
         result1.merge(result1_other)
@@ -807,7 +827,8 @@ class ResultTestCase(unittest.TestCase):
         result2.update(6, 7)
         result2.update(1, 15)
 
-        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50, accumulate_values=True)
+        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50,
+                                      accumulate_values=True)
         result2_other.update(12, 18)
         result2.merge(result2_other)
         self.assertEqual(result2._value, 56)
@@ -842,7 +863,8 @@ class ResultTestCase(unittest.TestCase):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         result1.update(13)
         result1.update(30)
-        result1_other = Result.create("name", Result.SUMTYPE, 11, accumulate_values=True)
+        result1_other = Result.create("name", Result.SUMTYPE, 11,
+                                      accumulate_values=True)
         result1_other.update(22)
         result1_other.update(4)
         result1.merge(result1_other)
@@ -860,7 +882,8 @@ class ResultTestCase(unittest.TestCase):
         result2.update(6, 7)
         result2.update(1, 15)
 
-        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50, accumulate_values=True)
+        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50,
+                                      accumulate_values=True)
         result2_other.update(12, 18)
         result2.merge(result2_other)
 
@@ -925,39 +948,13 @@ class ResultTestCase(unittest.TestCase):
         result.update(5, 7)
 
         # Calculate the expected confidence interval
-        A = np.array(result._value_list, dtype=float) / np.array(result._total_list, dtype=float)
-        expected_confidence_interval = misc.calc_confidence_interval(A.mean(), A.std(), A.size, P=95)
+        A = (np.array(result._value_list, dtype=float) /
+             np.array(result._total_list, dtype=float))
+        expected_confidence_interval = misc.calc_confidence_interval(
+            A.mean(), A.std(), A.size, P=95)
         confidence_interval = result.get_confidence_interval(P=95)
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
-
-    # def test_to_pandas_series_of_dataframe(self):
-    #     result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
-    #     result1.update(20)
-    #     result1.update(13)
-    #     result1.update(14)
-    #     result1.update(11)
-    #     s1 = result1.to_pandas_series_of_dataframe()
-    #     expected_s1 = pd.Series(data=[20,13,14,11])
-    #     self.assertTrue(all(s1 == expected_s1))
-
-    #     result2 = Result('name2', Result.MISCTYPE, accumulate_values=True)
-    #     result2.update('string')
-    #     result2.update(7)
-    #     result2.update(-1)
-    #     result2.update('hum')
-    #     s2 = result2.to_pandas_series_of_dataframe()
-    #     expected_s2 = pd.Series(data=['string',7,-1,'hum'])
-    #     self.assertTrue(all(s2 == expected_s2))
-
-    #     result3 = Result('name3', Result.RATIOTYPE, accumulate_values=True)
-    #     result3.update(20, 30)
-    #     result3.update(13, 15)
-    #     result3.update(14, 20)
-    #     result3.update(11, 22)
-    #     df1 = result3.to_pandas_series_of_dataframe()
-    #     expected_df1 = pd.DataFrame({'t': [30,15,20,22], 'v': [20,13,14,11]})
-    #     self.assertTrue(all(df1 == expected_df1))
 
 
 class SimulationResultsTestCase(unittest.TestCase):
@@ -1006,9 +1003,11 @@ class SimulationResultsTestCase(unittest.TestCase):
         # transform it into a set in this test only to make the order of
         # the names uninportant.
         expected_output = set(['lala', 'lele'])
-        self.assertEqual(set(self.simresults.get_result_names()), expected_output)
+        self.assertEqual(set(self.simresults.get_result_names()),
+                         expected_output)
         # Test also the representation of the SimulationResults object
-        self.assertEqual(self.simresults.__repr__(), """SimulationResults: ['lala', 'lele']""")
+        self.assertEqual(self.simresults.__repr__(),
+                         """SimulationResults: ['lala', 'lele']""")
 
     def test_add_result(self):
         # Add a result with the same name of an existing result -> Should
@@ -1174,14 +1173,14 @@ class SimulationResultsTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(a, b)
 
         # xxxxxxxxxx Test for a subset of the parameters xxxxxxxxxxxxxxxxxx
-        c1 = simresults.get_result_values_confidence_intervals('name', P,
-                                                               fixed_params={'P':1.0})
-        c2 = simresults.get_result_values_confidence_intervals('name', P,
-                                                               fixed_params={'P':2.0})
-        np.testing.assert_array_almost_equal(c1[0],
-                                             expected_list_of_confidence_intervals[0])
-        np.testing.assert_array_almost_equal(c2[0],
-                                             expected_list_of_confidence_intervals[1])
+        c1 = simresults.get_result_values_confidence_intervals(
+            'name', P, fixed_params={'P': 1.0})
+        c2 = simresults.get_result_values_confidence_intervals(
+            'name', P, fixed_params={'P': 2.0})
+        np.testing.assert_array_almost_equal(
+            c1[0], expected_list_of_confidence_intervals[0])
+        np.testing.assert_array_almost_equal(
+            c2[0], expected_list_of_confidence_intervals[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_file(self):
@@ -1239,7 +1238,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         try:
             import h5py
             del h5py
-        except ImportError as _:  # pragma: no cover
+        except ImportError:  # pragma: no cover
             self.skipTest("The h5py module is not installed")
 
         # Set sime simulation parameters
@@ -1362,7 +1361,7 @@ def _delete_pickle_files():
         for f in files:
             os.remove(f)
         os.rmdir('./partial_results')
-    except OSError as e:
+    except OSError:
         pass
 
 
@@ -1375,7 +1374,7 @@ def _delete_progressbar_output_files():
     try:
         os.remove()
         pass
-    except Exception as e:
+    except Exception:
         pass
 
 # Define a _DummyRunner class for the testing the simulate and
