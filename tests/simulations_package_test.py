@@ -1356,6 +1356,15 @@ def _delete_pickle_files():
     for f in files:
         os.remove(f)
 
+    try:
+        # Remove files in the partial_results folder
+        files = glob.glob('./partial_results/*.pickle')
+        for f in files:
+            os.remove(f)
+        os.rmdir('./partial_results')
+    except OSError as e:
+        pass
+
 
 def _delete_progressbar_output_files():
     """Delete all the files with *results*.txt names in the current folder.
@@ -1363,7 +1372,11 @@ def _delete_progressbar_output_files():
     progressbar_files = glob.glob('*results*.txt')
     for f in progressbar_files:  # pragma: no cover
         os.remove(f)
-
+    try:
+        os.remove()
+        pass
+    except Exception as e:
+        pass
 
 # Define a _DummyRunner class for the testing the simulate and
 # simulate_in_parallel methods in the SimulationRunner class.
@@ -1573,7 +1586,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         _delete_progressbar_output_files()
         # Now we perform the simulation
         dummyrunner.simulate(param_variation_index=4)
-        pr = SimulationResults.load_from_file('dummyrunner_results_bias_1.3_unpack_04.pickle')
+        pr = SimulationResults.load_from_file('partial_results/dummyrunner_results_bias_1.3_unpack_04.pickle')
 
         #  Get the parameters from the laoded result
         bias = pr.params['bias']

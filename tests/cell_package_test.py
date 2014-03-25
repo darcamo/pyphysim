@@ -256,6 +256,22 @@ class RectangleTestCase(unittest.TestCase):
         R3 = shapes.Rectangle(A1 + trans_step, B1 + trans_step, 30)
         np.testing.assert_almost_equal(R1._get_vertex_positions(), R3._get_vertex_positions())
 
+    def test_is_point_inside_shape(self):
+        A1 = -1.2 + -0.000001j
+        B1 = 1 + 3.4j
+        R1 = shapes.Rectangle(A1, B1)
+
+        self.assertTrue(R1.is_point_inside_shape(0.))
+        self.assertTrue(R1.is_point_inside_shape(0.01j))
+        self.assertTrue(R1.is_point_inside_shape(0.1+0.1j))
+        self.assertTrue(R1.is_point_inside_shape(-0.63+2.4j))
+        self.assertTrue(R1.is_point_inside_shape(-1.2+2.4j))
+        self.assertTrue(R1.is_point_inside_shape(-0.5+3.4j))
+        self.assertFalse(R1.is_point_inside_shape(-1.3+2.4j))
+        self.assertFalse(R1.is_point_inside_shape(-0.5+3.41j))
+        self.assertFalse(R1.is_point_inside_shape(-0.1+5j))
+        self.assertFalse(R1.is_point_inside_shape(-14+1j))
+        self.assertFalse(R1.is_point_inside_shape(-10+5j))
 
 class CircleTestCase(unittest.TestCase):
     def setUp(self):

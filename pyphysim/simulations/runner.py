@@ -8,6 +8,7 @@ __revision__ = "$Revision$"
 
 from time import time
 import sys
+import os
 import itertools
 
 from .simulationhelpers import get_common_parser
@@ -188,6 +189,11 @@ class SimulationRunner(object):
         # If this variable is set to True the saved partial results will be
         # deleted after the simulation is finished.
         self.delete_partial_results_bool = False
+
+        # Folder where the partial results will be saved. Set this to None
+        # to save the partial results in the same folder of the final
+        # results.
+        self.partial_results_folder = 'partial_results'
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
@@ -315,7 +321,11 @@ class SimulationRunner(object):
         partial_results_filename = '{0}_unpack_{1}.pickle'.format(
             self.__results_base_filename,
             unpack_index_str)
-        return partial_results_filename
+
+        if self.partial_results_folder is None:
+            return partial_results_filename
+        else:
+            return os.path.join(self.partial_results_folder, partial_results_filename)
 
     def __delete_partial_results_maybe(self):
         """
@@ -378,7 +388,18 @@ class SimulationRunner(object):
         # Now we can save the partial results to a file.
 
         current_sim_results.current_rep = current_rep
-        current_sim_results.save_to_file(partial_results_filename)
+
+        # Try to save the partial results
+        try:
+            current_sim_results.save_to_file(partial_results_filename)
+        except IOError as e:
+            if self.partial_results_folder is not None:
+
+                os.mkdir(self.partial_results_folder)
+                # This should not raise IOError again.
+                current_sim_results.save_to_file(partial_results_filename)
+            else:
+                raise e
 
         self.__results_base_filename_unpack_list.append(
             partial_results_filename)
@@ -757,7 +778,10 @@ class SimulationRunner(object):
                 current_params)
             current_rep = 1
 
-        # Run more iterations until one of the stop criteria is reached
+        # Run more iterations until one of the stop criteria is
+        # reached. Note that if partial results were loaded successfully
+        # from file and they already achieve the stop criteria then the
+        # while loop below will not run.
         while (self._keep_going(current_params,
                                 current_sim_results,
                                 current_rep)

@@ -685,8 +685,8 @@ class IASolverBaseClass(object):
 
         return second_part
 
-    # TODO: Change the defaul noise_power to None and, when it is None, use
-    # the member variable _noise_value.
+    # TODO: Change the defaul noise_power to NONE and, when it is NONE, use
+    # the member variable _noise_var.
     def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=0):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in

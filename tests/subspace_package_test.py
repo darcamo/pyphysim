@@ -93,9 +93,9 @@ class MetricsTestCase(unittest.TestCase):
         self.A.shape = (4, 2)
         self.B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
 
-    def test_calcPrincipalAngles(self):
+    def test_calc_principal_angles(self):
         np.testing.assert_array_almost_equal(
-            metrics.calcPrincipalAngles(self.A, self.B),
+            metrics.calc_principal_angles(self.A, self.B),
             np.array([0.00796407, 0.49360193]))
 
         # Example from the Matrix computations book
@@ -104,7 +104,7 @@ class MetricsTestCase(unittest.TestCase):
         B = np.array([1, 5, 3, 7, 5, -1])
         B.shape = (3, 2)
         np.testing.assert_array_almost_equal(
-            metrics.calcPrincipalAngles(A, B),
+            metrics.calc_principal_angles(A, B),
             np.array([0., 0.54312217]))
 
     def test_calculating_the_chordal_distance(self):
@@ -112,27 +112,27 @@ class MetricsTestCase(unittest.TestCase):
 
         # Test calcChordalDistance
         np.testing.assert_array_almost_equal(
-            metrics.calcChordalDistance(self.A, self.B),
+            metrics.calc_chordal_distance(self.A, self.B),
             expected_chord_dist)
 
         # Test calcChordalDistance2
         np.testing.assert_array_almost_equal(
-            metrics.calcChordalDistance2(self.A, self.B),
+            metrics.calc_chordal_distance_2(self.A, self.B),
             expected_chord_dist)
 
         # Test
-        principal_angles = metrics.calcPrincipalAngles(self.A, self.B)
+        principal_angles = metrics.calc_principal_angles(self.A, self.B)
         np.testing.assert_array_almost_equal(
-            metrics.calcChordalDistanceFromPrincipalAngles(principal_angles),
+            metrics.calc_chordal_distance_from_principal_angles(principal_angles),
             expected_chord_dist)
 
         # xxxxxxxxxx Now let's test with complex values xxxxxxxxxxxxxxxxxxx
         A = randn_c(3,2)
         B = randn_c(3,2)
-        principal_angles2 = metrics.calcPrincipalAngles(A, B)
-        dist1 = metrics.calcChordalDistance(A, B)
-        dist2 = metrics.calcChordalDistance2(A, B)
-        dist3 = metrics.calcChordalDistanceFromPrincipalAngles(
+        principal_angles2 = metrics.calc_principal_angles(A, B)
+        dist1 = metrics.calc_chordal_distance(A, B)
+        dist2 = metrics.calc_chordal_distance_2(A, B)
+        dist3 = metrics.calc_chordal_distance_from_principal_angles(
             principal_angles2)
 
         self.assertAlmostEqual(dist1, dist2)

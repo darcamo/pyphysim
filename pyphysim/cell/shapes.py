@@ -423,10 +423,6 @@ class Hexagon(Shape):
         return vertex_positions
 
 
-# TODO: Implement a is_point_inside_shape method. The method from the Shape
-# class works, but because a Rectangle is very simple it would be more
-# efficient to re-implement this method. Note that you will have to write a
-# testcase for this as well in the cell_package_test.py file.
 class Rectangle(Shape):
     """Rectangle shape class.
     """
@@ -492,6 +488,36 @@ class Rectangle(Shape):
         the Shape class is 'equal').
         """
         return Shape._repr_some_format_(self, extension=extension, axis_option='tight')
+
+    def is_point_inside_shape(self, point):
+        """Test is a point is inside the rectangle
+
+        Parameters
+        ----------
+        point : complex
+            A single complex number.
+
+        Returns
+        -------
+        inside_or_not : bool
+            True if `point` is inside the rectangle, False otherwise.
+        """
+        min_x = min(self._lower_coord.real, self._upper_coord.real)
+        max_x = max(self._lower_coord.real, self._upper_coord.real)
+        min_y = min(self._lower_coord.imag, self._upper_coord.imag)
+        max_y = max(self._lower_coord.imag, self._upper_coord.imag)
+
+        point_x = point.real
+        point_y = point.imag
+        if point_x < min_x:
+            return False
+        if point_x > max_x:
+            return False
+        if point_y < min_y:
+            return False
+        if point_y > max_y:
+            return False
+        return True
 
 
 class Circle(Shape):

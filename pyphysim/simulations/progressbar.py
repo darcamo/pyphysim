@@ -48,9 +48,11 @@ __all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2',
            'ProgressbarZMQServer', 'center_message']
 
 
-# TODO: Move this function to the misc module.
+# If this function is ever used outside this file, then move it to the
+# util.misc module.
 def center_message(message, length=50, fill_char=' ', left='', right=''):
-    """Return a string with `message` centralized and surrounded by
+    """
+    Return a string with `message` centralized and surrounded by
     `fill_char`.
 
     Parameters

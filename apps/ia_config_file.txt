@@ -4,9 +4,9 @@
         modulator = PSK
         NSymbs = 100
         K = 3
-        Nr = 4
-        Nt = 4
-        Ns = 2
+        Nr = 2
+        Nt = 2
+        Ns = 1
 [IA Algorithm]
         max_iterations = [60]
 [General]

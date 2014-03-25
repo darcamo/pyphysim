@@ -361,9 +361,8 @@ class SimulationResults(object):
         if fixed_params is None:
             fixed_params = {}
 
-        # If the fictionary is not empty
+        # If the dictionary is not empty
         if fixed_params:
-            # TODO: Test this part
             indexes = self.params.get_pack_indexes(fixed_params)
             out = [v.get_result() for i, v in enumerate(self[result_name])
                    if i in indexes]
@@ -413,7 +412,6 @@ class SimulationResults(object):
             fixed_params = {}
 
         if fixed_params:
-            # TODO: Test this part
             indexes = self.params.get_pack_indexes(fixed_params)
             out = [v.get_confidence_interval(P) for i, v in enumerate(self[result_name])
                    if i in indexes]

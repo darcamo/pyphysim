@@ -20,7 +20,7 @@ import multiprocessing
 import numpy as np
 import scipy.io
 
-from pyphysim.subspace.metrics import calcChordalDistanceFromPrincipalAngles, calcPrincipalAngles
+from pyphysim.subspace.metrics import calc_chordal_distance_from_principal_angles, calc_principal_angles
 from pyphysim.simulations import progressbar
 from pyphysim.util.misc import pretty_time
 
@@ -152,9 +152,9 @@ class CodebookFinder(object):
         # for comb in calc_all_comb_indexes(K):
         for comb in combinations(range(0, K), 2):
             #comb is a tuple with two elements
-            pa = calcPrincipalAngles(codebook[comb[0]], codebook[comb[1]])
+            pa = calc_principal_angles(codebook[comb[0]], codebook[comb[1]])
             principal_angles.append(pa)
-            dists[index] = calcChordalDistanceFromPrincipalAngles(pa)
+            dists[index] = calc_chordal_distance_from_principal_angles(pa)
             index += 1
 
         min_index = dists.argmin()  # Index of the minimum distance (in the
