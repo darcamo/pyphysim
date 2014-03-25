@@ -685,9 +685,7 @@ class IASolverBaseClass(object):
 
         return second_part
 
-    # TODO: Change the defaul noise_power to NONE and, when it is NONE, use
-    # the member variable _noise_var.
-    def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=0):
+    def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=None):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
         [Cadambe2008]_.
@@ -733,6 +731,9 @@ class IASolverBaseClass(object):
 
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
+        if noise_power is None:
+            noise_power = self.noise_var
+
         Bkl_all_l = np.empty(self._Ns[k], dtype=np.ndarray)
         first_part = self._calc_Bkl_cov_matrix_first_part(k)
         for l in range(self._Ns[k]):

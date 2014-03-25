@@ -1137,6 +1137,28 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             for l in range(self.Ns[k]):
                 np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
+            # Repeat the test, but now without setting the noise variance
+            # explicitly. It should use the self.noise_var property from
+            # the IA solver class, which in turn will use the
+            # last_noise_var property of the Mutiuser channel class.
+            self.iasolver._multiUserChannel._last_noise_var = 0.14
+
+            # xxxxx Calculates the Second Part xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            expected_Bkl = np.empty(self.Ns[k], dtype=np.ndarray)
+            for l in range(self.Ns[k]):
+                # The second part depend on the user index and the stream
+                # index.
+                second_part = self.iasolver._calc_Bkl_cov_matrix_second_part(k, l)
+                expected_Bkl[l] = first_part - second_part + 0.14 * np.eye(self.Nr[k])
+
+            Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
+
+            # Test if the Bkl for all l of user k were calculated correctly
+            for l in range(self.Ns[k]):
+                np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
+
+
+
     def test_calc_Bkl_cov_matrix_all_l_rev(self):
         self.iasolver.noise_var = 1.0
 
