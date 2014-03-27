@@ -227,11 +227,8 @@ class IASolverBaseClass(object):
                     # Equivalent channel with the effect of the precoder,
                     # channel and receive filter
                     Hieq = self._calc_equivalent_channel(k)
-                    Hieq_inv = np.linalg.inv(Hieq)
+                    self._full_W_H[k] = np.linalg.solve(Hieq, self.W_H[k]) / np.sqrt(self.P[k])
 
-                    # full_W_H will compensate for the equivalent channel
-                    # and the transmit power
-                    self._full_W_H[k] = Hieq_inv.dot(self.W_H[k]) / np.sqrt(self.P[k])
         return self._full_W_H
 
     @property
@@ -265,14 +262,14 @@ class IASolverBaseClass(object):
         get property so that the returned filter W compensates the effect
         of the direct channel.
         """
-        # Note that here Wk is the self._Wk attribute and not the W
-        # property. Since _calc_equivalent_channel is used in the W get
-        # property if we had used self.W here we would get an infinity
-        # recursion.
-        Wk = self.W_H[k]
+        # Note that here Wk_H is the self.Wk_H property and not the
+        # self.full_W_H property. Since _calc_equivalent_channel is used in
+        # the full_W_H get property if we had used self.full_W_H here we
+        # would get an infinity recursion.
+        Wk_H = self.W_H[k]
         Fk = self.F[k]
         Hkk = self._get_channel(k, k)
-        Hk_eq = Wk.dot(Hkk.dot(Fk))
+        Hk_eq = Wk_H.dot(Hkk.dot(Fk))
         return Hk_eq
 
     @property
@@ -1921,9 +1918,13 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         """
         Vkl = Vk[:, l:l + 1]
-        invBkl = np.linalg.inv(Bkl)
-        Ukl = np.dot(invBkl,
-                     np.dot(Hkk, Vkl))
+
+        # invBkl = np.linalg.inv(Bkl)
+        # Ukl = np.dot(invBkl,
+        #              np.dot(Hkk, Vkl))
+
+        Ukl = np.linalg.solve(Bkl, np.dot(Hkk, Vkl))
+
         Ukl = Ukl / np.linalg.norm(Ukl, 'fro')
         return Ukl
 
@@ -2085,23 +2086,19 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         # $$\mtU_k = \left( \sum_{i=1}^K \mtH_{ki} \mtV_i \mtV_i^H \mtH_{ki}^H + \sigma_n^2 \mtI \right)^{-1} \mtH_{kk} \mtV_k$$
         Hkk = self._get_channel(k, k)
-        Vk = self.F[k]
-        P = self.P
+        Vk = self.full_F[k]
 
         sum_term = 0
         for i in range(self.K):
             Hki = self._get_channel(k, i)
-            Vi = self.F[i]
+            Vi = self.full_F[i]
             aux = np.dot(Hki, Vi)
-            sum_term = sum_term + np.dot(P[i] * aux,
+            sum_term = sum_term + np.dot(aux,
                                          aux.conj().T)
 
-        inv_term = sum_term + self.noise_var * np.eye(self.Nr[k])
-        inv_term = np.linalg.inv(inv_term)
+        sum_term2 = sum_term + self.noise_var * np.eye(self.Nr[k])
 
-        Uk = np.dot(inv_term,
-                    np.dot(Hkk,
-                           np.sqrt(P[k]) * Vk))
+        Uk = np.linalg.solve(sum_term2, np.dot(Hkk, Vk))
         return Uk
 
     def _updateW(self):
