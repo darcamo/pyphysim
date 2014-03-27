@@ -228,7 +228,10 @@ class IASolverBaseClass(object):
                     # channel and receive filter
                     Hieq = self._calc_equivalent_channel(k)
                     Hieq_inv = np.linalg.inv(Hieq)
-                    self._full_W_H[k] = Hieq_inv.dot(self.W_H[k])
+
+                    # full_W_H will compensate for the equivalent channel
+                    # and the transmit power
+                    self._full_W_H[k] = Hieq_inv.dot(self.W_H[k]) / np.sqrt(self.P[k])
         return self._full_W_H
 
     @property
@@ -2107,30 +2110,32 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         self._clear_receive_filter()
 
-        self._W = np.zeros(3, dtype=np.ndarray)
+        new_W = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
-            self._W[k] = self._calc_Uk(k)
+            new_W[k] = self._calc_Uk(k)
 
-    # def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
-    #     """
-    #     Calculates the value of Vi for the given parameters.
+        self._W = new_W
 
-    #     This method is called inside _calc_Vi.
+    def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
+        """
+        Calculates the value of Vi for the given parameters.
 
-    #     Parameters
-    #     ----------
-    #     sum_term : numpy array
-    #         The sumation term in the formula to calculate the precoder.
-    #     mu_i : float
-    #         The value of the lagrange multiplier
-    #     H_herm_U : numpy array
-    #         The value of :math:`H_ii^H U_i`
-    #     """
-    #     N = sum_term.shape[0]
-    #     Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
-    #                 H_herm_U)
+        This method is called inside _calc_Vi.
 
-    #     return Vi
+        Parameters
+        ----------
+        sum_term : numpy array
+            The sumation term in the formula to calculate the precoder.
+        mu_i : float
+            The value of the lagrange multiplier
+        H_herm_U : numpy array
+            The value of :math:`H_ii^H U_i`
+        """
+        N = sum_term.shape[0]
+        Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
+                    H_herm_U)
+
+        return Vi
 
     def _calc_Vi_for_a_given_mu2(self, inv_sum_term, mu_i, H_herm_U):
         """
@@ -2222,6 +2227,11 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                                               min_mu_i,
                                               Hii_herm_U),
                 'fro')
+            # max_norm = np.linalg.norm(
+            #     self._calc_Vi_for_a_given_mu(sum_term,
+            #                                   min_mu_i,
+            #                                   Hii_herm_U),
+            #     'fro')
 
             # If the square of max_norm is lower then the maximum power
             # then we can use the value of mu_i to min_mu_i and we're done:
@@ -2229,6 +2239,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 mu_i = min_mu_i
                 Vi = self._calc_Vi_for_a_given_mu2(
                     inv_sum_term, mu_i, Hii_herm_U)
+                # Vi = self._calc_Vi_for_a_given_mu(
+                #     sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
             else:
                 # If we are not done yet then we need to perform the
@@ -2285,16 +2297,18 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         Updates the precoder of all users.
         """
         self._clear_precoder_filter()
-        self._F = np.zeros(3, dtype=np.ndarray)
-        self._mu = np.zeros(3, dtype=float)
+        self._F = np.zeros(self.K, dtype=np.ndarray)
+        self._mu = np.zeros(self.K, dtype=float)
 
+        Vi = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
             # Note: The square of the Frobenius norm of Vi is NOT equal to
             # one. Since the full_F property will apply the correct power
-            # scaling, the norm of self._F must be equal to one and thus we
-            # set self._F as the normalized value of Vi
-            Vi = self._calc_Vi(k)
-            self._F[k] = Vi / np.linalg.norm(Vi)
+            # scaling, the norm of self._F must be equal to one.
+            Vi[k] = self._calc_Vi(k)
+            Vi[k] = Vi[k] / np.linalg.norm(Vi[k], 'fro')
+
+        self._F = Vi
 
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

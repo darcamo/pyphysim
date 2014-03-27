@@ -682,12 +682,13 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
     def test_full_W_H_property(self):
         Ns = 1
-        self.iasolver.solve(Ns)
+        P = np.array([0.7, 1.34, 0.94])
+        self.iasolver.solve(Ns, P)
         for k in range(self.iasolver.K):
             Hkk = self.iasolver._get_channel(k, k)
             full_Wk_H = self.iasolver.full_W_H[k]
-            Fk = self.iasolver.F[k]
-            s = np.dot(full_Wk_H, np.dot(Hkk, Fk))[0][0]
+            full_Fk = self.iasolver.full_F[k]
+            s = np.dot(full_Wk_H, np.dot(Hkk, full_Fk))[0][0]
             self.assertAlmostEqual(1.0, s)
 
 
@@ -1436,14 +1437,20 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
 
     def test_full_W_H_property(self):
         self.iasolver._step()
-        F = self.iasolver.F
+        full_F = self.iasolver.full_F
         full_W_H = self.iasolver.full_W_H
         H00 = self.iasolver._get_channel(0, 0)
         H11 = self.iasolver._get_channel(1, 1)
         H22 = self.iasolver._get_channel(2, 2)
-        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+        self.assertAlmostEqual(
+            np.dot(full_W_H[0], np.dot(H00, full_F[0]))[0][0],
+            1.0)
+        self.assertAlmostEqual(
+            np.dot(full_W_H[1], np.dot(H11, full_F[1]))[0][0],
+            1.0)
+        self.assertAlmostEqual(
+            np.dot(full_W_H[2], np.dot(H22, full_F[2]))[0][0],
+            1.0)
 
     def test_solve(self):
         K = 3
@@ -1473,17 +1480,17 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         H20 = np.matrix(iasolver._get_channel(2, 0))
         H21 = np.matrix(iasolver._get_channel(2, 1))
 
-        F0 = iasolver.F[0]
-        F1 = iasolver.F[1]
-        F2 = iasolver.F[2]
+        full_F0 = iasolver.full_F[0]
+        full_F1 = iasolver.full_F[1]
+        full_F2 = iasolver.full_F[2]
         full_W_H0 = iasolver.full_W_H[0]
         full_W_H1 = iasolver.full_W_H[1]
         full_W_H2 = iasolver.full_W_H[2]
 
         # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(full_W_H0 * H00 * F0, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H1 * H11 * F1, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H2 * H22 * F2, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2, 1.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         ## TODO: uncomment the lines below to test the remaining interference
@@ -1685,14 +1692,20 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
         self.iasolver._step()
-        F = self.iasolver.F
+        full_F = self.iasolver.full_F
         full_W_H = self.iasolver.full_W_H
         H00 = self.iasolver._get_channel(0, 0)
         H11 = self.iasolver._get_channel(1, 1)
         H22 = self.iasolver._get_channel(2, 2)
-        self.assertAlmostEqual(np.dot(full_W_H[0], np.dot(H00, F[0]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[1], np.dot(H11, F[1]))[0][0], 1.0)
-        self.assertAlmostEqual(np.dot(full_W_H[2], np.dot(H22, F[2]))[0][0], 1.0)
+        self.assertAlmostEqual(
+            np.dot(full_W_H[0], np.dot(H00, full_F[0]))[0][0],
+            1.0)
+        self.assertAlmostEqual(
+            np.dot(full_W_H[1], np.dot(H11, full_F[1]))[0][0],
+            1.0)
+        self.assertAlmostEqual(
+            np.dot(full_W_H[2], np.dot(H22, full_F[2]))[0][0],
+            1.0)
 
     def test_solve(self):
         self.iasolver.max_iterations = 1
@@ -2024,13 +2037,13 @@ class MMSEIASolverTestCase(unittest.TestCase):
         Ns = self.Ns
         self.iasolver.max_iterations = 120
         self.iasolver.noise_var = 1e-50
-        import pudb; pudb.set_trace()  ## DEBUG ##
+        #import pudb; pudb.set_trace()  ## DEBUG ##
 
         self.iasolver.solve(Ns, self.P)
 
-        F0 = np.matrix(self.iasolver.F[0])
-        F1 = np.matrix(self.iasolver.F[1])
-        F2 = np.matrix(self.iasolver.F[2])
+        full_F0 = np.matrix(self.iasolver.full_F[0])
+        full_F1 = np.matrix(self.iasolver.full_F[1])
+        full_F2 = np.matrix(self.iasolver.full_F[2])
 
         full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
         full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
@@ -2047,25 +2060,25 @@ class MMSEIASolverTestCase(unittest.TestCase):
         H22 = np.matrix(self.iasolver._get_channel(2, 2))
 
         # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(full_W_H0 * H00 * F0, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H1 * H11 * F1, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H2 * H22 * F2, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1, 1.0)
+        np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2, 1.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
         try:
             np.testing.assert_array_almost_equal(
-                np.abs(full_W_H0 * H01 * F1), 0.0, decimal=1)
+                np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
-                np.abs(full_W_H0 * H02 * F2), 0.0, decimal=1)
+                np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
-                np.abs(full_W_H1 * H10 * F0), 0.0, decimal=1)
+                np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
-                np.abs(full_W_H1 * H12 * F2), 0.0, decimal=1)
+                np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
-                np.abs(full_W_H2 * H20 * F0), 0.0, decimal=1)
+                np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
-                np.abs(full_W_H2 * H21 * F1), 0.0, decimal=1)
+                np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
         except AssertionError:
             if new_test is True:
                 MMSE_test_solve_state = {'iasolver_state': self.iasolver_state,
@@ -2075,7 +2088,6 @@ class MMSEIASolverTestCase(unittest.TestCase):
                     pickle.dump(MMSE_test_solve_state, fid, pickle.HIGHEST_PROTOCOL)
 
             raise  # re-raises the last exception
-
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
