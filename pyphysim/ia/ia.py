@@ -17,7 +17,7 @@ __revision__ = "$Revision$"
 import numpy as np
 import itertools
 
-from ..util.misc import peig, leig, randn_c, update_inv_sum_diag, \
+from ..util.misc import peig, leig, randn_c_RS, update_inv_sum_diag, \
     get_principal_component_matrix
 from ..comm import channels
 
@@ -94,6 +94,10 @@ class IASolverBaseClass(object):
         self._W_H = None  # Receive filter: One for each user
         self._full_W_H = None
         self._full_W = None
+
+        # Other member variables
+        self._rs = np.random.RandomState()  # RandomState object used to
+                                            # randomize the precoder
 
     def _clear_receive_filter(self):
         """
@@ -370,7 +374,7 @@ class IASolverBaseClass(object):
 
         self._F = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
-            self._F[k] = normalized(randn_c(self.Nt[k], Ns[k]))
+            self._F[k] = normalized(randn_c_RS(self._rs, self.Nt[k], Ns[k]))
         #self._F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
 
         self._Ns = np.array(Ns)  # This will create a new array so that we
@@ -2047,6 +2051,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         self._mu = None
+        self._bisection_tol = 1e-3  # Tolerance used to stop the bisection method
 
     def _solve_init(self, Ns, P):
         """
@@ -2229,7 +2234,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # If we are not done yet then we need to perform the
                 # bisection method to find the best mu value between
                 # min_mu_i and max_mu_i
-                tol = 1e-3  # Tolerance used to stop the bisection method
+                tol = self._bisection_tol  # Tolerance used to stop the bisection method
 
                 # Maximum number of iterations of the bisection
                 max_iter = int(1 + np.round(
@@ -2290,3 +2295,6 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # set self._F as the normalized value of Vi
             Vi = self._calc_Vi(k)
             self._F[k] = Vi / np.linalg.norm(Vi)
+
+
+# xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
