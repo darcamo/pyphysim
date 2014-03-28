@@ -1744,6 +1744,63 @@ class MMSEIASolverTestCase(unittest.TestCase):
         # Randomize the channel and initialize the IA precoders
         self.set_up_randomize_channel_and_init_precoder()
 
+        # This is used only in the the _save_state and _maybe_load_state
+        # methods. It is set to True or False in the _maybe_load_state
+        # method depending if the state was a previous test run was loaded
+        # or not and the _save_state will only save the state if _new_test
+        # is True.
+        self._new_test = None
+
+    def _save_state(self, ):
+        """
+        When a test fails, call this method to save the state of the channel
+        and IA solver random generators so that you can reproduce this fail
+        again.
+        """
+        if self._new_test is True:
+            MMSE_test_solve_state = {'iasolver_state': self.iasolver_state,
+                                     'channel_state': self.channel_state,
+                                     'noise_state': self.noise_state}
+            with open('MMSE_test_solve_state.pickle', 'wb') as fid:
+                pickle.dump(MMSE_test_solve_state,
+                            fid,
+                            pickle.HIGHEST_PROTOCOL)
+
+    def _maybe_load_state(self, ):
+        """
+        """
+        self._new_test = True
+        try:
+            # If the file MMSE_test_solve_state.pickle exists, that means
+            # that a previous run of this test method fail and the random
+            # states were saved. In that case we will load those random
+            # states and 'randomize' the channel and precoders with them to
+            # reproduce the previous failed test.
+            with open('MMSE_test_solve_state.pickle', 'r') as fid:
+                MMSE_test_solve_state = pickle.load(fid)
+            iasolver_state = MMSE_test_solve_state['iasolver_state']
+            channel_state = MMSE_test_solve_state['channel_state']
+            noise_state = MMSE_test_solve_state['noise_state']
+
+            self.iasolver._rs.set_state(iasolver_state)
+            self.iasolver._multiUserChannel._RS_channel.set_state(channel_state)
+            self.iasolver._multiUserChannel._RS_noise.set_state(noise_state)
+            self.set_up_randomize_channel_and_init_precoder()
+            self._new_test = False
+
+            # xxxxxxxxxx APAGAR DEPOIS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            channel2 = channels.MultiUserChannelMatrix()
+            altmin_solver = AlternatingMinIASolver(channel2)
+            altmin_solver._rs.set_state(iasolver_state)
+            altmin_solver._multiUserChannel._RS_channel.set_state(channel_state)
+            altmin_solver._multiUserChannel._RS_noise.set_state(noise_state)
+            self.set_up_randomize_channel_and_init_precoder(altmin_solver)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        except IOError:
+            pass
+
+
     def set_up_randomize_channel_and_init_precoder(self, iasolver=None):
         """
         Random initialization of the channel and IA Solver precocer.
@@ -2008,36 +2065,9 @@ class MMSEIASolverTestCase(unittest.TestCase):
         pass
 
     def test_solve(self):
-        new_test = True
-        try:
-            # If the file MMSE_test_solve_state.pickle exists, that means
-            # that a previous run of this test method fail and the random
-            # states were saved. In that case we will load those random
-            # states and 'randomize' the channel and precoders with them to
-            # reproduce the previous failed test.
-            with open('MMSE_test_solve_state.pickle', 'r') as fid:
-                MMSE_test_solve_state = pickle.load(fid)
-            iasolver_state = MMSE_test_solve_state['iasolver_state']
-            channel_state = MMSE_test_solve_state['channel_state']
-            noise_state = MMSE_test_solve_state['noise_state']
-
-            self.iasolver._rs.set_state(iasolver_state)
-            self.iasolver._multiUserChannel._RS_channel.set_state(channel_state)
-            self.iasolver._multiUserChannel._RS_noise.set_state(noise_state)
-            self.set_up_randomize_channel_and_init_precoder()
-            new_test = False
-
-            # xxxxxxxxxx APAGAR DEPOIS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            channel2 = channels.MultiUserChannelMatrix()
-            altmin_solver = AlternatingMinIASolver(channel2)
-            altmin_solver._rs.set_state(iasolver_state)
-            altmin_solver._multiUserChannel._RS_channel.set_state(channel_state)
-            altmin_solver._multiUserChannel._RS_noise.set_state(noise_state)
-            self.set_up_randomize_channel_and_init_precoder(altmin_solver)
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        except IOError:
-            pass
+        # If a prwevious run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state()
 
         Ns = self.Ns
         self.iasolver.max_iterations = 120
@@ -2046,7 +2076,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.iasolver.solve(Ns, self.P)
 
         # xxxxxxxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        #import pudb; pudb.set_trace()  ## DEBUG ##
+        import pudb; pudb.set_trace()  ## DEBUG ##
         self.iasolver._step()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2068,16 +2098,27 @@ class MMSEIASolverTestCase(unittest.TestCase):
         H21 = np.matrix(self.iasolver._get_channel(2, 1))
         H22 = np.matrix(self.iasolver._get_channel(2, 2))
 
-        # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2, 1.0)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
-        print self.iasolver._mu
-        print self.iasolver.P
+        # Perform the actual tests
         try:
+            # xxxxx Test if the transmit power limit is respected xxxxxxxxx
+            self.assertTrue(
+                np.linalg.norm(full_F0, 'fro')**2 <= self.P[0] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(full_F1, 'fro')**2 <= self.P[1] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(full_F2, 'fro')**2 <= self.P[2] + 1e-12)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                full_W_H0 * H00 * full_F0, 1.0)
+            np.testing.assert_array_almost_equal(
+                full_W_H1 * H11 * full_F1, 1.0)
+            np.testing.assert_array_almost_equal(
+                full_W_H2 * H22 * full_F2, 1.0)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
             np.testing.assert_array_almost_equal(
                 np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
@@ -2091,13 +2132,9 @@ class MMSEIASolverTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
         except AssertionError:
-            if new_test is True:
-                MMSE_test_solve_state = {'iasolver_state': self.iasolver_state,
-                                         'channel_state': self.channel_state,
-                                         'noise_state': self.noise_state}
-                with open('MMSE_test_solve_state.pickle', 'wb') as fid:
-                    pickle.dump(MMSE_test_solve_state, fid, pickle.HIGHEST_PROTOCOL)
-
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state()
             raise  # re-raises the last exception
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
