@@ -853,18 +853,17 @@ class ClosedFormIASolver(IASolverBaseClass):
         """
         # $\mtE = \mtH_{31}^{-1}\mtH_{32}\mtH_{12}^{-1}\mtH_{13}\mtH_{23}^{-1}\mtH_{21}$
 
-        #inv = np.linalg.inv
-        pinv = np.linalg.pinv
         H31 = self._get_channel(2, 0)
         H32 = self._get_channel(2, 1)
         H12 = self._get_channel(0, 1)
         H13 = self._get_channel(0, 2)
         H23 = self._get_channel(1, 2)
         H21 = self._get_channel(1, 0)
-        E = np.dot(pinv(H31),
-                   np.dot(H32,
-                          np.dot(pinv(H12),
-                                 np.dot(H13, np.dot(pinv(H23), H21)))))
+
+        E = (np.linalg.solve(H31, H32)).dot(
+             (np.linalg.solve(H12, H13)).dot(
+                 np.linalg.solve(H23, H21)))
+
         return E
 
     def _calc_all_F_initializations(self, Ns):
@@ -1919,10 +1918,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """
         Vkl = Vk[:, l:l + 1]
 
-        # invBkl = np.linalg.inv(Bkl)
-        # Ukl = np.dot(invBkl,
-        #              np.dot(Hkk, Vkl))
-
         Ukl = np.linalg.solve(Bkl, np.dot(Hkk, Vkl))
 
         Ukl = Ukl / np.linalg.norm(Ukl, 'fro')
@@ -2113,7 +2108,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         self._W = new_W
 
-    def _calc_Vi_for_a_given_mu(self, sum_term, mu_i, H_herm_U):
+    @staticmethod
+    def _calc_Vi_for_a_given_mu(sum_term, mu_i, H_herm_U):
         """
         Calculates the value of Vi for the given parameters.
 
@@ -2129,12 +2125,15 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             The value of :math:`H_ii^H U_i`
         """
         N = sum_term.shape[0]
-        Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
-                    H_herm_U)
+
+        Vi = np.linalg.solve(sum_term + mu_i * np.eye(N), H_herm_U)
+        # Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
+        #             H_herm_U)
 
         return Vi
 
-    def _calc_Vi_for_a_given_mu2(self, inv_sum_term, mu_i, H_herm_U):
+    @staticmethod
+    def _calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, H_herm_U):
         """
         Calculates the value of Vi for the given parameters.
 
@@ -2211,7 +2210,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
 
         # At this point we are guaranteed that sum_term has an inverse
-        inv_sum_term = np.linalg.inv(sum_term)
+        #inv_sum_term = np.linalg.inv(sum_term)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
@@ -2219,25 +2218,25 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         if mu_i is None:
             min_mu_i = 0
             max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
-            max_norm = np.linalg.norm(
-                self._calc_Vi_for_a_given_mu2(inv_sum_term,
-                                              min_mu_i,
-                                              Hii_herm_U),
-                'fro')
             # max_norm = np.linalg.norm(
-            #     self._calc_Vi_for_a_given_mu(sum_term,
+            #     self._calc_Vi_for_a_given_mu2(inv_sum_term,
             #                                   min_mu_i,
             #                                   Hii_herm_U),
             #     'fro')
+            max_norm = np.linalg.norm(
+                self._calc_Vi_for_a_given_mu(sum_term,
+                                              min_mu_i,
+                                              Hii_herm_U),
+                'fro')
 
             # If the square of max_norm is lower then the maximum power
             # then we can use the value of mu_i to min_mu_i and we're done:
             if self.P[i] > (max_norm ** 2):
                 mu_i = min_mu_i
-                Vi = self._calc_Vi_for_a_given_mu2(
-                    inv_sum_term, mu_i, Hii_herm_U)
-                # Vi = self._calc_Vi_for_a_given_mu(
-                #     sum_term, mu_i, Hii_herm_U)
+                # Vi = self._calc_Vi_for_a_given_mu2(
+                #     inv_sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu(
+                    sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
             else:
                 # If we are not done yet then we need to perform the
@@ -2252,9 +2251,15 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # Perform the bisection
                 for _ in range(max_iter):
                     mu_i = (max_mu_i + min_mu_i) / 2.0
+                    # cost = (
+                    #     np.linalg.norm(
+                    #         self._calc_Vi_for_a_given_mu2(inv_sum_term,
+                    #                                       mu_i,
+                    #                                       Hii_herm_U),
+                    #         'fro') ** 2) - self.P[i]
                     cost = (
                         np.linalg.norm(
-                            self._calc_Vi_for_a_given_mu2(inv_sum_term,
+                            self._calc_Vi_for_a_given_mu(sum_term,
                                                           mu_i,
                                                           Hii_herm_U),
                             'fro') ** 2) - self.P[i]
@@ -2272,8 +2277,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                         break
 
                 # Now that we have the best value for mu_i, lets calculate Vi
-                Vi = self._calc_Vi_for_a_given_mu2(
-                    inv_sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu(
+                    sum_term, mu_i, Hii_herm_U)
+                # Vi = self._calc_Vi_for_a_given_mu2(
+                #     inv_sum_term, mu_i, Hii_herm_U)
 
                 # If any load_factor was added (in case the original
                 # sum_term is a singular matrix) we will add it to the
@@ -2285,7 +2292,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         else:
             self._mu[i] = mu_i
-            Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+            Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+            # Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
 
         return Vi
 

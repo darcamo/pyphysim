@@ -1494,20 +1494,20 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         ## TODO: uncomment the lines below to test the remaining interference
-        # # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H0 * H01 * F1), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H0 * H02 * F2), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H1 * H10 * F0), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H1 * H12 * F2), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H2 * H20 * F0), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H2 * H21 * F1), 0.0, decimal=1)
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
+        np.testing.assert_array_almost_equal(
+            np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_solve_finalize(self):
         K = 3
