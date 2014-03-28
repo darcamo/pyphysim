@@ -15,6 +15,7 @@ the noise variance.
 __revision__ = "$Revision$"
 
 import numpy as np
+from scipy import optimize
 import itertools
 
 from ..util.misc import peig, leig, randn_c_RS, update_inv_sum_diag, \
@@ -2124,7 +2125,6 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             The value of :math:`H_ii^H U_i`
         """
         N = sum_term.shape[0]
-
         Vi = np.linalg.solve(sum_term + mu_i * np.eye(N), H_herm_U)
         # Vi = np.dot(np.linalg.inv(sum_term + mu_i * np.eye(N)),
         #             H_herm_U)
@@ -2178,20 +2178,23 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         Hii_herm_U = np.dot(Hii.conj().T, Ui)
 
+        # xxxxx Calculates the Summation term xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         sum_term = 0
         for k in range(self.K):
             Hki = self._get_channel(k, i)
             Uk = self.W[k]
             aux = np.dot(Hki.conj().T, Uk)
             sum_term = sum_term + np.dot(aux, aux.conj().T)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Note that occasionally (specially for the low SNR values) sum_term
-        # may be a singular matrix. In that case, we add a diagonal loading
-        # factor to make the sum_term non-singular. This diagonal loading
+        # xxxxxxxxxx Perform diagonal loading if it is necessary xxxxxxxxxx
+        # Occasionally (specially for the low SNR values) sum_term may be a
+        # singular matrix. In that case, we add a diagonal loading factor
+        # to make the sum_term non-singular. This diagonal loading
         # corresponding to summing an identity matrix times a load_factor
-        # to the sum_term, where this load_factor is arbitrarily
-        # calculated as 1/100 of the mean of the eigen values of the
-        # singular sum_term.
+        # to the sum_term, where this load_factor is arbitrarily calculated
+        # as 1/100 of the mean of the eigen values of the singular
+        # sum_term.
 
         # Calculates the SVD of sum_term so that we can calculate the
         # condition number.
@@ -2207,73 +2210,42 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             load_factor = S.mean() / 100.0
             # pylint: disable= E1103
             sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
-
-        # At this point we are guaranteed that sum_term has an inverse
-        #inv_sum_term = np.linalg.inv(sum_term)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if mu_i is None:
-            min_mu_i = 0
-            max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
-            # max_norm = np.linalg.norm(
-            #     self._calc_Vi_for_a_given_mu2(inv_sum_term,
-            #                                   min_mu_i,
-            #                                   Hii_herm_U),
-            #     'fro')
-            max_norm = np.linalg.norm(
-                self._calc_Vi_for_a_given_mu(sum_term,
-                                              min_mu_i,
-                                              Hii_herm_U),
-                'fro')
+            # xxxxx Define the function that will be optimized xxxxxxxxxxxx
+            def func(mu, sum_term, Hii_herm_U, P):
+                """
+                Function that will be optimized to find the best value of mu.
+                """
+                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu, Hii_herm_U)
+                norm = np.linalg.norm(Vi, 'fro')
+                cost = (norm ** 2) - P
+                return cost
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-            # If the square of max_norm is lower then the maximum power
-            # then we can use the value of mu_i to min_mu_i and we're done:
-            if self.P[i] > (max_norm ** 2):
+            min_mu_i = 0
+
+            cost = func(min_mu_i, sum_term, Hii_herm_U, self.P[i])
+            # If cost is lower than or equal to zero then the power
+            # constraint is already satisfied and we are done. The value of
+            # mu will be min_mu_i.
+            if cost <= 0:
                 mu_i = min_mu_i
-                # Vi = self._calc_Vi_for_a_given_mu2(
-                #     inv_sum_term, mu_i, Hii_herm_U)
                 Vi = self._calc_Vi_for_a_given_mu(
                     sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
+
             else:
                 # If we are not done yet then we need to perform the
                 # bisection method to find the best mu value between
                 # min_mu_i and max_mu_i
-                tol = self._bisection_tol  # Tolerance used to stop the bisection method
-
-                # Maximum number of iterations of the bisection
-                max_iter = int(1 + np.round(
-                    (np.log(max_mu_i - min_mu_i) - np.log(tol)) / np.log(2)))
-
-                # Perform the bisection
-                for _ in range(max_iter):
-                    mu_i = (max_mu_i + min_mu_i) / 2.0
-                    # cost = (
-                    #     np.linalg.norm(
-                    #         self._calc_Vi_for_a_given_mu2(inv_sum_term,
-                    #                                       mu_i,
-                    #                                       Hii_herm_U),
-                    #         'fro') ** 2) - self.P[i]
-                    cost = (
-                        np.linalg.norm(
-                            self._calc_Vi_for_a_given_mu(sum_term,
-                                                          mu_i,
-                                                          Hii_herm_U),
-                            'fro') ** 2) - self.P[i]
-                    if cost > 0:
-                        # The current value of mu_i yields a precoder with
-                        # a power higher then the allowed value. Lets
-                        # increase the value of min_mu_i
-                        min_mu_i = mu_i
-                    else:
-                        # The current value of mu_i yields a precoder with
-                        # a power lower then the allowed value. Lets
-                        # decrease the value of max_mu_i
-                        max_mu_i = mu_i
-                    if np.abs(cost) < tol:
-                        break
+                mu_i = optimize.fsolve(
+                    func, min_mu_i,
+                    args=(sum_term, Hii_herm_U, self.P[i]))[0]
 
                 # Now that we have the best value for mu_i, lets calculate Vi
                 Vi = self._calc_Vi_for_a_given_mu(
@@ -2295,6 +2267,138 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
 
         return Vi
+
+
+    # def _calc_Vi_orig(self, i, mu_i=None):
+    #     """
+    #     Calculates the precoder of the i-th user.
+
+    #     Parameters
+    #     ----------
+    #     i : int
+    #         User index
+    #     mu_i : float or None
+    #         The value of the Lagrange multiplier. If it is None (default),
+    #         then the best value will be found and used to calculate the
+    #         precoder.
+
+    #     Returns
+    #     -------
+    #     Vi : numpy array
+    #         The calculate precoder of the i-th user.
+    #     """
+    #     # $$\mtV_i = \left( \sum_{k=1}^K \mtH_{ki}^H \mtU_k \mtU_k^H \mtH_{ki} + \mu_i \mtI \right)^{-1} \mtH_{ii}^H \mtU_i$$
+    #     Hii = self._get_channel(i, i)
+    #     Ui = self.W[i]
+
+    #     Hii_herm_U = np.dot(Hii.conj().T, Ui)
+
+    #     # xxxxx Calculates the Summation term xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     sum_term = 0
+    #     for k in range(self.K):
+    #         Hki = self._get_channel(k, i)
+    #         Uk = self.W[k]
+    #         aux = np.dot(Hki.conj().T, Uk)
+    #         sum_term = sum_term + np.dot(aux, aux.conj().T)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    #     # xxxxxxxxxx Perform diagonal loading if it is necessary xxxxxxxxxx
+    #     # Occasionally (specially for the low SNR values) sum_term may be a
+    #     # singular matrix. In that case, we add a diagonal loading factor
+    #     # to make the sum_term non-singular. This diagonal loading
+    #     # corresponding to summing an identity matrix times a load_factor
+    #     # to the sum_term, where this load_factor is arbitrarily calculated
+    #     # as 1/100 of the mean of the eigen values of the singular
+    #     # sum_term.
+
+    #     # Calculates the SVD of sum_term so that we can calculate the
+    #     # condition number.
+    #     [_, S, _] = np.linalg.svd(sum_term)
+    #     cond = cond = S.max() / S.min()
+    #     load_factor = 0.0
+    #     # If the condition number is larger than 1e8 we consider sum_term
+    #     # as a singular matrix, which means that we will perform the
+    #     # diagonal loading
+    #     if cond > 5e4:
+    #         # Calculates the load_factor (arbitrarily choosen as 1/100 the
+    #         # mean of the current singular values of sum_term).
+    #         load_factor = S.mean() / 100.0
+    #         # pylint: disable= E1103
+    #         sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     if mu_i is None:
+    #         # xxxxx Define the function that will be optimized xxxxxxxxxxxx
+    #         def func(mu, sum_term, Hii_herm_U, P):
+    #             Vi = self._calc_Vi_for_a_given_mu(sum_term, mu, Hii_herm_U)
+    #             norm = np.linalg.norm(Vi, 'fro')
+    #             cost = norm**2  - P
+    #             return cost
+    #         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    #         min_mu_i = 0
+    #         max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
+
+    #         cost = func(min_mu_i, sum_term, Hii_herm_U, self.P[i])
+    #         # If cost is lower than or equal to zero then the power
+    #         # constraint is already satisfied and we are done. The value of
+    #         # mu will be min_mu_i.
+    #         if cost <= 0:
+    #             mu_i = min_mu_i
+    #             Vi = self._calc_Vi_for_a_given_mu(
+    #                 sum_term, mu_i, Hii_herm_U)
+    #             self._mu[i] = mu_i
+
+    #         else:
+    #             # If we are not done yet then we need to perform the
+    #             # bisection method to find the best mu value between
+    #             # min_mu_i and max_mu_i
+    #             tol = self._bisection_tol  # Tolerance used to stop the bisection method
+
+    #             # Maximum number of iterations of the bisection
+    #             max_iter = int(1 + np.round(
+    #                 (np.log(max_mu_i - min_mu_i) - np.log(tol)) / np.log(2)))
+
+    #             # Perform the bisection
+    #             for _ in range(max_iter):
+    #                 mu_i = (max_mu_i + min_mu_i) / 2.0
+    #                 cost = func(mu_i, sum_term, Hii_herm_U, self.P[i])
+    #                 if cost > 0:
+    #                     # The current value of mu_i yields a precoder with
+    #                     # a power higher then the allowed value. Lets
+    #                     # increase the value of min_mu_i
+    #                     min_mu_i = mu_i
+    #                 else:
+    #                     # The current value of mu_i yields a precoder with
+    #                     # a power lower then the allowed value. Lets
+    #                     # decrease the value of max_mu_i
+    #                     max_mu_i = mu_i
+    #                 if np.abs(cost) < tol:
+    #                     break
+
+    #             # Now that we have the best value for mu_i, lets calculate Vi
+    #             Vi = self._calc_Vi_for_a_given_mu(
+    #                 sum_term, mu_i, Hii_herm_U)
+    #             # Vi = self._calc_Vi_for_a_given_mu2(
+    #             #     inv_sum_term, mu_i, Hii_herm_U)
+
+    #             # If any load_factor was added (in case the original
+    #             # sum_term is a singular matrix) we will add it to the
+    #             # optimum mu_i, since this is the effective value of mu_i.
+    #             self._mu[i] = mu_i + load_factor
+
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Case when the mu value is provided xxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     else:
+    #         self._mu[i] = mu_i
+    #         Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
+    #         # Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+
+    #     return Vi
 
     def _updateF(self):
         """
