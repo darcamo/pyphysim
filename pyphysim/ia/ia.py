@@ -1085,6 +1085,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.max_iterations = 50  # Number of times the step method is
                                   # called in the solve method.
 
+        # Relative change of the precoder in one iteration to the next
+        # one. If the relative change from one iteration to the next one is
+        # lower than this factor then the algorithm will stop the
+        # iterations before the max_iterations limit is reached.
+        self.relative_factor = 1e-6
+
         # We can use the closed form IA solver to initialize the iterative
         # algorithm. This can reduce the number of iterations required for
         # convergence. Note that this will be done only if
@@ -1291,7 +1297,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                 raise Exception("I should not be here.")
 
     @classmethod
-    def _is_diff_significant(cls, F_old, F_new):
+    def _is_diff_significant(cls, F_old, F_new, relative_factor):
         """
         Test if there was any significant change from `F_old` to `F_new`.
 
@@ -1325,7 +1331,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             min_value = np.abs(Fk_new).min()
             diff = np.abs(Fk_new - Fk_old)
             max_diff = diff.max()
-            if max_diff > (min_value / 1000.0):
+            if max_diff > (min_value * relative_factor):
                 return True
 
         return False
@@ -1390,7 +1396,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
             # Stop the iteration earlier if the precoder does not change
             # too much
-            if self._is_diff_significant(old_F, self._F) is False:
+            if self._is_diff_significant(old_F, self._F, self.relative_factor) is False:
                 break
             else:
                 old_F = self._F

@@ -600,7 +600,8 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
     def test_solve_and_calc_equivalent_channel(self):
         Ns = 1
-        self.iasolver.solve(Ns)
+        P = [0.8, 1.1, 0.956]
+        self.iasolver.solve(Ns, P)
         for l in range(3):
             for k in range(3):
                 Hlk = self.iasolver._get_channel(l, k)
@@ -712,12 +713,15 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
         F_new[1] = F1.copy()
         F_new[2] = F2.copy()
 
-        self.assertFalse(IterativeIASolverBaseClass._is_diff_significant(F_old, F_new))
+        self.assertFalse(IterativeIASolverBaseClass._is_diff_significant(
+            F_old, F_new, 1e-3))
         F_new[1][1, 2] += 9e-4
         F_new[2][0, 0] += 6e-4
-        self.assertFalse(IterativeIASolverBaseClass._is_diff_significant(F_old, F_new))
+        self.assertFalse(IterativeIASolverBaseClass._is_diff_significant(
+            F_old, F_new, 1e-3))
         F_new[2][2, 2] += 2e-3
-        self.assertTrue(IterativeIASolverBaseClass._is_diff_significant(F_old, F_new))
+        self.assertTrue(IterativeIASolverBaseClass._is_diff_significant(
+            F_old, F_new, 1e-3))
 
 
 class AlternatingMinIASolverTestCase(unittest.TestCase):
@@ -1973,71 +1977,30 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now lets repeat the tests, but without specifying the value of
-        # mu. Therefore, the optimum value of mu will be also calculated.
-
+        # mu. In that case, the optimum value of mu is also calculated in
+        # the _calc_Vi method. Since it is hard to test this here we will
+        # only test if the power of the calculated precoders respect the
+        # power constraint.
         V0_best = self.iasolver._calc_Vi(0)
         V1_best = self.iasolver._calc_Vi(1)
         V2_best = self.iasolver._calc_Vi(2)
 
+        self.assertTrue(
+            np.linalg.norm(V0_best, 'fro')**2 <= self.P[0] + 1e-12)
+        self.assertTrue(
+            np.linalg.norm(V1_best, 'fro')**2 <= self.P[1] + 1e-12)
+        self.assertTrue(
+            np.linalg.norm(V2_best, 'fro')**2 <= self.P[2] + 1e-12)
+
         # TODO: Find a way to test the case when the best value of mu is found
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # TODO: Finish this implementation or erase this method
-    def test_calc_Vi2(self):
-        # This method test the case when IA is not feasible
-        K = 3
-        Nt = 4 * np.ones(K)
-        Nr = 4 * np.ones(K)
-        Ns = 2
-        P = 1.0
-
-        # This specific channel will yield a degenerated solution solution
-        big_H = np.load("{0}/tests/big_H.npy".format(parent_dir))
-        F = np.load("{0}/tests/F.npy".format(parent_dir))
-        W = np.load("{0}/tests/W.npy".format(parent_dir))
-
-        multi_user_channel = channels.MultiUserChannelMatrix()
-        multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
-
-        iasolver = MMSEIASolver(multi_user_channel)
-        iasolver.noise_var=10  # Set a very high noise variance (that is, a
-                               # very low SINR)
-        #iasolver._initialize_F_and_W_from_closed_form(Ns, P)
-
-        # iasolver._F = F
-        # iasolver._W = W
-
-        #import pudb; pudb.set_trace()  ## DEBUG ##
-        iasolver.solve(Ns, P)
-
-        iasolver._calc_Vi(0)
-
-        #print np.linalg.svd(iasolver.F[0])[1]
-
-        #import pudb; pudb.set_trace()  ## DEBUG ##
-
-        # iasolver.noise_var = 1e-6
-        # iasolver.solve(Ns)
-
-    # TODO: Finish this implementation or erase this method
-    def test_calc_Vi3(self):
-        # This method test the case when IA is not feasible
-        K = 3
-        Nt = 3 * np.ones(K)
-        Nr = 3 * np.ones(K)
-        Ns = 2
-        #P = 1.0
-
-        # This specific channel will yield a degenerated solution solution
-        big_H = np.load("{0}/tests/big_H2.npy".format(parent_dir))
-        multi_user_channel = channels.MultiUserChannelMatrix()
-        multi_user_channel.init_from_channel_matrix(big_H, Nr, Nt, K)
-
-        iasolver = MMSEIASolver(multi_user_channel)
-        iasolver.noise_var = 1000.0
-
-        iasolver.solve(Ns)
-
+    # TODO: Finish the implementation
     def test_updateF(self):
+        # We are only testing the transmit powers here. If the precoders
+        # are not calculated correctly then the test for the solve method
+        # should fail.
+
         self.iasolver.P = np.array([0.67, 0.89, 1.1])
         self.iasolver._initialize_F_and_W_from_closed_form(1, 1)
         self.iasolver._updateF()
@@ -2046,23 +2009,18 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.assertAlmostEqual(norm(self.iasolver.F[1], 'fro') ** 2, 1.0)
         self.assertAlmostEqual(norm(self.iasolver.F[2], 'fro') ** 2, 1.0)
 
-        print
-        print "Darlan"
-        print self.iasolver.P
-        print norm(self.iasolver.full_F[0], 'fro') ** 2
-        print norm(self.iasolver.full_F[1], 'fro') ** 2
-        print norm(self.iasolver.full_F[2], 'fro') ** 2
-        print "Fim"
-
         self.assertTrue(
-            norm(self.iasolver.full_F[0], 'fro') ** 2 <= self.iasolver.P[0] + 1e-12)
+            (norm(self.iasolver.full_F[0], 'fro') ** 2
+             <=
+             self.iasolver.P[0] + 1e-12))
         self.assertTrue(
-            norm(self.iasolver.full_F[1], 'fro') ** 2 <= self.iasolver.P[1] + 1e-12)
+            (norm(self.iasolver.full_F[1], 'fro') ** 2
+             <=
+             self.iasolver.P[1] + 1e-12))
         self.assertTrue(
-            norm(self.iasolver.full_F[2], 'fro') ** 2 <= self.iasolver.P[2] + 1e-12)
-
-        # TODO: implement-me
-        pass
+            (norm(self.iasolver.full_F[2], 'fro') ** 2
+             <=
+             self.iasolver.P[2] + 1e-12))
 
     def test_solve(self):
         # If a prwevious run of this test failed, this will load the state
@@ -2074,11 +2032,6 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.iasolver.noise_var = 1e-50
 
         self.iasolver.solve(Ns, self.P)
-
-        # xxxxxxxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        import pudb; pudb.set_trace()  ## DEBUG ##
-        self.iasolver._step()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         full_F0 = np.matrix(self.iasolver.full_F[0])
         full_F1 = np.matrix(self.iasolver.full_F[1])
@@ -2141,5 +2094,4 @@ class MMSEIASolverTestCase(unittest.TestCase):
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
-    # plot_psd_OFDM_symbols()
     unittest.main()
