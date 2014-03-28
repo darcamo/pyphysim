@@ -227,7 +227,7 @@ class IASolverBaseClass(object):
                     # Equivalent channel with the effect of the precoder,
                     # channel and receive filter
                     Hieq = self._calc_equivalent_channel(k)
-                    self._full_W_H[k] = np.linalg.solve(Hieq, self.W_H[k]) / np.sqrt(self.P[k])
+                    self._full_W_H[k] = np.linalg.solve(Hieq, self.W_H[k])
 
         return self._full_W_H
 
@@ -247,9 +247,9 @@ class IASolverBaseClass(object):
 
     def _calc_equivalent_channel(self, k):
         """
-        Calculates the equivalent channel for user :math:`k` considering
-        the effect of the precoder, the actual channel, and the receive
-        filter.
+        Calculates the equivalent channel for user :math:`k` considering the
+        effect of the precoder (including transmit power), the actual
+        channel, and the receive filter (without power compensation).
 
         Parameters
         ----------
@@ -267,9 +267,9 @@ class IASolverBaseClass(object):
         # the full_W_H get property if we had used self.full_W_H here we
         # would get an infinity recursion.
         Wk_H = self.W_H[k]
-        Fk = self.F[k]
+        full_Fk = self.full_F[k]
         Hkk = self._get_channel(k, k)
-        Hk_eq = Wk_H.dot(Hkk.dot(Fk))
+        Hk_eq = Wk_H.dot(Hkk.dot(full_Fk))
         return Hk_eq
 
     @property
@@ -2100,12 +2100,11 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         Updates the receive filter of all users.
         """
-        self._clear_receive_filter()
-
         new_W = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
             new_W[k] = self._calc_Uk(k)
 
+        self._clear_receive_filter()
         self._W = new_W
 
     @staticmethod
@@ -2301,19 +2300,23 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         Updates the precoder of all users.
         """
-        self._clear_precoder_filter()
-        self._F = np.zeros(self.K, dtype=np.ndarray)
-        self._mu = np.zeros(self.K, dtype=float)
+        # Note that _mu should never be negative. By setting the values to
+        # -1 here if after the solve method some element in _mu is still
+        # negative then something was not write.
+        self._mu = -1.0 * np.ones(self.K, dtype=float)
 
         Vi = np.zeros(self.K, dtype=np.ndarray)
+        norm_Vi = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
             # Note: The square of the Frobenius norm of Vi is NOT equal to
             # one. Since the full_F property will apply the correct power
             # scaling, the norm of self._F must be equal to one.
             Vi[k] = self._calc_Vi(k)
-            Vi[k] = Vi[k] / np.linalg.norm(Vi[k], 'fro')
+            norm_Vi[k] = Vi[k] / np.linalg.norm(Vi[k], 'fro')
 
-        self._F = Vi
+        self._clear_precoder_filter()
+        self._full_F = Vi
+        self._F = norm_Vi
 
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
