@@ -881,13 +881,17 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = AlternatingMinIASolver(multiUserChannel)
+
         self.K = 3
         self.Nr = np.array([2, 4, 6])
         self.Nt = np.array([2, 3, 5])
         self.Ns = np.array([1, 2, 3])
+
+        # Transmit power of all users
         self.P = np.array([1.1, 0.876, 1.23])
+
+        # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-        #self.iasolver.randomizeF(self.Ns)
 
     def test_updateC(self):
         self.iasolver.randomizeF(self.Ns, self.P)
@@ -1339,12 +1343,6 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = MaxSinrIASolver(multiUserChannel)
 
-        # State of the RandomState objects used to get the random precoder,
-        # random channel and random noise samples.2
-        self.iasolver_state = self.iasolver._rs.get_state()
-        self.channel_state = multiUserChannel._RS_channel.get_state()
-        self.noise_state = multiUserChannel._RS_noise.get_state()
-
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
         self.Nr = np.ones(self.K, dtype=int) * 2
@@ -1356,22 +1354,10 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-        # xxxxxxxxxx APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # This is used only in the the _save_state and _maybe_load_state
-        # methods. It is set to True or False in the _maybe_load_state
-        # method depending if the state was a previous test run was loaded
-        # or not and the _save_state will only save the state if _new_test
-        # is True.
-        self._new_test = None
-
-        # Initialize the precoders and the receive filters
+    def test_calc_Bkl_cov_matrix_first_part_rev(self):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
-    def test_calc_Bkl_cov_matrix_first_part_rev(self):
         for k in range(self.K):
             expected_first_part_rev = 0.0
             for j in range(self.K):
@@ -1392,6 +1378,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             )
 
     def test_calc_Bkl_cov_matrix_second_part_rev(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._updateW()
+
         for k in range(self.K):
             Hkk = self.iasolver._get_channel_rev(k, k)
             Hkk_H = Hkk.transpose().conjugate()
@@ -1410,6 +1399,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                     self.iasolver._calc_Bkl_cov_matrix_second_part_rev(k, l))
 
     def test_calc_Bkl_cov_matrix_all_l(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._updateW()
+
         # Calculates Bkl for all streams (l index) of all users (k index)
         for k in range(self.K):
             # The first_part does not depend on the stream index. Only on
@@ -1451,6 +1443,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
     def test_calc_Bkl_cov_matrix_all_l_rev(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._updateW()
+
         self.iasolver.noise_var = 1.0
 
         # Calculates Bkl for all streams (l index) of all users (k index)
@@ -1475,6 +1470,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
     def test_calc_Ukl(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+
         for k in range(self.K):
             Hkk = self.iasolver._get_channel(k, k)
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
@@ -1488,6 +1485,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                 np.testing.assert_array_almost_equal(expected_Ukl, Ukl)
 
     def teste_calc_Uk(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+
         for k in range(self.K):
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             expected_Uk = np.empty(self.Ns[k], dtype=np.ndarray)
@@ -1501,6 +1500,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
     def test_underline_calc_SINR_k(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+
         multiUserChannel = channels.MultiUserChannelMatrix()
         iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
@@ -1590,6 +1591,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_get_channel_rev(self):
+
         for k in range(self.K):
             for l in range(self.K):
                 Hlk = self.iasolver._get_channel(l, k)
@@ -1598,6 +1600,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                 np.testing.assert_array_almost_equal(expected_Hkl_rev, Hkl_rev)
 
     def test_calc_Uk_all_k(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+
         Uk = self.iasolver._calc_Uk_all_k()
 
         for k in range(self.K):
@@ -1608,6 +1612,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
     def test_calc_Uk_all_k_rev(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._updateW()
+
         Uk = self.iasolver._calc_Uk_all_k_rev()
 
         for k in range(self.K):
@@ -1693,6 +1700,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_updateW(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
         for k in range(self.iasolver.K):
@@ -1718,6 +1726,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         self.assertIsNone(self.iasolver.full_W_H)
 
     def test_full_W_H_property(self):
+        self.iasolver.randomizeF(self.Ns, self.P)
+        self.iasolver._updateW()
+
         self.iasolver._step()
         full_F = self.iasolver.full_F
         full_W_H = self.iasolver.full_W_H
@@ -2025,13 +2036,6 @@ class MMSEIASolverTestCase(CustomTestCase):
 
         # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-
-        # This is used only in the the _save_state and
-        # _maybe_load_state_and_randomize_channel methods. It is set to
-        # True or False in the _maybe_load_state method depending if the
-        # state was a previous test run was loaded or not and the
-        # _save_state will only save the state if _new_test is True.
-        self._new_test = None
 
     def test_updateW(self):
         self.iasolver._initialize_F_and_W_from_closed_form(1, 1)
