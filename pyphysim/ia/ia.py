@@ -643,16 +643,11 @@ class IASolverBaseClass(object):
         first_part = 0.0
         for j in range(self.K):
             Hkj = self._get_channel(k, j)
-            Hkj_H = Hkj.conjugate().transpose()
             Vj = self.full_F[j]
-            Vj_H = Vj.conjugate().transpose()
 
-            first_part = first_part + np.dot(
-                Hkj,
-                np.dot(
-                    np.dot(Vj,
-                           Vj_H),
-                    Hkj_H))
+            aux = np.dot(Hkj, Vj)
+
+            first_part = first_part + np.dot(aux, aux.conjugate().T)
 
         return first_part
 
@@ -680,13 +675,9 @@ class IASolverBaseClass(object):
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
         Hkk = self._get_channel(k, k)
-        Hkk_H = Hkk.transpose().conjugate()
-
         Vkl = self.full_F[k][:, l:l + 1]
-        Vkl_H = Vkl.transpose().conjugate()
-        second_part = np.dot(Hkk,
-                             np.dot(np.dot(Vkl, Vkl_H),
-                                    Hkk_H))
+        aux = np.dot(Hkk, Vkl)
+        second_part = np.dot(aux, aux.conjugate().T)
 
         return second_part
 
@@ -963,11 +954,6 @@ class ClosedFormIASolver(IASolverBaseClass):
             np.dot(A2, A2.transpose().conjugate()),
             self.Ns[2])[0]
 
-    # @property
-    # def W(self):
-    #     """Receive filter of all users."""
-    #     return self._get_W_property_alt()
-
     def solve(self, Ns, P=None):
         """
         Find the IA solution.
@@ -1165,6 +1151,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     # that they also reset the _runned_iterations attribute to zero.
     def randomizeF(self, Ns, P=None):
         self._runned_iterations = 0
+        # randomizeF in the base class will set `self._P` to `P`
         super(IterativeIASolverBaseClass, self).randomizeF(Ns, P)
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1222,6 +1209,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
+        self.P = P
+
         if self.initialize_with_closed_form is True:
             self._initialize_F_and_W_from_closed_form(Ns, P)
         else:
@@ -1480,7 +1469,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
             (k, l) = kl
             Hkl_Fl = np.dot(
                 self._get_channel(k, l),
-                self._F[l])
+                self.full_F[l])
             Cost = Cost + np.linalg.norm(
                 Hkl_Fl -
                 np.dot(
@@ -1606,6 +1595,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         #self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
         for k in range(self.K):
             self._F[k] = leig(newF[k], self.Ns[k])[0]
+            self._F[k] = self._F[k] / np.linalg.norm(self._F[k],'fro')
 
     def _updateW(self):
         """
@@ -2075,8 +2065,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
-        self._mu = np.zeros(self.K, dtype=float)
         IterativeIASolverBaseClass._solve_init(self, Ns, P)
+        self._mu = np.zeros(self.K, dtype=float)
 
     def _calc_Uk(self, k):
         """Calculates the receive filter of the k-th user.

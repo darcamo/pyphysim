@@ -35,6 +35,114 @@ from pyphysim.ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIAS
 from pyphysim.util.misc import peig, leig
 
 
+class CustomTestCase(unittest.TestCase):
+    """
+    This class inherits from unittest.TestCase and implements the
+    `_save_state` and `_maybe_load_state` methods that can be used in the
+    IA Solver test case classes.
+
+    Notes
+    -----
+
+    In the implementation of the setUp method of a derived class you must
+    set the values of the variables `_new_test`, `iasolver_state`,
+    `channel_state`, `noise_state` and `iasolver`. Furthermore, at the end
+    of the setUp method you must also call the method
+    `set_up_randomize_channel_and_init_precoder()`.
+    """
+
+    def __init__(self, methodName='runTest'):
+        """Init method.
+        """
+        unittest.TestCase.__init__(self, methodName)
+
+        # These four variables MUST be overwritten in the setUp method in
+        # the subclass so that they are initialized with the correct values
+        # before each test is run.
+        self._new_test = None  # Set this to None in the setUp method
+        self.iasolver_state = None  # Set this to the correct RandomState
+                                    # object in the setUp method
+        self.channel_state = None  # Set this to the correct RandomState
+                                   # object in the setUp method
+        self.noise_state = None  # Set this to the correct RandomState
+                                 # object in the setUp method
+
+        self.iasolver = None  # Set this to the IASolver object in the
+                              # setUp method
+
+    def _save_state(self, filename, iasolver=None):
+        """
+        When a test fails, call this method to save the state of the channel
+        and IA solver random generators so that you can reproduce this fail
+        again.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file where the state will be saved.
+        iasolver : IA Solver object.
+            The object containing the state that should be saved (including
+            the channel state associated with that object).
+        """
+        if iasolver is None:
+            iasolver = self.iasolver
+
+        if self._new_test is True:
+            MMSE_test_solve_state = {'iasolver_state': self.iasolver_state,
+                                     'channel_state': self.channel_state,
+                                     'noise_state': self.noise_state}
+            with open(filename, 'wb') as fid:
+                pickle.dump(MMSE_test_solve_state,
+                            fid,
+                            pickle.HIGHEST_PROTOCOL)
+
+    def _maybe_load_state(self, filename, iasolver=None):
+        """
+        Load the state of a previous test fail, if the saved file exists.
+        """
+        if iasolver is None:
+            iasolver = self.iasolver
+
+        self._new_test = True
+        try:
+            # If the file pointed by `filename` exists, that means that a
+            # previous run of the test method failed and the random states
+            # were saved. In that case we will load those random states and
+            # 'randomize' the channel and precoders with them to reproduce
+            # the previous failed test.
+            with open(filename, 'r') as fid:
+                MMSE_test_solve_state = pickle.load(fid)
+            iasolver_state = MMSE_test_solve_state['iasolver_state']
+            channel_state = MMSE_test_solve_state['channel_state']
+            noise_state = MMSE_test_solve_state['noise_state']
+
+            iasolver._rs.set_state(iasolver_state)
+            iasolver._multiUserChannel._RS_channel.set_state(channel_state)
+            iasolver._multiUserChannel._RS_noise.set_state(noise_state)
+            self.set_up_randomize_channel_and_init_precoder(iasolver)
+            self._new_test = False
+
+        except IOError:
+            pass
+
+    def set_up_randomize_channel_and_init_precoder(self, iasolver=None):
+        """
+        Random initialization of the channel and IA Solver precocer.
+
+        This is called inside the setUp method, which in turn runs before
+        any test method runs.
+        """
+        if iasolver is None:
+            iasolver = self.iasolver
+
+        iasolver._multiUserChannel.randomize(self.Nr, self.Nt, self.K)
+
+        #iasolver.noise_var = 1e-3
+
+        #iasolver._initialize_F_and_W_from_closed_form(1, 1)
+        #iasolver.P = self.P
+
+
 # UPDATE THIS CLASS if another module is added to the ia package
 class IaDoctestsTestCase(unittest.TestCase):
     """Teste case that run all the doctests in the modules of the ia
@@ -430,6 +538,10 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             self.iasolver.solve(Ns=1)
 
+    def test_calc_SINR_k(self):
+        # This test is implemented in the MaxSinrIASolerTestCase class.
+        pass
+
 
 class ClosedFormIASolverTestCase(unittest.TestCase):
     def setUp(self):
@@ -505,6 +617,8 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(a, b)
 
     def test_updateF(self):
+        P = np.array([1.1, 0.86, 1.328])
+        self.iasolver.P = P
         Ns = 1
         E = self.iasolver._calc_E()
         [_, eigenvectors] = np.linalg.eig(E)
@@ -538,11 +652,24 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V2, self.iasolver.F[1])
         np.testing.assert_array_almost_equal(V3, self.iasolver.F[2])
 
-        self.assertAlmostEqual(norm(V1, 'fro'), 1.0)
-        self.assertAlmostEqual(norm(V2, 'fro'), 1.0)
-        self.assertAlmostEqual(norm(V3, 'fro'), 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[0], 'fro'), 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[1], 'fro'), 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[2], 'fro'), 1.0)
+
+        self.assertAlmostEqual(norm(self.iasolver.full_F[0], 'fro')**2, P[0])
+        self.assertAlmostEqual(norm(self.iasolver.full_F[1], 'fro')**2, P[1])
+        self.assertAlmostEqual(norm(self.iasolver.full_F[2], 'fro')**2, P[2])
+
+        np.testing.assert_array_almost_equal(self.iasolver.full_F[0],
+                                             self.iasolver.F[0] * np.sqrt(P[0]))
+        np.testing.assert_array_almost_equal(self.iasolver.full_F[1],
+                                             self.iasolver.F[1] * np.sqrt(P[1]))
+        np.testing.assert_array_almost_equal(self.iasolver.full_F[2],
+                                             self.iasolver.F[2] * np.sqrt(P[2]))
 
     def test_updateW(self):
+        P = np.array([1.1, 0.86, 1.328])
+        self.iasolver.P = P
         Ns = 1
         # The number of streams _Ns is set in the solve method, before
         # _updateF and the _updateW methods are called. However, since we
@@ -556,12 +683,19 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         V2 = np.matrix(self.iasolver.F[1])
         #V3 = np.matrix(self.iasolver.F[2])
 
+        full_V1 = np.matrix(self.iasolver.full_F[0])
+        full_V2 = np.matrix(self.iasolver.full_F[1])
+        full_V3 = np.matrix(self.iasolver.full_F[2])
+
+        H11 = np.matrix(self.iasolver._get_channel(0, 0))
         H12 = np.matrix(self.iasolver._get_channel(0, 1))
         H13 = np.matrix(self.iasolver._get_channel(0, 2))
         H21 = np.matrix(self.iasolver._get_channel(1, 0))
+        H22 = np.matrix(self.iasolver._get_channel(1, 1))
         H23 = np.matrix(self.iasolver._get_channel(1, 2))
         H31 = np.matrix(self.iasolver._get_channel(2, 0))
         H32 = np.matrix(self.iasolver._get_channel(2, 1))
+        H33 = np.matrix(self.iasolver._get_channel(2, 2))
 
         U1 = H12 * V2
         U1 = leig(U1 * U1.H, 1)[0]
@@ -573,6 +707,15 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.iasolver._W[0], U1)
         np.testing.assert_array_almost_equal(self.iasolver._W[1], U2)
         np.testing.assert_array_almost_equal(self.iasolver._W[2], U3)
+
+        # xxxxx Test the direct channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self.assertAlmostEqual(
+            np.dot(self.iasolver.full_W_H[0], np.dot(H11, full_V1))[0,0], 1.0)
+        self.assertAlmostEqual(
+            np.dot(self.iasolver.full_W_H[1], np.dot(H22, full_V2))[0,0], 1.0)
+        self.assertAlmostEqual(
+            np.dot(self.iasolver.full_W_H[2], np.dot(H33, full_V3))[0,0], 1.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test if the interference is cancelled xxxxxxxxxxxxxxxxxxxxx
         I1 = np.dot(self.iasolver.W_H[0], np.dot(H12, self.iasolver.F[1])) + \
@@ -606,13 +749,16 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             for k in range(3):
                 Hlk = self.iasolver._get_channel(l, k)
                 Wl_H = self.iasolver.W_H[l]
-                Fk = self.iasolver.F[k]
-                s = np.dot(Wl_H, np.dot(Hlk, Fk))[0][0]
+                full_Wl_H = self.iasolver.full_W_H[l]
+                full_Fk = self.iasolver.full_F[k]
+                s = np.dot(Wl_H, np.dot(Hlk, full_Fk))[0][0]
+                s2 = np.dot(full_Wl_H, np.dot(Hlk, full_Fk))[0][0]
                 if l == k:
                     Hk_eq = self.iasolver._calc_equivalent_channel(k)
-                    s2 = s / Hk_eq[0, 0]  # We only have one stream -> the
+                    s3 = s / Hk_eq[0, 0]  # We only have one stream -> the
                                           # equivalent channel is an scalar.
                     self.assertAlmostEqual(1.0, s2)
+                    self.assertAlmostEqual(1.0, s3)
                 else:
                     # Test if the interference is equal to 0.0
                     self.assertAlmostEqual(0.0, s)
@@ -723,8 +869,12 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
         self.assertTrue(IterativeIASolverBaseClass._is_diff_significant(
             F_old, F_new, 1e-3))
 
+    def test_clear(self):
+        # This method is tested in the AlternatingMinIASolverTestCase class
+        pass
 
-class AlternatingMinIASolverTestCase(unittest.TestCase):
+
+class AlternatingMinIASolverTestCase(CustomTestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
     def setUp(self):
         """Called before each test."""
@@ -734,11 +884,12 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         self.Nr = np.array([2, 4, 6])
         self.Nt = np.array([2, 3, 5])
         self.Ns = np.array([1, 2, 3])
+        self.P = np.array([1.1, 0.876, 1.23])
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
         #self.iasolver.randomizeF(self.Ns)
 
     def test_updateC(self):
-        self.iasolver.randomizeF(self.Ns)
+        self.iasolver.randomizeF(self.Ns, self.P)
 
         # Dimensions of the interference subspace
         Ni = self.Nr - self.Ns
@@ -749,11 +900,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         k = 0
         H01_F1 = np.dot(
             self.iasolver._get_channel(k, 1),
-            self.iasolver.F[1]
+            self.iasolver.full_F[1]
         )
         H02_F2 = np.dot(
             self.iasolver._get_channel(k, 2),
-            self.iasolver.F[2]
+            self.iasolver.full_F[2]
         )
         expected_C0 = np.dot(H01_F1, H01_F1.transpose().conjugate()) + \
             np.dot(H02_F2, H02_F2.transpose().conjugate())
@@ -767,11 +918,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         k = 1
         H10_F0 = np.dot(
             self.iasolver._get_channel(k, 0),
-            self.iasolver.F[0]
+            self.iasolver.full_F[0]
         )
         H12_F2 = np.dot(
             self.iasolver._get_channel(k, 2),
-            self.iasolver.F[2]
+            self.iasolver.full_F[2]
         )
         expected_C1 = np.dot(H10_F0, H10_F0.transpose().conjugate()) + \
             np.dot(H12_F2, H12_F2.transpose().conjugate())
@@ -785,11 +936,11 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         k = 2
         H20_F0 = np.dot(
             self.iasolver._get_channel(k, 0),
-            self.iasolver.F[0]
+            self.iasolver.full_F[0]
         )
         H21_F1 = np.dot(
             self.iasolver._get_channel(k, 1),
-            self.iasolver.F[1]
+            self.iasolver.full_F[1]
         )
         expected_C2 = np.dot(H20_F0, H20_F0.transpose().conjugate()) + \
             np.dot(H21_F1, H21_F1.transpose().conjugate())
@@ -800,7 +951,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_updateF(self):
-        self.iasolver.randomizeF(self.Ns)
+        self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateC()
         self.iasolver._updateF()
 
@@ -837,6 +988,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_F0 = np.dot(np.dot(H10.conjugate().transpose(), Y1), H10) + \
             np.dot(np.dot(H20.conjugate().transpose(), Y2), H20)
         expected_F0 = leig(expected_F0, self.Ns[0])[0]
+        expected_F0 = expected_F0 / np.linalg.norm(expected_F0, 'fro')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[1] after one step xxxxxxxxxxxxxxxx
@@ -844,6 +996,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_F1 = np.dot(np.dot(H01.conjugate().transpose(), Y0), H01) + \
             np.dot(np.dot(H21.conjugate().transpose(), Y2), H21)
         expected_F1 = leig(expected_F1, self.Ns[1])[0]
+        expected_F1 = expected_F1 / np.linalg.norm(expected_F1, 'fro')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[1] after one step xxxxxxxxxxxxxxxx
@@ -851,15 +1004,38 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         expected_F2 = np.dot(np.dot(H02.conjugate().transpose(), Y0), H02) + \
             np.dot(np.dot(H12.conjugate().transpose(), Y1), H12)
         expected_F2 = leig(expected_F2, self.Ns[2])[0]
+        expected_F2 = expected_F2 / np.linalg.norm(expected_F2, 'fro')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Get the precoders xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        F0 = self.iasolver.F[0]
+        full_F0 = self.iasolver.full_F[0]
+        F1 = self.iasolver.F[1]
+        full_F1 = self.iasolver.full_F[1]
+        F2 = self.iasolver.F[2]
+        full_F2 = self.iasolver.full_F[2]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Finally perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(self.iasolver.F[0], expected_F0)
-        np.testing.assert_array_almost_equal(self.iasolver.F[1], expected_F1)
-        np.testing.assert_array_almost_equal(self.iasolver.F[2], expected_F2)
+        np.testing.assert_array_almost_equal(F0, expected_F0)
+        np.testing.assert_array_almost_equal(F1, expected_F1)
+        np.testing.assert_array_almost_equal(F2, expected_F2)
+        np.testing.assert_array_almost_equal(full_F0, expected_F0 * np.sqrt(self.P[0]))
+        np.testing.assert_array_almost_equal(full_F1, expected_F1 * np.sqrt(self.P[1]))
+        np.testing.assert_array_almost_equal(full_F2, expected_F2 * np.sqrt(self.P[2]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the norm of the precoders xxxxxxxxxxxxxxxxxxxxxxx
+        self.assertAlmostEqual(np.linalg.norm(F0, 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(F1, 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(F2, 'fro'), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(full_F0, 'fro')**2, self.P[0])
+        self.assertAlmostEqual(np.linalg.norm(full_F1, 'fro')**2, self.P[1])
+        self.assertAlmostEqual(np.linalg.norm(full_F2, 'fro')**2, self.P[2])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_updateW(self):
-        self.iasolver.randomizeF(self.Ns)
+        self.iasolver.randomizeF(self.Ns, self.P)
 
         # Call updateC, updateF and updateW
         self.iasolver._step()
@@ -894,6 +1070,21 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.iasolver.W_H[2], expected_W2_H)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Equivalent channels xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Heq0 = self.iasolver._calc_equivalent_channel(0)
+        Heq1 = self.iasolver._calc_equivalent_channel(1)
+        Heq2 = self.iasolver._calc_equivalent_channel(2)
+        expected_full_W0_H = np.dot(np.linalg.inv(Heq0), expected_W0_H)
+        expected_full_W1_H = np.dot(np.linalg.inv(Heq1), expected_W1_H)
+        expected_full_W2_H = np.dot(np.linalg.inv(Heq2), expected_W2_H)
+        np.testing.assert_array_almost_equal(self.iasolver.full_W_H[0],
+                                             expected_full_W0_H)
+        np.testing.assert_array_almost_equal(self.iasolver.full_W_H[1],
+                                             expected_full_W1_H)
+        np.testing.assert_array_almost_equal(self.iasolver.full_W_H[2],
+                                             expected_full_W2_H)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx Sanity tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test if the hermitian of W[k] is equal to W[k]
         for k in range(self.iasolver.K):
@@ -909,13 +1100,14 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_getCost(self):
+        P = np.array([1.23, 0.965])
         K = 2
         Nr = np.array([3, 3])
         Nt = np.array([3, 3])
         Ns = np.array([2, 2])
         multiUserChannel = self.iasolver._multiUserChannel
         multiUserChannel.randomize(Nr, Nt, K)
-        self.iasolver.randomizeF(Ns)
+        self.iasolver.randomizeF(Ns, P)
 
         # Call updateC, updateF and updateW
         self.iasolver._step()
@@ -924,7 +1116,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         k, l = (0, 1)
         H01_F1 = np.dot(
             self.iasolver._get_channel(k, l),
-            self.iasolver.F[l])
+            self.iasolver.full_F[l])
         Cost = Cost + norm(
             H01_F1 -
             np.dot(
@@ -935,7 +1127,7 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         k, l = (1, 0)
         H10_F0 = np.dot(
             self.iasolver._get_channel(k, l),
-            self.iasolver.F[l])
+            self.iasolver.full_F[l])
         Cost = Cost + norm(
             H10_F0 -
             np.dot(
@@ -945,11 +1137,83 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(self.iasolver.get_cost(), Cost)
 
-    # def test_solve(self):
-    #     self.iasolver.max_iterations = 1
-    #     # We are only testing if this does not thrown an exception. That's
-    #     # why there is no assert clause here
-    #     self.iasolver.solve(self.Ns)
+    def test_solve(self):
+        Nr = 2
+        Nt = 2
+        Ns = 1
+        K = 3
+        P = np.array([0.97, 1.125, 1.342])
+
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.randomize(Nr, Nt, K)
+        iasolver = AlternatingMinIASolver(multiUserChannel)
+
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        #self._maybe_load_state('Alt_Min_test_solve_state.pickle', iasolver)
+
+        iasolver.max_iterations = 60
+        iasolver.noise_var = 1e-50
+
+        iasolver.solve(Ns, P)
+
+        full_F0 = np.matrix(iasolver.full_F[0])
+        full_F1 = np.matrix(iasolver.full_F[1])
+        full_F2 = np.matrix(iasolver.full_F[2])
+
+        full_W_H0 = np.matrix(iasolver.full_W_H[0])
+        full_W_H1 = np.matrix(iasolver.full_W_H[1])
+        full_W_H2 = np.matrix(iasolver.full_W_H[2])
+
+        H00 = np.matrix(iasolver._get_channel(0, 0))
+        H01 = np.matrix(iasolver._get_channel(0, 1))
+        H02 = np.matrix(iasolver._get_channel(0, 2))
+        H10 = np.matrix(iasolver._get_channel(1, 0))
+        H11 = np.matrix(iasolver._get_channel(1, 1))
+        H12 = np.matrix(iasolver._get_channel(1, 2))
+        H20 = np.matrix(iasolver._get_channel(2, 0))
+        H21 = np.matrix(iasolver._get_channel(2, 1))
+        H22 = np.matrix(iasolver._get_channel(2, 2))
+
+        # Perform the actual tests
+        try:
+            # xxxxx Test if the transmit power limit is respected xxxxxxxxx
+            self.assertTrue(
+                np.linalg.norm(full_F0, 'fro')**2 <= P[0] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(full_F1, 'fro')**2 <= P[1] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(full_F2, 'fro')**2 <= P[2] + 1e-12)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                full_W_H0 * H00 * full_F0, 1.0)
+            np.testing.assert_array_almost_equal(
+                full_W_H1 * H11 * full_F1, 1.0)
+            np.testing.assert_array_almost_equal(
+                full_W_H2 * H22 * full_F2, 1.0)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
+        except AssertionError:
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            #self._save_state('Alt_Min_test_solve_state.pickle', iasolver)
+            raise  # re-raises the last exception
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_SINR_old(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
@@ -1067,11 +1331,18 @@ class AlternatingMinIASolverTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.iasolver.runned_iterations, 0.0)
 
 
-class MaxSinrIASolerTestCase(unittest.TestCase):
+class MaxSinrIASolerTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = MaxSinrIASolver(multiUserChannel)
+
+        # State of the RandomState objects used to get the random precoder,
+        # random channel and random noise samples.2
+        self.iasolver_state = self.iasolver._rs.get_state()
+        self.channel_state = multiUserChannel._RS_channel.get_state()
+        self.noise_state = multiUserChannel._RS_noise.get_state()
+
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
         self.Nr = np.ones(self.K, dtype=int) * 2
@@ -1080,12 +1351,21 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         # Transmit power of all users
         self.P = np.array([1.2, 1.5, 0.9])
 
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of the random precoder
-        self.iasolver._multiUserChannel.set_channel_seed(324)
+        # Randomize the channel
+        self.set_up_randomize_channel_and_init_precoder()
+
+        # xxxxxxxxxx APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        multiUserChannel.randomize(self.Nr, self.Nt, self.K)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        multiUserChannel.randomize(self.Nr, self.Nt, self.K)
+        # This is used only in the the _save_state and _maybe_load_state
+        # methods. It is set to True or False in the _maybe_load_state
+        # method depending if the state was a previous test run was loaded
+        # or not and the _save_state will only save the state if _new_test
+        # is True.
+        self._new_test = None
+
+        # Initialize the precoders and the receive filters
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -1168,8 +1448,6 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             for l in range(self.Ns[k]):
                 np.testing.assert_array_almost_equal(expected_Bkl[l], Bkl_all_l[l])
 
-
-
     def test_calc_Bkl_cov_matrix_all_l_rev(self):
         self.iasolver.noise_var = 1.0
 
@@ -1239,8 +1517,6 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             Hkk = iasolver._get_channel(k, k)
             Bkl_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k)
             Uk = iasolver.full_W[k]
-            # Uk_H = iasolver.full_W_H[k]
-
             SINR_k_all_l = iasolver._calc_SINR_k(k, Bkl_all_l)
 
             for l in range(Ns[k]):
@@ -1457,6 +1733,9 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
             1.0)
 
     def test_solve(self):
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state(filename='MaxSINR_test_solve_state.pickle')
         K = 3
         Nt = np.ones(K, dtype=int) * 2
         Nr = np.ones(K, dtype=int) * 2
@@ -1491,27 +1770,34 @@ class MaxSinrIASolerTestCase(unittest.TestCase):
         full_W_H1 = iasolver.full_W_H[1]
         full_W_H2 = iasolver.full_W_H[2]
 
-        # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1, 1.0)
-        np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2, 1.0)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Perform the actual tests
+        try:
+            # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0, 1.0)
+            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1, 1.0)
+            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2, 1.0)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # ## TODO: uncomment the lines below to test the remaining interference
-        # # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
-        # np.testing.assert_array_almost_equal(
-        #     np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # ## TODO: uncomment the lines below to test the remaining interference
+            # # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
+            # np.testing.assert_array_almost_equal(
+            #     np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
+            # np.testing.assert_array_almost_equal(
+            #     np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
+            # np.testing.assert_array_almost_equal(
+            #     np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
+            # np.testing.assert_array_almost_equal(
+            #     np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
+            # np.testing.assert_array_almost_equal(
+            #     np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
+            # np.testing.assert_array_almost_equal(
+            #     np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
+            # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        except AssertionError:
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state(filename='MaxSINR_test_solve_state.pickle')
+            raise  # re-raises the last exception
 
     def test_solve_finalize(self):
         K = 3
@@ -1719,7 +2005,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 
 
 # TODO: finish implementation
-class MMSEIASolverTestCase(unittest.TestCase):
+class MMSEIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
@@ -1736,16 +2022,10 @@ class MMSEIASolverTestCase(unittest.TestCase):
         self.Nr = np.ones(self.K, dtype=int) * 2
         self.Ns = np.ones(self.K, dtype=int) * 1
 
-        # # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # multiUserChannel.set_channel_seed(43)
-        # multiUserChannel.set_noise_seed(456)
-        # np.random.seed(25)
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # Transmit power of all users
         self.P = np.array([1.2, 1.5, 0.9])
 
-        # Randomize the channel and initialize the IA precoders
+        # Randomize the channel
         self.set_up_randomize_channel_and_init_precoder()
 
         # This is used only in the the _save_state and _maybe_load_state
@@ -1754,71 +2034,6 @@ class MMSEIASolverTestCase(unittest.TestCase):
         # or not and the _save_state will only save the state if _new_test
         # is True.
         self._new_test = None
-
-    def _save_state(self, ):
-        """
-        When a test fails, call this method to save the state of the channel
-        and IA solver random generators so that you can reproduce this fail
-        again.
-        """
-        if self._new_test is True:
-            MMSE_test_solve_state = {'iasolver_state': self.iasolver_state,
-                                     'channel_state': self.channel_state,
-                                     'noise_state': self.noise_state}
-            with open('MMSE_test_solve_state.pickle', 'wb') as fid:
-                pickle.dump(MMSE_test_solve_state,
-                            fid,
-                            pickle.HIGHEST_PROTOCOL)
-
-    def _maybe_load_state(self, ):
-        """
-        """
-        self._new_test = True
-        try:
-            # If the file MMSE_test_solve_state.pickle exists, that means
-            # that a previous run of this test method fail and the random
-            # states were saved. In that case we will load those random
-            # states and 'randomize' the channel and precoders with them to
-            # reproduce the previous failed test.
-            with open('MMSE_test_solve_state.pickle', 'r') as fid:
-                MMSE_test_solve_state = pickle.load(fid)
-            iasolver_state = MMSE_test_solve_state['iasolver_state']
-            channel_state = MMSE_test_solve_state['channel_state']
-            noise_state = MMSE_test_solve_state['noise_state']
-
-            self.iasolver._rs.set_state(iasolver_state)
-            self.iasolver._multiUserChannel._RS_channel.set_state(channel_state)
-            self.iasolver._multiUserChannel._RS_noise.set_state(noise_state)
-            self.set_up_randomize_channel_and_init_precoder()
-            self._new_test = False
-
-            # xxxxxxxxxx APAGAR DEPOIS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            channel2 = channels.MultiUserChannelMatrix()
-            altmin_solver = AlternatingMinIASolver(channel2)
-            altmin_solver._rs.set_state(iasolver_state)
-            altmin_solver._multiUserChannel._RS_channel.set_state(channel_state)
-            altmin_solver._multiUserChannel._RS_noise.set_state(noise_state)
-            self.set_up_randomize_channel_and_init_precoder(altmin_solver)
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        except IOError:
-            pass
-
-
-    def set_up_randomize_channel_and_init_precoder(self, iasolver=None):
-        """
-        Random initialization of the channel and IA Solver precocer.
-
-        This is called inside the setUp method, which in turn runs before
-        any test method runs.
-        """
-        if iasolver is None:
-            iasolver = self.iasolver
-
-        iasolver._multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-        iasolver.noise_var = 1e-3
-        #iasolver._initialize_F_and_W_from_closed_form(1, 1)
-        #iasolver.P = self.P
 
     def test_updateW(self):
         self.iasolver._initialize_F_and_W_from_closed_form(1, 1)
@@ -1892,6 +2107,10 @@ class MMSEIASolverTestCase(unittest.TestCase):
                                              expected_W2)
 
     def test_calc_Vi(self):
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state(filename='MMSE_test_calc_Vi_state.pickle')
+
         # For now we use an arbitrarily chosen value
         mu = np.array([0.9, 1.1, 0.8])
         self.iasolver.initialize_with_closed_form = True
@@ -1970,30 +2189,36 @@ class MMSEIASolverTestCase(unittest.TestCase):
         V1 = self.iasolver._calc_Vi(1, mu[1])
         V2 = self.iasolver._calc_Vi(2, mu[2])
 
-        # Test if the calculated values are equal to the expected values
-        np.testing.assert_array_almost_equal(expected_V0, V0)
-        np.testing.assert_array_almost_equal(expected_V1, V1)
-        np.testing.assert_array_almost_equal(expected_V2, V2)
+        try:
+            # Test if the calculated values are equal to the expected values
+            np.testing.assert_array_almost_equal(expected_V0, V0)
+            np.testing.assert_array_almost_equal(expected_V1, V1)
+            np.testing.assert_array_almost_equal(expected_V2, V2)
 
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Now lets repeat the tests, but without specifying the value of
-        # mu. In that case, the optimum value of mu is also calculated in
-        # the _calc_Vi method. Since it is hard to test this here we will
-        # only test if the power of the calculated precoders respect the
-        # power constraint.
-        V0_best = self.iasolver._calc_Vi(0)
-        V1_best = self.iasolver._calc_Vi(1)
-        V2_best = self.iasolver._calc_Vi(2)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Now lets repeat the tests, but without specifying the value of
+            # mu. In that case, the optimum value of mu is also calculated in
+            # the _calc_Vi method. Since it is hard to test this here we will
+            # only test if the power of the calculated precoders respect the
+            # power constraint.
+            V0_best = self.iasolver._calc_Vi(0)
+            V1_best = self.iasolver._calc_Vi(1)
+            V2_best = self.iasolver._calc_Vi(2)
 
-        self.assertTrue(
-            np.linalg.norm(V0_best, 'fro')**2 <= self.P[0] + 1e-12)
-        self.assertTrue(
-            np.linalg.norm(V1_best, 'fro')**2 <= self.P[1] + 1e-12)
-        self.assertTrue(
-            np.linalg.norm(V2_best, 'fro')**2 <= self.P[2] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(V0_best, 'fro')**2 <= self.P[0] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(V1_best, 'fro')**2 <= self.P[1] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(V2_best, 'fro')**2 <= self.P[2] + 1e-12)
 
-        # TODO: Find a way to test the case when the best value of mu is found
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # TODO: Find a way to test the case when the best value of mu is found
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        except AssertionError:
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state(filename='MMSE_test_calc_Vi_state.pickle')
+            raise  # re-raises the last exception
 
     # TODO: Finish the implementation
     def test_updateF(self):
@@ -2023,9 +2248,9 @@ class MMSEIASolverTestCase(unittest.TestCase):
              self.iasolver.P[2] + 1e-12))
 
     def test_solve(self):
-        # If a prwevious run of this test failed, this will load the state
+        # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
-        self._maybe_load_state()
+        self._maybe_load_state(filename='MMSE_test_solve_state.pickle')
 
         Ns = self.Ns
         self.iasolver.max_iterations = 120
@@ -2087,7 +2312,7 @@ class MMSEIASolverTestCase(unittest.TestCase):
         except AssertionError:
             # Since this test failed, let's save its state so that we can
             # reproduce it
-            self._save_state()
+            self._save_state(filename='MMSE_test_solve_state.pickle')
             raise  # re-raises the last exception
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
