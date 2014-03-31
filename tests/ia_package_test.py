@@ -54,41 +54,33 @@ class CustomTestCase(unittest.TestCase):
         """
         unittest.TestCase.__init__(self, methodName)
 
-        # These variables MUST be overwritten in the setUp method in the
-        # subclass so that they are initialized with the correct values
-        # before each test is run.
-        self._new_test = None  # Set this to None in the setUp method
-        self.iasolver_state = None  # Set this to the correct RandomState
-                                    # object in the setUp method
-        self.channel_state = None  # Set this to the correct RandomState
-                                   # object in the setUp method
-        self.noise_state = None  # Set this to the correct RandomState
-                                 # object in the setUp method
+        self._new_test = None  # Don't change this
 
-        self.iasolver = None  # Set this to the IASolver object in the
-                              # setUp method
+        # Variable used to save the RandomState object for the IA
+        # solver. Don't change this.
+        self.iasolver_state = None
+        # Variable used to save the RandomState object for the channel
+        # samples generation. Don't change this.
+        self.channel_state = None
+        # Variable used to save the RandomState object for the noise
+        # generation. Don't change this.
+        self.noise_state = None
 
-        self.Nr = None
-        self.Nt = None
-        self.K = None
-
-    def _save_state(self, filename, iasolver=None):
+    def _save_state(self, filename):
         """
         When a test fails, call this method to save the state of the channel
         and IA solver random generators so that you can reproduce this fail
         again.
 
+        Note that for this method to work, you need to have called the
+        `_maybe_load_state_and_randomize_channel` at the beginning of the
+        test method where `_save_state` will be called.
+
         Parameters
         ----------
         filename : str
             Name of the file where the state will be saved.
-        iasolver : IA Solver object.
-            The object containing the state that should be saved (including
-            the channel state associated with that object).
         """
-        if iasolver is None:
-            iasolver = self.iasolver
-
         if self._new_test is True:
             MMSE_test_solve_state = {'iasolver_state': self.iasolver_state,
                                      'channel_state': self.channel_state,
@@ -105,16 +97,22 @@ class CustomTestCase(unittest.TestCase):
         The state includes the state of the random generators for the
         iasolver precoders, for the channel samples, and for the channel
         noise.
-        """
-        if iasolver is None:
-            iasolver = self.iasolver
-        if Nr is None:
-            Nr = self.Nr
-        if Nt is None:
-            Nt = self.Nt
-        if K is None:
-            K = self.K
 
+        Parameters
+        ----------
+        filename : str
+            The name of the file to laod the state.
+        iasolver : IA Solver object
+            The IA solver whose state will be saved (the state of the
+            MultiUserChannelMatrix associated with that IA solver object
+            will also be saved).
+        Nr : int of numpy array
+            Number of receive antennas of all/each user.
+        Nt : int of numpy array
+            Number of receive antennas of all/each user.
+        K : int
+            Number of users
+        """
         multiUserChannel = iasolver._multiUserChannel
         self._new_test = None
 
@@ -412,7 +410,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         Qk = self.iasolver.calc_Q(k)
         pk = self.iasolver.calc_remaining_interference_percentage(k)
 
-        [V, D] = leig(Qk, Ns[k])
+        [_, D] = leig(Qk, Ns[k])
         expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
         self.assertAlmostEqual(pk, expected_pk)
 
@@ -799,12 +797,6 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         Nt = 4
         Ns = 2
 
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # multiUserChannel.set_channel_seed(43)
-        # multiUserChannel.set_noise_seed(456)
-        # np.random.seed(25)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         multiUserChannel.randomize(Nr, Nt, K)
 
         iasolver.solve(Ns)
@@ -849,7 +841,6 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             self.assertAlmostEqual(1.0, s)
 
 
-# TODO: finish implementation
 class IterativeIASolverBaseClassTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1159,7 +1150,9 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
-        self._maybe_load_state_and_randomize_channel('Alt_Min_test_solve_state.pickle', iasolver, Nr, Nt, K)
+        self._maybe_load_state_and_randomize_channel(
+            filename='Alt_Min_test_solve_state.pickle',
+            iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
 
         iasolver.max_iterations = 60
         iasolver.noise_var = 1e-50
@@ -1220,7 +1213,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         except AssertionError:
             # Since this test failed, let's save its state so that we can
             # reproduce it
-            self._save_state('Alt_Min_test_solve_state.pickle', iasolver)
+            self._save_state('Alt_Min_test_solve_state.pickle')
             raise  # re-raises the last exception
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1744,7 +1737,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
     def test_solve(self):
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
-        self._maybe_load_state_and_randomize_channel(filename='MaxSINR_test_solve_state.pickle')
+        self._maybe_load_state_and_randomize_channel(
+            filename='MaxSINR_test_solve_state.pickle',
+            iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
         K = 3
         Nt = np.ones(K, dtype=int) * 2
         Nr = np.ones(K, dtype=int) * 2
@@ -2020,12 +2015,6 @@ class MMSEIASolverTestCase(CustomTestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         self.iasolver = MMSEIASolver(multiUserChannel)
 
-        # State of the RandomState objects used to get the random precoder,
-        # random channel and random noise samples.2
-        self.iasolver_state = self.iasolver._rs.get_state()
-        self.channel_state = multiUserChannel._RS_channel.get_state()
-        self.noise_state = multiUserChannel._RS_noise.get_state()
-
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
         self.Nr = np.ones(self.K, dtype=int) * 2
@@ -2037,11 +2026,11 @@ class MMSEIASolverTestCase(CustomTestCase):
         # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-        # This is used only in the the _save_state and _maybe_load_state
-        # methods. It is set to True or False in the _maybe_load_state
-        # method depending if the state was a previous test run was loaded
-        # or not and the _save_state will only save the state if _new_test
-        # is True.
+        # This is used only in the the _save_state and
+        # _maybe_load_state_and_randomize_channel methods. It is set to
+        # True or False in the _maybe_load_state method depending if the
+        # state was a previous test run was loaded or not and the
+        # _save_state will only save the state if _new_test is True.
         self._new_test = None
 
     def test_updateW(self):
@@ -2118,7 +2107,9 @@ class MMSEIASolverTestCase(CustomTestCase):
     def test_calc_Vi(self):
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
-        self._maybe_load_state_and_randomize_channel(filename='MMSE_test_calc_Vi_state.pickle')
+        self._maybe_load_state_and_randomize_channel(
+            filename='MMSE_test_calc_Vi_state.pickle',
+            iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
 
         # For now we use an arbitrarily chosen value
         mu = np.array([0.9, 1.1, 0.8])
@@ -2260,7 +2251,8 @@ class MMSEIASolverTestCase(CustomTestCase):
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
         self._maybe_load_state_and_randomize_channel(
-            filename='MMSE_test_solve_state.pickle')
+            filename='MMSE_test_solve_state.pickle',
+            iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
 
         Ns = self.Ns
         self.iasolver.max_iterations = 120
