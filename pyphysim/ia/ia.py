@@ -1254,6 +1254,15 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     new_F = get_principal_component_matrix(self._F[k], n)
                     new_F = new_F / np.linalg.norm(new_F, 'fro')
                     self._F[k] = new_F
+
+                    if self._full_F[k] is not None:
+                        # Original norm of the _full_F[k] precoder
+                        original_norm = np.linalg.norm(self._full_F[k], 'fro')
+                        new_full_F = get_principal_component_matrix(self._full_F[k], n)
+                        # Restore the original norm
+                        new_full_F = new_full_F / np.linalg.norm(new_full_F, 'fro') * original_norm
+                        self._full_F[k] = new_full_F
+
                     self.Ns[k] = n
 
         # If we modified any of the precoders then the mod_users list has

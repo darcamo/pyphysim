@@ -1632,13 +1632,23 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         Nr = np.array([3, 3, 3])
         Ns = np.array([1, 1, 1])
         multiUserChannel = self.iasolver._multiUserChannel
+        multiUserChannel._last_noise_var = 1e-10
 
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
 
+        self._maybe_load_state_and_randomize_channel(
+            filename='MaxSINR_test_calc_Q_state.pickle',
+            iasolver=self.iasolver, Nr=Nr, Nt=Nt, K=K)
+
         multiUserChannel.randomize(Nr, Nt, K)
         self.iasolver.randomizeF(Ns, P)
-        self.iasolver._W = self.iasolver._calc_Uk_all_k()
+
+        try:
+            self.iasolver._W = self.iasolver._calc_Uk_all_k()
+        except Exception:
+            self._save_state(filename='MaxSINR_test_calc_Q_state.pickle')
+            raise  # re-raises the last exception
 
         # xxxxx Calculate the expected Q[0]_rev after one step xxxxxxxxxxxx
         k = 0
@@ -1764,9 +1774,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             filename='MaxSINR_test_solve_state.pickle',
             iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
 
-        iasolver.noise_var = 1e-50
-        #iasolver.max_iterations = 200
-
+        iasolver.noise_var = 1e-10
+        iasolver.max_iterations = 200
         try:
             iasolver.solve(Ns, P)
         except Exception:
@@ -1850,10 +1859,18 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         self.assertEqual(iasolver.W[1].shape, (4, 2))
         self.assertEqual(iasolver.W[2].shape, (4, 2))
 
-        np.testing.assert_array_equal(iasolver.Ns, np.array([1,2,2]))
+        self.assertEqual(iasolver.full_F[0].shape, (4, 1))
+        self.assertEqual(iasolver.full_F[1].shape, (4, 2))
+        self.assertEqual(iasolver.full_F[2].shape, (4, 2))
+
+        self.assertEqual(iasolver.full_W[0].shape, (4, 1))
+        self.assertEqual(iasolver.full_W[1].shape, (4, 2))
+        self.assertEqual(iasolver.full_W[2].shape, (4, 2))
+
+        np.testing.assert_array_equal(iasolver.Ns, np.array([1, 2, 2]))
         # The Ns array passed to the IA solver object should not be
         # changed.
-        np.testing.assert_array_equal(Ns, np.array([2,2,2]))
+        np.testing.assert_array_equal(Ns, np.array([2, 2, 2]))
 
 
 # TODO: Finish the implementation
@@ -2325,6 +2342,49 @@ class MMSEIASolverTestCase(CustomTestCase):
             self._save_state(filename='MMSE_test_solve_state.pickle')
             raise  # re-raises the last exception
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_solve_finalize(self):
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        Ns = np.ones(K, dtype=int) * 2
+
+        # Transmit power of all users. We set the power of the first user
+        # to a very low value so that the ia solver sets 0 energy to one of
+        # the streams (due to the waterfilling algorithm deciding is is
+        # better to focus all the energy into one stream). This will make
+        # the code in the _solve_finalize method to reduce the number of
+        # streams of the first user, which we will test here.
+        P = np.array([0.0001, 100.8, 230.0])
+
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.randomize(Nr, Nt, K)
+
+        iasolver = MMSEIASolver(multiUserChannel)
+        iasolver.noise_var = 0.1
+
+        iasolver.solve(Ns, P)
+
+        self.assertEqual(iasolver.F[0].shape, (4, 1))
+        self.assertEqual(iasolver.F[1].shape, (4, 2))
+        self.assertEqual(iasolver.F[2].shape, (4, 2))
+
+        self.assertEqual(iasolver.W[0].shape, (4, 1))
+        self.assertEqual(iasolver.W[1].shape, (4, 2))
+        self.assertEqual(iasolver.W[2].shape, (4, 2))
+
+        self.assertEqual(iasolver.full_F[0].shape, (4, 1))
+        self.assertEqual(iasolver.full_F[1].shape, (4, 2))
+        self.assertEqual(iasolver.full_F[2].shape, (4, 2))
+
+        self.assertEqual(iasolver.full_W[0].shape, (4, 1))
+        self.assertEqual(iasolver.full_W[1].shape, (4, 2))
+        self.assertEqual(iasolver.full_W[2].shape, (4, 2))
+
+        np.testing.assert_array_equal(iasolver.Ns, np.array([1, 2, 2]))
+        # The Ns array passed to the IA solver object should not be
+        # changed.
+        np.testing.assert_array_equal(Ns, np.array([2, 2, 2]))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
