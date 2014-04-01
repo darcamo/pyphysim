@@ -424,15 +424,14 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
         self.iasolver.randomizeF(Ns, P)
 
-        # For ones stream the expected Bkl is equivalent to the Q matrix
+        # For one stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
         for k in range(self.iasolver.K):
             Hkk = self.iasolver._get_channel(k, k)
-            Fk = self.iasolver.F[k]
+            Fk = self.iasolver.full_F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = self.iasolver.calc_Q(k) + P[k] / \
-                Ns[k].astype(float) * \
-                np.dot(HkkFk, HkkFk.transpose().conjugate())
+            expected_first_part = self.iasolver.calc_Q(k) + \
+                                  np.dot(HkkFk, HkkFk.transpose().conjugate())
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -524,7 +523,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
 
     def test_calc_Bkl(self):
-        # For the case of a single stream oer user Bkl (which only has l=0)
+        # For the case of a single stream per user Bkl (which only has l=0)
         # is equal to Qk plus I (identity matrix)
         Nr = 2
         Nt = 2
@@ -541,6 +540,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
             expected_Bk0 = self.iasolver.calc_Q(k) + (noise_power * np.eye(Nr))
             Bk0 = self.iasolver._calc_Bkl_cov_matrix_all_l(k, noise_power=noise_power)[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
+
+        # TODO: Test Bkl for the case with more than one stream per user
 
     def test_solve(self):
         with self.assertRaises(NotImplementedError):
@@ -1158,7 +1159,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
             filename='Alt_Min_test_solve_state.pickle',
             iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
 
-        iasolver.max_iterations = 60
+        iasolver.max_iterations = 120
         iasolver.noise_var = 1e-50
 
         iasolver.solve(Ns, P)
@@ -1475,7 +1476,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         for k in range(self.K):
             Hkk = self.iasolver._get_channel(k, k)
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
-            F = self.iasolver.F[k]
+            F = self.iasolver.full_F[k]
             for l in range(self.Ns[k]):
                 expected_Ukl = np.dot(
                     np.linalg.inv(Bkl_all_l[l]),
@@ -1491,7 +1492,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             expected_Uk = np.empty(self.Ns[k], dtype=np.ndarray)
             Hkk = self.iasolver._get_channel(k, k)
-            Vk = self.iasolver.F[k]
+            Vk = self.iasolver.full_F[k]
             Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
 
             expected_Uk = np.empty([self.Nr[k], self.Ns[k]], dtype=complex)
@@ -1606,7 +1607,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 
         for k in range(self.K):
             Hkk = self.iasolver._get_channel(k, k)
-            Vk = self.iasolver.F[k]
+            Vk = self.iasolver.full_F[k]
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
             expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
@@ -1746,11 +1747,6 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             1.0)
 
     def test_solve(self):
-        # If a previous run of this test failed, this will load the state
-        # of the failed test so that it is reproduced.
-        self._maybe_load_state_and_randomize_channel(
-            filename='MaxSINR_test_solve_state.pickle',
-            iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
         K = 3
         Nt = np.ones(K, dtype=int) * 2
         Nr = np.ones(K, dtype=int) * 2
@@ -1760,13 +1756,22 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         P = np.array([2.0, 1.5, 0.9])
 
         multiUserChannel = channels.MultiUserChannelMatrix()
-        multiUserChannel.randomize(Nr, Nt, K)
-
         iasolver = MaxSinrIASolver(multiUserChannel)
+
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state_and_randomize_channel(
+            filename='MaxSINR_test_solve_state.pickle',
+            iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
+
         iasolver.noise_var = 1e-50
         #iasolver.max_iterations = 200
 
-        iasolver.solve(Ns, P)
+        try:
+            iasolver.solve(Ns, P)
+        except Exception:
+            self._save_state(filename='MaxSINR_test_solve_state.pickle')
+            raise  # re-raises the last exception
 
         H00 = np.matrix(iasolver._get_channel(0, 0))
         H11 = np.matrix(iasolver._get_channel(1, 1))
@@ -1793,21 +1798,20 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2, 1.0)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-            # ## TODO: uncomment the lines below to test the remaining interference
-            # # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
-            # np.testing.assert_array_almost_equal(
-            #     np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
-            # np.testing.assert_array_almost_equal(
-            #     np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
-            # np.testing.assert_array_almost_equal(
-            #     np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
-            # np.testing.assert_array_almost_equal(
-            #     np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
-            # np.testing.assert_array_almost_equal(
-            #     np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
-            # np.testing.assert_array_almost_equal(
-            #     np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
-            # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H0 * H01 * full_F1), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H0 * H02 * full_F2), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H1 * H10 * full_F0), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H1 * H12 * full_F2), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
+            np.testing.assert_array_almost_equal(
+                np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         except AssertionError:
             # Since this test failed, let's save its state so that we can
             # reproduce it
