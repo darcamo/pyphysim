@@ -455,6 +455,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_a = "5:5:20"
         self.assertEqual(expr_a, expected_expr_a)
 
+        a = np.array([5, 10, 15, 20])
+        expr_a = misc.get_range_representation(a, True)
+        expected_expr_a = "5_(5)_20"
+        self.assertEqual(expr_a, expected_expr_a)
+
         a = np.array([5, 10, 15, 20, 25, 30, 35, 40])
         expr_a = misc.get_range_representation(a)
         expected_expr_a = "5:5:40"
@@ -466,9 +471,20 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_b = "2.3:0.3:4.7"
         self.assertEqual(expr_b, expected_expr_b)
 
+        b = np.array([2.3, 2.6, 2.9, 3.2, 3.5, 3.8, 4.1, 4.4, 4.7])
+        expr_b = misc.get_range_representation(b, True)
+        misc.get_range_representation(b)
+        expected_expr_b = "2.3_(0.3)_4.7"
+        self.assertEqual(expr_b, expected_expr_b)
+
         c = np.array([10.2, 9., 7.8, 6.6, 5.4, 4.2])
         expr_c = misc.get_range_representation(c)
         expected_expr_c = "10.2:-1.2:4.2"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        c = np.array([10.2, 9., 7.8, 6.6, 5.4, 4.2])
+        expr_c = misc.get_range_representation(c, True)
+        expected_expr_c = "10.2_(-1.2)_4.2"
         self.assertEqual(expr_c, expected_expr_c)
 
         # This array is not an arithmetic progression and
@@ -497,19 +513,39 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_a = "0:2:6"
         self.assertEqual(expr_a, expected_expr_a)
 
+        a = np.array([0, 2, 4, 6])
+        expr_a = misc.get_mixed_range_representation(a, True)
+        expected_expr_a = "0_(2)_6"
+        self.assertEqual(expr_a, expected_expr_a)
+
         a = np.array([1, 5, 10, 15, 20, 25, 30, 35, 40])
         expr_a = misc.get_mixed_range_representation(a)
-        expected_expr_a = "1,5,10:5:40"
+        expected_expr_a = "1,5:5:40"
         self.assertEqual(expr_a, expected_expr_a)
 
         b = np.array([1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 100])
         expr_b = misc.get_mixed_range_representation(b)
-        expected_expr_b = "1,2,3,5,10:5:40,100"
+        expected_expr_b = "1,2,3,5:5:40,100"
+        self.assertEqual(expr_b, expected_expr_b)
+
+        b = np.array([1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 100])
+        expr_b = misc.get_mixed_range_representation(b, True)
+        expected_expr_b = "1,2,3,5_(5)_40,100"
         self.assertEqual(expr_b, expected_expr_b)
 
         c = np.array([1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100])
         expr_c = misc.get_mixed_range_representation(c)
-        expected_expr_c = "1:1:6,10,15:5:40,50,100"
+        expected_expr_c = "1:1:6,10:5:40,50,100"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        c = np.array([1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100])
+        expr_c = misc.get_mixed_range_representation(c, True)
+        expected_expr_c = "1_(1)_6,10_(5)_40,50,100"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        c = np.array([1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100, 150, 200, 250, 300, 1000])
+        expr_c = misc.get_mixed_range_representation(c, True)
+        expected_expr_c = "1_(1)_6,10_(5)_40,50_(50)_300,1000"
         self.assertEqual(expr_c, expected_expr_c)
 
         d = np.array([2.3, 2.6, 2.9, 3.2, 3.5, 3.8, 4.1, 4.4, 4.7])
@@ -524,21 +560,39 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         c = np.array([11.0, 10.2, 9., 7.8, 6.6, 5.4, 4.2])
         expr_c = misc.get_mixed_range_representation(c)
-        expected_expr_c = "11.0,10.2,9.0:-1.2:4.2"
+        expected_expr_c = "11.0,10.2:-1.2:4.2"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        c = np.array([11.0, 10.2, 8.4, 8.2, 8.0, 7.8, 7.6, 5, 3, 1, -1, -3, -10])
+        expr_c = misc.get_mixed_range_representation(c)
+        expected_expr_c = "11.0,10.2,8.4:-0.2:7.6,5.0:-2.0:-3.0,-10.0"
         self.assertEqual(expr_c, expected_expr_c)
 
     def test_replace_dict_values(self):
         name = "something {value1} - {value2} something else {value3}"
-        dictionary = {'value1': 'bla bla', 'value2': np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
+        dictionary = {'value1': 'bla bla',
+                      'value2': np.array([5, 10, 15, 20, 25, 30]),
+                      'value3': 76}
         new_name = misc.replace_dict_values(name, dictionary)
         expected_new_name = 'something bla bla - [5_(5)_30] something else 76'
         self.assertEqual(new_name, expected_new_name)
 
         # Value2 is not an arithmetic progression
-        dictionary2 = {'value1': 'bla bla', 'value2': np.array([5, 10, 18, 20, 25, 30]), 'value3': 76}
+        dictionary2 = {'value1': 'bla bla',
+                       'value2': np.array([5, 10, 18, 20, 25, 30]),
+                       'value3': 76}
         new_name2 = misc.replace_dict_values(name, dictionary2)
-        expected_new_name2 = 'something bla bla - [ 5,10,18,20,25,30] something else 76'
+        expected_new_name2 = 'something bla bla - [5,10,18,20,25,30] something else 76'
         self.assertEqual(new_name2, expected_new_name2)
+
+        # Value3 has parts that are arithmetic progressions and others that
+        # are not an arithmetic progression
+        dictionary3 = {'value1': 'bla bla',
+                       'value2': np.array([2, 5, 10, 15, 20, 25, 30, 31, 32, 50]),
+                       'value3': 76}
+        new_name3 = misc.replace_dict_values(name, dictionary3)
+        expected_new_name3 = 'something bla bla - [2,5_(5)_30,31,32,50] something else 76'
+        self.assertEqual(new_name3, expected_new_name3)
 
     def test_pretty_time(self):
         self.assertEqual(misc.pretty_time(0), '0.00s')

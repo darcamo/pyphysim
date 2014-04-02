@@ -698,10 +698,10 @@ def get_principal_component_matrix(A, num_components):
     return out
 
 
-def get_range_representation(array):
+def get_range_representation(array, filename_mode=False):
     """
     Get the "range representation" of a numpy array consisting of a
-    arithmetic progression. If no valid range representation is exists,
+    arithmetic progression. If no valid range representation exists,
     return None.
 
     Suppose you have the array
@@ -713,6 +713,11 @@ def get_range_representation(array):
     Parameters
     ----------
     array : 1D numpy array
+        The array to be represented as a range expression.
+    filename_mode : bool (default is False)
+        If True, the returned representation will be more suitable to be
+        used as part of a file-name. That is instead of "5:5:40" the string
+        "5_(5)_40" would be returned.
 
     Returns
     -------
@@ -735,13 +740,16 @@ def get_range_representation(array):
 
     if np.allclose(array[1:] - step, array[0:-1]):
         # array is an arithmetic progression
-        return "{0}:{1}:{2}".format(array[0], step, array[-1])
+        if filename_mode == True:
+            return "{0}_({1})_{2}".format(array[0], step, array[-1])
+        else:
+            return "{0}:{1}:{2}".format(array[0], step, array[-1])
     else:
         # array is not an arithmetic progression
         return None
 
 
-def get_mixed_range_representation(array):
+def get_mixed_range_representation(array, filename_mode=False):
     """
     Get the "range representation" of a numpy array. This is similar to
     get_range_representation, but it no pure range representation is
@@ -759,6 +767,11 @@ def get_mixed_range_representation(array):
     Parameters
     ----------
     array : 1D numpy array
+        The array to be represented as a range expression.
+    filename_mode : bool (default is False)
+        If True, the returned representation will be more suitable to be
+        used as part of a file-name. That is instead of "5:5:40" the string
+        "5_(5)_40" would be returned.
 
     Returns
     -------
@@ -779,7 +792,7 @@ def get_mixed_range_representation(array):
             if not np.allclose(diff[i], current_value):
                 end = i
                 # intervalo incluindo o inicio, mas sem incluir o fim
-                output_expressions.append((start, end))
+                output_expressions.append([start, end])
                 start = end
                 current_value = diff[end]
                 break  # Break the for loop. The else statements will not
@@ -787,17 +800,44 @@ def get_mixed_range_representation(array):
         else:
             # If the for loop terminated normally, this code will run
             end = i
-            output_expressions.append((start, end + 1))
+            output_expressions.append([start, end + 1])
             start = end + 1
+
+    # xxxxx Process the results from the previous while loop. xxxxxxxxxxxxx
+    # The first pair will never be changed
+    for i, pair in enumerate(output_expressions[1:]):
+        if pair[1] - pair[0] > 3:
+            # This is a range expression
+
+            # Get the step of this range expression
+            step = array[pair[0]+1] - array[pair[0]]
+
+            # Get the first element in the range
+            first_element = array[pair[0]]
+
+            # Get the previous element (the element in array before this
+            # range)
+            previous_element = array[output_expressions[i][1]-1]
+
+            # If the difference of the first element in the range to the
+            # previous element in the range is equal to the step of the
+            # range, that means that this previous element should be in
+            # this pair, and not in the previous one.
+            if np.allclose(first_element - previous_element, step):
+                output_expressions[i][1] -= 1
+                output_expressions[i+1][0] -= 1
 
     out = []
     for pair in output_expressions:
-        out.append(get_range_representation(array[pair[0]:pair[1]]))
+        value = get_range_representation(array[pair[0]:pair[1]],
+                                         filename_mode)
+        if value != '':
+            out.append(value)
 
     return ','.join(out)
 
 
-def replace_dict_values(name, dictionary):
+def replace_dict_values(name, dictionary, filename_mode=False):
     """
     Perform the replacements in `name` with the value of dictionary[name].
 
@@ -808,7 +848,8 @@ def replace_dict_values(name, dictionary):
     The only diference is that some small changes are performed in the
     dictionary prior to this. More specifically, modifications such as
     changind a numpy array to a more compact representation (when
-    possible).
+    possible). This is done by converting the numpy arrays with the
+    get_mixed_range_representation function.
 
     Parameters
     ----------
@@ -816,6 +857,11 @@ def replace_dict_values(name, dictionary):
         The name fo be formated.
     dictionary : a python dictionary
         The dictionary with the values to be replaced in `name`.
+    filename_mode : bool (default is False)
+        Extra parameter passed to the get_mixed_range_representation
+        function. If True, the returned representation will be more
+        suitable to be used as part of a file-name. That is instead of
+        "5:5:40" the string "5_(5)_40" would be used.
 
     Returns
     -------
@@ -828,18 +874,11 @@ def replace_dict_values(name, dictionary):
     >>> dictionary = {'value1':'bla bla', 'value2':np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
     >>> replace_dict_values(name, dictionary)
     'something bla bla - [5_(5)_30] something else 76'
-
     """
     new_dict = {}
     for n, v in dictionary.items():
         if isinstance(v, np.ndarray):
-            new_v = get_range_representation(v)
-            if new_v is not None:
-                v = new_v
-                # This will change something like '10:5:30' to '[10_(5)_30]'
-                v = '[{0}_({1})_{2}]'.format(*new_v.split(':'))
-            else:
-                v = np.array2string(v, separator=',')
+            v = "[{0}]".format(get_mixed_range_representation(v, True))
         new_dict[n] = v
 
     return name.format(**new_dict)
