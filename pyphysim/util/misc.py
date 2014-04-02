@@ -719,8 +719,9 @@ def get_range_representation(array):
     expr : str
         A string expression representing `array`.
     """
-    if len(array) == 1:
-        return None
+    # Special case-> If len(array) < 4 we simply return the array
+    if len(array) < 4:
+        return ','.join(array.astype(str))
 
     step = array[1] - array[0]
 
@@ -738,6 +739,62 @@ def get_range_representation(array):
     else:
         # array is not an arithmetic progression
         return None
+
+
+def get_mixed_range_representation(array):
+    """
+    Get the "range representation" of a numpy array. This is similar to
+    get_range_representation, but it no pure range representation is
+    possible it will try to represent as least part of the array as range
+    representations.
+
+    Suppose you have the array
+    n = [1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 100]
+
+    Except for the 3 initial and the final elements, this array is an
+    arithmetic progression with step equal to 5. Lets keep the 3 initial
+    and the final values and represent the other values as a range
+    representation.
+
+    Parameters
+    ----------
+    array : 1D numpy array
+
+    Returns
+    -------
+    expr : str
+        A string expression representing `array`.
+    """
+    diff = array[1:] - array[0:-1]
+    diff = np.hstack([diff[0], diff])
+    start = 0
+
+    current_value = diff[0]
+
+    output_expressions = []
+
+    while start < len(diff):
+        for i in range(start, len(diff)):
+            #if diff[i] != current_value:
+            if not np.allclose(diff[i], current_value):
+                end = i
+                # intervalo incluindo o inicio, mas sem incluir o fim
+                output_expressions.append((start, end))
+                start = end
+                current_value = diff[end]
+                break  # Break the for loop. The else statements will not
+                       # run in this case.
+        else:
+            # If the for loop terminated normally, this code will run
+            end = i
+            output_expressions.append((start, end + 1))
+            start = end + 1
+
+    out = []
+    for pair in output_expressions:
+        out.append(get_range_representation(array[pair[0]:pair[1]]))
+
+    return ','.join(out)
 
 
 def replace_dict_values(name, dictionary):

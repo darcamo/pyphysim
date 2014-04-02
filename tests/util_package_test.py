@@ -445,6 +445,16 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_new_A, new_A)
 
     def test_get_range_representation(self):
+        a = np.array([5, 10, 15])
+        expr_a = misc.get_range_representation(a)
+        expected_expr_a = "5,10,15"
+        self.assertEqual(expr_a, expected_expr_a)
+
+        a = np.array([5, 10, 15, 20])
+        expr_a = misc.get_range_representation(a)
+        expected_expr_a = "5:5:20"
+        self.assertEqual(expr_a, expected_expr_a)
+
         a = np.array([5, 10, 15, 20, 25, 30, 35, 40])
         expr_a = misc.get_range_representation(a)
         expected_expr_a = "5:5:40"
@@ -469,8 +479,53 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # Return None when a valid range representation does not exist,
         # such as when the array has a single element or when the array is
         # not an arithmetic progression.
-        self.assertIsNone(misc.get_range_representation(np.array([6, 10, 20])))
-        self.assertIsNone(misc.get_range_representation(np.array([10])))
+        self.assertIsNone(misc.get_range_representation(np.array([6, 10, 20, 50])))
+
+    def test_get_mixed_range_representation(self):
+        a = np.array([1, 2, 4])
+        expr_a = misc.get_mixed_range_representation(a)
+        expected_expr_a = "1,2,4"
+        self.assertEqual(expr_a, expected_expr_a)
+
+        a = np.array([1, 2, 4, 6])
+        expr_a = misc.get_mixed_range_representation(a)
+        expected_expr_a = "1,2,4,6"
+        self.assertEqual(expr_a, expected_expr_a)
+
+        a = np.array([0, 2, 4, 6])
+        expr_a = misc.get_mixed_range_representation(a)
+        expected_expr_a = "0:2:6"
+        self.assertEqual(expr_a, expected_expr_a)
+
+        a = np.array([1, 5, 10, 15, 20, 25, 30, 35, 40])
+        expr_a = misc.get_mixed_range_representation(a)
+        expected_expr_a = "1,5,10:5:40"
+        self.assertEqual(expr_a, expected_expr_a)
+
+        b = np.array([1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 100])
+        expr_b = misc.get_mixed_range_representation(b)
+        expected_expr_b = "1,2,3,5,10:5:40,100"
+        self.assertEqual(expr_b, expected_expr_b)
+
+        c = np.array([1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100])
+        expr_c = misc.get_mixed_range_representation(c)
+        expected_expr_c = "1:1:6,10,15:5:40,50,100"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        d = np.array([2.3, 2.6, 2.9, 3.2, 3.5, 3.8, 4.1, 4.4, 4.7])
+        expr_d = misc.get_mixed_range_representation(d)
+        expected_expr_d = "2.3:0.3:4.7"
+        self.assertEqual(expr_d, expected_expr_d)
+
+        c = np.array([10.2, 9., 7.8, 6.6, 5.4, 4.2])
+        expr_c = misc.get_mixed_range_representation(c)
+        expected_expr_c = "10.2:-1.2:4.2"
+        self.assertEqual(expr_c, expected_expr_c)
+
+        c = np.array([11.0, 10.2, 9., 7.8, 6.6, 5.4, 4.2])
+        expr_c = misc.get_mixed_range_representation(c)
+        expected_expr_c = "11.0,10.2,9.0:-1.2:4.2"
+        self.assertEqual(expr_c, expected_expr_c)
 
     def test_replace_dict_values(self):
         name = "something {value1} - {value2} something else {value3}"
