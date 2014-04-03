@@ -23,6 +23,55 @@ except ImportError as e:  # pragma: no cover
 
 from .configobjvalidation import real_numpy_array_check, integer_numpy_array_check, integer_scalar_or_integer_numpy_array_check, real_scalar_or_real_numpy_array_check
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def combine_simulation_parameters(params1, params2):
+    """
+    Combine two SimulationParameters objects and return a new
+    SimulationParameters object corresponding to the union of them.
+
+    The union is only valid if both objects have the same parameters and
+    only the values of the unpacked parameters are different.
+
+    Parameters
+    ----------
+    params1 : SimulationParameters
+        The first SimulationParameters object.
+    params2 : SimulationParameters
+        The second SimulationParameters object.
+
+    Returns
+    -------
+    union : SimulationParameters
+        The union of 'params1' and 'params2'.
+    """
+    if set(params1.parameters.keys()) != set(params2.parameters.keys()):
+        raise RuntimeError(['Both SimulationParameters objects must have'
+                            ' the same parameters.'])
+
+    if set(params1.unpacked_parameters) != set(params2.unpacked_parameters):
+        raise RuntimeError(['Both SimulationParameters objects must have'
+                            ' the same unpacked parameters (only the values'
+                            ' should can be different).'])
+
+    fixed_parameters = params1.fixed_parameters
+    for key in fixed_parameters:
+        if params1[key] != params2[key]:
+            raise RuntimeError(['The fixed parameters in both '
+                                'SimulationParameters objects must have the'
+                                ' same value.'])
+
+    union = SimulationParameters()
+    for key in fixed_parameters:
+        union.add(key, copy.copy(params1[key]))
+
+    for key in params1.unpacked_parameters:
+        union.add(key, np.union1d(params1[key], params2[key]))
+
+    return union
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -114,6 +163,13 @@ class SimulationParameters(object):
     def unpacked_parameters(self):
         """Names of the parameters marked to be unpacked."""
         return list(self._unpacked_parameters_set)
+
+    @property
+    def fixed_parameters(self):
+        """Names of the parameters which are NOT marked to be unpacked."""
+        fixed_params = [name for name in self.parameters.keys()
+                        if name not in self._unpacked_parameters_set]
+        return fixed_params
 
     @staticmethod
     def _create(params_dict, unpack_index=-1, original_sim_params=None):

@@ -37,7 +37,8 @@ from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, \
     real_scalar_or_real_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check
 from pyphysim.simulations.simulationhelpers import get_common_parser
-from pyphysim.simulations.parameters import SimulationParameters
+from pyphysim.simulations.parameters import SimulationParameters, \
+    combine_simulation_parameters
 from pyphysim.simulations.results import Result, SimulationResults
 from pyphysim.simulations.runner import SimulationRunner
 from pyphysim.util import misc
@@ -47,7 +48,8 @@ from pyphysim.util import misc
 # xxxxxxxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SimulationsDoctestsTestCase(unittest.TestCase):
-    """Test case that run all the doctests in the modules of the util
+    """
+    Test case that run all the doctests in the modules of the simulations
     package.
     """
     def test_configobjvalidation(self):
@@ -86,6 +88,10 @@ class SimulationHelpersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx configobjvalidation Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
+    """
+    Unit-tests for the module functions in the in the configobjvalidation
+    module.
+    """
     def setUp(self):
         """Called before each test."""
         pass
@@ -304,9 +310,86 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Parameters Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ParametersModuleFunctionsTestCase(unittest.TestCase):
+    """
+    Unit-tests for the functions in the parameters module.
+    """
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_combine_simulation_parameters(self):
+        sim_params1 = SimulationParameters.create(
+            {'first': 10, 'second': 20,
+             'third': np.array([1, 3, 2, 5]), 'fourth': ['A', 'B']})
+        sim_params1.set_unpack_parameter('third')
+        sim_params1.set_unpack_parameter('fourth')
+
+        sim_params2 = SimulationParameters.create(
+            {'first': 10, 'second': 20, 'third': np.array([-1, 1, 3, 8])})
+        sim_params2.set_unpack_parameter('third')
+
+        sim_params3 = SimulationParameters.create(
+            {'first': 10, 'third': np.array([-1, 1, 3, 8]),
+             'fourth': ['B', 'C']})
+        sim_params3.set_unpack_parameter('third')
+        sim_params3.set_unpack_parameter('fourth')
+
+        sim_params4 = SimulationParameters.create(
+            {'first': 10, 'second': 30,
+             'third': np.array([-1, 1, 3, 8]), 'fourth': ['B', 'C']})
+        sim_params4.set_unpack_parameter('third')
+        sim_params4.set_unpack_parameter('fourth')
+
+        sim_params5 = SimulationParameters.create(
+            {'first': 10, 'second': 20,
+             'third': np.array([-1, 1, 3, 8]), 'fourth': ['B', 'C']})
+        sim_params5.set_unpack_parameter('fourth')
+
+        sim_params6 = SimulationParameters.create(
+            {'first': 10, 'second': 20,
+             'third': np.array([-1, 1, 3, 8]), 'fourth': ['B', 'C']})
+        sim_params6.set_unpack_parameter('third')
+        sim_params6.set_unpack_parameter('fourth')
+
+        # xxxxxxxxxx Test invalid cases xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        with self.assertRaises(RuntimeError):
+            # sim_params2 does not have the same parameters of sim_params1
+            combine_simulation_parameters(sim_params1, sim_params2)
+
+        with self.assertRaises(RuntimeError):
+            # sim_params3 does not have the same parameters of sim_params1
+            combine_simulation_parameters(sim_params1, sim_params3)
+
+        with self.assertRaises(RuntimeError):
+            # sim_params4 has the same parameters of sim_params1, but the
+            # value of one of the fixed parameters is different
+            combine_simulation_parameters(sim_params1, sim_params4)
+
+        with self.assertRaises(RuntimeError):
+            # sim_params4 has the same parameters of sim_params1, but the
+            # parameters set to be unpacked are different
+            combine_simulation_parameters(sim_params1, sim_params5)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the valid case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        union = combine_simulation_parameters(sim_params1, sim_params6)
+        self.assertEqual(union['first'], sim_params1['first'])
+        self.assertEqual(union['second'], sim_params1['second'])
+        np.testing.assert_array_almost_equal(
+            union['third'],
+            np.array([-1, 1, 2, 3, 5, 8]))
+        np.testing.assert_array_equal(
+            union['fourth'],
+            np.array(['A', 'B', 'C']))
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 class SimulationParametersTestCase(unittest.TestCase):
-    """Unit-tests for the SimulationParameters class in the simulations
-    module.
+    """
+    Unit-tests for the SimulationParameters class in the parameters module.
     """
     def setUp(self):
         params_dict = {'first': 10, 'second': 20}
@@ -328,6 +411,14 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
+
+        # Test the correct static parameters (should be all parameters for
+        # now)
+        self.assertEqual(
+            set(self.sim_params.fixed_parameters),
+            set(['first', 'second', 'third', 'fourth']))
+
+        # Let's unpack the parameters 'third' and 'fourth'
         self.sim_params.set_unpack_parameter('third')
         self.sim_params.set_unpack_parameter('fourth')
 
@@ -344,6 +435,11 @@ class SimulationParametersTestCase(unittest.TestCase):
         # We may have 8 variations, but there are still only 4 parameters
         self.assertEqual(len(self.sim_params), 4)
 
+        # Test the correct static parameters
+        self.assertEqual(
+            set(self.sim_params.fixed_parameters),
+            set(['first', 'second']))
+
         # Test if an exception is raised if we try to set a non iterable
         # parameter to be unpacked.
         self.sim_params.add('fifth', 10)
@@ -355,15 +451,16 @@ class SimulationParametersTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.sim_params.set_unpack_parameter('sixth')
 
+        # xxxxx THIS TEST WILL NOT BE PERFORMED IN PYTHON 3 xxxxxxxxxxxxxxx
         if sys.version_info[0] < 3:
             # Now that a few parameters were added and set to be unpacked,
             # lets test the representation of the SimulationParameters
             # object. Note that the parameters that are marked for
             # unpacking have '*' appended to their name.
-            # THIS TEST WILL NOT BE PERFORMED IN PYTHON 3
             self.assertEqual(
                 self.sim_params.__repr__(),
                 """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Test if we can unset a parameter that was previously set to be
         # unpacked.
@@ -657,7 +754,9 @@ class SimulationParametersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Results Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ResultTestCase(unittest.TestCase):
-    """Unit-tests for the Result class in the simulations module."""
+    """
+    Unit-tests for the Result class in the results module.
+    """
 
     def setUp(self):
         """Called before each test."""
@@ -958,9 +1057,8 @@ class ResultTestCase(unittest.TestCase):
 
 
 class SimulationResultsTestCase(unittest.TestCase):
-    """Unit-tests for the SimulationResults class in the simulations
-    module.
-
+    """
+    Unit-tests for the SimulationResults class in the results module.
     """
     def setUp(self):
         # First SimulationResults object
@@ -1449,8 +1547,8 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
 
 
 class SimulationRunnerTestCase(unittest.TestCase):
-    """Unit-tests for the SimulationRunner class in the simulations
-    module.
+    """
+    Unit-tests for the SimulationRunner class in the runner module.
     """
     def setUp(self):
         self.runner = SimulationRunner(read_command_line_args=False)
