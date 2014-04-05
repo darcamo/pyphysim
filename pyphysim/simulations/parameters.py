@@ -37,14 +37,14 @@ def combine_simulation_parameters(params1, params2):
 
     Parameters
     ----------
-    params1 : SimulationParameters
+    params1 : SimulationParameters object
         The first SimulationParameters object.
-    params2 : SimulationParameters
+    params2 : SimulationParameters object
         The second SimulationParameters object.
 
     Returns
     -------
-    union : SimulationParameters
+    union : SimulationParameters object
         The union of 'params1' and 'params2'.
     """
     if set(params1.parameters.keys()) != set(params2.parameters.keys()):
@@ -64,11 +64,18 @@ def combine_simulation_parameters(params1, params2):
                                 ' same value.'])
 
     union = SimulationParameters()
+
+    # Add the fixed parameters to the 'union' object.
     for key in fixed_parameters:
         union.add(key, copy.copy(params1[key]))
 
+    # Add the union of the unpacked parameters to the 'union' object.
     for key in params1.unpacked_parameters:
         union.add(key, np.union1d(params1[key], params2[key]))
+
+    # Set the parameters to be unpacked.
+    for p in params1.unpacked_parameters:
+        union.set_unpack_parameter(p)
 
     return union
 

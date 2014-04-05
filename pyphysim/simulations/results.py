@@ -8,7 +8,7 @@ __revision__ = "$Revision$"
 
 import numpy as np
 
-from .parameters import SimulationParameters
+from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts
 
 try:
@@ -20,6 +20,82 @@ try:
     import tables as tb
 except ImportError as e:
     pass
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def combine_simulation_results(simresults1, simresults2):
+    """
+    Combine two SimulationResults objects with different parameters values.
+
+    For this function to work both simulation objects need to have exact
+    the same parameters and only the values of the parameters set to be
+    unpacked can be different.
+
+    Parameters
+    ----------
+    simresults1 : SimulationResults object
+        The first SimulationResults object to be combined.
+    simresults2 : SimulationResults object
+        The second SimulationResults object to be combined.
+
+    Returns
+    -------
+    union : SimulationResults object
+    The combined SimulationResults object.
+
+    Examples
+    --------
+    If the first SimulationResults object was obtained for the parameters
+    "p1 = 10" and "p2 = [1, 2, 3]", while the second SimulationResults
+    object was obtained for the parameters "p1 = 10" and "p2 = [2, 4, 6]"
+    and p2 was marked to be unpacked in both of them, then the returned
+    combined SimulationResults object will have parameters "p1 = 10" and
+    "p2 = [1, 2, 3, 4, 6]" with p2 marked to be unpacked.
+
+    Note that the results for the values of p2 equal to "2" and "4" exist
+    in both objects and will be merged together.
+    """
+    # Create the combined simulation parameters
+    combined_params = combine_simulation_parameters(simresults1.params,
+                                                    simresults2.params)
+
+    result_names = simresults1.get_result_names()
+    if set(result_names) != set(simresults2.get_result_names()):
+        raise RuntimeError('Both SimulationResults objects must have the same results.')
+
+    union = SimulationResults()
+    union.set_parameters(combined_params)
+
+    for name in result_names:
+        result_list1 = simresults1[name]
+        result_list2 = simresults2[name]
+        type_code = result_list1[0].type_code
+        for unpack in combined_params.get_unpacked_params_list():
+            # Create an empty Result object.
+            result_object = Result(name, type_code)
+
+            # Dictionary with the current unpack variation
+            fixed_parameters = unpack.parameters
+
+            try:
+                index1 = simresults1.params.get_pack_indexes(fixed_parameters)
+                result_object.merge(result_list1[index1])
+            except ValueError:
+                pass
+
+            try:
+                index2 = simresults2.params.get_pack_indexes(fixed_parameters)
+                result_object.merge(result_list2[index2])
+            except ValueError:
+                pass
+
+            union.append_result(result_object)
+
+    return union
+
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationResults - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

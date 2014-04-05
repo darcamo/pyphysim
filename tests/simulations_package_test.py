@@ -31,8 +31,9 @@ try:
 except ImportError:  # pragma: no cover
     pass
 
-from pyphysim.simulations import configobjvalidation, parameters, progressbar,\
+from pyphysim.simulations import configobjvalidation, parameters, progressbar, \
     results, runner, simulationhelpers
+from pyphysim.simulations.results import combine_simulation_results
 from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, \
     real_scalar_or_real_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check
@@ -382,6 +383,10 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_equal(
             union['fourth'],
             np.array(['A', 'B', 'C']))
+
+        self.assertEqual(set(union.unpacked_parameters), set(['third', 'fourth']))
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -753,6 +758,106 @@ class SimulationParametersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Results Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ResultsModuleFunctionsTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_combine_simulation_results(self):
+        dummyrunner = _DummyRunner()
+        dummyrunner.simulate()
+
+        dummyrunner2 = _DummyRunner()
+        dummyrunner2.simulate()
+
+        dummyrunner3 = _DummyRunner()
+        dummyrunner3.params.add('extra', np.array([4.1, 5.7, 6.2]))
+        dummyrunner3.simulate()
+
+        results1 = dummyrunner.results
+        results2 = dummyrunner2.results
+        results3 = dummyrunner3.results
+        results2.add_new_result('bla', Result.SUMTYPE, 10)
+
+        # Lets modify the result1 just to make the tests later better
+        for r in results1['lala']:
+            r._value += 0.8
+
+        # If both SimulationResults objects do not have exactly the same
+        # results, an exception will be raised.
+        with self.assertRaises(RuntimeError):
+            combine_simulation_results(results1, results2)
+
+        # results1 and results3 can be combined
+        union = combine_simulation_results(results1, results3)
+
+        # xxxxxxxxxx Test the parameters of the combined object xxxxxxxxxxx
+        comb_params = combine_simulation_parameters(results1.params, results3.params)
+        # Test
+        self.assertEqual(comb_params, union.params)
+
+        # xxxxxxxxxx Test the results of the combined object xxxxxxxxxxxxxx
+        self.assertEqual(set(union.get_result_names()), set(['elapsed_time', 'lala']))
+
+        # The unpacked param list of union is
+        # [{'bias': 1.3, 'SNR': 0.0, 'extra': 2.2},
+        #  {'bias': 1.3, 'SNR': 0.0, 'extra': 4.1},
+        #  {'bias': 1.3, 'SNR': 0.0, 'extra': 5.7},
+        #  {'bias': 1.3, 'SNR': 0.0, 'extra': 6.2},
+        #  {'bias': 1.3, 'SNR': 5.0, 'extra': 2.2},
+        #  {'bias': 1.3, 'SNR': 5.0, 'extra': 4.1},
+        #  {'bias': 1.3, 'SNR': 5.0, 'extra': 5.7},
+        #  {'bias': 1.3, 'SNR': 5.0, 'extra': 6.2},
+        #  {'bias': 1.3, 'SNR': 10.0, 'extra': 2.2},
+        #  {'bias': 1.3, 'SNR': 10.0, 'extra': 4.1},
+        #  {'bias': 1.3, 'SNR': 10.0, 'extra': 5.7},
+        #  {'bias': 1.3, 'SNR': 10.0, 'extra': 6.2},
+        #  {'bias': 1.3, 'SNR': 15.0, 'extra': 2.2},
+        #  {'bias': 1.3, 'SNR': 15.0, 'extra': 4.1},
+        #  {'bias': 1.3, 'SNR': 15.0, 'extra': 5.7},
+        #  {'bias': 1.3, 'SNR': 15.0, 'extra': 6.2},
+        #  {'bias': 1.3, 'SNR': 20.0, 'extra': 2.2},
+        #  {'bias': 1.3, 'SNR': 20.0, 'extra': 4.1},
+        #  {'bias': 1.3, 'SNR': 20.0, 'extra': 5.7},
+        #  {'bias': 1.3, 'SNR': 20.0, 'extra': 6.2}]
+        #
+        # Comparing this with the unpacked param list of result1 and
+        # result3 we see that every group of four lines, the first line
+        # comes only from result1, the second comes from result1 and
+        # result3, while the third and fourth come onky from result3.
+        #
+        # The number of updates of each result in union should be equal to
+        # 2, except for the number of updates of the second line in each
+        # group of four lines.
+        expected_num_updates_list = [
+            2, 4, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2]
+        num_updates_list = [v.num_updates for v in union['lala']]
+        self.assertEqual(expected_num_updates_list, num_updates_list)
+
+        # Now we test the actual result values
+        expected_lala_results = []
+        i1 = 0
+        i2 = 0
+        for _ in range(5):
+            # First element comes from results1
+            expected_lala_results.append(results1['lala'][i1].get_result())
+            # Second element comes from result1 and results3
+            expected_lala_results.append(
+                (
+                    results1['lala'][i1+1].get_result() +
+                    results3['lala'][i2].get_result()
+                )/2.0)
+            # Third and fourth elements comes from results3
+            expected_lala_results.append(results3['lala'][i2+1].get_result())
+            expected_lala_results.append(results3['lala'][i2+2].get_result())
+            i1 += 2
+            i2 += 3
+
+        union_lala_results = [v.get_result() for v in union['lala']]
+        self.assertEqual(expected_lala_results, union_lala_results)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 class ResultTestCase(unittest.TestCase):
     """
     Unit-tests for the Result class in the results module.
@@ -1468,12 +1573,12 @@ def _delete_progressbar_output_files():
     """
     progressbar_files = glob.glob('*results*.txt')
     for f in progressbar_files:  # pragma: no cover
-        os.remove(f)
-    try:
-        os.remove()
-        pass
-    except Exception:
-        pass
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+
+
 
 # Define a _DummyRunner class for the testing the simulate and
 # simulate_in_parallel methods in the SimulationRunner class.
