@@ -391,18 +391,17 @@ class SimulationRunner(object):
 
         # Try to save the partial results
         try:
-            current_sim_results.save_to_file(partial_results_filename)
+            filename = current_sim_results.save_to_file(partial_results_filename)
         except IOError as e:
             if self.partial_results_folder is not None:
 
                 os.mkdir(self.partial_results_folder)
                 # This should not raise IOError again.
-                current_sim_results.save_to_file(partial_results_filename)
+                filename = current_sim_results.save_to_file(partial_results_filename)
             else:
                 raise e
 
-        self.__results_base_filename_unpack_list.append(
-            partial_results_filename)
+        self.__results_base_filename_unpack_list.append(filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def clear(self, ):  # pragma: no cover
