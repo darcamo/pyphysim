@@ -183,6 +183,13 @@ class SimulationResults(object):
         # set_parameters method.
         self._params = SimulationParameters()
 
+        # When the SimulationResults object is saved to a file with the
+        # methods 'save_to_file' or 'save_to_hdf5_file', this variable will
+        # be set to the used filename (before any string
+        # replacements). This is useful when this file is loaded to recover
+        # the SimulationResults object.
+        self.original_filename = None
+
     def __eq__(self, other):
         """
         Compare two SimulationResults objects.
@@ -190,6 +197,9 @@ class SimulationResults(object):
         Two SimulationResults objects are considered equal if all Result
         objects in both of them are equal, with the exception of the
         'elapsed_time' Result, which is ignored in the comparison.
+
+        Note that the 'original_filename' variable is also ignored in the
+        comparison.
 
         Parameters
         ----------
@@ -199,7 +209,10 @@ class SimulationResults(object):
         if self is other:  # pragma: no cover
             return True
 
-        aux = equal_dicts(self.__dict__, other.__dict__, ignore_keys=['elapsed_time', '_results'])
+        aux = equal_dicts(self.__dict__,
+                          other.__dict__,
+                          ignore_keys=['elapsed_time', '_results', 'original_filename'])
+
         if aux is False:
             return False
 
@@ -566,6 +579,9 @@ class SimulationResults(object):
             equivalent to `filename` after string replacements (with the
             simulation parameters) are done.
         """
+        # Save the original filename before string replacements
+        self.original_filename = filename
+
         # If filename has some replacements that cannot be done, which
         # would raise an exception, then we will save to the filename
         # without string replacements so that at least we don't lose
@@ -629,6 +645,9 @@ class SimulationResults(object):
         --------
         load_from_hdf5_file
         """
+        # Save the original filename before string replacements
+        self.original_filename = filename
+
         # If filename has some replacements that cannot be done, which
         # would raise an exception, then we will save to the filename
         # without string replacements so that at least we don't lose
@@ -647,6 +666,9 @@ class SimulationResults(object):
         # Save the TITTLE attribute to be more consistent with what
         # Pytables would do.
         fid.attrs.create("TITLE", "Simulation Results file")
+
+        # Save the original_filename variable
+        fid.attrs.create("original_filename", self.original_filename)
 
         # Add the attributes, if any
         if isinstance(attrs, dict):  # pragma: no cover
@@ -728,6 +750,9 @@ class SimulationResults(object):
 
         import h5py
         fid = h5py.File(filename, 'r')
+
+        # Get the original filename variable
+        simresults.original_filename = fid.attrs['original_filename']
 
         # xxxxxxxxxx Results group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         rg = fid['results']

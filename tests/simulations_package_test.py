@@ -1387,12 +1387,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_file(self):
-        filename = 'results_({age})_({temperature})_({factor}).pickle'
-        # Let's make sure the file does not exist
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
+        base_filename = 'results_({age})_({temperature})_({factor}).pickle'
 
         # Set sime simulation parameters
         self.simresults.params.add('factor', 0.5)
@@ -1400,11 +1395,12 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.params.add('age', 3)
 
         # Save to the file and get the actual filename used to save the file
-        filename = self.simresults.save_to_file(filename)
+        filename = self.simresults.save_to_file(base_filename)
 
         # Load from the file
         simresults2 = SimulationResults.load_from_file(filename)
 
+        self.assertEqual(simresults2.original_filename, base_filename)
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
                          set(simresults2.get_result_names()))
@@ -1431,12 +1427,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         os.remove(filename)
 
     def test_save_to_and_load_from_hdf5_file(self):
-        filename = 'test_results_hdf5.h5'
-        # Let's make sure the file does not exist
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
+        base_filename = 'results_({age})_({temperature})_({factor}).h5'
 
         try:
             import h5py
@@ -1456,10 +1447,11 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults['lele'][0].update(5, 7)
 
         # Save to the file
-        self.simresults.save_to_hdf5_file(filename)
+        filename = self.simresults.save_to_hdf5_file(base_filename)
 
         # Load from the file
         simresults2 = SimulationResults.load_from_hdf5_file(filename)
+        self.assertEqual(simresults2.original_filename, base_filename)
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
                          set(simresults2.get_result_names()))
@@ -1734,6 +1726,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Now we do not set the results filename
         dummyrunner2 = _DummyRunner()
         dummyrunner2.simulate()
+
         self.assertEqual(dummyrunner.results, dummyrunner2.results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
