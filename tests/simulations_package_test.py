@@ -1387,7 +1387,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_file(self):
-        filename = 'results.pickle'
+        filename = 'results_({age})_({temperature})_({factor}).pickle'
         # Let's make sure the file does not exist
         try:
             os.remove(filename)
@@ -1399,8 +1399,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.params.add('temperature', 50.5)
         self.simresults.params.add('age', 3)
 
-        # Save to the file
-        self.simresults.save_to_file(filename)
+        # Save to the file and get the actual filename used to save the file
+        filename = self.simresults.save_to_file(filename)
 
         # Load from the file
         simresults2 = SimulationResults.load_from_file(filename)

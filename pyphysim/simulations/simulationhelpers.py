@@ -6,7 +6,6 @@
 __revision__ = "$Revision$"
 
 import sys
-import os
 import argparse
 
 from .progressbar import ProgressbarZMQServer

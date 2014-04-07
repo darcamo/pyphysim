@@ -9,7 +9,7 @@ __revision__ = "$Revision$"
 import numpy as np
 
 from .parameters import SimulationParameters, combine_simulation_parameters
-from ..util.misc import calc_confidence_interval, equal_dicts
+from ..util.misc import calc_confidence_interval, equal_dicts, replace_dict_values
 
 try:
     import cPickle as pickle
@@ -544,17 +544,42 @@ class SimulationResults(object):
         return iterator
 
     def save_to_file(self, filename):
-        """Save the SimulationResults to the file `filename`.
+        """
+        Save the SimulationResults to the file `filename`.
+
+        The string in `filename` can have placeholders for string
+        replacements with any parameter value.
 
         Parameters
         ----------
         filename : src
-            Name of the file to save the results.
+            Name of the file to save the results. This can have string
+            placements for replacements of simulation parameters. For
+            instance, is `filename` is "somename_{age}.pickle" and the
+            value of an 'age' parameter is '3', then the actual name used
+            to save the file will be "somename_3.pickle"
 
+        Returns
+        -------
+        new_filename : string
+            The name of the file where the results were saved. This will be
+            equivalent to `filename` after string replacements (with the
+            simulation parameters) are done.
         """
+        # If filename has some replacements that cannot be done, which
+        # would raise an exception, then we will save to the filename
+        # without string replacements so that at least we don't lose
+        # simulation results.
+        try:
+            filename = replace_dict_values(filename, self.params.parameters, True)
+        except Exception:
+            pass
+
         # For python3 compatibility the file must be opened in binary mode
         with open(filename, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+
+        return filename
 
     @staticmethod
     def load_from_file(filename):
@@ -579,17 +604,40 @@ class SimulationResults(object):
         Save the SimulationResults to the file `filename` using the HDF5 format
         standard.
 
+        The string in `filename` can have placeholders for string
+        replacements with any parameter value.
+
         Parameters
         ----------
         filename : src
-            Name of the file to save the results.
+            Name of the file to save the results. This can have string
+            placements for replacements of simulation parameters. For
+            instance, is `filename` is "somename_{age}.pickle" and the
+            value of an 'age' parameter is '3', then the actual name used
+            to save the file will be "somename_3.pickle"
         attrs : a dictionary
             Extra attributes to add to the HDF5 file.
+
+        Returns
+        -------
+        new_filename : string
+            The name of the file where the results were saved. This will be
+            equivalent to `filename` after string replacements (with the
+            simulation parameters) are done.
 
         See also
         --------
         load_from_hdf5_file
         """
+        # If filename has some replacements that cannot be done, which
+        # would raise an exception, then we will save to the filename
+        # without string replacements so that at least we don't lose
+        # simulation results.
+        try:
+            filename = replace_dict_values(filename, self.params.parameters, True)
+        except Exception:
+            pass
+
         if attrs is None:
             attrs = {}
 
@@ -624,6 +672,7 @@ class SimulationResults(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         fid.close()
+        return filename
 
     # # TODO: Test if this method saves all the information that the
     # # save_to_hdf5_file method saves.
