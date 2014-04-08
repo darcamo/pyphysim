@@ -556,6 +556,36 @@ class SimulationResults(object):
 
         return iterator
 
+    def _replace_params_in_filename(self, filename):
+        """
+        Perform the string replacements in filename with simulation parameters.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file to save the results. This can have string
+            placements for replacements of simulation parameters. For
+            instance, is `filename` is "somename_{age}.pickle" and the
+            value of an 'age' parameter is '3', then the actual name used
+            to save the file will be "somename_3.pickle"
+
+        Returns
+        -------
+        new_filename : string
+            The name of the file where the results were saved. This will be
+            equivalent to `filename` after string replacements (with the
+            simulation parameters) are done.
+        """
+        # If filename has some replacements that cannot be done, which
+        # would raise an exception, then we will save to the filename
+        # without string replacements so that at least we don't lose
+        # simulation results.
+        try:
+            filename = replace_dict_values(filename, self.params.parameters, True)
+        except Exception:
+            pass
+        return filename
+
     def save_to_file(self, filename):
         """
         Save the SimulationResults to the file `filename`.
@@ -582,14 +612,7 @@ class SimulationResults(object):
         # Save the original filename before string replacements
         self.original_filename = filename
 
-        # If filename has some replacements that cannot be done, which
-        # would raise an exception, then we will save to the filename
-        # without string replacements so that at least we don't lose
-        # simulation results.
-        try:
-            filename = replace_dict_values(filename, self.params.parameters, True)
-        except Exception:
-            pass
+        filename = self._replace_params_in_filename(filename)
 
         # For python3 compatibility the file must be opened in binary mode
         with open(filename, 'wb') as output:
@@ -648,14 +671,7 @@ class SimulationResults(object):
         # Save the original filename before string replacements
         self.original_filename = filename
 
-        # If filename has some replacements that cannot be done, which
-        # would raise an exception, then we will save to the filename
-        # without string replacements so that at least we don't lose
-        # simulation results.
-        try:
-            filename = replace_dict_values(filename, self.params.parameters, True)
-        except Exception:
-            pass
+        filename = self._replace_params_in_filename(filename)
 
         if attrs is None:
             attrs = {}
