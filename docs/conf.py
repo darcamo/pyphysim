@@ -46,7 +46,7 @@ extensions = [#'matplotlib.sphinxext.mathmpl',
               'sphinx.ext.viewcode',
               # 'inheritance_diagram',
               #'sphinx.ext.extlinks',  # Markup to shorten external links
-              'sphinxcontrib.aafig',
+              #'sphinxcontrib.aafig',
               'sphinx.ext.autosummary',
               'numpydoc']
 
