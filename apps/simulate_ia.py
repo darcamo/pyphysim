@@ -18,8 +18,10 @@ sys.path.append(parent_dir)
 import numpy as np
 from pprint import pprint
 
-from pyphysim.simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result, get_common_parser
-from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
+from pyphysim.simulations.runner import SimulationRunner
+from pyphysim.simulations.parameters import SimulationParameters
+from pyphysim.simulations.results import SimulationResults, Result
+from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean, get_common_parser
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
