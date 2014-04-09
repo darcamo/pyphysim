@@ -778,6 +778,9 @@ def get_mixed_range_representation(array, filename_mode=False):
     expr : str
         A string expression representing `array`.
     """
+    if len(array) < 2:
+        return '{0}'.format(array[0])
+
     diff = array[1:] - array[0:-1]
     diff = np.hstack([diff[0], diff])
     start = 0

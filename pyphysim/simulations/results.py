@@ -7,6 +7,7 @@ __revision__ = "$Revision$"
 
 
 import numpy as np
+import os.path
 
 from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, replace_dict_values
@@ -367,13 +368,15 @@ class SimulationResults(object):
                 self.append_result(result)
 
     def merge_all_results(self, other):
-        """Merge all the results of the other SimulationResults object with
-        the results in self.
+        """
+        Merge all the results of the other SimulationResults object with the
+        results in self.
 
         When there is more then one result with the same name stored in
-        self (for instance two bit error rates) then only the last one will
-        be merged with the one in `other`. That also means that only one
-        result for that name should be stored in `other`.
+        self (for instance two bit error rates -> for different parameters)
+        then only the last one will be merged with the one in `other`. That
+        also means that only one result for that name should be stored in
+        `other`.
 
         Parameters
         ----------
@@ -384,6 +387,10 @@ class SimulationResults(object):
         --------
         append_result, append_all_results
 
+        Notes
+        -----
+        This method is used in the SimulationRunner class to combine
+        results of two simulations for the exact same parameters.
         """
         # If the current SimulationResults object is empty, we basically
         # copy the Result objects from other
@@ -556,7 +563,7 @@ class SimulationResults(object):
 
         return iterator
 
-    def _replace_params_in_filename(self, filename):
+    def get_filename_with_replaced_params(self, filename):
         """
         Perform the string replacements in filename with simulation parameters.
 
@@ -609,10 +616,16 @@ class SimulationResults(object):
             equivalent to `filename` after string replacements (with the
             simulation parameters) are done.
         """
+        # Get the file extension (if there is any). If it is not equal to
+        # '.pickle' that means we need to add the '.pickle' extension.
+        ext = os.path.splitext(filename)[-1]
+        if ext != '.pickle':
+            filename = '{0}.pickle'.format(filename)
+
         # Save the original filename before string replacements
         self.original_filename = filename
 
-        filename = self._replace_params_in_filename(filename)
+        filename = self.get_filename_with_replaced_params(filename)
 
         # For python3 compatibility the file must be opened in binary mode
         with open(filename, 'wb') as output:
@@ -668,10 +681,16 @@ class SimulationResults(object):
         --------
         load_from_hdf5_file
         """
+        # Get the file extension (if there is any). If it is not equal to
+        # '.pickle' that means we need to add the '.pickle' extension.
+        ext = os.path.splitext(filename)[-1]
+        if ext != '.h5':
+            filename = '{0}.h5'.format(filename)
+
         # Save the original filename before string replacements
         self.original_filename = filename
 
-        filename = self._replace_params_in_filename(filename)
+        filename = self.get_filename_with_replaced_params(filename)
 
         if attrs is None:
             attrs = {}

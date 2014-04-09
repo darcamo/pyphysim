@@ -498,6 +498,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertIsNone(misc.get_range_representation(np.array([6, 10, 20, 50])))
 
     def test_get_mixed_range_representation(self):
+        a = np.array([2])
+        expr_a = misc.get_mixed_range_representation(a)
+        expected_expr_a = "2"
+        self.assertEqual(expr_a, expected_expr_a)
+
         a = np.array([1, 2, 4])
         expr_a = misc.get_mixed_range_representation(a)
         expected_expr_a = "1,2,4"
@@ -569,6 +574,14 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertEqual(expr_c, expected_expr_c)
 
     def test_replace_dict_values(self):
+        name = "something {value1} - {value2} something else {value3}"
+        dictionary = {'value1': 'bla bla',
+                      'value2': np.array([15]),
+                      'value3': 76}
+        new_name = misc.replace_dict_values(name, dictionary)
+        expected_new_name = 'something bla bla - [15] something else 76'
+        self.assertEqual(new_name, expected_new_name)
+
         name = "something {value1} - {value2} something else {value3}"
         dictionary = {'value1': 'bla bla',
                       'value2': np.array([5, 10, 15, 20, 25, 30]),

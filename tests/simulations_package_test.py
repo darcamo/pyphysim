@@ -1679,6 +1679,11 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertIsNone(dummyrunner.results_filename)
 
         dummyrunner.set_results_filename("some_name_{bias}")
+
+        # Note that this line would be unecessary if we had call the
+        # 'simulate' method of dummyrunner.
+        dummyrunner.results.set_parameters(dummyrunner.params)
+
         self.assertEqual(dummyrunner.results_filename, "some_name_1.3.pickle")
 
     def test_simulate(self):
@@ -1691,10 +1696,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # This will make the progressbar print to a file, instead of stdout
         dummyrunner.progress_output_type = 'file'  # Default is 'screen'
 
-        # Remove old file from previous test run
-        _delete_pickle_files()
-
-        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1718,8 +1719,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
         results = SimulationResults.load_from_file(dummyrunner.results_filename)
         self.assertEqual(results, dummyrunner.results)
-        _delete_pickle_files()
-        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1750,15 +1749,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxx Repeat the test loading the partial results xxxxxxxxxx
         dummyrunner4 = _DummyRunner()
         dummyrunner4.set_results_filename('dummyrunner3_results')
-        dummyrunner4.delete_partial_results_bool = False
+        dummyrunner4.delete_partial_results_bool = True
         dummyrunner4.simulate()
-
-        # Delete all *.pickle files in the same folder
-        _delete_pickle_files()
-
-        # Delete all the *results*.txt files (created by the progressbar)
-        _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Delete the pickle files in the same folder
+        _delete_pickle_files()
 
     def test_simulate_with_param_variation_index(self):
         # Test the "simulate" method when the param_variation_index
@@ -1777,8 +1773,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # This will make the progressbar print to a file, instead of stdout
         dummyrunner.progress_output_type = 'file'  # Default is 'screen'
 
-        _delete_pickle_files()
-        _delete_progressbar_output_files()
         # Now we perform the simulation
         dummyrunner.simulate(param_variation_index=4)
         pr = SimulationResults.load_from_file('partial_results/dummyrunner_results_bias_1.3_unpack_04.pickle')
@@ -1793,9 +1787,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         self.assertEqual(len(pr['lala']), 1)
         self.assertAlmostEqual(pr['lala'][0].get_result(), expected_value)
-
-        _delete_pickle_files()
-        _delete_progressbar_output_files()
 
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
