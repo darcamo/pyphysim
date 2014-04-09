@@ -15,6 +15,7 @@ sys.path.append(parent_dir)
 
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+from time import time
 import numpy as np
 from pprint import pprint
 
@@ -497,57 +498,11 @@ class MMSESimulationRunner(IASimulationRunner):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-## xxxxxxxxxx Main - Perform the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# This will perform the simulation
-if __name__ == '__main__':
-    from time import time
-    from pyphysim.util.misc import pretty_time
-    from apps.simulate_ia import ClosedFormSimulationRunner, AlternatingSimulationRunner, MMSESimulationRunner, MaxSINRSimulationRunner, MinLeakageSimulationRunner
-
+def main_simulate(algorithms_to_simulate):
+    """
+    Function called to perform the simulation.
+    """
     tic = time()
-
-    # xxxxxxxxxx Command Line options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # The returned parser already has two possiblr arguments: "config" and
-    # "index".
-    parser = get_common_parser()
-    parser.description = "Simulate several Interference Alignment Algorithms"
-    group = parser.add_argument_group('IA Algorithms to Simulate. Default is all of them.')
-    group.add_argument('--closed_form', action="store_true", default=False, help="Simulate the Closed Form algorithm.")
-    group.add_argument('--alt_min', action="store_true", default=False, help="Simulate the Alternating Minimizations algorithm.")
-    group.add_argument('--max_sinr', action="store_true", default=False, help="Simulate the Max SINR algorithm.")
-    group.add_argument('--mmse', action="store_true", default=False, help="Simulate the MMSE algorithm.")
-
-    args = parser.parse_args()
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Determine which algorithms should be simulated xxxxxxxxxxx
-    algorithms_to_simulate = []
-
-    simulate_all_algorithms = True
-    if args.closed_form is True:
-        algorithms_to_simulate.append("Closed Form")
-        simulate_all_algorithms = False
-
-    if args.alt_min is True:
-        algorithms_to_simulate.append("Alt Min")
-        simulate_all_algorithms = False
-
-    if args.max_sinr is True:
-        algorithms_to_simulate.append("Max SINR")
-        simulate_all_algorithms = False
-
-    if args.mmse is True:
-        algorithms_to_simulate.append("MMSE")
-        simulate_all_algorithms = False
-
-    if simulate_all_algorithms is True:
-        algorithms_to_simulate = [
-            "Closed Form",
-            "Alt Min",
-            "Max SINR",
-            "MMSE"]
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     all_simulation_runner_objs = []
 
@@ -558,11 +513,11 @@ if __name__ == '__main__':
         #del closed_form_runner.params.parameters['max_iterations']
         try:
             closed_form_runner.params.set_unpack_parameter('max_iterations', False)
-        except KeyError as e:
+        except KeyError:
             pass
 
         pprint(closed_form_runner.params.parameters)
-        print("IA Solver: {0}\n".format(closed_form_runner.ia_solver.__class__))
+        #print("IA Solver: {0}\n".format(closed_form_runner.ia_solver.__class__))
         closed_form_runner.set_results_filename('ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
         all_simulation_runner_objs.append(closed_form_runner)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -572,7 +527,7 @@ if __name__ == '__main__':
         print "Simulating Alternating Minimizations algorithm"
         alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
         pprint(alt_min_runner.params.parameters)
-        print("IA Solver: {0}\n".format(alt_min_runner.ia_solver.__class__))
+        #print("IA Solver: {0}\n".format(alt_min_runner.ia_solver.__class__))
         alt_min_runner.set_results_filename(
         'ia_alt_min_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
         all_simulation_runner_objs.append(alt_min_runner)
@@ -583,7 +538,7 @@ if __name__ == '__main__':
         print "Simulating Max SINR algorithm"
         max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
         pprint(max_sinrn_runner.params.parameters)
-        print("IA Solver: {0}\n".format(max_sinrn_runner.ia_solver.__class__))
+        #print("IA Solver: {0}\n".format(max_sinrn_runner.ia_solver.__class__))
         max_sinrn_runner.set_results_filename(
         'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
         all_simulation_runner_objs.append(max_sinrn_runner)
@@ -594,7 +549,7 @@ if __name__ == '__main__':
         print "Simulating MMSE algorithm"
         mmse_runner = MMSESimulationRunner('ia_config_file.txt')
         pprint(mmse_runner.params.parameters)
-        print("IA Solver: {0}\n".format(mmse_runner.ia_solver.__class__))
+        #print("IA Solver: {0}\n".format(mmse_runner.ia_solver.__class__))
         mmse_runner.set_results_filename('ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
         all_simulation_runner_objs.append(mmse_runner)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -603,29 +558,50 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Some finalization message xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     toc = time()
-    print "Total Elapsed Time: {0}".format(pretty_time(toc - tic))
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    print "Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic))
 
 
-## xxxxxxxxxx Plot xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# This will read results from a previous simulation and draw some plots
-if __name__ == '__main__1':
+def main_plot(algorithms_to_simulate, index=0):
+    """
+    Function called to plot the results from a previous simulation.
+    """
     from matplotlib import pyplot as plt
 
+    if args.config is None:
+        config_file = 'ia_config_file.txt'
+    else:
+        config_file = args.config
+
+    # xxxxxxxxxx Config spec for the config file xxxxxxxxxxxxxxxxxxxxxxxxxx
+    spec = """[Scenario]
+        SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
+        M=integer(min=4, max=512, default=4)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        K=integer(min=2,default=3)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
+        [IA Algorithm]
+        max_iterations=integer_numpy_array(min=1, default=60)
+        [General]
+        rep_max=integer(min=1, default=2000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    params = SimulationParameters.load_from_config_file('ia_config_file.txt')
-    K = params['K']
-    Nr = params['Nr']
-    Nt = params['Nt']
-    Ns = params['Ns']
-    max_iterations = params['max_iterations']
-    M = params['M']
-    modulator = params['modulator']
+    params = SimulationParameters.load_from_config_file(config_file, spec)
+    max_iterations = params['max_iterations'][index]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[120]'.format(**params.parameters)
-    base_name_no_iter = 'results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_[120]'.format(**params.parameters)  # Used only for the closed form algorithm, which is not iterative
+    # Base name for all IA algorithms (except the Closed Form)
+    base_name = misc.replace_dict_values('results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}', params.parameters)
+
+    # Base name for the closed form IA algorithm.
+    base_name_no_iter = base_name
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -649,8 +625,6 @@ if __name__ == '__main__1':
     SNR_max_SINR = np.array(max_sinrn_results.params['SNR'])
     # SNR_min_leakage = np.array(min_leakage_results.params['SNR'])
     SNR_mmse = np.array(mmse_results.params['SNR'])
-
-    max_iterations = 120
 
     ber_alt_min = alt_min_results.get_result_values_list(
         'ber',
@@ -775,3 +749,85 @@ if __name__ == '__main__1':
     plt.show()
     fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Main: Simulate or plot the results xxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+if __name__ == '__main__':
+    # This include statement may seem unnecessary, since these classes are
+    # defined in this file, but they are important when the simulation is
+    # performed in parallel in IPython engines.
+    from apps.simulate_ia import ClosedFormSimulationRunner, \
+    AlternatingSimulationRunner, MMSESimulationRunner, \
+    MaxSINRSimulationRunner  #, MinLeakageSimulationRunner
+
+    # xxxxxxxxxx Command Line options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # The returned parser already has two possiblr arguments: "config" and
+    # "index".
+    parser = get_common_parser()
+    parser.description = ("Simulator for several Interference "
+                          "Alignment Algorithms.")
+
+    # Optional positional argument to decide if we will simulate or plot
+    help_msg = ('Perform the actual simulation or plot results from a'
+                ' previous simulation. Default is "simulate".')
+    parser.add_argument('action', nargs='?',
+                        choices=('simulate', 'plot'),
+                        default='simulate', help=help_msg)
+
+    group = parser.add_argument_group('IA Algorithms to include. Default is all of them.')
+    group.add_argument('--closed_form', action="store_true", default=False, help="Simulate the Closed Form algorithm.")
+    group.add_argument('--alt_min', action="store_true", default=False, help="Simulate the Alternating Minimizations algorithm.")
+    group.add_argument('--max_sinr', action="store_true", default=False, help="Simulate the Max SINR algorithm.")
+    group.add_argument('--mmse', action="store_true", default=False, help="Simulate the MMSE algorithm.")
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Finally parse the command line arguments xxxxxxxxxxxxxxxxx
+    args = parser.parse_args()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Determine which algorithms should be included xxxxxxxxxxxx
+    algorithms_to_simulate = []
+
+    simulate_all_algorithms = True
+    if args.closed_form is True:
+        algorithms_to_simulate.append("Closed Form")
+        simulate_all_algorithms = False
+
+    if args.alt_min is True:
+        algorithms_to_simulate.append("Alt Min")
+        simulate_all_algorithms = False
+
+    if args.max_sinr is True:
+        algorithms_to_simulate.append("Max SINR")
+        simulate_all_algorithms = False
+
+    if args.mmse is True:
+        algorithms_to_simulate.append("MMSE")
+        simulate_all_algorithms = False
+
+    if simulate_all_algorithms is True:
+        algorithms_to_simulate = [
+            "Closed Form",
+            "Alt Min",
+            "Max SINR",
+            "MMSE"]
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # Decide if we are simulation or plotting results from a previous
+    # simulation
+    if args.action == 'simulate':
+        main_simulate(algorithms_to_simulate)
+    elif args.action == 'plot':
+        if args.index is None:
+            main_plot(algorithms_to_simulate)
+        else:
+            main_plot(algorithms_to_simulate, args.index)
+    else:
+        print "Should not be here!!!"

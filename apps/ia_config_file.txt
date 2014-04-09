@@ -8,9 +8,9 @@
         Nt = 2
         Ns = 1
 [IA Algorithm]
-        max_iterations = [60]
+        max_iterations = [10 20]
 [General]
         max_bit_errors = 3000
         unpacked_parameters = SNR, max_iterations
-        rep_max = 500
+        rep_max = 100
         
