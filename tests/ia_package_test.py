@@ -32,7 +32,7 @@ import pyphysim.ia  # Import the package ia
 from pyphysim.ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
     MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
     IterativeIASolverBaseClass
-from pyphysim.util.misc import peig, leig
+from pyphysim.util.misc import peig, leig, randn_c
 
 
 class CustomTestCase(unittest.TestCase):
@@ -66,7 +66,7 @@ class CustomTestCase(unittest.TestCase):
         # generation. Don't change this.
         self.noise_state = None
 
-    def _save_state(self, filename):
+    def _save_state(self, filename):  # pragma: no cover
         """
         When a test fails, call this method to save the state of the channel
         and IA solver random generators so that you can reproduce this fail
@@ -90,7 +90,7 @@ class CustomTestCase(unittest.TestCase):
                             fid,
                             pickle.HIGHEST_PROTOCOL)
 
-    def _maybe_load_state_and_randomize_channel(self, filename, iasolver=None, Nr=None, Nt=None, K=None):
+    def _maybe_load_state_and_randomize_channel(self, filename, iasolver=None, Nr=None, Nt=None, K=None):  # pragma: no cover
         """
         Load the state of a previous test fail, if the saved file exists.
 
@@ -1215,7 +1215,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
                 np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
                 np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
-        except AssertionError:
+        except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
             self._save_state('Alt_Min_test_solve_state.pickle')
@@ -1646,7 +1646,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 
         try:
             self.iasolver._W = self.iasolver._calc_Uk_all_k()
-        except Exception:
+        except Exception:  # pragma: no cover
             self._save_state(filename='MaxSINR_test_calc_Q_state.pickle')
             raise  # re-raises the last exception
 
@@ -1778,7 +1778,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         iasolver.max_iterations = 200
         try:
             iasolver.solve(Ns, P)
-        except Exception:
+        except Exception:  # pragma: no cover
             self._save_state(filename='MaxSINR_test_solve_state.pickle')
             raise  # re-raises the last exception
 
@@ -1821,7 +1821,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             np.testing.assert_array_almost_equal(
                 np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        except AssertionError:
+        except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
             self._save_state(filename='MaxSINR_test_solve_state.pickle')
@@ -2129,6 +2129,23 @@ class MMSEIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(self.iasolver.W[2],
                                              expected_W2)
 
+    def test_calc_Vi_for_a_given_mu(self):
+        sum_term = randn_c(3,3)
+        sum_term = sum_term.dot(sum_term.conj().T)
+        mu = 0.135
+        H_herm_U = randn_c(3,2)
+
+        expected_vi = np.dot(
+            np.linalg.inv(sum_term + mu * np.eye(3)),
+            H_herm_U)
+
+        vi = MMSEIASolver._calc_Vi_for_a_given_mu(sum_term, mu, H_herm_U)
+        vi2 = MMSEIASolver._calc_Vi_for_a_given_mu2(np.linalg.inv(sum_term),
+                                                    mu, H_herm_U)
+
+        np.testing.assert_array_almost_equal(expected_vi, vi)
+        np.testing.assert_array_almost_equal(expected_vi, vi2)
+
     def test_calc_Vi(self):
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
@@ -2239,7 +2256,7 @@ class MMSEIASolverTestCase(CustomTestCase):
 
             # TODO: Find a way to test the case when the best value of mu is found
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        except AssertionError:
+        except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
             self._save_state(filename='MMSE_test_calc_Vi_state.pickle')
@@ -2336,7 +2353,7 @@ class MMSEIASolverTestCase(CustomTestCase):
                 np.abs(full_W_H2 * H20 * full_F0), 0.0, decimal=1)
             np.testing.assert_array_almost_equal(
                 np.abs(full_W_H2 * H21 * full_F1), 0.0, decimal=1)
-        except AssertionError:
+        except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
             self._save_state(filename='MMSE_test_solve_state.pickle')

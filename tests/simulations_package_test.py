@@ -1556,18 +1556,18 @@ def _delete_pickle_files():
         for f in files:
             os.remove(f)
         os.rmdir('./partial_results')
-    except OSError:
+    except OSError:  # pragma: nocover
         pass
 
 
-def _delete_progressbar_output_files():
+def _delete_progressbar_output_files():  # pragma: no cover
     """Delete all the files with *results*.txt names in the current folder.
     """
     progressbar_files = glob.glob('*results*.txt')
     for f in progressbar_files:  # pragma: no cover
         try:
             os.remove(f)
-        except OSError:
+        except OSError:  # pragma: nocover
             pass
 
 

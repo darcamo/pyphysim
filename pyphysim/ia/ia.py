@@ -2209,7 +2209,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # If the condition number is larger than 1e8 we consider sum_term
         # as a singular matrix, which means that we will perform the
         # diagonal loading
-        if cond > 5e4:
+        if cond > 5e4:  # pragma: no cover
             # Calculates the load_factor (arbitrarily choosen as 1/100 the
             # mean of the current singular values of sum_term).
             load_factor = S.mean() / 100.0

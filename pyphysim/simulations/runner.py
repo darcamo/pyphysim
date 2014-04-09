@@ -403,7 +403,7 @@ class SimulationRunner(object):
                 os.mkdir(self.partial_results_folder)
                 # This should not raise IOError again.
                 filename = current_sim_results.save_to_file(partial_results_filename)
-            else:
+            else:  # pragma: no cover
                 raise e
 
         self._results_base_filename_unpack_list.append(filename)

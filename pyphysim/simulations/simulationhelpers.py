@@ -67,7 +67,8 @@ get_common_parser.parser = None
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def simulate_do_what_i_mean(runner_or_list_of_runners, folder=None):
+def simulate_do_what_i_mean(runner_or_list_of_runners,
+                            folder=None):  # pragma: no cover
     """
     This will either call the simulate method or the simulate_in_parallel
     method as appropriated.
@@ -129,7 +130,9 @@ def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
     dview.execute('sys.path.append("{0}")'.format(folder), block=True)
 
 
-def _simulate_do_what_i_mean_single_runner(runner, folder=None, block=True):
+def _simulate_do_what_i_mean_single_runner(runner,
+                                           folder=None,
+                                           block=True):  # pragma: no cover
     """
     This will either call the `simulate` method or the
     `simulate_in_parallel` method as appropriated.
@@ -194,8 +197,9 @@ def _simulate_do_what_i_mean_single_runner(runner, folder=None, block=True):
             runner.simulate()
 
 
-def _simulate_do_what_i_mean_multiple_runners(list_of_runners,
-                                              folder=None):
+def _simulate_do_what_i_mean_multiple_runners(
+        list_of_runners,
+        folder=None):  # pragma: no cover
     """
     This will either call the `simulate` method or the
     `simulate_in_parallel` method as appropriated.
