@@ -1788,6 +1788,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertEqual(len(pr['lala']), 1)
         self.assertAlmostEqual(pr['lala'][0].get_result(), expected_value)
 
+        _delete_pickle_files()
+
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
