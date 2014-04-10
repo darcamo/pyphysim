@@ -586,7 +586,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         dictionary = {'value1': 'bla bla',
                       'value2': np.array([5, 10, 15, 20, 25, 30]),
                       'value3': 76}
-        new_name = misc.replace_dict_values(name, dictionary)
+        new_name = misc.replace_dict_values(name, dictionary, True)
         expected_new_name = 'something bla bla - [5_(5)_30] something else 76'
         self.assertEqual(new_name, expected_new_name)
 
@@ -603,7 +603,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         dictionary3 = {'value1': 'bla bla',
                        'value2': np.array([2, 5, 10, 15, 20, 25, 30, 31, 32, 50]),
                        'value3': 76}
-        new_name3 = misc.replace_dict_values(name, dictionary3)
+        new_name3 = misc.replace_dict_values(name, dictionary3, True)
         expected_new_name3 = 'something bla bla - [2,5_(5)_30,31,32,50] something else 76'
         self.assertEqual(new_name3, expected_new_name3)
 
