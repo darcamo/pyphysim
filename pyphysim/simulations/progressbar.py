@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101
+
 """Implement classes to represent the progress of a task.
 
 Use the ProgressbarText class for tasks that do not use multiprocessing,
@@ -140,7 +142,7 @@ class DummyProgressbar(object):  # pragma: no cover
 # http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/
 # /examples/notebooks/Progress%20Bars.ipynb
 #
-class ProgressbarTextBase(object):
+class ProgressbarTextBase(object):  # pylint: disable=R0902
     """
     Base class for Text progressbars.
 
@@ -317,7 +319,7 @@ class ProgressbarTextBase(object):
         # The width should be large enough to contain both the left_side
         # and right_side and still have (reasonable) enough space for the
         # characters representing the progress.
-        assert(self.width > sides_length + 20)
+        assert self.width > sides_length + 20
 
         # Space that will be used bu the characters representing the
         # progress
@@ -596,7 +598,7 @@ class ProgressbarText(ProgressbarTextBase):
         This method is only a helper method called in the
         `_write_initialization` method.
         """
-        if(len(self._message) != 0):
+        if len(self._message) != 0:
             message = self._message
         else:
             message = '% Progress'
@@ -767,7 +769,7 @@ class ProgressbarText2(ProgressbarTextBase):
 
         # Append the message to the self.prog_bar variable if there is one
         # (or a default message if there is no message set)..
-        if(len(self._message) != 0):
+        if len(self._message) != 0:
             message = self._message.format(elapsed_time=self.elapsed_time)
             self.prog_bar += "  {0}".format(message)
         else:

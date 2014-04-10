@@ -607,6 +607,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_new_name3 = 'something bla bla - [2,5_(5)_30,31,32,50] something else 76'
         self.assertEqual(new_name3, expected_new_name3)
 
+        # Now we test the same thing, but with the third parameter being False
+        new_name4 = misc.replace_dict_values(name, dictionary3, False)
+        expected_new_name4 = 'something bla bla - [2,5:5:30,31,32,50] something else 76'
+        self.assertEqual(new_name4, expected_new_name4)
+
     def test_pretty_time(self):
         self.assertEqual(misc.pretty_time(0), '0.00s')
         self.assertEqual(misc.pretty_time(2.3), '2.30s')

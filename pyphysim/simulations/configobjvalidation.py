@@ -208,7 +208,7 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
     """
     try:
         value = validate.is_float(value, min, max)
-    except validate.VdtTypeError as e:
+    except validate.VdtTypeError:
         value = real_numpy_array_check(value, min, max)
 
     return value

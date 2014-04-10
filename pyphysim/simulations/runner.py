@@ -880,7 +880,7 @@ class SimulationRunner(object):
         if proxybar_data is None:
             update_progress_func = lambda value: None
         else:
-            client_id, ip, port = proxybar_data
+            client_id, ip, port = proxybar_data  # pylint: disable=W0633
             proxybar = ProgressbarZMQClient(client_id, ip, port)
             update_progress_func = proxybar.progress
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

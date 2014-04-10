@@ -831,7 +831,7 @@ class SimulationParameters(object):
         --------
         load_from_pytables_group
         """
-        pytables_file = group._v_file
+        pytables_file = group._v_file  # pylint: disable=W0212
 
         # Store each parameter in self.parameter in a different dataset
         for name, value in self.parameters.iteritems():

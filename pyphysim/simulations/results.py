@@ -589,7 +589,7 @@ class SimulationResults(object):
         # simulation results.
         try:
             filename = replace_dict_values(filename, self.params.parameters, True)
-        except Exception:
+        except Exception:  # pylint: disable=W0703
             pass
         return filename
 
