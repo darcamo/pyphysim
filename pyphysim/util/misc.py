@@ -139,9 +139,9 @@ def pretty_time(time_in_seconds):
     hours = minutes // 60
     minutes = minutes % 60
 
-    if(hours > 0):
+    if hours > 0:
         return "%sh:%02dm:%02ds" % (hours, minutes, seconds)
-    elif(minutes > 0):
+    elif minutes > 0:
         return "%sm:%02ds" % (minutes, seconds)
     else:
         return "%.2fs" % time_in_seconds
@@ -636,17 +636,17 @@ def calc_confidence_interval(mean, std, n, P=95):
     """
     # Dictionary that maps a desired "confidence" to the corresponding
     # critical value. See https://en.wikipedia.org/wiki/Student%27s_t-distribution
-    table_of_values = { 50:0.674,
-                        60:0.842,
-                        70:1.036,
-                        80:1.282,
-                        90:1.645,
-                        95:1.960,
-                        98:2.326,
-                        99:2.576,
-                        99.5:2.807,
-                        99.8:3.090,
-                        99.9:3.291 }
+    table_of_values = {50:0.674,
+                       60:0.842,
+                       70:1.036,
+                       80:1.282,
+                       90:1.645,
+                       95:1.960,
+                       98:2.326,
+                       99:2.576,
+                       99.5:2.807,
+                       99.8:3.090,
+                       99.9:3.291}
 
     # Critical value used in the calculation of the confidence interval
     C = table_of_values[P]
@@ -881,7 +881,8 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     new_dict = {}
     for n, v in dictionary.items():
         if isinstance(v, np.ndarray):
-            v = "[{0}]".format(get_mixed_range_representation(v, True))
+            v = "[{0}]".format(get_mixed_range_representation(v,
+                                                              filename_mode))
         new_dict[n] = v
 
     return name.format(**new_dict)

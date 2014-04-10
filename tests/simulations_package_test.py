@@ -1678,13 +1678,13 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner.set_results_filename()
         self.assertIsNone(dummyrunner.results_filename)
 
-        dummyrunner.set_results_filename("some_name_{bias}")
+        dummyrunner.set_results_filename("some_name_{bias}_{extra}")
 
         # Note that this line would be unecessary if we had call the
         # 'simulate' method of dummyrunner.
         dummyrunner.results.set_parameters(dummyrunner.params)
 
-        self.assertEqual(dummyrunner.results_filename, "some_name_1.3.pickle")
+        self.assertEqual(dummyrunner.results_filename, "some_name_1.3_[2.2,4.1].pickle")
 
     def test_simulate(self):
         from tests.simulations_package_test import _DummyRunner
