@@ -2248,7 +2248,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # If we are not done yet then we need to perform the
                 # bisection method to find the best mu value between
                 # min_mu_i and max_mu_i
-                mu_i = optimize.newton(
+                mu_i = optimize.newton(  # pylint: disable= E1101
                     func, min_mu_i,
                     args=(sum_term, Hii_herm_U, self.P[i]))
 
