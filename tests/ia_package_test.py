@@ -2248,11 +2248,11 @@ class MMSEIASolverTestCase(CustomTestCase):
             V2_best = self.iasolver._calc_Vi(2)
 
             self.assertTrue(
-                np.linalg.norm(V0_best, 'fro')**2 <= self.P[0] + 1e-12)
+                np.linalg.norm(V0_best, 'fro')**2 <= 1.0000000001 * self.P[0])
             self.assertTrue(
-                np.linalg.norm(V1_best, 'fro')**2 <= self.P[1] + 1e-12)
+                np.linalg.norm(V1_best, 'fro')**2 <= 1.0000000001 * self.P[1])
             self.assertTrue(
-                np.linalg.norm(V2_best, 'fro')**2 <= self.P[2] + 1e-12)
+                np.linalg.norm(V2_best, 'fro')**2 <= 1.0000000001 * self.P[2])
 
             # TODO: Find a way to test the case when the best value of mu is found
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2279,15 +2279,15 @@ class MMSEIASolverTestCase(CustomTestCase):
         self.assertTrue(
             (norm(self.iasolver.full_F[0], 'fro') ** 2
              <=
-             self.iasolver.P[0] + 1e-12))
+             1.0000000001 * self.iasolver.P[0]))
         self.assertTrue(
             (norm(self.iasolver.full_F[1], 'fro') ** 2
              <=
-             self.iasolver.P[1] + 1e-12))
+             1.0000000001 * self.iasolver.P[1]))
         self.assertTrue(
             (norm(self.iasolver.full_F[2], 'fro') ** 2
              <=
-             self.iasolver.P[2] + 1e-12))
+             1.0000000001 * self.iasolver.P[2]))
 
     def test_solve(self):
         # If a previous run of this test failed, this will load the state
@@ -2298,7 +2298,7 @@ class MMSEIASolverTestCase(CustomTestCase):
 
         Ns = self.Ns
         self.iasolver.max_iterations = 120
-        self.iasolver.noise_var = 1e-50
+        self.iasolver.noise_var = 1e-10
 
         self.iasolver.solve(Ns, self.P)
 
@@ -2324,11 +2324,11 @@ class MMSEIASolverTestCase(CustomTestCase):
         try:
             # xxxxx Test if the transmit power limit is respected xxxxxxxxx
             self.assertTrue(
-                np.linalg.norm(full_F0, 'fro')**2 <= self.P[0] + 1e-12)
+                np.linalg.norm(full_F0, 'fro')**2 <= 1.0000000001 * self.P[0])
             self.assertTrue(
-                np.linalg.norm(full_F1, 'fro')**2 <= self.P[1] + 1e-12)
+                np.linalg.norm(full_F1, 'fro')**2 <= 1.0000000001 * self.P[1])
             self.assertTrue(
-                np.linalg.norm(full_F2, 'fro')**2 <= self.P[2] + 1e-12)
+                np.linalg.norm(full_F2, 'fro')**2 <= 1.0000000001 * self.P[2])
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2358,7 +2358,6 @@ class MMSEIASolverTestCase(CustomTestCase):
             # reproduce it
             self._save_state(filename='MMSE_test_solve_state.pickle')
             raise  # re-raises the last exception
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_solve_finalize(self):
         K = 3
