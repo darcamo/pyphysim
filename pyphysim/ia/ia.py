@@ -1077,14 +1077,30 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # iterations before the max_iterations limit is reached.
         self.relative_factor = 1e-6
 
-        # We can use the closed form IA solver to initialize the iterative
+        # We can use the closed form IA solver or the Alternating
+        # Minimization IA solver to initialize the iterative
         # algorithm. This can reduce the number of iterations required for
-        # convergence. Note that this will be done only if
-        # initialize_with_closed_form is True when the solve method is
-        # called.
+        # convergence or even get better performance.
+        #
+        # Note that this is controlled by the 'initialize_with'
+        # variable. If it is 'random' the initialization is performed with
+        # random precoders. If it is 'closed_form' the initialization is
+        # performed with the Closed Form algorithm, while if it is
+        # 'alt_min' the initialization is performed with the Alternating
+        # Minimizations algorithm.
         self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
                                                          use_best_init=True)
-        self.initialize_with_closed_form = False
+
+        # If self is of the class AlternatingMinIASolver, then the
+        # initialization with the Alternating Minimizations algorithm makes
+        # no sense.
+        if isinstance(self, AlternatingMinIASolver):
+            self._alt_min_ia_solver = None
+        else:
+            self._alt_min_ia_solver = AlternatingMinIASolver(multiUserChannel)
+
+        # Can be: 'random', 'closed_form', or 'alt_min''
+        self.initialize_with = 'random'
 
     def _get_runned_iterations(self):
         """Get method for the runned_iterations property."""
@@ -1193,6 +1209,27 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._F = self._closed_form_ia_solver.F
         self._W = self._closed_form_ia_solver.W
 
+    def _initialize_F_and_W_from_alt_min(self, Ns, P):
+        """Initialize the IA Solution from the Alternating Minimizations IA solver.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+        """
+        # Clear all precoders and receive filters
+        self._clear_precoder_filter()
+        self._clear_receive_filter()
+
+        self._alt_min_ia_solver.max_iterations = self.max_iterations
+
+        self._alt_min_ia_solver.solve(Ns, P)
+        self._F = self._alt_min_ia_solver.F
+        self._W = self._alt_min_ia_solver.W
+
     def _solve_init(self, Ns, P):
         """
         Code run in the `solve` method before the loop that run the `step`
@@ -1211,10 +1248,17 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         self.P = P
 
-        if self.initialize_with_closed_form is True:
+        # initialize_with can be: 'random', 'closed_form', or 'alt_min''
+        if self.initialize_with == 'closed_form':
             self._initialize_F_and_W_from_closed_form(Ns, P)
-        else:
+        elif self.initialize_with == 'alt_min':
+            self._initialize_F_and_W_from_alt_min(Ns, P)
+        elif self.initialize_with == 'random':
             self._initialize_F_randomly_and_find_W(Ns, P)
+        else:
+            msg = 'unknown initialization option for the IA sovler: {0}'.format(
+                self.initialize_with)
+            raise RuntimeError(msg)
 
     def _solve_finalize(self):  # pragma: no cover
         """Perform any post processing after the solution has been found.
