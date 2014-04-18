@@ -580,14 +580,30 @@ class SimulationParametersTestCase(unittest.TestCase):
         # might be different depending on which version of the python
         # interpreter was used)
         #
-        #   {'second': 20, 'fourth': A, 'third': 1, 'first': 10}
-        #   {'second': 20, 'fourth': A, 'third': 3, 'first': 10}
-        #   {'second': 20, 'fourth': A, 'third': 2, 'first': 10}
-        #   {'second': 20, 'fourth': A, 'third': 5, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 1, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 3, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 2, 'first': 10}
-        #   {'second': 20, 'fourth': B, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': A, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': A, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': A, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': A, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': B, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': B, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': B, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fifth': Z, 'fourth': B, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': A, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': A, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': A, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': A, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': B, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': B, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': B, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fifth': X, 'fourth': B, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': A, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': A, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': A, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': A, 'third': 5, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': B, 'third': 1, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': B, 'third': 3, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': B, 'third': 2, 'first': 10}
+        #   {'second': 20, 'fifth': W, 'fourth': B, 'third': 5, 'first': 10}
         #
         # Lets focus on the 'third' and 'fourth' parameters, since they are
         # the only ones changing. Suppose we want to get the indexes
@@ -597,6 +613,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Get the indexes where the third parameter has a value of 2.
         fixed_third_2_indexes = self.sim_params.get_pack_indexes(fixed_third_2)
+        self.assertEqual(len(fixed_third_2_indexes), 6)
 
         # Now we test if for these indexes the value of the third parameter
         # is really 2
@@ -605,17 +622,20 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         fixed_third_5 = {'third': 5}
         fixed_third_5_indexes = self.sim_params.get_pack_indexes(fixed_third_5)
+        self.assertEqual(len(fixed_third_5_indexes), 6)
         for i in fixed_third_5_indexes:
             self.assertEqual(unpacked_list[i]['third'], 5)
 
         # now lets fix the 'fourth' parameter and let the 'third' vary.
         fixed_fourth_A = {'fourth': 'A'}
         fixed_fourth_A_indexes = self.sim_params.get_pack_indexes(fixed_fourth_A)
+        self.assertEqual(len(fixed_fourth_A_indexes), 12)
         for i in fixed_fourth_A_indexes:
             self.assertEqual(unpacked_list[i]['fourth'], 'A')
 
         fixed_fourth_B = {'fourth': 'B'}
         fixed_fourth_B_indexes = self.sim_params.get_pack_indexes(fixed_fourth_B)
+        self.assertEqual(len(fixed_fourth_B_indexes), 12)
         for i in fixed_fourth_B_indexes:
             self.assertEqual(unpacked_list[i]['fourth'], 'B')
 
@@ -629,17 +649,29 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Now lets fix the third, fourth and fifth parameters. This should
         # get me a single index.
-        self.assertEqual(
-            self.sim_params.get_pack_indexes(
-                {'third': 5, 'fourth': 'B', 'fifth': 'Z'}), 7)
+        index1 = self.sim_params.get_pack_indexes(
+            {'third': 5, 'fourth': 'B', 'fifth': 'Z'})
+        # Now we use the index to get an element in the unpacked_list and
+        # check if the values are the ones that we have fixed.
+        self.assertEqual(unpacked_list[index1]['third'], 5)
+        self.assertEqual(unpacked_list[index1]['fourth'], 'B')
+        self.assertEqual(unpacked_list[index1]['fifth'], 'Z')
 
-        self.assertEqual(
-            self.sim_params.get_pack_indexes(
-                {'third': 5, 'fourth': 'B', 'fifth': 'X'}), 15)
+        index2 = self.sim_params.get_pack_indexes(
+            {'third': 5, 'fourth': 'B', 'fifth': 'X'})
+        # Now we use the index to get an element in the unpacked_list and
+        # check if the values are the ones that we have fixed.
+        self.assertEqual(unpacked_list[index2]['third'], 5)
+        self.assertEqual(unpacked_list[index2]['fourth'], 'B')
+        self.assertEqual(unpacked_list[index2]['fifth'], 'X')
 
-        self.assertEqual(
-            self.sim_params.get_pack_indexes(
-                {'third': 2, 'fourth': 'A', 'fifth': 'Z'}), 2)
+        index3 = self.sim_params.get_pack_indexes(
+            {'third': 2, 'fourth': 'A', 'fifth': 'Z'})
+        # Now we use the index to get an element in the unpacked_list and
+        # check if the values are the ones that we have fixed.
+        self.assertEqual(unpacked_list[index3]['third'], 2)
+        self.assertEqual(unpacked_list[index3]['fourth'], 'A')
+        self.assertEqual(unpacked_list[index3]['fifth'], 'Z')
 
     def test_save_to_and_load_from_file(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))

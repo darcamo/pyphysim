@@ -1624,7 +1624,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
             np.dot(C, C.conjugate().transpose())
-        Y = map(calc_Y, self.Nr, self._C)
+        Y = list(map(calc_Y, self.Nr, self._C))
 
         newF = np.zeros(self.K, dtype=np.ndarray)
         # This will get all combinations of (l,k) without repetition. This

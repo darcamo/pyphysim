@@ -729,15 +729,15 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         # xxxxx Test if the interference is cancelled xxxxxxxxxxxxxxxxxxxxx
         I1 = np.dot(self.iasolver.W_H[0], np.dot(H12, self.iasolver.F[1])) + \
             np.dot(self.iasolver.W_H[0], np.dot(H13, self.iasolver.F[2]))
-        self.assertAlmostEqual(I1, 0.0)
+        np.testing.assert_array_almost_equal(I1, 0.0)
 
         I2 = np.dot(self.iasolver.W_H[1], np.dot(H21, self.iasolver.F[0])) + \
             np.dot(self.iasolver.W_H[1], np.dot(H23, self.iasolver.F[2]))
-        self.assertAlmostEqual(I2, 0.0)
+        np.testing.assert_array_almost_equal(I2, 0.0)
 
         I3 = np.dot(self.iasolver.W_H[2], np.dot(H31, self.iasolver.F[0])) + \
             np.dot(self.iasolver.W_H[2], np.dot(H32, self.iasolver.F[1]))
-        self.assertAlmostEqual(I3, 0.0)
+        np.testing.assert_array_almost_equal(I3, 0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Sanity tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2040,7 +2040,6 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver.solve(Ns=1)
 
 
-# TODO: finish implementation
 class MMSEIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
@@ -2296,11 +2295,12 @@ class MMSEIASolverTestCase(CustomTestCase):
             filename='MMSE_test_solve_state.pickle',
             iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
 
-        Ns = self.Ns
-        self.iasolver.max_iterations = 120
-        self.iasolver.noise_var = 1e-10
+        self.iasolver.noise_var = 1e-8
 
-        self.iasolver.solve(Ns, self.P)
+        self.iasolver.max_iterations = 200
+        self.iasolver.initialize_with = 'alt_min'
+
+        niter = self.iasolver.solve(self.Ns, self.P)
 
         full_F0 = np.matrix(self.iasolver.full_F[0])
         full_F1 = np.matrix(self.iasolver.full_F[1])
@@ -2324,11 +2324,11 @@ class MMSEIASolverTestCase(CustomTestCase):
         try:
             # xxxxx Test if the transmit power limit is respected xxxxxxxxx
             self.assertTrue(
-                np.linalg.norm(full_F0, 'fro')**2 <= 1.0000000001 * self.P[0])
+                np.linalg.norm(full_F0, 'fro')**2 <= 1.000000001 * self.P[0])
             self.assertTrue(
-                np.linalg.norm(full_F1, 'fro')**2 <= 1.0000000001 * self.P[1])
+                np.linalg.norm(full_F1, 'fro')**2 <= 1.000000001 * self.P[1])
             self.assertTrue(
-                np.linalg.norm(full_F2, 'fro')**2 <= 1.0000000001 * self.P[2])
+                np.linalg.norm(full_F2, 'fro')**2 <= 1.000000001 * self.P[2])
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
