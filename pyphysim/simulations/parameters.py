@@ -473,8 +473,18 @@ class SimulationParameters(object):
         results. For instance
 
         >>> fixed={'p1':3,'p3':15}
-        >>> params.get_pack_indexes(fixed)
-        array([2, 5])
+        >>> indexes = params.get_pack_indexes(fixed)
+        >>> index0 = indexes[0]
+        >>> index1 = indexes[1]
+        >>> unpacked_list = params.get_unpacked_params_list()
+        >>> unpacked_list[index0]['p1']
+        3
+        >>> unpacked_list[index0]['p3']
+        15
+        >>> unpacked_list[index1]['p1']
+        3
+        >>> unpacked_list[index1]['p3']
+        15
         """
         if fixed_params_dict is None:  # pragma: no cover
             fixed_params_dict = {}

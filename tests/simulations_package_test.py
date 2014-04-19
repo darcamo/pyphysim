@@ -2192,6 +2192,11 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
                   # pbar3 here to test if the file it is writing to is
                   # delete in that case.
 
+        # Close the output files.
+        out.close()
+        out2.close()
+        out3.close()
+
         # The first progressbar was marked to erase the file after the
         # progress finishes. therefore, if we try to delete it here python
         # should raise an OSError exception.
