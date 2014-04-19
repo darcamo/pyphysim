@@ -25,6 +25,7 @@ import numpy as np
 import glob
 from time import sleep
 from io import StringIO
+from itertools import repeat
 
 try:
     from IPython.parallel import CompositeError
@@ -811,12 +812,12 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         results3 = dummyrunner3.results
         results2.add_new_result('bla', Result.SUMTYPE, 10)
 
-        # Lets modify the result1 just to make the tests later better
+        # Lets modify the result1 just to make the tests later not trivial
         for r in results1['lala']:
             r._value += 0.8
 
         # If both SimulationResults objects do not have exactly the same
-        # results, an exception will be raised.
+        # results (names, not values), an exception will be raised.
         with self.assertRaises(RuntimeError):
             combine_simulation_results(results1, results2)
 
@@ -824,14 +825,15 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         union = combine_simulation_results(results1, results3)
 
         # xxxxxxxxxx Test the parameters of the combined object xxxxxxxxxxx
+        # Note that combine_simulation_parameters is already tested
         comb_params = combine_simulation_parameters(results1.params, results3.params)
-        # Test
+        # Test if the parameters of the combined result object are correct
         self.assertEqual(comb_params, union.params)
 
         # xxxxxxxxxx Test the results of the combined object xxxxxxxxxxxxxx
         self.assertEqual(set(union.get_result_names()), set(['elapsed_time', 'lala']))
 
-        # The unpacked param list of union is
+        # The unpacked param list of union is (the order might be different)
         # [{'bias': 1.3, 'SNR': 0.0, 'extra': 2.2},
         #  {'bias': 1.3, 'SNR': 0.0, 'extra': 4.1},
         #  {'bias': 1.3, 'SNR': 0.0, 'extra': 5.7},
@@ -853,37 +855,42 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         #  {'bias': 1.3, 'SNR': 20.0, 'extra': 5.7},
         #  {'bias': 1.3, 'SNR': 20.0, 'extra': 6.2}]
         #
-        # Comparing this with the unpacked param list of result1 and
-        # result3 we see that every group of four lines, the first line
-        # comes only from result1, the second comes from result1 and
-        # result3, while the third and fourth come onky from result3.
-        #
         # The number of updates of each result in union should be equal to
-        # 2, except for the number of updates of the second line in each
-        # group of four lines.
-        expected_num_updates_list = [
-            2, 4, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2]
-        num_updates_list = [v.num_updates for v in union['lala']]
-        self.assertEqual(expected_num_updates_list, num_updates_list)
+        # 2, except for the results corresponding to the 'extra' parameter
+        # value of 4.1, which is repeated in results1 and results3.
 
-        # Now we test the actual result values
-        expected_lala_results = []
-        i1 = 0
-        i2 = 0
-        for _ in range(5):
-            # First element comes from results1
-            expected_lala_results.append(results1['lala'][i1].get_result())
-            # Second element comes from result1 and results3
-            expected_lala_results.append(
-                (
-                    results1['lala'][i1+1].get_result() +
-                    results3['lala'][i2].get_result()
-                )/2.0)
-            # Third and fourth elements comes from results3
-            expected_lala_results.append(results3['lala'][i2+1].get_result())
-            expected_lala_results.append(results3['lala'][i2+2].get_result())
-            i1 += 2
-            i2 += 3
+        all_indexes = set(range(union.params.get_num_unpacked_variations()))
+        index_extra_4dot1 = set(union.params.get_pack_indexes({'extra':4.1}))
+        other_indexes = all_indexes - index_extra_4dot1
+
+        for index in index_extra_4dot1:
+            self.assertEqual(union['lala'][index].num_updates, 4)
+
+        for index in other_indexes:
+            self.assertEqual(union['lala'][index].num_updates, 2)
+
+        # Calculate the expected lala results
+        expected_lala_results = list(
+            repeat(0, union.params.get_num_unpacked_variations()))
+        for index, variation in enumerate(union.params.get_unpacked_params_list()):
+            count = 0.
+            snr = variation['SNR']
+            extra = variation['extra']
+
+            try:
+                r1index = results1.params.get_pack_indexes({'SNR': snr, 'extra': extra})
+                count += 1.
+                expected_lala_results[index] += results1['lala'][r1index].get_result()
+            except ValueError:
+                pass
+
+            try:
+                r3index = results3.params.get_pack_indexes({'SNR': snr, 'extra': extra})
+                count += 1.
+                expected_lala_results[index] += results3['lala'][r3index].get_result()
+            except ValueError:
+                pass
+            expected_lala_results[index] /= count
 
         union_lala_results = [v.get_result() for v in union['lala']]
         self.assertEqual(expected_lala_results, union_lala_results)
@@ -1621,13 +1628,19 @@ class _DummyRunner(SimulationRunner):
         self.params.set_unpack_parameter('extra')
         self.delete_partial_results_bool = True
 
+    @staticmethod
+    def calc_result(SNR, bias, extra):
+        value = 1.2 * SNR + bias + extra
+        return value
+
     def _run_simulation(self, current_params):
         SNR = current_params['SNR']
         bias = current_params['bias']
         extra = current_params['extra']
         sim_results = SimulationResults()
 
-        value = 1.2 * SNR + bias + extra
+        value = self.calc_result(SNR, bias, extra)
+
         # The correct result will be SNR * 1.2 + 1.3 + extra
         sim_results.add_new_result('lala', Result.RATIOTYPE, value, 1)
         return sim_results
@@ -1815,7 +1828,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         extra = pr.params['extra']
 
         # Calculate the expected value
-        expected_value = 1.2 * snr + bias + extra
+        expected_value = _DummyRunner.calc_result(snr, bias, extra)
 
         self.assertEqual(len(pr['lala']), 1)
         self.assertAlmostEqual(pr['lala'][0].get_result(), expected_value)
