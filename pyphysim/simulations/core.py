@@ -57,5 +57,5 @@ from .results import *
 # http://www.h5py.org/docs/intro/quick.html
 
 
-# Você pode usar o programa vitables par visualizar os arquivos criados com
+# Voce pode usar o programa vitables par visualizar os arquivos criados com
 # o pytables ou hdf5.

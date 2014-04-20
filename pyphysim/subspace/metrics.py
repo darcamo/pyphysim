@@ -41,30 +41,30 @@ def calc_principal_angles(matrix1, matrix2):
     >>> print(calc_principal_angles(A, B))
     [ 0.          0.54312217]
     """
-    # Primeiro preciso achar as matrizes de base ortonormal para matrix1 e
-    # matrix2, o que consigo com a decomposicao QR. Note que se matrix1
-    # possui `n` colunas então sua base orthogonal é formada pelas `n`
-    # primeiras colunas de Q1
+    # First we need to find the orthogonal basis for matrix1 and
+    # matrix2. This can be done with the QR decomposition. Note that if
+    # matrix1 has 'n' columns then its orthogonal basis is given by the
+    # first 'n' columns of the 'Q' matrix from its QR decomposition.
     Q1 = np.linalg.qr(matrix1)[0]
     Q2 = np.linalg.qr(matrix2)[0]
 
-    # TODO: Teste quem tem mais colunas que quem. Q1 deve ter dimensao
-    # maior ou igual que Q2 para que a SVD seja calculada nessa ordem
-    # abaixo.
+    # TODO: Test who has more columns. Q1 must have dimension grater than
+    # or equal to Q2 so that the SVD can be calculated in the order below.
     #
-    # Veja um algoritmo em
+    # See the algorithm in
     # http://sensblogs.wordpress.com/2011/09/07/matlab-codes-for-principal-angles-also-termed-as-canonical-correlation-between-any-arbitrary-subspaces-redirected-from-jen-mei-changs-dissertation/
     S = np.linalg.svd(
         Q1.conjugate().transpose().dot(Q2), full_matrices=False)[1]
 
-    # Os valores singulares em S variam entre 0 e 1, mas devido a
-    # imprecisões computacionais pode ter algum valor acima de um (por um
-    # erro bem pequeno). Abaixo mudo valores maiores que 1 para 1 para
-    # evitar problemas com o arccos mais tarde.
-    S[S > 1] = 1  # Muda valores maiores que 1 para 1
+    # The singular values of S vary between 0 and 1, but due to
+    # computational impressions there can be some value above 1 (by a very
+    # small value). Below we change values greater then 1 to be equal to 1
+    # to avoid problems with the arc-cos call later.
+    S[S > 1] = 1  # Change values greater then 1 to 1
 
-    # Os valores singulares na matriz S sao iguais ao cosseno dos angulos
-    # principais. Basta calcular o arcocosseno de cada elemento entao.
+    # The singular values in the matrix S are equal to the cosine of the
+    # principal angles. We can calcuate the arc-cosine of each element
+    # then.
     return np.arccos(S)
 
 

@@ -38,7 +38,7 @@ import pyphysim.comm.modulators as mod
 #     # Handler must be able to observe and manipulate both its corresponding
 #     # window and model objects. In Traits UI, this is accomplished by means
 #     # of the UIInfo object.  Whenever Traits UI creates a window or panel
-#     # from a View, a UIInfo object is created to act as the Handler’s
+#     # from a View, a UIInfo object is created to act as the Handler's
 #     # reference to that window and to the objects whose trait attributes
 #     # are displayed in it.
 #     def start_simulation(self, UIInfo_object):

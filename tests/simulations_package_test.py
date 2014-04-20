@@ -475,6 +475,27 @@ class SimulationParametersTestCase(unittest.TestCase):
             set(self.sim_params.unpacked_parameters),
             set(['third']))
 
+    def test_remove(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.add('fifth', ['Z', 'W', 'Y'])
+
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # Remove parameters second and third
+        self.sim_params.remove('second')
+        self.sim_params.remove('third')  # Note that this parameter was
+                                         # marked to be unpacked
+
+        expected_parameters = {'first': 10,
+                               'fourth': ['A', 'B'],
+                               'fifth': ['Z', 'W', 'Y']}
+        expected_unpacked_parameters = set(['fourth'])
+        self.assertEqual(self.sim_params.parameters, expected_parameters)
+        self.assertEqual(set(self.sim_params.unpacked_parameters),
+                         expected_unpacked_parameters)
+
     def test_equal_and_not_equal_operators(self):
         other = SimulationParameters()
         self.assertFalse(self.sim_params == other)

@@ -63,7 +63,7 @@ def block_diagonalize(mtChannel, num_users, iPu, noise_var):
     .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
        "Zero-Forcing Methods for Downlink Spatial Multiplexing
        in Multiuser MIMO Channels," IEEE Transactions on Signal
-       Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
+       Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
     """
     BD = BlockDiaginalizer(num_users, iPu, noise_var)
     results_tuple = BD.block_diagonalize(mtChannel)
@@ -236,7 +236,7 @@ class BlockDiaginalizer(object):
     .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
        "Zero-Forcing Methods for Downlink Spatial Multiplexing
        in Multiuser MIMO Channels," IEEE Transactions on Signal
-       Processing, vol. 52, no. 2, pp. 461–471, Feb. 2004.
+       Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
     """
 
     def __init__(self, num_users, iPu, noise_var):

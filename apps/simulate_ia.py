@@ -282,12 +282,13 @@ class IASimulationRunner(SimulationRunner):
     # iterative algorithm. We do this by implementing the
     # _on_simulate_current_params_start method.
     #
-    # Furthermore, since we create the channel object in the __init__
-    # method, we need to re-seed the channel for each set of parameters.
+    # Here we will both set the max_iterations and the initialize_with
+    # parameter. Re-implement this method any subclass that does not need
+    # them.
     def _on_simulate_current_params_start(self, current_params):
         self.multiUserChannel.re_seed()
         self.ia_solver.max_iterations = current_params['max_iterations']
-
+        self.ia_solver.initialize_with = current_params['initialize_with']
 
 class AlternatingSimulationRunner(IASimulationRunner):
     """
@@ -316,6 +317,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
+        initialize_with=string_list(default=list('random'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -329,6 +331,10 @@ class AlternatingSimulationRunner(IASimulationRunner):
                                     read_command_line_args)
 
         #self.update_progress_function_style = None
+
+    def _on_simulate_current_params_start(self, current_params):
+        self.multiUserChannel.re_seed()
+        self.ia_solver.max_iterations = current_params['max_iterations']
 
 
 class ClosedFormSimulationRunner(IASimulationRunner):
@@ -358,6 +364,7 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
+        initialize_with=string_list(default=list('random'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -404,6 +411,7 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
+        initialize_with=string_list(default=list('random'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -443,6 +451,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
+        initialize_with=string_list(default=list('random'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -482,6 +491,7 @@ class MMSESimulationRunner(IASimulationRunner):
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
+        initialize_with=string_list(default=list('random'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -510,15 +520,20 @@ def main_simulate(algorithms_to_simulate):
     if "Closed Form" in algorithms_to_simulate:
         print "Simulating Closed Form algorithm"
         closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
-        #del closed_form_runner.params.parameters['max_iterations']
+
         try:
-            closed_form_runner.params.set_unpack_parameter('max_iterations', False)
+            closed_form_runner.params.remove('max_iterations')
+        except KeyError:
+            pass
+
+        try:
+            closed_form_runner.params.remove('initialize_with')
         except KeyError:
             pass
 
         pprint(closed_form_runner.params.parameters)
         #print("IA Solver: {0}\n".format(closed_form_runner.ia_solver.__class__))
-        closed_form_runner.set_results_filename('ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        closed_form_runner.set_results_filename('ia_closed_form_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})')
         all_simulation_runner_objs.append(closed_form_runner)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -526,6 +541,12 @@ def main_simulate(algorithms_to_simulate):
     if "Alt Min" in algorithms_to_simulate:
         print "Simulating Alternating Minimizations algorithm"
         alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
+
+        try:
+            alt_min_runner.params.remove('initialize_with')
+        except KeyError:
+            pass
+
         pprint(alt_min_runner.params.parameters)
         #print("IA Solver: {0}\n".format(alt_min_runner.ia_solver.__class__))
         alt_min_runner.set_results_filename(
@@ -540,7 +561,7 @@ def main_simulate(algorithms_to_simulate):
         pprint(max_sinrn_runner.params.parameters)
         #print("IA Solver: {0}\n".format(max_sinrn_runner.ia_solver.__class__))
         max_sinrn_runner.set_results_filename(
-        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        'ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}_{initialize_with}')
         all_simulation_runner_objs.append(max_sinrn_runner)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -550,7 +571,7 @@ def main_simulate(algorithms_to_simulate):
         mmse_runner = MMSESimulationRunner('ia_config_file.txt')
         pprint(mmse_runner.params.parameters)
         #print("IA Solver: {0}\n".format(mmse_runner.ia_solver.__class__))
-        mmse_runner.set_results_filename('ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}')
+        mmse_runner.set_results_filename('ia_mmse_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}_{initialize_with}')
         all_simulation_runner_objs.append(mmse_runner)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -588,17 +609,23 @@ def main_plot(algorithms_to_simulate, index=0):
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
         unpacked_parameters=string_list(default=list('SNR'))
+        [Plot]
+        max_iterations_plot=integer(default=5)
+        initialize_with_plot=option('random', 'alt_min', default='random')
         """.split("\n")
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     params = SimulationParameters.load_from_config_file(config_file, spec)
-    max_iterations = params['max_iterations'][index]
+    max_iterations = params['max_iterations_plot']
+    initialize_with = params['initialize_with_plot']
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Base name for all IA algorithms (except the Closed Form)
     base_name = misc.replace_dict_values('results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}', params.parameters)
+
+    base_name2 = misc.replace_dict_values('results_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter_{max_iterations}_{initialize_with}', params.parameters)
 
     # Base name for the closed form IA algorithm.
     base_name_no_iter = base_name
@@ -612,11 +639,11 @@ def main_plot(algorithms_to_simulate, index=0):
     # closed_form_first_results = SimulationResults.load_from_file(
     #     'ia_closed_form_first_init_{0}.pickle'.format(base_name))
     max_sinrn_results = SimulationResults.load_from_file(
-        'ia_max_sinr_{0}.pickle'.format(base_name))
+        'ia_max_sinr_{0}.pickle'.format(base_name2))
     # min_leakage_results = SimulationResults.load_from_file(
     #     'ia_min_leakage_{0}.pickle'.format(base_name))
     mmse_results = SimulationResults.load_from_file(
-        'ia_mmse_{0}.pickle'.format(base_name))
+        'ia_mmse_{0}.pickle'.format(base_name2))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot BER (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -650,11 +677,13 @@ def main_plot(algorithms_to_simulate, index=0):
 
     ber_max_sinr = max_sinrn_results.get_result_values_list(
         'ber',
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals(
         'ber',
         P=95,
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     ber_errors_max_sinr = np.abs([i[1] - i[0] for i in ber_CF_max_sinr])
 
     # ber_min_leakage = min_leakage_results.get_result_values_list('ber')
@@ -663,11 +692,13 @@ def main_plot(algorithms_to_simulate, index=0):
 
     ber_mmse = mmse_results.get_result_values_list(
         'ber',
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     ber_CF_mmse = mmse_results.get_result_values_confidence_intervals(
         'ber',
         P=95,
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     ber_errors_mmse = np.abs([i[1] - i[0] for i in ber_CF_mmse])
 
     fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -710,11 +741,13 @@ def main_plot(algorithms_to_simulate, index=0):
 
     sum_capacity_max_sinr = max_sinrn_results.get_result_values_list(
         'sum_capacity',
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals(
         'sum_capacity',
         P=95,
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     sum_capacity_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_CF_max_sinr])
 
     # sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
@@ -723,11 +756,13 @@ def main_plot(algorithms_to_simulate, index=0):
 
     sum_capacity_mmse = mmse_results.get_result_values_list(
         'sum_capacity',
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals(
         'sum_capacity',
         P=95,
-        fixed_params={'max_iterations': max_iterations})
+        fixed_params={'max_iterations': max_iterations,
+                      'initialize_with': initialize_with})
     sum_capacity_errors_mmse = np.abs([i[1] - i[0] for i in sum_capacity_CF_mmse])
 
     fig2, ax2 = plt.subplots(nrows=1, ncols=1)

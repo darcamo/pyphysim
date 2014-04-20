@@ -140,7 +140,7 @@ class CodebookFinder(object):
         """
         K = codebook.shape[0]
 
-        #Se pegar todas as combinações possíveis (sem repetição e sem ligar para
+        #Se pegar todas as combinacoes possiveis (sem repeticao e sem ligar para
         # ordem) vc tera (ncols**2-ncols)/2 possibilidades. Isso Equivale a pegar
         # uma matriz matrix.ncols() x matrix.ncols() e contar todos os elementos
         # abaixo (ou acima) da diagonal.

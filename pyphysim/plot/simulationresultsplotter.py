@@ -316,7 +316,7 @@ class SimulationResultsPlotter(HasTraits):
         title="Chaco Plot")
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # TODO: Ainda não é usado
+    # TODO: Ainda nao e usado
     def add_index(self, index_label, index_array):
         """Add a new index in the plot.
 

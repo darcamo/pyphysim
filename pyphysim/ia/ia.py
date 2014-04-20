@@ -819,7 +819,7 @@ class ClosedFormIASolver(IASolverBaseClass):
 
     .. [CadambeDoF2008] V. R. Cadambe and S. A. Jafar, "Interference
        Alignment and Degrees of Freedom of the K User Interference
-       Channel," IEEE Transactions on Information Theory 54, pp. 3425–3441,
+       Channel," IEEE Transactions on Information Theory 54, pp. 3425-3441,
        Aug. 2008.
     """
     def __init__(self, multiUserChannel, use_best_init=True):
@@ -1100,7 +1100,22 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             self._alt_min_ia_solver = AlternatingMinIASolver(multiUserChannel)
 
         # Can be: 'random', 'closed_form', or 'alt_min''
-        self.initialize_with = 'random'
+        self._initialize_with = 'random'
+
+    def _set_initialize_with(self, value):
+        """Set method for the initialize_with property."""
+        options = ['random', 'alt_min', 'closed_form']
+        if value in options:
+            self._initialize_with = value
+        else:
+            msg = 'unknown initialization option: {0}'.format(self.initialize_with)
+            raise RuntimeError(msg)
+
+    def _get_initialize_with(self):
+        """Get method for the initialize_with property."""
+        return self._initialize_with
+
+    initialize_with = property(_get_initialize_with, _set_initialize_with)
 
     def _get_runned_iterations(self):
         """Get method for the runned_iterations property."""
@@ -1227,8 +1242,13 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._alt_min_ia_solver.max_iterations = self.max_iterations
 
         self._alt_min_ia_solver.solve(Ns, P)
+
         self._F = self._alt_min_ia_solver.F
-        self._W = self._alt_min_ia_solver.W
+
+        self._W = np.empty(self.K, dtype=np.ndarray)
+        for k in range(self.K):
+            Wk = self._alt_min_ia_solver.W[k]
+            self._W[k] = Wk / np.linalg.norm(Wk, 'fro')
 
     def _solve_init(self, Ns, P):
         """
@@ -2087,7 +2107,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
     -----
 
     .. [Peters2011] S. W. Peters and R. W. Heath, "Cooperative Algorithms
-       for MIMO Interference Channels," vol. 60, no. 1, pp. 206–218, 2011.
+       for MIMO Interference Channels," vol. 60, no. 1, pp. 206-218, 2011.
     """
 
     def __init__(self, multiUserChannel):

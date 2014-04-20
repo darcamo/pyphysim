@@ -254,6 +254,25 @@ class SimulationParameters(object):
         """
         self.parameters[name] = value
 
+    def remove(self, name):
+        """
+        Remove the parameter with name `name` from the SimulationParameters
+        object
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter to be removed.
+
+        Raises
+        ------
+        KeyError
+            If `name` is not in parameters.
+        """
+        del self.parameters[name]
+        if name in self._unpacked_parameters_set:
+            self._unpacked_parameters_set.remove(name)
+
     def set_unpack_parameter(self, name, unpack_bool=True):
         """Set the unpack property of the parameter with name `name`.
 

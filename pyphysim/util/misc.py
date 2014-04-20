@@ -564,7 +564,7 @@ def update_inv_sum_diag(invA, diagonal):
     Calculates the inverse of a matrix `(A + D)`, where `D` is a diagonal
     matrix, given the inverse of `A` and the diagonal of `D`.
 
-    This calculation is performed using the Sherman–Morrison formula, given
+    This calculation is performed using the Sherman-Morrison formula, given
     my
           :math:`(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \\over 1 + v^T A^{-1}u},`
     where `u` and `v` are vectors.
