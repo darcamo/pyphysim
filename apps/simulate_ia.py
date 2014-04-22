@@ -150,7 +150,7 @@ class IASimulationRunner(SimulationRunner):
         # Split the data. transmit_signal will be a list and each element
         # is a numpy array with the data of a user
         transmit_signal = np.split(modulatedData, cumNs[:-1])
-        transmit_signal_precoded = map(np.dot, self.ia_solver.F, transmit_signal)
+        transmit_signal_precoded = map(np.dot, self.ia_solver.full_F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

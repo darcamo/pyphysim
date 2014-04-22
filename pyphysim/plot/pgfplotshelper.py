@@ -27,7 +27,7 @@ One example of tex code for a plot using pgfplots is show below
 __revision__ = "$Revision$"
 
 
-def generate_pgfplots_plotline(x, y, errors=None, options=None):
+def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
     """
     This function generates the code corresponding to the "addplot" command
     in a pgfplots plot for the coordinates given in `x` and `y`.
@@ -50,6 +50,8 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None):
         solid,
         mark=square,
         mark options={solid}"
+    legend : str
+        The legend for the plot line.
     """
     import itertools
 
@@ -73,6 +75,10 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None):
     else:
         addplot_line = "\\addplot[{1}]\n{0}".format(plot_line, options)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    if legend is not None:
+        legend_line = "\n\\addlegendentry{{{0}}};".format(legend)
+        addplot_line += legend_line
 
     return addplot_line
 
