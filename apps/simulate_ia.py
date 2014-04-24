@@ -582,6 +582,45 @@ def main_simulate(algorithms_to_simulate):
     print "Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic))
 
 
+# This function is only used in the implementation of the main_plot
+# function.
+def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
+    """Function with the common code to plot the BER."""
+    # Get the SNR
+    SNR = np.array(simulationresults_obj.params['SNR'])
+
+    # Get the BER and BER eror interval limits
+    ber = simulationresults_obj.get_result_values_list(
+        'ber',
+        fixed_params=fixed_params)
+    ber_CF = simulationresults_obj.get_result_values_confidence_intervals(
+        'ber',
+        P=95,
+        fixed_params=fixed_params)
+    ber_errors = np.abs([i[1] - i[0] for i in ber_CF])
+
+    ax.errorbar(SNR, ber, ber_errors, fmt=fmt, elinewidth=2.0, label=label)
+
+
+# This function is only used in the implementation of the main_plot
+# function.
+def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
+    """Function with the common code to plot the Sum Capacity."""
+    # Get the SNR
+    SNR = np.array(simulationresults_obj.params['SNR'])
+
+    sum_capacity = simulationresults_obj.get_result_values_list(
+        'sum_capacity',
+        fixed_params=fixed_params)
+    sum_capacity_CF = simulationresults_obj.get_result_values_confidence_intervals(
+        'sum_capacity',
+        P=95,
+        fixed_params=fixed_params)
+    sum_capacity_errors = np.abs([i[1] - i[0] for i in sum_capacity_CF])
+
+    ax.errorbar(SNR, sum_capacity, sum_capacity_errors, fmt=fmt, elinewidth=2.0, label=label)
+
+
 def main_plot(algorithms_to_simulate, index=0):
     """
     Function called to plot the results from a previous simulation.
@@ -631,159 +670,73 @@ def main_plot(algorithms_to_simulate, index=0):
     base_name_no_iter = base_name
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    alt_min_results = SimulationResults.load_from_file(
-        'ia_alt_min_{0}.pickle'.format(base_name))
-    closed_form_results = SimulationResults.load_from_file(
-        'ia_closed_form_{0}.pickle'.format(base_name_no_iter))
-    # closed_form_first_results = SimulationResults.load_from_file(
-    #     'ia_closed_form_first_init_{0}.pickle'.format(base_name))
-    max_sinrn_results = SimulationResults.load_from_file(
-        'ia_max_sinr_{0}.pickle'.format(base_name2))
-    # min_leakage_results = SimulationResults.load_from_file(
-    #     'ia_min_leakage_{0}.pickle'.format(base_name))
-    mmse_results = SimulationResults.load_from_file(
-        'ia_mmse_{0}.pickle'.format(base_name2))
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Plot BER (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    SNR_alt_min = np.array(alt_min_results.params['SNR'])
-    SNR_closed_form = np.array(closed_form_results.params['SNR'])
-    SNR_max_SINR = np.array(max_sinrn_results.params['SNR'])
-    # SNR_min_leakage = np.array(min_leakage_results.params['SNR'])
-    SNR_mmse = np.array(mmse_results.params['SNR'])
-
-    ber_alt_min = alt_min_results.get_result_values_list(
-        'ber',
-        fixed_params={'max_iterations': max_iterations})
-    ber_CF_alt_min = alt_min_results.get_result_values_confidence_intervals(
-        'ber',
-        P=95,
-        fixed_params={'max_iterations': max_iterations})
-    ber_errors_alt_min = np.abs([i[1] - i[0] for i in ber_CF_alt_min])
-
-    ber_closed_form = closed_form_results.get_result_values_list(
-        'ber',
-        fixed_params={'max_iterations': max_iterations})
-    ber_CF_closed_form = closed_form_results.get_result_values_confidence_intervals(
-        'ber',
-        P=95,
-        fixed_params={'max_iterations': max_iterations})
-    ber_errors_closed_form = np.abs([i[1] - i[0] for i in ber_CF_closed_form])
-
-    # ber_closed_form_first = closed_form_first_results.get_result_values_list('ber')
-    # ber_CF_closed_form_first = closed_form_first_results.get_result_values_confidence_intervals('ber', P=95)
-    # ber_errors_closed_form_first = np.abs([i[1] - i[0] for i in ber_CF_closed_form_first])
-
-    ber_max_sinr = max_sinrn_results.get_result_values_list(
-        'ber',
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    ber_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals(
-        'ber',
-        P=95,
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    ber_errors_max_sinr = np.abs([i[1] - i[0] for i in ber_CF_max_sinr])
-
-    # ber_min_leakage = min_leakage_results.get_result_values_list('ber')
-    # ber_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('ber', P=95)
-    # ber_errors_min_leakage = np.abs([i[1] - i[0] for i in ber_CF_min_leakage])
-
-    ber_mmse = mmse_results.get_result_values_list(
-        'ber',
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    ber_CF_mmse = mmse_results.get_result_values_confidence_intervals(
-        'ber',
-        P=95,
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    ber_errors_mmse = np.abs([i[1] - i[0] for i in ber_CF_mmse])
-
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    ax.errorbar(SNR_alt_min, ber_alt_min, ber_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
-    ax.errorbar(SNR_closed_form, ber_closed_form, ber_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
-    ax.errorbar(SNR_max_SINR, ber_max_sinr, ber_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
-    # ax.errorbar(SNR, ber_min_leakage, ber_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
-    ax.errorbar(SNR_mmse, ber_mmse, ber_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
+    fig2, ax2 = plt.subplots(nrows=1, ncols=1)
 
-    plt.xlabel('SNR')
-    plt.ylabel('BER')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    if 'Alt Min' in algorithms_to_simulate:
+        alt_min_results = SimulationResults.load_from_file(
+            'ia_alt_min_{0}.pickle'.format(base_name))
+        parameters_dict = alt_min_results.params.parameters
+        fixed_params = {'max_iterations': max_iterations}
+        _plot_ber(alt_min_results, fixed_params, ax, 'Alt. Min.', '-r*')
+        _plot_sum_capacity(alt_min_results, fixed_params, ax2, 'Alt. Min.', '-r*')
+
+    if "Closed Form" in algorithms_to_simulate:
+        closed_form_results = SimulationResults.load_from_file(
+            'ia_closed_form_{0}.pickle'.format(base_name_no_iter))
+        parameters_dict = closed_form_results.params.parameters
+        fixed_params = {}
+        _plot_ber(closed_form_results, fixed_params, ax, 'Closed Form', '-b*')
+        _plot_sum_capacity(closed_form_results, fixed_params, ax2, 'Closed Form', '-b*')
+
+    if "Max SINR" in algorithms_to_simulate:
+        max_sinrn_results = SimulationResults.load_from_file(
+            'ia_max_sinr_{0}.pickle'.format(base_name2))
+        parameters_dict = max_sinrn_results.params.parameters
+        fixed_params = {'max_iterations': max_iterations,
+                        'initialize_with': initialize_with}
+        _plot_ber(max_sinrn_results, fixed_params, ax, 'Max SINR', '-g*')
+        _plot_sum_capacity(max_sinrn_results, fixed_params, ax2, 'Max SINR', '-g*')
+
+    if "MMSE" in algorithms_to_simulate:
+        mmse_results = SimulationResults.load_from_file(
+            'ia_mmse_{0}.pickle'.format(base_name2))
+        parameters_dict = mmse_results.params.parameters
+        fixed_params = {'max_iterations': max_iterations,
+                        'initialize_with': initialize_with}
+        _plot_ber(mmse_results, fixed_params, ax, 'MMSE', '-m*')
+        _plot_sum_capacity(mmse_results, fixed_params, ax2, 'MMSE', '-m*')
+        #SNR_mmse, ber_mmse, ber_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx BER Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ax.set_xlabel('SNR')
+    ax.set_ylabel('BER')
     title = 'BER for Different Algorithms ({max_iterations} Max Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'.replace("{max_iterations}", str(max_iterations))
-    plt.title(title.format(**alt_min_results.params.parameters))
+    ax.set_title(title.format(**parameters_dict))
 
     ax.set_yscale('log')
     leg = ax.legend(fancybox=True, shadow=True, loc='best')
     ax.grid(True, which='both', axis='both')
-    plt.show(block=False)
+
+    #plt.show(block=False)
     fig.savefig('ber_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxx Plot Sum Capacity (all) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    sum_capacity_alt_min = alt_min_results.get_result_values_list(
-        'sum_capacity',
-        fixed_params={'max_iterations': max_iterations})
-    sum_capacity_CF_alt_min = alt_min_results.get_result_values_confidence_intervals(
-        'sum_capacity',
-        P=95,
-        fixed_params={'max_iterations': max_iterations})
-    sum_capacity_errors_alt_min = np.abs([i[1] - i[0] for i in sum_capacity_CF_alt_min])
-
-    sum_capacity_closed_form = closed_form_results.get_result_values_list(
-        'sum_capacity',
-        fixed_params={'max_iterations': max_iterations})
-    sum_capacity_CF_closed_form = closed_form_results.get_result_values_confidence_intervals(
-        'sum_capacity',
-        P=95,
-        fixed_params={'max_iterations': max_iterations})
-    sum_capacity_errors_closed_form = np.abs([i[1] - i[0] for i in sum_capacity_CF_closed_form])
-
-    sum_capacity_max_sinr = max_sinrn_results.get_result_values_list(
-        'sum_capacity',
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    sum_capacity_CF_max_sinr = max_sinrn_results.get_result_values_confidence_intervals(
-        'sum_capacity',
-        P=95,
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    sum_capacity_errors_max_sinr = np.abs([i[1] - i[0] for i in sum_capacity_CF_max_sinr])
-
-    # sum_capacity_min_leakage = min_leakage_results.get_result_values_list('sum_capacity')
-    # sum_capacity_CF_min_leakage = min_leakage_results.get_result_values_confidence_intervals('sum_capacity', P=95)
-    # sum_capacity_errors_min_leakage = np.abs([i[1] - i[0] for i in sum_capacity_CF_min_leakage])
-
-    sum_capacity_mmse = mmse_results.get_result_values_list(
-        'sum_capacity',
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    sum_capacity_CF_mmse = mmse_results.get_result_values_confidence_intervals(
-        'sum_capacity',
-        P=95,
-        fixed_params={'max_iterations': max_iterations,
-                      'initialize_with': initialize_with})
-    sum_capacity_errors_mmse = np.abs([i[1] - i[0] for i in sum_capacity_CF_mmse])
-
-    fig2, ax2 = plt.subplots(nrows=1, ncols=1)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    ax2.errorbar(SNR_alt_min, sum_capacity_alt_min, sum_capacity_errors_alt_min, fmt='-r*', elinewidth=2.0, label='Alt. Min.')
-    ax2.errorbar(SNR_closed_form, sum_capacity_closed_form, sum_capacity_errors_closed_form, fmt='-b*', elinewidth=2.0, label='Closed Form')
-    ax2.errorbar(SNR_max_SINR, sum_capacity_max_sinr, sum_capacity_errors_max_sinr, fmt='-g*', elinewidth=2.0, label='Max SINR')
-    # ax2.errorbar(SNR, sum_capacity_min_leakage, sum_capacity_errors_min_leakage, fmt='-k*', elinewidth=2.0, label='Min Leakage.')
-    ax2.errorbar(SNR_mmse, sum_capacity_mmse, sum_capacity_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    plt.xlabel('SNR')
-    plt.ylabel('Sum Capacity')
+    # xxxxxxxxxx Sum Capacity Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ax2.set_xlabel('SNR')
+    ax2.set_ylabel('Sum Capacity')
     title = 'Sum Capacity for Different Algorithms ({max_iterations} Max Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'.replace("{max_iterations}", str(max_iterations))
-    plt.title(title.format(**alt_min_results.params.parameters))
+    ax2.set_title(title.format(**alt_min_results.params.parameters))
 
     leg2 = ax2.legend(fancybox=True, shadow=True, loc=2)
     ax2.grid(True, which='both', axis='both')
-    plt.show()
+    #plt.show()
     fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    plt.show()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
