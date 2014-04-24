@@ -265,7 +265,7 @@ class IASimulationRunner(SimulationRunner):
             if ber_value == 0.0:
                 return True
             else:
-                conf_interval = ber_result.get_confidence_interval()
+                conf_interval = ber_result.get_confidence_interval(P=95)
                 error = np.abs(conf_interval[1] - conf_interval[0])
 
                 # If error is lower then one fifth of the current result

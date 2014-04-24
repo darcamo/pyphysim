@@ -18,6 +18,54 @@ from .results import SimulationResults, Result
 from ..util.misc import pretty_time
 from .progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def get_partial_results_filename(results_base_filename,
+                                 current_params,
+                                 partial_results_folder=None):
+    """
+    Get the name of the file where the partial result will be saved for
+    the unpackated result with index `unpack_index`.
+
+    Parameters
+    ----------
+    results_base_filename : str
+        Base name for partial result file.
+    current_params : SimulationParameters object
+        The current parameters, which must be a "unpacked variation" of
+        another SimulationParameters object.
+    partial_results_folder : str (default is None)
+        The folder where the partial results will be stored.
+
+    Returns
+    -------
+    partial_results_filename : str
+        The name of the partial results file.
+    """
+    # Check if current_params is indeed an unpacked variation of another
+    # SimulationParameters object.
+    assert current_params.unpack_index > -1, "'current_params' must be an unpacked variation of another SimulationParameters object."
+
+    # This will get the number of unpacked variations of the parent
+    # SimulationParameters object.
+    total_unpacks = current_params.get_num_unpacked_variations()
+    num_digits = len(str(total_unpacks))
+    unpack_index_str = str(current_params.unpack_index).zfill(num_digits)
+
+    partial_results_filename = '{0}_unpack_{1}.pickle'.format(
+        results_base_filename,
+        unpack_index_str)
+
+    if partial_results_folder is not None:
+        partial_results_filename = os.path.join(
+            partial_results_folder, partial_results_filename)
+
+    return partial_results_filename
+
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -302,37 +350,6 @@ class SimulationRunner(object):
             out = open(filename, 'w')
 
         return out
-
-    def _get_partial_results_filename(self, current_params):
-        """
-        Get the name of the file where the partial result will be saved for
-        the unpackated result with index `unpack_index`.
-
-        Parameters
-        ----------
-        current_params : SimulationParameters object
-            The current parameters.
-
-        Returns
-        -------
-        partial_results_filename : str
-            The name of the partial results file.
-        """
-        # This will get the number of unpacked variations of the parent
-        # SimulationParameters object.
-        total_unpacks = current_params.get_num_unpacked_variations()
-        num_digits = len(str(total_unpacks))
-        unpack_index_str = str(current_params.unpack_index).zfill(num_digits)
-
-        partial_results_filename = '{0}_unpack_{1}.pickle'.format(
-            self.results_base_filename,
-            unpack_index_str)
-
-        if self.partial_results_folder is not None:
-            partial_results_filename = os.path.join(
-                self.partial_results_folder, partial_results_filename)
-
-        return partial_results_filename
 
     def __delete_partial_results_maybe(self):
         """
@@ -738,8 +755,10 @@ class SimulationRunner(object):
         try:
             # Name of the file where the partial results will be saved
             if self._results_base_filename is not None:
-                partial_results_filename = self._get_partial_results_filename(
-                    current_params)
+                partial_results_filename = get_partial_results_filename(
+                    self.results_base_filename,
+                    current_params,
+                    self.partial_results_folder)
             else:
                 # If __results_base_filename is None there is also no
                 # partial results to load. Therefore, lets raise an

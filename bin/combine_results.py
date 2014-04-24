@@ -24,7 +24,7 @@ from pyphysim.util.misc import replace_dict_values
 
 
 def main():
-    """
+    """Main function of the script.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('first', help="The name of the first SimulationResults file.")
@@ -42,7 +42,8 @@ def main():
 
     if args.output is None:
         output = replace_dict_values(first.original_filename,
-                                     union.params.parameters)
+                                     union.params.parameters,
+                                     filename_mode=True)
     else:
         output = args.output
 

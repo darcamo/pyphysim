@@ -228,6 +228,12 @@ class IASolverBaseClass(object):
                     # Equivalent channel with the effect of the precoder,
                     # channel and receive filter
                     Hieq = self._calc_equivalent_channel(k)
+                    # TODO: Put this in a try-except block for the case
+                    # that Hieq is singular (a linalg.LinAlgError exception
+                    # is thrown). In order to handle the exception, you
+                    # could set full_W_H to just W_H or you could try the
+                    # stream reduction (but stream reduction should be
+                    # performed at the precoders too)
                     self._full_W_H[k] = np.linalg.solve(Hieq, self.W_H[k])
 
         return self._full_W_H
@@ -726,7 +732,7 @@ class IASolverBaseClass(object):
         all streams.
 
         """
-        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
+        # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \sigma_n^2 \mtI_{N^{[k]}}$$
         if noise_power is None:
             noise_power = self.noise_var
 
