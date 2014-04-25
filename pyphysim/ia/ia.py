@@ -1105,16 +1105,31 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         else:
             self._alt_min_ia_solver = AlternatingMinIASolver(multiUserChannel)
 
-        # Can be: 'random', 'closed_form', or 'alt_min''
+        # Can be: 'random', 'closed_form', 'alt_min', or 'fix'
+        #
+        # 'random' -> Precvoder will be initialized randomly and then the
+        #             receive filter will be updated (using the _updateW
+        #             method which is implemented in the subclass..
+        #
+        # 'closed_form' : -> The precoder and receive filters will be
+        #                    initialized with the solution of the closed
+        #                    form algorithm.
+        #
+        # 'alt_min' : -> The precoder and receive filters will be
+        #                initialized with the solution of the alternating
+        #                minimizations algorithm.
+        #
+        # 'fix' : The precoder is not initialized and the current value of
+        #         self.F is used. This is more useful for debugging.
         self._initialize_with = 'random'
 
     def _set_initialize_with(self, value):
         """Set method for the initialize_with property."""
-        options = ['random', 'alt_min', 'closed_form']
+        options = ['random', 'alt_min', 'closed_form', 'fix']
         if value in options:
             self._initialize_with = value
         else:
-            msg = 'unknown initialization option: {0}'.format(self.initialize_with)
+            msg = "unknown initialization option: '{0}'".format(value)
             raise RuntimeError(msg)
 
     def _get_initialize_with(self):
@@ -1211,6 +1226,22 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.randomizeF(Ns, P)
         self._updateW()
 
+    def _dont_initialize_F_and_only_and_find_W(self):
+        """
+        Initialize the IA Solution from a random matrix.
+
+        The implementation here simple initializes the precoder variable
+        and then calculates the initial receive filter.
+        """
+        # The current value of self._F and self._full_F will be used.
+        if self._F is None:
+            raise RuntimeError("The precoder must be manually set, since you specified the 'fix' initialize_with option.")
+
+        if self._Ns is None:
+            self._Ns = np.array([F.shape[1] for F in self._F])
+
+        self._updateW()
+
     def _initialize_F_and_W_from_closed_form(self, Ns, P):
         """Initialize the IA Solution from the closed form IA solver.
 
@@ -1281,6 +1312,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             self._initialize_F_and_W_from_alt_min(Ns, P)
         elif self.initialize_with == 'random':
             self._initialize_F_randomly_and_find_W(Ns, P)
+        elif self.initialize_with == 'fix':
+            self._dont_initialize_F_and_only_and_find_W()
         else:
             msg = 'unknown initialization option for the IA sovler: {0}'.format(
                 self.initialize_with)
@@ -2037,7 +2070,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """Calculates the receive filter of all users.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
-
         for k in range(self.K):
             Hkk = self._get_channel(k, k)
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k, self.noise_var)
@@ -2313,6 +2345,14 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 Vi = self._calc_Vi_for_a_given_mu(
                     sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
+
+                # # xxxxxxxxxx APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                ## Case where the Vi precoder has practically zero energy.
+                # Vi_norm = np.linalg.norm(Vi, 'fro')
+                # if Vi_norm**2 < 0.05 * self.P[i]:
+                #     Vi = np.sqrt(0.01) * self.P[i] * Vi / Vi_norm
+                #     self._mu[i] = -1
+                # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             else:
                 # If we are not done yet then we need to perform the
