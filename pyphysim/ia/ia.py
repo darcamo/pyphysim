@@ -1257,6 +1257,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._clear_precoder_filter()
         self._clear_receive_filter()
 
+        self.P = P
+
         self._closed_form_ia_solver.solve(Ns, P)
         self._F = self._closed_form_ia_solver.F
         self._W = self._closed_form_ia_solver.W
@@ -1275,6 +1277,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # Clear all precoders and receive filters
         self._clear_precoder_filter()
         self._clear_receive_filter()
+
+        self.P = P
 
         self._alt_min_ia_solver.max_iterations = self.max_iterations
 
@@ -1489,11 +1493,19 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         # This will be used to detect of the precoder did not
         # significativelly change
+        # TODO: Should I use full_F instead of F???
         old_F = self._F
         i = -1  # Initialize the i variable in case the for loop is not run
         for i in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self._step()
+
+            # print "Norm"
+            # print np.linalg.norm(self._full_F[0], 'fro')**2
+            # print np.linalg.norm(self._full_F[1], 'fro')**2
+            # print np.linalg.norm(self._full_F[2], 'fro')**2
+
+            # print self.calc_SINR()
 
             # Stop the iteration earlier if the precoder does not change
             # too much
