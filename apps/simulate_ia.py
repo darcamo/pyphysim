@@ -219,6 +219,8 @@ class IASimulationRunner(SimulationRunner):
         ia_runned_iterationsResult = Result.create(
             "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1, accumulate_values=False)
 
+        import pudb; pudb.set_trace()  ## DEBUG ##
+
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
         simResults.add_result(numSymbolsResult)

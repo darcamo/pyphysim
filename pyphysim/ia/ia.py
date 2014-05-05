@@ -20,6 +20,7 @@ import itertools
 
 from ..util.misc import peig, leig, randn_c_RS, update_inv_sum_diag, \
     get_principal_component_matrix
+from ..util.conversion import linear2dB
 from ..comm import channels
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
@@ -623,6 +624,36 @@ class IASolverBaseClass(object):
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k, self.noise_var)
             SINRs[k] = self._calc_SINR_k(k, Bkl_all_l)
         return SINRs
+
+    def calc_SINR_in_dB(self):
+        """
+        Calculates the SINR values (in dB scale) of all streams of all
+        users with the current IA solution.
+
+        The noise variance used will be the value of the noise_var
+        property, which, if not explicitly set, will use the
+        last_noise_var property of the multiuserchannel object.
+
+        Returns
+        -------
+        SINRs : 1D numpy array of 1D numpy arrays (of floats)
+            The SINR (in dB scale) of all streams of all users.
+        """
+        K = self.K
+        SINRs = np.empty(K, dtype=np.ndarray)
+
+        for k in range(self.K):
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k, self.noise_var)
+            SINRs[k] = linear2dB(self._calc_SINR_k(k, Bkl_all_l))
+        return SINRs
+
+    def calc_sum_capacity(self):
+        """
+        Calculates the sum capacity of the current solution.
+
+        The SINRs are estimated and appyied to the Shannon capacity formula
+        """
+        return np.sum(np.log2(1+np.hstack(self.calc_SINR())))
 
     def _calc_Bkl_cov_matrix_first_part(self, k):
         """Calculates the first part in the equation of the Blk covariance

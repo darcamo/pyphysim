@@ -14,12 +14,17 @@ from ..util.misc import calc_confidence_interval, equal_dicts, replace_dict_valu
 
 try:
     import cPickle as pickle
-except ImportError as e:  # pragma: no cover
+except ImportError:  # pragma: no cover
     import pickle
 
 try:
     import tables as tb
-except ImportError as e:
+except ImportError:  # pragma: no cover
+    pass
+
+try:
+    from pandas import DataFrame
+except ImportError:  # pragma: no cover
     pass
 
 
@@ -812,6 +817,22 @@ class SimulationResults(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         fid.close()
         return simresults
+
+    def to_dataframe(self):
+        """
+        Convert the SimulationResults object to a pandas DataFrame.
+        """
+        data = {}  # The data dictionary that we will use to create the DataFrame
+        all_params_list = self.params.get_unpacked_params_list()
+        for name in self.params:
+            data[name] = [a[name] for a in all_params_list]
+
+        for res in self:
+            name = res[0].name
+            data[name] = [r.get_result() for r in res]
+
+        df = DataFrame(data)
+        return df
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

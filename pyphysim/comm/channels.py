@@ -572,14 +572,14 @@ class MultiUserChannelMatrix(object):
 
         Parameters
         ----------
-        K : int
-            Number of users.
         Nr : 1D numpy array or integers or a single integer
             Number of receive antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
         Nt : 1D numpy array or integers or a single integer
             Number of transmit antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
+        K : int
+            Number of users.
         """
         if isinstance(Nr, int):
             Nr = np.ones(K, dtype=int) * Nr
@@ -1809,19 +1809,18 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         Parameters
         ----------
-        K : int
-            Number of users.
         Nr : 1D array or an int
             Number of receive antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
         Nt : 1D array or an int
             Number of transmit antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
+        K : int
+            Number of users.
         NtE : 1D array or an int
             Number of transmit antennas of the external interference
             source(s). If NtE is an iterable, the number of external
             interference sources will be the len(NtE).
-
         """
         if isinstance(Nr, int):
             Nr = np.ones(K, dtype=int) * Nr

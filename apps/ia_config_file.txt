@@ -1,8 +1,8 @@
 [Scenario]
-        SNR = [30]
+        SNR = [20 25 30]
         M = 4
         modulator = PSK
-        NSymbs = 100
+        NSymbs = 1000000
         K = 3
         Nr = 4
         Nt = 4
@@ -13,7 +13,7 @@
 [General]
         max_bit_errors = 3000
         unpacked_parameters = SNR, max_iterations, initialize_with
-        rep_max = 20000
+        rep_max = 104
 [Plot]
-        max_iterations_plot = 37
-        initialize_with_plot = alt_min
+        max_iterations_plot = 120
+        initialize_with_plot = random

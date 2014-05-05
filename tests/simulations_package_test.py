@@ -1596,6 +1596,54 @@ class SimulationResultsTestCase(unittest.TestCase):
     #     self.assertEqual(self.simresults.params.unpacked_parameters[0],
     #                      simresults2.params.unpacked_parameters[0])
 
+    def test_to_dataframe(self):
+        # Create some dummy parameters (including two parameters set to be unpacked)
+        params = SimulationParameters()
+        params.add("extra", 2.3)
+        params.add("SNR", np.array([0,3,6,9]))
+        params.add("bias", [1.2, 1.6])
+        params.set_unpack_parameter('SNR')
+        params.set_unpack_parameter('bias')
+        params.add("Name", "Some string")
+
+        results = SimulationResults()
+        for p in params.get_unpacked_params_list():
+            extra = p['extra']
+            SNR = p['SNR']
+            bias = p['bias']
+            results.append_result(Result.create('res1', Result.SUMTYPE, extra*SNR+bias))
+            results.append_result(Result.create('res2', Result.SUMTYPE, bias*SNR+extra))
+        results.set_parameters(params)
+
+        # Now lets convert this SimulationResults object to a pandas
+        # DataFrame
+        df = results.to_dataframe()
+
+        # The DataFrame should have the same number of rows as the number
+        # of parameters variations
+        self.assertEqual(len(df), params.get_num_unpacked_variations())
+
+        # Test the parameters
+        expected_bias = [a['bias'] for a in params.get_unpacked_params_list()]
+        expected_SNR = [a['SNR'] for a in params.get_unpacked_params_list()]
+        expected_name = [a['Name'] for a in params.get_unpacked_params_list()]
+        expected_extra = [a['extra'] for a in params.get_unpacked_params_list()]
+        np.testing.assert_array_equal(df.bias, expected_bias)
+        np.testing.assert_array_equal(df.SNR, expected_SNR)
+        np.testing.assert_array_equal(df.Name, expected_name)
+        np.testing.assert_array_equal(df.extra, expected_extra)
+
+        # Test the results
+        for index, p in enumerate(params.get_unpacked_params_list()):
+            extra = p['extra']
+            SNR = p['SNR']
+            bias = p['bias']
+            expected_res1 = extra*SNR+bias
+            expected_res2 = bias*SNR+extra
+            self.assertAlmostEqual(expected_res1, df.res1[index])
+            self.assertAlmostEqual(expected_res2, df.res2[index])
+
+        import pudb; pudb.set_trace()  ## DEBUG ##
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
