@@ -1643,9 +1643,6 @@ class SimulationResultsTestCase(unittest.TestCase):
             self.assertAlmostEqual(expected_res1, df.res1[index])
             self.assertAlmostEqual(expected_res2, df.res2[index])
 
-        import pudb; pudb.set_trace()  ## DEBUG ##
-
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Runner Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

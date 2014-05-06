@@ -1160,8 +1160,8 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
             filename='Alt_Min_test_solve_state.pickle',
             iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
 
-        iasolver.max_iterations = 120
-        iasolver.noise_var = 1e-5
+        iasolver.max_iterations = 200
+        iasolver.noise_var = 1e-10
 
         iasolver.solve(Ns, P)
 
@@ -1205,6 +1205,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
             norm_value = np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2
+
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
@@ -1786,9 +1787,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 
     def test_solve(self):
         K = 3
-        Nt = np.ones(K, dtype=int) * 4
-        Nr = np.ones(K, dtype=int) * 4
-        Ns = np.ones(K, dtype=int) * 2
+        Nt = np.ones(K, dtype=int) * 2
+        Nr = np.ones(K, dtype=int) * 2
+        Ns = np.ones(K, dtype=int) * 1
 
         # Transmit power of all users
         P = np.array([2.0, 1.5, 0.9])
