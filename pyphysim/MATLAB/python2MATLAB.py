@@ -8,6 +8,9 @@ __revision__ = "$Revision$"
 import numpy as np
 
 
+__all__ = ["to_mat_str"]
+
+
 def to_mat_str(x, format_string='+.12e'):
     """Convert the ndarray 'x' to a string corresponding to the MATLAB
     representation of `x`.

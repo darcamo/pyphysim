@@ -24,6 +24,9 @@ except ImportError as e:  # pragma: no cover
 from .configobjvalidation import real_numpy_array_check, integer_numpy_array_check, integer_scalar_or_integer_numpy_array_check, real_scalar_or_real_numpy_array_check
 
 
+__all__ = ["combine_simulation_parameters", "SimulationParameters"]
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

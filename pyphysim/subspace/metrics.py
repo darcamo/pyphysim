@@ -11,6 +11,10 @@ import math
 from .projections import calcProjectionMatrix
 
 
+__all__ = ["calc_principal_angles", "calc_chordal_distance_from_principal_angles",
+           "calc_chordal_distance", "calc_chordal_distance_2"]
+
+
 # TODO: I think calc_principal_angles is not correct when matrix1 e matrix2
 # have different sizes. At least obtaining the chordal distance from the
 # principal angles does not work when matrix1 and matrix2 have different

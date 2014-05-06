@@ -17,15 +17,18 @@ try:
 except ImportError:  # pragma: no cover
     import pickle
 
-try:
-    import tables as tb
-except ImportError:  # pragma: no cover
-    pass
+# try:
+#     import tables as tb
+# except ImportError:  # pragma: no cover
+#     pass
 
 try:
     from pandas import DataFrame
 except ImportError:  # pragma: no cover
     pass
+
+
+__all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

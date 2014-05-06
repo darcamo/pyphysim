@@ -9,7 +9,6 @@ Each shape knows how to plot itself.
 __revision__ = "$Revision$"
 
 try:
-    from matplotlib import pylab
     from matplotlib import pyplot as plt
     from matplotlib import patches, path
     _MATPLOTLIB_AVAILABLE = True
