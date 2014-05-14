@@ -17,6 +17,7 @@ except ImportError:  # pragma: no cover
 
 import numpy as np
 from io import BytesIO
+import cmath
 
 __all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
 
@@ -54,6 +55,37 @@ class Coordinate(object):
         """
         dist = np.abs(self.pos - other.pos)
         return dist
+
+    def move_by_relative_coordinate(self, rel_pos):
+        """
+        Move from the current position to the relative coordinate.
+
+        This is equivalent to moving to a new position given by the current
+        position plus `coordinate`.
+
+        Parameters
+        ----------
+        rel_pos : complex
+            Relative coordinate
+        """
+        self.pos = self.pos + rel_pos
+
+    def move_by_relative_polar_coordinate(self, radius, angle):
+        """
+        Move from the current position to the relative coordinate.
+
+        This is equivalent to moving to a new position given by the current
+        position plus a the provided coordinate.
+
+        Parameters
+        ----------
+        radius : float
+            Distance of the movement in the direction given by `angle`.
+        angle : float (in radians)
+            Angle pointing the direction of the movement.
+        """
+        rel_pos = cmath.rect(radius, angle)
+        self.move_by_relative_coordinate(rel_pos)
 
 
 class Shape(Coordinate):

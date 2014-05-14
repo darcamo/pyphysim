@@ -16,10 +16,11 @@ from collections import Iterable
 import numpy as np
 import itertools
 from io import BytesIO
+import cmath
 
 from . import shapes
 
-__all__ = ['Node', 'CellBase', 'Cell', 'Cluster', 'Grid']
+__all__ = ['Node', 'CellBase', 'Cell', 'Cell3Sec', 'Cluster', 'Grid']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -105,6 +106,11 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
 
         self.id = cell_id
         self._users = []
+
+        # xxxxx Appearance for plotting xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Set this to a number. If None, default value for Matplotlib will be used.
+        self.cell_id_fontsize = None
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_num_users(self):
         """Get method for the num_users property."""
@@ -268,15 +274,44 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
             # If self.id is not None, plot the cell ID at the center of the
             # cell
             plt.text(self.pos.real,
-                       self.pos.imag,
-                       '{0}'.format(self.id),
-                       color=self.marker_color,
-                       horizontalalignment='center',
-                       verticalalignment='center')
+                     self.pos.imag,
+                     '{0}'.format(self.id),
+                     color=self.marker_color,
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     fontsize=self.cell_id_fontsize)
 
         # Now we plot all the users in the cell
         for user in self.users:
             user.plot_node(ax)
+
+    def plot_border(self, ax=None):  # pragma: no cover
+        """
+        Plot the border of the cell.
+
+        If an axes 'ax' is specified, then the shape is added to that
+        axis. Otherwise a new figure and axis are created and the shape is
+        plotted to that.
+
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cell will be plotted. If not provided, a new
+            figure (and axis) will be created.
+        """
+        stand_alone_plot = False
+
+        if (ax is None):
+            # This is a stand alone plot. Lets create a new axes.
+            ax = plt.axes()
+            stand_alone_plot = True
+
+        # Plot the border of the cell
+        shapes.Shape.plot(self, ax)
+
+        if stand_alone_plot is True:
+            ax.plot()
+            plt.show()
 
     @staticmethod
     def _validate_ratio(ratio):
@@ -339,7 +374,8 @@ class Cell(shapes.Hexagon, CellBase):
         CellBase.__init__(self, pos, radius, cell_id, rotation)
 
     def plot(self, ax=None):  # pragma: no cover
-        """Plot the cell using the matplotlib library.
+        """
+        Plot the cell using the matplotlib library.
 
         If an axes 'ax' is specified, then the shape is added to that
         axis. Otherwise a new figure and axis are created and the shape is
@@ -350,7 +386,6 @@ class Cell(shapes.Hexagon, CellBase):
         ax : A matplotlib axis, optional
             The axis where the cell will be plotted. If not provided, a new
             figure (and axis) will be created.
-
         """
 
         stand_alone_plot = False
@@ -369,6 +404,110 @@ class Cell(shapes.Hexagon, CellBase):
             ax.plot()
             plt.show()
 
+
+class Cell3Sec(CellBase):
+    """
+    Class representing a cell with 3 sectors.
+
+    Each sector corresponds to an hexagon.
+    """
+    def __init__(self, pos, radius, cell_id=None, rotation=0):
+        """Initializes the Cell3Sec object.
+
+        Parameters
+        ----------
+        pos : complex
+            The central position of the cell in the complex grid.
+        radius : float
+            The cell radius. The sector radius will be equal to half the cell radius.
+        cell_id : int, optional
+            The cell ID. If not provided the cell won't have an ID and its
+            plot will shown a symbol in cell center instead of the cell ID.
+        rotation : float, optional (default to 0)
+            The rotation of the cell (regarding the cell center).
+        """
+        CellBase.__init__(self, pos, radius, cell_id, rotation)
+
+    def _get_secradius(self):
+        """
+        Get method for the secradius property.
+
+        The radius of a sector.
+        """
+        return self.radius / 2.0
+    secradius = property(_get_secradius)
+
+    def _get_vertex_positions(self):
+        """
+        """
+        secradius = self.radius / 2.0
+        h = secradius * (np.sqrt(3) / 2.0)
+
+        # The three sectors are hexagons. We set their positions to the origin.
+        sec1 = shapes.Hexagon(0 - h - (0.5j * secradius), secradius, rotation=30)
+        sec2 = shapes.Hexagon(0 + h - (0.5j * secradius), secradius, rotation=30)
+        sec3 = shapes.Hexagon(0 + (1j * secradius), secradius, rotation=30)
+
+        # The vertexes of the whole cell correspond to the union of the
+        # vertexes of all sectors.
+        aux = [sec1.vertices[[0, 1]], sec2.vertices[[0, 1, 2, 3]],
+               sec3.vertices[[2, 3, 4, 5]], sec1.vertices[[4, 5]]]
+        all_vertexes = np.hstack(aux)
+
+        return all_vertexes
+
+    def plot(self, ax=None):
+        """
+        Plot the cell using the matplotlib library.
+
+        If an axes 'ax' is specified, then the shape is added to that
+        axis. Otherwise a new figure and axis are created and the shape is
+        plotted to that.
+
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cell will be plotted. If not provided, a new
+            figure (and axis) will be created.
+        """
+        stand_alone_plot = False
+
+        if (ax is None):
+            # This is a stand alone plot. Lets create a new axes.
+            ax = plt.axes()
+            stand_alone_plot = True
+
+        # Plot the shape part
+        shapes.Shape.plot(self, ax)
+
+        # xxxxxxxxxx Plot the dashed lines (border between sectors xxxxxxxx
+        rotation = self.rotation * np.pi / 180
+        angle = (np.pi / 6.) + rotation
+        p1 = self.pos + (np.cos(angle) + (np.sin(angle) * 1j)) * self.secradius
+        angle = angle + 2 * np.pi / 3.
+        p2 = self.pos + (np.cos(angle) + (np.sin(angle) * 1j)) * self.secradius
+        angle = angle + 2 * np.pi / 3.
+        #p3 = self.pos - 1j * self.secradius
+        p3 = self.pos + (np.cos(angle) + (np.sin(angle) * 1j)) * self.secradius
+
+        line1 = plt.Line2D([self.pos.real, p1.real], [self.pos.imag, p1.imag],
+                           linestyle='dashed', color='black', alpha=0.5)
+        line2 = plt.Line2D([self.pos.real, p2.real], [self.pos.imag, p2.imag],
+                           linestyle='dashed', color='black', alpha=0.5)
+        line3 = plt.Line2D([self.pos.real, p3.real], [self.pos.imag, p3.imag],
+                           linestyle='dashed', color='black', alpha=0.5)
+
+        ax.add_line(line1)
+        ax.add_line(line2)
+        ax.add_line(line3)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Plot the node part as well as the users in the cell
+        self._plot_common_part(ax)
+
+        if stand_alone_plot is True:
+            ax.plot()
+            plt.show()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -411,7 +550,12 @@ class Cluster(shapes.Shape):
     # disable setting this property.
     radius = property(shapes.Shape._get_radius)
 
-    def __init__(self, cell_radius, num_cells, pos=0 + 0j, cluster_id=None):
+    def __init__(self,
+                 cell_radius,
+                 num_cells,
+                 pos=0 + 0j,
+                 cluster_id=None,
+                 cell_type='simple'):
         """Initializes the Cluster object.
 
         Parameters
@@ -424,6 +568,10 @@ class Cluster(shapes.Shape):
             Central Position of the Cluster in the complex grid.
         cluster_id : int
             ID of the cluster.
+        cell_type : string (can be either 'simple' or '3sec'
+            The type of the cell. If it is 'simple' it means the standard
+            hexagon shaped cell. If '3sec' it means a 3 sectorized cell
+            composed of 3 hexagons.
         """
         shapes.Shape.__init__(self, pos, radius=0, rotation=0)
 
@@ -433,19 +581,27 @@ class Cluster(shapes.Shape):
         # Cells in the cluster
         self._cells = []
 
-        cell_positions = Cluster._calc_cell_positions(cell_radius, num_cells)
+        cell_positions = Cluster._calc_cell_positions(cell_radius, num_cells, cell_type)
         # Correct the positions to take into account the grid central
         # position.
         cell_positions[:, 0] = cell_positions[:, 0] + self.pos
+
+        if cell_type == 'simple':
+            CELLCLASS = Cell
+        elif cell_type == '3sec':
+            CELLCLASS = Cell3Sec
+        else:
+            raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
 
         # Finally, create the cells at the specified positions (also
         # rotated)
         for index in range(num_cells):
             cell_id = index + 1
-            self._cells.append(Cell(cell_positions[index, 0],
-                                    cell_radius,
-                                    cell_id,
-                                    cell_positions[index, 1]))
+            self._cells.append(CELLCLASS(cell_positions[index, 0],
+                                         cell_radius,
+                                         cell_id,
+                                         cell_positions[index, 1]))
+
         # Calculates the cluster radius.
         #
         # The radius of the cluster is defined as half the distance from one
@@ -455,6 +611,37 @@ class Cluster(shapes.Shape):
         self._radius = Cluster._calc_cluster_radius(num_cells, cell_radius)
         # Calculates the cluster external radius.
         self._external_radius = self._calc_cluster_external_radius()
+
+        # xxxxx Plot appearance xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._cell_id_fontsize = None  # If None, default value will be used
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def _set_cell_id_fontsize(self, value):
+        """
+        Set method for the cell_id_fontsize property.
+
+        The value of cell_id_fontsize only matters for plotting the
+        cluster.
+
+        Parameters
+        ----------
+        value : None or an int
+            The font size used to plot the cell id. If it is None, the
+            default value in matplotlib will be used.
+        """
+        self._cell_id_fontsize = value
+        for c in self._cells:
+            c.cell_id_fontsize = value
+
+    def _get_cell_id_fontsize(self):
+        """
+        Get method for the cell_id_fontsize property.
+
+        The value of cell_id_fontsize only matters for plotting the
+        cluster.
+        """
+        return self._cell_id_fontsize
+    cell_id_fontsize = property(_get_cell_id_fontsize, _set_cell_id_fontsize)
 
     # Property to get the cluster external radius
     # The cluster class also has a external_radius parameter that
@@ -543,7 +730,91 @@ class Cluster(shapes.Shape):
         return Cluster._ii_and_jj.get(num_cells, (0, 0))
 
     @staticmethod
-    def _calc_cell_positions(cell_radius, num_cells):
+    def _calc_cell_positions(cell_radius, num_cells, cell_type="simple"):
+        """
+        Helper function used by the Cluster class.
+
+        The calc_cell_positions method calculates the position (and
+        rotation) of the 'num_cells' different cells, each with radius
+        equal to 'cell_radius', so that they properly fit in the cluster.
+
+        Parameters
+        ----------
+        cell_radius : float
+            Radius of each cell in the cluster.
+        num_cells : int
+            Number of cells in the cluster.
+        cell_type : string (can be either 'simple' or '3sec'
+            The type of the cell. If it is 'simple' it means the standard
+            hexagon shaped cell. If '3sec' it means a 3 sectorized cell
+            composed of 3 hexagons.
+
+        Returns
+        -------
+        cell_positions : 1D numpy array
+            Positions of the cells in a cluster with `num_cells` cells with
+            radius `cell_radius`.
+        """
+        if cell_type == 'simple':
+            cell_positions = Cluster._calc_cell_positions_hexagon(cell_radius, num_cells)
+        elif cell_type == '3sec':
+            cell_positions = Cluster._calc_cell_positions_3sec(cell_radius, num_cells)
+        else:
+            raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
+
+        # The coordinates of the cells calculated up to now consider the
+        # center of the first cell as the origin. However, we want the
+        # center of the cluster to be the origin. Therefore, lets calculate
+        # the central position of the cluster and then correct all
+        # coordinates to move the center of the cluster to the origin.
+        central_pos = np.sum(cell_positions, axis=0) / num_cells
+        # We correct only the first column, which is the position
+        cell_positions[:, 0] = cell_positions[:, 0] - central_pos[0]
+
+        return cell_positions
+
+    @staticmethod
+    def _calc_cell_positions_3sec(cell_radius, num_cells, rotate_by_30=True):
+        cell_positions = np.zeros([num_cells, 2], dtype=complex)
+        sec_radius = cell_radius / 2.
+        sec_height = sec_radius * np.sqrt(3.) / 2.
+
+        # xxxxx Get the positions of cells from 2 to 7 xxxxxxxxxxxxxxxxxxxx
+        # angles_first_ring -> 30:60:330 -> 30,90,150,210,270,330
+        angles_first_ring = np.linspace(np.pi / 6., 11. * np.pi / 6., 6)
+        max_value = min(num_cells, 7)
+        for index in range(1, max_value):
+            # cell_positions[index, 0] = 2 * cell_height * np.exp(1j * angles_first_ring[index - 1])
+            cell_positions[index, 0] = 3 * sec_radius * np.exp(1j * angles_first_ring[index - 1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Get the positions of cells from 8 to 13 xxxxxxxxxxxxxxxxxxxx
+        if num_cells > 7:
+            angles_second_ring_A = np.linspace(0, np.pi * 5. / 3., 6)
+            max_value = min(num_cells, 13)
+            for index in range(7, max_value):
+                cell_positions[index, 0] = 6 * sec_height * np.exp(1j * angles_second_ring_A[index - 7])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
+        if num_cells > 13:
+            angles_second_ring_B = angles_first_ring
+            max_value = min(num_cells, 19)
+            for index in range(13, max_value):
+                cell_positions[index, 0] = 6 * sec_radius * np.exp(1j * angles_second_ring_B[index - 13])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        if rotate_by_30 is True:
+            # The cell positions calculated up to now do not consider
+            # rotation. Lets use the rotate function of the Shape class to
+            # rotate the coordinates.
+            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], -30)
+            cell_positions[:, 1] = 30
+
+        return cell_positions
+
+    @staticmethod
+    def _calc_cell_positions_hexagon(cell_radius, num_cells, rotate_by_30=True):
         """Helper function used by the Cluster class.
 
         The calc_cell_positions method calculates the position (and
@@ -556,6 +827,8 @@ class Cluster(shapes.Shape):
             Radius of each cell in the cluster.
         num_cells : int
             Number of cells in the cluster.
+        rotate_by_30 : bool
+            If True (default vbalue) the cluster will be rotated by 30 degrees.
 
         Returns
         -------
@@ -571,19 +844,22 @@ class Cluster(shapes.Shape):
         cell_height = cell_radius * np.sqrt(3.) / 2.
 
         # xxxxx Get the positions of cells from 2 to 7 xxxxxxxxxxxxxxxxxxxx
-        # angles_first_ring -> 30:60:330
+        # angles_first_ring -> 30:60:330 -> 30,90,150,210,270,330
         angles_first_ring = np.linspace(np.pi / 6., 11. * np.pi / 6., 6)
         max_value = min(num_cells, 7)
         for index in range(1, max_value):
-            cell_positions[index, 0] = 2 * cell_height * np.exp(1j * angles_first_ring[index - 1])
+            angle = angles_first_ring[index - 1]
+            cell_positions[index, 0] = cmath.rect(2 * cell_height, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Get the positions of cells from 8 to 13 xxxxxxxxxxxxxxxxxxxx
         if num_cells > 7:
+            # angles_second_ring_A -> 0:60:300
             angles_second_ring_A = np.linspace(0, np.pi * 5. / 3., 6)
             max_value = min(num_cells, 13)
             for index in range(7, max_value):
-                cell_positions[index, 0] = 3 * cell_radius * np.exp(1j * angles_second_ring_A[index - 7])
+                angle = angles_second_ring_A[index - 7]
+                cell_positions[index, 0] = cmath.rect(3 * cell_radius, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
@@ -591,23 +867,16 @@ class Cluster(shapes.Shape):
             angles_second_ring_B = angles_first_ring
             max_value = min(num_cells, 19)
             for index in range(13, max_value):
-                cell_positions[index, 0] = 4 * cell_height * np.exp(1j * angles_second_ring_B[index - 13])
+                angle = angles_second_ring_B[index - 13]
+                cell_positions[index, 0] = cmath.rect(4 * cell_height, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # The cell positions calculated up to now do not consider
-        # rotation. Lets use the rotate function of the Shape class to
-        # rotate the coordinates.
-        cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], -30)
-        cell_positions[:, 1] = 30
-
-        # The coordinates of the cells calculated up to now consider the
-        # center of the first cell as the origin. However, we want the
-        # center of the cluster to be the origin. Therefore, lets calculate
-        # the central position of the cluster and then correct all
-        # coordinates to move the center of the cluster to the origin.
-        central_pos = np.sum(cell_positions, axis=0) / num_cells
-        # We correct only the first column, which is the position
-        cell_positions[:, 0] = cell_positions[:, 0] - central_pos[0]
+        if rotate_by_30 is True:
+            # The cell positions calculated up to now do not consider
+            # rotation. Lets use the rotate function of the Shape class to
+            # rotate the coordinates.
+            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], -30)
+            cell_positions[:, 1] = 30
 
         return cell_positions
 
@@ -800,7 +1069,8 @@ class Cluster(shapes.Shape):
             plt.show()
 
     def plot_border(self, ax=None):  # pragma: no cover
-        """Plot only the border of the Cluster.
+        """
+        Plot only the border of the Cluster.
 
         Only work's for cluster sizes that can calculate the cluster
         vertices, such as cluster with 1, 7 or 19 cells.

@@ -69,17 +69,36 @@ class CellDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx SHAPES module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class CoordinateTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.C1 = shapes.Coordinate(0 + 3j)
+        self.C2 = shapes.Coordinate(2 - 4j)
+        self.C3 = shapes.Coordinate(5 - 0j)
+
     def test_calc_dist(self):
-        C1 = shapes.Coordinate(0 + 3j)
-        C2 = shapes.Coordinate(2 - 4j)
-        C3 = shapes.Coordinate(5 - 0j)
-
         # Sanity check
-        self.assertEqual(C1.calc_dist(C2), C2.calc_dist(C1))
+        self.assertEqual(self.C1.calc_dist(self.C2), self.C2.calc_dist(self.C1))
 
-        self.assertAlmostEqual(np.sqrt((2 ** 2) + (7 ** 2)), C1.calc_dist(C2))
-        self.assertAlmostEqual(np.sqrt((5 ** 2) + (3 ** 2)), C1.calc_dist(C3))
-        self.assertAlmostEqual(np.sqrt((3 ** 2) + (4 ** 2)), C2.calc_dist(C3))
+        self.assertAlmostEqual(np.sqrt((2 ** 2) + (7 ** 2)), self.C1.calc_dist(self.C2))
+        self.assertAlmostEqual(np.sqrt((5 ** 2) + (3 ** 2)), self.C1.calc_dist(self.C3))
+        self.assertAlmostEqual(np.sqrt((3 ** 2) + (4 ** 2)), self.C2.calc_dist(self.C3))
+
+    def test_move_by_relative_coordinate(self):
+        self.assertEqual(self.C1.pos, 0+3j)
+        self.C1.move_by_relative_coordinate(2-1.5j)
+        self.assertEqual(self.C1.pos, 2+1.5j)
+        self.C1.move_by_relative_coordinate(-1+4j)
+        self.assertEqual(self.C1.pos, 1+5.5j)
+
+    def test_move_by_relative_polar_coordinate(self):
+        self.C1.move_by_relative_polar_coordinate(1, np.pi/2)
+        self.assertAlmostEqual(self.C1.pos, 0+4j)
+
+        self.C1.move_by_relative_polar_coordinate(1, np.pi)
+        self.assertAlmostEqual(self.C1.pos, -1+4j)
+
+        self.C1.move_by_relative_polar_coordinate(3, np.pi/3)
+        self.assertAlmostEqual(self.C1.pos, 0.5+6.59807621135j)
 
 
 class ShapeTestCase(unittest.TestCase):
@@ -469,6 +488,50 @@ class CellTestCase(unittest.TestCase):
             self.assertTrue(self.C1.calc_dist(self.C1.users[index]) > min_dist)
 
 
+# TODO: finish implementation
+class Cell3SecTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.C1 = cell.Cell3Sec(pos=2 - 3j, radius=2.5, cell_id=1, rotation=0)
+        self.C2 = cell.Cell3Sec(pos=-3.5 + 3j, radius=2.5, cell_id=1, rotation=60)
+        self.C2.fill_color = 'r'
+        self.C2.fill_face_bool = True
+
+        self.C3 = cell.Cell(pos=2 - 3j, radius=1, cell_id=1, rotation=0)
+        self.C3.fill_color = 'b'
+        self.C3.fill_face_bool = True
+
+    def test_secradius(self):
+        self.assertAlmostEqual(self.C1.secradius, self.C1.radius / 2.0)
+
+    def test_get_vertex_positions(self):
+        # The _get_vertex_positions method return the vertexes of the cell
+        # ignoring the cell position as if the cell was located at the
+        # origin.
+        vertexes_no_translation = self.C1._get_vertex_positions()
+
+        self.assertEqual(len(vertexes_no_translation), 12)
+
+        expected_vertexes_no_translation = [
+            -1.08253175-1.87500000j , 0.00000000-1.25000000j,
+            1.08253175-1.87500000j  , 2.16506351-1.25000000j,
+            2.16506351              , 1.08253175+6.25000000e-01j,
+            1.08253175+1.87500000j  , 2.50000000j,
+            -1.08253175+1.87500000j , -1.08253175+6.25000000e-01j,
+            -2.16506351             , -2.16506351-1.25000000j]
+
+        np.testing.assert_array_almost_equal(expected_vertexes_no_translation,
+                                             vertexes_no_translation)
+
+        vertexes_with_translation = self.C1.vertices
+
+        expected_vertexes_with_translation = np.array(expected_vertexes_no_translation) + self.C1.pos
+
+        np.testing.assert_array_almost_equal(expected_vertexes_with_translation,
+                                             vertexes_with_translation)
+
+
+# TODO: Extend the tests to consider the case of the Cell3Sec class.
 class ClusterTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -554,7 +617,50 @@ class ClusterTestCase(unittest.TestCase):
                                4.3588989435406731 * self.C3.cell_radius)
 
     # TODO: Implement-me
-    def test_calc_cell_positions(self):
+    def test_calc_cell_positions_hexagon(self):
+        # C = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec')
+
+        # from matplotlib import pyplot as plt
+        # fig, ax = plt.subplots()
+        # C.plot(ax)
+        # C.plot_border(ax)
+        # ax.set_xlim([-5,5])
+        # ax.set_ylim([-5,5])
+        # plt.show()
+
+        # C1 = cell.Cluster(cell_radius=1.0, num_cells=12)
+        # C1.plot()
+
+        # print
+        # print self.C1._calc_cell_positions_hexagon(2, 7)
+        pass
+
+    def test_calc_cell_positions_3sec(self):
+        # from matplotlib import pyplot as plt
+        # fig, ax = plt.subplots()
+        # C1 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='simple')
+        # ax.set_xlim([-5,5])
+        # ax.set_ylim([-5,5])
+        # C1.fill_face_bool = True
+        # C1.fill_color = 'b'
+        # C1.fill_opacity = 0.6
+
+        # print
+        # print C1.radius
+        # print C1.external_radius
+        # C1.plot(ax)
+
+
+        # circle = shapes.Circle(0, 2)
+        # circle.plot(ax)
+
+        # C2 = cell.Cluster(cell_radius=1.0, num_cells=7, cell_type='simple')
+        # C2.plot(ax)
+
+        # C2 = cell.Cluster(cell_radius=1.0, num_cells=7, cell_type='3sec')
+        # C3 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec')
+
+        # plt.show()
         pass
 
     def test_get_vertex_positions(self):
