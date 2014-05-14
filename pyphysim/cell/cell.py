@@ -312,6 +312,8 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
         if stand_alone_plot is True:
             ax.plot()
             plt.show()
+        else:
+            ax.autoscale_view(False, True, True)
 
     @staticmethod
     def _validate_ratio(ratio):
@@ -403,6 +405,8 @@ class Cell(shapes.Hexagon, CellBase):
         if stand_alone_plot is True:
             ax.plot()
             plt.show()
+        else:
+            ax.autoscale_view(False, True, True)
 
 
 class Cell3Sec(CellBase):
@@ -508,6 +512,8 @@ class Cell3Sec(CellBase):
         if stand_alone_plot is True:
             ax.plot()
             plt.show()
+        else:
+            ax.autoscale_view(False, True, True)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1067,6 +1073,8 @@ class Cluster(shapes.Shape):
         if stand_alone_plot is True:
             ax.plot()
             plt.show()
+        else:
+            ax.autoscale_view(False, True, True)
 
     def plot_border(self, ax=None):  # pragma: no cover
         """
@@ -1100,6 +1108,8 @@ class Cluster(shapes.Shape):
             if stand_alone_plot is True:
                 ax.plot()
                 plt.show()
+            else:
+                ax.autoscale_view(False, True, True)
 
     def add_random_users(self, cell_ids, num_users=1, user_color=None, min_dist_ratio=0):
         """Adds one or more users to the Cells with the specified cell IDs (the
