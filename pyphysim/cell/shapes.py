@@ -38,7 +38,18 @@ class Coordinate(object):
         pos : complex
             Coordinate in the complex grid.
         """
-        self.pos = pos
+        self._pos = pos
+
+    # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def _set_pos(self, value):
+        """Set method for the pos property."""
+        self._pos = value
+
+    def _get_pos(self):
+        """Get method for the pos property."""
+        return self._pos
+    pos = property(_get_pos, _set_pos)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def calc_dist(self, other):
         """Calculates the distance to another coordinate.
@@ -87,6 +98,12 @@ class Coordinate(object):
         rel_pos = cmath.rect(radius, angle)
         self.move_by_relative_coordinate(rel_pos)
 
+    def __repr__(self):
+        """
+        Representation of a Coordinate object.
+        """
+        return "{0}({1})".format(self.__class__.__name__, self.pos)
+
 
 class Shape(Coordinate):
     """Base class for all 2D shapes.
@@ -114,6 +131,15 @@ class Shape(Coordinate):
         self.fill_face_bool = False
         self.fill_color = 'r'
         self.fill_opacity = 0.1
+
+    def __repr__(self):
+        """
+        Representation of a Shape object.
+        """
+        return "{0}(pos={1},radius={2},rotation={3})".format(self.__class__.__name__,
+                                                             self.pos,
+                                                             self.radius,
+                                                             self.rotation)
 
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Property to get the shape radius.
@@ -388,8 +414,9 @@ class Shape(Coordinate):
 
     @staticmethod
     def _rotate(cur_pos, angle):
-        """Rotate the complex numbers in the `cur_pos` array by `angle` (in
-        degrees)
+        """
+        Rotate the complex numbers in the `cur_pos` array by `angle` (in
+        degrees) around the origin.
 
         Parameters
         ----------
@@ -457,7 +484,6 @@ class Hexagon(Shape):
 class Rectangle(Shape):
     """Rectangle shape class.
     """
-
     def __init__(self, A, B, rotation=0):
         """Initializes the Rectangle object.
 
@@ -478,6 +504,15 @@ class Rectangle(Shape):
         Shape.__init__(self, central_pos, radius, rotation)
         self._lower_coord = complex(min(A.real, B.real), min(A.imag, B.imag))
         self._upper_coord = complex(max(A.real, B.real), max(A.imag, B.imag))
+
+    def __repr__(self):
+        """
+        Representation of a Shape object.
+        """
+        return "{0}(A={1},B={2},rotation={3})".format(self.__class__.__name__,
+                                                      self._lower_coord,
+                                                      self._upper_coord,
+                                                      self.rotation)
 
     def _get_vertex_positions(self):
         """Calculates the vertex positions ignoring any rotation and considering

@@ -502,7 +502,7 @@ class Cell3SecTestCase(unittest.TestCase):
         self.C3.fill_face_bool = True
 
     def test_secradius(self):
-        self.assertAlmostEqual(self.C1.secradius, self.C1.radius / 2.0)
+        self.assertAlmostEqual(self.C1.secradius, np.sqrt(3) * self.C1.radius / 3.0)
 
     def test_get_vertex_positions(self):
         # The _get_vertex_positions method return the vertexes of the cell
@@ -513,12 +513,12 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertEqual(len(vertexes_no_translation), 12)
 
         expected_vertexes_no_translation = [
-            -1.08253175-1.87500000j , 0.00000000-1.25000000j,
-            1.08253175-1.87500000j  , 2.16506351-1.25000000j,
-            2.16506351              , 1.08253175+6.25000000e-01j,
-            1.08253175+1.87500000j  , 2.50000000j,
-            -1.08253175+1.87500000j , -1.08253175+6.25000000e-01j,
-            -2.16506351             , -2.16506351-1.25000000j]
+            -1.25000000e+00-2.16506351e+00j,0.00000000e+00-1.44337567e+00j,
+            1.25000000e+00-2.16506351e+00j,2.50000000e+00-1.44337567e+00j,
+            2.50000000e+00+0.00000000e+00j,1.25000000e+00+7.21687836e-01j,
+            1.25000000e+00+2.16506351e+00j,5.55111512e-16+2.88675135e+00j,
+            -1.25000000e+00+2.16506351e+00j,-1.25000000e+00+7.21687836e-01j,
+            -2.50000000e+00+7.77156117e-16j,-2.50000000e+00-1.44337567e+00j]
 
         np.testing.assert_array_almost_equal(expected_vertexes_no_translation,
                                              vertexes_no_translation)
@@ -530,6 +530,57 @@ class Cell3SecTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_vertexes_with_translation,
                                              vertexes_with_translation)
 
+    def test_add_random_users_in_sector(self):
+        self.C1.add_random_user_in_sector(1)
+        self.assertEqual(self.C1.num_users, 1)
+
+        self.C1.add_random_user_in_sector(1)
+        self.C1.add_random_user_in_sector(2)
+
+        self.assertEqual(self.C1.num_users, 3)
+
+        self.C1.add_random_user_in_sector(2)
+        self.C1.add_random_user_in_sector(2)
+        self.C1.add_random_user_in_sector(3)
+        self.C1.add_random_users_in_sector(4, 3)  # Add 4 users in sector 3
+
+        self.assertEqual(self.C1.num_users, 10)
+
+        for i in range(self.C1.num_users):
+            self.assertTrue(self.C1.is_point_inside_shape(self.C1._users[i].pos))
+
+        # If we change the position of the cell, the position of the users
+        # already in the cell should be updated.
+        self.C1.pos = 0
+        for i in range(self.C1.num_users):
+            self.assertTrue(self.C1.is_point_inside_shape(self.C1._users[i].pos))
+
+    def test_lala(self):
+        C1 = cell.Cell3Sec(pos=0 - 3j, radius=2.5, cell_id=1, rotation=0)
+        C2 = cell.Cell3Sec(pos=7 - 3j, radius=2.5, cell_id=1, rotation=30)
+
+        from matplotlib import pyplot as plt
+        fig, ax = plt.subplots()
+        ax.axis('equal')
+        C1.plot(ax)
+        C2.plot(ax)
+
+        C1._sec1.fill_face_bool = True
+        C1._sec1.plot(ax)
+        C1._sec2.fill_face_bool = True
+        C1._sec2.plot(ax)
+        C1._sec3.fill_face_bool = True
+        C1._sec3.plot(ax)
+
+        C2._sec1.fill_face_bool = True
+        C2._sec1.plot(ax)
+        C2._sec2.fill_face_bool = True
+        C2._sec2.plot(ax)
+        C2._sec3.fill_face_bool = True
+        C2._sec3.plot(ax)
+        plt.show()
+        # TODO: Implement-me
+        pass
 
 # TODO: Extend the tests to consider the case of the Cell3Sec class.
 class ClusterTestCase(unittest.TestCase):
@@ -575,19 +626,19 @@ class ClusterTestCase(unittest.TestCase):
 
     def test_remove_all_users(self):
         # Remove all users from the second cell
-        self.C1.remove_all_users(2)
+        self.C1.delete_all_users(2)
         self.assertEqual(self.C1._cells[0].num_users, 2)
         self.assertEqual(self.C1._cells[1].num_users, 0)
         self.assertEqual(self.C1._cells[2].num_users, 5)
 
         # Remove all users from the second and third cells
-        self.C1.remove_all_users([2, 3])
+        self.C1.delete_all_users([2, 3])
         self.assertEqual(self.C1._cells[0].num_users, 2)
         self.assertEqual(self.C1._cells[1].num_users, 0)
         self.assertEqual(self.C1._cells[2].num_users, 0)
 
         # Remove all users from all cells
-        self.C1.remove_all_users()
+        self.C1.delete_all_users()
         self.assertEqual(self.C1._cells[0].num_users, 0)
         self.assertEqual(self.C1._cells[1].num_users, 0)
         self.assertEqual(self.C1._cells[2].num_users, 0)
@@ -598,7 +649,7 @@ class ClusterTestCase(unittest.TestCase):
         self.C1._cells[0].delete_all_users()
         self.assertEqual(len(self.C1.get_all_users()), 8)
 
-        self.C1.remove_all_users()
+        self.C1.delete_all_users()
         self.assertEqual(len(self.C1.get_all_users()), 0)
 
     def test_calc_cluster_radius(self):
@@ -626,6 +677,7 @@ class ClusterTestCase(unittest.TestCase):
         # C.plot_border(ax)
         # ax.set_xlim([-5,5])
         # ax.set_ylim([-5,5])
+        # ax.autoscale_view(False, True, True)
         # plt.show()
 
         # C1 = cell.Cluster(cell_radius=1.0, num_cells=12)
@@ -730,7 +782,7 @@ class ClusterTestCase(unittest.TestCase):
         #self.C2.plot()
 
     def test_add_border_users(self):
-        self.C1.remove_all_users()
+        self.C1.delete_all_users()
         cell_ids = [1, 2, 3]
         angles = [210, 30, 90]
 
@@ -744,7 +796,7 @@ class ClusterTestCase(unittest.TestCase):
         # 2. Multiple cell_ids with one user added per cell. The angle of
         # the added users may be the same for each cell or different for
         # each cell.
-        self.C1.remove_all_users()
+        self.C1.delete_all_users()
         # Add a user with the same angle in each cell
         self.C1.add_border_users(cell_ids, 270, 0.9)
         self.assertEqual(self.C1._cells[0].num_users, 1)
@@ -756,7 +808,7 @@ class ClusterTestCase(unittest.TestCase):
 
         # 3. Add multiple users to multiple cells with different angles,
         # ratios, etc.
-        self.C1.remove_all_users()
+        self.C1.delete_all_users()
         # Notice how we have to repeate "angles" 3 times, one time for each
         # cell_id. We also set a different color for the users in each
         # cell.
@@ -805,6 +857,33 @@ class ClusterTestCase(unittest.TestCase):
         for i, c in enumerate(self.C2):
             self.assertTrue(isinstance(c, cell.Cell))
         self.assertEqual(i, 6)
+
+    def test_lala(self):
+        # from matplotlib import pyplot as plt
+        # fig, ax = plt.subplots()
+        # rotate=True
+        # C1 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec', rotate_by_30=rotate)
+        # C2 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='simple', rotate_by_30=rotate)
+        # C1.fill_face_bool = True
+        # C2.fill_face_bool = True
+
+        # #C1._cells[0].add_random_users_in_sector(100,1)
+
+        # C1.plot(ax)
+        # #C2.plot(ax)
+
+        # C1._cells[0]._sec1.fill_face_bool = True
+        # C1._cells[0]._sec1.fill_color = 'b'
+        # C1._cells[0]._sec1.fill_opacity = 0.8
+        # C1._cells[0]._sec1.plot(ax)
+
+        # #C1._cells[0].plot()
+
+
+        # plt.show()
+
+        # TODO: Implement-me
+        pass
 
 class GridTestCase(unittest.TestCase):
     def setUp(self):

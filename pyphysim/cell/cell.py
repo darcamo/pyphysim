@@ -112,6 +112,25 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
         self.cell_id_fontsize = None
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def __repr__(self):
+        """
+        Representation of a CellBase (or derived) object.
+        """
+        return "{0}(pos={1},radius={2},cell_id={3},rotation={4})".format(
+            self.__class__.__name__, self.pos, self.radius, self.id, self.rotation)
+
+    # The _set_pos property inherited from the Coordinate class only
+    # changes the self._pos variable. We re-implement it here so that when
+    # the position is changed we update the positions of any user already
+    # in the cell.
+    def _set_pos(self, value):
+        """Set method for the pos property."""
+        diff = value - self._pos
+        self._pos = value
+        for user in self._users:
+            user.pos += diff
+    pos = property(fget=shapes.Coordinate._get_pos, fset=_set_pos)
+
     def _get_num_users(self):
         """Get method for the num_users property."""
         return len(self._users)
@@ -240,7 +259,8 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
         self.add_user(new_user, relative_pos_bool=False)
 
     def add_random_users(self, num_users, user_color=None, min_dist_ratio=0):
-        """Add `num_users` users randomly located in the cell.
+        """
+        Add `num_users` users randomly located in the cell.
 
         Parameters
         ----------
@@ -251,7 +271,6 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
         min_dist_ratio : float
             Minimum allowed (relative) distance between the cell center and
             the generated random user. The value must be between 0 and 0.7.
-
         """
         for _ in range(num_users):
             self.add_random_user(user_color, min_dist_ratio)
@@ -415,7 +434,7 @@ class Cell3Sec(CellBase):
 
     Each sector corresponds to an hexagon.
     """
-    def __init__(self, pos, radius, cell_id=None, rotation=0):
+    def __init__(self, pos, radius, cell_id=None, rotation=30):
         """Initializes the Cell3Sec object.
 
         Parameters
@@ -432,19 +451,43 @@ class Cell3Sec(CellBase):
         """
         CellBase.__init__(self, pos, radius, cell_id, rotation)
 
+        secradius = self.secradius
+        h = secradius * (np.sqrt(3) / 2.0)
+        self._sec1 = Cell(0 - h - (0.5j * secradius), secradius, rotation=rotation)
+        self._sec2 = Cell(0 + h - (0.5j * secradius), secradius, rotation=rotation)
+        self._sec3 = Cell(0 + (1j * secradius), secradius, rotation=rotation)
+
+        self._sec1.move_by_relative_coordinate(pos)
+        self._sec2.move_by_relative_coordinate(pos)
+        self._sec3.move_by_relative_coordinate(pos)
+
+    def _set_radius(self, value):
+        """Set method for the radius property"""
+        # Overwrite the set property for radius in the Shape parent class
+        # so that if radius is changed we update the radius of each sector.
+        self._radius = value
+        secradius = self.secradius  # self.secradius is updated when self.radius changes
+        self._sec1.radius = secradius
+        self._sec2.radius = secradius
+        self._sec3.radius = secradius
+
     def _get_secradius(self):
         """
         Get method for the secradius property.
 
         The radius of a sector.
         """
-        return self.radius / 2.0
+        # The value "sqrt(3) * r / 3" was chosen to be the section radius
+        # so that the area of the three sectorized cell with radius equal
+        # to `secradius` be the same of an hexagonal cell with radius equal
+        # to `r`.
+        return np.sqrt(3) * self.radius / 3.0
     secradius = property(_get_secradius)
 
     def _get_vertex_positions(self):
         """
         """
-        secradius = self.radius / 2.0
+        secradius = self.secradius
         h = secradius * (np.sqrt(3) / 2.0)
 
         # The three sectors are hexagons. We set their positions to the origin.
@@ -454,11 +497,59 @@ class Cell3Sec(CellBase):
 
         # The vertexes of the whole cell correspond to the union of the
         # vertexes of all sectors.
-        aux = [sec1.vertices[[0, 1]], sec2.vertices[[0, 1, 2, 3]],
-               sec3.vertices[[2, 3, 4, 5]], sec1.vertices[[4, 5]]]
+        aux = [sec1.vertices[[0, 1]],
+               sec2.vertices[[0, 1, 2, 3]],
+               sec3.vertices[[2, 3, 4, 5]],
+               sec1.vertices[[4, 5]]]
         all_vertexes = np.hstack(aux)
 
         return all_vertexes
+
+    def add_random_user_in_sector(self, sector, user_color=None, min_dist_ratio=0):
+        """
+        Adds a user randomly located in the specified `sector` of the cell.
+
+        Parameters
+        ----------
+        sector : int
+            The sector index. Can only be 1, 2 or 3.
+        user_color : srt
+            Color of the user's marker.
+        min_dist_ratio : float
+            Minimum allowed (relative) distance between the cell center and
+            the generated random user. The value must be between 0 and 0.7.
+        """
+        if sector == 1:
+            sec = self._sec1
+        elif sector == 2:
+            sec = self._sec2
+        elif sector == 3:
+            sec = self._sec3
+        else:
+            raise RuntimeError('Invalid sector number: {0}'.format(sector))
+
+        sec.add_random_user(user_color, min_dist_ratio)
+        self._users.extend(sec.users)
+        sec.delete_all_users()
+
+    def add_random_users_in_sector(self, num_users, sector, user_color=None, min_dist_ratio=0):
+        """
+        Add `num_users` users randomly in the specified `sector` of the cell
+
+        Parameters
+        ----------
+        num_users : int
+            Number of users to be added to the sector.
+        sector : int
+            The sector index. Can only be 1, 2 or 3.
+        user_color : srt
+            Color of the user's marker.
+        min_dist_ratio : float
+            Minimum allowed (relative) distance between the cell center and
+            the generated random user. The value must be between 0 and 0.7.
+        """
+        for _ in range(num_users):
+            self.add_random_user_in_sector(sector, user_color, min_dist_ratio)
 
     def plot(self, ax=None):
         """
@@ -561,7 +652,8 @@ class Cluster(shapes.Shape):
                  num_cells,
                  pos=0 + 0j,
                  cluster_id=None,
-                 cell_type='simple'):
+                 cell_type='simple',
+                 rotate_by_30=True):
         """Initializes the Cluster object.
 
         Parameters
@@ -578,8 +670,15 @@ class Cluster(shapes.Shape):
             The type of the cell. If it is 'simple' it means the standard
             hexagon shaped cell. If '3sec' it means a 3 sectorized cell
             composed of 3 hexagons.
+        rotate_by_30 : bool
+            If True, the cluster will be rotated by 30 degrees.
         """
         shapes.Shape.__init__(self, pos, radius=0, rotation=0)
+
+        # xxxxx Store for later reference (in __repr__) xxxxxxxxxxxxxxxxxxx
+        self._cell_type = cell_type
+        self._rotate_by_30 = rotate_by_30
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.cluster_id = cluster_id
         self._cell_radius = cell_radius
@@ -587,7 +686,10 @@ class Cluster(shapes.Shape):
         # Cells in the cluster
         self._cells = []
 
-        cell_positions = Cluster._calc_cell_positions(cell_radius, num_cells, cell_type)
+        cell_positions = Cluster._calc_cell_positions(cell_radius,
+                                                      num_cells,
+                                                      cell_type,
+                                                      rotate_by_30)
         # Correct the positions to take into account the grid central
         # position.
         cell_positions[:, 0] = cell_positions[:, 0] + self.pos
@@ -621,6 +723,14 @@ class Cluster(shapes.Shape):
         # xxxxx Plot appearance xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self._cell_id_fontsize = None  # If None, default value will be used
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def __repr__(self):
+        """
+        Representation of a Cluster (or derived) object.
+        """
+        return "{0}(cell_radius={1},num_cells={2},pos={3},cluster_id={4},cell_type={5},rotate_by_30={6})".format(
+            self.__class__.__name__, self._cell_radius, self.num_cells, self.pos,
+            self.cluster_id, repr(self._cell_type), self._rotate_by_30)
 
     def _set_cell_id_fontsize(self, value):
         """
@@ -736,7 +846,7 @@ class Cluster(shapes.Shape):
         return Cluster._ii_and_jj.get(num_cells, (0, 0))
 
     @staticmethod
-    def _calc_cell_positions(cell_radius, num_cells, cell_type="simple"):
+    def _calc_cell_positions(cell_radius, num_cells, cell_type="simple", rotate_by_30=True):
         """
         Helper function used by the Cluster class.
 
@@ -754,6 +864,8 @@ class Cluster(shapes.Shape):
             The type of the cell. If it is 'simple' it means the standard
             hexagon shaped cell. If '3sec' it means a 3 sectorized cell
             composed of 3 hexagons.
+        rotate_by_30 : bool
+            If True, the cells will be rotated by 30 degrees.
 
         Returns
         -------
@@ -762,9 +874,13 @@ class Cluster(shapes.Shape):
             radius `cell_radius`.
         """
         if cell_type == 'simple':
-            cell_positions = Cluster._calc_cell_positions_hexagon(cell_radius, num_cells)
+            cell_positions = Cluster._calc_cell_positions_hexagon(cell_radius,
+                                                                  num_cells,
+                                                                  rotate_by_30)
         elif cell_type == '3sec':
-            cell_positions = Cluster._calc_cell_positions_3sec(cell_radius, num_cells)
+            cell_positions = Cluster._calc_cell_positions_3sec(cell_radius,
+                                                               num_cells,
+                                                               rotate_by_30)
         else:
             raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
 
@@ -782,7 +898,7 @@ class Cluster(shapes.Shape):
     @staticmethod
     def _calc_cell_positions_3sec(cell_radius, num_cells, rotate_by_30=True):
         cell_positions = np.zeros([num_cells, 2], dtype=complex)
-        sec_radius = cell_radius / 2.
+        sec_radius = np.sqrt(3) * cell_radius / 3.
         sec_height = sec_radius * np.sqrt(3.) / 2.
 
         # xxxxx Get the positions of cells from 2 to 7 xxxxxxxxxxxxxxxxxxxx
@@ -790,24 +906,28 @@ class Cluster(shapes.Shape):
         angles_first_ring = np.linspace(np.pi / 6., 11. * np.pi / 6., 6)
         max_value = min(num_cells, 7)
         for index in range(1, max_value):
-            # cell_positions[index, 0] = 2 * cell_height * np.exp(1j * angles_first_ring[index - 1])
-            cell_positions[index, 0] = 3 * sec_radius * np.exp(1j * angles_first_ring[index - 1])
+            angle = angles_first_ring[index - 1]
+            cell_positions[index, 0] = cmath.rect(3 * sec_radius, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Get the positions of cells from 8 to 13 xxxxxxxxxxxxxxxxxxxx
         if num_cells > 7:
+            # angles_second_ring_A -> 0:60:300 -> 0,60,120,180,240,300
             angles_second_ring_A = np.linspace(0, np.pi * 5. / 3., 6)
             max_value = min(num_cells, 13)
             for index in range(7, max_value):
-                cell_positions[index, 0] = 6 * sec_height * np.exp(1j * angles_second_ring_A[index - 7])
+                angle = angles_second_ring_A[index - 7]
+                cell_positions[index, 0] = cmath.rect(6 * sec_height, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
         if num_cells > 13:
+            # 30:60:330 -> 30,90,150,210,270,330
             angles_second_ring_B = angles_first_ring
             max_value = min(num_cells, 19)
             for index in range(13, max_value):
-                cell_positions[index, 0] = 6 * sec_radius * np.exp(1j * angles_second_ring_B[index - 13])
+                angle = angles_second_ring_B[index - 13]
+                cell_positions[index, 0] = cmath.rect(6 * sec_radius, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         if rotate_by_30 is True:
@@ -870,6 +990,7 @@ class Cluster(shapes.Shape):
 
         # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
         if num_cells > 13:
+            # 30:60:330 -> 30,90,150,210,270,330
             angles_second_ring_B = angles_first_ring
             max_value = min(num_cells, 19)
             for index in range(13, max_value):
@@ -1233,7 +1354,7 @@ class Cluster(shapes.Shape):
                 cell_id, angle, ratio, color = data
                 self._cells[cell_id - 1].add_border_user(angle, ratio, color)
 
-    def remove_all_users(self, cell_id=None):
+    def delete_all_users(self, cell_id=None):
         """Remove all users from one or more cells.
 
         If cell_id is an integer > 0, only the users from the cell whose
