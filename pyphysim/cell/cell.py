@@ -451,15 +451,31 @@ class Cell3Sec(CellBase):
         """
         CellBase.__init__(self, pos, radius, cell_id, rotation)
 
+        # secradius = self.secradius
+        # h = secradius * (np.sqrt(3) / 2.0)
+
+        sec_positions = self._calc_sectors_positions()
+
+        self._sec1 = Cell(sec_positions[0], self.secradius, rotation=self.rotation-30)
+        self._sec2 = Cell(sec_positions[1], self.secradius, rotation=self.rotation-30)
+        self._sec3 = Cell(sec_positions[2], self.secradius, rotation=self.rotation-30)
+
+    def _calc_sectors_positions(self):
+        """
+        Calculates the positions of the sectors with the current rotation,
+        center position and radius.
+        """
         secradius = self.secradius
         h = secradius * (np.sqrt(3) / 2.0)
-        self._sec1 = Cell(0 - h - (0.5j * secradius), secradius, rotation=rotation)
-        self._sec2 = Cell(0 + h - (0.5j * secradius), secradius, rotation=rotation)
-        self._sec3 = Cell(0 + (1j * secradius), secradius, rotation=rotation)
 
-        self._sec1.move_by_relative_coordinate(pos)
-        self._sec2.move_by_relative_coordinate(pos)
-        self._sec3.move_by_relative_coordinate(pos)
+        sec_positions = np.empty(3, dtype=complex)
+        sec_positions[0] = 0 - h - (0.5j * secradius)
+        sec_positions[1] = 0 + h - (0.5j * secradius)
+        sec_positions[2] = 0 + (1j * secradius)
+
+        sec_positions = shapes.Shape._rotate(sec_positions, self.rotation)
+        sec_positions += self.pos
+        return sec_positions
 
     def _set_radius(self, value):
         """Set method for the radius property"""
@@ -470,6 +486,14 @@ class Cell3Sec(CellBase):
         self._sec1.radius = secradius
         self._sec2.radius = secradius
         self._sec3.radius = secradius
+
+        # When the radius change, we also need to update the position of each sector.
+        sec_positions = self._calc_sectors_positions()
+        self._sec1.pos = sec_positions[0]
+        self._sec2.pos = sec_positions[1]
+        self._sec3.pos = sec_positions[2]
+
+    radius = property(fget=shapes.Shape._get_radius, fset=_set_radius)
 
     def _get_secradius(self):
         """

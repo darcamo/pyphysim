@@ -556,14 +556,14 @@ class Cell3SecTestCase(unittest.TestCase):
             self.assertTrue(self.C1.is_point_inside_shape(self.C1._users[i].pos))
 
     def test_lala(self):
-        C1 = cell.Cell3Sec(pos=0 - 3j, radius=2.5, cell_id=1, rotation=0)
-        C2 = cell.Cell3Sec(pos=7 - 3j, radius=2.5, cell_id=1, rotation=30)
+        C1 = cell.Cell3Sec(pos=0 - 3j, radius=2, cell_id=1, rotation=47)
+        C2 = cell.Cell3Sec(pos=7 - 3j, radius=2.5, cell_id=1, rotation=10)
 
         from matplotlib import pyplot as plt
         fig, ax = plt.subplots()
         ax.axis('equal')
-        C1.plot(ax)
-        C2.plot(ax)
+
+        C1.radius = 6
 
         C1._sec1.fill_face_bool = True
         C1._sec1.plot(ax)
@@ -572,12 +572,24 @@ class Cell3SecTestCase(unittest.TestCase):
         C1._sec3.fill_face_bool = True
         C1._sec3.plot(ax)
 
+        C1.add_random_users_in_sector(100, 1)
+        C1.add_random_users_in_sector(100, 2, user_color='b')
+        C1.add_random_users_in_sector(100, 3, user_color='g')
+
+        C2.add_random_users_in_sector(100, 1)
+        C2.add_random_users_in_sector(100, 2, user_color='b')
+        C2.add_random_users_in_sector(100, 3, user_color='g')
+        print C2.num_users
         C2._sec1.fill_face_bool = True
         C2._sec1.plot(ax)
         C2._sec2.fill_face_bool = True
         C2._sec2.plot(ax)
         C2._sec3.fill_face_bool = True
         C2._sec3.plot(ax)
+
+        C1.plot(ax)
+        C2.plot(ax)
+
         plt.show()
         # TODO: Implement-me
         pass
