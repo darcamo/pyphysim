@@ -812,6 +812,28 @@ class Cluster(shapes.Shape):
     # Property to get the radius of the cells in the cluster.
     cell_radius = property(_get_cell_radius)
 
+    @staticmethod
+    def _calc_cell_height(radius):
+        """
+        Calculates the cell height from the cell radius.
+
+        Parameters
+        ----------
+        radius : float
+            The cell Radius.
+
+        Returns
+        -------
+        height : float
+            The cell height.
+        """
+        return radius * np.sqrt(3.0) / 2.0
+
+    def _get_cell_height(self):
+        """Get method for the cell_height property."""
+        return self._calc_cell_height(self.cell_radius)
+    cell_height = property(_get_cell_height)
+
     def __iter__(self):
         """Iterator for the cells in the cluster"""
         return iter(self._cells)
@@ -991,7 +1013,7 @@ class Cluster(shapes.Shape):
         # (complex number) and the second column has the cell rotation
         # (only the real part is considered)
         cell_positions = np.zeros([num_cells, 2], dtype=complex)
-        cell_height = cell_radius * np.sqrt(3.) / 2.
+        cell_height = Cluster._calc_cell_height(cell_radius)
 
         # xxxxx Get the positions of cells from 2 to 7 xxxxxxxxxxxxxxxxxxxx
         # angles_first_ring -> 30:60:330 -> 30,90,150,210,270,330
@@ -1033,9 +1055,11 @@ class Cluster(shapes.Shape):
 
     @staticmethod
     def _calc_cluster_radius(num_cells, cell_radius):
-        """Calculates the "cluster radius" for a cluster with "num_cells"
-        cells, each cell with radius equal to "cell_radius". The cluster
-        "radius" is equivalent to half the distance between two clusters.
+        """
+        Calculates the "cluster radius" for a cluster with "num_cells" cells,
+        each cell with radius equal to "cell_radius". The cluster "radius"
+        is equivalent to half the distance between two clusters when they
+        are in a Grid.
 
         Parameters
         ----------
@@ -1054,9 +1078,8 @@ class Cluster(shapes.Shape):
         -----
         The cluster "radius" is equivalent to half the distance between two
         clusters.
-
         """
-        cell_height = cell_radius * np.sqrt(3.0) / 2.0
+        cell_height = Cluster._calc_cell_height(cell_radius)
         # In the Rappaport book we have
         # the formula
         #       N = i^2+i*j+j^2
