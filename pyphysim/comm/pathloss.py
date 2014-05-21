@@ -193,7 +193,7 @@ class PathLossFreeSpace(PathLossBase):
     def __init__(self):
         PathLossBase.__init__(self)
         self.n = 2       # Path Loss Coefficient
-        self.fc = 900e6  # Frequency of the central carrier
+        self.fc = 900e6  # Frequency of the central carrier (in Hz)
 
     def which_distance_dB(self, PL):
         """Calculates the required distance (in kilometers) to achieve the
@@ -247,7 +247,7 @@ class PathLossFreeSpace(PathLossBase):
 class PathLoss3GPP1(PathLossBase):
     """Class to calculate the Path Loss according to the model from 3GPP
     (scenario 1). That is, the Path Loss (in dB) is equal to
-    $128.1 + 37.6*\\log10(d)$.
+    $128.1 + 37.6*\log10(d)$.
 
     This model is valid for LTE assumptions and at 2GHz frequency, where
     the distance is in Km.
@@ -289,14 +289,13 @@ class PathLoss3GPP1(PathLossBase):
         -------
         d : float of numpy array
             Distance (in Km).
-
         """
         d = 10 ** ((PL - 128.1) / 37.6)
         return d
 
     def _calc_deterministic_path_loss_dB(self, d):
-        """Calculates the Path Loss (in dB) for a given distance (in
-        kilometers).
+        """
+        Calculates the Path Loss (in dB) for a given distance (in kilometers).
 
         Note that the returned value is positive, but should be understood
         as "a loss".
@@ -311,6 +310,135 @@ class PathLoss3GPP1(PathLossBase):
 
         Returns
         -------
+        PL : float
+            Path loss in dB.
         """
         PL = 128.1 + 37.6 * np.log10(d)
         return PL
+
+
+# TODO: The frequency in this class is in MHz. Change the frequency in the
+# OTHER path loss classes to also be in MHz.
+# TODO: Test this class
+class PathLossOkomuraHata(PathLossBase):
+    # f in MHz
+    # d in Km
+
+    # $L (\text{in dB}) = 69.55 + 26.16 \log(f) -13.82 \log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\log(h_{bs})) \log(d) - K$
+
+    # d should be between 1Km and 20Km
+    def __init__(self):
+        # super(PathLossFreeSpace, self).__init__()
+        PathLossBase.__init__(self)
+
+        self.hbs = 30  # Height of the Base Station (in meters) -> 30m a 200m
+        self.hms = 1.5  # Height of the Mobile Station (in meters) - 1m - 10m
+        self.fc = 900  # Frequency of the central carrier (in MHz) - 150e3 - 1500e3
+
+        # Can be 'open', 'suburban', 'medium city', 'small city', 'large city'.
+        # Note: The category of “large city” used by Hata implies building
+        # heights greater than 15m.
+        self.area_type = 'suburban'
+
+    def _calc_mobile_antenna_height_correction_factor(self):
+        """
+        Calculates the mobile antenna height correction factor.
+
+        Returns
+        -------
+        a : float
+            The mobile antenna height correction.
+        """
+        if self.area_type in ['open', 'suburban', 'medium city', 'small city']:
+
+            # Suburban and ruran areas (f in MHz
+            # $a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$
+            a = (1.1 * np.log10(self.fc) - 0.7) * self.hms - 1.56 * np.log10(self.fc) + 0.8
+        elif self.area_type == 'large city':
+            # Note: The category of “large city” used by Hata implies
+            # building heights greater than 15m.
+            if self.fc > 300:
+                # If frequency is greater then 300MHz then the factor is given by
+                # $3.2 (\log(11.75*h_{ms})^2) - 4.97$
+                a = 3.2 * (np.log10(11.75 * self.hms)**2) - 4.97
+            else:
+                # If frequency is lower then 300MHz then the factor is given by
+                # $8.29 (\log(1.54 h_{ms}))^2 - 1.10$
+                a = 8.29 * (np.log10(1.54 * self.hms)**2) - 1.10
+        else:
+            raise RuntimeError('Invalid area type: {0}'.format(self.area_type))
+
+        return a
+
+    def _calc_K(self):
+        """
+        Calculates the "'small city'/'suburban'/'open area'" correction factor.
+
+        Returns
+        -------
+        K : float
+            The correction factor "K".
+        """
+        if self.area_type == 'large city':
+            K = 0
+        elif self.area_type == 'open':
+            # Value for 'open' areas
+            # $K = 4.78 (\log(f))^2 - 18.33 \log(f) + 40.94$
+            K = 4.78 * (np.log10(self.fc)**2) - 18.33 * np.log10(self.fc) + 40.94
+        elif self.area_type == 'suburban':
+            # Value for 'suburban' areas
+            # $K = 2 [\log(f/28)^2] + 5.4$
+            K = 2 * (np.log10(self.fc / 28.0)**2) + 5.4
+        else:
+            K = 0
+        return K
+
+    def _calc_deterministic_path_loss_dB(self, d):
+        """
+        Calculates the Path Loss (in dB) for a given distance (in kilometers).
+
+        Note that the returned value is positive, but should be understood
+        as "a loss".
+
+        For d in Km and self.fc in Hz, the free space Path Loss is given by
+        PL = 10n ( log10(d) +log10(f) - 4.3779113907 )
+
+        Parameters
+        ----------
+        d : float or numpy array
+            Distance (in Km).
+
+        Returns
+        -------
+        PL : float
+            Path loss in dB.
+        """
+        # $L (\text{in dB}) = 69.55 + 26.16 \log(f) -13.82 \log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\log(h_{bs})) \log(d) - K$
+
+        # Calculate the mobile antenna height correction factor
+        a = self._calc_mobile_antenna_height_correction_factor()
+
+        # Calculates the "'small city'/'suburban'/'open area'" correction factor.
+        K = self._calc_K()
+
+        L = 69.55 + 26.16 * np.log10(self.fc) - 13.82 * np.log10(self.hbs) - a + (44.9 - 6.55 * np.log10(self.hbs)) * np.log10(d) - K
+        return L
+
+    def which_distance_dB(self, PL):
+        """Calculates the required distance (in kilometers) to achieve the
+        given path loss (in dB).
+
+        It is the inverse of the calcPathLoss function.
+
+        Parameters
+        ----------
+        PL : float or numpy array
+            Path loss (in dB).
+
+        Returns
+        -------
+        d : float of numpy array
+            Distance (in Km).
+        """
+        # TODO: implement-me
+        pass
