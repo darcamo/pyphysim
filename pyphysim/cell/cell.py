@@ -56,7 +56,6 @@ class Node(shapes.Coordinate):
 
         """
         stand_alone_plot = False
-
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
             ax = plt.axes()
@@ -456,9 +455,12 @@ class Cell3Sec(CellBase):
 
         sec_positions = self._calc_sectors_positions()
 
-        self._sec1 = Cell(sec_positions[0], self.secradius, rotation=self.rotation-30)
-        self._sec2 = Cell(sec_positions[1], self.secradius, rotation=self.rotation-30)
-        self._sec3 = Cell(sec_positions[2], self.secradius, rotation=self.rotation-30)
+        self._sec1 = Cell(sec_positions[0], self.secradius, cell_id='',
+                          rotation=self.rotation-30)
+        self._sec2 = Cell(sec_positions[1], self.secradius, cell_id='',
+                          rotation=self.rotation-30)
+        self._sec3 = Cell(sec_positions[2], self.secradius, cell_id='',
+                          rotation=self.rotation-30)
 
     def _calc_sectors_positions(self):
         """
@@ -492,8 +494,39 @@ class Cell3Sec(CellBase):
         self._sec1.pos = sec_positions[0]
         self._sec2.pos = sec_positions[1]
         self._sec3.pos = sec_positions[2]
-
     radius = property(fget=shapes.Shape._get_radius, fset=_set_radius)
+
+    def _set_rotation(self, value):
+        """Set method for the rotation property."""
+        # Overwrite the set property for rotation in the Shape parent class
+        # so that if rotation is changed we update the rotation of each
+        # sector.
+        self._rotation = value
+
+        self._sec1.rotation = value - 30
+        self._sec2.rotation = value - 30
+        self._sec3.rotation = value - 30
+        sec_positions = self._calc_sectors_positions()
+
+        self._sec1.pos = sec_positions[0]
+        self._sec2.pos = sec_positions[1]
+        self._sec3.pos = sec_positions[2]
+    rotation = property(fget=shapes.Shape._get_rotation, fset=_set_rotation)
+
+    def _set_pos(self, value):
+        """Set method for the pos property."""
+
+        # Calling the _set_pos method of CellBase class will not only
+        # update the position of the cell, but also update the position of
+        # any users already in the cell.
+        CellBase._set_pos(self, value)
+
+        # Update the sectors' positions
+        sec_positions = self._calc_sectors_positions()
+        self._sec1.pos = sec_positions[0]
+        self._sec2.pos = sec_positions[1]
+        self._sec3.pos = sec_positions[2]
+    pos = property(fget=shapes.Shape._get_pos, fset=_set_pos)
 
     def _get_secradius(self):
         """
@@ -986,8 +1019,10 @@ class Cluster(shapes.Shape):
         return cell_positions
 
     @staticmethod
-    def _calc_cell_positions_hexagon(cell_radius, num_cells, rotate_by_30=True):
-        """Helper function used by the Cluster class.
+    def _calc_cell_positions_hexagon(cell_radius, num_cells,
+                                     rotate_by_30=True):
+        """
+        Helper function used by the Cluster class.
 
         The calc_cell_positions method calculates the position (and
         rotation) of the 'num_cells' different cells, each with radius
@@ -1007,7 +1042,6 @@ class Cluster(shapes.Shape):
         cell_positions : 1D numpy array
             Positions of the cells in a cluster with `num_cells` cells with
             radius `cell_radius`.
-
         """
         # The first column in cell_positions has the cell positions
         # (complex number) and the second column has the cell rotation
