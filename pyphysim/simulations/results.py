@@ -834,6 +834,11 @@ class SimulationResults(object):
             name = res[0].name
             data[name] = [r.get_result() for r in res]
 
+        try:
+            data['runned_reps'] = self.runned_reps
+        except AttributeError:
+            pass
+
         df = DataFrame(data)
         return df
 
