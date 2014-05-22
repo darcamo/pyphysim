@@ -1487,15 +1487,19 @@ class Cluster(shapes.Shape):
         the last three rows correspond to the users in the third cell.
 
         """
-        dists = np.zeros([self.num_users, self.num_cells], dtype=float)
-        all_cells = self._cells
         all_users = self.get_all_users()
 
-        for user_index in range(self.num_users):
-            for cell_index in range(self.num_cells):
-                dists[user_index, cell_index] = all_cells[cell_index].calc_dist(all_users[user_index])
+        # We use the ndmin=2 option so that the array has two dimensions
+        # instead of just one
+        all_users_pos = np.array([x.pos for x in all_users], ndmin=2)
+        all_cells_pos = np.array([x.pos for x in self._cells], ndmin=2)
 
+        # Using broadcast we can calculate all distances in one go without
+        # any for loop. -> dists[user_index, cell_index]
+        dists = np.abs(all_users_pos.T - all_cells_pos)
         return dists
+
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
