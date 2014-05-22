@@ -4385,6 +4385,117 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
             np.array([1.2, 1.0]))
 
 
+# TODO: finish implementation
+class PathLossOkomuraHataTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.pl = pathloss.PathLossOkomuraHata()
+
+    def test_model_parameters(self):
+        self.assertAlmostEqual(self.pl.hms, 1.0)
+        self.assertAlmostEqual(self.pl.hbs, 30.0)
+        self.assertAlmostEqual(self.pl.fc, 900.0)
+
+        # Valid values -> no exceptions should be raised
+        self.pl.hbs = 45.0
+        self.pl.hms = 1.5
+        self.pl.fc = 1100.0
+
+        # Invalid values: an exception should be raised
+        with self.assertRaises(RuntimeError):
+            self.pl.hms = 0.8
+
+        with self.assertRaises(RuntimeError):
+            self.pl.hms = 11.4
+
+        with self.assertRaises(RuntimeError):
+            self.pl.hbs = 25.0
+
+        with self.assertRaises(RuntimeError):
+            self.pl.hbs = 205.3
+
+        with self.assertRaises(RuntimeError):
+             self.pl.fc= 130.0
+
+        with self.assertRaises(RuntimeError):
+             self.pl.fc= 1600.0
+
+    def test_calc_deterministic_path_loss_dB(self):
+        self.pl.fc = 900.0
+        self.pl.hbs = 30.0
+        self.pl.hms = 1.0
+
+        # Distances for which the path loss will be calculated
+        d = np.linspace(1, 20, 20)
+
+        # xxxxxxxxxx Test for the 'open' area type xxxxxxxxxxxxxxxxxxxxxxxx
+        self.pl.area_type = 'open'
+        expected_open_pl = np.array([99.1717017731874, 109.775439956383, 115.978229161017, 120.379178139578, 123.792819371578, 126.581967344212, 128.940158353991, 130.982916322773, 132.784756548846, 134.396557554774, 135.854608919885, 137.185705527407, 138.410195707052, 139.543896537186, 140.599346759408, 141.586654505968, 142.514087575345, 143.388494732042, 144.215612946935, 145.000295737969])
+
+        np.testing.assert_array_almost_equal(
+            expected_open_pl,
+            self.pl._calc_deterministic_path_loss_dB(d))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for the suburban area type xxxxxxxxxxxxxxxxxxxxxx
+        self.pl.area_type = 'suburban'
+        expected_suburban_pl = np.array([117.735512612807, 128.339250796002, 134.542040000636, 138.942988979197, 142.356630211198, 145.145778183831, 147.50396919361, 149.546727162392, 151.348567388466, 152.960368394393, 154.418419759504, 155.749516367027, 156.974006546672, 158.107707376805, 159.163157599027, 160.150465345588, 161.077898414965, 161.952305571661, 162.779423786554, 163.564106577588])
+
+        np.testing.assert_array_almost_equal(
+            expected_suburban_pl,
+            self.pl._calc_deterministic_path_loss_dB(d))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test for the medium and small city area types xxxxxxxxxxxxx
+        self.pl.area_type = 'medium city'
+        expected_urban_pl = np.array([127.678119861049, 138.281858044244, 144.484647248879, 148.88559622744, 152.29923745944, 155.088385432074, 157.446576441852, 159.489334410635, 161.291174636708, 162.902975642635, 164.361027007746, 165.692123615269, 166.916613794914, 168.050314625048, 169.10576484727, 170.09307259383, 171.020505663207, 171.894912819903, 172.722031034797, 173.506713825831])
+
+        np.testing.assert_array_almost_equal(
+            expected_urban_pl,
+            self.pl._calc_deterministic_path_loss_dB(d))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for the 'large city' area type xxxxxxxxxxxxxxxxxx
+        # TODO: The test below is only for frequency 900MHz. You need to
+        # test for a lower frequency.
+        self.pl.area_type = 'large city'
+        expected_large_city_pl = np.array(
+            [127.72522899, 138.32896717, 144.53175638, 148.93270536,
+             152.34634659, 155.13549456, 157.49368557, 159.53644354,
+             161.33828377, 162.95008477, 164.40813614, 165.73923275,
+             166.96372293, 168.09742376, 169.15287398, 170.14018172,
+             171.06761479, 171.94202195, 172.76914017, 173.55382296])
+        np.testing.assert_array_almost_equal(
+            expected_large_city_pl,
+            self.pl._calc_deterministic_path_loss_dB(d))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # def test_plots(self):
+    #     pl1 = pathloss.PathLossOkomuraHata()
+    #     pl1.area_type = 'open'
+    #     pl2 = pathloss.PathLossOkomuraHata()
+    #     pl2.area_type = 'suburban'
+    #     pl3 = pathloss.PathLossOkomuraHata()
+    #     pl3.area_type = 'medium city'
+    #     pl4 = pathloss.PathLossOkomuraHata()
+    #     pl4.area_type = 'large city'
+    #     pl1.fc = 400
+    #     pl2.fc = 400
+    #     pl3.fc = 400
+    #     pl4.fc = 400
+
+    #     fig, ax = plt.subplots()
+
+    #     d = np.linspace(1, 20, 20)
+    #     pl1.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'open'})
+    #     pl2.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'suburban'})
+    #     pl3.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'medium city'})
+    #     pl4.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'large city', 'linestyle':'dashed'})
+    #     ax.legend(loc='upper left')
+
+    #     plt.show()
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
     # plot_psd_OFDM_symbols()
