@@ -953,9 +953,13 @@ class Cluster(shapes.Shape):
             radius `cell_radius`.
         """
         if cell_type == 'simple':
-            cell_positions = Cluster._calc_cell_positions_hexagon(cell_radius,
-                                                                  num_cells,
-                                                                  rotate_by_30)
+            if rotate_by_30 is True:
+                cell_positions = Cluster._calc_cell_positions_hexagon(
+                    cell_radius, num_cells, 30.0)
+            else:
+                cell_positions = Cluster._calc_cell_positions_hexagon(
+                    cell_radius, num_cells, 0.0)
+
         elif cell_type == '3sec':
             cell_positions = Cluster._calc_cell_positions_3sec(cell_radius,
                                                                num_cells,
@@ -963,6 +967,7 @@ class Cluster(shapes.Shape):
         else:
             raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
 
+        # xxxxxxx Possibly translate the postions of each cell xxxxxxxxxxxx
         # The coordinates of the cells calculated up to now consider the
         # center of the first cell as the origin. However, we want the
         # center of the cluster to be the origin. Therefore, lets calculate
@@ -971,6 +976,7 @@ class Cluster(shapes.Shape):
         central_pos = np.sum(cell_positions, axis=0) / num_cells
         # We correct only the first column, which is the position
         cell_positions[:, 0] = cell_positions[:, 0] - central_pos[0]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return cell_positions
 
@@ -1020,7 +1026,7 @@ class Cluster(shapes.Shape):
 
     @staticmethod
     def _calc_cell_positions_hexagon(cell_radius, num_cells,
-                                     rotate_by_30=True):
+                                     rotation=None):
         """
         Helper function used by the Cluster class.
 
@@ -1034,8 +1040,8 @@ class Cluster(shapes.Shape):
             Radius of each cell in the cluster.
         num_cells : int
             Number of cells in the cluster.
-        rotate_by_30 : bool
-            If True (default vbalue) the cluster will be rotated by 30 degrees.
+        rotation : float
+            Rotation of the cluster.
 
         Returns
         -------
@@ -1078,12 +1084,12 @@ class Cluster(shapes.Shape):
                 cell_positions[index, 0] = cmath.rect(4 * cell_height, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if rotate_by_30 is True:
+        if rotation is not None:
             # The cell positions calculated up to now do not consider
             # rotation. Lets use the rotate function of the Shape class to
             # rotate the coordinates.
-            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], -30)
-            cell_positions[:, 1] = 30
+            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], +rotation)
+            cell_positions[:, 1] = rotation
 
         return cell_positions
 
