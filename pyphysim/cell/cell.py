@@ -433,15 +433,17 @@ class Cell3Sec(CellBase):
 
     Each sector corresponds to an hexagon.
     """
-    def __init__(self, pos, radius, cell_id=None, rotation=30):
-        """Initializes the Cell3Sec object.
+    def __init__(self, pos, radius, cell_id=None, rotation=0):
+        """
+        Initializes the Cell3Sec object.
 
         Parameters
         ----------
         pos : complex
             The central position of the cell in the complex grid.
         radius : float
-            The cell radius. The sector radius will be equal to half the cell radius.
+            The cell radius. The sector radius will be equal to half the
+            cell radius.
         cell_id : int, optional
             The cell ID. If not provided the cell won't have an ID and its
             plot will shown a symbol in cell center instead of the cell ID.
@@ -662,6 +664,98 @@ class Cell3Sec(CellBase):
             plt.show()
         else:
             ax.autoscale_view(False, True, True)
+
+
+class CellWrap(CellBase):
+    """Class that wraps another cell.
+    """
+    def __init__(self, pos, wrapped_cell):
+        """
+        Initializes the CellWrap object.
+
+        Parameters
+        ----------
+        pos : complex
+            The central position where the wrapped cell will be in the
+            complex grid.
+        wrapped_cell : A subclass of CellBase.
+            The wrapped cell.
+        """
+        # Except for the _wrapped_cell member variable below, all other
+        # member variables are defined in some base class of CellWrap.
+        self._wrapped_cell = wrapped_cell
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        radius = wrapped_cell.radius
+        rotation = wrapped_cell.rotation
+        if wrapped_cell.id is not None:
+            cell_id = "Wrap {0}".format(wrapped_cell.id)
+        else:
+            cell_id = None
+        CellBase.__init__(self, pos, radius, cell_id, rotation)
+
+        self.fill_face_bool = True
+        self.fill_color = 'gray'
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    pos = property(shapes.Shape._get_pos)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def _get_radius(self):
+        """Get method for the radius property."""
+        return self._wrapped_cell.radius
+    radius = property(_get_radius)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def _get_rotation(self):
+        """Get method for the rotation property."""
+        return self._wrapped_cell.rotation
+    rotation = property(_get_rotation)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx users property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def _get_users(self):
+        """Get method for the users property."""
+        wrapped_cell_pos = self._wrapped_cell.pos
+        users = [Node(u.pos - wrapped_cell_pos + self.pos) for u in self._wrapped_cell.users]
+        return users
+    users = property(_get_users)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def __repr__(self):
+        """
+        Representation of a CellWrap (or derived) object.
+        """
+        return "{0}(pos={1},cell_id={3})".format(
+            self.__class__.__name__, self.pos, self._wrapped_cell)
+
+    def _get_vertex_positions(self):
+        return self._wrapped_cell._get_vertex_positions()
+
+    def plot(self, ax=None):  # pragma: no cover
+        stand_alone_plot = False
+
+        if (ax is None):
+            # This is a stand alone plot. Lets create a new axes.
+            ax = plt.axes()
+            stand_alone_plot = True
+
+        # Plot the shape part
+        shapes.Shape.plot(self, ax)
+        # Plot the node part as well as the users in the cell
+        self._plot_common_part(ax)
+
+        if stand_alone_plot is True:
+            ax.plot()
+            plt.show()
+        else:
+            ax.autoscale_view(False, True, True)
+
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -710,7 +804,7 @@ class Cluster(shapes.Shape):
                  pos=0 + 0j,
                  cluster_id=None,
                  cell_type='simple',
-                 rotate_by_30=True):
+                 rotation=None):
         """Initializes the Cluster object.
 
         Parameters
@@ -727,14 +821,14 @@ class Cluster(shapes.Shape):
             The type of the cell. If it is 'simple' it means the standard
             hexagon shaped cell. If '3sec' it means a 3 sectorized cell
             composed of 3 hexagons.
-        rotate_by_30 : bool
-            If True, the cluster will be rotated by 30 degrees.
+        rotation : float
+            Rotation of the cluster.
         """
         shapes.Shape.__init__(self, pos, radius=0, rotation=0)
 
         # xxxxx Store for later reference (in __repr__) xxxxxxxxxxxxxxxxxxx
         self._cell_type = cell_type
-        self._rotate_by_30 = rotate_by_30
+        self._rotation = rotation
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.cluster_id = cluster_id
@@ -746,7 +840,7 @@ class Cluster(shapes.Shape):
         cell_positions = Cluster._calc_cell_positions(cell_radius,
                                                       num_cells,
                                                       cell_type,
-                                                      rotate_by_30)
+                                                      rotation)
         # Correct the positions to take into account the grid central
         # position.
         cell_positions[:, 0] = cell_positions[:, 0] + self.pos
@@ -781,13 +875,19 @@ class Cluster(shapes.Shape):
         self._cell_id_fontsize = None  # If None, default value will be used
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # We reimplement the pos property here so that we can disable setting
+    # the position
+    pos = property(shapes.Coordinate._get_pos)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def __repr__(self):
         """
         Representation of a Cluster (or derived) object.
         """
-        return "{0}(cell_radius={1},num_cells={2},pos={3},cluster_id={4},cell_type={5},rotate_by_30={6})".format(
+        return "{0}(cell_radius={1},num_cells={2},pos={3},cluster_id={4},cell_type={5},rotation={6})".format(
             self.__class__.__name__, self._cell_radius, self.num_cells, self.pos,
-            self.cluster_id, repr(self._cell_type), self._rotate_by_30)
+            self.cluster_id, repr(self._cell_type), self._rotation)
 
     def _set_cell_id_fontsize(self, value):
         """
@@ -925,7 +1025,7 @@ class Cluster(shapes.Shape):
         return Cluster._ii_and_jj.get(num_cells, (0, 0))
 
     @staticmethod
-    def _calc_cell_positions(cell_radius, num_cells, cell_type="simple", rotate_by_30=True):
+    def _calc_cell_positions(cell_radius, num_cells, cell_type="simple", rotation=None):
         """
         Helper function used by the Cluster class.
 
@@ -943,27 +1043,23 @@ class Cluster(shapes.Shape):
             The type of the cell. If it is 'simple' it means the standard
             hexagon shaped cell. If '3sec' it means a 3 sectorized cell
             composed of 3 hexagons.
-        rotate_by_30 : bool
-            If True, the cells will be rotated by 30 degrees.
+        rotation : float
+            Rotation of the cluster.
 
         Returns
         -------
-        cell_positions : 1D numpy array
-            Positions of the cells in a cluster with `num_cells` cells with
-            radius `cell_radius`.
+        cell_positions : 2D numpy array
+            The first column of `cell_positions` has the positions of the
+            cells in a cluster with `num_cells` cells with radius
+            `cell_radius`. The second column has the rotation of each cell.
         """
         if cell_type == 'simple':
-            if rotate_by_30 is True:
-                cell_positions = Cluster._calc_cell_positions_hexagon(
-                    cell_radius, num_cells, 30.0)
-            else:
-                cell_positions = Cluster._calc_cell_positions_hexagon(
-                    cell_radius, num_cells, 0.0)
-
+            cell_positions = Cluster._calc_cell_positions_hexagon(
+                cell_radius, num_cells, rotation)
         elif cell_type == '3sec':
             cell_positions = Cluster._calc_cell_positions_3sec(cell_radius,
                                                                num_cells,
-                                                               rotate_by_30)
+                                                               rotation)
         else:
             raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
 
@@ -981,7 +1077,30 @@ class Cluster(shapes.Shape):
         return cell_positions
 
     @staticmethod
-    def _calc_cell_positions_3sec(cell_radius, num_cells, rotate_by_30=True):
+    def _calc_cell_positions_3sec(cell_radius, num_cells, rotation=None):
+        """
+        Helper function used by the Cluster class.
+
+        The _calc_cell_positions_3sec method calculates the position (and
+        rotation) of the 'num_cells' different cells, each with radius
+        equal to 'cell_radius', so that they properly fit in the cluster.
+
+        Parameters
+        ----------
+        cell_radius : float
+            Radius of each cell in the cluster.
+        num_cells : int
+            Number of cells in the cluster.
+        rotation : float
+            Rotation of the cluster.
+
+        Returns
+        -------
+        cell_positions : 2D numpy array
+            The first column of `cell_positions` has the positions of the
+            cells in a cluster with `num_cells` cells with radius
+            `cell_radius`. The second column has the rotation of each cell.
+        """
         cell_positions = np.zeros([num_cells, 2], dtype=complex)
         sec_radius = np.sqrt(3) * cell_radius / 3.
         sec_height = sec_radius * np.sqrt(3.) / 2.
@@ -1015,12 +1134,12 @@ class Cluster(shapes.Shape):
                 cell_positions[index, 0] = cmath.rect(6 * sec_radius, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if rotate_by_30 is True:
+        if rotation is not None:
             # The cell positions calculated up to now do not consider
             # rotation. Lets use the rotate function of the Shape class to
             # rotate the coordinates.
-            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], -30)
-            cell_positions[:, 1] = 30
+            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0], rotation)
+            cell_positions[:, 1] = rotation
 
         return cell_positions
 
@@ -1045,9 +1164,9 @@ class Cluster(shapes.Shape):
 
         Returns
         -------
-        cell_positions : 1D numpy array
-            Positions of the cells in a cluster with `num_cells` cells with
-            radius `cell_radius`.
+            The first column of `cell_positions` has the positions of the
+            cells in a cluster with `num_cells` cells with radius
+            `cell_radius`. The second column has the rotation of each cell.
         """
         # The first column in cell_positions has the cell positions
         # (complex number) and the second column has the cell rotation
@@ -1064,24 +1183,18 @@ class Cluster(shapes.Shape):
             cell_positions[index, 0] = cmath.rect(2 * cell_height, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Get the positions of cells from 8 to 13 xxxxxxxxxxxxxxxxxxxx
-        if num_cells > 7:
-            # angles_second_ring_A -> 0:60:300
-            angles_second_ring_A = np.linspace(0, np.pi * 5. / 3., 6)
-            max_value = min(num_cells, 13)
-            for index in range(7, max_value):
-                angle = angles_second_ring_A[index - 7]
-                cell_positions[index, 0] = cmath.rect(3 * cell_radius, angle)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Get the positions of cells from 8 to 19 xxxxxxxxxxxxxxxxxxxx
+        # angles -> 0, 30, 60, ..., 330
+        angles = np.linspace(0, 11 * np.pi / 6., 12)
+        # For angle 0, the distance is 3*cell_radius, for angle 30 the
+        # distance is 4*cell_height, for angle 60 the distance is
+        # 3*cell_radius, for angle 90 the distance is 4*cell_height and the
+        # pattern continues.
+        dists = itertools.cycle([3*cell_radius, 4*cell_height])
 
-        # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
-        if num_cells > 13:
-            # 30:60:330 -> 30,90,150,210,270,330
-            angles_second_ring_B = angles_first_ring
-            max_value = min(num_cells, 19)
-            for index in range(13, max_value):
-                angle = angles_second_ring_B[index - 13]
-                cell_positions[index, 0] = cmath.rect(4 * cell_height, angle)
+        # The distance alternates between 3*cell_radius and 4*cell_height.
+        for index, a, d in zip(range(7, num_cells), angles, dists):
+            cell_positions[index, 0] = cmath.rect(d, a)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         if rotation is not None:
@@ -1505,6 +1618,15 @@ class Cluster(shapes.Shape):
         dists = np.abs(all_users_pos.T - all_cells_pos)
         return dists
 
+    def create_wrap_around_cells(self):
+        """
+        This function will create the wrapped cells, as well as the wrapinfo
+        data.
+        """
+        if self.num_cells == 19:
+            pass
+        else:
+            raise RuntimeError("Wrap around not implemented for a cluster with {0} cells.".format(self.num_cells))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -555,44 +555,77 @@ class Cell3SecTestCase(unittest.TestCase):
         for i in range(self.C1.num_users):
             self.assertTrue(self.C1.is_point_inside_shape(self.C1._users[i].pos))
 
-    def test_lala(self):
-        C1 = cell.Cell3Sec(pos=0 - 3j, radius=2, cell_id=1, rotation=47)
-        C2 = cell.Cell3Sec(pos=7 - 3j, radius=2.5, cell_id=1, rotation=10)
+    # def test_lala(self):
+    #     C1 = cell.Cell3Sec(pos=0 - 3j, radius=2, cell_id=1, rotation=47)
+    #     C2 = cell.Cell3Sec(pos=7 - 3j, radius=2.5, cell_id=1, rotation=10)
 
-        from matplotlib import pyplot as plt
-        fig, ax = plt.subplots()
-        ax.axis('equal')
+    #     from matplotlib import pyplot as plt
+    #     _, ax = plt.subplots()
+    #     ax.axis('equal')
 
-        C1.radius = 6
+    #     C1.radius = 6
+    #     C1.rotation=35
 
-        C1._sec1.fill_face_bool = True
-        C1._sec1.plot(ax)
-        C1._sec2.fill_face_bool = True
-        C1._sec2.plot(ax)
-        C1._sec3.fill_face_bool = True
-        C1._sec3.plot(ax)
+    #     C1.pos = 12+1j
 
-        C1.add_random_users_in_sector(100, 1)
-        C1.add_random_users_in_sector(100, 2, user_color='b')
-        C1.add_random_users_in_sector(100, 3, user_color='g')
+    #     C1._sec1.fill_face_bool = True
+    #     C1._sec1.plot(ax)
+    #     C1._sec2.fill_face_bool = True
+    #     C1._sec2.plot(ax)
+    #     C1._sec3.fill_face_bool = True
+    #     C1._sec3.plot(ax)
 
-        C2.add_random_users_in_sector(100, 1)
-        C2.add_random_users_in_sector(100, 2, user_color='b')
-        C2.add_random_users_in_sector(100, 3, user_color='g')
-        print C2.num_users
-        C2._sec1.fill_face_bool = True
-        C2._sec1.plot(ax)
-        C2._sec2.fill_face_bool = True
-        C2._sec2.plot(ax)
-        C2._sec3.fill_face_bool = True
-        C2._sec3.plot(ax)
+    #     C1.add_random_users_in_sector(10, 1)
+    #     C1.add_random_users_in_sector(10, 2, user_color='b')
+    #     C1.add_random_users_in_sector(10, 3, user_color='g')
 
-        C1.plot(ax)
-        C2.plot(ax)
+    #     C2.add_random_users_in_sector(10, 1)
+    #     C2.add_random_users_in_sector(10, 2, user_color='b')
+    #     C2.add_random_users_in_sector(10, 3, user_color='g')
+    #     print C2.num_users
+    #     C2._sec1.fill_face_bool = True
+    #     C2._sec1.plot(ax)
+    #     C2._sec2.fill_face_bool = True
+    #     C2._sec2.plot(ax)
+    #     C2._sec3.fill_face_bool = True
+    #     C2._sec3.plot(ax)
 
-        plt.show()
-        # TODO: Implement-me
+    #     C1.plot(ax)
+    #     C2.plot(ax)
+
+    #     plt.show()
+    #     # TODO: Implement-me
+    #     pass
+
+
+# TODO: finish implementation
+class CellWrapTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.C = cell.Cell(1-1j, 1.0, cell_id=1, rotation=10)
+        self.W = cell.CellWrap(-1+0j, self.C)
+
+    def test_some_method(self):
+        # self.W.radius = 3
+        # from matplotlib import pyplot as plt
+        # fig, ax = plt.subplots()
+
+        # self.C.add_random_users(10)
+
+        # print self.C.users
+        # print self.W.users
+
+        # self.C.plot(ax)
+        # self.W.plot(ax)
+
+        # print()
+        # print self.C.vertices
+        # print (self.W.vertices)
+
+        # plt.show()
         pass
+
+
 
 # TODO: Extend the tests to consider the case of the Cell3Sec class.
 class ClusterTestCase(unittest.TestCase):
@@ -679,32 +712,56 @@ class ClusterTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.C3.external_radius,
                                4.3588989435406731 * self.C3.cell_radius)
 
-    # TODO: Implement-me
     def test_calc_cell_positions_hexagon(self):
-        # C = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec')
+        # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
+        positions = cell.Cluster._calc_cell_positions_hexagon(
+            cell_radius=1.0, num_cells=19, rotation=None)
 
-        # from matplotlib import pyplot as plt
-        # fig, ax = plt.subplots()
-        # C.plot(ax)
-        # C.plot_border(ax)
-        # ax.set_xlim([-5,5])
-        # ax.set_ylim([-5,5])
-        # ax.autoscale_view(False, True, True)
-        # plt.show()
+        expected_positions = np.array([
+            0.0 +0.0j, 1.5 +8.66025404e-01j, 0.0 +1.73205081j,
+            -1.5 +8.66025404e-01j, -1.5 -8.66025404e-01j, 0.0 -1.73205081j,
+            1.5 -8.66025404e-01j, 3.0 +0.0j, 3.0 +1.73205081j,
+            1.5 +2.59807621j, 0.0 +3.46410162j, -1.5 +2.59807621j,
+            -3.0 +1.73205081j, -3.0, -3.0 -1.73205081j, -1.5 -2.59807621j,
+            0.0 -3.46410162j, 1.5 -2.59807621j, 3.0 -1.73205081j])
 
-        # C1 = cell.Cluster(cell_radius=1.0, num_cells=12)
-        # C1.plot()
+        np.testing.assert_array_almost_equal(positions[:,0],
+                                             expected_positions)
+        np.testing.assert_array_almost_equal(positions[:,1], 0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # print
-        # print self.C1._calc_cell_positions_hexagon(2, 7)
-        pass
+        # xxxxxxxxxx Now test with a rotation of 30 degrees xxxxxxxxxxxxxxx
+        positions2 = cell.Cluster._calc_cell_positions_hexagon(
+            cell_radius=1.0, num_cells=19, rotation=30)
+        expected_positions2 = shapes.Shape._rotate(expected_positions, 30)
+        np.testing.assert_array_almost_equal(positions2[:,0],
+                                             expected_positions2)
+        np.testing.assert_array_almost_equal(positions2[:,1],
+                                             30.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Now with a different cell radius and rotation xxxxxxxx
+        expected_positions3 = shapes.Shape._rotate(expected_positions * 1.5,
+                                                   48)
+        positions3 = cell.Cluster._calc_cell_positions_hexagon(
+            cell_radius=1.5, num_cells=19, rotation=48)
+        np.testing.assert_array_almost_equal(positions3[:,0],
+                                             expected_positions3)
+        np.testing.assert_array_almost_equal(positions3[:,1],
+                                             48.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_cell_positions_3sec(self):
+        # positions = cell.Cluster._calc_cell_positions_3sec(
+        #     cell_radius=1.0, num_cells=19, rotation=None)
+        # print positions
+
         # from matplotlib import pyplot as plt
         # fig, ax = plt.subplots()
-        # C1 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='simple')
-        # ax.set_xlim([-5,5])
-        # ax.set_ylim([-5,5])
+        # C1 = cell.Cluster(pos=1-2j,cell_radius=1.0, num_cells=19, cell_type='3sec', rotation=None)
+
+        # # ax.set_xlim([-5,5])
+        # # ax.set_ylim([-5,5])
         # C1.fill_face_bool = True
         # C1.fill_color = 'b'
         # C1.fill_opacity = 0.6
@@ -747,10 +804,10 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(len(C7.vertices), 18)
 
         C13 = cell.Cluster(cell_radius=1.0, num_cells=13)
-        self.assertEqual(len(C13.vertices), 30)
+        self.assertEqual(len(C13.vertices), 28)
 
         C15 = cell.Cluster(cell_radius=1.0, num_cells=15)
-        self.assertEqual(len(C15.vertices), 30)
+        self.assertEqual(len(C15.vertices), 25)
 
         C19 = cell.Cluster(cell_radius=1.0, num_cells=19)
         self.assertEqual(len(C19.vertices), 30)
@@ -870,32 +927,39 @@ class ClusterTestCase(unittest.TestCase):
             self.assertTrue(isinstance(c, cell.Cell))
         self.assertEqual(i, 6)
 
-    def test_lala(self):
-        # from matplotlib import pyplot as plt
-        # fig, ax = plt.subplots()
-        # rotate=True
-        # C1 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec', rotate_by_30=rotate)
-        # C2 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='simple', rotate_by_30=rotate)
-        # C1.fill_face_bool = True
-        # C2.fill_face_bool = True
-
-        # #C1._cells[0].add_random_users_in_sector(100,1)
-
-        # C1.plot(ax)
-        # #C2.plot(ax)
-
-        # C1._cells[0]._sec1.fill_face_bool = True
-        # C1._cells[0]._sec1.fill_color = 'b'
-        # C1._cells[0]._sec1.fill_opacity = 0.8
-        # C1._cells[0]._sec1.plot(ax)
-
-        # #C1._cells[0].plot()
-
-
-        # plt.show()
+    def test_create_wrap_around_cells(self):
+        #self.C3.plot()
+        self.C3.create_wrap_around_cells()
 
         # TODO: Implement-me
         pass
+
+    # def test_lala(self):
+    #     from matplotlib import pyplot as plt
+    #     fig, ax = plt.subplots()
+    #     rotate=False
+    #     C1 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec', rotate_by_30=rotate)
+    #     C2 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='simple', rotate_by_30=rotate)
+    #     C1.fill_face_bool = True
+    #     C2.fill_face_bool = True
+
+    #     #C1._cells[0].add_random_users_in_sector(100,1)
+
+    #     C1.plot(ax)
+    #     #C2.plot(ax)
+
+    #     C1._cells[0]._sec1.fill_face_bool = True
+    #     C1._cells[0]._sec1.fill_color = 'b'
+    #     C1._cells[0]._sec1.fill_opacity = 0.8
+
+    #     #C1._cells[0].plot()
+
+
+    #     plt.show()
+
+    #     # TODO: Implement-me
+    #     pass
+
 
 class GridTestCase(unittest.TestCase):
     def setUp(self):

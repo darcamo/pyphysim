@@ -191,7 +191,7 @@ class Shape(Coordinate):
         """Get method for the vertices property."""
         vertex_positions = self._get_vertex_positions()
         vertex_positions = self.pos + Shape._rotate(
-            vertex_positions, self._rotation)
+            vertex_positions, self.rotation)
         return vertex_positions
 
     vertices = property(_get_vertices)
@@ -462,7 +462,8 @@ class Hexagon(Shape):
     height = property(_get_height)
 
     def _get_vertex_positions(self):
-        """Calculates the vertex positions ignoring any rotation and considering
+        """
+        Calculates the vertex positions ignoring any rotation and considering
         that the hexagon is at the origin (rotation and translation will be
         added automatically later).
 
@@ -470,7 +471,6 @@ class Hexagon(Shape):
         -------
         vertex_positions : 1D numpy array
             The positions of the vertexes of the shape.
-
         """
         vertex_positions = np.zeros(6, dtype=complex)
         vertex_positions[0] = complex(-self._radius / 2., -self.height)
