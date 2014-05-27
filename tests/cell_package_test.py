@@ -631,9 +631,9 @@ class CellWrapTestCase(unittest.TestCase):
 class ClusterTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.C1 = cell.Cluster(cell_radius=1.0, num_cells=3)
-        self.C2 = cell.Cluster(cell_radius=1.0, num_cells=7)
-        self.C3 = cell.Cluster(cell_radius=1.0, num_cells=19)
+        self.C1 = cell.Cluster(pos=1-2j, cell_radius=1.0, num_cells=3)
+        self.C2 = cell.Cluster(pos=-2+3j, cell_radius=1.0, num_cells=7)
+        self.C3 = cell.Cluster(pos=0-1.1j, cell_radius=1.0, num_cells=19)
 
         # Add two users to the first cell of Cluster1
         self.C1._cells[0].add_random_user()
@@ -650,6 +650,15 @@ class ClusterTestCase(unittest.TestCase):
         self.C1._cells[2].add_random_user()
         self.C1._cells[2].add_random_user()
         self.C1._cells[2].add_random_user()
+
+    def test_init(self):
+        self.assertAlmostEqual(self.C1.pos, 1-2j)
+        self.assertAlmostEqual(self.C2.pos, -2+3j)
+        self.assertAlmostEqual(self.C3.pos, -1.1j)
+
+        self.assertEqual(self.C1.num_users, 10)
+        self.assertEqual(self.C2.num_users, 0)
+        self.assertEqual(self.C3.num_users, 0)
 
     def test_get_ii_and_jj(self):
         # This test is here simple to indicate if the Cluster._ii_and_jj
@@ -752,37 +761,37 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_cell_positions_3sec(self):
-        # positions = cell.Cluster._calc_cell_positions_3sec(
-        #     cell_radius=1.0, num_cells=19, rotation=None)
-        # print positions
+        # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
+        positions = cell.Cluster._calc_cell_positions_3sec(
+            cell_radius=1.0, num_cells=19, rotation=None)
 
-        # from matplotlib import pyplot as plt
-        # fig, ax = plt.subplots()
-        # C1 = cell.Cluster(pos=1-2j,cell_radius=1.0, num_cells=19, cell_type='3sec', rotation=None)
+        expected_positions = np.array([ 0.0 +0.0j, 1.50000000 +8.66025404e-01j, 0.0 +1.73205081j, -1.50000000 +8.66025404e-01j, -1.50000000 -8.66025404e-01j, 0.0 -1.73205081j, 1.50000000 -8.66025404e-01j, 3.00000000 +0.0j, 3.00000000 +1.73205081j, 1.50000000 +2.59807621j, 0.0 +3.46410162j, -1.50000000 +2.59807621j, -3.00000000 +1.73205081j, -3.00000000 +0.0j, -3.00000000 -1.73205081j, -1.50000000 -2.59807621j, 0.0 -3.46410162j, 1.50000000 -2.59807621j, 3.00000000 -1.73205081j])
+        np.testing.assert_array_almost_equal(positions[:,0], expected_positions)
 
-        # # ax.set_xlim([-5,5])
-        # # ax.set_ylim([-5,5])
-        # C1.fill_face_bool = True
-        # C1.fill_color = 'b'
-        # C1.fill_opacity = 0.6
+        np.testing.assert_array_almost_equal(positions[:,1], 0.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # print
-        # print C1.radius
-        # print C1.external_radius
-        # C1.plot(ax)
+        # xxxxxxxxxx Test with a rotation of 30 degrees xxxxxxxxxxxxxxxxxxx
+        positions2 = cell.Cluster._calc_cell_positions_3sec(
+            cell_radius=1.0, num_cells=19, rotation=30)
 
+        expected_positions2 = shapes.Shape._rotate(expected_positions, 30)
+        np.testing.assert_array_almost_equal(positions2[:,0],
+                                             expected_positions2)
+        np.testing.assert_array_almost_equal(positions2[:,1],
+                                             30.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # circle = shapes.Circle(0, 2)
-        # circle.plot(ax)
-
-        # C2 = cell.Cluster(cell_radius=1.0, num_cells=7, cell_type='simple')
-        # C2.plot(ax)
-
-        # C2 = cell.Cluster(cell_radius=1.0, num_cells=7, cell_type='3sec')
-        # C3 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec')
-
-        # plt.show()
-        pass
+        # xxxxxxxxxx Now with a different cell radius and rotation xxxxxxxx
+        expected_positions3 = shapes.Shape._rotate(expected_positions * 1.5,
+                                                   48)
+        positions3 = cell.Cluster._calc_cell_positions_3sec(
+            cell_radius=1.5, num_cells=19, rotation=48)
+        np.testing.assert_array_almost_equal(positions3[:,0],
+                                             expected_positions3)
+        np.testing.assert_array_almost_equal(positions3[:,1],
+                                             48.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_get_vertex_positions(self):
         # For a cluster of a single cell, the cluster vertexes are the same
@@ -929,7 +938,10 @@ class ClusterTestCase(unittest.TestCase):
 
     def test_create_wrap_around_cells(self):
         #self.C3.plot()
-        self.C3.create_wrap_around_cells()
+        # self.C3.create_wrap_around_cells()
+        # self.C3.fill_opacity = 0.4
+        # self.C3.fill_face_bool = True
+        # self.C3.plot()
 
         # TODO: Implement-me
         pass
