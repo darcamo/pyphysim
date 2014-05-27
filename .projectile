@@ -3,3 +3,10 @@
 -/docs/_build
 -/__pycache__
 -/.svn
+-*.so
+-*.pickle
+-*_bkp
+-*.ipynb
+-/.ropeproject
+-*.npz
+-*.mat
