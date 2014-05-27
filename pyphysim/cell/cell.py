@@ -1114,24 +1114,18 @@ class Cluster(shapes.Shape):
             cell_positions[index, 0] = cmath.rect(3 * sec_radius, angle)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Get the positions of cells from 8 to 13 xxxxxxxxxxxxxxxxxxxx
-        if num_cells > 7:
-            # angles_second_ring_A -> 0:60:300 -> 0,60,120,180,240,300
-            angles_second_ring_A = np.linspace(0, np.pi * 5. / 3., 6)
-            max_value = min(num_cells, 13)
-            for index in range(7, max_value):
-                angle = angles_second_ring_A[index - 7]
-                cell_positions[index, 0] = cmath.rect(6 * sec_height, angle)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Get the positions of cells from 8 to 19 xxxxxxxxxxxxxxxxxxxx
+        # angles -> 0, 30, 60, ..., 330
+        angles = np.linspace(0, 11 * np.pi / 6., 12)
+        # For angle 0, the distance is 6*sec_height, for angle 30 the
+        # distance is 6*sec_radius, for angle 60 the distance is
+        # 6*sec_height, for angle 90 the distance is 6*sec_radius and the
+        # pattern continues.
+        dists = itertools.cycle([6 * sec_height, 6 * sec_radius])
 
-        # xxxxx Get the positions of cells from 14 to 19 xxxxxxxxxxxxxxxxxxxx
-        if num_cells > 13:
-            # 30:60:330 -> 30,90,150,210,270,330
-            angles_second_ring_B = angles_first_ring
-            max_value = min(num_cells, 19)
-            for index in range(13, max_value):
-                angle = angles_second_ring_B[index - 13]
-                cell_positions[index, 0] = cmath.rect(6 * sec_radius, angle)
+        # The distance alternates between 3*cell_radius and 4*cell_height.
+        for index, a, d in zip(range(7, num_cells), angles, dists):
+            cell_positions[index, 0] = cmath.rect(d, a)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         if rotation is not None:
