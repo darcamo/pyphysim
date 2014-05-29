@@ -371,9 +371,9 @@ class NodeTestCase(unittest.TestCase):
 class CellTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.C1 = cell.Cell(2 - 3j, 2.5, 1, 30)
-        self.C2 = cell.Cell(0 + 2j, 2, 1, 20)
-        self.C3 = cell.Cell(-3 + 5j, 1.5, 1, 70)
+        self.C1 = cell.Cell(pos=2 - 3j, radius=2.5, cell_id=1, rotation=30)
+        self.C2 = cell.Cell(pos=0 + 2j, radius=2, cell_id=2, rotation=20)
+        self.C3 = cell.Cell(pos=-3 + 5j, radius=1.5, cell_id=3, rotation=70)
 
     def test_add_user(self):
         # The cell has no users yet
@@ -382,15 +382,21 @@ class CellTestCase(unittest.TestCase):
         # User with the same position as the cell center
         user1 = cell.Node(self.C1.pos, marker_color='b')
         self.C1.add_user(user1, relative_pos_bool=False)
+        self.assertEqual(user1.cell_id, self.C1.id)
+        self.assertAlmostEqual(user1.relative_pos, user1.pos - self.C1.pos)
 
         # User (relative to cell center) located at the top of the cell
         user2 = cell.Node(0 + 0.99999j, marker_color='r')
         self.C1.add_user(user2)
+        self.assertEqual(user2.cell_id, self.C1.id)
+        self.assertAlmostEqual(user2.relative_pos, user2.pos - self.C1.pos)
 
         # User (relative to cell center) located at some point in the north
         # east part of the cell
         user3 = cell.Node(0.4 + 0.7j, marker_color='g')
         self.C1.add_user(user3)
+        self.assertEqual(user3.cell_id, self.C1.id)
+        self.assertAlmostEqual(user3.relative_pos, user3.pos - self.C1.pos)
 
         # We have successfully added 3 users to the cell
         self.assertEqual(self.C1.num_users, 3)
@@ -678,6 +684,19 @@ class ClusterTestCase(unittest.TestCase):
         # Test if we get (0,0) for an invalid key.
         self.assertEqual(cell.Cluster._get_ii_and_jj(30), (0, 0))
 
+    def test_get_cell_by_id(self):
+        for cell_id in range(1, self.C1.num_cells + 1):
+            c = self.C1.get_cell_by_id(cell_id)
+            self.assertEqual(c.id, cell_id)
+
+        for cell_id in range(1, self.C2.num_cells + 1):
+            c = self.C2.get_cell_by_id(cell_id)
+            self.assertEqual(c.id, cell_id)
+
+        for cell_id in range(1, self.C3.num_cells + 1):
+            c = self.C3.get_cell_by_id(cell_id)
+            self.assertEqual(c.id, cell_id)
+
     def test_remove_all_users(self):
         # Remove all users from the second cell
         self.C1.delete_all_users(2)
@@ -897,7 +916,7 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_dist_all_cells_to_all_users(self):
-        all_dists = self.C1.calc_dist_all_cells_to_all_users()
+        all_dists = self.C1.calc_dist_all_users_to_each_cell()
         self.assertEqual(all_dists.shape, (10, 3))
 
         nrows, ncols = all_dists.shape
@@ -937,9 +956,16 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(i, 6)
 
     def test_create_wrap_around_cells(self):
-        #self.C3.plot()
-        # self.C3.create_wrap_around_cells()
-        # self.C3.fill_opacity = 0.4
+        # TODO: Finish the implementation
+        # self.C3.create_wrap_around_cells(False)
+        # self.C3.add_random_users(range(1, 20), 2)
+
+        # self.C3.calc_diffs_between_cells()
+
+        # self.C3.calc_dist_all_users_to_each_cell()
+        ##import pudb; pudb.set_trace()  ## DEBUG ##
+
+        # self.C3.fill_opacity = 0.1
         # self.C3.fill_face_bool = True
         # self.C3.plot()
 
