@@ -504,7 +504,7 @@ class IASolverBaseClass(object):
         calc_Q
         """
         P = self.P
-        interfering_users = set(range(self.K)) - set([k])
+        interfering_users = set(range(self.K)) - {k}
         Qk = np.zeros([self.Nt[k], self.Nt[k]], dtype=complex)
 
         for l in interfering_users:
@@ -964,9 +964,9 @@ class ClosedFormIASolver(IASolverBaseClass):
         self._F[2] = np.dot(invH23, np.dot(H21, F0))
 
         # Normalize the precoders
-        self._F[0] = self._F[0] / np.linalg.norm(self._F[0], 'fro')
-        self._F[1] = self._F[1] / np.linalg.norm(self._F[1], 'fro')
-        self._F[2] = self._F[2] / np.linalg.norm(self._F[2], 'fro')
+        self._F[0] /= np.linalg.norm(self._F[0], 'fro')
+        self._F[1] /= np.linalg.norm(self._F[1], 'fro')
+        self._F[2] /= np.linalg.norm(self._F[2], 'fro')
 
     def _updateW(self):
         """Find the receive filters
@@ -1390,7 +1390,10 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     num_significant_sing_values.append(n)
 
                     new_F = get_principal_component_matrix(self._F[k], n)
+
+                    # Normalize new_F
                     new_F = new_F / np.linalg.norm(new_F, 'fro')
+
                     self._F[k] = new_F
 
                     if self._full_F[k] is not None:

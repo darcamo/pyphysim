@@ -182,7 +182,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         cluster0 = self.cell_grid.get_cluster_from_index(0)
         cell_ids = np.arange(1, current_params['num_cells'] + 1)
         angles = np.array([210, -30, 90])
-        cluster0.remove_all_users()
+        cluster0.delete_all_users()
         cluster0.add_border_users(cell_ids, angles, 0.7)
 
     def _create_users_channels(self, current_params):
@@ -194,7 +194,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         # xxxxx Distances between each transmitter and each receiver xxxxxx
         # This `dists` matrix may be indexed as dists[user, cell].
-        dists = cluster0.calc_dist_all_cells_to_all_users()
+        dists = cluster0.calc_dist_all_users_to_each_cell()
         # Path loss from each base station to each user
         pathloss = self.path_loss_obj.calc_path_loss(dists)
 

@@ -1031,7 +1031,9 @@ class SimulationRunner(object):
                            'the "simulate" method.')
                 raise RuntimeError(err_msg)
             param_comb_list = self.params.get_unpacked_params_list()
-            if param_variation_index >= 0 and param_variation_index < len(param_comb_list):
+
+            # if param_variation_index >= 0 and param_variation_index < len(param_comb_list):
+            if 0 <= param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
                 self._simulate_for_current_params_serial(current_params,
                                                          var_print_iter)

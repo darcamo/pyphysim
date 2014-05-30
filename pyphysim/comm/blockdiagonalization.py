@@ -12,8 +12,6 @@ There are two ways to use this module. You can either use the
 
 """
 
-__all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
-
 __revision__ = "$Revision$"
 
 import numpy as np
@@ -210,7 +208,7 @@ class BlockDiaginalizer(object):
     We can see that the equivalent channel (after applying the Ms
     modulation matrix) is really block diagonalized.
 
-    >>> print((newH + 1e-10 + 1e-10j).round(4))
+    >>> print(np.round(newH + 1e-10 + 1e-10j, 4))
     [[ 0.0916+0.0135j -1.7449-0.4328j  0.0000+0.j      0.0000+0.j    ]
      [-0.0114-0.146j   0.0213-1.1366j  0.0000+0.j      0.0000+0.j    ]
      [ 0.0000+0.j      0.0000+0.j      0.0868+0.1565j -0.3673+0.2289j]
@@ -219,9 +217,9 @@ class BlockDiaginalizer(object):
     Notice how the power restriction of each BS is respected (although only
     one BS will transmit with its maximum power).
 
-    >>> print((np.linalg.norm(Ms[:,0:Ntx])**2).round(4))
+    >>> print(np.round(np.linalg.norm(Ms[:,0:Ntx])**2, 4))
     1.4997
-    >>> print((np.linalg.norm(Ms[:,Ntx:])**2).round(4))
+    >>> print(np.round(np.linalg.norm(Ms[:,Ntx:])**2, 4))
     1.5
 
 

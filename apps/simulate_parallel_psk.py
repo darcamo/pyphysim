@@ -71,8 +71,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         self.params.add('SNR', SNR)
         self.params.set_unpack_parameter('SNR')
 
-    @staticmethod
-    def _run_simulation(current_parameters):
+    def _run_simulation(self, current_parameters):
         """The _run_simulation method is where the actual code to simulate
         the system is.
 

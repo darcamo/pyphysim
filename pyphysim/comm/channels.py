@@ -848,7 +848,7 @@ class MultiUserChannelMatrix(object):
         See the documentation of the calc_Q method.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
-        interfering_users = set(range(self.K)) - set([k])
+        interfering_users = set(range(self.K)) - {k}
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
         for l in interfering_users:
@@ -900,7 +900,7 @@ class MultiUserChannelMatrix(object):
         See the documentation of the calc_JP_Q method.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
-        interfering_users = set(range(self.K)) - set([k])
+        interfering_users = set(range(self.K)) - {k}
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
         for l in interfering_users:
@@ -1969,7 +1969,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         calc_JP_Q
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
-        interfering_users = set(range(self.K)) - set([k])
+        interfering_users = set(range(self.K)) - {k}
         Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
 
         for l in interfering_users:

@@ -76,7 +76,7 @@ cluster0 = cell_grid._clusters[0]
 # xxxxxxxxxx Create the scenario xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 cell_ids = np.arange(1, num_cells + 1)
 angles = np.array([210, -30, 90])
-cluster0.remove_all_users()
+cluster0.delete_all_users()
 cluster0.add_border_users(cell_ids, angles, 0.7)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -84,7 +84,7 @@ cluster0.add_border_users(cell_ids, angles, 0.7)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Simulation loop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-dists = cluster0.calc_dist_all_cells_to_all_users()
+dists = cluster0.calc_dist_all_users_to_each_cell()
 pathloss = path_loss_obj.calc_path_loss(dists)
 distance_users_to_cluster_center = np.array(
     [cluster0.calc_dist(i) for i in cluster0.get_all_users()])

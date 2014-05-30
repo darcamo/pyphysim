@@ -26,7 +26,6 @@ K = 3
 Nt = 2 * np.ones(K)
 Nr = 2 * np.ones(K)
 Ns_BD = Nt
-ext_int_rank = 1
 
 # Modulator Parameters
 M = 4

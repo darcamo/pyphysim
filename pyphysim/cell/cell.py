@@ -1223,7 +1223,7 @@ class Cluster(shapes.Shape):
         # method is called and any subsequent call of this method for the
         # same value of num_cells will avoid the calculations in the if
         # block below.
-        if not Cluster.normalized_cell_positions.has_key(num_cells):
+        if num_cells not in Cluster.normalized_cell_positions:
             norm_radius = 1.0
             # The first column in cell_positions has the cell positions
             # (complex number) and the second column has the cell rotation

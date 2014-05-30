@@ -740,7 +740,7 @@ def get_range_representation(array, filename_mode=False):
 
     if np.allclose(array[1:] - step, array[0:-1]):
         # array is an arithmetic progression
-        if filename_mode == True:
+        if filename_mode is True:
             return "{0}_({1})_{2}".format(array[0], step, array[-1])
         else:
             return "{0}:{1}:{2}".format(array[0], step, array[-1])

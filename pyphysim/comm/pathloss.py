@@ -95,7 +95,7 @@ class PathLossBase(object):
         raise NotImplementedError('_calc_deterministic_path_loss_dB must be reimplemented in the {0} class'.format(self.__class__.__name__))
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(self, d, ax=None, extra_args={}):
+    def plot_deterministic_path_loss_in_dB(self, d, ax=None, extra_args=None):
         """
         Parameters
         ----------
@@ -109,6 +109,9 @@ class PathLossBase(object):
             "**extra_args" (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
+        if extra_args is None:
+            extra_args = {}
+
         stand_alone_plot = False
 
         if (ax is None):

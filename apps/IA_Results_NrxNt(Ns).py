@@ -11,11 +11,11 @@ __revision__ = "$Revision$"
 import sys
 sys.path.append("/home/darlan/cvs_files/pyphysim2")
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result
-from comm import modulators, channels
-from util.conversion import dB2Linear
-from util import misc
-from ia import ia
+from pyphysim.util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result
+from pyphysim.comm import modulators, channels
+from pyphysim.util.conversion import dB2Linear
+from pyphysim.util import misc
+from pyphysim.ia import ia
 import numpy as np
 from pprint import pprint
 from plot.pgfplotshelper import *

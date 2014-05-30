@@ -229,7 +229,7 @@ def simulate_general(runner, results_filename):
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # The simulation will be run either in parallel or serially depending
     # if the IPython engines are running or not.
-    run_in_parallel=True
+    run_in_parallel = True
     try:
         # If we can get an IPython view that means that the IPython engines
         # are running. In that case we will perform the simulation in
@@ -248,7 +248,7 @@ def simulate_general(runner, results_filename):
 
         # But for the actual simulation we are better using a load balanced view
         lview = cl.load_balanced_view()
-    except Exception, e:
+    except Exception:  # pylint: disable=W0703
         # If we can't get an IPython view then we will perform the
         # simulation serially
         run_in_parallel = False
@@ -327,8 +327,8 @@ def plot_ber_and_ser(results, plot_title = None, block=True):
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
 
-    modulator_name = '{0}-{1}'.format(results.params['M'],
-                                      results.params['modulator'])
+    # modulator_name = '{0}-{1}'.format(results.params['M'],
+    #                                   results.params['modulator'])
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:

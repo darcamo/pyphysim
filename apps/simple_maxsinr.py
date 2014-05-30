@@ -26,7 +26,7 @@ if __name__ == '__main__':
     noise_var = 1 / dB2Linear(SNR)
     M = 4
     NSymbs = 50
-    rep_max = 3000
+    rep_max = 300
     modulator = modulators.QAM(M)
     K = 3
     Nr = np.ones(K, dtype=int) * 4
@@ -34,7 +34,8 @@ if __name__ == '__main__':
     Ns = np.ones(K, dtype=int) * 2
     multi_user_channel = channels.MultiUserChannelMatrix()
     #ia_solver = ia.AlternatingMinIASolver(multi_user_channel)
-    ia_solver = ia.MaxSinrIASolver(multi_user_channel, noise_var)
+    ia_solver = ia.MaxSinrIASolver(multi_user_channel)
+    ia_solver.noise_var = noise_var
     #ia_solver = ia.MinLeakageIASolver(multi_user_channel)
     ia_solver.max_iterations = 50
 
@@ -63,8 +64,8 @@ if __name__ == '__main__':
         transmit_signal = np.split(modulatedData, cumNs[:-1])
 
         multi_user_channel.randomize(Nr, Nt, K)
-        ia_solver.randomizeF(Ns)
-        ia_solver.solve()
+        #ia_solver.randomizeF(Ns)
+        ia_solver.solve(Ns)
 
         transmit_signal_precoded = map(np.dot, ia_solver.F, transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -79,7 +80,7 @@ if __name__ == '__main__':
         #dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
         # This will cancel the interference
         received_data_no_interference = map(np.dot,
-                                            ia_solver.W, received_data)
+                                            ia_solver.W_H, received_data)
 
         # We still need to compensate the combined effect of the precoding and
         # IA receive filter

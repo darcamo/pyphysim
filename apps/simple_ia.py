@@ -29,7 +29,7 @@ from pyphysim.ia import ia
 from pyphysim.simulations.progressbar import ProgressbarText
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
+#calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
 
 def calc_capacity(sinr):
     """Calculate the Sum capacity.
