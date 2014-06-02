@@ -23,12 +23,13 @@ try:
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
+import warnings
 import numpy as np
 from collections import Iterable
 
 from ..util import conversion
 
-__all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1']
+__all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1', 'PathLossOkomuraHata']
 
 
 class PathLossBase(object):
@@ -562,7 +563,7 @@ class PathLossOkomuraHata(PathLossBase):
             Path loss in dB.
         """
         if np.any(d < 1.0) or np.any(d > 20.0):
-            raise Warning('distance for the Okomura Hata model should be between 1Km and 20Km')
+            warnings.warn(Warning('Distance for the Okomura Hata model should be between 1Km and 20Km'))
 
         # $L (\text{in dB}) = 69.55 + 26.16 \log(f) -13.82 \log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\log(h_{bs})) \log(d) - K$
 

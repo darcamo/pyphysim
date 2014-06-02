@@ -803,7 +803,9 @@ class MultiUserChannelMatrix(object):
         return output
 
     def set_pathloss(self, pathloss_matrix=None):
-        """Set the path loss from each transmitter to each receiver.
+        """
+        Set the path loss (IN LINEAR SCALE) from each transmitter to each
+        receiver.
 
         The path loss will be accounted when calling the get_Hkl, get_Hk, the
         corrupt_concatenated_data and the corrupt_data methods.
@@ -814,16 +816,15 @@ class MultiUserChannelMatrix(object):
         ----------
         pathloss_matrix : 2D numpy array
             A matrix with dimension "K x K", where K is the number of
-            users, with the path loss from each transmitter (columns) to
-            each receiver (rows). If you want to disable the path loss then
-            set it to None.
+            users, with the path loss (IN LINEAR SCALE) from each
+            transmitter (columns) to each receiver (rows). If you want to
+            disable the path loss then set it to None.
 
         Notes
         -----
         Note that path loss is a power relation, which means that the
         channel coefficients will be multiplied by the square root of
         elements in `pathloss_matrix`.
-
         """
         # A matrix with the path loss from each transmitter to each
         # receiver.
@@ -1836,9 +1837,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
     def set_pathloss(self, pathloss_matrix=None, ext_int_pathloss=None):
         """
-        Set the path loss from each transmitter to each receiver, as well
-        as the path loss from the external interference source(s) to each
-        receiver.
+        Set the path loss (IN LINEAR SCALE) from each transmitter to each
+        receiver, as well as the path loss from the external interference
+        source(s) to each receiver.
 
         The path loss will be accounted when calling the get_Hkl, get_Hk,
         the corrupt_concatenated_data and the corrupt_data methods.
@@ -1853,14 +1854,13 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         ----------
         pathloss_matrix : 2D numpy array
             A matrix with dimension "K x K", where K is the number of
-            users, with the path loss from each transmitter (columns) to
-            each receiver (rows). If you want to disable the path loss then
-            set it to None.
-        ext_int_pathloss : 2D numpy array
-            The path loss from each interference source to each
-            receiver. The number of rows of ext_int_pathloss must be equal
-            to the number of receives, while the number of columns must be
-            equal to the number of external interference sources.
+            users, with the path loss (IN LINEAR SCALE) from each
+            transmitter (columns) to each receiver (rows). If you want to
+            disable the path loss then set it to None.  ext_int_pathloss :
+            2D numpy array The path loss from each interference source to
+            each receiver. The number of rows of ext_int_pathloss must be
+            equal to the number of receives, while the number of columns
+            must be equal to the number of external interference sources.
         """
         # A matrix with the path loss from each transmitter to each
         # receiver.
