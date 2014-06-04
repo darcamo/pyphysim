@@ -160,6 +160,10 @@ class PathLossBase(object):
                     np.random.randn() * self.sigma_shadow)
             PL = PL + shadow
 
+        # The calculated path loss (in dB) must be positive. If it is not
+        # positive that means that the distance 'd' is too small.
+        if np.any(np.array(PL) < 0):
+            raise RuntimeError("The distance is too small to calculate a valid path loss.".format(d))
         return PL
 
     def calc_path_loss(self, d):
