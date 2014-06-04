@@ -351,7 +351,7 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         # Plot the border of the cell
@@ -442,7 +442,7 @@ class Cell(shapes.Hexagon, CellBase):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         # Plot the shape part
@@ -658,7 +658,7 @@ class Cell3Sec(CellBase):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         # Plot the shape part
@@ -781,7 +781,7 @@ class CellWrap(CellBase):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         # Plot the shape part
@@ -1508,7 +1508,7 @@ class Cluster(shapes.Shape):
         stand_alone_plot = False
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         # self.fill_face_bool = False
@@ -1558,7 +1558,7 @@ class Cluster(shapes.Shape):
             stand_alone_plot = False
             if (ax is None):
                 # This is a stand alone plot. Lets create a new axes.
-                ax = plt.axes()
+                _, ax = plt.subplots(figsize=self.figsize)
                 stand_alone_plot = True
 
             polygon_edges = patches.Polygon(
@@ -2097,7 +2097,7 @@ class Grid(object):
         stand_alone_plot = False
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         for cluster in self._clusters:

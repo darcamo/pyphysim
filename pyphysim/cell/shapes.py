@@ -132,6 +132,11 @@ class Shape(Coordinate):
         self.fill_color = 'r'
         self.fill_opacity = 0.1
 
+        # Default figsize passed to matplotlib when the plot or the
+        # _repr_some_format_ methods are called. Note that if you passed
+        # the 'ax' argument in the plot method this will not be used.
+        self.figsize = (8, 8)
+
     def __repr__(self):
         """
         Representation of a Shape object.
@@ -345,7 +350,7 @@ class Shape(Coordinate):
 
         if (ax is None):
             # This is a stand alone plot. Lets create a new axes.
-            ax = plt.axes()
+            _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 
         if self.fill_face_bool:
@@ -386,7 +391,7 @@ class Shape(Coordinate):
             Option to be given to the ax.axis function.
         """
         plt.ioff() # turn off interactive mode
-        fig = plt.figure()
+        fig = plt.figure(figsize=self.figsize)
         ax = fig.add_subplot(111)
         ax.set_axis_off()
 

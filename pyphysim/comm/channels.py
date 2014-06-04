@@ -327,15 +327,23 @@ class MultiUserChannelMatrix(object):
     """
 
     def __init__(self):
-        # The _big_H variable is an internal variable with all the channels
-        # from each transmitter to each receiver represented as a single
-        # big matrix.
-        self._big_H = np.array([], dtype=np.ndarray)
-        # The _H variable is an internal variable with all the channels
+        # The _big_H_no_pathloss variable is an internal variable with all
+        # the channels from each transmitter to each receiver represented
+        # as a single big matrix.
+        self._big_H_no_pathloss = np.array([], dtype=np.ndarray)
+
+        # The _H_no_pathloss variable is an internal variable with all the channels
         # from each transmitter to each receiver. It points to the same
-        # data as the _big_H variable, however, _H is a "matrix of
+        # data as the _big_H_no_pathloss variable, however, _H is a "matrix of
         # matrices" instead of a single big matrix.
-        self._H = np.array([], dtype=np.ndarray)
+        self._H_no_pathloss = np.array([], dtype=np.ndarray)
+
+        # The _big_H_with_pathloss and _H_with_pathloss variables are
+        # similar to their no_pathloss counterpart, but include the effect
+        # of pathloss if it was set.
+        self._big_H_with_pathloss = None
+        self._H_with_pathloss = None
+
         self._Nr = np.array([])
         self._Nt = np.array([])
         self._K = 0
@@ -419,12 +427,16 @@ class MultiUserChannelMatrix(object):
         """Get method for the H property."""
         if self._pathloss_matrix is None:
             # No path loss
-            return self._H
+            return self._H_no_pathloss
         else:
-            # Apply path loss. Note that the _pathloss_big_matrix matrix
-            # has the same dimension as the self._big_H matrix and we are
-            # performing element-wise multiplication here.
-            return self._H * np.sqrt(self._pathloss_matrix)
+            if self._H_with_pathloss is None:
+                # Apply path loss. Note that the _pathloss_big_matrix
+                # matrix has the same dimension as the
+                # self._big_H_no_pathloss matrix and we are performing
+                # element-wise multiplication here.
+                self._H_with_pathloss = self._H_no_pathloss * np.sqrt(
+                    self._pathloss_matrix)
+            return self._H_with_pathloss
     H = property(_get_H)
 
     # Property to get the big channel matrix (with pass loss applied if any)
@@ -432,12 +444,16 @@ class MultiUserChannelMatrix(object):
         """Get method for the big_H property."""
         if self._pathloss_matrix is None:
             # No path loss
-            return self._big_H
+            return self._big_H_no_pathloss
         else:
-            # Apply path loss. Note that the _pathloss_big_matrix matrix
-            # has the same dimension as the self._big_H matrix and we are
-            # performing element-wise multiplication here.
-            return self._big_H * np.sqrt(self._pathloss_big_matrix)
+            if self._big_H_with_pathloss is None:
+                # Apply path loss. Note that the _pathloss_big_matrix
+                # matrix has the same dimension as the
+                # self._big_H_no_pathloss matrix and we are performing
+                # element-wise multiplication here.
+                self._big_H_with_pathloss = self._big_H_no_pathloss * np.sqrt(
+                    self._pathloss_big_matrix)
+            return self._big_H_with_pathloss
     big_H = property(_get_big_H)
 
     # Property to get the pathloss. Use the "set_pathloss" method to set
@@ -551,21 +567,27 @@ class MultiUserChannelMatrix(object):
         if (Nt.size != K) or (Nr.size != K):
             raise ValueError("K must be equal to the number of elements in Nr and Nt")
 
+        # Reset the _big_H_with_pathloss and _H_with_pathloss. They will be
+        # correctly set the first time the _get_H or _get_big_H methods are
+        # called.
+        self._big_H_with_pathloss = None
+        self._H_with_pathloss = None
+
         self._K = K
         self._Nr = Nr
         self._Nt = Nt
 
-        self._big_H = channel_matrix
+        self._big_H_no_pathloss = channel_matrix
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
-        self._H = single_matrix_to_matrix_of_matrices(channel_matrix, Nr, Nt)
+        self._H_no_pathloss = single_matrix_to_matrix_of_matrices(channel_matrix, Nr, Nt)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
-        self._big_H.setflags(write=False)
-        self._H.setflags(write=False)
+        self._big_H_no_pathloss.setflags(write=False)
+        self._H_no_pathloss.setflags(write=False)
 
     def randomize(self, Nr, Nt, K):
         """Generates a random channel matrix for all users.
@@ -581,6 +603,12 @@ class MultiUserChannelMatrix(object):
         K : int
             Number of users.
         """
+        # Reset the _big_H_with_pathloss and _H_with_pathloss. They will be
+        # correctly set the first time the _get_H or _get_big_H methods are
+        # called.
+        self._big_H_with_pathloss = None
+        self._H_with_pathloss = None
+
         if isinstance(Nr, int):
             Nr = np.ones(K, dtype=int) * Nr
         if isinstance(Nt, int):
@@ -590,15 +618,15 @@ class MultiUserChannelMatrix(object):
         self._Nt = Nt.astype(int)
         self._K = int(K)
 
-        self._big_H = randn_c_RS(self._RS_channel,
+        self._big_H_no_pathloss = randn_c_RS(self._RS_channel,
                                  np.sum(self._Nr), np.sum(self._Nt))
 
-        self._H = single_matrix_to_matrix_of_matrices(self._big_H, Nr, Nt)
+        self._H_no_pathloss = single_matrix_to_matrix_of_matrices(self._big_H_no_pathloss, Nr, Nt)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
-        self._big_H.setflags(write=False)
-        self._H.setflags(write=False)
+        self._big_H_no_pathloss.setflags(write=False)
+        self._H_no_pathloss.setflags(write=False)
 
     def get_Hkl(self, k, l):
         """Get the channel matrix from user `l` to user `k`.
@@ -738,7 +766,7 @@ class MultiUserChannelMatrix(object):
 
         """
         # Note that self.big_H already accounts the path loss (while
-        # self._big_H does not)
+        # self._big_H_no_pathloss does not)
 
         output = np.dot(self.big_H, data)
         if noise_var is not None:
@@ -829,6 +857,12 @@ class MultiUserChannelMatrix(object):
         # A matrix with the path loss from each transmitter to each
         # receiver.
         self._pathloss_matrix = pathloss_matrix
+
+        # Reset the _big_H_with_pathloss and _H_with_pathloss. They will be
+        # correctly set the first time the _get_H or _get_big_H methods are
+        # called.
+        self._big_H_with_pathloss = None
+        self._H_with_pathloss = None
 
         if pathloss_matrix is None:
             self._pathloss_big_matrix = None
@@ -1539,13 +1573,13 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         # We only care about the first self.K "rows". The remaining rows
         # are the channels from all transmitters to the "external
         # interference user".
-        H = self._H[0:self.K]
+        H = self._H_no_pathloss[0:self.K]
         if self._pathloss_matrix is None:
             # No path loss
             return H
         else:
             # Apply path loss. Note that the _pathloss_big_matrix matrix
-            # has the same dimension as the self._big_H matrix and we are
+            # has the same dimension as the self._big_H_no_pathloss matrix and we are
             # performing element-wise multiplication here.
             return H * np.sqrt(self._pathloss_matrix)
     H = property(_get_H)
