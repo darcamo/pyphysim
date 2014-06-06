@@ -87,7 +87,8 @@ setup(
 
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ext_modules=[misc_c],
-    cmdclass={'build_ext': build_ext}, requires=['numpy', 'scipy', 'configobj', 'validate', 'matplotlib', 'h5py',
-                                                 'IPython', 'Cython']
+    cmdclass={'build_ext': build_ext}, requires=[
+        'numpy', 'scipy', 'configobj', 'validate', 'matplotlib', 'h5py',
+        'IPython', 'Cython'],
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 )

@@ -56,7 +56,6 @@ class PathLossBase(object):
         self.sigma_shadow = 8  # Shadow standard deviation
         self.use_shadow_bool = False
 
-    #
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     def which_distance_dB(self, PL):
         """Calculates the distance that yields the given path loss (in dB).

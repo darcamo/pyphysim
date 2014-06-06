@@ -2,25 +2,28 @@
 # -*- coding: utf-8 -*-
 
 """module docstring"""
-import numpy as np
-import itertools
-
 import sys
 import os
-parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-sys.path.append(parent_dir)
+
+import numpy as np
+
+try:
+    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+    sys.path.append(parent_dir)
+except NameError:
+    sys.path.append("../")
 
 from pyphysim.ia import ia
-from pyphysim.util.conversion import dB2Linear, linear2dB
+from pyphysim.util.conversion import dB2Linear
 from pyphysim.comm.channels import MultiUserChannelMatrix
 from pyphysim.comm.modulators import PSK
 
 
 if __name__ == '__main__':
-    K = 3
-    Nr = np.ones(K) * 2
-    Nt = np.ones(K) * 2
-    Ns = np.array([1, 1, 1]) #np.ones(K) * 2
+    K = 11
+    Nr = np.ones(K) * 4
+    Nt = np.ones(K) * 8
+    Ns = 1#np.array([2, 2, 3]) #np.ones(K) * 2
 
     multiuserchannel = MultiUserChannelMatrix()
     modulator = PSK(4)
@@ -81,6 +84,6 @@ if __name__ == '__main__':
         np.sum(np.log2(np.hstack(1.0+ia_solver3.calc_SINR()))))
 
 
-    print linear2dB(np.hstack(ia_solver.calc_SINR()))
-    print linear2dB(np.hstack(ia_solver2.calc_SINR()))
-    print linear2dB(np.hstack(ia_solver3.calc_SINR()))
+    # print linear2dB(np.hstack(ia_solver.calc_SINR()))
+    # print linear2dB(np.hstack(ia_solver2.calc_SINR()))
+    # print linear2dB(np.hstack(ia_solver3.calc_SINR()))
