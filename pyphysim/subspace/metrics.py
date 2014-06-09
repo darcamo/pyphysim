@@ -11,7 +11,8 @@ import math
 from .projections import calcProjectionMatrix
 
 
-__all__ = ["calc_principal_angles", "calc_chordal_distance_from_principal_angles",
+__all__ = ["calc_principal_angles",
+           "calc_chordal_distance_from_principal_angles",
            "calc_chordal_distance", "calc_chordal_distance_2"]
 
 
@@ -148,7 +149,6 @@ def calc_chordal_distance(matrix1, matrix2):
     Q1_sqr = Q1.dot(Q1.conjugate().transpose())
     Q2_sqr = Q2.dot(Q2.conjugate().transpose())
     return np.linalg.norm(Q1_sqr - Q2_sqr, 'fro') / math.sqrt(2.)
-    # return (Q1*Q1.conjugate_transpose() - Q2*Q2.conjugate_transpose()).norm('frob')/math.sqrt(2).n()
 
 
 def calc_chordal_distance_2(matrix1, matrix2):
@@ -183,4 +183,6 @@ def calc_chordal_distance_2(matrix1, matrix2):
     >>> print(calc_chordal_distance_2(A, B))
     0.473867859572
     """
-    return np.linalg.norm(calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') / math.sqrt(2)
+    return (np.linalg.norm(calcProjectionMatrix(matrix1)
+                           - calcProjectionMatrix(matrix2), 'fro')
+            / math.sqrt(2))

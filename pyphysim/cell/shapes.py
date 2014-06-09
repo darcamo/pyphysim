@@ -141,10 +141,11 @@ class Shape(Coordinate):
         """
         Representation of a Shape object.
         """
-        return "{0}(pos={1},radius={2},rotation={3})".format(self.__class__.__name__,
-                                                             self.pos,
-                                                             self.radius,
-                                                             self.rotation)
+        return "{0}(pos={1},radius={2},rotation={3})".format(
+            self.__class__.__name__,
+            self.pos,
+            self.radius,
+            self.rotation)
 
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Property to get the shape radius.
@@ -189,7 +190,9 @@ class Shape(Coordinate):
         positions.
 
         """
-        raise NotImplementedError('get_vertex_positions still needs to be implemented in the {0} class'.format(self.__class__.__name__))
+        raise NotImplementedError(
+            ('get_vertex_positions still needs to be implemented in the '
+             '{0} class'.format(self.__class__.__name__)))
 
     # xxxxx vertex property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def _get_vertices(self):
@@ -237,7 +240,9 @@ class Shape(Coordinate):
 
         ## pnpoly returns 1 if point is inside the polygon and 0 otherwise
         # import matplotlib.nxutils as mnx
-        # return mnx.pnpoly(point.real, point.imag, from_complex_array_to_real_matrix(self.vertices)) == 1
+        # return mnx.pnpoly(point.real, point.imag,
+        #                   from_complex_array_to_real_matrix(
+        #                       self.vertices)) == 1
 
     def get_border_point(self, angle, ratio):  # pylint: disable=R0914
         """Calculates the coordinate of the point that intercepts the
@@ -390,7 +395,7 @@ class Shape(Coordinate):
         axis_option : str
             Option to be given to the ax.axis function.
         """
-        plt.ioff() # turn off interactive mode
+        plt.ioff()  # turn off interactive mode
         fig = plt.figure(figsize=self.figsize)
         ax = fig.add_subplot(111)
         ax.set_axis_off()
@@ -401,7 +406,7 @@ class Shape(Coordinate):
         fig.savefig(output, format=extension)
         output.seek(0)
         plt.close(fig)
-        plt.ion() # turn on interactive mode
+        plt.ion()  # turn on interactive mode
 
         return output.getvalue()
 
@@ -482,14 +487,15 @@ class Hexagon(Shape):
         angles = np.linspace(0, 240, 5) * np.pi / 180.
 
         for k in range(5):
-            vertex_positions[k + 1] = vertex_positions[k] + self._radius * np.exp(angles[k] * 1j)
+            vertex_positions[k + 1] = (vertex_positions[k] +
+                                       self._radius * np.exp(angles[k] * 1j))
         return vertex_positions
 
 
 class Rectangle(Shape):
     """Rectangle shape class.
     """
-    def __init__(self, A, B, rotation=0):
+    def __init__(self, first, second, rotation=0):
         """Initializes the Rectangle object.
 
         The rectangle is initialized from two coordinates as well as from
@@ -497,18 +503,20 @@ class Rectangle(Shape):
 
         Parameters
         ----------
-        A : complex
+        first : complex
             First coordinate (without rotation).
-        B : complex
+        second : complex
             Second coordinate (without rotation).
         rotation : float
             Rotation of the rectangle in degrees.
         """
-        central_pos = (A + B) / 2
-        radius = np.abs(B - central_pos)
+        central_pos = (first + second) / 2
+        radius = np.abs(second - central_pos)
         Shape.__init__(self, central_pos, radius, rotation)
-        self._lower_coord = complex(min(A.real, B.real), min(A.imag, B.imag))
-        self._upper_coord = complex(max(A.real, B.real), max(A.imag, B.imag))
+        self._lower_coord = complex(min(first.real, second.real),
+                                    min(first.imag, second.imag))
+        self._upper_coord = complex(max(first.real, second.real),
+                                    max(first.imag, second.imag))
 
     def __repr__(self):
         """
@@ -520,7 +528,8 @@ class Rectangle(Shape):
                                                       self.rotation)
 
     def _get_vertex_positions(self):
-        """Calculates the vertex positions ignoring any rotation and considering
+        """
+        Calculates the vertex positions ignoring any rotation and considering
         that the rectangle is at the origin (rotation and translation will
         be added automatically later).
 
@@ -528,7 +537,6 @@ class Rectangle(Shape):
         -------
         vertex_positions : 1D numpy array
             The positions of the vertexes of the shape.
-
         """
         vertex_positions = np.zeros(4, dtype=complex)
         A = self._lower_coord - self.pos
@@ -549,8 +557,6 @@ class Rectangle(Shape):
             The extension of the desired format. This should be something
             that the savefig method in a matplotlib figure can understandm,
             such as 'png', 'svg', stc.
-        axis_option : str
-            Option to be given to the ax.axis function.
 
         Notes
         -----
@@ -558,7 +564,9 @@ class Rectangle(Shape):
         here so that we can change the axis_option to 'tight' (default in
         the Shape class is 'equal').
         """
-        return Shape._repr_some_format_(self, extension=extension, axis_option='tight')
+        return Shape._repr_some_format_(self,
+                                        extension=extension,
+                                        axis_option='tight')
 
     def is_point_inside_shape(self, point):
         """Test is a point is inside the rectangle
@@ -611,7 +619,8 @@ class Circle(Shape):
         Shape.__init__(self, pos, radius)
 
     def _get_vertex_positions(self):
-        """Calculates the vertex positions considering that the circle is at the
+        """
+        Calculates the vertex positions considering that the circle is at the
         origin (translation will be added automatically later).
 
         Returns
@@ -626,7 +635,6 @@ class Circle(Shape):
         Shape's class interface the _get_vertex_positions is implemented
         such that it returns a subset of the circle vertexes. The number of
         returned vertexes was arbitrarily chosen as 12.
-
         """
         num_vertexes = 12
         angles = np.linspace(0,

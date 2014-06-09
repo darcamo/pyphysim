@@ -44,7 +44,10 @@ def to_mat_str(x, format_string='+.12e'):
     >>> # Call to_mat_str(a) to print the string representation of the
     >>> # converted matrix
     >>> print(to_mat_str(a))
-    [+1.000000000000e+00, +2.000000000000e+00, +3.000000000000e+00; +4.000000000000e+00, +5.000000000000e+00, +6.000000000000e+00; +7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
+    [\
++1.000000000000e+00, +2.000000000000e+00, +3.000000000000e+00; \
++4.000000000000e+00, +5.000000000000e+00, +6.000000000000e+00; \
++7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
 
     """
     def convert_row_or_col(numpy_array, format_string, separator=', '):
@@ -56,7 +59,8 @@ def to_mat_str(x, format_string='+.12e'):
         # +.12e
         output = []
         if numpy_array.dtype == 'complex':
-            format_string = "{{0:{0}}}{{1:{0}}}j".format(format_string, format_string)
+            format_string = "{{0:{0}}}{{1:{0}}}j".format(format_string,
+                                                         format_string)
             for i in numpy_array:
                 output.append(format_string.format(i.real, i.imag))
         else:

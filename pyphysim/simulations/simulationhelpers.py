@@ -50,11 +50,15 @@ def get_common_parser():
                            type=str,
                            nargs='?')
 
-        help_msg = ('Instead of running the simulation, return the number of variations.')
-        group.add_argument('-n',       # short version to specify the option
-                           '--number_variations',  # Long version to specify the option
-                           help=help_msg,
-                           action='store_true')
+        help_msg = ('Instead of running the simulation, return the number of'
+                    ' variations.')
+        group.add_argument(
+            # short version to specify the option
+            '-n',
+            # Long version to specify the option
+            '--number_variations',
+            help=help_msg,
+            action='store_true')
 
         get_common_parser.parser = parser
 

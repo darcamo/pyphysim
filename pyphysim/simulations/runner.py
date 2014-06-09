@@ -16,7 +16,8 @@ from .parameters import SimulationParameters
 from .results import SimulationResults, Result
 
 from ..util.misc import pretty_time
-from .progressbar import ProgressbarText, ProgressbarText2, ProgressbarText3, ProgressbarZMQServer
+from .progressbar import ProgressbarText, ProgressbarText2, \
+    ProgressbarText3, ProgressbarZMQServer
 
 
 __all__ = ["get_partial_results_filename", "SimulationRunner"]
@@ -49,7 +50,9 @@ def get_partial_results_filename(results_base_filename,
     """
     # Check if current_params is indeed an unpacked variation of another
     # SimulationParameters object.
-    assert current_params.unpack_index > -1, "'current_params' must be an unpacked variation of another SimulationParameters object."
+    msg = ("'current_params' must be an unpacked variation of another "
+           "SimulationParameters object.")
+    assert current_params.unpack_index > -1, msg
 
     # This will get the number of unpacked variations of the parent
     # SimulationParameters object.
@@ -66,7 +69,6 @@ def get_partial_results_filename(results_base_filename,
             partial_results_folder, partial_results_filename)
 
     return partial_results_filename
-
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -141,7 +143,8 @@ class SimulationRunner(object):
     SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
     """
-    def __init__(self, default_config_file=None, config_spec=None, read_command_line_args=True, save_parsed_file=False):
+    def __init__(self, default_config_file=None, config_spec=None,
+                 read_command_line_args=True, save_parsed_file=False):
         self.rep_max = 1
         self._runned_reps = []  # Number of iterations performed by
                                 # simulation when it finished
@@ -179,7 +182,7 @@ class SimulationRunner(object):
         # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
         if self._config_filename is None:
             self.params = SimulationParameters()
-        else: # pragma: no cover
+        else:  # pragma: no cover
             self.params = SimulationParameters.load_from_config_file(
                 self._config_filename,
                 self._configobj_spec,
@@ -322,7 +325,8 @@ class SimulationRunner(object):
         return results_filename
     results_filename = property(_get_results_filename)
 
-    def _get_progress_output_sinc(self, param_variation_index):  # pragma: no cover
+    def _get_progress_output_sinc(self,
+                                  param_variation_index):  # pragma: no cover
         """
         Get the output sinc for the progressbars.
 
@@ -416,13 +420,15 @@ class SimulationRunner(object):
 
         # Try to save the partial results
         try:
-            filename = current_sim_results.save_to_file(partial_results_filename)
+            filename = current_sim_results.save_to_file(
+                partial_results_filename)
         except IOError as e:
             if self.partial_results_folder is not None:
 
                 os.mkdir(self.partial_results_folder)
                 # This should not raise IOError again.
-                filename = current_sim_results.save_to_file(partial_results_filename)
+                filename = current_sim_results.save_to_file(
+                    partial_results_filename)
             else:  # pragma: no cover
                 raise e
 
@@ -539,7 +545,8 @@ class SimulationRunner(object):
         # maximum number of allowed iterations is reached.
         return True
 
-    def _get_serial_update_progress_function(self, current_params):  # pragma: no cover
+    def _get_serial_update_progress_function(
+            self, current_params):  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -1032,7 +1039,6 @@ class SimulationRunner(object):
                 raise RuntimeError(err_msg)
             param_comb_list = self.params.get_unpacked_params_list()
 
-            # if param_variation_index >= 0 and param_variation_index < len(param_comb_list):
             if 0 <= param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
                 self._simulate_for_current_params_serial(current_params,
@@ -1044,7 +1050,9 @@ class SimulationRunner(object):
             # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             # Loop through all the parameters combinations
             for current_params in self.params.get_unpacked_params_list():
-                (current_rep, current_sim_results, _) = self._simulate_for_current_params_serial(current_params, var_print_iter)
+                (current_rep, current_sim_results, _) \
+                    = self._simulate_for_current_params_serial(
+                        current_params, var_print_iter)
 
                 # Store the number of repetitions actually ran for the
                 # current parameters combination
@@ -1197,7 +1205,7 @@ class SimulationRunner(object):
             self._on_simulate_finish()
 
             # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxx
-            self.results.runned_reps = self._runned_reps  # pylint: disable=W0201
+            self.results.runned_reps = self.runned_reps
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1205,7 +1213,7 @@ class SimulationRunner(object):
             self._elapsed_time = self.__toc - self.__tic
 
             # Also save the elapsed time in the SimulationResults object
-            self.results.elapsed_time = self._elapsed_time  # pylint: disable=W0201
+            self.results.elapsed_time = self.elapsed_time
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Save the results if results_base_filename is not None x
@@ -1217,7 +1225,8 @@ class SimulationRunner(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # Stop the progressbar updating progress
-            if self.update_progress_function_style is not None:  # pragma: no cover
+            if self.update_progress_function_style is not None:
+                # pragma: no cover
                 self._pbar.stop_updater()
 
             # Erase the self._async_results object, since we already got all

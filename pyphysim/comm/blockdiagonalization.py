@@ -19,7 +19,8 @@ import collections
 from scipy.linalg import block_diag
 
 from . import waterfilling
-from ..util.misc import least_right_singular_vectors, calc_shannon_sum_capacity, calc_whitening_matrix
+from ..util.misc import least_right_singular_vectors, \
+    calc_shannon_sum_capacity, calc_whitening_matrix
 from ..util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 from ..subspace.projections import calcProjectionMatrix
 
@@ -202,7 +203,11 @@ class BlockDiaginalizer(object):
     >>> Nrx = 2  # Number of receive antennas (per user)
     >>> # Create the BlockDiaginalizer object
     >>> bd = BlockDiaginalizer(num_users, bs_power, noise_var)
-    >>> channel = np.array([[-0.9834-0.0123j,  0.6503-0.3189j,  0.5484+1.7049j, -1.0891-0.1025j], [-0.5911-0.3055j, -0.6205+0.3375j, -0.7995+0.3723j,  0.7412-1.2537j], [-0.2732+0.475j , -0.4191+0.4019j,  0.1047-0.5592j,  0.7548-1.0214j], [ 0.5377-0.208j , -0.1480-1.0527j, -0.6373+0.4081j, -0.5854-0.8135j]])
+    >>> channel = np.array([[-0.9834-0.0123j,  0.6503-0.3189j,  \
+    0.5484+1.7049j, -1.0891-0.1025j], [-0.5911-0.3055j, -0.6205+0.3375j, \
+    -0.7995+0.3723j,  0.7412-1.2537j], [-0.2732+0.475j , -0.4191+0.4019j,  \
+    0.1047-0.5592j,  0.7548-1.0214j], [ 0.5377-0.208j , -0.1480-1.0527j, \
+    -0.6373+0.4081j, -0.5854-0.8135j]])
     >>> (newH, Ms) = bd.block_diagonalize(channel)
 
     We can see that the equivalent channel (after applying the Ms
@@ -293,7 +298,9 @@ class BlockDiaginalizer(object):
         dimensions corresponding to that base station.
         """
         iNr = mtChannel.shape[0]
-        assert iNr % self.num_users == 0, "`block_diagonalize`: Number of rows of the channel must be a multiple of the number of users."
+        msg = ("`block_diagonalize`: Number of rows of the channel must be"
+               " a multiple of the number of users.")
+        assert iNr % self.num_users == 0, msg
 
         # Number of antennas per user
         iNrU = iNr // self.num_users
@@ -529,7 +536,8 @@ class BlockDiaginalizer(object):
             user_matrix = Ms_bad[:, user * iNtU:user * iNtU + iNtU]
             # The power is actually the square of cur_sqrt_P
             cur_sqrt_P = np.linalg.norm(user_matrix, 'fro')
-            Ms_good[:, user * iNtU:user * iNtU + iNtU] = user_matrix * np.sqrt(self.iPu) / cur_sqrt_P
+            Ms_good[:, user * iNtU:user * iNtU + iNtU] = (
+                user_matrix * np.sqrt(self.iPu) / cur_sqrt_P)
 
         # Ms_good = self._perform_normalized_power_scaling(Ms_bad,
         #                                                  Sigma)
@@ -600,7 +608,8 @@ class BlockDiaginalizer(object):
         6 transmit antennas.
 
         >>> BD = BlockDiaginalizer(3, 0, 0)
-        >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]), 3 * np.ones([2, 6])])
+        >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]),\
+                                 3 * np.ones([2, 6])])
         >>> BD._get_sub_channel(channel, [0,2])
         array([[ 1.,  1.,  1.,  1.,  1.,  1.],
                [ 1.,  1.,  1.,  1.,  1.,  1.],
@@ -666,8 +675,10 @@ class BDWithExtIntBase(BlockDiaginalizer):
             for a receiver.
         """
         K = mu_channel.K
-        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, self.pe)
-        W_all_k = [calc_whitening_matrix(R_all_k[k]).conjugate().T for k in range(K)]
+        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(
+            noise_var, self.pe)
+        W_all_k = [calc_whitening_matrix(R_all_k[k]).conjugate().T
+                   for k in range(K)]
         return W_all_k
 
 
@@ -718,7 +729,8 @@ class WhiteningBD(BDWithExtIntBase):
         """
         # W = np.linalg.inv(np.dot(whitening_filter_k.conjugate().T, Heq_k))
         K = Nr.size
-        big_W = np.dot(BlockDiaginalizer.calc_receive_filter(newH), whitening_filter)
+        big_W = np.dot(BlockDiaginalizer.calc_receive_filter(newH),
+                       whitening_filter)
         Wk_all_users = np.empty(K, dtype=np.ndarray)
         aux = single_matrix_to_matrix_of_matrices(big_W, Nr, Nt)
         for userindex in range(K):
@@ -776,7 +788,8 @@ class WhiteningBD(BDWithExtIntBase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Calculate the receive filter xxxxxxxxxxxxxxxxxxxxxxxxx
-        Wk_all_users = self._calc_receive_filter_with_whitening(newH, big_whitening_filter, Nr, Nt)
+        Wk_all_users = self._calc_receive_filter_with_whitening(
+            newH, big_whitening_filter, Nr, Nt)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return (Ms_all_users, Wk_all_users, Nt.copy())
@@ -930,7 +943,10 @@ class EnhancedBD(BDWithExtIntBase):
             self._metric_func_name = 'naive'
             self._metric_func = None
             if 'num_streams' not in metric_func_extra_args_dict.keys():
-                raise AttributeError("The 'naive' metric requires that metric_func_extra_args_dict is provided and has the 'num_streams' key")
+                msg = ("The 'naive' metric requires that "
+                       "metric_func_extra_args_dict is provided and has "
+                       "the 'num_streams' key")
+                raise AttributeError(msg)
 
             # Set self._metric_func_extra_args as a dictionary containing
             # the 'num_stream' key (and value) in
@@ -943,7 +959,10 @@ class EnhancedBD(BDWithExtIntBase):
             self._metric_func_name = 'fixed'
             self._metric_func = None
             if 'num_streams' not in metric_func_extra_args_dict.keys():
-                raise AttributeError("The 'fixed' metric requires that metric_func_extra_args_dict is provided and has the 'num_streams' key")  # pragma: no cover
+                msg = ("The 'fixed' metric requires that "
+                       "metric_func_extra_args_dict is provided and has "
+                       "the 'num_streams' key")
+                raise AttributeError(msg)  # pragma: no cover
 
             # Set self._metric_func_extra_args as a dictionary containing
             # the 'num_stream' key (and value) in
@@ -956,15 +975,21 @@ class EnhancedBD(BDWithExtIntBase):
             self._metric_func = _calc_effective_throughput
             keys = metric_func_extra_args_dict.keys()
             if ('modulator' not in keys) or ('packet_length' not in keys):
-                raise AttributeError("The 'effective_throughput' metric requires that metric_func_extra_args_dict is provided and has the 'modulator' and package_length' keys")
+                msg = ("The 'effective_throughput' metric requires that "
+                       "metric_func_extra_args_dict is provided and has "
+                       "the 'modulator' and package_length' keys")
+                raise AttributeError(msg)
 
             # Set self._metric_func_extra_args as a dictionary containing
             # the 'modulator' and 'packet_length' keys (and values) in
             # metric_func_extra_args_dict
-            self._metric_func_extra_args = {k: metric_func_extra_args_dict[k]
-                                            for k in ('modulator', 'packet_length')}
+            self._metric_func_extra_args = {
+                k: metric_func_extra_args_dict[k]
+                for k in ('modulator', 'packet_length')}
         else:
-            raise AttributeError("The `metric` attribute can only be one of {None, 'capacity', 'effective_throughput'}")
+            msg = ("The `metric` attribute can only be one of "
+                   "{None, 'capacity', 'effective_throughput'}")
+            raise AttributeError(msg)
 
     def _get_metric_name(self):
         """Get name of the method used to decide how many streams to
@@ -1042,7 +1067,8 @@ class EnhancedBD(BDWithExtIntBase):
         #K = Re_k.size  # Number of users
         mtP = np.dot(Wk, Heq_k_red)
         desired_power = np.abs(np.diagonal(mtP)) ** 2
-        internalInterference = np.sum(np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
+        internalInterference = np.sum(
+            np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
 
         Wk_H = Wk.transpose().conjugate()
 
@@ -1052,7 +1078,8 @@ class EnhancedBD(BDWithExtIntBase):
             np.dot(Wk, np.dot(Re_k, Wk_H))
         ).real
 
-        sinr = desired_power / (internalInterference + np.abs(external_interference_plus_noise))
+        sinr = desired_power / (internalInterference +
+                                np.abs(external_interference_plus_noise))
         return sinr
 
     def _perform_BD_no_waterfilling_no_stream_reduction(self, mu_channel):
@@ -1095,7 +1122,8 @@ class EnhancedBD(BDWithExtIntBase):
         # Since we are not handling external interference, we simple call
         # the block_diagonalize_no_waterfilling method from the
         # BlockDiaginalizer class.
-        (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(self, mu_channel.big_H_no_ext_int)
+        (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(
+            self, mu_channel.big_H_no_ext_int)
 
         # Since there is no stream reduction, the number of streams of each
         # user will transmit is equal to the number of transmit antennas of
@@ -1185,7 +1213,8 @@ class EnhancedBD(BDWithExtIntBase):
             if self.metric_name == 'fixed':
                 Pk = _calc_stream_reduction_matrix(Re_k, num_streams)
 
-            norm_term = np.linalg.norm(np.dot(Msk, Pk), 'fro') / np.sqrt(self.iPu)
+            norm_term = (np.linalg.norm(np.dot(Msk, Pk), 'fro')
+                         / np.sqrt(self.iPu))
             # Equivalent channel with stream reduction
             Heq_k_red = np.dot(Heq_k, Pk / norm_term)
 
@@ -1286,7 +1315,8 @@ class EnhancedBD(BDWithExtIntBase):
 
                 # Normalization term for the combined BD matrix Msk and stream
                 # reduction matrix Pk
-                norm_term = np.linalg.norm(np.dot(Msk, Pk), 'fro') / np.sqrt(self.iPu)
+                norm_term = (np.linalg.norm(np.dot(Msk, Pk), 'fro')
+                             / np.sqrt(self.iPu))
                 norm_term_all[index] = norm_term  # Save for later
 
                 # Equivalent channel with stream reduction
@@ -1313,7 +1343,8 @@ class EnhancedBD(BDWithExtIntBase):
             # to the number of transmit streams which yields the highest
             # value of the metric.
             best_index = np.argmax(metric_value_for_user_k)
-            MsPk_all_users[userindex] = np.dot(Msk, Pk_all[best_index]) / norm_term_all[best_index]
+            MsPk_all_users[userindex] = (np.dot(Msk, Pk_all[best_index])
+                                         / norm_term_all[best_index])
             Wk_all_users[userindex] = Wk_all[best_index]
             Ns_all_users[userindex] = Pk_all[best_index].shape[1]
 
@@ -1372,5 +1403,6 @@ class EnhancedBD(BDWithExtIntBase):
         # function is set in the set_ext_int_handling_metric method, where
         # any extra arguments (besides sinr) that should be passed to this
         # function are set in the _metric_func_extra_args dictionary.
-        return self._perform_BD_no_waterfilling_decide_number_streams(mu_channel)
+        return self._perform_BD_no_waterfilling_decide_number_streams(
+            mu_channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

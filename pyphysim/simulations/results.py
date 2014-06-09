@@ -10,7 +10,8 @@ import numpy as np
 import os.path
 
 from .parameters import SimulationParameters, combine_simulation_parameters
-from ..util.misc import calc_confidence_interval, equal_dicts, replace_dict_values
+from ..util.misc import calc_confidence_interval, equal_dicts, \
+    replace_dict_values
 
 try:
     import cPickle as pickle
@@ -72,7 +73,8 @@ def combine_simulation_results(simresults1, simresults2):
 
     result_names = simresults1.get_result_names()
     if set(result_names) != set(simresults2.get_result_names()):
-        raise RuntimeError('Both SimulationResults objects must have the same results.')
+        raise RuntimeError(
+            'Both SimulationResults objects must have the same results.')
 
     union = SimulationResults()
     union.set_parameters(combined_params)
@@ -103,7 +105,6 @@ def combine_simulation_results(simresults1, simresults2):
             union.append_result(result_object)
 
     return union
-
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -220,7 +221,9 @@ class SimulationResults(object):
 
         aux = equal_dicts(self.__dict__,
                           other.__dict__,
-                          ignore_keys=['elapsed_time', '_results', 'original_filename'])
+                          ignore_keys=['elapsed_time',
+                                       '_results',
+                                       'original_filename'])
 
         if aux is False:
             return False
@@ -229,7 +232,9 @@ class SimulationResults(object):
         if self._results.keys() != other._results.keys():
             return False
 
-        return all([self[k] == other[k] for k in self._results.keys() if k != 'elapsed_time'])
+        return all(
+            [self[k] == other[k] for k in self._results.keys()
+             if k != 'elapsed_time'])
 
     def __ne__(self, other):
         """
@@ -517,8 +522,8 @@ class SimulationResults(object):
 
         if fixed_params:
             indexes = self.params.get_pack_indexes(fixed_params)
-            out = [v.get_confidence_interval(P) for i, v in enumerate(self[result_name])
-                   if i in indexes]
+            out = [v.get_confidence_interval(P) for i, v
+                   in enumerate(self[result_name]) if i in indexes]
         else:
             # If fixed_params is an empty dictionary (default value) then
             # we return the full list of results
@@ -596,7 +601,8 @@ class SimulationResults(object):
         # without string replacements so that at least we don't lose
         # simulation results.
         try:
-            filename = replace_dict_values(filename, self.params.parameters, True)
+            filename = replace_dict_values(filename, self.params.parameters,
+                                           True)
         except Exception:  # pylint: disable=W0703
             pass
         return filename
@@ -802,7 +808,8 @@ class SimulationResults(object):
 
         for result_name in rg:
             ds = rg[result_name]
-            #simresults._results[result_name] = Result.load_from_hdf5_dataset(ds)
+            # simresults._results[result_name] \
+            #     = Result.load_from_hdf5_dataset(ds)
             result = Result.load_from_hdf5_dataset(ds)[-1]
             simresults.add_result(result)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -812,8 +819,8 @@ class SimulationResults(object):
             # We only set the simulation parameters if it was stored in the
             # hdf5 file.
             pg = fid['parameters']
-            # simresults._params = SimulationParameters.load_from_hdf5_group(pg)
-            simresults.set_parameters(SimulationParameters.load_from_hdf5_group(pg))
+            simresults.set_parameters(
+                SimulationParameters.load_from_hdf5_group(pg))
         except KeyError:  # pragma: no cover
             pass
 
@@ -825,7 +832,8 @@ class SimulationResults(object):
         """
         Convert the SimulationResults object to a pandas DataFrame.
         """
-        data = {}  # The data dictionary that we will use to create the DataFrame
+        data = {}  # The data dictionary that we will use to create the
+                   # DataFrame
         all_params_list = self.params.get_unpacked_params_list()
         for name in self.params:
             data[name] = [a[name] for a in all_params_list]
@@ -925,11 +933,6 @@ class Result(object):
       current stored value with the new value.
 
     """
-    # Since we only expect to have some very specific attributes for any
-    # object of the Result class, we define the attributes here. This can
-    # save memory when you have a lot of Result objects.
-    #__slots__ = ('name', '_update_type_code', '_value', '_total', 'num_updates', '_accumulate_values_bool', '_value_list', '_total_list', '_result_sum', '_result_squared_sum')
-
     # Like an Enumeration for the type of results.
     (SUMTYPE, RATIOTYPE, MISCTYPE) = range(3)
     _all_types = {
@@ -970,7 +973,9 @@ class Result(object):
             The other Result object.
         """
         # All class attributes with the exception of num_updates
-        attributes = ['name', '_update_type_code', '_value', '_total', '_accumulate_values_bool', '_value_list', '_total_list', '_result_squared_sum', '_result_sum']
+        attributes = ['name', '_update_type_code', '_value', '_total',
+                      '_accumulate_values_bool', '_value_list',
+                      '_total_list', '_result_squared_sum', '_result_sum']
         if self is other:  # pragma: no cover
             return True
 
@@ -1126,7 +1131,8 @@ class Result(object):
             available types. Thus, an exception will be raised.
 
             """
-            raise ValueError("Can't update a Result object of type '{0}'".format(self._update_type_code))
+            msg = "Can't update a Result object of type '{0}'"
+            raise ValueError(msg.format(self._update_type_code))
 
         def __update_SUMTYPE_value(value, dummy):
             """Update the Result object when its type is SUMTYPE."""
@@ -1145,7 +1151,9 @@ class Result(object):
                 If the `total` parameter is None (not provided).
             """
             if total is None:
-                raise ValueError("A 'value' and a 'total' are required when updating a Result object of the RATIOTYPE type.")
+                msg = ("A 'value' and a 'total' are required when updating "
+                       "a Result object of the RATIOTYPE type.")
+                raise ValueError(msg)
 
             self._value += value
             self._total += total
@@ -1193,10 +1201,11 @@ class Result(object):
         assert self.name == other.name, (
             "Can only merge two objects with the same name and type")
 
-        if self._accumulate_values_bool is True:
+        if self.accumulate_values_bool is True:
             # The second object must also have been set to accumulate values
-            assert other.accumulate_values_bool == True, (
-            "The merged Result also must have been set to accumulate values.")
+            msg = ("The merged Result also must have been set to accumulate"
+                   " values.")
+            assert other.accumulate_values_bool is True, msg
 
             self._value_list.extend(other._value_list)
             self._total_list.extend(other._total_list)
@@ -1258,7 +1267,8 @@ class Result(object):
         """
         # self._fix_old_version()  # Remove this line in the future
 
-        return (float(self._result_squared_sum) / self.num_updates) - (self.get_result_mean())**2
+        return ((float(self._result_squared_sum) / self.num_updates)
+                - (self.get_result_mean())**2)
 
     def get_confidence_interval(self, P=95):
         """
@@ -1282,56 +1292,14 @@ class Result(object):
         util.misc.calc_confidence_interval
         """
         if self._update_type_code == Result.MISCTYPE:
-            message = "Calling get_confidence_interval is not valid for the MISC update type."
+            message = ("Calling get_confidence_interval is not valid for "
+                       "the MISC update type.")
             raise RuntimeError(message)
 
         mean = self.get_result_mean()
         std = np.sqrt(self.get_result_var())
         n = self.num_updates
         return calc_confidence_interval(mean, std, n, P)
-
-    # # Remove this in the future
-    # def get_confidence_interval_old(self, P=95):
-    #     """
-    #     Get the confidence inteval that contains the true result with a given
-    #     probability `P`.
-
-    #     Parameters
-    #     ----------
-    #     P : float
-    #         The desired confidence (probability in %) that true value is
-    #         inside the calculated interval. The possible values are
-    #         described in the documentaiton of the
-    #         `util.misc.calc_confidence_interval` function`
-
-    #     Returns
-    #     -------
-    #     Interval : Numpy (float) array with two elements.
-
-    #     See also
-    #     --------
-    #     util.misc.calc_confidence_interval
-    #     """
-    #     if self._update_type_code == Result.MISCTYPE:
-    #         message = "Calling get_confidence_interval is not valid for the MISC update type."
-    #         raise RuntimeError(message)
-
-    #     if len(self._value_list) == 0:
-    #         if self._accumulate_values_bool is False:
-    #             message = "get_confidence_interval: The accumulate_values option must be set to True."
-    #         else:
-    #             message = "get_confidence_interval: There are no stored values yet."
-    #         raise RuntimeError(message)
-
-    #     values = np.array(self._value_list, dtype=float)
-    #     if self._update_type_code == Result.RATIOTYPE:
-    #         values = values / np.array(self._total_list, dtype=float)
-
-    #     mean = values.mean()
-    #     std = values.std()
-    #     n = values.size
-
-    #     return calc_confidence_interval(mean, std, n, P)
 
     # TODO: Save the _value_list, _total_list and _accumulate_values_bool
     # variables
@@ -1368,7 +1336,8 @@ class Result(object):
         r = None
         for i, r in enumerate(results_list):
             # pylint: disable=W0212
-            ds[i] = (r._value, r._total, r.num_updates, r._result_sum, r._result_squared_sum)
+            ds[i] = (r._value, r._total, r.num_updates, r._result_sum,
+                     r._result_squared_sum)
 
         if r is not None:
             ds.attrs.create('update_type_code', data=r.type_code)

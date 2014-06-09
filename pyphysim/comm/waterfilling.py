@@ -14,7 +14,9 @@ __all__ = ['doWF']
 
 
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
-    """Performs the Waterfilling algorithm and returns the optimum power and water level.
+    """
+    Performs the Waterfilling algorithm and returns the optimum power and
+    water level.
 
     Parameters
     ----------
@@ -33,7 +35,6 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     (vtOptP, mu) : tuple
         A tuple with vtOptP and mu, where vtOptP are the optimum powers,
         while mu is the water level.
-
     """
     ## Sort Channels (descending order)
     vtChannelsSortIndexes = np.argsort(vtChannels)[::-1]
@@ -72,7 +73,8 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
 
     # Put optimum power in the original channel order
     vtOptP = np.zeros([vtChannels.size, ])
-    vtOptP[vtChannelsSortIndexes[np.arange(0, dNChannels - dRemoveChannels)]] = vtOptPaux
+    vtOptP[vtChannelsSortIndexes[
+        np.arange(0, dNChannels - dRemoveChannels)]] = vtOptPaux
     mu = vtOptPaux[0] + float(noiseVar) / vtChannelsSorted[0]
 
     return (vtOptP, mu)

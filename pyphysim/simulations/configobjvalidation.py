@@ -15,7 +15,9 @@ import numpy as np
 import validate
 
 
-__all__ = ["real_numpy_array_check", "real_scalar_or_real_numpy_array_check", "integer_numpy_array_check", "integer_scalar_or_integer_numpy_array_check"]
+__all__ = ["real_numpy_array_check", "real_scalar_or_real_numpy_array_check",
+           "integer_numpy_array_check",
+           "integer_scalar_or_integer_numpy_array_check"]
 
 
 def _parse_range_expr(value, converter=float):
@@ -81,6 +83,7 @@ def _parse_int_range_expr(value):
         The parsed numpy array.
     """
     return _parse_range_expr(value, int)
+
 
 # pylint: disable= W0622
 def real_numpy_array_check(value, min=None, max=None):

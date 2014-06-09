@@ -58,16 +58,21 @@ class OFDM(object):
             If the any of the parameters are invalid.
         """
         if (cp_size < 0) or cp_size > fft_size:
-            raise ValueError("cp_size must be nonnegative and cannot be greater than fft_size")
+            msg = ("cp_size must be nonnegative and cannot be greater "
+                   "than fft_size")
+            raise ValueError(msg)
 
         if num_used_subcarriers is None:
             num_used_subcarriers = fft_size
 
         if num_used_subcarriers > fft_size:
-            raise ValueError("Number of used subcarriers cannot be greater than the fft_size")
+            msg = ("Number of used subcarriers cannot be greater than the "
+                   "fft_size")
+            raise ValueError(msg)
 
         if (num_used_subcarriers % 2 != 0) or (num_used_subcarriers < 2):
-            raise ValueError("Number of used subcarriers must be a multiple of 2")
+            msg = "Number of used subcarriers must be a multiple of 2"
+            raise ValueError(msg)
 
         self.fft_size = fft_size
         self.cp_size = cp_size
@@ -96,8 +101,10 @@ class OFDM(object):
             required to transmit `input_data_size` symbols.
 
         """
-        num_ofdm_symbols = int(np.ceil(float(input_data_size) / self.num_used_subcarriers))
-        zeropad = self.num_used_subcarriers * num_ofdm_symbols - input_data_size
+        num_ofdm_symbols = (int(np.ceil(float(input_data_size)
+                                        / self.num_used_subcarriers)))
+        zeropad = (self.num_used_subcarriers * num_ofdm_symbols
+                   - input_data_size)
         return (zeropad, num_ofdm_symbols)
 
     def get_subcarrier_indexes(self):
@@ -237,14 +244,17 @@ class OFDM(object):
         num_ofdm_symbols = self._calc_zeropad(num_symbs)[1]
 
         # Finally add the zeros to the input data
-        input_signal = np.hstack([input_signal, np.zeros(self.num_used_subcarriers * num_ofdm_symbols - num_symbs)])
+        input_signal = np.hstack(
+            [input_signal, np.zeros(
+                self.num_used_subcarriers * num_ofdm_symbols - num_symbs)])
 
         # Change the shape of the imput data. Each row will be modulated as
         # one OFDM symbol.
         input_signal.shape = (num_ofdm_symbols, self.num_used_subcarriers)
 
         input_ifft = np.zeros([num_ofdm_symbols, self.fft_size])
-        input_ifft[:, self._get_used_subcarrier_indexes_proper()] = input_signal[:, :]
+        input_ifft[:, self._get_used_subcarrier_indexes_proper()] \
+            = input_signal[:, :]
 
         return input_ifft
 
@@ -301,7 +311,8 @@ class OFDM(object):
         _prepare_input_signal
 
         """
-        return decoded_signal[:, self._get_used_subcarrier_indexes_proper()].flatten()
+        return decoded_signal[
+            :, self._get_used_subcarrier_indexes_proper()].flatten()
 
     def _add_CP(self, input_data):
         """Add the Cyclic prefix to the input data.
@@ -435,5 +446,6 @@ class OFDM(object):
         # num_ofdm_symbols = received_signal_no_CP.size / self.fft_size
         # received_signal_no_CP.shape = (num_ofdm_symbols, self.fft_size)
 
-        # demodulated_data = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
+        # demodulated_data = np.fft.fft(received_signal_no_CP,
+        #                               self.fft_size, 1)
         # return demodulated_data

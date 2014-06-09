@@ -27,11 +27,13 @@ from scipy.linalg import block_diag
 from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
 
-__all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt', 'JakesSampleGenerator', 'generate_jakes_samples']
+__all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt',
+           'JakesSampleGenerator', 'generate_jakes_samples']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None, RS=None, start_time=0.0):
+def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
+                           RS=None, start_time=0.0):
     """
     Generates channel samples according to the Jakes model.
 
@@ -268,7 +270,10 @@ class JakesSampleGenerator(object):
         t = self._generate_time_samples(NSamples)
 
         # Finally calculate the channel samples
-        h = np.sqrt(1.0 / self.L) * np.sum(np.exp(1j * (2 * np.pi * self.Fd * np.cos(self._phi_l) * t + self._psi_l)), axis=0)
+        h = (np.sqrt(1.0 / self.L) *
+             np.sum(np.exp(1j * (2 * np.pi * self.Fd
+                                 * np.cos(self._phi_l) * t + self._psi_l)),
+                    axis=0))
 
         return h
 
@@ -332,10 +337,10 @@ class MultiUserChannelMatrix(object):
         # as a single big matrix.
         self._big_H_no_pathloss = np.array([], dtype=np.ndarray)
 
-        # The _H_no_pathloss variable is an internal variable with all the channels
-        # from each transmitter to each receiver. It points to the same
-        # data as the _big_H_no_pathloss variable, however, _H is a "matrix of
-        # matrices" instead of a single big matrix.
+        # The _H_no_pathloss variable is an internal variable with all the
+        # channels from each transmitter to each receiver. It points to the
+        # same data as the _big_H_no_pathloss variable, however, _H is a
+        # "matrix of matrices" instead of a single big matrix.
         self._H_no_pathloss = np.array([], dtype=np.ndarray)
 
         # The _big_H_with_pathloss and _H_with_pathloss variables are
@@ -513,7 +518,8 @@ class MultiUserChannelMatrix(object):
         >>> Nr = np.array([2, 4, 6])
         >>> Nt = np.array([2, 3, 5])
         >>> small_matrix = np.array([[1,2,3],[4,5,6],[7,8,9]])
-        >>> MultiUserChannelMatrix._from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K)
+        >>> MultiUserChannelMatrix._from_small_matrix_to_big_matrix(\
+                small_matrix, Nr, Nt, K)
         array([[1, 1, 2, 2, 2, 3, 3, 3, 3, 3],
                [1, 1, 2, 2, 2, 3, 3, 3, 3, 3],
                [4, 4, 5, 5, 5, 6, 6, 6, 6, 6],
@@ -532,11 +538,13 @@ class MultiUserChannelMatrix(object):
 
         cumNr = np.hstack([0, np.cumsum(Nr)])
         cumNt = np.hstack([0, np.cumsum(Nt)])
-        big_matrix = np.ones([np.sum(Nr), np.sum(Nt)], dtype=small_matrix.dtype)
+        big_matrix = np.ones([np.sum(Nr), np.sum(Nt)],
+                             dtype=small_matrix.dtype)
 
         for rx in range(Kr):
             for tx in range(Kt):
-                big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]] *= small_matrix[rx, tx]
+                big_matrix[cumNr[rx]:cumNr[rx + 1], cumNt[tx]:cumNt[tx + 1]] \
+                    *= small_matrix[rx, tx]
         return big_matrix
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
@@ -562,10 +570,14 @@ class MultiUserChannelMatrix(object):
 
         """
         if channel_matrix.shape != (np.sum(Nr), np.sum(Nt)):
-            raise ValueError("Shape of the channel_matrix must be equal to the sum or receive antennas of all users times the sum of the receive antennas of all users.")
+            msg = ("Shape of the channel_matrix must be equal to the sum or"
+                   " receive antennas of all users times the sum of the "
+                   "receive antennas of all users.")
+            raise ValueError(msg)
 
         if (Nt.size != K) or (Nr.size != K):
-            raise ValueError("K must be equal to the number of elements in Nr and Nt")
+            raise ValueError(
+                "K must be equal to the number of elements in Nr and Nt")
 
         # Reset the _big_H_with_pathloss and _H_with_pathloss. They will be
         # correctly set the first time the _get_H or _get_big_H methods are
@@ -582,7 +594,8 @@ class MultiUserChannelMatrix(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
-        self._H_no_pathloss = single_matrix_to_matrix_of_matrices(channel_matrix, Nr, Nt)
+        self._H_no_pathloss = single_matrix_to_matrix_of_matrices(
+            channel_matrix, Nr, Nt)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
@@ -618,10 +631,11 @@ class MultiUserChannelMatrix(object):
         self._Nt = Nt.astype(int)
         self._K = int(K)
 
-        self._big_H_no_pathloss = randn_c_RS(self._RS_channel,
-                                 np.sum(self._Nr), np.sum(self._Nt))
+        self._big_H_no_pathloss = randn_c_RS(
+            self._RS_channel, np.sum(self._Nr), np.sum(self._Nt))
 
-        self._H_no_pathloss = single_matrix_to_matrix_of_matrices(self._big_H_no_pathloss, Nr, Nt)
+        self._H_no_pathloss = single_matrix_to_matrix_of_matrices(
+            self._big_H_no_pathloss, Nr, Nt)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
@@ -706,7 +720,8 @@ class MultiUserChannelMatrix(object):
         [[ 8  9 10 11]
          [12 13 14 15]]
         """
-        receive_channels = single_matrix_to_matrix_of_matrices(self.big_H, self.Nr)
+        receive_channels = single_matrix_to_matrix_of_matrices(
+            self.big_H, self.Nr)
         return receive_channels[k]
 
     def set_post_filter(self, filters):
@@ -975,7 +990,8 @@ class MultiUserChannelMatrix(object):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \sigma_n^2 \mtI_{N_k}$$
-        Qk = self._calc_JP_Q_impl(k, F_all_users) + np.eye(self.Nr[k]) * noise_var
+        Qk = (self._calc_JP_Q_impl(k, F_all_users)
+              + np.eye(self.Nr[k]) * noise_var)
         return Qk
 
     def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, N0_or_Rek=0.0):
@@ -1124,7 +1140,8 @@ class MultiUserChannelMatrix(object):
 
         Ns_k = F_all_users[k].shape[1]
         Bkl_all_l = np.empty(Ns_k, dtype=np.ndarray)
-        first_part = self._calc_Bkl_cov_matrix_first_part(F_all_users, k, N0_or_Rek)
+        first_part = self._calc_Bkl_cov_matrix_first_part(
+            F_all_users, k, N0_or_Rek)
         for l in range(Ns_k):
             second_part = self._calc_Bkl_cov_matrix_second_part(
                 F_all_users[k], k, l)
@@ -1168,7 +1185,8 @@ class MultiUserChannelMatrix(object):
 
         return first_part
 
-    def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users, k, noise_power=0.0):
+    def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users, k,
+                                           noise_power=0.0):
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_ when joint process is employed.
@@ -1195,11 +1213,15 @@ class MultiUserChannelMatrix(object):
 
         Rek = (noise_power * np.eye(self.Nr[k]))
         Hk = self.get_Hk(k)
-        return self._calc_JP_Bkl_cov_matrix_first_part_impl(Hk, F_all_users, Rek)
+        return self._calc_JP_Bkl_cov_matrix_first_part_impl(
+            Hk, F_all_users, Rek)
 
     @staticmethod
     def _calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l):
-        """Common implementation of the _calc_JP_Bkl_cov_matrix_second_part method."""
+        """
+        Common implementation of the _calc_JP_Bkl_cov_matrix_second_part
+        method.
+        """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[k]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[k]\dagger}$$
         Hk_H = Hk.transpose().conjugate()
 
@@ -1294,7 +1316,8 @@ class MultiUserChannelMatrix(object):
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
         Ns_k = F_all_users[k].shape[1]
         Bkl_all_l = np.empty(Ns_k, dtype=np.ndarray)
-        first_part = self._calc_JP_Bkl_cov_matrix_first_part(F_all_users, k, N0_or_Rek)
+        first_part = self._calc_JP_Bkl_cov_matrix_first_part(
+            F_all_users, k, N0_or_Rek)
         for l in range(Ns_k):
             second_part = self._calc_JP_Bkl_cov_matrix_second_part(
                 F_all_users[k], k, l)
@@ -1579,8 +1602,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             return H
         else:
             # Apply path loss. Note that the _pathloss_big_matrix matrix
-            # has the same dimension as the self._big_H_no_pathloss matrix and we are
-            # performing element-wise multiplication here.
+            # has the same dimension as the self._big_H_no_pathloss matrix
+            # and we are performing element-wise multiplication here.
             return H * np.sqrt(self._pathloss_matrix)
     H = property(_get_H)
 
@@ -1830,7 +1853,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             If the arguments are invalid.
 
         """
-        (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
+        (full_Nr, full_Nt, full_K, extIntK, extIntNt) \
+            = MultiUserChannelMatrixExtInt._prepare_input_parans(
+                Nr, Nt, K, NtE)
 
         self._extIntK = extIntK
         self._extIntNt = extIntNt
@@ -1862,7 +1887,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         if isinstance(Nt, int):
             Nt = np.ones(K, dtype=int) * Nt
 
-        (full_Nr, full_Nt, full_K, extIntK, extIntNt) = MultiUserChannelMatrixExtInt._prepare_input_parans(Nr, Nt, K, NtE)
+        (full_Nr, full_Nt, full_K, extIntK, extIntNt) \
+            = MultiUserChannelMatrixExtInt._prepare_input_parans(
+                Nr, Nt, K, NtE)
 
         self._extIntK = extIntK
         self._extIntNt = extIntNt
@@ -1909,7 +1936,10 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
                 ext_int_pathloss])
             self._pathloss_matrix = pathloss_matrix_with_ext_int
 
-            self._pathloss_big_matrix = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(pathloss_matrix_with_ext_int, self._Nr, self._Nt, self.K, self._K)
+            self._pathloss_big_matrix \
+                = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(
+                    pathloss_matrix_with_ext_int, self._Nr, self._Nt,
+                    self.K, self._K)
 
             # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
             # in sync by disallowing modification of individual elements in
@@ -1945,7 +1975,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         for ii in range(self.Nr.size):
             extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
-            R[ii] = pe * np.dot(extH, extH.transpose().conjugate()) + np.eye(self.Nr[ii]) * noise_var
+            R[ii] = (pe * np.dot(extH, extH.transpose().conjugate())
+                     + np.eye(self.Nr[ii]) * noise_var)
         return R
 
     def calc_Q(self, k, F_all_users, noise_var=0.0, pe=1.0):

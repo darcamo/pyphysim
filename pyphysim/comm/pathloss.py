@@ -29,7 +29,8 @@ from collections import Iterable
 
 from ..util import conversion
 
-__all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1', 'PathLossOkomuraHata']
+__all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1',
+           'PathLossOkomuraHata']
 
 
 class PathLossBase(object):
@@ -74,7 +75,8 @@ class PathLossBase(object):
         """
         # Raises an exception if which_distance_dB is not implemented in a
         # subclass
-        raise NotImplementedError('which_distance_dB must be reimplemented in the {0} class'.format(self.__class__.__name__))
+        msg = 'which_distance_dB must be reimplemented in the {0} class'
+        raise NotImplementedError(msg.format(self.__class__.__name__))
 
     def _calc_deterministic_path_loss_dB(self, d):
         """Calculates the Path Loss (in dB) for a given distance (in Km)
@@ -92,7 +94,9 @@ class PathLossBase(object):
             PathLossBase class is called.
 
         """
-        raise NotImplementedError('_calc_deterministic_path_loss_dB must be reimplemented in the {0} class'.format(self.__class__.__name__))
+        msg = ('_calc_deterministic_path_loss_dB must be reimplemented in '
+               'the {0} class')
+        raise NotImplementedError(msg.format(self.__class__.__name__))
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
     def plot_deterministic_path_loss_in_dB(self, d, ax=None, extra_args=None):
@@ -114,7 +118,7 @@ class PathLossBase(object):
 
         stand_alone_plot = False
 
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             ax = plt.axes()
             stand_alone_plot = True
@@ -162,7 +166,8 @@ class PathLossBase(object):
         # The calculated path loss (in dB) must be positive. If it is not
         # positive that means that the distance 'd' is too small.
         if np.any(np.array(PL) < 0):
-            raise RuntimeError("The distance is too small to calculate a valid path loss.".format(d))
+            msg = "The distance is too small to calculate a valid path loss."
+            raise RuntimeError(msg.format(d))
         return PL
 
     def calc_path_loss(self, d):
@@ -261,7 +266,8 @@ class PathLossFreeSpace(PathLossBase):
         # $10^{(PL/(10n) - \log_{10}(fc) + 4.377911390697565)}$
         # Note: the value "6.0" was subtracted to account the fact that
         # self.fc is in MHz.
-        d = 10. ** (PL / (10. * self.n) - np.log10(self.fc) - 6.0 + 4.377911390697565)
+        d = (10. ** (PL / (10. * self.n)
+                     - np.log10(self.fc) - 6.0 + 4.377911390697565))
         return d
 
     def _calc_deterministic_path_loss_dB(self, d):
@@ -285,7 +291,8 @@ class PathLossFreeSpace(PathLossBase):
             Path loss in dB.
         """
         # The value "6.0" was added to convert the frequency self.fc to MHz
-        PL = 10 * self.n * (np.log10(d) + np.log10(self.fc) + 6.0 - 4.377911390697565)
+        PL = (10 * self.n
+              * (np.log10(d) + np.log10(self.fc) + 6.0 - 4.377911390697565))
         return PL
 
 
@@ -397,7 +404,6 @@ class PathLossOkomuraHata(PathLossBase):
     # Lp_suburban = A + B*log10(r)-C;
     # Lp_open = A + B*log10(r)-D;
 
-
     # f in MHz
     # d in Km
 
@@ -426,7 +432,9 @@ class PathLossOkomuraHata(PathLossBase):
     def _set_fc(self, value):
         """Set method for the fc property."""
         if value < 150.0 or value > 1500:
-            raise RuntimeError("The carrier frequency for the Okomura Hata model must be between 150 and 1500 (values in MHz).")
+            msg = ("The carrier frequency for the Okomura Hata model must be"
+                   " between 150 and 1500 (values in MHz).")
+            raise RuntimeError(msg)
         self._fc = value
 
     def _get_fc(self):
@@ -439,7 +447,9 @@ class PathLossOkomuraHata(PathLossBase):
     def _set_hbs(self, value):
         """Set method for the hbs property."""
         if value < 30.0 or value > 200.0:
-            raise RuntimeError("The Base Station antenna height for the Okomura Hata model must be between 30 and 200 (values in meters).")
+            msg = ("The Base Station antenna height for the Okomura Hata "
+                   "model must be between 30 and 200 (values in meters).")
+            raise RuntimeError(msg)
         self._hbs = value
 
     def _get_hbs(self):
@@ -452,7 +462,9 @@ class PathLossOkomuraHata(PathLossBase):
     def _set_hms(self, value):
         """Set method for the hms property."""
         if value < 1.0 or value > 10.0:
-            raise RuntimeError("The Mobile Station antenna height for the Okomura Hata model must be between 1 and 10 (values in meters).")
+            msg = ("The Mobile Station antenna height for the Okomura Hata "
+                   "model must be between 1 and 10 (values in meters).")
+            raise RuntimeError(msg)
         self._hms = value
 
     def _get_hms(self):
@@ -505,16 +517,19 @@ class PathLossOkomuraHata(PathLossBase):
 
             # Suburban and ruran areas (f in MHz
             # $a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$
-            a = (1.1 * np.log10(self.fc) - 0.7) * self.hms - 1.56 * np.log10(self.fc) + 0.8
+            a = ((1.1 * np.log10(self.fc) - 0.7)
+                 * self.hms - 1.56 * np.log10(self.fc) + 0.8)
         elif self.area_type == 'large city':
             # Note: The category of “large city” used by Hata implies
             # building heights greater than 15m.
             if self.fc > 300:
-                # If frequency is greater then 300MHz then the factor is given by
+                # If frequency is greater then 300MHz then the factor is
+                # given by
                 # $3.2 (\log(11.75*h_{ms})^2) - 4.97$
                 a = 3.2 * (np.log10(11.75 * self.hms)**2) - 4.97
             else:
-                # If frequency is lower then 300MHz then the factor is given by
+                # If frequency is lower then 300MHz then the factor is
+                # given by
                 # $8.29 (\log(1.54 h_{ms}))^2 - 1.10$
                 a = 8.29 * (np.log10(1.54 * self.hms)**2) - 1.10
         else:
@@ -524,7 +539,8 @@ class PathLossOkomuraHata(PathLossBase):
 
     def _calc_K(self):
         """
-        Calculates the "'medium city'/'suburban'/'open area'" correction factor.
+        Calculates the "'medium city'/'suburban'/'open area'" correction
+        factor.
 
         Returns
         -------
@@ -536,7 +552,8 @@ class PathLossOkomuraHata(PathLossBase):
         elif self.area_type == 'open':
             # Value for 'open' areas
             # $K = 4.78 (\log(f))^2 - 18.33 \log(f) + 40.94$
-            K = 4.78 * (np.log10(self.fc)**2) - 18.33 * np.log10(self.fc) + 40.94
+            K = (4.78 * (np.log10(self.fc)**2) - 18.33 * np.log10(self.fc)
+                 + 40.94)
         elif self.area_type == 'suburban':
             # Value for 'suburban' areas
             # $K = 2 [\log(f/28)^2] + 5.4$
@@ -566,7 +583,9 @@ class PathLossOkomuraHata(PathLossBase):
             Path loss in dB.
         """
         if np.any(d < 1.0) or np.any(d > 20.0):
-            warnings.warn(Warning('Distance for the Okomura Hata model should be between 1Km and 20Km'))
+            msg = ('Distance for the Okomura Hata model should be between'
+                   ' 1Km and 20Km')
+            warnings.warn(Warning(msg))
 
         # $L (\text{in dB}) = 69.55 + 26.16 \log(f) -13.82 \log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\log(h_{bs})) \log(d) - K$
 
@@ -576,7 +595,8 @@ class PathLossOkomuraHata(PathLossBase):
         # Calculates the "'suburban'/'open area'" correction factor.
         K = self._calc_K()
 
-        L = 69.55 + 26.16 * np.log10(self.fc) - 13.82 * np.log10(self.hbs) - a + (44.9 - 6.55 * np.log10(self.hbs)) * np.log10(d) - K
+        L = (69.55 + 26.16 * np.log10(self.fc) - 13.82 * np.log10(self.hbs)
+             - a + (44.9 - 6.55 * np.log10(self.hbs)) * np.log10(d) - K)
         return L
 
     def which_distance_dB(self, PL):

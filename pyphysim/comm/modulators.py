@@ -209,7 +209,8 @@ class Modulator(object):
         # # import pudb
         # # pudb.set_trace()
         # for ii in xrange(num_symbols):
-        #     output[ii] = np.abs(self.symbols - reshaped_received_data[ii]).argmin()
+        #     output[ii] = np.abs(
+        #                  self.symbols - reshaped_received_data[ii]).argmin()
         # output.shape = shape
         # return output
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -737,7 +738,8 @@ class QAM(Modulator):
         # Probability of error of each carrier in a square QAM
         # $P_{sc} = 2\left(1 - \frac{1}{\sqrt M}\right)Q\left(\sqrt{\frac{3}{M-1}\frac{E_s}{N_0}}\right)$
         sqrtM = np.sqrt(self._M)
-        Psc = 2. * (1. - (1. / sqrtM)) * qfunc(np.sqrt(snr * 3. / (self._M - 1.)))
+        Psc = (2. * (1. - (1. / sqrtM))
+               * qfunc(np.sqrt(snr * 3. / (self._M - 1.))))
         return Psc
 
     def calcTheoreticalSER(self, SNR):

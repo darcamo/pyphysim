@@ -960,7 +960,7 @@ class ClusterTestCase(unittest.TestCase):
         # self.C3.create_wrap_around_cells(False)
         # self.C3.add_random_users(range(1, 20), 2)
 
-        # self.C3.calc_diffs_between_cells()
+        # self.C3.calc_dists_between_cells()
 
         # self.C3.calc_dist_all_users_to_each_cell()
         ##import pudb; pudb.set_trace()  ## DEBUG ##

@@ -468,16 +468,6 @@ class IASolverBaseClass(object):
         This is impacted by the self.P attribute.
 
         """
-        # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
-        # interfering_users = set(range(self.K)) - set([k])
-        # Qk = np.zeros([self.Nr[k], self.Nr[k]], dtype=complex)
-
-        # for l in interfering_users:
-        #     Hkl_F = np.dot(
-        #         self._get_channel(k, l),
-        #         self.full_F[l])
-        #     Qk = Qk + np.dot(Hkl_F, Hkl_F.transpose().conjugate())
-
         Qk = self._multiUserChannel.calc_Q(k, self.full_F)
         return Qk
 
@@ -890,8 +880,8 @@ class ClosedFormIASolver(IASolverBaseClass):
         H21 = self._get_channel(1, 0)
 
         E = (np.linalg.solve(H31, H32)).dot(
-             (np.linalg.solve(H12, H13)).dot(
-                 np.linalg.solve(H23, H21)))
+            (np.linalg.solve(H12, H13)).dot(
+                np.linalg.solve(H23, H21)))
 
         return E
 
@@ -1266,7 +1256,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         # The current value of self._F and self._full_F will be used.
         if self._F is None:
-            raise RuntimeError("The precoder must be manually set, since you specified the 'fix' initialize_with option.")
+            msg = ("The precoder must be manually set, since you specified"
+                   " the 'fix' initialize_with option.")
+            raise RuntimeError(msg)
 
         if self._Ns is None:
             self._Ns = np.array([F.shape[1] for F in self._F])
@@ -1295,7 +1287,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._W = self._closed_form_ia_solver.W
 
     def _initialize_F_and_W_from_alt_min(self, Ns, P):
-        """Initialize the IA Solution from the Alternating Minimizations IA solver.
+        """
+        Initialize the IA Solution from the Alternating Minimizations IA
+        solver.
 
         Parameters
         ----------
@@ -1350,9 +1344,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         elif self.initialize_with == 'fix':
             self._dont_initialize_F_and_only_and_find_W()
         else:
-            msg = 'unknown initialization option for the IA sovler: {0}'.format(
-                self.initialize_with)
-            raise RuntimeError(msg)
+            msg = 'unknown initialization option for the IA sovler: {0}'
+            raise RuntimeError(msg.format(self.initialize_with))
 
     def _solve_finalize(self):  # pragma: no cover
         """Perform any post processing after the solution has been found.
@@ -1399,9 +1392,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     if self._full_F[k] is not None:
                         # Original norm of the _full_F[k] precoder
                         original_norm = np.linalg.norm(self._full_F[k], 'fro')
-                        new_full_F = get_principal_component_matrix(self._full_F[k], n)
+                        new_full_F = get_principal_component_matrix(
+                            self._full_F[k], n)
                         # Restore the original norm
-                        new_full_F = new_full_F / np.linalg.norm(new_full_F, 'fro') * original_norm
+                        new_full_F = new_full_F / np.linalg.norm(
+                            new_full_F, 'fro') * original_norm
                         self._full_F[k] = new_full_F
 
                     self.Ns[k] = n
@@ -1543,7 +1538,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
             # Stop the iteration earlier if the precoder does not change
             # too much
-            if self._is_diff_significant(old_F, self._F, self.relative_factor) is False:
+            if self._is_diff_significant(
+                    old_F, self._F, self.relative_factor) is False:
                 break
             else:
                 old_F = self._F
@@ -1753,7 +1749,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         #self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
         for k in range(self.K):
             self._F[k] = leig(newF[k], self.Ns[k])[0]
-            self._F[k] = self._F[k] / np.linalg.norm(self._F[k],'fro')
+            self._F[k] = self._F[k] / np.linalg.norm(self._F[k], 'fro')
 
     def _updateW(self):
         """
@@ -2204,7 +2200,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         self._mu = None
-        self._bisection_tol = 1e-3  # Tolerance used to stop the bisection method
+        # Tolerance used to stop the bisection method
+        self._bisection_tol = 1e-3
 
     def _solve_init(self, Ns, P):
         """
@@ -2425,141 +2422,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         else:
             self._mu[i] = mu_i
             Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
-            # Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
+            # Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term,
+            #                                    mu_i, Hii_herm_U)
 
         return Vi
-
-
-    # def _calc_Vi_orig(self, i, mu_i=None):
-    #     """
-    #     Calculates the precoder of the i-th user.
-
-    #     Parameters
-    #     ----------
-    #     i : int
-    #         User index
-    #     mu_i : float or None
-    #         The value of the Lagrange multiplier. If it is None (default),
-    #         then the best value will be found and used to calculate the
-    #         precoder.
-
-    #     Returns
-    #     -------
-    #     Vi : numpy array
-    #         The calculate precoder of the i-th user.
-    #     """
-    #     # $$\mtV_i = \left( \sum_{k=1}^K \mtH_{ki}^H \mtU_k \mtU_k^H \mtH_{ki} + \mu_i \mtI \right)^{-1} \mtH_{ii}^H \mtU_i$$
-    #     Hii = self._get_channel(i, i)
-    #     Ui = self.W[i]
-
-    #     Hii_herm_U = np.dot(Hii.conj().T, Ui)
-
-    #     # xxxxx Calculates the Summation term xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     sum_term = 0
-    #     for k in range(self.K):
-    #         Hki = self._get_channel(k, i)
-    #         Uk = self.W[k]
-    #         aux = np.dot(Hki.conj().T, Uk)
-    #         sum_term = sum_term + np.dot(aux, aux.conj().T)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    #     # xxxxxxxxxx Perform diagonal loading if it is necessary xxxxxxxxxx
-    #     # Occasionally (specially for the low SNR values) sum_term may be a
-    #     # singular matrix. In that case, we add a diagonal loading factor
-    #     # to make the sum_term non-singular. This diagonal loading
-    #     # corresponding to summing an identity matrix times a load_factor
-    #     # to the sum_term, where this load_factor is arbitrarily calculated
-    #     # as 1/100 of the mean of the eigen values of the singular
-    #     # sum_term.
-
-    #     # Calculates the SVD of sum_term so that we can calculate the
-    #     # condition number.
-    #     [_, S, _] = np.linalg.svd(sum_term)
-    #     cond = cond = S.max() / S.min()
-    #     load_factor = 0.0
-    #     # If the condition number is larger than 1e8 we consider sum_term
-    #     # as a singular matrix, which means that we will perform the
-    #     # diagonal loading
-    #     if cond > 5e4:
-    #         # Calculates the load_factor (arbitrarily choosen as 1/100 the
-    #         # mean of the current singular values of sum_term).
-    #         load_factor = S.mean() / 100.0
-    #         # pylint: disable= E1103
-    #         sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     # xxxxxxxxxx Case when the best mu value must be found xxxxxxxxxxxx
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     if mu_i is None:
-    #         # xxxxx Define the function that will be optimized xxxxxxxxxxxx
-    #         def func(mu, sum_term, Hii_herm_U, P):
-    #             Vi = self._calc_Vi_for_a_given_mu(sum_term, mu, Hii_herm_U)
-    #             norm = np.linalg.norm(Vi, 'fro')
-    #             cost = norm**2  - P
-    #             return cost
-    #         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    #         min_mu_i = 0
-    #         max_mu_i = 10  # (10 was arbitrarily chosen, but seems good enough)
-
-    #         cost = func(min_mu_i, sum_term, Hii_herm_U, self.P[i])
-    #         # If cost is lower than or equal to zero then the power
-    #         # constraint is already satisfied and we are done. The value of
-    #         # mu will be min_mu_i.
-    #         if cost <= 0:
-    #             mu_i = min_mu_i
-    #             Vi = self._calc_Vi_for_a_given_mu(
-    #                 sum_term, mu_i, Hii_herm_U)
-    #             self._mu[i] = mu_i
-
-    #         else:
-    #             # If we are not done yet then we need to perform the
-    #             # bisection method to find the best mu value between
-    #             # min_mu_i and max_mu_i
-    #             tol = self._bisection_tol  # Tolerance used to stop the bisection method
-
-    #             # Maximum number of iterations of the bisection
-    #             max_iter = int(1 + np.round(
-    #                 (np.log(max_mu_i - min_mu_i) - np.log(tol)) / np.log(2)))
-
-    #             # Perform the bisection
-    #             for _ in range(max_iter):
-    #                 mu_i = (max_mu_i + min_mu_i) / 2.0
-    #                 cost = func(mu_i, sum_term, Hii_herm_U, self.P[i])
-    #                 if cost > 0:
-    #                     # The current value of mu_i yields a precoder with
-    #                     # a power higher then the allowed value. Lets
-    #                     # increase the value of min_mu_i
-    #                     min_mu_i = mu_i
-    #                 else:
-    #                     # The current value of mu_i yields a precoder with
-    #                     # a power lower then the allowed value. Lets
-    #                     # decrease the value of max_mu_i
-    #                     max_mu_i = mu_i
-    #                 if np.abs(cost) < tol:
-    #                     break
-
-    #             # Now that we have the best value for mu_i, lets calculate Vi
-    #             Vi = self._calc_Vi_for_a_given_mu(
-    #                 sum_term, mu_i, Hii_herm_U)
-    #             # Vi = self._calc_Vi_for_a_given_mu2(
-    #             #     inv_sum_term, mu_i, Hii_herm_U)
-
-    #             # If any load_factor was added (in case the original
-    #             # sum_term is a singular matrix) we will add it to the
-    #             # optimum mu_i, since this is the effective value of mu_i.
-    #             self._mu[i] = mu_i + load_factor
-
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     # xxxxxxxxxx Case when the mu value is provided xxxxxxxxxxxxxxxxxxx
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    #     else:
-    #         self._mu[i] = mu_i
-    #         Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
-    #         # Vi = self._calc_Vi_for_a_given_mu2(inv_sum_term, mu_i, Hii_herm_U)
-
-    #     return Vi
 
     def _updateF(self):
         """

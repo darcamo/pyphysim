@@ -21,7 +21,9 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
-from .configobjvalidation import real_numpy_array_check, integer_numpy_array_check, integer_scalar_or_integer_numpy_array_check, real_scalar_or_real_numpy_array_check
+from .configobjvalidation import real_numpy_array_check, \
+    integer_numpy_array_check, integer_scalar_or_integer_numpy_array_check, \
+    real_scalar_or_real_numpy_array_check
 
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
@@ -81,6 +83,7 @@ def combine_simulation_parameters(params1, params2):
         union.set_unpack_parameter(p)
 
     return union
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -441,7 +444,8 @@ class SimulationParameters(object):
             return 1
         else:
             # Generator for the lengths of the parameters set to be unpacked
-            gen_values = (len(self.parameters[i]) for i in self._unpacked_parameters_set)
+            gen_values = (
+                len(self.parameters[i]) for i in self._unpacked_parameters_set)
             # Just multiply all the lengths
             import operator
             import functools
@@ -522,7 +526,8 @@ class SimulationParameters(object):
             if i in varying_param:
                 param_indexes.append(':')
             else:
-                fixed_param_value_index = list(self.parameters[i]).index(fixed_params_dict[i])
+                fixed_param_value_index = list(self.parameters[i]).index(
+                    fixed_params_dict[i])
                 param_indexes.append(str(fixed_param_value_index))
 
         # xxxxx Get the indexes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -532,15 +537,13 @@ class SimulationParameters(object):
         # order to get the linear indexes.
 
         # Get the lengths of the parameters marked to be unpacked
-        dimensions = [len(self.parameters[i]) for i in self.unpacked_parameters]
+        dimensions = [
+            len(self.parameters[i]) for i in self.unpacked_parameters]
         aux = np.arange(0, self.get_num_unpacked_variations())
         aux.shape = dimensions
-        indexes = eval("aux" + "[{0}]".format(",".join(param_indexes))).flatten()
+        indexes = eval(
+            "aux" + "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # if indexes.shape == ():
-        #     print("simulations.py: Create a unittest when the code reaches this branch.")
-        #     indexes = np.array([indexes])
 
         return indexes
 
@@ -605,10 +608,12 @@ class SimulationParameters(object):
         # (for the different parameters marked to be unpacked) to a single
         # iterator that returns all the possible combinations (cartesian
         # product) of the individual iterators.
-        all_combinations = itertools.product(*(unpacked_params_iter_dict.values()))
+        all_combinations = itertools.product(
+            *(unpacked_params_iter_dict.values()))
 
         # Names of the parameters that don't need to be unpacked
-        regular_params = set(self.parameters.keys()) - self._unpacked_parameters_set
+        regular_params = (set(self.parameters.keys())
+                          - self._unpacked_parameters_set)
 
         # Constructs a list with dictionaries, where each dictionary
         # corresponds to a possible parameters combination
@@ -772,9 +777,16 @@ class SimulationParameters(object):
                 # add_params(params, conf_file_parser)
                 # pprint(params.parameters)
                 # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' must be provided.".format(filename, first_error[1], first_error[0][0]))
+                msg = ("Error loading file {0}. Parameter '{1}' in section "
+                       "'{2}' must be provided.")
+                raise Exception(msg.format(filename, first_error[1],
+                                           first_error[0][0]))
             else:
-                raise Exception("Error loading file {0}. Parameter '{1}' in section '{2}' is invalid. {3}".format(filename, first_error[1], first_error[0][0], first_error[2].message.capitalize()))
+                msg = ("Error loading file {0}. Parameter '{1}' in section "
+                       "'{2}' is invalid. {3}")
+                raise Exception(
+                    msg.format(filename, first_error[1], first_error[0][0],
+                               first_error[2].message.capitalize()))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Finally add the parsed parameters to the params object xxxx
@@ -839,7 +851,8 @@ class SimulationParameters(object):
         # Store the _unpacked_parameters_set as an attribute of the group.
         # Note that we need to convert _unpacked_parameters_set to a list,
         # since a set has no native HDF5 equivalent.
-        group.attrs.create('_unpacked_parameters_set', data=list(self._unpacked_parameters_set))
+        group.attrs.create('_unpacked_parameters_set', data=list(
+            self._unpacked_parameters_set))
 
     def save_to_pytables_group(self, group):
         """Save the contents of the SimulationParameters object into an
@@ -875,7 +888,8 @@ class SimulationParameters(object):
 
         # TODO: Currently the atribute will be saved as a python object,
         # but it should be an array of strings.
-        pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(self._unpacked_parameters_set))
+        pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(
+            self._unpacked_parameters_set))
 
     @staticmethod
     def load_from_hdf5_group(group):
@@ -910,6 +924,7 @@ class SimulationParameters(object):
             params.add(name, ds.value)
 
         # pylint: disable=W0212
-        params._unpacked_parameters_set = set(group.attrs['_unpacked_parameters_set'])
+        params._unpacked_parameters_set = set(
+            group.attrs['_unpacked_parameters_set'])
         return params
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
