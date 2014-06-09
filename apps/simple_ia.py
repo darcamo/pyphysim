@@ -25,7 +25,7 @@ from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean, get_
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.util import misc
-from pyphysim.ia import ia
+from pyphysim.ia import algorithms
 from pyphysim.simulations.progressbar import ProgressbarText
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -77,8 +77,8 @@ def main():
         multiUserChannel.randomize(Nr, Nt, K)
 
         # Creat the IA solver object
-        mmse_ia_solver = ia.MMSEIASolver(multiUserChannel)
-        max_sinr_ia_solver = ia.MaxSinrIASolver(multiUserChannel)
+        mmse_ia_solver = algorithms.MMSEIASolver(multiUserChannel)
+        max_sinr_ia_solver = algorithms.MaxSinrIASolver(multiUserChannel)
 
         mmse_ia_solver.randomizeF(Ns, P)
 

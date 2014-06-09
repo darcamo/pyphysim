@@ -14,7 +14,7 @@ sys.path.append(parent_dir)
 
 import numpy as np
 
-from pyphysim.ia import ia
+from pyphysim.ia import algorithms
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
@@ -33,10 +33,10 @@ if __name__ == '__main__':
     Nt = np.ones(K, dtype=int) * 4
     Ns = np.ones(K, dtype=int) * 2
     multi_user_channel = channels.MultiUserChannelMatrix()
-    #ia_solver = ia.AlternatingMinIASolver(multi_user_channel)
-    ia_solver = ia.MaxSinrIASolver(multi_user_channel)
+    #ia_solver = algorithms.AlternatingMinIASolver(multi_user_channel)
+    ia_solver = algorithms.MaxSinrIASolver(multi_user_channel)
     ia_solver.noise_var = noise_var
-    #ia_solver = ia.MinLeakageIASolver(multi_user_channel)
+    #ia_solver = algorithms.MinLeakageIASolver(multi_user_channel)
     ia_solver.max_iterations = 50
 
     pb = ProgressbarText(rep_max, '*', message="Simulating for SNR: {0}".format(SNR))

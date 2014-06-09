@@ -26,7 +26,7 @@ from matplotlib import pyplot as plt
 from pyphysim.comm.ofdm import OFDM
 from pyphysim.comm import modulators, blockdiagonalization, ofdm, mimo, pathloss, \
     waterfilling, channels
-from pyphysim.ia.ia import ClosedFormIASolver
+from pyphysim.ia.algorithms import ClosedFormIASolver
 from pyphysim.util.misc import randn_c, least_right_singular_vectors, \
     calc_shannon_sum_capacity, calc_whitening_matrix
 from pyphysim.util.conversion import dB2Linear, linear2dB, \

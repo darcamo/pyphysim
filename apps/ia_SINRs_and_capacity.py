@@ -29,7 +29,7 @@ from pandas import DataFrame
 
 from pyphysim.comm import channels
 import pyphysim.ia  # Import the package ia
-from pyphysim.ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
+from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
     MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
     IterativeIASolverBaseClass
 from pyphysim.util.misc import peig, leig, randn_c

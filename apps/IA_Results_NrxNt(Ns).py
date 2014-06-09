@@ -15,7 +15,7 @@ from pyphysim.util.simulations import SimulationRunner, SimulationParameters, Si
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
-from pyphysim.ia import ia
+from pyphysim.ia import algorithms
 import numpy as np
 from pprint import pprint
 from plot.pgfplotshelper import *

@@ -13,7 +13,7 @@ try:
 except NameError:
     sys.path.append("../")
 
-from pyphysim.ia import ia
+from pyphysim.ia import algorithms
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.comm.channels import MultiUserChannelMatrix
 from pyphysim.comm.modulators import PSK
@@ -36,11 +36,11 @@ if __name__ == '__main__':
     multiuserchannel.randomize(Nr, Nt, K)
     multiuserchannel._last_noise_var = noise_var
 
-    ia_solver = ia.AlternatingMinIASolver(multiuserchannel)
-    ia_solver2 = ia.MMSEIASolver(multiuserchannel)
-    ia_solver3 = ia.MaxSinrIASolver(multiuserchannel)
+    ia_solver = algorithms.AlternatingMinIASolver(multiuserchannel)
+    ia_solver2 = algorithms.MMSEIASolver(multiuserchannel)
+    ia_solver3 = algorithms.MaxSinrIASolver(multiuserchannel)
 
-    ia_solver4 = ia.AlternatingMinIASolver(multiuserchannel)
+    ia_solver4 = algorithms.AlternatingMinIASolver(multiuserchannel)
 
     #ia_solver.initialize_with_closed_form = True
     # ia_solver2.initialize_with_closed_form = True

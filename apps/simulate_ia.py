@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Module containing simulation runners for the several Interference
-Alignment algorithms in the ia.ia module."""
+Alignment algorithms in the algorithms.ia module."""
 
 __revision__ = "$Revision$"
 
@@ -26,7 +26,7 @@ from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean, get_
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
-from pyphysim.ia import ia
+from pyphysim.ia import algorithms
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -41,7 +41,7 @@ class IASimulationRunner(SimulationRunner):
     ----------
     IaSolverClass : The class of the IA solver object
         The IA solver class, which should be a derived class from
-        ia.IASolverBaseClass
+        algorithms.IASolverBaseClass
     default_config_file : string
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
@@ -85,7 +85,7 @@ class IASimulationRunner(SimulationRunner):
         # for each algorithm we manually added to the ClosedFormIASolver
         # object just to make the code in _run_simulation equal for all
         # solvers.
-        if isinstance(self.ia_solver, ia.ClosedFormIASolver):
+        if isinstance(self.ia_solver, algorithms.ClosedFormIASolver):
             self.ia_solver.runned_iterations = 0.0
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
@@ -279,7 +279,7 @@ class IASimulationRunner(SimulationRunner):
 
         return True
 
-    # Except for the closed form algorithm, all the other ia algorithms are
+    # Except for the closed form algorithm, all the other algorithms algorithms are
     # iterative and we need to set the maximum number of iterations of the
     # iterative algorithm. We do this by implementing the
     # _on_simulate_current_params_start method.
@@ -327,7 +327,7 @@ class AlternatingSimulationRunner(IASimulationRunner):
         """.split("\n")
 
         IASimulationRunner.__init__(self,
-                                    ia.AlternatingMinIASolver,
+                                    algorithms.AlternatingMinIASolver,
                                     default_config_file,
                                     spec,
                                     read_command_line_args)
@@ -374,7 +374,7 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         """.split("\n")
 
         IASimulationRunner.__init__(self,
-                                    ia.ClosedFormIASolver,
+                                    algorithms.ClosedFormIASolver,
                                     default_config_file,
                                     spec,
                                     read_command_line_args)
@@ -421,7 +421,7 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         """.split("\n")
 
         IASimulationRunner.__init__(self,
-                                    ia.MinLeakageIASolver,
+                                    algorithms.MinLeakageIASolver,
                                     default_config_file,
                                     spec,
                                     read_command_line_args)
@@ -461,7 +461,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         """.split("\n")
 
         IASimulationRunner.__init__(self,
-                                    ia.MaxSinrIASolver,
+                                    algorithms.MaxSinrIASolver,
                                     default_config_file,
                                     spec,
                                     read_command_line_args)
@@ -501,7 +501,7 @@ class MMSESimulationRunner(IASimulationRunner):
         """.split("\n")
 
         IASimulationRunner.__init__(self,
-                                    ia.MMSEIASolver,
+                                    algorithms.MMSEIASolver,
                                     default_config_file,
                                     spec,
                                     read_command_line_args)

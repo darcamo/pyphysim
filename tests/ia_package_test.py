@@ -29,11 +29,11 @@ import copy
 
 from pyphysim.comm import channels
 import pyphysim.ia  # Import the package ia
-from pyphysim.ia.ia import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
+from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
     MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
     IterativeIASolverBaseClass
 from pyphysim.util.misc import peig, leig, randn_c
-from pyphysim.util.conversion import linear2dB, dB2Linear
+from pyphysim.util.conversion import dB2Linear
 
 
 class CustomTestCase(unittest.TestCase):
