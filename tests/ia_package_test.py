@@ -1511,7 +1511,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                     np.linalg.inv(Bkl_all_l[l]),
                     np.dot(Hkk, F[:, l:l + 1]))
                 expected_Ukl = expected_Ukl / norm(expected_Ukl, 'fro')
-                Ukl = self.iasolver._calc_Ukl(Hkk, F, Bkl_all_l[l], k, l)
+                Ukl = self.iasolver._calc_Ukl(Hkk, F, Bkl_all_l[l], l)
                 np.testing.assert_array_almost_equal(expected_Ukl, Ukl)
 
     def teste_calc_Uk(self):
@@ -1522,11 +1522,11 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             expected_Uk = np.empty(self.Ns[k], dtype=np.ndarray)
             Hkk = self.iasolver._get_channel(k, k)
             Vk = self.iasolver.full_F[k]
-            Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
+            Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l)
 
             expected_Uk = np.empty([self.Nr[k], self.Ns[k]], dtype=complex)
             for l in range(self.Ns[k]):
-                expected_Uk[:, l] = self.iasolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
+                expected_Uk[:, l] = self.iasolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], l)[:, 0]
             np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
     def test_underline_calc_SINR_k(self):
@@ -1638,7 +1638,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             Hkk = self.iasolver._get_channel(k, k)
             Vk = self.iasolver.full_F[k]
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
-            expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
+            expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
     def test_calc_Uk_all_k_rev(self):
@@ -1651,7 +1651,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             Hkk = self.iasolver._get_channel_rev(k, k)
             Vk = self.iasolver._W[k]
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l_rev(k)
-            expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l, k)
+            expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
     # Test the calc_Q_rev method from IASolverBaseClass

@@ -2044,7 +2044,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         return Bkl_all_l_rev
 
     @classmethod
-    def _calc_Ukl(cls, Hkk, Vk, Bkl, k, l):
+    def _calc_Ukl(cls, Hkk, Vk, Bkl, l):
         """Calculates the Ukl matrix in equation (29) of [Cadambe2008]_.
 
         Parameters
@@ -2056,8 +2056,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         Bkl : 2D numpy complex array
             The previously calculates Bkl matrix in equation (28) of
             [Cadambe2008]_
-        k : int
-            Index of the desired user
         l : int
             Index of the desired stream
 
@@ -2075,7 +2073,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         return Ukl
 
     @classmethod
-    def _calc_Uk(cls, Hkk, Vk, Bkl_all_l, k):
+    def _calc_Uk(cls, Hkk, Vk, Bkl_all_l):
         """Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
         calculates the receive filter (a vector) only for the :math:`l`-th
         stream :meth:`calc_Uk` calculates a receive filter (a matrix) for
@@ -2091,8 +2089,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
-        k : int
-            Index of the desired user.
 
         Returns
         -------
@@ -2104,7 +2100,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         Uk = np.zeros([num_Rx, num_streams], dtype=complex)
         for l in range(num_streams):
             Uk[:, l] = MaxSinrIASolver._calc_Ukl(
-                Hkk, Vk, Bkl_all_l[l], k, l)[:, 0]
+                Hkk, Vk, Bkl_all_l[l], l)[:, 0]
 
         return Uk / np.linalg.norm(Uk, 'fro')
 
@@ -2115,7 +2111,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         for k in range(self.K):
             Hkk = self._get_channel(k, k)
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(k, self.noise_var)
-            Uk[k] = self._calc_Uk(Hkk, self._F[k], Bkl_all_l, k)
+            Uk[k] = self._calc_Uk(Hkk, self._F[k], Bkl_all_l)
         return Uk
 
     def _calc_Uk_all_k_rev(self):
@@ -2127,7 +2123,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         for k in range(self.K):
             Hkk = self._get_channel_rev(k, k)
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l_rev(k)
-            Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l, k)
+            Uk[k] = self._calc_Uk(Hkk, F[k], Bkl_all_l)
         return Uk
 
     def _updateF(self):
@@ -2323,17 +2319,17 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             The calculate precoder of the i-th user.
         """
         # $$\mtV_i = \left( \sum_{k=1}^K \mtH_{ki}^H \mtU_k \mtU_k^H \mtH_{ki} + \mu_i \mtI \right)^{-1} \mtH_{ii}^H \mtU_i$$
-        Hii = self._get_channel(i, i)
-        Ui = self.W[i]
 
-        Hii_herm_U = np.dot(Hii.conj().T, Ui)
+        # H_{ii}^H * Ui
+        Hii_herm_U = np.dot(self._get_channel(i, i).conj().T,
+                            self.W[i])
 
         # xxxxx Calculates the Summation term xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         sum_term = 0
         for k in range(self.K):
-            Hki = self._get_channel(k, i)
-            Uk = self.W[k]
-            aux = np.dot(Hki.conj().T, Uk)
+            # H_{ki}^H * Uk
+            aux = np.dot(self._get_channel(k, i).conj().T,
+                         self.W[k])
             sum_term = sum_term + np.dot(aux, aux.conj().T)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2349,7 +2345,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # Calculates the SVD of sum_term so that we can calculate the
         # condition number.
         [_, S, _] = np.linalg.svd(sum_term)
-        cond = cond = S.max() / S.min()
+        cond = S.max() / S.min()
         load_factor = 0.0
         # If the condition number is larger than 1e8 we consider sum_term
         # as a singular matrix, which means that we will perform the
@@ -2388,14 +2384,6 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 Vi = self._calc_Vi_for_a_given_mu(
                     sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
-
-                # # xxxxxxxxxx APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                ## Case where the Vi precoder has practically zero energy.
-                # Vi_norm = np.linalg.norm(Vi, 'fro')
-                # if Vi_norm**2 < 0.05 * self.P[i]:
-                #     Vi = np.sqrt(0.01) * self.P[i] * Vi / Vi_norm
-                #     self._mu[i] = -1
-                # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             else:
                 # If we are not done yet then we need to perform the
