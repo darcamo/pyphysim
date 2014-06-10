@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101,E1103,W0403
+
 """Tests for the modules in the simulations package.
 
 Each module has doctests for its functions and all we need to do is run all
@@ -1600,7 +1602,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # Create some dummy parameters (including two parameters set to be unpacked)
         params = SimulationParameters()
         params.add("extra", 2.3)
-        params.add("SNR", np.array([0,3,6,9]))
+        params.add("SNR", np.array([0, 3, 6, 9]))
         params.add("bias", [1.2, 1.6])
         params.set_unpack_parameter('SNR')
         params.set_unpack_parameter('bias')
@@ -2161,7 +2163,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
             #self.out.getvalue(),
-"""------------ ProgressbarText Unittest -----------1
+            """------------ ProgressbarText Unittest -----------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 **********""")
@@ -2176,7 +2178,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar.progress(35)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-"""------------ ProgressbarText Unittest -----------1
+            """------------ ProgressbarText Unittest -----------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 ***********************************""")
@@ -2189,7 +2191,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
                                 # count will set the progress to 100%
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-"""------------ ProgressbarText Unittest -----------1
+            """------------ ProgressbarText Unittest -----------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 **************************************************\n""")
@@ -2207,7 +2209,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar2.progress(20)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out2),
-"""------------------- % Progress ------------------1
+            """------------------- % Progress ------------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
@@ -2227,7 +2229,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         pbar3.progress(1)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-"""------------------- % Progress ------------------1
+            """------------------- % Progress ------------------1
     1    2    3    4    5    6    7    8    9    0
 ----0----0----0----0----0----0----0----0----0----0
 """)

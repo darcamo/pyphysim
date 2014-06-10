@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101
+
 """Tests for the modules in the MATLAB package.
 
 Each module has doctests for its functions and all we need to do is run all

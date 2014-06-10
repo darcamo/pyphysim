@@ -882,7 +882,9 @@ class MultiUserChannelMatrix(object):
         if pathloss_matrix is None:
             self._pathloss_big_matrix = None
         else:
-            self._pathloss_big_matrix = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(pathloss_matrix, self._Nr, self._Nt, self._K)
+            self._pathloss_big_matrix \
+                = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(
+                    pathloss_matrix, self._Nr, self._Nt, self._K)
 
             # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
             # in sync by disallowing modification of individual elements in
@@ -2143,7 +2145,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         # Note that here the power is already included in `Fk`.
 
         Hk = self.get_Hk_without_ext_int(k)
-        return self._calc_JP_Bkl_cov_matrix_first_part_impl(Hk, F_all_users, Rek)
+        return self._calc_JP_Bkl_cov_matrix_first_part_impl(
+            Hk, F_all_users, Rek)
 
     def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
         """Calculates the second part in the equation of the Blk covariance

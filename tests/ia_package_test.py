@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101
+
 """Tests for the modules in the ia package.
 
 Each module has several doctests that we run in addition to the unittests
@@ -25,7 +27,6 @@ import unittest
 import doctest
 import numpy as np
 from numpy.linalg import norm
-import copy
 
 from pyphysim.comm import channels
 import pyphysim.ia  # Import the package ia
@@ -33,7 +34,6 @@ from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, Ma
     MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
     IterativeIASolverBaseClass
 from pyphysim.util.misc import peig, leig, randn_c
-from pyphysim.util.conversion import dB2Linear
 
 
 class CustomTestCase(unittest.TestCase):
@@ -720,11 +720,14 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
         # xxxxx Test the direct channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.assertAlmostEqual(
-            np.dot(self.iasolver.full_W_H[0], np.dot(H11, full_V1))[0,0], 1.0)
+            np.dot(self.iasolver.full_W_H[0], np.dot(H11, full_V1))[0, 0],
+            1.0)
         self.assertAlmostEqual(
-            np.dot(self.iasolver.full_W_H[1], np.dot(H22, full_V2))[0,0], 1.0)
+            np.dot(self.iasolver.full_W_H[1], np.dot(H22, full_V2))[0, 0],
+            1.0)
         self.assertAlmostEqual(
-            np.dot(self.iasolver.full_W_H[2], np.dot(H33, full_V3))[0,0], 1.0)
+            np.dot(self.iasolver.full_W_H[2], np.dot(H33, full_V3))[0, 0],
+            1.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test if the interference is cancelled xxxxxxxxxxxxxxxxxxxxx
@@ -1898,8 +1901,6 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         Nr = np.ones(K, dtype=int) * 4
         Ns = np.ones(K, dtype=int) * 2
 
-        original_Ns = copy.copy(Ns)
-
         # Transmit power of all users. We set the power of the first user
         # to a very low value so that the ia solver sets 0 energy to one of
         # the streams (due to the waterfilling algorithm deciding is is
@@ -2046,7 +2047,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
         last_cost = self.iasolver.get_cost()
-        for i in range(5):
+        for _ in range(5):
             self.iasolver._step()
             new_cost = self.iasolver.get_cost()
             self.assertTrue(new_cost < last_cost)
@@ -2189,10 +2190,10 @@ class MMSEIASolverTestCase(CustomTestCase):
                                              expected_W2)
 
     def test_calc_Vi_for_a_given_mu(self):
-        sum_term = randn_c(3,3)
+        sum_term = randn_c(3, 3)
         sum_term = sum_term.dot(sum_term.conj().T)
         mu = 0.135
-        H_herm_U = randn_c(3,2)
+        H_herm_U = randn_c(3, 2)
 
         expected_vi = np.dot(
             np.linalg.inv(sum_term + mu * np.eye(3)),
@@ -2358,20 +2359,20 @@ class MMSEIASolverTestCase(CustomTestCase):
         self.iasolver.noise_var = 1e-3
         P = self.P
 
-        # xxxxxxxxxx DEBUG - APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        P = np.ones(self.K, dtype=float)
-        SNR = 30
-        noise_var = 1. / dB2Linear(SNR)
-        self.iasolver.noise_var
+        # # xxxxxxxxxx DEBUG - APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # P = np.ones(self.K, dtype=float)
+        # SNR = 30
+        # #noise_var = 1. / dB2Linear(SNR)
+        # self.iasolver.noise_var
 
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         self.iasolver.max_iterations = 200
         self.iasolver.initialize_with = 'random'
 
         niter = self.iasolver.solve(self.Ns, P)
 
-        #print self.iasolver.P
+        self.assertTrue(niter <= self.iasolver.max_iterations)
 
         full_F0 = np.matrix(self.iasolver.full_F[0])
         full_F1 = np.matrix(self.iasolver.full_F[1])

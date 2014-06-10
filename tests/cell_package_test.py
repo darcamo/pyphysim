@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101
+
 """Tests for the modules in the cell package.
 
 Each module has several doctests that we run in addition to the unittests
@@ -23,30 +25,6 @@ import doctest
 import numpy as np
 
 from pyphysim.cell import shapes, cell
-
-
-# def positivy_angle_rad(angle):
-#     """Return the positive angle corresponding to `angle`..
-
-#     Arguments:
-#     - `angle`: An angle (in radians)
-
-#     """
-#     if angle >= 0:
-#         return angle
-#     else:
-#         return 2 * np.pi + angle
-
-# def get_sorted_array_by_angle(x):
-#     """Function to return the complex array sorted by the angles
-#     ("positivated angles")
-
-#     """
-#     angles_rad = np.angle(x)
-#     #while any(x < 0):
-
-#     angles_rad = map(positivy_angle_rad, angles_rad)
-#     return x[np.argsort(angles_rad)]
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -637,12 +615,12 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertEqual(len(vertexes_no_translation), 12)
 
         expected_vertexes_no_translation = [
-            -1.25000000e+00-2.16506351e+00j,0.00000000e+00-1.44337567e+00j,
-            1.25000000e+00-2.16506351e+00j,2.50000000e+00-1.44337567e+00j,
-            2.50000000e+00+0.00000000e+00j,1.25000000e+00+7.21687836e-01j,
-            1.25000000e+00+2.16506351e+00j,5.55111512e-16+2.88675135e+00j,
-            -1.25000000e+00+2.16506351e+00j,-1.25000000e+00+7.21687836e-01j,
-            -2.50000000e+00+7.77156117e-16j,-2.50000000e+00-1.44337567e+00j]
+            -1.25000000e+00-2.16506351e+00j, 0.00000000e+00-1.44337567e+00j,
+            1.25000000e+00-2.16506351e+00j, 2.50000000e+00-1.44337567e+00j,
+            2.50000000e+00+0.00000000e+00j, 1.25000000e+00+7.21687836e-01j,
+            1.25000000e+00+2.16506351e+00j, 5.55111512e-16+2.88675135e+00j,
+            -1.25000000e+00+2.16506351e+00j, -1.25000000e+00+7.21687836e-01j,
+            -2.50000000e+00+7.77156117e-16j, -2.50000000e+00-1.44337567e+00j]
 
         np.testing.assert_array_almost_equal(expected_vertexes_no_translation,
                                              vertexes_no_translation)
@@ -914,7 +892,7 @@ class ClusterTestCase(unittest.TestCase):
             -3.0 +1.73205081j, -3.0, -3.0 -1.73205081j, -1.5 -2.59807621j,
             0.0 -3.46410162j, 1.5 -2.59807621j, 3.0 -1.73205081j])
 
-        np.testing.assert_array_almost_equal(positions[:,0],
+        np.testing.assert_array_almost_equal(positions[:, 0],
                                              expected_positions)
         np.testing.assert_array_almost_equal(positions[:,1], 0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -923,9 +901,9 @@ class ClusterTestCase(unittest.TestCase):
         positions2 = cell.Cluster._calc_cell_positions_hexagon(
             cell_radius=1.0, num_cells=19, rotation=30)
         expected_positions2 = shapes.Shape.calc_rotated_pos(expected_positions, 30)
-        np.testing.assert_array_almost_equal(positions2[:,0],
+        np.testing.assert_array_almost_equal(positions2[:, 0],
                                              expected_positions2)
-        np.testing.assert_array_almost_equal(positions2[:,1],
+        np.testing.assert_array_almost_equal(positions2[:, 1],
                                              30.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -934,9 +912,9 @@ class ClusterTestCase(unittest.TestCase):
                                                    48)
         positions3 = cell.Cluster._calc_cell_positions_hexagon(
             cell_radius=1.5, num_cells=19, rotation=48)
-        np.testing.assert_array_almost_equal(positions3[:,0],
+        np.testing.assert_array_almost_equal(positions3[:, 0],
                                              expected_positions3)
-        np.testing.assert_array_almost_equal(positions3[:,1],
+        np.testing.assert_array_almost_equal(positions3[:, 1],
                                              48.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -945,10 +923,20 @@ class ClusterTestCase(unittest.TestCase):
         positions = cell.Cluster._calc_cell_positions_3sec(
             cell_radius=1.0, num_cells=19, rotation=None)
 
-        expected_positions = np.array([ 0.0 +0.0j, 1.50000000 +8.66025404e-01j, 0.0 +1.73205081j, -1.50000000 +8.66025404e-01j, -1.50000000 -8.66025404e-01j, 0.0 -1.73205081j, 1.50000000 -8.66025404e-01j, 3.00000000 +0.0j, 3.00000000 +1.73205081j, 1.50000000 +2.59807621j, 0.0 +3.46410162j, -1.50000000 +2.59807621j, -3.00000000 +1.73205081j, -3.00000000 +0.0j, -3.00000000 -1.73205081j, -1.50000000 -2.59807621j, 0.0 -3.46410162j, 1.50000000 -2.59807621j, 3.00000000 -1.73205081j])
-        np.testing.assert_array_almost_equal(positions[:,0], expected_positions)
+        expected_positions = np.array([
+            0.0 +0.0j, 1.50000000 +8.66025404e-01j, 0.0 +1.73205081j,
+            -1.50000000 +8.66025404e-01j, -1.50000000 -8.66025404e-01j,
+            0.0 -1.73205081j, 1.50000000 -8.66025404e-01j, 3.00000000 +0.0j,
+            3.00000000 +1.73205081j, 1.50000000 +2.59807621j,
+            0.0 +3.46410162j, -1.50000000 +2.59807621j,
+            -3.00000000 +1.73205081j, -3.00000000 +0.0j,
+            -3.00000000 -1.73205081j, -1.50000000 -2.59807621j,
+            0.0 -3.46410162j, 1.50000000 -2.59807621j,
+            3.00000000 -1.73205081j])
+        np.testing.assert_array_almost_equal(
+            positions[:, 0], expected_positions)
 
-        np.testing.assert_array_almost_equal(positions[:,1], 0.0)
+        np.testing.assert_array_almost_equal(positions[:, 1], 0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test with a rotation of 30 degrees xxxxxxxxxxxxxxxxxxx
@@ -956,20 +944,21 @@ class ClusterTestCase(unittest.TestCase):
             cell_radius=1.0, num_cells=19, rotation=30)
 
         expected_positions2 = shapes.Shape.calc_rotated_pos(expected_positions, 30)
-        np.testing.assert_array_almost_equal(positions2[:,0],
+        np.testing.assert_array_almost_equal(positions2[:, 0],
                                              expected_positions2)
         np.testing.assert_array_almost_equal(positions2[:,1],
                                              30.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Now with a different cell radius and rotation xxxxxxxx
-        expected_positions3 = shapes.Shape.calc_rotated_pos(expected_positions * 1.5,
+        expected_positions3 = shapes.Shape.calc_rotated_pos(
+            expected_positions * 1.5,
                                                    48)
         positions3 = cell.Cluster._calc_cell_positions_3sec(
             cell_radius=1.5, num_cells=19, rotation=48)
-        np.testing.assert_array_almost_equal(positions3[:,0],
+        np.testing.assert_array_almost_equal(positions3[:, 0],
                                              expected_positions3)
-        np.testing.assert_array_almost_equal(positions3[:,1],
+        np.testing.assert_array_almost_equal(positions3[:, 1],
                                              48.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

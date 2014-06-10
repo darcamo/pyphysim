@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101
+
 """Tests for the modules in the subspace package.
 
 Each module has doctests for its functions and all we need to do is run all
@@ -127,8 +129,8 @@ class MetricsTestCase(unittest.TestCase):
             expected_chord_dist)
 
         # xxxxxxxxxx Now let's test with complex values xxxxxxxxxxxxxxxxxxx
-        A = randn_c(3,2)
-        B = randn_c(3,2)
+        A = randn_c(3, 2)
+        B = randn_c(3, 2)
         principal_angles2 = metrics.calc_principal_angles(A, B)
         dist1 = metrics.calc_chordal_distance(A, B)
         dist2 = metrics.calc_chordal_distance_2(A, B)

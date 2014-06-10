@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1101,E0611
+
 """Tests for the modules in the comm package.
 
 Each module has several doctests that we run in addition to the unittests
@@ -182,7 +184,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Nt = np.array([2, 3, 5])
         small_matrix = np.arange(1, 10)
         small_matrix.shape = (3, 3)
-        big_matrix = channels.MultiUserChannelMatrix._from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, K)
+        big_matrix \
+            = channels.MultiUserChannelMatrix._from_small_matrix_to_big_matrix(
+                small_matrix, Nr, Nt, K)
 
         expected_big_matrix = np.array(
             [[1., 1., 2., 2., 2., 3., 3., 3., 3., 3.],
@@ -360,16 +364,13 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_array_equal(
             self.multiH.get_Hk(0),
-            expected_H1
-        )
+            expected_H1)
         np.testing.assert_array_equal(
             self.multiH.get_Hk(1),
-            expected_H2
-        )
+            expected_H2)
         np.testing.assert_array_equal(
             self.multiH.get_Hk(2),
-            expected_H3
-        )
+            expected_H3)
 
         # xxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         pathloss = np.abs(np.random.randn(self.K, self.K))
@@ -411,7 +412,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 # Test the 'big_H' property
                 np.testing.assert_array_equal(
                     self.multiH.get_Hkl(row, col),
-                    self.multiH.big_H[cumNr[row]:cumNr[row + 1], cumNt[col]:cumNt[col + 1]])
+                    self.multiH.big_H[
+                        cumNr[row]:cumNr[row + 1], cumNt[col]:cumNt[col + 1]])
 
     def test_corrupt_data(self):
         NSymbs = 20
@@ -587,18 +589,18 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F_all_k[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
-            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+            F_all_k[k] = (F_all_k[k]
+                          / np.linalg.norm(F_all_k[k], 'fro')
+                          * np.sqrt(P[k]))
 
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
         H01_F1 = np.dot(
             self.multiH.get_Hkl(k, 1),
-            F_all_k[1]
-        )
+            F_all_k[1])
         H02_F2 = np.dot(
             self.multiH.get_Hkl(k, 2),
-            F_all_k[2]
-        )
+            F_all_k[2])
         expected_Q0 = np.dot(H01_F1,
                              H01_F1.transpose().conjugate()) + \
             np.dot(H02_F2,
@@ -620,12 +622,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         k = 1
         H10_F0 = np.dot(
             self.multiH.get_Hkl(k, 0),
-            F_all_k[0]
-        )
+            F_all_k[0])
         H12_F2 = np.dot(
             self.multiH.get_Hkl(k, 2),
-            F_all_k[2]
-        )
+            F_all_k[2])
         expected_Q1 = np.dot(H10_F0,
                              H10_F0.transpose().conjugate()) + \
             np.dot(H12_F2,
@@ -683,7 +683,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F_all_k[k] = randn_c(np.sum(Nt), Ns[k]) * np.sqrt(P[k])
-            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+            F_all_k[k] = (F_all_k[k]
+                          / np.linalg.norm(F_all_k[k], 'fro')
+                          * np.sqrt(P[k]))
 
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
@@ -761,7 +763,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
         Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
-        np.testing.assert_array_almost_equal(Qk, expected_Q2 + noise_var * np.eye(2))
+        np.testing.assert_array_almost_equal(
+            Qk,
+            expected_Q2 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_Bkl_cov_matrix_first_part(self):
@@ -785,8 +789,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = self.multiH.calc_Q(k, F) + np.dot(HkkFk, HkkFk.conjugate().T)
-            expected_first_part_with_noise = self.multiH.calc_Q(k, F, noise_power) + np.dot(HkkFk, HkkFk.conjugate().T)
+            expected_first_part = (self.multiH.calc_Q(k, F)
+                                   + np.dot(HkkFk, HkkFk.conjugate().T))
+            expected_first_part_with_noise = (
+                self.multiH.calc_Q(k, F, noise_power)
+                + np.dot(HkkFk, HkkFk.conjugate().T))
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -830,7 +837,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expected_first_part = expected_first_part + aux
 
-            expected_first_part_with_noise = expected_first_part + np.eye(Nr[k]) * noise_power
+            expected_first_part_with_noise = (expected_first_part
+                                              + np.eye(Nr[k]) * noise_power)
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -865,8 +873,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = np.dot(
+                    Hkk,
+                    np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
@@ -894,8 +903,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = np.dot(
+                    Hkk,
+                    np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
@@ -923,8 +933,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = np.dot(
+                    Hkk,
+                    np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
@@ -947,8 +958,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         for k in range(K):
             # We only have the stream 0
-            expected_Bk0 = self.multiH.calc_Q(k, F) + (noise_power * np.eye(Nr[k]))
-            Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=noise_power)[0]
+            expected_Bk0 = (self.multiH.calc_Q(k, F)
+                            + (noise_power * np.eye(Nr[k])))
+            Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(
+                F, k, N0_or_Rek=noise_power)[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
     def test_underline_calc_SINR_k(self):
@@ -972,7 +985,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         for k in range(K):
             Hkk = multiUserChannel.get_Hkl(k, k)
-            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=0.0)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+                F, k, N0_or_Rek=0.0)
             Uk = U[k]
             Fk = F[k]
             # Uk_H = iasolver.full_W_H[k]
@@ -988,8 +1002,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expectedSINRkl = np.asscalar(
                     np.dot(aux, aux.transpose().conjugate()) / np.dot(
-                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))
-                )
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
@@ -1005,8 +1018,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Uk = U[k]
             Fk = F[k]
 
-            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=0.0001)
-            SINR_k_all_l = multiUserChannel._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+                F, k, N0_or_Rek=0.0001)
+            SINR_k_all_l = multiUserChannel._calc_SINR_k(
+                k, F[k], U[k], Bkl_all_l)
 
             for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
@@ -1017,8 +1032,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expectedSINRkl = abs(np.asscalar(
                     np.dot(aux, aux.transpose().conjugate()) / np.dot(
-                        Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
-                )
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))))
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
@@ -1044,35 +1058,23 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=0.0)
-        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
-                                                       F[0],
-                                                       U[0],
-                                                       B0l_all_l)
+            F, k=0, N0_or_Rek=0.0)
+        expected_SINR0 = multiUserChannel._calc_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=0.0)
-        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
-                                                       F[1],
-                                                       U[1],
-                                                       B1l_all_l)
+            F, k=1, N0_or_Rek=0.0)
+        expected_SINR1 = multiUserChannel._calc_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 1
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=0.0)
-        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
-                                                       F[2],
-                                                       U[2],
-                                                       B2l_all_l)
+            F, k=2, N0_or_Rek=0.0)
+        expected_SINR2 = multiUserChannel._calc_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1081,35 +1083,23 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         iasolver.noise_var = 0.1
         SINR_all_users = multiUserChannel.calc_SINR(F, U, noise_power=0.1)
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=0.1)
-        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
-                                                       F[0],
-                                                       U[0],
-                                                       B0l_all_l)
+            F, k=0, N0_or_Rek=0.1)
+        expected_SINR0 = multiUserChannel._calc_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=0.1)
-        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
-                                                       F[1],
-                                                       U[1],
-                                                       B1l_all_l)
+            F, k=1, N0_or_Rek=0.1)
+        expected_SINR1 = multiUserChannel._calc_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 2
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=0.1)
-        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
-                                                       F[2],
-                                                       U[2],
-                                                       B2l_all_l)
+            F, k=2, N0_or_Rek=0.1)
+        expected_SINR2 = multiUserChannel._calc_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1123,8 +1113,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, noise_power)
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
@@ -1134,8 +1124,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
-            expected_first_part = self.multiH.calc_JP_Q(k, F) + np.dot(HkFk, HkFk.conjugate().T)
-            expected_first_part_with_noise = self.multiH.calc_JP_Q(k, F, noise_power) + np.dot(HkFk, HkFk.conjugate().T)
+            expected_first_part = (self.multiH.calc_JP_Q(k, F)
+                                   + np.dot(HkFk, HkFk.conjugate().T))
+            expected_first_part_with_noise = (
+                self.multiH.calc_JP_Q(k, F, noise_power)
+                + np.dot(HkFk, HkFk.conjugate().T))
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -1145,7 +1138,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             # Test with noise
             np.testing.assert_array_almost_equal(
                 expected_first_part_with_noise,
-                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power))
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                    F, k, noise_power))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1156,8 +1150,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, noise_power)
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
@@ -1179,7 +1173,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expected_first_part = expected_first_part + aux
 
-            expected_first_part_with_noise = expected_first_part + np.eye(Nr[k]) * noise_power
+            expected_first_part_with_noise = (expected_first_part
+                                              + np.eye(Nr[k]) * noise_power)
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -1189,7 +1184,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             # Test with noise
             np.testing.assert_array_almost_equal(
                 expected_first_part_with_noise,
-                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power))
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                    F, k, noise_power))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_JP_Bkl_cov_matrix_second_part(self):
@@ -1202,8 +1198,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, noise_power)
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
@@ -1220,7 +1216,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                                               np.dot(np.dot(Vkl, Vkl_H), Hk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
-                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l))
+                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(
+                        F[k], k, l))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test for more streams
@@ -1232,8 +1229,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, noise_power)
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
@@ -1250,7 +1247,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                                               np.dot(np.dot(Vkl, Vkl_H), Hk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
-                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l))
+                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(
+                        F[k], k, l))
 
     def test_calc_JP_Bkl_cov_matrix_all_l(self):
         # For the case of a single stream oer user Bkl (which only has l=0)
@@ -1264,19 +1262,23 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (_, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, noise_power)
+        (_, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, noise_power)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
         for k in range(K):
-            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power)
-            first_part = self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power)
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+                F, k, noise_power)
+            first_part = self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                F, k, noise_power)
             for l in range(Ns[k]):
-                second_part = self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l)
+                second_part = self.multiH._calc_JP_Bkl_cov_matrix_second_part(
+                    F[k], k, l)
                 expected_Bkl = first_part - second_part
 
-                np.testing.assert_array_almost_equal(expected_Bkl, Bkl_all_l[l])
+                np.testing.assert_array_almost_equal(expected_Bkl,
+                                                     Bkl_all_l[l])
 
     def test_underline_calc_JP_SINR_k(self):
         # Test the _calc_JP_SINR_k method when joint processing is used.
@@ -1299,7 +1301,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         for k in range(K):
             Hk = self.multiH.get_Hk(k)
-            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=noise_power)
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+                F, k, N0_or_Rek=noise_power)
             Uk = U[k]
             Fk = F[k]
 
@@ -1321,8 +1324,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Repeat the test, but now using a BD solution xxxxxxxxx
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, 0.0)
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, 0.0)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
         big_U = blockdiagonalization.calc_receive_filter(newH)
@@ -1333,7 +1336,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         for k in range(K):
             Hk = self.multiH.get_Hk(k)
-            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, N0_or_Rek=noise_power)
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+                F, k, N0_or_Rek=noise_power)
             Uk = U[k]
             Fk = F[k]
 
@@ -1360,12 +1364,12 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Nt = np.ones(K, dtype=int) * 2
         Ns = Nt
         iPu = 1.2
-        noise_power = 0.001
+        #noise_power = 0.001
 
         self.multiH.randomize(Nr, Nt, K)
 
-        (newH, Ms_good) = blockdiagonalization.block_diagonalize(self.multiH.big_H,
-                                                                 K, iPu, 0.0)
+        (newH, Ms_good) = blockdiagonalization.block_diagonalize(
+            self.multiH.big_H, K, iPu, 0.0)
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
         big_U = blockdiagonalization.calc_receive_filter(newH)
@@ -1380,35 +1384,23 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
         B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=0.0)
-        expected_SINR0 = self.multiH._calc_JP_SINR_k(0,
-                                                     F[0],
-                                                     U[0],
-                                                     B0l_all_l)
+            F, k=0, N0_or_Rek=0.0)
+        expected_SINR0 = self.multiH._calc_JP_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=0.0)
-        expected_SINR1 = self.multiH._calc_JP_SINR_k(1,
-                                                     F[1],
-                                                     U[1],
-                                                     B1l_all_l)
+            F, k=1, N0_or_Rek=0.0)
+        expected_SINR1 = self.multiH._calc_JP_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 1
         B2l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=0.0)
-        expected_SINR2 = self.multiH._calc_JP_SINR_k(2,
-                                                     F[2],
-                                                     U[2],
-                                                     B2l_all_l)
+            F, k=2, N0_or_Rek=0.0)
+        expected_SINR2 = self.multiH._calc_JP_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1416,35 +1408,23 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # k = 0
         SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=0.1)
         B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=0.1)
-        expected_SINR0 = self.multiH._calc_JP_SINR_k(0,
-                                                     F[0],
-                                                     U[0],
-                                                     B0l_all_l)
+            F, k=0, N0_or_Rek=0.1)
+        expected_SINR0 = self.multiH._calc_JP_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=0.1)
-        expected_SINR1 = self.multiH._calc_JP_SINR_k(1,
-                                                     F[1],
-                                                     U[1],
-                                                     B1l_all_l)
+            F, k=1, N0_or_Rek=0.1)
+        expected_SINR1 = self.multiH._calc_JP_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 2
         B2l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=0.1)
-        expected_SINR2 = self.multiH._calc_JP_SINR_k(2,
-                                                     F[2],
-                                                     U[2],
-                                                     B2l_all_l)
+            F, k=2, N0_or_Rek=0.1)
+        expected_SINR2 = self.multiH._calc_JP_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1650,10 +1630,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # channel
         multiH_no_ext_int = channels.MultiUserChannelMatrix()
         multiH_no_ext_int.init_from_channel_matrix(
-            self.multiH.big_H_no_ext_int,
-            Nr,
-            Nt,
-            K)
+            self.multiH.big_H_no_ext_int, Nr, Nt, K)
 
         # Test if we receive the same data with and without the external
         # interference source. Note that the received data must be the same
@@ -1673,12 +1650,19 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         received_data2_expected = received_data_expected
 
-        received_data2 = self.multiH.corrupt_data(input_data, input_data_extint2)
+        received_data2 = self.multiH.corrupt_data(input_data,
+                                                  input_data_extint2)
 
         # received_data2_expected for now has only the included the user's
         # signal. Lets add the external interference source's signal.
-        received_data2_expected[0] = received_data2_expected[0] + np.dot(self.multiH.get_Hkl(0, 2), input_data_extint2[0]) + np.dot(self.multiH.get_Hkl(0, 3), input_data_extint2[1])
-        received_data2_expected[1] = received_data2_expected[1] + np.dot(self.multiH.get_Hkl(1, 2), input_data_extint2[0]) + np.dot(self.multiH.get_Hkl(1, 3), input_data_extint2[1])
+        received_data2_expected[0] = (
+            received_data2_expected[0]
+            + np.dot(self.multiH.get_Hkl(0, 2), input_data_extint2[0])
+            + np.dot(self.multiH.get_Hkl(0, 3), input_data_extint2[1]))
+        received_data2_expected[1] = (
+            received_data2_expected[1]
+            + np.dot(self.multiH.get_Hkl(1, 2), input_data_extint2[0])
+            + np.dot(self.multiH.get_Hkl(1, 3), input_data_extint2[1]))
 
         # Now lets test if the received_data2 is correct
         self.assertEqual(received_data2_expected.shape, received_data2.shape)
@@ -1740,7 +1724,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         received_data2_expected = received_data_expected
 
-        received_data2 = self.multiH.corrupt_data(input_data, input_data_extint2)
+        received_data2 = self.multiH.corrupt_data(input_data,
+                                                  input_data_extint2)
 
         # received_data2_expected for now has only the included the user's
         # signal. Lets add the external interference source's signal.
@@ -1884,7 +1869,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F_all_k[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
-            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+            F_all_k[k] = (F_all_k[k]
+                          / np.linalg.norm(F_all_k[k], 'fro')
+                          * np.sqrt(P[k]))
 
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
@@ -1912,7 +1899,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
         # Test if Qk is equal to the expected output
-        np.testing.assert_array_almost_equal(Qk, expected_Q0_no_ext_int_or_noise)
+        np.testing.assert_array_almost_equal(Qk,
+                                             expected_Q0_no_ext_int_or_noise)
 
         # Now with external interference
         expected_Q0_no_noise = (expected_Q0_no_ext_int_or_noise +
@@ -1951,7 +1939,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
         # Test if Qk is equal to the expected output
-        np.testing.assert_array_almost_equal(Qk, expected_Q1_no_ext_int_or_noise)
+        np.testing.assert_array_almost_equal(Qk,
+                                             expected_Q1_no_ext_int_or_noise)
 
         # Now with external interference
         expected_Q1_no_noise = (expected_Q1_no_ext_int_or_noise +
@@ -1990,7 +1979,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
         # Test if Qk is equal to the expected output
-        np.testing.assert_array_almost_equal(Qk, expected_Q2_no_ext_int_or_noise)
+        np.testing.assert_array_almost_equal(Qk,
+                                             expected_Q2_no_ext_int_or_noise)
 
         # Now with external interference
         expected_Q2_no_noise = (expected_Q2_no_ext_int_or_noise +
@@ -2021,7 +2011,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F_all_k[k] = randn_c(np.sum(Nt), Ns[k]) * np.sqrt(P[k])
-            F_all_k[k] = F_all_k[k] / np.linalg.norm(F_all_k[k], 'fro') * np.sqrt(P[k])
+            F_all_k[k] = (F_all_k[k]
+                          / np.linalg.norm(F_all_k[k], 'fro')
+                          * np.sqrt(P[k]))
 
         noise_var = round(0.1 * np.random.rand(), 4)
         Pe = round(np.random.rand(), 4)
@@ -2029,9 +2021,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
             noise_var=0.0,
             pe=Pe)
-        Re_with_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_var,
-            pe=Pe)
+        # Re_with_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
+        #     noise_var=noise_var,
+        #     pe=Pe)
 
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
@@ -2053,7 +2045,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
         # Test if Qk is equal to the expected output
-        np.testing.assert_array_almost_equal(Qk, expected_Q0_no_ext_int_or_noise)
+        np.testing.assert_array_almost_equal(Qk,
+                                             expected_Q0_no_ext_int_or_noise)
 
         # Now with external interference
         expected_Q0_no_noise = (expected_Q0_no_ext_int_or_noise +
@@ -2088,7 +2081,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
         # Test if Qk is equal to the expected output
-        np.testing.assert_array_almost_equal(Qk, expected_Q1_no_ext_int_or_noise)
+        np.testing.assert_array_almost_equal(Qk,
+                                             expected_Q1_no_ext_int_or_noise)
 
         # Now with external interference
         expected_Q1_no_noise = (expected_Q1_no_ext_int_or_noise +
@@ -2123,7 +2117,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
         # Test if Qk is equal to the expected output
-        np.testing.assert_array_almost_equal(Qk, expected_Q2_no_ext_int_or_noise)
+        np.testing.assert_array_almost_equal(Qk,
+                                             expected_Q2_no_ext_int_or_noise)
 
         # Now with external interference
         expected_Q2_no_noise = (expected_Q2_no_ext_int_or_noise +
@@ -2154,7 +2149,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=0.0, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=0.0, pe=Pe)
 
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
@@ -2162,7 +2158,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = self.multiH.calc_Q(k, F, pe=Pe) + np.dot(HkkFk, HkkFk.conjugate().T)
+            expected_first_part = (self.multiH.calc_Q(k, F, pe=Pe)
+                                   + np.dot(HkkFk, HkkFk.conjugate().T))
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -2172,7 +2169,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with noise variance different from zero
         noise_var = 0.13
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_var, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_var, pe=Pe)
 
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
@@ -2180,7 +2178,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = self.multiH.calc_Q(k, F, noise_var=noise_var, pe=Pe) + np.dot(HkkFk, HkkFk.conjugate().T)
+            expected_first_part = (
+                self.multiH.calc_Q(k, F, noise_var=noise_var, pe=Pe)
+                + np.dot(HkkFk, HkkFk.conjugate().T))
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -2196,7 +2196,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_var, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_var, pe=Pe)
 
         F = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -2242,7 +2243,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_power, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_power, pe=Pe)
 
         F = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -2251,7 +2253,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         for k in range(K):
             # We only have the stream 0
-            expected_Bk0 = self.multiH.calc_Q(k, F, noise_var=noise_power, pe=Pe)
+            expected_Bk0 = self.multiH.calc_Q(
+                k, F, noise_var=noise_power, pe=Pe)
             Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, Re[k])[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
@@ -2283,7 +2286,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         for k in range(K):
             Hkk = multiUserChannel.get_Hkl(k, k)
-            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+                F, k, Re[k])
             Uk = U[k]
             Fk = F[k]
             # Uk_H = iasolver.full_W_H[k]
@@ -2320,8 +2324,10 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Uk = U[k]
             Fk = F[k]
 
-            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
-            SINR_k_all_l = multiUserChannel._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
+            Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
+                F, k, Re[k])
+            SINR_k_all_l = multiUserChannel._calc_SINR_k(
+                k, F[k], U[k], Bkl_all_l)
 
             for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
@@ -2332,8 +2338,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
                 expectedSINRkl = abs(np.asscalar(
                     np.dot(aux, aux.transpose().conjugate()) / np.dot(
-                        Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
-                )
+                        Ukl_H, np.dot(Bkl_all_l[l], Ukl))))
 
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
@@ -2372,13 +2377,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # k = 0
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=Re[0])
-        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
-                                                       F[0],
-                                                       U[0],
-                                                       B0l_all_l)
+            F, k=0, N0_or_Rek=Re[0])
+        expected_SINR0 = multiUserChannel._calc_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
@@ -2386,10 +2387,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             F,
             k=1,
             N0_or_Rek=Re[1])
-        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
-                                                       F[1],
-                                                       U[1],
-                                                       B1l_all_l)
+        expected_SINR1 = multiUserChannel._calc_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 2
@@ -2397,14 +2396,12 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             F,
             k=2,
             N0_or_Rek=Re[2])
-        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
-                                                       F[2],
-                                                       U[2],
-                                                       B2l_all_l)
+        expected_SINR2 = multiUserChannel._calc_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Noise Variance = 0.01 and Pe = 0.63 xxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Noise Variance = 0.01 and Pe = 0.63 xxxxxxxxxxxxxxxxxx
         Pe = 0.01
         noise_power = 0.63
         Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
@@ -2423,32 +2420,22 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             F,
             k=0,
             N0_or_Rek=Re[0])
-        expected_SINR0 = multiUserChannel._calc_SINR_k(0,
-                                                       F[0],
-                                                       U[0],
-                                                       B0l_all_l)
+        expected_SINR0 = multiUserChannel._calc_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=Re[1])
-        expected_SINR1 = multiUserChannel._calc_SINR_k(1,
-                                                       F[1],
-                                                       U[1],
-                                                       B1l_all_l)
+            F, k=1, N0_or_Rek=Re[1])
+        expected_SINR1 = multiUserChannel._calc_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 2
         B2l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=Re[2])
-        expected_SINR2 = multiUserChannel._calc_SINR_k(2,
-                                                       F[2],
-                                                       U[2],
-                                                       B2l_all_l)
+            F, k=2, N0_or_Rek=Re[2])
+        expected_SINR2 = multiUserChannel._calc_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2477,23 +2464,29 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk_without_ext_int(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
-            expected_first_part = self.multiH.calc_JP_Q(k, F, pe=0.0) + np.dot(HkFk, HkFk.conjugate().T)
-            expected_first_part_with_noise = self.multiH.calc_JP_Q(k, F, noise_power, pe=0.0) + np.dot(HkFk, HkFk.conjugate().T)
+            expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=0.0)
+                                   + np.dot(HkFk, HkFk.conjugate().T))
+            expected_first_part_with_noise = self.multiH.calc_JP_Q(
+                k, F, noise_power, pe=0.0) + np.dot(HkFk, HkFk.conjugate().T)
 
             # Test without noise
             np.testing.assert_array_almost_equal(
                 expected_first_part,
-                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, np.zeros([Nr[0], Nr[1]])))
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                    F, k, np.zeros([Nr[0], Nr[1]])))
 
             # Test with noise
             np.testing.assert_array_almost_equal(
                 expected_first_part_with_noise,
-                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power*np.eye(Nr[k])))
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                    F, k, noise_power*np.eye(Nr[k])))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test with external interference xxxxxxxxxxxxxxxxxxxxxx
-        Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=0.0, pe=Pe)
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var=noise_power, pe=Pe)
+        Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=0.0, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
+            noise_var=noise_power, pe=Pe)
 
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
@@ -2501,13 +2494,17 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk_without_ext_int(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
-            expected_first_part = self.multiH.calc_JP_Q(k, F, pe=Pe) + np.dot(HkFk, HkFk.conjugate().T)
-            expected_first_part_with_noise = self.multiH.calc_JP_Q(k, F, noise_power, pe=Pe) + np.dot(HkFk, HkFk.conjugate().T)
+            expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=Pe)
+                                   + np.dot(HkFk, HkFk.conjugate().T))
+            expected_first_part_with_noise = (
+                self.multiH.calc_JP_Q(k, F, noise_power, pe=Pe)
+                + np.dot(HkFk, HkFk.conjugate().T))
 
             # Test without noise
             np.testing.assert_array_almost_equal(
                 expected_first_part,
-                self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, Re_no_noise[k]))
+                self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                    F, k, Re_no_noise[k]))
 
             # Test with noise
             np.testing.assert_array_almost_equal(
@@ -2523,7 +2520,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         iPu = 1.2
         NtE = np.array([1])
         noise_power = 0.1
-        Pe = 1.2
+        # Pe = 1.2
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
@@ -2544,9 +2541,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 Vkl_H = Vkl.transpose().conjugate()
                 expected_second_part = np.dot(Hk,
                                               np.dot(np.dot(Vkl, Vkl_H), Hk_H))
+
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
-                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l))
+                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(
+                        F[k], k, l))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         K = 3
@@ -2576,9 +2575,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 Vkl_H = Vkl.transpose().conjugate()
                 expected_second_part = np.dot(Hk,
                                               np.dot(np.dot(Vkl, Vkl_H), Hk_H))
+
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
-                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l))
+                    self.multiH._calc_JP_Bkl_cov_matrix_second_part(
+                        F[k], k, l))
 
     def test_calc_JP_Bkl_cov_matrix_all_l(self):
         K = 3
@@ -2588,7 +2589,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         iPu = 1.2
         NtE = np.array([1])
         noise_power = 0.1
-        Pe = 1.2
+        # Pe = 1.2
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
@@ -2599,13 +2600,17 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
         for k in range(K):
-            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power)
-            first_part = self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, noise_power)
+            Bkl_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
+                F, k, noise_power)
+            first_part = self.multiH._calc_JP_Bkl_cov_matrix_first_part(
+                F, k, noise_power)
             for l in range(Ns[k]):
-                second_part = self.multiH._calc_JP_Bkl_cov_matrix_second_part(F[k], k, l)
+                second_part = self.multiH._calc_JP_Bkl_cov_matrix_second_part(
+                    F[k], k, l)
                 expected_Bkl = first_part - second_part
 
-                np.testing.assert_array_almost_equal(expected_Bkl, Bkl_all_l[l])
+                np.testing.assert_array_almost_equal(expected_Bkl,
+                                                     Bkl_all_l[l])
 
     def test_underline_calc_JP_SINR_k(self):
         K = 3
@@ -2706,40 +2711,29 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         for k in range(K):
             U[k] = aux[k, k].conjugate().T
 
-        SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=0.0, pe=0.0)
+        SINR_all_users = self.multiH.calc_JP_SINR(
+            F, U, noise_power=0.0, pe=0.0)
 
         # xxxxxxxxxx Noise Variance of 0.0, Pe of 0.0 xxxxxxxxxxxxxxxxxxxxx
         # k = 0
         B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=0.0)
-        expected_SINR0 = self.multiH._calc_JP_SINR_k(0,
-                                                     F[0],
-                                                     U[0],
-                                                     B0l_all_l)
+            F, k=0, N0_or_Rek=0.0)
+        expected_SINR0 = self.multiH._calc_JP_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=0.0)
-        expected_SINR1 = self.multiH._calc_JP_SINR_k(1,
-                                                     F[1],
-                                                     U[1],
-                                                     B1l_all_l)
+            F, k=1, N0_or_Rek=0.0)
+        expected_SINR1 = self.multiH._calc_JP_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 1
         B2l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=0.0)
-        expected_SINR2 = self.multiH._calc_JP_SINR_k(2,
-                                                     F[2],
-                                                     U[2],
-                                                     B2l_all_l)
+            F, k=2, N0_or_Rek=0.0)
+        expected_SINR2 = self.multiH._calc_JP_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2748,39 +2742,28 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         Pe = 0.63
         Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var, pe=Pe)
 
-        SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=noise_var, pe=Pe)
+        SINR_all_users = self.multiH.calc_JP_SINR(
+            F, U, noise_power=noise_var, pe=Pe)
 
         # k = 0
         B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=0,
-            N0_or_Rek=Re[0])
-        expected_SINR0 = self.multiH._calc_JP_SINR_k(0,
-                                                     F[0],
-                                                     U[0],
-                                                     B0l_all_l)
+            F, k=0, N0_or_Rek=Re[0])
+        expected_SINR0 = self.multiH._calc_JP_SINR_k(
+            0, F[0], U[0], B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
 
         # k = 1
         B1l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=1,
-            N0_or_Rek=Re[1])
-        expected_SINR1 = self.multiH._calc_JP_SINR_k(1,
-                                                     F[1],
-                                                     U[1],
-                                                     B1l_all_l)
+            F, k=1, N0_or_Rek=Re[1])
+        expected_SINR1 = self.multiH._calc_JP_SINR_k(
+            1, F[1], U[1], B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
 
         # k = 2
         B2l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
-            F,
-            k=2,
-            N0_or_Rek=Re[2])
-        expected_SINR2 = self.multiH._calc_JP_SINR_k(2,
-                                                     F[2],
-                                                     U[2],
-                                                     B2l_all_l)
+            F, k=2, N0_or_Rek=Re[2])
+        expected_SINR2 = self.multiH._calc_JP_SINR_k(
+            2, F[2], U[2], B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2809,14 +2792,22 @@ class OfdmTestCase(unittest.TestCase):
         # passed to set_parameters
 
         # Raises an exception if number of used subcarriers is odd
-        self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, 16, 51)
+        with self.assertRaises(ValueError):
+            self.ofdm_object.set_parameters(64, 16, 51)
+
         # Raises an exception if number of used subcarriers is greater than
         # the fft_size
-        self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, 16, 70)
+        with self.assertRaises(ValueError):
+            self.ofdm_object.set_parameters(64, 16, 70)
+
         # Raises an exception if cp_size is negative
-        self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, -2, 52)
+        with self.assertRaises(ValueError):
+            self.ofdm_object.set_parameters(64, -2, 52)
+
         # Raises an exception if cp_size is greater than the fft_size
-        self.assertRaises(ValueError, self.ofdm_object.set_parameters, 64, 65, 52)
+        with self.assertRaises(ValueError):
+            self.ofdm_object.set_parameters(64, 65, 52)
+
         # Test if the number of subcarriers defaults to the fft_size when
         # not provided
         self.ofdm_object.set_parameters(64, 16)
@@ -2829,7 +2820,8 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets first test the case where we use exactly 52 subcarriers from
         # the 64 available subcarriers. That is, no zeropadding is needed.
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
+        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
+            input_signal.size)
         self.assertEqual(zeropad, 0)
         self.assertEqual(num_ofdm_symbols, 1)
 
@@ -2839,7 +2831,9 @@ class OfdmTestCase(unittest.TestCase):
               52., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4.,
               5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.,
               19., 20., 21., 22., 23., 24., 25., 26.]])
-        np.testing.assert_array_equal(self.ofdm_object._prepare_input_signal(input_signal), expected_data)
+        np.testing.assert_array_equal(
+            self.ofdm_object._prepare_input_signal(input_signal),
+            expected_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2859,17 +2853,22 @@ class OfdmTestCase(unittest.TestCase):
               0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7., 8.,
               9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21.,
               22., 23., 24., 25., 26., 27., 28., 29., 30., ]])
-        np.testing.assert_array_equal(self.ofdm_object._prepare_input_signal(input_signal), expected_data2)
+        np.testing.assert_array_equal(
+            self.ofdm_object._prepare_input_signal(input_signal),
+            expected_data2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now lets test the case when we use all subcarriers (but still
         # with zeropadding)
         self.ofdm_object.num_used_subcarriers = 64
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
+        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
+            input_signal.size)
         self.assertEqual(zeropad, 12)
+
         # But we still have only one OFDM symbol
         self.assertEqual(num_ofdm_symbols, 1)
+
         # Notice that in this case the DC subcarrier is used
         expected_data3 = np.array(
             [[33., 34., 35., 36., 37., 38., 39., 40., 41., 42., 43., 44., 45.,
@@ -2886,13 +2885,16 @@ class OfdmTestCase(unittest.TestCase):
         np.testing.assert_array_equal(output, input1)
 
     def test_modulate(self):
-        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
-                                     # subcarriers)
+        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52
+                                     # used subcarriers)
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
+        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
+            input_signal.size)
+
         self.assertEqual(zeropad, 0)
+
         # But we still have only one OFDM symbol
         self.assertEqual(num_ofdm_symbols, 2)
 
@@ -2907,7 +2909,9 @@ class OfdmTestCase(unittest.TestCase):
 
         # Lets test each OFDM symbol individually
         np.testing.assert_array_almost_equal(
-            self.ofdm_object.modulate(input_signal[0:52]), expected_data[0:64])
+            self.ofdm_object.modulate(input_signal[0:52]),
+            expected_data[0:64])
+
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal[52:]), expected_data[64:])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2915,21 +2919,24 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 4, 52)
         expected_data2 = expected_data[0:64]
-        expected_data2 = np.hstack([expected_data2[-self.ofdm_object.cp_size:], expected_data[0:64]])
+        expected_data2 = np.hstack(
+            [expected_data2[-self.ofdm_object.cp_size:], expected_data[0:64]])
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal[0:52]), expected_data2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_demodulate(self):
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
-        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
-                                     # subcarriers)
+        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52
+                                     # used subcarriers)
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
         modulated_ofdm_symbols = self.ofdm_object.modulate(input_signal)
 
-        demodulated_symbols = self.ofdm_object.demodulate(modulated_ofdm_symbols)
+        demodulated_symbols = self.ofdm_object.demodulate(
+            modulated_ofdm_symbols)
+
         np.testing.assert_array_equal(
             np.real(demodulated_symbols.round()).astype(int),
             input_signal
@@ -2937,12 +2944,14 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
-        input_signal2 = np.r_[1:105]  # Exactly two OFDM symbols (with 52 used
-                                     # subcarriers)
+        input_signal2 = np.r_[1:105]  # Exactly two OFDM symbols (with 52
+                                      # used subcarriers)
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols2 = self.ofdm_object.modulate(input_signal2)
 
-        demodulated_symbols2 = self.ofdm_object.demodulate(modulated_ofdm_symbols2)
+        demodulated_symbols2 = self.ofdm_object.demodulate(
+            modulated_ofdm_symbols2)
+
         np.testing.assert_array_equal(
             np.real(demodulated_symbols2.round()).astype(int),
             input_signal2
@@ -2950,12 +2959,13 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
-        input_signal3 = np.r_[1:110]  # Exactly two OFDM symbols (with 52 used
-                                     # subcarriers)
+        input_signal3 = np.r_[1:110]  # Exactly two OFDM symbols (with 52
+                                      # used subcarriers)
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols3 = self.ofdm_object.modulate(input_signal3)
 
-        demodulated_symbols3 = self.ofdm_object.demodulate(modulated_ofdm_symbols3)
+        demodulated_symbols3 = self.ofdm_object.demodulate(
+            modulated_ofdm_symbols3)
         # OFDM will not remove the zeropadding therefore we need to do it
         # manually
         demodulated_symbols3 = demodulated_symbols3[0:109]
@@ -3200,7 +3210,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
     def test_calc_BD_matrix_no_power_scaling(self):
         channel = randn_c(self.iNr, self.iNt)
-        (Ms_bad, Sigma) = self.BD._calc_BD_matrix_no_power_scaling(channel)
+        (Ms_bad, _) = self.BD._calc_BD_matrix_no_power_scaling(channel)
 
         newH = np.dot(channel, Ms_bad)
 
@@ -3434,7 +3444,7 @@ class BDWithExtIntBaseTestCase(unittest.TestCase):
         bd_obj = blockdiagonalization.BDWithExtIntBase(K, iPu, noise_var, pe)
         W_all_k = bd_obj.calc_whitening_matrices(mu_channel, noise_var)
 
-        R_all_k =  mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
         for W, R in zip(W_all_k, R_all_k):
             np.testing.assert_array_almost_equal(
                 W,
@@ -3456,10 +3466,10 @@ class WhiteningBDTestCase(unittest.TestCase):
         pe = 1e-3  # External interference power (in linear scale)
         noise_var = 1e-4
 
-        # The modulator and packet_length are required in the
-        # effective_throughput metric case
-        psk_obj = modulators.PSK(4)
-        packet_length = 120
+        # # The modulator and packet_length are required in the
+        # # effective_throughput metric case
+        # psk_obj = modulators.PSK(4)
+        # packet_length = 120
 
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
         multiUserChannel.randomize(Nr, Nt, K, Nti)
@@ -3613,8 +3623,8 @@ class EnhancedBDTestCase(unittest.TestCase):
         # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
         psk_obj = modulators.PSK(4)
         enhancedBD_obj.set_ext_int_handling_metric('effective_throughput',
-                                             {'modulator': psk_obj,
-                                              'packet_length': 120})
+                                                   {'modulator': psk_obj,
+                                                    'packet_length': 120})
         self.assertEqual(enhancedBD_obj._metric_func,
                          blockdiagonalization._calc_effective_throughput)
         self.assertEqual(enhancedBD_obj.metric_name, "effective_throughput")
@@ -3646,7 +3656,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Test setting the metric to naive xxxxxxxxxxxxxxxxxxxxxxxxxx
         enhancedBD_obj.set_ext_int_handling_metric('naive',
-                                             {'num_streams': 2})
+                                                   {'num_streams': 2})
         self.assertIsNone(enhancedBD_obj._metric_func)
         self.assertEqual(enhancedBD_obj.metric_name, "naive")
 
@@ -3788,9 +3798,10 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-            linear2dB(sinrs[0]),
-            packet_length))
+        se = (
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs[0]),
+                packet_length))
             +
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs[1]),
@@ -3842,9 +3853,10 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se4 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-            linear2dB(sinrs4[0]),
-            packet_length))
+        se4 = (
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs4[0]),
+                packet_length))
             +
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs4[1]),
@@ -3896,9 +3908,10 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se5 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-            linear2dB(sinrs5[0]),
-            packet_length))
+        se5 = (
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs5[0]),
+                packet_length))
             +
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs5[1]),
@@ -3941,9 +3954,10 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se2 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-            linear2dB(sinrs2[0]),
-            packet_length))
+        se2 = (
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs2[0]),
+                packet_length))
             +
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs2[1]),
@@ -3994,9 +4008,10 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se3 = (np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-            linear2dB(sinrs3[0]),
-            packet_length))
+        se3 = (
+            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+                linear2dB(sinrs3[0]),
+                packet_length))
             +
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs3[1]),
@@ -4366,8 +4381,9 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.assertNotAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                   93.1102472958)
 
+        # TODO: Finish the implementation below
         # Test if calc_path_loss works with shadowing for multiple values.
-        self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+        #self.pl.calc_path_loss([1.2, 1.4, 1.6]),
 
     def test_calc_which_distance(self):
         # Test which_distance and which_distance_dB for a single value.
@@ -4415,10 +4431,10 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
             self.pl.hbs = 205.3
 
         with self.assertRaises(RuntimeError):
-             self.pl.fc= 130.0
+            self.pl.fc = 130.0
 
         with self.assertRaises(RuntimeError):
-             self.pl.fc= 1600.0
+            self.pl.fc = 1600.0
 
     def test_calc_deterministic_path_loss_dB(self):
         self.pl.fc = 900.0
@@ -4430,7 +4446,14 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test for the 'open' area type xxxxxxxxxxxxxxxxxxxxxxxx
         self.pl.area_type = 'open'
-        expected_open_pl = np.array([99.1717017731874, 109.775439956383, 115.978229161017, 120.379178139578, 123.792819371578, 126.581967344212, 128.940158353991, 130.982916322773, 132.784756548846, 134.396557554774, 135.854608919885, 137.185705527407, 138.410195707052, 139.543896537186, 140.599346759408, 141.586654505968, 142.514087575345, 143.388494732042, 144.215612946935, 145.000295737969])
+        expected_open_pl = np.array(
+            [99.1717017731874, 109.775439956383, 115.978229161017,
+             120.379178139578, 123.792819371578, 126.581967344212,
+             128.940158353991, 130.982916322773, 132.784756548846,
+             134.396557554774, 135.854608919885, 137.185705527407,
+             138.410195707052, 139.543896537186, 140.599346759408,
+             141.586654505968, 142.514087575345, 143.388494732042,
+             144.215612946935, 145.000295737969])
 
         np.testing.assert_array_almost_equal(
             expected_open_pl,
@@ -4439,7 +4462,14 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test for the suburban area type xxxxxxxxxxxxxxxxxxxxxx
         self.pl.area_type = 'suburban'
-        expected_suburban_pl = np.array([117.735512612807, 128.339250796002, 134.542040000636, 138.942988979197, 142.356630211198, 145.145778183831, 147.50396919361, 149.546727162392, 151.348567388466, 152.960368394393, 154.418419759504, 155.749516367027, 156.974006546672, 158.107707376805, 159.163157599027, 160.150465345588, 161.077898414965, 161.952305571661, 162.779423786554, 163.564106577588])
+        expected_suburban_pl = np.array(
+            [117.735512612807, 128.339250796002, 134.542040000636,
+             138.942988979197, 142.356630211198, 145.145778183831,
+             147.50396919361, 149.546727162392, 151.348567388466,
+             152.960368394393, 154.418419759504, 155.749516367027,
+             156.974006546672, 158.107707376805, 159.163157599027,
+             160.150465345588, 161.077898414965, 161.952305571661,
+             162.779423786554, 163.564106577588])
 
         np.testing.assert_array_almost_equal(
             expected_suburban_pl,
@@ -4448,7 +4478,14 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 
         # xxxxx Test for the medium and small city area types xxxxxxxxxxxxx
         self.pl.area_type = 'medium city'
-        expected_urban_pl = np.array([127.678119861049, 138.281858044244, 144.484647248879, 148.88559622744, 152.29923745944, 155.088385432074, 157.446576441852, 159.489334410635, 161.291174636708, 162.902975642635, 164.361027007746, 165.692123615269, 166.916613794914, 168.050314625048, 169.10576484727, 170.09307259383, 171.020505663207, 171.894912819903, 172.722031034797, 173.506713825831])
+        expected_urban_pl = np.array(
+            [127.678119861049, 138.281858044244, 144.484647248879,
+             148.88559622744, 152.29923745944, 155.088385432074,
+             157.446576441852, 159.489334410635, 161.291174636708,
+             162.902975642635, 164.361027007746, 165.692123615269,
+             166.916613794914, 168.050314625048, 169.10576484727,
+             170.09307259383, 171.020505663207, 171.894912819903,
+             172.722031034797, 173.506713825831])
 
         np.testing.assert_array_almost_equal(
             expected_urban_pl,
@@ -4469,31 +4506,6 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
             expected_large_city_pl,
             self.pl._calc_deterministic_path_loss_dB(d))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # def test_plots(self):
-    #     pl1 = pathloss.PathLossOkomuraHata()
-    #     pl1.area_type = 'open'
-    #     pl2 = pathloss.PathLossOkomuraHata()
-    #     pl2.area_type = 'suburban'
-    #     pl3 = pathloss.PathLossOkomuraHata()
-    #     pl3.area_type = 'medium city'
-    #     pl4 = pathloss.PathLossOkomuraHata()
-    #     pl4.area_type = 'large city'
-    #     pl1.fc = 400
-    #     pl2.fc = 400
-    #     pl3.fc = 400
-    #     pl4.fc = 400
-
-    #     fig, ax = plt.subplots()
-
-    #     d = np.linspace(1, 20, 20)
-    #     pl1.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'open'})
-    #     pl2.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'suburban'})
-    #     pl3.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'medium city'})
-    #     pl4.plot_deterministic_path_loss_in_dB(d, ax, {'label': 'large city', 'linestyle':'dashed'})
-    #     ax.legend(loc='upper left')
-
-    #     plt.show()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
