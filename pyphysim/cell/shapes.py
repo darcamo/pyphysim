@@ -41,13 +41,14 @@ class Coordinate(object):
         self._pos = pos
 
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def _get_pos(self):
+        """Get method for the pos property."""
+        return self._pos
+
     def _set_pos(self, value):
         """Set method for the pos property."""
         self._pos = value
 
-    def _get_pos(self):
-        """Get method for the pos property."""
-        return self._pos
     pos = property(_get_pos, _set_pos)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

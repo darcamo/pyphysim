@@ -493,6 +493,26 @@ class CellTestCase(unittest.TestCase):
             min_dist = self.C1.radius * min_dist_ratio
             self.assertTrue(self.C1.calc_dist(self.C1.users[index]) > min_dist)
 
+    def test_set_pos(self):
+        # When the position of a cell is changed, the position of any user
+        # in the cell must be updated.
+        self.C1.add_border_user(0, 0.1)
+        self.C1.add_border_user(90, 0.4)
+        self.C1.add_border_user(270, 0.3)
+        users = self.C1.users
+
+        self.assertAlmostEqual(self.C1.pos, 2-3j)
+        self.assertAlmostEqual(users[0].pos, (2.21650635094611-3j))
+        self.assertAlmostEqual(users[1].pos, (2-2j))
+        self.assertAlmostEqual(users[2].pos, (2-3.75j))
+
+        # Change the position of the cell ...
+        self.C1.pos = 0 - 1j
+        # ... and check if the position of the users changed
+        self.assertAlmostEqual(users[0].pos, (0.21650635094611-1j))
+        self.assertAlmostEqual(users[1].pos, (0-0j))
+        self.assertAlmostEqual(users[2].pos, (0-1.75j))
+
 
 # TODO: finish implementation
 class Cell3SecTestCase(unittest.TestCase):
@@ -507,8 +527,97 @@ class Cell3SecTestCase(unittest.TestCase):
         self.C3.fill_color = 'b'
         self.C3.fill_face_bool = True
 
+    def test_calc_sectors_positions(self):
+        expected_sec_positions = np.array(
+            [0.75-3.72168784j, 3.25-3.72168784j, 2.00-1.55662433j])
+
+        pos = self.C1._calc_sectors_positions()
+        np.testing.assert_array_almost_equal(pos, expected_sec_positions)
+
+        self.C1.rotation = 14
+        self.C1.pos = 4-1j
+        self.C1.radius = 3.2
+        pos = self.C1._calc_sectors_positions()
+        expected_sec_positions = np.array(
+            [2.67100471-2.28339583j, 5.77595104-1.50924577j, 3.55304425+0.7926416j])
+        np.testing.assert_array_almost_equal(pos, expected_sec_positions)
+
+    def test_set_pos(self):
+        # Whenever the pos property of the Cell3Sec object changes, the
+        # position of each individual sector should change
+        expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
+            = self.C1._calc_sectors_positions()
+        self.assertAlmostEqual(self.C1._sec1.pos, expected_sec1_pos)
+        self.assertAlmostEqual(self.C1._sec2.pos, expected_sec2_pos)
+        self.assertAlmostEqual(self.C1._sec3.pos, expected_sec3_pos)
+
+        self.C1.pos = 4-1j
+        expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
+            = self.C1._calc_sectors_positions()
+
+        self.assertAlmostEqual(self.C1._sec1.pos, expected_sec1_pos)
+        self.assertAlmostEqual(self.C1._sec2.pos, expected_sec2_pos)
+        self.assertAlmostEqual(self.C1._sec3.pos, expected_sec3_pos)
+
     def test_secradius(self):
-        self.assertAlmostEqual(self.C1.secradius, np.sqrt(3) * self.C1.radius / 3.0)
+        expected_secradius = np.sqrt(3) * self.C1.radius / 3.0
+        self.assertAlmostEqual(self.C1.secradius, expected_secradius)
+
+        self.C1.radius = 10
+        expected_secradius = np.sqrt(3) * self.C1.radius / 3.0
+        self.assertAlmostEqual(self.C1.secradius, expected_secradius)
+
+    def test_set_radius(self):
+        # Whenever the radius property of the Cell3Sec object changes, the
+        # position and radius of each individual sector should change
+        expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
+            = self.C1._calc_sectors_positions()
+
+        self.assertAlmostEqual(expected_sec1_pos, self.C1._sec1.pos)
+        self.assertAlmostEqual(expected_sec2_pos, self.C1._sec2.pos)
+        self.assertAlmostEqual(expected_sec3_pos, self.C1._sec3.pos)
+
+        # Lets change the position, rotation and radius of self.C1 ...
+        self.C1.rotation = 14
+        self.C1.pos = 4-1j
+        self.C1.radius = 3.2
+        # ... and calculate the new sec positions
+        expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
+            = self.C1._calc_sectors_positions()
+
+        # Now lets test if the pos property of each sector really changed
+        self.assertAlmostEqual(expected_sec1_pos, self.C1._sec1.pos)
+        self.assertAlmostEqual(expected_sec2_pos, self.C1._sec2.pos)
+        self.assertAlmostEqual(expected_sec3_pos, self.C1._sec3.pos)
+
+    def test_set_rotation(self):
+        # Whenever the rotation property of the Cell3Sec object changes, the
+        # position and rotation of each individual sector should change
+        expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
+            = self.C1._calc_sectors_positions()
+
+        self.assertAlmostEqual(expected_sec1_pos, self.C1._sec1.pos)
+        self.assertAlmostEqual(expected_sec2_pos, self.C1._sec2.pos)
+        self.assertAlmostEqual(expected_sec3_pos, self.C1._sec3.pos)
+
+        self.assertAlmostEqual(self.C1._sec1.rotation, -30)
+        self.assertAlmostEqual(self.C1._sec2.rotation, -30)
+        self.assertAlmostEqual(self.C1._sec3.rotation, -30)
+
+        # Lets change the rotation of self.C1 ...
+        self.C1.rotation = 23
+        # ... and calculate the new sec positions
+        expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
+            = self.C1._calc_sectors_positions()
+
+        self.assertAlmostEqual(expected_sec1_pos, self.C1._sec1.pos)
+        self.assertAlmostEqual(expected_sec2_pos, self.C1._sec2.pos)
+        self.assertAlmostEqual(expected_sec3_pos, self.C1._sec3.pos)
+
+        expected_sec_rotataion = self.C1.rotation - 30
+        self.assertAlmostEqual(self.C1._sec1.rotation, expected_sec_rotataion)
+        self.assertAlmostEqual(self.C1._sec2.rotation, expected_sec_rotataion)
+        self.assertAlmostEqual(self.C1._sec3.rotation, expected_sec_rotataion)
 
     def test_get_vertex_positions(self):
         # The _get_vertex_positions method return the vertexes of the cell
@@ -553,13 +662,13 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertEqual(self.C1.num_users, 10)
 
         for i in range(self.C1.num_users):
-            self.assertTrue(self.C1.is_point_inside_shape(self.C1._users[i].pos))
+            self.assertTrue(self.C1.is_point_inside_shape(self.C1.users[i].pos))
 
         # If we change the position of the cell, the position of the users
         # already in the cell should be updated.
         self.C1.pos = 0
         for i in range(self.C1.num_users):
-            self.assertTrue(self.C1.is_point_inside_shape(self.C1._users[i].pos))
+            self.assertTrue(self.C1.is_point_inside_shape(self.C1.users[i].pos))
 
     # def test_lala(self):
     #     C1 = cell.Cell3Sec(pos=0 - 3j, radius=2, cell_id=1, rotation=47)

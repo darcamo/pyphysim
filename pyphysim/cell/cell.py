@@ -64,12 +64,10 @@ class Node(shapes.Coordinate):
         else:
             self._relative_pos = None
 
-    # xxxxxxxxxx relative_pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _get_relative_pos(self):
+    @property
+    def relative_pos(self):
         """Get method for the relative_pos property."""
         return self._relative_pos
-    relative_pos = property(_get_relative_pos)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def plot_node(self, ax=None):  # pragma: no cover
         """Plot the node using the matplotlib library.
@@ -162,15 +160,15 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
             user.pos += diff
     pos = property(fget=shapes.Coordinate._get_pos, fset=_set_pos)
 
-    def _get_num_users(self):
+    @property
+    def num_users(self):
         """Get method for the num_users property."""
         return len(self._users)
-    num_users = property(_get_num_users)
 
-    def _get_users(self):
+    @property
+    def users(self):
         """Get method for the users property."""
         return self._users
-    users = property(_get_users)
 
     def delete_all_users(self):
         """Delete all users from the cell.
@@ -524,7 +522,11 @@ class Cell3Sec(CellBase):
         sec_positions += self.pos
         return sec_positions
 
-    def _set_radius(self, value):
+    # Since we want to override the setter for the radius property defined
+    # in the Shape class while keeping the same getter method, we need to
+    # specify the full name of the property.
+    @shapes.Shape.radius.setter
+    def radius(self, value):
         """Set method for the radius property"""
         # Overwrite the set property for radius in the Shape parent class
         # so that if radius is changed we update the radius of each sector.
@@ -541,9 +543,12 @@ class Cell3Sec(CellBase):
         self._sec1.pos = sec_positions[0]
         self._sec2.pos = sec_positions[1]
         self._sec3.pos = sec_positions[2]
-    radius = property(fget=shapes.Shape._get_radius, fset=_set_radius)
 
-    def _set_rotation(self, value):
+    # Since we want to override the setter for the rotation property defined
+    # in the Shape class while keeping the same getter method, we need to
+    # specify the full name of the property.
+    @shapes.Shape.rotation.setter
+    def rotation(self, value):
         """Set method for the rotation property."""
         # Overwrite the set property for rotation in the Shape parent class
         # so that if rotation is changed we update the rotation of each
@@ -558,9 +563,12 @@ class Cell3Sec(CellBase):
         self._sec1.pos = sec_positions[0]
         self._sec2.pos = sec_positions[1]
         self._sec3.pos = sec_positions[2]
-    rotation = property(fget=shapes.Shape._get_rotation, fset=_set_rotation)
 
-    def _set_pos(self, value):
+    # Since we want to override the setter for the pos property defined
+    # in the Shape class while keeping the same getter method, we need to
+    # specify the full name of the property.
+    @shapes.Shape.pos.setter
+    def pos(self, value):
         """Set method for the pos property."""
 
         # Calling the _set_pos method of CellBase class will not only
@@ -573,9 +581,9 @@ class Cell3Sec(CellBase):
         self._sec1.pos = sec_positions[0]
         self._sec2.pos = sec_positions[1]
         self._sec3.pos = sec_positions[2]
-    pos = property(fget=shapes.Shape._get_pos, fset=_set_pos)
 
-    def _get_secradius(self):
+    @property
+    def secradius(self):
         """
         Get method for the secradius property.
 
@@ -586,7 +594,6 @@ class Cell3Sec(CellBase):
         # to `secradius` be the same of an hexagonal cell with radius equal
         # to `r`.
         return np.sqrt(3) * self.radius / 3.0
-    secradius = property(_get_secradius)
 
     def _get_vertex_positions(self):
         """
