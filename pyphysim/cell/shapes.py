@@ -163,15 +163,15 @@ class Shape(Coordinate):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _set_rotation(self, value):
-        """Set method for the rotation property."""
-        self._rotation = value
-
-    def _get_rotation(self):
+    @property
+    def rotation(self):
         """Get method for the rotation property."""
         return self._rotation
 
-    rotation = property(_get_rotation, _set_rotation)
+    @rotation.setter
+    def rotation(self, value):
+        """Set method for the rotation property."""
+        self._rotation = value
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_vertex_positions(self):  # pragma: no cover
@@ -196,26 +196,24 @@ class Shape(Coordinate):
              '{0} class'.format(self.__class__.__name__)))
 
     # xxxxx vertex property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _get_vertices(self):
+    @property
+    def vertices(self):
         """Get method for the vertices property."""
         vertex_positions = self._get_vertex_positions()
         vertex_positions = self.pos + Shape._rotate(
             vertex_positions, self.rotation)
         return vertex_positions
-
-    vertices = property(_get_vertices)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Shape's Path xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # A Matplotlib "Path" corresponding to the shape
-    def _get_path(self):
+    @property
+    def path(self):
         """Get method for the path property.
 
         The `path` property returns a Matplotlib Path for the shape.
         """
         return path.Path(from_complex_array_to_real_matrix(self.vertices))
-
-    path = property(_get_path)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def is_point_inside_shape(self, point):
@@ -467,10 +465,10 @@ class Hexagon(Shape):
         """
         Shape.__init__(self, pos, radius, rotation)
 
-    def _get_height(self):
+    @property
+    def height(self):
         """Get method for the height property."""
         return self._radius * np.sqrt(3.) / 2.0
-    height = property(_get_height)
 
     def _get_vertex_positions(self):
         """

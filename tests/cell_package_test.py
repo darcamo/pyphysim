@@ -775,6 +775,18 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C2.num_users, 0)
         self.assertEqual(self.C3.num_users, 0)
 
+    def test_pos_and_rotation(self):
+        self.assertAlmostEqual(self.C2.pos, -2+3j)
+        self.assertAlmostEqual(self.C2.rotation, 0)
+
+        with self.assertRaises(AttributeError):
+            self.C2.pos = 0
+        self.assertAlmostEqual(self.C2.pos, -2+3j)
+
+        with self.assertRaises(AttributeError):
+            self.C2.rotation = 30
+        self.assertAlmostEqual(self.C2.rotation, 0.0)
+
     def test_get_ii_and_jj(self):
         # This test is here simple to indicate if the Cluster._ii_and_jj
         # variable ever changes, in which case it will fail. If this is the

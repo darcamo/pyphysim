@@ -874,7 +874,7 @@ class Cluster(shapes.Shape):
                  pos=0 + 0j,
                  cluster_id=None,
                  cell_type='simple',
-                 rotation=None):
+                 rotation=0.0):
         """Initializes the Cluster object.
 
         Parameters
@@ -961,16 +961,22 @@ class Cluster(shapes.Shape):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # We reimplement the pos property here so that we can disable setting
-    # the position
-    pos = property(shapes.Coordinate._get_pos)
+    # We reimplement the pos setter property here so that we can disable
+    # setting the position
+    @shapes.Coordinate.pos.setter
+    def pos(self, _):  # pylint: disable=R0201
+        """Disabled setter for the pos property defined in base class."""
+        raise AttributeError("can't set attribute")
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # # xxxxxxxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We reimplement the rotation property here so that we can disable setting
     # the rotation
-    rotation = property(shapes.Shape._get_rotation)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    @shapes.Shape.rotation.setter
+    def rotation(self, _):  # pylint: disable=R0201
+        """Disabled setter for the rotation property defined in base class."""
+        raise AttributeError("can't set attribute")
+    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def __repr__(self):
         """
