@@ -84,7 +84,7 @@ class Node(shapes.Coordinate):
 
         """
         stand_alone_plot = False
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             ax = plt.axes()
             stand_alone_plot = True
@@ -148,17 +148,18 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
             self.__class__.__name__, self.pos, self.radius,
             self.id, self.rotation)
 
-    # The _set_pos property inherited from the Coordinate class only
-    # changes the self._pos variable. We re-implement it here so that when
-    # the position is changed we update the positions of any user already
-    # in the cell.
-    def _set_pos(self, value):
+    # The set pos property inherited from the Coordinate class only changes
+    # the self._pos variable. We re-implement it here so that when the
+    # position is changed we update the positions of any user already in
+    # the cell. Notice how we are only changing the 'set' part of the
+    # property defined in the Coordinate base class.
+    @shapes.Coordinate.pos.setter
+    def pos(self, value):
         """Set method for the pos property."""
         diff = value - self._pos
         self._pos = value
         for user in self._users:
             user.pos += diff
-    pos = property(fget=shapes.Coordinate._get_pos, fset=_set_pos)
 
     @property
     def num_users(self):
@@ -200,6 +201,7 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
                 # absolute coordinate.
                 new_user.pos = new_user.pos * self.radius + self.pos
             if self.is_point_inside_shape(new_user.pos):
+                # pylint: disable=W0212
                 new_user.cell_id = self.id
                 new_user._relative_pos = new_user.pos - self.pos
                 self._users.append(new_user)
@@ -360,7 +362,7 @@ class CellBase(Node, shapes.Shape):  # pylint: disable=W0223
         """
         stand_alone_plot = False
 
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
@@ -518,7 +520,7 @@ class Cell3Sec(CellBase):
         sec_positions[1] = 0 + h - (0.5j * secradius)
         sec_positions[2] = 0 + (1j * secradius)
 
-        sec_positions = shapes.Shape._rotate(sec_positions, self.rotation)
+        sec_positions = shapes.Shape.calc_rotated_pos(sec_positions, self.rotation)
         sec_positions += self.pos
         return sec_positions
 
@@ -567,14 +569,14 @@ class Cell3Sec(CellBase):
     # Since we want to override the setter for the pos property defined
     # in the Shape class while keeping the same getter method, we need to
     # specify the full name of the property.
-    @shapes.Shape.pos.setter
+    @CellBase.pos.setter
     def pos(self, value):
         """Set method for the pos property."""
 
-        # Calling the _set_pos method of CellBase class will not only
-        # update the position of the cell, but also update the position of
-        # any users already in the cell.
-        CellBase._set_pos(self, value)
+        # Calling the "set method" of the "pos" property of the CellBase
+        # class will not only update the position of the cell, but also
+        # update the position of any users already in the cell.
+        CellBase.pos.fset(self, value)
 
         # Update the sectors' positions
         sec_positions = self._calc_sectors_positions()
@@ -597,6 +599,14 @@ class Cell3Sec(CellBase):
 
     def _get_vertex_positions(self):
         """
+        Calculates the vertex positions ignoring any rotation and considering
+        that the shape is at the origin (rotation and translation will be
+        added automatically later).
+
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The positions of the vertexes of the shape.
         """
         secradius = self.secradius
         h = secradius * (np.sqrt(3) / 2.0)
@@ -800,7 +810,17 @@ class CellWrap(CellBase):
             self.__class__.__name__, self.pos, self.id)
 
     def _get_vertex_positions(self):
-        return self._wrapped_cell._get_vertex_positions()
+        """
+        Calculates the vertex positions ignoring any rotation and considering
+        that the shape is at the origin (rotation and translation will be
+        added automatically later).
+
+        Returns
+        -------
+        vertex_positions : 1D numpy array
+            The positions of the vertexes of the shape.
+        """
+        return self._wrapped_cell.vertices_no_trans_no_rotation()
 
     def plot(self, ax=None):  # pragma: no cover
         stand_alone_plot = False
@@ -856,15 +876,9 @@ class Cluster(shapes.Shape):
                   13: (3, 1),
                   19: (3, 2)}
 
-    # Property to get the Cluster radius. The radius property is inherited
-    # from shape. However, since here it represents the cluster radius,
-    # which depends on the number of cells and the cell radius, then we
-    # disable setting this property.
-    radius = property(shapes.Shape._get_radius)
-
     # Store cell positions in a cluster centered at the origin without any
     # rotation and with a radius equal to one.
-    normalized_cell_positions = {}
+    _normalized_cell_positions = {}
 
     def __init__(self,
                  cell_radius,
@@ -962,9 +976,18 @@ class Cluster(shapes.Shape):
         self._cell_id_fontsize = None  # If None, default value will be used
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # We reimplement the pos setter property here so that we can disable
+    # setting the radius of the cluster.
+    @shapes.Shape.radius.setter
+    def radius(self, _):  # pylint: disable=R0201
+        """Disabled setter for the radius property defined in base class."""
+        raise AttributeError("can't set attribute")
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We reimplement the pos setter property here so that we can disable
-    # setting the position
+    # setting the position of the cluster.
     @shapes.Coordinate.pos.setter
     def pos(self, _):  # pylint: disable=R0201
         """Disabled setter for the pos property defined in base class."""
@@ -1246,18 +1269,18 @@ class Cluster(shapes.Shape):
             cells in a cluster with `num_cells` cells with radius
             `cell_radius`. The second column has the rotation of each cell.
         """
-        # Note that the Cluster.normalized_cell_positions dictionary store
+        # Note that the Cluster._normalized_cell_positions dictionary store
         # the positions of the cells for a cluster with radius equal to
         # 1.0. Each key in the dictionary corresponds to a specific number
         # f cells.
         #
-        # If Cluster.normalized_cell_positions has no key with the value of
+        # If Cluster._normalized_cell_positions has no key with the value of
         # 'num_cells' that means we still need to calculate it. Note,
         # however, that this will be true only in the first time that this
         # method is called and any subsequent call of this method for the
         # same value of num_cells will avoid the calculations in the if
         # block below.
-        if num_cells not in Cluster.normalized_cell_positions:
+        if num_cells not in Cluster._normalized_cell_positions:
             norm_radius = 1.0
             # The first column in cell_positions has the cell positions
             # (complex number) and the second column has the cell rotation
@@ -1290,24 +1313,24 @@ class Cluster(shapes.Shape):
 
             # Store the normalized cell positions for a cluster with
             # 'num_cells' cells for later reference.
-            Cluster.normalized_cell_positions[num_cells] = cell_positions
+            Cluster._normalized_cell_positions[num_cells] = cell_positions
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # At this point we know that
-        # Cluster.normalized_cell_positions[num_cells] has the positions of
+        # Cluster._normalized_cell_positions[num_cells] has the positions of
         # the cells in a cluster with radius equal to 1.0 and with
         # 'num_cells' cells. All we need to do is multiply that our desired
         # cell_radius and then apply the 'rotation' (if there is any).
-        cell_positions = (Cluster.normalized_cell_positions[num_cells]
+        cell_positions = (Cluster._normalized_cell_positions[num_cells]
                           * cell_radius)
 
         if rotation is not None:
             # The cell positions calculated up to now do not consider
             # rotation. Lets use the rotate function of the Shape class to
             # rotate the coordinates.
-            cell_positions[:, 0] = shapes.Shape._rotate(cell_positions[:, 0],
-                                                        rotation)
+            cell_positions[:, 0] = shapes.Shape.calc_rotated_pos(
+                cell_positions[:, 0], rotation)
             cell_positions[:, 1] = rotation
 
         return cell_positions
@@ -1370,7 +1393,7 @@ class Cluster(shapes.Shape):
     #         # The cell positions calculated up to now do not consider
     #         # rotation. Lets use the rotate function of the Shape class to
     #         # rotate the coordinates.
-    #         cell_positions[:, 0] = shapes.Shape._rotate(
+    #         cell_positions[:, 0] = shapes.Shape.calc_rotated_pos(
     #                                    cell_positions[:, 0], +rotation)
     #         cell_positions[:, 1] = rotation
     #
@@ -1444,7 +1467,8 @@ class Cluster(shapes.Shape):
         return external_radius
 
     def _get_outer_vertexes(self, vertexes, central_pos, distance):
-        """Filter out vertexes closer to the shape center them `distance`.
+        """
+        Filter out vertexes closer to the shape center them `distance`.
 
         This is a helper method used in the _get_vertex_positions method.
 
@@ -1483,7 +1507,8 @@ class Cluster(shapes.Shape):
         return vertexes
 
     def _get_vertex_positions(self):
-        """Get the vertex positions of the cluster borders.
+        """
+        Get the vertex positions of the cluster borders.
 
         Returns
         -------
@@ -1493,7 +1518,6 @@ class Cluster(shapes.Shape):
         Notes
         -----
         This is only valid for cluster sizes from 1 to 19.
-
         """
         cell_radius = self._cells[0].radius
         if self.num_cells == 1:
@@ -1596,7 +1620,7 @@ class Cluster(shapes.Shape):
         """
         if len(self.vertices) != 0:
             stand_alone_plot = False
-            if (ax is None):
+            if ax is None:
                 # This is a stand alone plot. Lets create a new axes.
                 _, ax = plt.subplots(figsize=self.figsize)
                 stand_alone_plot = True
@@ -2006,11 +2030,10 @@ class Grid(object):
         """
         return self._clusters[index]
 
-    def _get_num_clusters(self):
+    @property
+    def num_clusters(self):
         """Get method for the num_clusters property."""
         return len(self._clusters)
-    # Property to get the number of clusters in the grid
-    num_clusters = property(_get_num_clusters)
 
     def __iter__(self):
         """Iterator for the clusters in the Grid
@@ -2088,8 +2111,8 @@ class Grid(object):
             length = np.sqrt(3) * self._cell_radius
             return length * np.exp(1j * angle)
         else:
-            msg = "For the two cells per cluster case only two clusters"
-            " may be used"
+            msg = ("For the two cells per cluster case only two clusters"
+                   " may be used")
             raise ValueError(msg)
 
     def _calc_cluster_pos3(self):
@@ -2147,7 +2170,7 @@ class Grid(object):
             figure (and axis) will be created.
         """
         stand_alone_plot = False
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True

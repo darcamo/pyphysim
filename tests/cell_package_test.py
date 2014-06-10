@@ -141,8 +141,8 @@ class ShapeTestCase(unittest.TestCase):
         """Test the static method Shape._rotate
         """
         cur_pos = 1 - 2j
-        self.assertAlmostEqual(shapes.Shape._rotate(cur_pos, 90), 2 + 1j)
-        self.assertAlmostEqual(shapes.Shape._rotate(cur_pos, 180), -1 + 2j)
+        self.assertAlmostEqual(shapes.Shape.calc_rotated_pos(cur_pos, 90), 2 + 1j)
+        self.assertAlmostEqual(shapes.Shape.calc_rotated_pos(cur_pos, 180), -1 + 2j)
 
 
 class HexagonTestCase(unittest.TestCase):
@@ -202,7 +202,7 @@ class HexagonTestCase(unittest.TestCase):
 
         # H3 has rotation and translation.
         np.testing.assert_array_almost_equal(
-            shapes.Shape._rotate(self.H3._get_vertex_positions(), 30) + 3 + 5j,
+            shapes.Shape.calc_rotated_pos(self.H3._get_vertex_positions(), 30) + 3 + 5j,
             self.H3.vertices)
 
     def test_is_point_inside_shape(self, ):
@@ -547,6 +547,9 @@ class Cell3SecTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(pos, expected_sec_positions)
 
     def test_set_pos(self):
+        # Add a few users in the cell
+        self.C1.add_random_users(5)
+
         # Whenever the pos property of the Cell3Sec object changes, the
         # position of each individual sector should change
         expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
@@ -555,13 +558,15 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.C1._sec2.pos, expected_sec2_pos)
         self.assertAlmostEqual(self.C1._sec3.pos, expected_sec3_pos)
 
-        self.C1.pos = 4-1j
+        self.C1.pos = 10-1j
         expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
             = self.C1._calc_sectors_positions()
 
         self.assertAlmostEqual(self.C1._sec1.pos, expected_sec1_pos)
         self.assertAlmostEqual(self.C1._sec2.pos, expected_sec2_pos)
         self.assertAlmostEqual(self.C1._sec3.pos, expected_sec3_pos)
+
+        #self.C1.plot()
 
     def test_secradius(self):
         expected_secradius = np.sqrt(3) * self.C1.radius / 3.0
@@ -917,7 +922,7 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxx Now test with a rotation of 30 degrees xxxxxxxxxxxxxxx
         positions2 = cell.Cluster._calc_cell_positions_hexagon(
             cell_radius=1.0, num_cells=19, rotation=30)
-        expected_positions2 = shapes.Shape._rotate(expected_positions, 30)
+        expected_positions2 = shapes.Shape.calc_rotated_pos(expected_positions, 30)
         np.testing.assert_array_almost_equal(positions2[:,0],
                                              expected_positions2)
         np.testing.assert_array_almost_equal(positions2[:,1],
@@ -925,7 +930,7 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Now with a different cell radius and rotation xxxxxxxx
-        expected_positions3 = shapes.Shape._rotate(expected_positions * 1.5,
+        expected_positions3 = shapes.Shape.calc_rotated_pos(expected_positions * 1.5,
                                                    48)
         positions3 = cell.Cluster._calc_cell_positions_hexagon(
             cell_radius=1.5, num_cells=19, rotation=48)
@@ -950,7 +955,7 @@ class ClusterTestCase(unittest.TestCase):
         positions2 = cell.Cluster._calc_cell_positions_3sec(
             cell_radius=1.0, num_cells=19, rotation=30)
 
-        expected_positions2 = shapes.Shape._rotate(expected_positions, 30)
+        expected_positions2 = shapes.Shape.calc_rotated_pos(expected_positions, 30)
         np.testing.assert_array_almost_equal(positions2[:,0],
                                              expected_positions2)
         np.testing.assert_array_almost_equal(positions2[:,1],
@@ -958,7 +963,7 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Now with a different cell radius and rotation xxxxxxxx
-        expected_positions3 = shapes.Shape._rotate(expected_positions * 1.5,
+        expected_positions3 = shapes.Shape.calc_rotated_pos(expected_positions * 1.5,
                                                    48)
         positions3 = cell.Cluster._calc_cell_positions_3sec(
             cell_radius=1.5, num_cells=19, rotation=48)
@@ -1112,6 +1117,9 @@ class ClusterTestCase(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             self.C1.cell_height = 3.0
+
+        with self.assertRaises(AttributeError):
+            self.C1.radius = 3.0
 
     def test_iterator_cells_in_the_cluster(self):
         i = -1  # Initialize the i variable

@@ -175,9 +175,10 @@ class Shape(Coordinate):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_vertex_positions(self):  # pragma: no cover
-        """Calculates the vertex positions ignoring any rotation and
-        considering that the shape is at the origin (rotation and
-        translation will be added automatically later).
+        """
+        Calculates the vertex positions ignoring any rotation and considering
+        that the shape is at the origin (rotation and translation will be
+        added automatically later).
 
         Returns
         -------
@@ -189,7 +190,6 @@ class Shape(Coordinate):
         Not implemented. Must be implemented in a subclass and return a
         one-dimensional numpy array (complex dtype) with the vertex
         positions.
-
         """
         raise NotImplementedError(
             ('get_vertex_positions still needs to be implemented in the '
@@ -197,23 +197,19 @@ class Shape(Coordinate):
 
     # xxxxx vertex property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
+    def vertices_no_trans_no_rotation(self):
+        """
+        Get the shape vertexes without translation and rotation.
+        """
+        return self._get_vertex_positions()
+
+    @property
     def vertices(self):
         """Get method for the vertices property."""
         vertex_positions = self._get_vertex_positions()
-        vertex_positions = self.pos + Shape._rotate(
+        vertex_positions = self.pos + Shape.calc_rotated_pos(
             vertex_positions, self.rotation)
         return vertex_positions
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxx Shape's Path xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # A Matplotlib "Path" corresponding to the shape
-    @property
-    def path(self):
-        """Get method for the path property.
-
-        The `path` property returns a Matplotlib Path for the shape.
-        """
-        return path.Path(from_complex_array_to_real_matrix(self.vertices))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def is_point_inside_shape(self, point):
@@ -229,8 +225,10 @@ class Shape(Coordinate):
         inside_or_not : bool
             True if `point` is inside the shape, False otherwise.
         """
+        mpl_path = path.Path(from_complex_array_to_real_matrix(self.vertices))
+
         # This code is used with Matplotlib version 1.2 or higher.
-        return self.path.contains_point([point.real, point.imag])
+        return mpl_path.contains_point([point.real, point.imag])
 
         # xxxxx Code for Matplotlib version 1.1 xxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The code below was used for Matplotlib lower then version
@@ -352,7 +350,7 @@ class Shape(Coordinate):
         """
         stand_alone_plot = False
 
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
@@ -422,7 +420,7 @@ class Shape(Coordinate):
         return self._repr_some_format_('svg')
 
     @staticmethod
-    def _rotate(cur_pos, angle):
+    def calc_rotated_pos(cur_pos, angle):
         """
         Rotate the complex numbers in the `cur_pos` array by `angle` (in
         degrees) around the origin.
@@ -679,7 +677,7 @@ class Circle(Shape):
         inside_or_not : bool
             True if `point` is inside the circle, False otherwise.
         """
-        return (np.abs(self.pos - point) < self.radius)
+        return np.abs(self.pos - point) < self.radius
 
     def plot(self, ax=None):  # pragma: no cover
         """Plot the circle using the Matplotlib library.
@@ -698,7 +696,7 @@ class Circle(Shape):
         """
         stand_alone_plot = False
 
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             ax = plt.axes()
             stand_alone_plot = True
