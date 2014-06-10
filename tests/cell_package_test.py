@@ -720,6 +720,28 @@ class CellWrapTestCase(unittest.TestCase):
         self.C = cell.Cell(1-1j, 1.0, cell_id=1, rotation=10)
         self.W = cell.CellWrap(-1+0j, self.C)
 
+    def test_pos(self):
+        self.assertAlmostEqual(self.W.pos, -1 + 0j)
+
+        self.W.pos = 4-2j
+        self.assertAlmostEqual(self.W.pos, 4 - 2j)
+
+    def test_radius(self):
+        self.assertAlmostEqual(self.W.radius, 1.0)
+        with self.assertRaises(AttributeError):
+            self.W.radius = 2.0
+
+    def test_rotation(self):
+        self.assertAlmostEqual(self.W.rotation, 10.0)
+        with self.assertRaises(AttributeError):
+            self.W.rotation = 30
+        self.assertAlmostEqual(self.W.rotation, 10.0)
+
+    def test_get_users(self):
+
+        # TODO: Implement-me
+        pass
+
     def test_some_method(self):
         # self.W.radius = 3
         # from matplotlib import pyplot as plt
