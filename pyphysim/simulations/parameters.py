@@ -541,7 +541,7 @@ class SimulationParameters(object):
             len(self.parameters[i]) for i in self.unpacked_parameters]
         aux = np.arange(0, self.get_num_unpacked_variations())
         aux.shape = dimensions
-        indexes = eval(
+        indexes = eval(  # pylint: disable=W0123
             "aux" + "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

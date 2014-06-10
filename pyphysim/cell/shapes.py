@@ -346,7 +346,6 @@ class Shape(Coordinate):
         If an axes 'ax' is specified, then the shape is added to that
         axes. Otherwise a new figure and axes are created and the shape is
         plotted to that.
-
         """
         stand_alone_plot = False
 

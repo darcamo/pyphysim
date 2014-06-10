@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable-all
+
 """
 This module contains useful functions to create pgfplots code (latex
 code using the pdfplots package) from python data.

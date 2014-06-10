@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable-all
+
 """Define classes to plot the results in the apps folder using the chaco
 plot library"""
 

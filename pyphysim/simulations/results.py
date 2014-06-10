@@ -193,6 +193,10 @@ class SimulationResults(object):
         # set_parameters method.
         self._params = SimulationParameters()
 
+        # Don't change this manually. This will be set in the
+        # SimulationRunner class in the end of the simulation.
+        self.runned_reps = None
+
         # When the SimulationResults object is saved to a file with the
         # methods 'save_to_file' or 'save_to_hdf5_file', this variable will
         # be set to the used filename (before any string
