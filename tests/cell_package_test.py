@@ -17,6 +17,7 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+import math
 import unittest
 import doctest
 import numpy as np
@@ -375,6 +376,9 @@ class CellTestCase(unittest.TestCase):
         self.C2 = cell.Cell(pos=0 + 2j, radius=2, cell_id=2, rotation=20)
         self.C3 = cell.Cell(pos=-3 + 5j, radius=1.5, cell_id=3, rotation=70)
 
+    def test_repr(self):
+        self.assertEqual(repr(self.C1), 'Cell(pos=(2-3j),radius=2.5,cell_id=1,rotation=30)')
+
     def test_add_user(self):
         # The cell has no users yet
         self.assertEqual(self.C1.num_users, 0)
@@ -662,55 +666,20 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertEqual(self.C1.num_users, 10)
 
         for i in range(self.C1.num_users):
-            self.assertTrue(self.C1.is_point_inside_shape(self.C1.users[i].pos))
+            self.assertTrue(
+                self.C1.is_point_inside_shape(self.C1.users[i].pos))
 
         # If we change the position of the cell, the position of the users
         # already in the cell should be updated.
         self.C1.pos = 0
         for i in range(self.C1.num_users):
-            self.assertTrue(self.C1.is_point_inside_shape(self.C1.users[i].pos))
+            self.assertTrue(
+                self.C1.is_point_inside_shape(self.C1.users[i].pos))
 
-    # def test_lala(self):
-    #     C1 = cell.Cell3Sec(pos=0 - 3j, radius=2, cell_id=1, rotation=47)
-    #     C2 = cell.Cell3Sec(pos=7 - 3j, radius=2.5, cell_id=1, rotation=10)
-
-    #     from matplotlib import pyplot as plt
-    #     _, ax = plt.subplots()
-    #     ax.axis('equal')
-
-    #     C1.radius = 6
-    #     C1.rotation=35
-
-    #     C1.pos = 12+1j
-
-    #     C1._sec1.fill_face_bool = True
-    #     C1._sec1.plot(ax)
-    #     C1._sec2.fill_face_bool = True
-    #     C1._sec2.plot(ax)
-    #     C1._sec3.fill_face_bool = True
-    #     C1._sec3.plot(ax)
-
-    #     C1.add_random_users_in_sector(10, 1)
-    #     C1.add_random_users_in_sector(10, 2, user_color='b')
-    #     C1.add_random_users_in_sector(10, 3, user_color='g')
-
-    #     C2.add_random_users_in_sector(10, 1)
-    #     C2.add_random_users_in_sector(10, 2, user_color='b')
-    #     C2.add_random_users_in_sector(10, 3, user_color='g')
-    #     print C2.num_users
-    #     C2._sec1.fill_face_bool = True
-    #     C2._sec1.plot(ax)
-    #     C2._sec2.fill_face_bool = True
-    #     C2._sec2.plot(ax)
-    #     C2._sec3.fill_face_bool = True
-    #     C2._sec3.plot(ax)
-
-    #     C1.plot(ax)
-    #     C2.plot(ax)
-
-    #     plt.show()
-    #     # TODO: Implement-me
-    #     pass
+        # Sector 5 does not exist and a RuntimeError exception should be
+        # raised
+        with self.assertRaises(RuntimeError):
+            self.C1.add_random_users_in_sector(2, 5)
 
 
 # TODO: finish implementation
@@ -718,7 +687,9 @@ class CellWrapTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.C = cell.Cell(1-1j, 1.0, cell_id=1, rotation=10)
+        self.C2 = cell.Cell(-2+3j, 2.0, rotation=60)
         self.W = cell.CellWrap(-1+0j, self.C)
+        self.W2 = cell.CellWrap(0+0j, self.C2)
 
     def test_pos(self):
         self.assertAlmostEqual(self.W.pos, -1 + 0j)
@@ -728,40 +699,51 @@ class CellWrapTestCase(unittest.TestCase):
 
     def test_radius(self):
         self.assertAlmostEqual(self.W.radius, 1.0)
+        self.assertAlmostEqual(self.W2.radius, 2.0)
+
+        # The radius property in a CellWrap object should not be changed
         with self.assertRaises(AttributeError):
             self.W.radius = 2.0
 
     def test_rotation(self):
         self.assertAlmostEqual(self.W.rotation, 10.0)
+        self.assertAlmostEqual(self.W2.rotation, 60.0)
+
+        # The rotation property in a CellWrap object should not be changed
         with self.assertRaises(AttributeError):
             self.W.rotation = 30
         self.assertAlmostEqual(self.W.rotation, 10.0)
 
     def test_get_users(self):
+        self.C.add_random_users(5)
+        self.assertEqual(self.C.num_users, 5)
+        orig_users = self.C.users
 
-        # TODO: Implement-me
-        pass
+        self.assertFalse(self.W.include_users_bool)
+        self.assertEqual(self.W.num_users, 0)
 
-    def test_some_method(self):
-        # self.W.radius = 3
-        # from matplotlib import pyplot as plt
-        # fig, ax = plt.subplots()
+        users = self.W.users
+        self.assertEqual(users, [])
 
-        # self.C.add_random_users(10)
+        self.W.include_users_bool = True
+        self.assertEqual(self.W.num_users, 5)
 
-        # print self.C.users
-        # print self.W.users
+        users = self.W.users
 
-        # self.C.plot(ax)
-        # self.W.plot(ax)
+        pos_diff = self.W.pos - self.C.pos
+        for u, ou in zip(users, orig_users):
+            self.assertAlmostEqual(u.pos, ou.pos + pos_diff)
 
-        # print()
-        # print self.C.vertices
-        # print (self.W.vertices)
+        # Add two more users in the original cell
+        self.C.add_random_users(2)
+        self.assertEqual(self.W.num_users, 7)
 
-        # plt.show()
-        pass
+        for u, ou in zip(users, orig_users):
+            self.assertAlmostEqual(u.pos, ou.pos + pos_diff)
 
+    def test_repr(self):
+        self.assertEqual(repr(self.W), 'CellWrap(pos=(-1+0j),cell_id=Wrap 1)')
+        self.assertEqual(repr(self.W2), 'CellWrap(pos=0j,cell_id=None)')
 
 
 # TODO: Extend the tests to consider the case of the Cell3Sec class.
@@ -769,8 +751,11 @@ class ClusterTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.C1 = cell.Cluster(pos=1-2j, cell_radius=1.0, num_cells=3)
-        self.C2 = cell.Cluster(pos=-2+3j, cell_radius=1.0, num_cells=7)
+        self.C2 = cell.Cluster(pos=-2+3j, cell_radius=1.0, num_cells=7,
+                               rotation=20)
         self.C3 = cell.Cluster(pos=0-1.1j, cell_radius=1.0, num_cells=19)
+        self.C4 = cell.Cluster(pos=0-1.1j, cell_radius=1.0, num_cells=19,
+                               cell_type='3sec')
 
         # Add two users to the first cell of Cluster1
         self.C1._cells[0].add_random_user()
@@ -797,9 +782,37 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C2.num_users, 0)
         self.assertEqual(self.C3.num_users, 0)
 
+        self.assertEqual(type(self.C1._cells[0]), cell.Cell)
+        self.assertEqual(type(self.C2._cells[0]), cell.Cell)
+        self.assertEqual(type(self.C3._cells[0]), cell.Cell)
+        self.assertEqual(type(self.C4._cells[0]), cell.Cell3Sec)
+
+        with self.assertRaises(RuntimeError):
+            # cell_type can only be 'simple' or '3sec'
+            cell.Cluster(1.0, num_cells=19, cell_type='invalid_type')
+
+    def test_repr(self):
+        self.assertEqual(repr(self.C1), "Cluster(cell_radius=1.0,num_cells=3,pos=(1-2j),cluster_id=None,cell_type='simple',rotation=0.0)")
+        self.assertEqual(repr(self.C2), "Cluster(cell_radius=1.0,num_cells=7,pos=(-2+3j),cluster_id=None,cell_type='simple',rotation=20)")
+        self.assertEqual(repr(self.C3), "Cluster(cell_radius=1.0,num_cells=19,pos=-1.1j,cluster_id=None,cell_type='simple',rotation=0.0)")
+        self.assertEqual(repr(self.C4), "Cluster(cell_radius=1.0,num_cells=19,pos=-1.1j,cluster_id=None,cell_type='3sec',rotation=0.0)")
+
+    def test_cell_id_fontsize_property(self):
+        self.assertIsNone(self.C1.cell_id_fontsize)
+        for c in self.C1:
+            self.assertIsNone(c.cell_id_fontsize)
+
+        self.C1.cell_id_fontsize = 20
+        self.assertEqual(self.C1.cell_id_fontsize, 20)
+        for c in self.C1:
+            self.assertEqual(c.cell_id_fontsize, 20)
+
+        # The effect of the cell_id_fontsize can only be seen when plotting
+        # self.C1.plot()
+
     def test_pos_and_rotation(self):
         self.assertAlmostEqual(self.C2.pos, -2+3j)
-        self.assertAlmostEqual(self.C2.rotation, 0)
+        self.assertAlmostEqual(self.C2.rotation, 20)
 
         with self.assertRaises(AttributeError):
             self.C2.pos = 0
@@ -807,7 +820,7 @@ class ClusterTestCase(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             self.C2.rotation = 30
-        self.assertAlmostEqual(self.C2.rotation, 0.0)
+        self.assertAlmostEqual(self.C2.rotation, 20.0)
 
     def test_get_ii_and_jj(self):
         # This test is here simple to indicate if the Cluster._ii_and_jj
@@ -1079,13 +1092,26 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C1.num_cells, 3)
         self.assertEqual(self.C2.num_cells, 7)
         self.assertEqual(self.C3.num_cells, 19)
+
         # Test num_users property
         self.assertEqual(self.C1.num_users, 10)
         self.assertEqual(self.C2.num_users, 0)
+
         # Test cell_radius property
         self.assertEqual(self.C1.cell_radius, 1.0)
         self.assertEqual(self.C2.cell_radius, 1.0)
         self.assertEqual(self.C3.cell_radius, 1.0)
+
+        # Test cell height
+        self.assertEqual(self.C1.cell_height, math.sqrt(3) / 2.0)
+        self.assertEqual(self.C2.cell_height, math.sqrt(3) / 2.0)
+        self.assertEqual(self.C3.cell_height, math.sqrt(3) / 2.0)
+
+        with self.assertRaises(AttributeError):
+            self.C1.cell_radius = 3.0
+
+        with self.assertRaises(AttributeError):
+            self.C1.cell_height = 3.0
 
     def test_iterator_cells_in_the_cluster(self):
         i = -1  # Initialize the i variable

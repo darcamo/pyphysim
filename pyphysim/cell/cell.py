@@ -666,7 +666,7 @@ class Cell3Sec(CellBase):
         for _ in range(num_users):
             self.add_random_user_in_sector(sector, user_color, min_dist_ratio)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """
         Plot the cell using the matplotlib library.
 
@@ -682,7 +682,7 @@ class Cell3Sec(CellBase):
         """
         stand_alone_plot = False
 
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
@@ -762,22 +762,26 @@ class CellWrap(CellBase):
         self.fill_color = 'gray'
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _get_radius(self):
+    @property
+    def radius(self):
         """Get method for the radius property."""
         return self._wrapped_cell.radius
-    radius = property(_get_radius)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _get_rotation(self):
+    @property
+    def rotation(self):
         """Get method for the rotation property."""
         return self._wrapped_cell.rotation
-    rotation = property(_get_rotation)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx users property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _get_users(self):
+    @property
+    def num_users(self):
+        """Get method for the num_users property."""
+        if self.include_users_bool is True:
+            return self._wrapped_cell.num_users
+        else:
+            return 0
+
+    @property
+    def users(self):
         """Get method for the users property."""
         if self.include_users_bool is True:
             wrapped_cell_pos = self._wrapped_cell.pos
@@ -787,8 +791,6 @@ class CellWrap(CellBase):
         else:
             users = []
         return users
-    users = property(_get_users)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def __repr__(self):
         """
@@ -803,7 +805,7 @@ class CellWrap(CellBase):
     def plot(self, ax=None):  # pragma: no cover
         stand_alone_plot = False
 
-        if (ax is None):
+        if ax is None:
             # This is a stand alone plot. Lets create a new axes.
             _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
@@ -827,7 +829,8 @@ class CellWrap(CellBase):
 # xxxxxxxxxxxxxxx Cluster Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Cluster(shapes.Shape):
-    """Class representing a cluster of Hexagonal cells.
+    """
+    Class representing a cluster of Hexagonal cells.
 
     Valid cluster sizes are given by the formula
     :math:`N = i^2+i*j+j^2`
@@ -845,7 +848,6 @@ class Cluster(shapes.Shape):
         | 3,1 | 13 |
         | 3,2 | 19 |
         +-----+----+
-
     """
     _ii_and_jj = {1: (1, 0),
                   3: (1, 1),
@@ -928,8 +930,12 @@ class Cluster(shapes.Shape):
             CELLCLASS = Cell
         elif cell_type == '3sec':
             CELLCLASS = Cell3Sec
-        else:
-            raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
+        else:  # pragma: no cover
+            # Note that it the code should never get here, since if the
+            # cell type is not valid an exception will be raised in the
+            # '_calc_cell_positions' method which is called before this
+            # point.
+            raise RuntimeError("Invalid cell type: '{0}'".format(cell_type))
 
         # Finally, create the cells at the specified positions (also
         # rotated)
@@ -984,7 +990,18 @@ class Cluster(shapes.Shape):
                           self.num_cells, self.pos, self.cluster_id,
                           repr(self._cell_type), self._rotation)
 
-    def _set_cell_id_fontsize(self, value):
+    @property
+    def cell_id_fontsize(self):
+        """
+        Get method for the cell_id_fontsize property.
+
+        The value of cell_id_fontsize only matters for plotting the
+        cluster.
+        """
+        return self._cell_id_fontsize
+
+    @cell_id_fontsize.setter
+    def cell_id_fontsize(self, value):
         """
         Set method for the cell_id_fontsize property.
 
@@ -1001,44 +1018,30 @@ class Cluster(shapes.Shape):
         for c in self._cells:
             c.cell_id_fontsize = value
 
-    def _get_cell_id_fontsize(self):
-        """
-        Get method for the cell_id_fontsize property.
-
-        The value of cell_id_fontsize only matters for plotting the
-        cluster.
-        """
-        return self._cell_id_fontsize
-    cell_id_fontsize = property(_get_cell_id_fontsize, _set_cell_id_fontsize)
-
     # Property to get the cluster external radius
     # The cluster class also has a external_radius parameter that
     # corresponds to the radius of the smallest circle that can completely
     # hold the cluster inside of it.
-    def _get_external_radius(self):
+    @property
+    def external_radius(self):
         """Get method for the external_radius property."""
         return self._external_radius
-    external_radius = property(_get_external_radius)
 
-    # Property to get the number of users in the cluster.
-    def _get_num_users(self):
+    @property
+    def num_users(self):
         """Get method for the num_users property."""
         num_users = [cell.num_users for cell in self._cells]
         return np.sum(num_users)
-    num_users = property(_get_num_users)
 
-    # property to get the number of _cells in the cluster
-    def _get_num_cells(self):
+    @property
+    def num_cells(self):
         """Get method for the num_cells property."""
         return len(self._cells)
 
-    num_cells = property(_get_num_cells)
-
-    def _get_cell_radius(self):
+    @property
+    def cell_radius(self):
         """Get method for the cell_radius property."""
         return self._cell_radius
-    # Property to get the radius of the cells in the cluster.
-    cell_radius = property(_get_cell_radius)
 
     @staticmethod
     def _calc_cell_height(radius):
@@ -1057,10 +1060,10 @@ class Cluster(shapes.Shape):
         """
         return radius * np.sqrt(3.0) / 2.0
 
-    def _get_cell_height(self):
+    @property
+    def cell_height(self):
         """Get method for the cell_height property."""
         return self._calc_cell_height(self.cell_radius)
-    cell_height = property(_get_cell_height)
 
     def __iter__(self):
         """Iterator for the cells in the cluster"""
@@ -1172,7 +1175,7 @@ class Cluster(shapes.Shape):
             cell_positions = Cluster._calc_cell_positions_3sec(
                 cell_radius, num_cells, rotation)
         else:
-            raise RuntimeError('Invalid cell type: {0}'.format(cell_type))
+            raise RuntimeError("Invalid cell type: '{0}'".format(cell_type))
 
         # xxxxxxx Possibly translate the postions of each cell xxxxxxxxxxxx
         # The coordinates of the cells calculated up to now consider the
