@@ -7,14 +7,16 @@ awgn channel."""
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
-parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-sys.path.append(parent_dir)
+try:
+    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+    sys.path.append(parent_dir)
+except NameError:
+    sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from traits.api import Instance, on_trait_change
 
-import simulate_psk_with_traits
-from simulate_psk_with_traits import PskSimulationRunner
+from apps.simulate_psk_with_traits import PskSimulationRunner
 import pyphysim.comm.modulators as mod
 
 

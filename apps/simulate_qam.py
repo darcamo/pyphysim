@@ -8,11 +8,14 @@ awgn channel.
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
-parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-sys.path.append(parent_dir)
+try:
+    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
+    sys.path.append(parent_dir)
+except NameError:
+    sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from simulate_psk import VerySimplePskSimulationRunner
+from apps.simulate_psk import VerySimplePskSimulationRunner
 from pyphysim.comm import modulators
 
 
