@@ -343,7 +343,14 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         #         self.F is used. This is more useful for debugging.
         self._initialize_with = 'random'
 
-    def _set_initialize_with(self, value):
+    # xxxxxxxxxx initialize_with property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    @property
+    def initialize_with(self):
+        """Get method for the initialize_with property."""
+        return self._initialize_with
+
+    @initialize_with.setter
+    def initialize_with(self, value):
         """Set method for the initialize_with property."""
         options = ['random', 'alt_min', 'closed_form', 'fix']
         if value in options:
@@ -351,17 +358,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         else:
             msg = "unknown initialization option: '{0}'".format(value)
             raise RuntimeError(msg)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _get_initialize_with(self):
-        """Get method for the initialize_with property."""
-        return self._initialize_with
-
-    initialize_with = property(_get_initialize_with, _set_initialize_with)
-
-    def _get_runned_iterations(self):
+    @property
+    def runned_iterations(self):
         """Get method for the runned_iterations property."""
         return self._runned_iterations
-    runned_iterations = property(_get_runned_iterations)
 
     def clear(self):
         """

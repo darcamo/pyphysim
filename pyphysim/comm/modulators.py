@@ -78,7 +78,8 @@ class Modulator(object):
         """Get method for the 'name' property."""
         return "{0:d}-{1:s}".format(self._M, self.__class__.__name__)
 
-    def _get_M(self):
+    @property
+    def M(self):
         """Get method for the M property.
 
         The `M` property corresponds to the number of symbols in the
@@ -89,9 +90,9 @@ class Modulator(object):
         K
         """
         return self._M
-    M = property(_get_M)
 
-    def _get_K(self):
+    @property
+    def K(self):
         """Get method for the K property.
 
         The `K` property corresponds to the number of bits represented by
@@ -103,7 +104,6 @@ class Modulator(object):
         M
         """
         return self._K
-    K = property(_get_K)
 
     def __repr__(self):  # pragma: no cover
         return "{0} object".format(self.name)

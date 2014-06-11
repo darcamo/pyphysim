@@ -255,10 +255,10 @@ class SimulationResults(object):
         """
         return not self.__eq__(other)
 
-    def _get_params(self):
+    @property
+    def params(self):
         """Get method for the params property."""
         return self._params
-    params = property(_get_params)
 
     def set_parameters(self, params):
         """Set the parameters of the simulation used to generate the

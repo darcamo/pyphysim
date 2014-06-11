@@ -429,61 +429,65 @@ class PathLossOkomuraHata(PathLossBase):
         self._area_type = 'suburban'
 
     # xxxxxxxxxx fc property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _set_fc(self, value):
+    @property
+    def fc(self):
+        """Get method for the fc property."""
+        return self._fc
+
+    @fc.setter
+    def fc(self, value):
         """Set method for the fc property."""
         if value < 150.0 or value > 1500:
             msg = ("The carrier frequency for the Okomura Hata model must be"
                    " between 150 and 1500 (values in MHz).")
             raise RuntimeError(msg)
         self._fc = value
-
-    def _get_fc(self):
-        """Get method for the fc property."""
-        return self._fc
-    fc = property(_get_fc, _set_fc)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx hbs property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _set_hbs(self, value):
+    @property
+    def hbs(self):
+        """Get method for the hbs property."""
+        return self._hbs
+
+    @hbs.setter
+    def hbs(self, value):
         """Set method for the hbs property."""
         if value < 30.0 or value > 200.0:
             msg = ("The Base Station antenna height for the Okomura Hata "
                    "model must be between 30 and 200 (values in meters).")
             raise RuntimeError(msg)
         self._hbs = value
-
-    def _get_hbs(self):
-        """Get method for the hbs property."""
-        return self._hbs
-    hbs = property(_get_hbs, _set_hbs)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx hms property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _set_hms(self, value):
+    @property
+    def hms(self):
+        """Get method for the hms property."""
+        return self._hms
+
+    @hms.setter
+    def hms(self, value):
         """Set method for the hms property."""
         if value < 1.0 or value > 10.0:
             msg = ("The Mobile Station antenna height for the Okomura Hata "
                    "model must be between 1 and 10 (values in meters).")
             raise RuntimeError(msg)
         self._hms = value
-
-    def _get_hms(self):
-        """Get method for the hms property."""
-        return self._hms
-    hms = property(_get_hms, _set_hms)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx area_type property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _set_area_type(self, value):
+    @property
+    def area_type(self):
+        """Get method for the area_type property."""
+        return self._area_type
+
+    @area_type.setter
+    def area_type(self, value):
         """Set method for the area_type property."""
         if value not in ['open', 'suburban', 'medium city', 'large city']:
             raise RuntimeError('Invalid area type: {0}'.format(value))
         self._area_type = value
-
-    def _get_area_type(self):
-        """Get method for the area_type property."""
-        return self._area_type
-    area_type = property(_get_area_type, _set_area_type)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _calc_mobile_antenna_height_correction_factor(self):

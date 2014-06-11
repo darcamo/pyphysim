@@ -237,7 +237,8 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
         # _maybe_delete_output_file method to do that.
         self._maybe_delete_output_file()
 
-    def _get_elapsed_time(self):
+    @property
+    def elapsed_time(self):
         """Get method for the elapsed_time property."""
         elapsed_time = 0.0
         if self._initialized is True:
@@ -246,7 +247,6 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
             else:
                 elapsed_time = self._stop_time - self._start_time
         return pretty_time(elapsed_time)
-    elapsed_time = property(_get_elapsed_time)
 
     def _count_to_percent(self, count):
         """
@@ -268,7 +268,14 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
         percentage = (count / float(self.finalcount)) * 100.0
         return percentage
 
-    def _set_width(self, value):
+    # xxxxxxxxxx width property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    @property
+    def width(self):
+        """Get method for the width property."""
+        return self._width
+
+    @width.setter
+    def width(self, value):
         """Set method for the width property."""
         # If value is lower than 40, the width will be set to 40.
         # If value is not a multiple of 10, width will be set to the
@@ -276,12 +283,7 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
         if value < 40:
             value = 40
         self._width = value - (value % 10)
-
-    def _get_width(self):
-        """Get method for the width property."""
-        return self._width
-
-    width = property(_get_width, _set_width)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_percentage_representation(self,
                                        percent,
@@ -970,10 +972,10 @@ class ProgressbarDistributedServerBase(object):
         # self._tic = multiprocessing.Value('f', 0.0)
         # self._toc = multiprocessing.Value('f', 0.0)
 
-    def _get_total_final_count(self):
+    @property
+    def total_final_count(self):
         """Get method for the total_final_count property."""
         return self._total_final_count.get()
-    total_final_count = property(_get_total_final_count)
 
     def _update_client_data_list(self):
         """
@@ -1498,15 +1500,15 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         # This will be set to a ZMQ Socket in the _update_progress method
         self._zmq_pull_socket = None
 
-    def _get_ip(self):
+    @property
+    def ip(self):
         """Get method for the ip property."""
         return self._ns.ip
-    ip = property(_get_ip)
 
-    def _get_port(self):
+    @property
+    def port(self):
         """Get method for the port property."""
         return self._ns.port
-    port = property(_get_port)
 
     def register_client_and_get_proxy_progressbar(self, total_count):
         client_id = self._register_client(total_count)

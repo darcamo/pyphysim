@@ -409,22 +409,22 @@ class MultiUserChannelMatrix(object):
         self.set_noise_seed(None)
 
     # Property to get the number of receive antennas
-    def _get_Nr(self):
+    @property
+    def Nr(self):
         """Get method for the Nr property."""
         return self._Nr
-    Nr = property(_get_Nr)
 
     # Property to get the number of transmit antennas
-    def _get_Nt(self):
+    @property
+    def Nt(self):
         """Get method for the Nt property."""
         return self._Nt
-    Nt = property(_get_Nt)
 
     # Property to get the number of users
-    def _get_K(self):
+    @property
+    def K(self):
         """Get method for the K property."""
         return self._K
-    K = property(_get_K)
 
     # Property to get the matrix of channel matrices (with pass loss
     # applied if any)
@@ -445,10 +445,11 @@ class MultiUserChannelMatrix(object):
     H = property(_get_H)
 
     # Property to get the big channel matrix (with pass loss applied if any)
-    def _get_big_H(self):
+    @property
+    def big_H(self):
         """Get method for the big_H property."""
         if self._pathloss_matrix is None:
-            # No path loss
+            # No path lossr
             return self._big_H_no_pathloss
         else:
             if self._big_H_with_pathloss is None:
@@ -459,26 +460,23 @@ class MultiUserChannelMatrix(object):
                 self._big_H_with_pathloss = self._big_H_no_pathloss * np.sqrt(
                     self._pathloss_big_matrix)
             return self._big_H_with_pathloss
-    big_H = property(_get_big_H)
 
     # Property to get the pathloss. Use the "set_pathloss" method to set
     # the pathloss.
-    def _get_pathloss(self):
+    @property
+    def pathloss(self):
         """Get method for the pathloss property."""
         return self._pathloss_matrix
-    pathloss = property(_get_pathloss)
 
-    def _get_last_noise(self):
+    @property
+    def last_noise(self):
         """Get method for the last_noise property."""
         return self._last_noise
 
-    last_noise = property(_get_last_noise)
-
-    def _get_last_noise_var(self):
+    @property
+    def last_noise_var(self):
         """Get method for the last_noise_var property."""
         return self._last_noise_var
-
-    last_noise_var = property(_get_last_noise_var)
 
     @staticmethod
     def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
@@ -741,18 +739,18 @@ class MultiUserChannelMatrix(object):
         self._big_W = None  # This will be set in the get property only
                             # when required.
 
-    def _get_W(self):
+    @property
+    def W(self):
         """Get method for the post processing filter W."""
         return self._W
-    W = property(_get_W)
 
-    def _get_big_W(self):
+    @property
+    def big_W(self):
         """Get method for the big_W property."""
         if self._big_W is None:
             if self.W is not None:
                 self._big_W = block_diag(*self.W)
         return self._big_W
-    big_W = property(_get_big_W)
 
     def corrupt_concatenated_data(self, data, noise_var=None):
         """Corrupt data passed through the channel.
@@ -1552,38 +1550,39 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
                             # interference sources.
 
     # Property to get the number of external interference sources
-    def _get_extIntK(self):
+    @property
+    def extIntK(self):
         """Get method for the extIntK property."""
         return self._extIntK
-    extIntK = property(_get_extIntK)
 
     # Property to get the number of transmit antennas (or the rank) of the
     # external interference sources
-    def _get_extIntNt(self):
+    @property
+    def extIntNt(self):
         """Get method for the extIntNt property."""
         return self._extIntNt
-    extIntNt = property(_get_extIntNt)
 
     # Property to get the number of receive antennas of all users. We
     # overwrite the property from the MultiUserChannelMatrix to avoid
     # account the number of receive antennas of the external interference
     # sources.
-    def _get_Nr(self):
+    @property
+    def Nr(self):
         """Get method for the Nr property."""
         return self._Nr[:-self._extIntK]
-    Nr = property(_get_Nr)
 
-    def _get_Nt(self):
+    @property
+    def Nt(self):
         """Get method for the Nt property."""
         return self._Nt[:-self._extIntK]
-    Nt = property(_get_Nt)
 
-    def _get_K(self):
+    @property
+    def K(self):
         """Get method for the K property."""
         return self._K - self._extIntK
-    K = property(_get_K)
 
-    def _get_big_H_no_ext_int(self):
+    @property
+    def big_H_no_ext_int(self):
         """Get method for the big_H_no_est_int property.
 
         big_H_no_est_int is similar to big_H, but does not include the last
@@ -1591,9 +1590,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         """
         return self.big_H[:, :np.sum(self.Nt)]
-    big_H_no_ext_int = property(_get_big_H_no_ext_int)
 
-    def _get_H(self):
+    @property
+    def H(self):
         """Get method for the H property."""
         # We only care about the first self.K "rows". The remaining rows
         # are the channels from all transmitters to the "external
@@ -1607,13 +1606,12 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             # has the same dimension as the self._big_H_no_pathloss matrix
             # and we are performing element-wise multiplication here.
             return H * np.sqrt(self._pathloss_matrix)
-    H = property(_get_H)
 
-    def _get_H_no_ext_int(self):
+    @property
+    def H_no_ext_int(self):
         """Get method for the H_no_ext_int property."""
         H = MultiUserChannelMatrix._get_H(self)
         return H[:self.K, :self.K]
-    H_no_ext_int = property(_get_H_no_ext_int)
 
     def corrupt_data(self, data, ext_int_data, noise_var=None):
         """Corrupt data passed through the channel.

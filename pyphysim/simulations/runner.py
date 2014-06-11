@@ -301,7 +301,8 @@ class SimulationRunner(object):
         """
         self._results_base_filename = filename
 
-    def _get_results_base_filename(self):
+    @property
+    def results_base_filename(self):
         """
         Get name of the file where the last simulation results were stored.
         """
@@ -311,9 +312,9 @@ class SimulationRunner(object):
             filename = self.results.get_filename_with_replaced_params(
                 self._results_base_filename)
         return filename
-    results_base_filename = property(_get_results_base_filename)
 
-    def _get_results_filename(self):
+    @property
+    def results_filename(self):
         """
         Get name of the file where the last simulation results were stored.
         """
@@ -323,7 +324,6 @@ class SimulationRunner(object):
         else:
             results_filename = '{0}.pickle'.format(results_base_filename)
         return results_filename
-    results_filename = property(_get_results_filename)
 
     def _get_progress_output_sinc(self,
                                   param_variation_index):  # pragma: no cover

@@ -1151,9 +1151,9 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         self.assertAlmostEqual(self.iasolver.get_cost(), Cost)
 
     def test_solve(self):
-        Nr = 4
-        Nt = 4
-        Ns = 2
+        Nr = 2
+        Nt = 2
+        Ns = 1
         K = 3
         P = np.array([0.97, 1.125, 1.342])
 

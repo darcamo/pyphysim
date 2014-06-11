@@ -167,10 +167,10 @@ class SimulationParameters(object):
         self._unpack_index = -1
         self._original_sim_params = None
 
-    def _get_unpack_index(self):
+    @property
+    def unpack_index(self):
         """Get method for the unpack_index property."""
         return self._unpack_index
-    unpack_index = property(_get_unpack_index)
 
     @property
     def unpacked_parameters(self):

@@ -991,12 +991,12 @@ class EnhancedBD(BDWithExtIntBase):
                    "{None, 'capacity', 'effective_throughput'}")
             raise AttributeError(msg)
 
-    def _get_metric_name(self):
+    @property
+    def metric_name(self):
         """Get name of the method used to decide how many streams to
         sacrifice.
         """
         return self._metric_func_name
-    metric_name = property(_get_metric_name)
 
     @staticmethod
     def calc_receive_filter_user_k(Heq_k_P, P=None):
