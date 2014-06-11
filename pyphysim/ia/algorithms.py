@@ -23,7 +23,8 @@ from ..util.misc import peig, leig, update_inv_sum_diag, \
     get_principal_component_matrix
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
-           'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver']
+           'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver',
+           'GreedStreamIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -340,7 +341,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         #                minimizations algorithm.
         #
         # 'fix' : The precoder is not initialized and the current value of
-        #         self.F is used. This is more useful for debugging.
+        #         self.F is used. This is specially useful for debugging.
         self._initialize_with = 'random'
 
     # xxxxxxxxxx initialize_with property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1637,5 +1638,84 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         self._clear_precoder_filter()
         self._full_F = Vi
         self._F = norm_Vi
+
+
+class GreedStreamIASolver(object):
+    """
+    Implements the Greed Stream Interference Alignment algorithm variation.
+
+    This is not a new IA algorithm, but rather a variation of existing IA
+    algorithms. The idea is to use another IA algorithm to find the IA
+    solution for the desired maximum number of streams. After the solution
+    is found, we remove the worst stream and use the same algorithm again
+    to find a new solution. If the solution after the stream reduction
+    provided a larger sum capacity we remove the worst stream again and
+    keep going until each user has only one stream or the sum capacity
+    after stream reduction is lower. The final solution will be for the
+    number of streams that yielded the largest sum capacity.
+    """
+
+    def __init__(self, iasovler_obj):
+        """
+
+        Parameters
+        ----------
+        iasovler_obj : A ia solver object.
+            Must be an object of a derived class of IterativeIASolverBaseClass.
+        """
+        self._iasolver = iasovler_obj
+
+        # #IASolverBaseClass.__init__(self, multiUserChannel)
+
+        # # Maximum number of iterations that the underlying iterative IA
+        # # algorithm can run for a given stream configuration.
+        # self.max_iterations_per_run = 50
+
+        # # Relative change of the precoder of the underlying algorithm to
+        # # consider if the algorithm converged.
+        # self.relative_factor = 1e-6
+
+        #
+        self._runned_iterations = 0  # Count how many iterations the
+                                     # underlying algorithm run (including
+                                     # all stream configurations).
+
+        # Store the full_F, W_H and Ns for the previous stream
+        # configuration
+        self._old_full_F = None
+        self._old_W_H = None
+        self._old_Ns = None
+
+    def solve(self, Ns, P=None):
+        """
+        Find the IA solution.
+
+        This method updates the 'F' and 'W' member variables.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+        """
+        # Find the solution for the maximum number of antennas
+        self._runned_iterations += self._iasolver.solve(Ns, P)
+
+        self._old_full_F = self._iasolver.full_F
+        self._old_W_H = self._iasolver.W_H
+        self._old_Ns = self._iasolver.Ns
+
+        # xxxxxxxxxx Now we remove the worst stream xxxxxxxxxxxxxxxxxxxxxxx
+        sinrs = self._iasolver.calc_SINR()
+        # First we find the index of the minimum SINR for each user
+        min_sinr_index = map(np.argmin, sinrs)
+
+        print "Finish the implementation"
+
+
+        # TODO: Finish the implementation
+        print "Finish the implementation"
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

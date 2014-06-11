@@ -35,7 +35,7 @@ from pyphysim.comm import channels
 import pyphysim.ia  # Import the package ia
 from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
     MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
-    IterativeIASolverBaseClass
+    IterativeIASolverBaseClass, GreedStreamIASolver
 from pyphysim.util.misc import peig, leig, randn_c
 
 
@@ -2485,6 +2485,35 @@ class MMSEIASolverTestCase(CustomTestCase):
         # The Ns array passed to the IA solver object should not be
         # changed.
         np.testing.assert_array_equal(Ns, np.array([2, 2, 2]))
+
+
+# TODO: finish implementation
+class GreedStreamIASolverTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        mmse_iasolver = MMSEIASolver(multiUserChannel)
+
+        self.iasolver = GreedStreamIASolver(mmse_iasolver)
+
+        self.K = 3
+        self.Nt = np.ones(self.K, dtype=int) * 4
+        self.Nr = np.ones(self.K, dtype=int) * 4
+        # Note that for this configuration IA is not feasible
+        self.Ns = np.ones(self.K, dtype=int) * 3
+
+        # Transmit power of all users
+        self.P = np.array([1.2, 1.5, 0.9])
+
+        # Randomize the channel
+        multiUserChannel.randomize(self.Nr, self.Nt, self.K)
+
+    def test_some_method(self):
+        import pudb; pudb.set_trace()  ## DEBUG ##
+
+        self.iasolver.solve(self.Ns, self.P)
+
+        print "Finish the implementation"
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
