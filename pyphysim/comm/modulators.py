@@ -43,6 +43,7 @@ class Modulator(object):
 
     Examples
     --------
+    >>> np.set_printoptions(linewidth=70)
     >>> constellation = np.array([1+1j, -1+1j, -1-1j, 1-1j])
     >>> m=Modulator()
     >>> m.setConstellation(constellation)

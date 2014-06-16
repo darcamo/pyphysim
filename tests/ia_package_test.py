@@ -2601,35 +2601,143 @@ class MMSEIASolverTestCase(CustomTestCase):
 
 
 # TODO: finish implementation
-class GreedStreamIASolverTestCase(unittest.TestCase):
+class GreedStreamIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
+        # multiUserChannel = channels.MultiUserChannelMatrix()
+        # mmse_iasolver = MMSEIASolver(multiUserChannel)
+        # max_sinr_iasolver = MaxSinrIASolver(multiUserChannel)
+        # alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
+
+        # self.iasolver = GreedStreamIASolver(alt_min_iasolver)
+
+        # self.K = 3
+        # self.Nt = np.ones(self.K, dtype=int) * 4
+        # self.Nr = np.ones(self.K, dtype=int) * 4
+        # # Note that for this configuration IA is not feasible
+        # self.Ns = np.ones(self.K, dtype=int) * 3
+
+        # # Transmit power of all users
+        # self.P = np.array([1.2, 1.5, 0.9])
+
+        # # Randomize the channel
+        # multiUserChannel.randomize(self.Nr, self.Nt, self.K)
+
+        pass
+
+    def test_solve(self):
+        # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         multiUserChannel = channels.MultiUserChannelMatrix()
-        mmse_iasolver = MMSEIASolver(multiUserChannel)
-        max_sinr_iasolver = MaxSinrIASolver(multiUserChannel)
         alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
 
-        self.iasolver = GreedStreamIASolver(alt_min_iasolver)
+        iasolver = GreedStreamIASolver(alt_min_iasolver)
 
-        self.K = 3
-        self.Nt = np.ones(self.K, dtype=int) * 4
-        self.Nr = np.ones(self.K, dtype=int) * 4
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
         # Note that for this configuration IA is not feasible
-        self.Ns = np.ones(self.K, dtype=int) * 3
+        Ns = np.ones(K, dtype=int) * 3
 
         # Transmit power of all users
-        self.P = np.array([1.2, 1.5, 0.9])
+        P = np.array([1.2, 1.5, 0.9])
 
         # Randomize the channel
-        multiUserChannel.randomize(self.Nr, self.Nt, self.K)
+        multiUserChannel.randomize(Nr, Nt, K)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_some_method(self):
-        # #self.import pudb; pudb.set_trace()  ## DEBUG ##
-        #self.iasolver._iasolver.solve(self.Ns, self.P)
-        self.iasolver._iasolver.max_iterations = 200
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state_and_randomize_channel(
+            filename='GreedStream_test_solve_state.pickle',
+            iasolver=iasolver._iasolver, Nr=Nr, Nt=Nt, K=K)
 
-        self.iasolver.solve(self.Ns, self.P)
-        pass
+        # xxxxxxxxxx Fint the solution xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        iasolver._iasolver.max_iterations = 200
+        iasolver.solve(Ns, P)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Soltion found by the algorithm xxxxxxxxxxxxxxxxxxxxxxx
+        full_F0 = np.matrix(iasolver._iasolver.full_F[0])
+        full_F1 = np.matrix(iasolver._iasolver.full_F[1])
+        full_F2 = np.matrix(iasolver._iasolver.full_F[2])
+
+        full_W_H0 = np.matrix(iasolver._iasolver.full_W_H[0])
+        full_W_H1 = np.matrix(iasolver._iasolver.full_W_H[1])
+        full_W_H2 = np.matrix(iasolver._iasolver.full_W_H[2])
+
+        H00 = np.matrix(iasolver._iasolver._get_channel(0, 0))
+        H01 = np.matrix(iasolver._iasolver._get_channel(0, 1))
+        H02 = np.matrix(iasolver._iasolver._get_channel(0, 2))
+        H10 = np.matrix(iasolver._iasolver._get_channel(1, 0))
+        H11 = np.matrix(iasolver._iasolver._get_channel(1, 1))
+        H12 = np.matrix(iasolver._iasolver._get_channel(1, 2))
+        H20 = np.matrix(iasolver._iasolver._get_channel(2, 0))
+        H21 = np.matrix(iasolver._iasolver._get_channel(2, 1))
+        H22 = np.matrix(iasolver._iasolver._get_channel(2, 2))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        try:
+            # xxxxx Number of streams that are actually used. xxxxxxxxxxxxx
+            # Note that the values in final_Ns can be lower than or equal to
+            # the values in Ns.
+            final_Ns = iasolver._iasolver.Ns
+
+            # For this particular test (no path loss) we know that the
+            # algorithm will always prefer to stay in the feasible case. That
+            # means that the total number of streams will be less than or equal
+            # to 6.
+            self.assertTrue(final_Ns.sum() <= 6, msg='Expected 6 os less streams, but got {0}'.format(final_Ns.sum()))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Test if the transmit power limit is respected xxxxxxxxx
+            self.assertTrue(
+                np.linalg.norm(full_F0, 'fro')**2 <= P[0] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(full_F1, 'fro')**2 <= P[1] + 1e-12)
+            self.assertTrue(
+                np.linalg.norm(full_F2, 'fro')**2 <= P[2] + 1e-12)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                full_W_H0 * H00 * full_F0, np.eye(final_Ns[0]))
+            np.testing.assert_array_almost_equal(
+                full_W_H1 * H11 * full_F1, np.eye(final_Ns[1]))
+            np.testing.assert_array_almost_equal(
+                full_W_H2 * H22 * full_F2, np.eye(final_Ns[2]))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
+            norm_value = np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2
+
+            self.assertTrue(norm_value < 0.05,
+                            msg="Norm Value: {0}".format(norm_value))
+
+            norm_value = np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2
+            self.assertTrue(norm_value < 0.05,
+                            msg="Norm Value: {0}".format(norm_value))
+
+            norm_value = np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2
+            self.assertTrue(norm_value < 0.05,
+                            msg="Norm Value: {0}".format(norm_value))
+
+            norm_value = np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2
+            self.assertTrue(norm_value < 0.05,
+                            msg="Norm Value: {0}".format(norm_value))
+
+            norm_value = np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2
+            self.assertTrue(norm_value < 0.05,
+                            msg="Norm Value: {0}".format(norm_value))
+
+            norm_value = np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2
+            self.assertTrue(norm_value < 0.05,
+                            msg="Norm Value: {0}".format(norm_value))
+
+        except AssertionError:
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state('GreedStream_test_solve_state.pickle')
+            raise  # re-raises the last exception
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

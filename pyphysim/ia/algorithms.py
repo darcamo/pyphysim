@@ -738,17 +738,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # significativelly change
         # TODO: Should I use full_F instead of F???
         old_F = self._F
-        i = -1  # Initialize the i variable in case the for loop is not run
-        for i in range(self.max_iterations):
+        for _ in range(self.max_iterations):
             self._runned_iterations = self._runned_iterations + 1
             self._step()
-
-            # print "Norm"
-            # print np.linalg.norm(self._full_F[0], 'fro')**2
-            # print np.linalg.norm(self._full_F[1], 'fro')**2
-            # print np.linalg.norm(self._full_F[2], 'fro')**2
-
-            # print self.calc_SINR()
 
             # Stop the iteration earlier if the precoder does not change
             # too much
@@ -767,7 +759,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._solve_finalize()
 
         # Return the number of iterations the algorithm run
-        return i + 1
+        return self._runned_iterations
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1736,8 +1728,6 @@ class GreedStreamIASolver(object):
             # False to disable stream reduction.
             keep_going = False
 
-        import pudb; pudb.set_trace()  ## DEBUG ##
-
         while keep_going is True:
             # xxxxxxxxxx Store the current solution xxxxxxxxxxxxxxxxxxxxxxx
             self._old_F = [F.copy() for F in self._iasolver.F]
@@ -1750,24 +1740,9 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Find the index of the stream to be removed xxxxxxx
-            sinrs = self._iasolver.calc_SINR()
-            # First we find the index of the minimum SINR for each user
-            min_sinr_indexes = [np.argmin(s) for s in sinrs]
-
-            # For each user we get his minimum sinr.
-            min_sinrs = [sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)]
-
-            # Index of the users in ascending order of the sinrs. The fist
-            # element is the index of the user with the minimum SINR.
-            min_sinr_user_idx = np.argsort(min_sinrs)
-
-            # Let's discard any user that has only one stream, since we can't
-            # reduce the number of streams of that user.
-            valid_users_idx = np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
-            min_sinr_user_idx = [i for i in min_sinr_user_idx if i in valid_users_idx]
-
-            user_idx = min_sinr_user_idx[0]
-            stream_idx = min_sinr_indexes[user_idx]
+            # Note that you need to have called the solve method of the
+            # self._iasolver object before you call this method here.
+            user_idx, stream_idx = self._find_index_stream_with_worst_sinr()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Remove the stream and find a new IA solution xxxxxxxxxx
@@ -1786,20 +1761,14 @@ class GreedStreamIASolver(object):
             self._iasolver.solve(self._iasolver.Ns, self._iasolver.P)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-            Ns = self._iasolver.Ns
-
             # xxxxxxxxxx Check if the new solution is better xxxxxxxxxxxxxx
             new_sum_capacity = self._iasolver.calc_sum_capacity()
             new_sinrs = self._iasolver.calc_SINR_in_dB()
-            #import pudb; pudb.set_trace()  ## DEBUG ##
 
             # If the new solution is not better, we restore the previous
             # solution and set keep_going to False to stop the stream
             # reduction.
-            # TODO: Implement what is described in the comment above
             if old_sum_capacity > new_sum_capacity:
-                import pudb; pudb.set_trace()  ## DEBUG ##
-
                 # Lets restore the previous solution. First we clear the
                 # current solution.
                 self._iasolver.clear()
@@ -1809,18 +1778,6 @@ class GreedStreamIASolver(object):
                 self._iasolver.set_receive_filters(W_H=self._old_W_H)
 
                 keep_going = False
-
-                # for k in range(self._iasolver.K):
-                #     self._iasolver.F = np.array(self._old_F)
-                #     self._iasolver.full_F = np.array(self._old_full_F)
-                #     self._iasolver.W_H = self._old_W_H
-                #     #self._iasolver.W = None
-                #     self._iasolver.Ns = self._old_Ns
-                #self._iasolver.
-                # self._old_F
-                # self._old_full_F
-                # self._old_W_H
-                # self._old_Ns
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Check if at least one user has more then 1 stream xxxxx
@@ -1829,10 +1786,39 @@ class GreedStreamIASolver(object):
                 # can't reduce streams anymore. Let's stop the while loop
                 # then.
                 keep_going = False
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # # TODO: Finish the implementation
-        # print "Finish the implementation"
+    def _find_index_stream_with_worst_sinr(self):
+        """
+        Considering the current solution (precoders and receive filters) in
+        self._iasolver, find the index of the user and stream corresponding
+        to the worst SINR.
 
+        Returns
+        -------
+        user_idx : int
+            The index of the user that has the stream with the worst SINR.
+        stream_idx : int
+            The index of the stream (for user `user_idx`) with the worst
+            SINR.
+        """
+        sinrs = self._iasolver.calc_SINR()
+        # First we find the index of the minimum SINR for each user
+        min_sinr_indexes = [np.argmin(s) for s in sinrs]
+
+        # For each user we get his minimum sinr.
+        min_sinrs = [sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)]
+
+        # Index of the users in ascending order of the sinrs. The fist
+        # element is the index of the user with the minimum SINR.
+        min_sinr_user_idx = np.argsort(min_sinrs)
+
+        # Let's discard any user that has only one stream, since we can't
+        # reduce the number of streams of that user.
+        valid_users_idx = np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
+        min_sinr_user_idx = [i for i in min_sinr_user_idx if i in valid_users_idx]
+
+        user_idx = min_sinr_user_idx[0]
+        stream_idx = min_sinr_indexes[user_idx]
+        return user_idx, stream_idx
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
