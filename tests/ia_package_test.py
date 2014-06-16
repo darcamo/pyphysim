@@ -292,6 +292,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.assertIsNone(self.iasolver._P)
 
     def test_F_and_full_F(self):
+        self.iasolver._multiUserChannel.randomize(4, 4, 3)
         self.iasolver.randomizeF(1)
         self.assertIsNotNone(self.iasolver._F)
         self.assertIsNone(self.iasolver._full_F)
@@ -299,11 +300,123 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # Since the power was not set yet then full_F should have the same
         # value as F
         self.assertIsNone(self.iasolver._P)
-        np.testing.assert_almost_equal(self.iasolver.F, self.iasolver.full_F)
+        np.testing.assert_almost_equal(self.iasolver.F[0], self.iasolver.full_F[0])
+        np.testing.assert_almost_equal(self.iasolver.F[1], self.iasolver.full_F[1])
+        np.testing.assert_almost_equal(self.iasolver.F[2], self.iasolver.full_F[2])
 
         # Let's change F and see if full_F matches
         self.iasolver.randomizeF(1)
-        np.testing.assert_almost_equal(self.iasolver.F, self.iasolver.full_F)
+        np.testing.assert_almost_equal(self.iasolver.F[0], self.iasolver.full_F[0])
+        np.testing.assert_almost_equal(self.iasolver.F[1], self.iasolver.full_F[1])
+        np.testing.assert_almost_equal(self.iasolver.F[2], self.iasolver.full_F[2])
+
+    def test_set_precoders(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.randomize(4, 4, 3)
+
+        iasolver1 = IASolverBaseClass(multiUserChannel)
+        iasolver2 = IASolverBaseClass(multiUserChannel)
+        iasolver3 = IASolverBaseClass(multiUserChannel)
+        P = np.array([1.2, 0.8, 1.1])
+
+        with self.assertRaises(RuntimeError):
+            iasolver1.set_precoders()
+
+        F = np.empty(3, dtype=np.ndarray)
+        full_F = np.empty(3, dtype=np.ndarray)
+        full_F_other = np.empty(3, dtype=np.ndarray)
+
+        F[0] = np.random.randn(3, 2)
+        F[1] = np.random.randn(3, 1)
+        F[2] = np.random.randn(3, 2)
+
+        for k in range(3):
+            F[k] = F[k] / np.linalg.norm(F[k], 'fro')
+            full_F[k] = np.sqrt(P[k]) * F[k]
+
+            # factor can be any value from 0.75 to 1.0
+            factor = np.random.rand()/4 + 0.75
+            full_F_other[k] = np.sqrt(factor) * full_F[k]
+
+        iasolver1.set_precoders(F, P=P)
+        np.testing.assert_array_almost_equal(F[0], iasolver1.F[0])
+        np.testing.assert_array_almost_equal(F[1], iasolver1.F[1])
+        np.testing.assert_array_almost_equal(F[2], iasolver1.F[2])
+        np.testing.assert_array_almost_equal(iasolver1.P, P)
+        np.testing.assert_array_almost_equal(iasolver1.full_F[0], full_F[0])
+        np.testing.assert_array_almost_equal(iasolver1.full_F[1], full_F[1])
+        np.testing.assert_array_almost_equal(iasolver1.full_F[2], full_F[2])
+        np.testing.assert_array_equal(iasolver1.Ns, np.array([2, 1, 2]))
+
+        iasolver2.set_precoders(full_F=full_F)
+        np.testing.assert_array_almost_equal(iasolver2.full_F[0], full_F[0])
+        np.testing.assert_array_almost_equal(iasolver2.full_F[1], full_F[1])
+        np.testing.assert_array_almost_equal(iasolver2.full_F[2], full_F[2])
+        np.testing.assert_array_almost_equal(iasolver2.F[0], F[0])
+        np.testing.assert_array_almost_equal(iasolver2.F[1], F[1])
+        np.testing.assert_array_almost_equal(iasolver2.F[2], F[2])
+        np.testing.assert_array_equal(iasolver2.Ns, np.array([2, 1, 2]))
+
+        # The full_F precoders don't use all of the available power
+        iasolver3.set_precoders(F=F, full_F=full_F_other, P=P)
+        np.testing.assert_array_almost_equal(iasolver3.P, P)
+        np.testing.assert_array_almost_equal(iasolver3.F[0], F[0])
+        np.testing.assert_array_almost_equal(iasolver3.F[1], F[1])
+        np.testing.assert_array_almost_equal(iasolver3.F[2], F[2])
+        np.testing.assert_array_almost_equal(iasolver3.full_F[0], full_F_other[0])
+        np.testing.assert_array_almost_equal(iasolver3.full_F[1], full_F_other[1])
+        np.testing.assert_array_almost_equal(iasolver3.full_F[2], full_F_other[2])
+        np.testing.assert_array_equal(iasolver3.Ns, np.array([2, 1, 2]))
+
+    def test_set_receive_filters(self):
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.randomize(4, 4, 3)
+
+        iasolver1 = IASolverBaseClass(multiUserChannel)
+
+        P = np.array([1.2, 0.8, 1.1])
+        iasolver1.randomizeF([2, 3, 2], P)
+
+        W = np.empty(3, dtype=np.ndarray)
+        W_H = np.empty(3, dtype=np.ndarray)
+
+        W[0] = np.random.randn(4, 2)
+        W[1] = np.random.randn(4, 3)
+        W[2] = np.random.randn(4, 2)
+        for k in range(3):
+            W_H[k] = W[k].conj().T
+
+        self.assertIsNone(iasolver1._W)
+        self.assertIsNone(iasolver1._W_H)
+        self.assertIsNone(iasolver1._full_W)
+        self.assertIsNone(iasolver1._full_W_H)
+
+        # Can't call set_receive_filters without arguments
+        with self.assertRaises(RuntimeError):
+            iasolver1.set_receive_filters()
+
+        # Can't call set_receive_filters with two arguments
+        with self.assertRaises(RuntimeError):
+            iasolver1.set_receive_filters(W, W_H)
+
+        iasolver1.set_receive_filters(W=W)
+        np.testing.assert_array_almost_equal(iasolver1.W[0], W[0])
+        np.testing.assert_array_almost_equal(iasolver1.W[1], W[1])
+        np.testing.assert_array_almost_equal(iasolver1.W[2], W[2])
+
+        np.testing.assert_array_almost_equal(iasolver1.W_H[0], W_H[0])
+        np.testing.assert_array_almost_equal(iasolver1.W_H[1], W_H[1])
+        np.testing.assert_array_almost_equal(iasolver1.W_H[2], W_H[2])
+
+        iasolver1._clear_receive_filter()
+        iasolver1.set_receive_filters(W_H=W_H)
+        np.testing.assert_array_almost_equal(iasolver1.W[0], W[0])
+        np.testing.assert_array_almost_equal(iasolver1.W[1], W[1])
+        np.testing.assert_array_almost_equal(iasolver1.W[2], W[2])
+
+        np.testing.assert_array_almost_equal(iasolver1.W_H[0], W_H[0])
+        np.testing.assert_array_almost_equal(iasolver1.W_H[1], W_H[1])
+        np.testing.assert_array_almost_equal(iasolver1.W_H[2], W_H[2])
 
     def test_calc_Q(self):
         K = 3
@@ -2493,8 +2606,10 @@ class GreedStreamIASolverTestCase(unittest.TestCase):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
         mmse_iasolver = MMSEIASolver(multiUserChannel)
+        max_sinr_iasolver = MaxSinrIASolver(multiUserChannel)
+        alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
 
-        self.iasolver = GreedStreamIASolver(mmse_iasolver)
+        self.iasolver = GreedStreamIASolver(alt_min_iasolver)
 
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 4
@@ -2509,11 +2624,12 @@ class GreedStreamIASolverTestCase(unittest.TestCase):
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
     def test_some_method(self):
-        import pudb; pudb.set_trace()  ## DEBUG ##
+        # #self.import pudb; pudb.set_trace()  ## DEBUG ##
+        #self.iasolver._iasolver.solve(self.Ns, self.P)
+        self.iasolver._iasolver.max_iterations = 200
 
         self.iasolver.solve(self.Ns, self.P)
-
-        print "Finish the implementation"
+        pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

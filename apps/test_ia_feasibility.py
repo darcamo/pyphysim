@@ -23,10 +23,10 @@ from pyphysim.comm.modulators import PSK
 
 
 if __name__ == '__main__':
-    K = 11
+    K = 3
     Nr = np.ones(K) * 4
-    Nt = np.ones(K) * 8
-    Ns = 1#np.array([2, 2, 3]) #np.ones(K) * 2
+    Nt = np.ones(K) * 4
+    Ns = np.array([2, 2, 2]) #np.ones(K) * 2
 
     multiuserchannel = MultiUserChannelMatrix()
     modulator = PSK(4)
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     # ia_solver3.initialize_with_closed_form = True
 
     ia_solver.randomizeF(Ns)
-    ia_solver.max_iterations = 100
+    ia_solver.max_iterations = 400
     ia_solver.solve(Ns)
 
     ia_solver2.randomizeF(Ns)

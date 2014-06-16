@@ -177,6 +177,54 @@ class IASolverBaseClass(object):
             self._full_F = self._F * np.sqrt(self.P)
         return self._full_F
 
+    def set_precoders(self, F=None, full_F=None, P=None):
+        """
+        Set the precoders of each user.
+
+        Either `F` or `full_F` (or both of them) must be provided.
+
+        If only `full_F` is provided then the value of `F` will be
+        calculated from `full_F`.
+
+        In any case, the value of `self.Ns` will be updated according to
+        the dimensions of the `F` or `full_F`.
+
+        Parameters
+        ----------
+        F : 1D numpy array of 2D numpy arrays.
+            A numpy array where each element is the (normalized) precoder
+            (a 2D numpy array) of one user.
+        full_F : 1D numpy array of 2D numpy arrays.
+            A numpy array where each element is the precoder (a 2D numpy
+            array) of one user.
+        P : 1D numpy array
+            The maximum transmit power. If not provided the current value
+            of self.P will be kept as it is.
+        """
+        if F is None and full_F is None:
+            raise RuntimeError("Either 'F' or 'full_F' must be provided.")
+
+        self._clear_precoder_filter()
+
+        if P is not None:
+            self._P = P
+
+        self._full_F = full_F
+
+        if F is None:
+            K, = full_F.shape
+            self._F = np.empty(K, dtype=np.ndarray)
+            for k in range(K):
+                # TODO: Update self._F
+                self._F[k] = full_F[k] / np.linalg.norm(full_F[k], 'fro')
+        else:
+            self._F = F
+
+        # Update the number of streams
+        self._Ns = np.empty(self.K, dtype=int)
+        for k in range(self.K):
+            self._Ns[k] = self._F[k].shape[1]
+
     # The W property should return a receive filter that can be directly
     # multiplied (no need to calculate the hermitian of W) by the received
     # signal to cancel interference and compensate the effect of the
@@ -243,6 +291,38 @@ class IASolverBaseClass(object):
             for k in range(self.K):
                 self._full_W[k] = self.full_W_H[k].conj().T
         return self._full_W
+
+    def set_receive_filters(self, W_H=None, W=None):
+        """
+        Set the receive filters.
+
+        You only need to pass either `W_H` or `W`, but not both of them,
+        since one is calculated from the other.
+
+        Parameters
+        ----------
+        W_H : 1D numpy array of 2D numpy arrays.
+            A numpy array where each element is the receive filter (a 2D
+            numpy array) of one user.
+
+        W : 1D numpy array of 2D numpy arrays.
+            A numpy array where each element is the receive filter (a 2D
+            numpy array) of one user.
+        """
+        self._clear_receive_filter()
+
+        if W is None and W_H is None:
+            raise RuntimeError("Either 'W' or 'W_H' must be provided.")
+
+        if W is not None and W_H is not None:
+            raise RuntimeError(
+                "Either 'W' or 'W_H' must be provided (but not both of them.")
+
+        self._W = W
+        self._W_H = W_H
+
+        pass
+
 
     def _calc_equivalent_channel(self, k):
         """
@@ -325,7 +405,9 @@ class IASolverBaseClass(object):
         K : int
             The number of users.
         """
-        return self._multiUserChannel.K
+        K = self._multiUserChannel.K
+        assert K > 0, 'You must initialize the channel object before using the IA solver object.'
+        return K
 
     @property
     def Nr(self):

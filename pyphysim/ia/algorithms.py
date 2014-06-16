@@ -17,6 +17,7 @@ __revision__ = "$Revision$"
 import numpy as np
 from scipy import optimize
 import itertools
+from copy import copy
 
 from .iabase import IASolverBaseClass
 from ..util.misc import peig, leig, update_inv_sum_diag, \
@@ -341,7 +342,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         #                minimizations algorithm.
         #
         # 'fix' : The precoder is not initialized and the current value of
-        #         self.F is used. This is specially useful for debugging.
+        #         self.F is used. This initialization type should only be
+        #         used to call the 'solve' method a second time after it
+        #         has been called before with another of the initialization
+        #         type. This allows performing more iterations continuing
+        #         from the previous solution . This is specially useful for
+        #         debugging.
         self._initialize_with = 'random'
 
     # xxxxxxxxxx initialize_with property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -462,8 +468,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                    " the 'fix' initialize_with option.")
             raise RuntimeError(msg)
 
-        if self._Ns is None:
-            self._Ns = np.array([F.shape[1] for F in self._F])
+        # For the 'fix' initialization type we get the number of streams
+        # from the initialized precoders.
+        self._Ns = np.array([F.shape[1] for F in self._F])
 
         self._updateW()
 
@@ -544,6 +551,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         elif self.initialize_with == 'random':
             self._initialize_F_randomly_and_find_W(Ns, P)
         elif self.initialize_with == 'fix':
+            # Note that for this initialization type we ignore the 'Ns' and
+            # 'P' parameters. Since this initialization method should only
+            # be used after the 'solve' method has been called before with
+            # another initialization method then these parameters have
+            # already been set.
             self._dont_initialize_F_and_only_and_find_W()
         else:
             msg = 'unknown initialization option for the IA sovler: {0}'
@@ -1421,12 +1433,18 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         self._mu = np.zeros(self.K, dtype=float)
 
     def _calc_Uk(self, k):
-        """Calculates the receive filter of the k-th user.
+        """
+        Calculates the receive filter of the k-th user.
 
         Parameters
         ----------
         k : int
             User index
+
+        Returns
+        -------
+        Uk : 2D numpy array
+            The receive filter of the user 'k'.
         """
         # $$\mtU_k = \left( \sum_{i=1}^K \mtH_{ki} \mtV_i \mtV_i^H \mtH_{ki}^H + \sigma_n^2 \mtI \right)^{-1} \mtH_{kk} \mtV_k$$
         Hkk = self._get_channel(k, k)
@@ -1675,16 +1693,17 @@ class GreedStreamIASolver(object):
         # # consider if the algorithm converged.
         # self.relative_factor = 1e-6
 
-        #
-        self._runned_iterations = 0  # Count how many iterations the
-                                     # underlying algorithm run (including
-                                     # all stream configurations).
-
         # Store the full_F, W_H and Ns for the previous stream
         # configuration
+        self._old_F = None
         self._old_full_F = None
         self._old_W_H = None
         self._old_Ns = None
+
+    @property
+    def runned_iterations(self):
+        """Get method for the runned_iterations property."""
+        return self._iasolver.runned_iterations
 
     def solve(self, Ns, P=None):
         """
@@ -1698,24 +1717,122 @@ class GreedStreamIASolver(object):
             Number of streams of each user.
         P : 1D numpy array
             Power of each user. If not provided, a value of 1 will be used
-            for each user.
+            for each ,user.
         """
-        # Find the solution for the maximum number of antennas
-        self._runned_iterations += self._iasolver.solve(Ns, P)
+        # Find the solution for the number of asked streams. Note that
+        # depending of the underlying IA algorithm the number of streams in
+        # the solution for some user(s) can be lower then the values in Ns
+        self._iasolver.solve(Ns, P)
 
-        self._old_full_F = self._iasolver.full_F
-        self._old_W_H = self._iasolver.W_H
-        self._old_Ns = self._iasolver.Ns
+        # First we check if any user has more then one stream, since
+        # otherwise we can't remove any stream.
+        if np.any(self._iasolver.Ns > 1):
+            # If yes, then set 'keep_going' to True to indicate that the
+            # stream reduction should be tried.
+            keep_going = True
+        else:
+            # If there is no user with more then one stream then we have no
+            # way to reduce a stream. In that case, set 'keep_going' to
+            # False to disable stream reduction.
+            keep_going = False
 
-        # xxxxxxxxxx Now we remove the worst stream xxxxxxxxxxxxxxxxxxxxxxx
-        sinrs = self._iasolver.calc_SINR()
-        # First we find the index of the minimum SINR for each user
-        min_sinr_index = map(np.argmin, sinrs)
+        import pudb; pudb.set_trace()  ## DEBUG ##
 
-        print "Finish the implementation"
+        while keep_going is True:
+            # xxxxxxxxxx Store the current solution xxxxxxxxxxxxxxxxxxxxxxx
+            self._old_F = [F.copy() for F in self._iasolver.F]
+            self._old_full_F = [full_F.copy() for full_F in self._iasolver.full_F]
+            self._old_W_H = [W_H.copy() for W_H in self._iasolver.W_H]
+            self._old_Ns = copy(self._iasolver.Ns)
 
+            old_sum_capacity = self._iasolver.calc_sum_capacity()
+            old_sinrs = self._iasolver.calc_SINR_in_dB()
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # TODO: Finish the implementation
-        print "Finish the implementation"
+            # xxxxxxxxxx Find the index of the stream to be removed xxxxxxx
+            sinrs = self._iasolver.calc_SINR()
+            # First we find the index of the minimum SINR for each user
+            min_sinr_indexes = [np.argmin(s) for s in sinrs]
+
+            # For each user we get his minimum sinr.
+            min_sinrs = [sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)]
+
+            # Index of the users in ascending order of the sinrs. The fist
+            # element is the index of the user with the minimum SINR.
+            min_sinr_user_idx = np.argsort(min_sinrs)
+
+            # Let's discard any user that has only one stream, since we can't
+            # reduce the number of streams of that user.
+            valid_users_idx = np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
+            min_sinr_user_idx = [i for i in min_sinr_user_idx if i in valid_users_idx]
+
+            user_idx = min_sinr_user_idx[0]
+            stream_idx = min_sinr_indexes[user_idx]
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Remove the stream and find a new IA solution xxxxxxxxxx
+            self._iasolver.F[user_idx] = np.delete(self._iasolver.F[user_idx], stream_idx, 1)
+            self._iasolver.full_F[user_idx] = np.delete(self._iasolver.full_F[user_idx], stream_idx, 1)
+            self._iasolver.Ns[user_idx] -= 1
+
+            # Note that the F member variable is the normalized
+            # precoder. Since we removed one column, let's normalize it
+            # again.
+            self._iasolver.F[user_idx] /= np.linalg.norm(self._iasolver.F[user_idx], 'fro')
+
+            #
+            self._iasolver.initialize_with = 'fix'
+            new_sum_capacity_APAGAR = self._iasolver.calc_sum_capacity()
+            self._iasolver.solve(self._iasolver.Ns, self._iasolver.P)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            Ns = self._iasolver.Ns
+
+            # xxxxxxxxxx Check if the new solution is better xxxxxxxxxxxxxx
+            new_sum_capacity = self._iasolver.calc_sum_capacity()
+            new_sinrs = self._iasolver.calc_SINR_in_dB()
+            #import pudb; pudb.set_trace()  ## DEBUG ##
+
+            # If the new solution is not better, we restore the previous
+            # solution and set keep_going to False to stop the stream
+            # reduction.
+            # TODO: Implement what is described in the comment above
+            if old_sum_capacity > new_sum_capacity:
+                import pudb; pudb.set_trace()  ## DEBUG ##
+
+                # Lets restore the previous solution. First we clear the
+                # current solution.
+                self._iasolver.clear()
+
+                # Now we set the precoders
+                self._iasolver.set_precoders(F=self._old_F, full_F=self._old_full_F, P=P)
+                self._iasolver.set_receive_filters(W_H=self._old_W_H)
+
+                keep_going = False
+
+                # for k in range(self._iasolver.K):
+                #     self._iasolver.F = np.array(self._old_F)
+                #     self._iasolver.full_F = np.array(self._old_full_F)
+                #     self._iasolver.W_H = self._old_W_H
+                #     #self._iasolver.W = None
+                #     self._iasolver.Ns = self._old_Ns
+                #self._iasolver.
+                # self._old_F
+                # self._old_full_F
+                # self._old_W_H
+                # self._old_Ns
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Check if at least one user has more then 1 stream xxxxx
+            if not np.any(self._iasolver.Ns > 1):
+                # If there is no user with more then 1 stream, then we
+                # can't reduce streams anymore. Let's stop the while loop
+                # then.
+                keep_going = False
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # TODO: Finish the implementation
+        # print "Finish the implementation"
+
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
