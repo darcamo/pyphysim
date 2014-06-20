@@ -1674,6 +1674,7 @@ class GreedStreamIASolver(object):
             Must be an object of a derived class of IterativeIASolverBaseClass.
         """
         self._iasolver = iasovler_obj
+        self._runned_iterations = 0
 
         # #IASolverBaseClass.__init__(self, multiUserChannel)
 
@@ -1695,7 +1696,7 @@ class GreedStreamIASolver(object):
     @property
     def runned_iterations(self):
         """Get method for the runned_iterations property."""
-        return self._iasolver.runned_iterations
+        return self._runned_iterations
 
     def solve(self, Ns, P=None):
         """
@@ -1710,11 +1711,19 @@ class GreedStreamIASolver(object):
         P : 1D numpy array
             Power of each user. If not provided, a value of 1 will be used
             for each ,user.
+
+        Returns
+        -------
+        Number of iterations the iterative interference alignment algorithm
+        run.
         """
+        self._iasolver.clear()
+        self._runned_iterations = 0
+
         # Find the solution for the number of asked streams. Note that
         # depending of the underlying IA algorithm the number of streams in
         # the solution for some user(s) can be lower then the values in Ns
-        self._iasolver.solve(Ns, P)
+        self._runned_iterations += self._iasolver.solve(Ns, P)
 
         # First we check if any user has more then one stream, since
         # otherwise we can't remove any stream.
@@ -1758,7 +1767,8 @@ class GreedStreamIASolver(object):
             #
             self._iasolver.initialize_with = 'fix'
             new_sum_capacity_APAGAR = self._iasolver.calc_sum_capacity()
-            self._iasolver.solve(self._iasolver.Ns, self._iasolver.P)
+            self._runned_iterations += self._iasolver.solve(
+                self._iasolver.Ns, self._iasolver.P)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Check if the new solution is better xxxxxxxxxxxxxx
@@ -1786,6 +1796,9 @@ class GreedStreamIASolver(object):
                 # can't reduce streams anymore. Let's stop the while loop
                 # then.
                 keep_going = False
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        return self.runned_iterations
 
     def _find_index_stream_with_worst_sinr(self):
         """

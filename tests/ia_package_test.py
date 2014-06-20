@@ -2722,7 +2722,7 @@ class GreedStreamIASolverTestCase(CustomTestCase):
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4
         # Note that for this configuration IA is not feasible
-        Ns = np.ones(K, dtype=int) * 3
+        Ns = np.array([2, 2, 1])  # np.ones(K, dtype=int) * 3
 
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
