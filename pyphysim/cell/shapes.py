@@ -99,7 +99,7 @@ class Coordinate(object):
         rel_pos = cmath.rect(radius, angle)
         self.move_by_relative_coordinate(rel_pos)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         """
         Representation of a Coordinate object.
         """
@@ -138,7 +138,7 @@ class Shape(Coordinate):
         # the 'ax' argument in the plot method this will not be used.
         self.figsize = (8, 8)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         """
         Representation of a Shape object.
         """
@@ -197,7 +197,7 @@ class Shape(Coordinate):
 
     # xxxxx vertex property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
-    def vertices_no_trans_no_rotation(self):
+    def vertices_no_trans_no_rotation(self):  # pragma: no cover
         """
         Get the shape vertexes without translation and rotation.
         """
@@ -378,7 +378,8 @@ class Shape(Coordinate):
             ax.plot()
             plt.show()
 
-    def _repr_some_format_(self, extension='png', axis_option='equal'):
+    def _repr_some_format_(self, extension='png',
+                           axis_option='equal'):  # pragma: nocover
         """
         Return the representation of the shape in the desired format.
 
@@ -406,13 +407,13 @@ class Shape(Coordinate):
 
         return output.getvalue()
 
-    def _repr_png_(self):
+    def _repr_png_(self):  # pragma: no cover
         """
         Return the PNG representation of the shape.
         """
         return self._repr_some_format_('png')
 
-    def _repr_svg_(self):
+    def _repr_svg_(self):  # pragma: no cover
         """
         Return the SVG representation of the shape.
         """
@@ -514,7 +515,7 @@ class Rectangle(Shape):
         self._upper_coord = complex(max(first.real, second.real),
                                     max(first.imag, second.imag))
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         """
         Representation of a Shape object.
         """
@@ -543,7 +544,7 @@ class Rectangle(Shape):
         vertex_positions[3] = complex(A.real, B.imag)
         return vertex_positions
 
-    def _repr_some_format_(self, extension='png'):
+    def _repr_some_format_(self, extension='png'):  # pragma: no cover
         """
         Return the representation of the shape in the desired format.
 

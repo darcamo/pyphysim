@@ -269,10 +269,12 @@ class RectangleTestCase(unittest.TestCase):
         self.assertTrue(R1.is_point_inside_shape(-1.2+2.4j))
         self.assertTrue(R1.is_point_inside_shape(-0.5+3.4j))
         self.assertFalse(R1.is_point_inside_shape(-1.3+2.4j))
+        self.assertFalse(R1.is_point_inside_shape(1.3+.4j))
         self.assertFalse(R1.is_point_inside_shape(-0.5+3.41j))
         self.assertFalse(R1.is_point_inside_shape(-0.1+5j))
         self.assertFalse(R1.is_point_inside_shape(-14+1j))
         self.assertFalse(R1.is_point_inside_shape(-10+5j))
+        self.assertFalse(R1.is_point_inside_shape(0+-0.1j))
 
 class CircleTestCase(unittest.TestCase):
     def setUp(self):
@@ -677,6 +679,10 @@ class CellWrapTestCase(unittest.TestCase):
         self.W = cell.CellWrap(-1+0j, self.C)
         self.W2 = cell.CellWrap(0+0j, self.C2)
 
+    def test_init(self):
+        with self.assertRaises(AssertionError):
+            W = cell.CellWrap(pos=0, wrapped_cell='should_be_cell_object')
+
     def test_pos(self):
         self.assertAlmostEqual(self.W.pos, -1 + 0j)
 
@@ -730,6 +736,11 @@ class CellWrapTestCase(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(repr(self.W), 'CellWrap(pos=(-1+0j),cell_id=Wrap 1)')
         self.assertEqual(repr(self.W2), 'CellWrap(pos=0j,cell_id=None)')
+
+    def test_get_vertex_positions(self):
+        A = self.C._get_vertex_positions()
+        B = self.W._get_vertex_positions()
+        np.testing.assert_array_almost_equal(A, B)
 
 
 # TODO: Extend the tests to consider the case of the Cell3Sec class.
@@ -1068,6 +1079,23 @@ class ClusterTestCase(unittest.TestCase):
                                  ['g', 'b', 'k'])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_calc_dist_all_users_to_each_cell_no_wrap_around(self):
+        all_dists = self.C1.calc_dist_all_users_to_each_cell_no_wrap_around()
+
+        self.assertEqual(all_dists.shape, (10, 3))
+
+        nrows, ncols = all_dists.shape
+        expected_all_dists = np.zeros([nrows, ncols])
+
+        all_cells = self.C1._cells
+        all_users = self.C1.get_all_users()
+
+        for ii in range(nrows):
+            for jj in range(ncols):
+                expected_all_dists[ii, jj] = all_cells[jj].calc_dist(all_users[ii])
+
+        np.testing.assert_array_almost_equal(expected_all_dists, all_dists)
+
     def test_calc_dist_all_cells_to_all_users(self):
         all_dists = self.C1.calc_dist_all_users_to_each_cell()
         self.assertEqual(all_dists.shape, (10, 3))
@@ -1125,47 +1153,14 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(i, 6)
 
     def test_create_wrap_around_cells(self):
-        # TODO: Finish the implementation
-        # self.C3.create_wrap_around_cells(False)
-        # self.C3.add_random_users(range(1, 20), 2)
-
-        # self.C3.calc_dists_between_cells()
-
-        # self.C3.calc_dist_all_users_to_each_cell()
-        ##import pudb; pudb.set_trace()  ## DEBUG ##
-
-        # self.C3.fill_opacity = 0.1
-        # self.C3.fill_face_bool = True
-        # self.C3.plot()
-
-        # TODO: Implement-me
+        # It is complicated to test the create_wrap_around_cells method
+        # pragmatically. However, with a simple plot you can easily see if
+        # it was done correctly. Therefore, for now we didn't implement
+        # proper unittests for create_wrap_around_cells.
+        #
+        # Note: if you ever implement this test, remove the pragma comment
+        # from the create_wrap_around_cells method.
         pass
-
-    # def test_lala(self):
-    #     from matplotlib import pyplot as plt
-    #     fig, ax = plt.subplots()
-    #     rotate=False
-    #     C1 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='3sec', rotate_by_30=rotate)
-    #     C2 = cell.Cluster(cell_radius=1.0, num_cells=19, cell_type='simple', rotate_by_30=rotate)
-    #     C1.fill_face_bool = True
-    #     C2.fill_face_bool = True
-
-    #     #C1._cells[0].add_random_users_in_sector(100,1)
-
-    #     C1.plot(ax)
-    #     #C2.plot(ax)
-
-    #     C1._cells[0]._sec1.fill_face_bool = True
-    #     C1._cells[0]._sec1.fill_color = 'b'
-    #     C1._cells[0]._sec1.fill_opacity = 0.8
-
-    #     #C1._cells[0].plot()
-
-
-    #     plt.show()
-
-    #     # TODO: Implement-me
-    #     pass
 
 
 class GridTestCase(unittest.TestCase):

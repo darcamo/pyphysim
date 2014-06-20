@@ -750,6 +750,7 @@ class CellWrap(CellBase):
             Set to True if the users of the original cells should apear in
             the wrapped version.
         """
+        assert isinstance(wrapped_cell, CellBase), 'wrapped_cell must be a subclass of CellBase'
         # Except for the _wrapped_cell member variable below, all other
         # member variables are defined in some base class of CellWrap.
         self._wrapped_cell = wrapped_cell
@@ -820,7 +821,7 @@ class CellWrap(CellBase):
         vertex_positions : 1D numpy array
             The positions of the vertexes of the shape.
         """
-        return self._wrapped_cell.vertices_no_trans_no_rotation()
+        return self._wrapped_cell.vertices_no_trans_no_rotation
 
     def plot(self, ax=None):  # pragma: no cover
         stand_alone_plot = False
@@ -1789,7 +1790,7 @@ class Cluster(shapes.Shape):
         else:
             self.get_cell_by_id(cell_id).delete_all_users()
 
-    def create_wrap_around_cells(self, include_users_bool=False):
+    def create_wrap_around_cells(self, include_users_bool=False):  # pragma: no cover
         """
         This function will create the wrapped cells, as well as the wrapinfo
         data.
@@ -1821,12 +1822,12 @@ class Cluster(shapes.Shape):
                     + self.pos)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # TODO: Maybe implement for other cluster sizes
         if self.num_cells == 19:
             # Reset the variable with the distance between cells, since we
             # will create new (wrapped) cells.
             self._cell_pos_diffs = None
 
-            # TODO: Finish the implementation
             # In order to explain the sequences in the for loop below let's
             # take as an example the first value of each sequence, that is,
             # (17, 7, 13). That means that we will create a wrapped cell for
@@ -2183,7 +2184,8 @@ class Grid(object):
             plt.show()
 
     # This method is the same in the Shape class
-    def _repr_some_format_(self, extension='png', axis_option='equal'):
+    def _repr_some_format_(self, extension='png',
+                           axis_option='equal'):  # pragma: no cover
         """
         Return the representation of the shape in the desired format.
 
@@ -2212,14 +2214,14 @@ class Grid(object):
         return output.getvalue()
 
     # This method is the same in the Shape class
-    def _repr_png_(self):
+    def _repr_png_(self):  # pragma: no cover
         """
         Return the PNG representation of the shape.
         """
         return self._repr_some_format_('png')
 
     # This method is the same in the Shape class
-    def _repr_svg_(self):
+    def _repr_svg_(self):  # pragma: no cover
         """
         Return the SVG representation of the shape.
         """
