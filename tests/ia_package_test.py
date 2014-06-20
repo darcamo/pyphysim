@@ -17,7 +17,7 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1077,6 +1077,26 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
         self.assertTrue(IterativeIASolverBaseClass._is_diff_significant(
             F_old, F_new, 1e-3))
 
+    def test_initialize_with_property(self):
+        channel = channels.MultiUserChannelMatrix()
+        solver = IterativeIASolverBaseClass(channel)
+
+        self.assertEqual(solver.initialize_with, 'random')
+        solver.initialize_with = 'fix'
+        self.assertEqual(solver.initialize_with, 'fix')
+
+        with self.assertRaises(RuntimeError):
+            solver.initialize_with = 'invalid_option'
+
+        with self.assertRaises(RuntimeError):
+            solver.initialize_with = 'fix'
+            # When the 'fix' initialization type is set the randonmizeF
+            # method must be called before the
+            # '_dont_initialize_F_and_only_and_find_W' method (called
+            # inside 'solve_init' method) is called. Since that is not the
+            # case here, an exception should be raised.
+            solver._dont_initialize_F_and_only_and_find_W()
+
     def test_clear(self):
         # This method is tested in the AlternatingMinIASolverTestCase class
         pass
@@ -2011,6 +2031,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         iasolver.noise_var = 1e-4
         iasolver.max_iterations = 200
         try:
+            iasolver.randomizeF(Ns, P)
+            iasolver.initialize_with = 'fix'
             iasolver.solve(Ns, P)
         except Exception:  # pragma: no cover
             self._save_state(filename='MaxSINR_test_solve_state.pickle')
@@ -2561,15 +2583,9 @@ class MMSEIASolverTestCase(CustomTestCase):
         self.iasolver.noise_var = 1e-3
         P = self.P
 
-        # # xxxxxxxxxx DEBUG - APAGAR xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # P = np.ones(self.K, dtype=float)
-        # SNR = 30
-        # #noise_var = 1. / dB2Linear(SNR)
-        # self.iasolver.noise_var
-
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         self.iasolver.max_iterations = 200
+
+        # xxxxxxxxxx Test with the random initialization type xxxxxxxxxxxxx
         self.iasolver.initialize_with = 'random'
 
         niter = self.iasolver.solve(self.Ns, P)
@@ -2626,21 +2642,107 @@ class MMSEIASolverTestCase(CustomTestCase):
             # reproduce it
             self._save_state(filename='MMSE_test_solve_state.pickle')
             raise  # re-raises the last exception
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # print "Darlan"
-        # print np.linalg.norm(full_F0, 'fro')**2
-        # print np.linalg.norm(full_F1, 'fro')**2
-        # print np.linalg.norm(full_F2, 'fro')**2
-        # print
-        # print np.abs(full_W_H0 * H01 * full_F1)
-        # print np.abs(full_W_H0 * H02 * full_F2)
-        # print np.abs(full_W_H1 * H10 * full_F0)
-        # print np.abs(full_W_H1 * H12 * full_F2)
-        # print np.abs(full_W_H2 * H20 * full_F0)
-        # print np.abs(full_W_H2 * H21 * full_F1)
+        # xxxxxxxxxx Test with the closed_form initialization type xxxxxxxxxxxx
+        self.iasolver.clear()
+        self.iasolver.initialize_with = 'closed_form'
 
-        # print
-        # print map(linear2dB, self.iasolver.calc_SINR())
+        niter = self.iasolver.solve(self.Ns, P)
+
+        self.assertTrue(niter <= self.iasolver.max_iterations)
+
+        full_F0 = np.matrix(self.iasolver.full_F[0])
+        full_F1 = np.matrix(self.iasolver.full_F[1])
+        full_F2 = np.matrix(self.iasolver.full_F[2])
+
+        full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
+        full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
+        full_W_H2 = np.matrix(self.iasolver.full_W_H[2])
+
+        # Perform the actual tests
+        try:
+            # xxxxx Test if the transmit power limit is respected xxxxxxxxx
+            self.assertTrue(
+                np.linalg.norm(full_F0, 'fro')**2 <= 1.000000001 * P[0])
+            self.assertTrue(
+                np.linalg.norm(full_F1, 'fro')**2 <= 1.000000001 * P[1])
+            self.assertTrue(
+                np.linalg.norm(full_F2, 'fro')**2 <= 1.000000001 * P[2])
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                full_W_H0 * H00 * full_F0, np.eye(self.Ns[0]))
+            np.testing.assert_array_almost_equal(
+                full_W_H1 * H11 * full_F1, np.eye(self.Ns[0]))
+            np.testing.assert_array_almost_equal(
+                full_W_H2 * H22 * full_F2, np.eye(self.Ns[0]))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
+            self.assertTrue(np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2 < 0.1)
+        except AssertionError:  # pragma: nocover
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state(filename='MMSE_test_solve_state.pickle')
+            raise  # re-raises the last exception
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test with the alt_min initialization type xxxxxxxxxxxx
+        self.iasolver.clear()
+        self.iasolver.initialize_with = 'alt_min'
+
+        niter = self.iasolver.solve(self.Ns, P)
+
+        self.assertTrue(niter <= self.iasolver.max_iterations)
+
+        full_F0 = np.matrix(self.iasolver.full_F[0])
+        full_F1 = np.matrix(self.iasolver.full_F[1])
+        full_F2 = np.matrix(self.iasolver.full_F[2])
+
+        full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
+        full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
+        full_W_H2 = np.matrix(self.iasolver.full_W_H[2])
+
+        # Perform the actual tests
+        try:
+            # xxxxx Test if the transmit power limit is respected xxxxxxxxx
+            self.assertTrue(
+                np.linalg.norm(full_F0, 'fro')**2 <= 1.000000001 * P[0])
+            self.assertTrue(
+                np.linalg.norm(full_F1, 'fro')**2 <= 1.000000001 * P[1])
+            self.assertTrue(
+                np.linalg.norm(full_F2, 'fro')**2 <= 1.000000001 * P[2])
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
+            np.testing.assert_array_almost_equal(
+                full_W_H0 * H00 * full_F0, np.eye(self.Ns[0]))
+            np.testing.assert_array_almost_equal(
+                full_W_H1 * H11 * full_F1, np.eye(self.Ns[0]))
+            np.testing.assert_array_almost_equal(
+                full_W_H2 * H22 * full_F2, np.eye(self.Ns[0]))
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
+            self.assertTrue(np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2 < 0.1)
+            self.assertTrue(np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2 < 0.1)
+        except AssertionError:  # pragma: nocover
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state(filename='MMSE_test_solve_state.pickle')
+            raise  # re-raises the last exception
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_solve_finalize(self):
         K = 3
@@ -2819,7 +2921,7 @@ class GreedStreamIASolverTestCase(CustomTestCase):
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-        except AssertionError:
+        except AssertionError:  # pragma: no cover
             # Since this test failed, let's save its state so that we can
             # reproduce it
             self._save_state('GreedStream_test_solve_state.pickle')

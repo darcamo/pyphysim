@@ -607,7 +607,7 @@ class SimulationResults(object):
         try:
             filename = replace_dict_values(filename, self.params.parameters,
                                            True)
-        except Exception:  # pylint: disable=W0703
+        except KeyError:  # pragma: nocover
             pass
         return filename
 
@@ -848,7 +848,7 @@ class SimulationResults(object):
 
         try:
             data['runned_reps'] = self.runned_reps
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             pass
 
         df = DataFrame(data)

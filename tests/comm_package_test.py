@@ -17,10 +17,11 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+import warnings
 import unittest
 import doctest
 import numpy as np
@@ -4366,6 +4367,12 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl = pathloss.PathLossFreeSpace()
 
     def test_calc_path_loss(self):
+        # with a very small distance the path loss (in linear scale) would
+        # be negative, which is not valid. For these cases we should throw
+        # an exception.
+        with self.assertRaises(RuntimeError):
+            self.pl.calc_path_loss(0.000011)
+
         # Test for a single path loss value
         self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
                                4.88624535312e-10)
@@ -4443,6 +4450,20 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
         self.pl.fc = 900.0
         self.pl.hbs = 30.0
         self.pl.hms = 1.0
+
+        # Area type can only be one of the following values:
+        # 'open', 'suburban', 'medium city' or 'large city'
+        with self.assertRaises(RuntimeError):
+            self.pl.area_type = 'some_invalid_string'
+
+        # Test if a warning is raised when the distance is smaller then
+        # 1Km. For that we capture the warnings ...
+        with warnings.catch_warnings(record=True) as w:
+            # then we call the method with the distance smaller than 1Km
+            # ...
+            self.pl._calc_deterministic_path_loss_dB(0.9)
+            # and we test if captured 1 warning.
+            self.assertEqual(len(w), 1, msg='Warning was not raised')
 
         # Distances for which the path loss will be calculated
         d = np.linspace(1, 20, 20)

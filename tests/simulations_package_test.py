@@ -18,7 +18,7 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1491,7 +1491,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         os.remove(filename)
 
     def test_save_to_and_load_from_hdf5_file(self):
-        base_filename = 'results_({age})_({temperature})_({factor}).h5'
+        base_filename = 'results_({age})_({temperature})_({factor})'
 
         try:
             import h5py
@@ -1515,7 +1515,7 @@ class SimulationResultsTestCase(unittest.TestCase):
 
         # Load from the file
         simresults2 = SimulationResults.load_from_hdf5_file(filename)
-        self.assertEqual(simresults2.original_filename, base_filename)
+        self.assertEqual(simresults2.original_filename, '{0}.h5'.format(base_filename))
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
                          set(simresults2.get_result_names()))

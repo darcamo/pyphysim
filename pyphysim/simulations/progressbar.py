@@ -385,7 +385,7 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
                     except OSError:  # Pragma: no cover
                         pass
 
-            except AttributeError:
+            except AttributeError:  # pragma: no cover
                 # If an attribute error was raised then the output is not a
                 # file like object and therefore we don't need to delete
                 # any file

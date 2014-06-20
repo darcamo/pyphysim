@@ -557,7 +557,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             # another initialization method then these parameters have
             # already been set.
             self._dont_initialize_F_and_only_and_find_W()
-        else:
+        else:  # pragma: no cover
             msg = 'unknown initialization option for the IA sovler: {0}'
             raise RuntimeError(msg.format(self.initialize_with))
 
@@ -746,7 +746,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             # too much
             if self._is_diff_significant(
                     old_F, self._F, self.relative_factor) is False:
-                break
+                break  # pragma: no cover
             else:
                 old_F = self._F
 
@@ -1735,7 +1735,7 @@ class GreedStreamIASolver(object):
             # If there is no user with more then one stream then we have no
             # way to reduce a stream. In that case, set 'keep_going' to
             # False to disable stream reduction.
-            keep_going = False
+            keep_going = False  # pragma: no cover
 
         while keep_going is True:
             # xxxxxxxxxx Store the current solution xxxxxxxxxxxxxxxxxxxxxxx
@@ -1795,7 +1795,7 @@ class GreedStreamIASolver(object):
                 # If there is no user with more then 1 stream, then we
                 # can't reduce streams anymore. Let's stop the while loop
                 # then.
-                keep_going = False
+                keep_going = False  # pragma: no cover
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return self.runned_iterations

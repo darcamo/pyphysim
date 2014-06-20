@@ -99,7 +99,8 @@ class PathLossBase(object):
         raise NotImplementedError(msg.format(self.__class__.__name__))
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(self, d, ax=None, extra_args=None):
+    def plot_deterministic_path_loss_in_dB(
+            self, d, ax=None, extra_args=None):  # pragma: no cover
         """
         Parameters
         ----------
@@ -150,7 +151,7 @@ class PathLossBase(object):
             Path loss (in dB) for the given distance(s).
         """
         PL = self._calc_deterministic_path_loss_dB(d)
-        if self.use_shadow_bool is True:
+        if self.use_shadow_bool is True:  # pragma: no cover
             if isinstance(d, Iterable):
                 # If 'd' is a numpy array (or something similar such as a
                 # list), shadow must be a numpy array with the same shape
@@ -536,7 +537,7 @@ class PathLossOkomuraHata(PathLossBase):
                 # given by
                 # $8.29 (\log(1.54 h_{ms}))^2 - 1.10$
                 a = 8.29 * (np.log10(1.54 * self.hms)**2) - 1.10
-        else:
+        else:  # pragma: no cover
             raise RuntimeError('Invalid area type: {0}'.format(self.area_type))
 
         return a
@@ -620,5 +621,4 @@ class PathLossOkomuraHata(PathLossBase):
             Distance (in Km).
         """
         # TODO: implement-me
-        raise NotImplementedError("Implement-me")
-        pass
+        raise NotImplementedError("Implement-me")  # pragma: no cover
