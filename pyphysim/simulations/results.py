@@ -788,7 +788,7 @@ class SimulationResults(object):
         Parameters
         ----------
         filename : src
-            Name of the file to save the results.
+            Name of the file from which the SimulationResults should be loaded.
 
         Returns
         -------

@@ -88,9 +88,6 @@ def combine_simulation_parameters(params1, params2):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: Save the _unpack_index member variable in the save methods to hdf5
-# and pytables. After that, load this information in the corresponding load
-# methods.
 class SimulationParameters(object):
     """Class to store the simulation parameters.
 
@@ -399,6 +396,9 @@ class SimulationParameters(object):
             return False
 
         if set(self.parameters.keys()) != set(other.parameters.keys()):
+            return False
+
+        if self._unpack_index != other._unpack_index:
             return False
 
         for key in self.parameters.keys():
@@ -820,8 +820,9 @@ class SimulationParameters(object):
         return params
 
     def save_to_hdf5_group(self, group):
-        """Save the contents of the SimulationParameters object into an
-        HDF5 group.
+        """
+        Save the contents of the SimulationParameters object into an HDF5
+        group.
 
         This function is called in the save_to_hdf5_file function in the
         SimulationResults class.
@@ -854,42 +855,76 @@ class SimulationParameters(object):
         group.attrs.create('_unpacked_parameters_set', data=list(
             self._unpacked_parameters_set))
 
-    def save_to_pytables_group(self, group):
-        """Save the contents of the SimulationParameters object into an
-        Pytables group.
+        # Save the _unpack_index member variable as an attribute of the group.
+        group.attrs.create('_unpack_index', data=self._unpack_index)
 
-        This function is called in the save_to_pytables_file function in the
-        SimulationResults class.
+    def save_to_hdf5_file(self, filename, attrs=None):
+        """
+        Save the SimulationParameters object to an hdf5 file.
 
         Parameters
         ----------
-        group : A Pytables group
-            The group where the parameters will be saved.
-
-        Notes
-        -----
-        This method is called from the save_to_pytables_file method in the
-        SimulationResults class. It uses the python pytables library and
-        `group` is supposed to be an pytables group created with that library.
-
-        See also
-        --------
-        load_from_pytables_group
+        filename : src
+            Name of the file to save the SimulationParameters object.
+        attrs : TYPE
         """
-        pytables_file = group._v_file  # pylint: disable=W0212
+        if attrs is None:
+            attrs = {}
 
-        # Store each parameter in self.parameter in a different dataset
-        for name, value in self.parameters.iteritems():
-            pytables_file.createArray(group, name, value, title=name)
+        import h5py
+        fid = h5py.File(filename, 'w')
 
-        # Store the _unpacked_parameters_set as an attribute of the group.
-        # Note that we need to convert _unpacked_parameters_set to a list,
-        # since a set has no native HDF5 equivalent.
+        # Save the TITTLE attribute to be more consistent with what
+        # Pytables would do.
+        fid.attrs.create("TITLE", "Simulation Parameters file")
 
-        # TODO: Currently the atribute will be saved as a python object,
-        # but it should be an array of strings.
-        pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(
-            self._unpacked_parameters_set))
+        # Add the attributes, if any
+        if isinstance(attrs, dict):  # pragma: no cover
+            # attr is a dictionary of attributes
+            for name, value in attrs.items():
+                fid.attrs.create(name, value)
+
+        g = fid.create_group('params')
+        self.save_to_hdf5_group(g)
+
+        fid.close()
+
+    # def save_to_pytables_group(self, group):
+    #     """Save the contents of the SimulationParameters object into an
+    #     Pytables group.
+
+    #     This function is called in the save_to_pytables_file function in the
+    #     SimulationResults class.
+
+    #     Parameters
+    #     ----------
+    #     group : A Pytables group
+    #         The group where the parameters will be saved.
+
+    #     Notes
+    #     -----
+    #     This method is called from the save_to_pytables_file method in the
+    #     SimulationResults class. It uses the python pytables library and
+    #     `group` is supposed to be an pytables group created with that library.
+
+    #     See also
+    #     --------
+    #     load_from_pytables_group
+    #     """
+    #     pytables_file = group._v_file  # pylint: disable=W0212
+
+    #     # Store each parameter in self.parameter in a different dataset
+    #     for name, value in self.parameters.iteritems():
+    #         pytables_file.createArray(group, name, value, title=name)
+
+    #     # Store the _unpacked_parameters_set as an attribute of the group.
+    #     # Note that we need to convert _unpacked_parameters_set to a list,
+    #     # since a set has no native HDF5 equivalent.
+
+    #     # TODO: Currently the atribute will be saved as a python object,
+    #     # but it should be an array of strings.
+    #     pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(
+    #         self._unpacked_parameters_set))
 
     @staticmethod
     def load_from_hdf5_group(group):
@@ -926,5 +961,34 @@ class SimulationParameters(object):
         # pylint: disable=W0212
         params._unpacked_parameters_set = set(
             group.attrs['_unpacked_parameters_set'])
+
+        params._unpack_index = group.attrs['_unpack_index']
         return params
+
+    @staticmethod
+    def load_from_hdf5_file(filename):
+        """
+
+        Parameters
+        ----------
+        filename : str
+            Name of the file from which the SimulationParameters should be loaded.
+
+        Returns
+        -------
+        params : SimulationParameters object.
+            The loaded SimulationParameters object.
+        """
+        import h5py
+        fid = h5py.File(filename, 'r')
+
+        # xxxxxxxxxx params group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        rg = fid['params']
+        simparams = SimulationParameters.load_from_hdf5_group(rg)
+
+        fid.close()
+        return simparams
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

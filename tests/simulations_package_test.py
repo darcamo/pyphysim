@@ -699,7 +699,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(unpacked_list[index3]['fourth'], 'A')
         self.assertEqual(unpacked_list[index3]['fifth'], 'Z')
 
-    def test_save_to_and_load_from_file(self):
+    def test_save_to_and_load_from_pickle_file(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.sim_params.set_unpack_parameter('third')
@@ -726,6 +726,58 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Delete the where the parameters were saved
         os.remove(filename)
+
+        # xxxxx Test saving and loading one of the unpacked variations xxxx
+        filename2 = 'params_3.pickle'
+        fourth_unpacked_param = self.sim_params.get_unpacked_params_list()[3]
+        fourth_unpacked_param.save_to_pickled_file(filename2)
+
+        fourth_unpacked_param2 = SimulationParameters.load_from_pickled_file(filename2)
+        self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
+
+        # Delete the where the parameters were saved
+        os.remove(filename2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_save_to_and_load_from_hdf5_file(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        filename = 'params.h5'
+        # Let's make sure the file does not exist
+        try:
+            os.remove(filename)
+        except OSError:  # pragma: no cover
+            pass
+
+        # Save to the file
+        self.sim_params.save_to_hdf5_file(filename)
+
+        # Load from the file
+        sim_params2 = SimulationParameters.load_from_hdf5_file(filename)
+
+        self.assertEqual(self.sim_params['first'], sim_params2['first'])
+        self.assertEqual(self.sim_params['second'], sim_params2['second'])
+        self.assertEqual(len(self.sim_params), len(sim_params2))
+        self.assertEqual(self.sim_params.get_num_unpacked_variations(),
+                         sim_params2.get_num_unpacked_variations())
+
+        # Delete the where the parameters were saved
+        os.remove(filename)
+
+        # xxxxx Test saving and loading one of the unpacked variations xxxx
+        filename2 = 'params_3.pickle'
+        fourth_unpacked_param = self.sim_params.get_unpacked_params_list()[3]
+        fourth_unpacked_param.save_to_hdf5_file(filename2)
+
+        fourth_unpacked_param2 = SimulationParameters.load_from_hdf5_file(filename2)
+        self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
+
+        # Delete the where the parameters were saved
+        os.remove(filename2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_load_from_config_file(self):
         try:

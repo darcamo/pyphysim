@@ -215,7 +215,6 @@ class IASolverBaseClass(object):
             K, = full_F.shape
             self._F = np.empty(K, dtype=np.ndarray)
             for k in range(K):
-                # TODO: Update self._F
                 self._F[k] = full_F[k] / np.linalg.norm(full_F[k], 'fro')
         else:
             self._F = F
