@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=R0902,R0904
+# pylint: disable=R0904
 
 """
 Module with implementation of Interference Alignment (IA) algorithms.
@@ -707,8 +707,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Returns
         -------
-        Number of iterations the iterative interference alignment algorithm
-        run.
+        Number of iterations that the iterative interference alignment
+        algorithm run.
 
         Notes
         -----
@@ -1740,12 +1740,13 @@ class GreedStreamIASolver(object):
         while keep_going is True:
             # xxxxxxxxxx Store the current solution xxxxxxxxxxxxxxxxxxxxxxx
             self._old_F = [F.copy() for F in self._iasolver.F]
-            self._old_full_F = [full_F.copy() for full_F in self._iasolver.full_F]
+            self._old_full_F = [
+                full_F.copy() for full_F in self._iasolver.full_F]
             self._old_W_H = [W_H.copy() for W_H in self._iasolver.W_H]
             self._old_Ns = copy(self._iasolver.Ns)
 
             old_sum_capacity = self._iasolver.calc_sum_capacity()
-            old_sinrs = self._iasolver.calc_SINR_in_dB()
+            #old_sinrs = self._iasolver.calc_SINR_in_dB()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Find the index of the stream to be removed xxxxxxx
@@ -1755,25 +1756,28 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Remove the stream and find a new IA solution xxxxxxxxxx
-            self._iasolver.F[user_idx] = np.delete(self._iasolver.F[user_idx], stream_idx, 1)
-            self._iasolver.full_F[user_idx] = np.delete(self._iasolver.full_F[user_idx], stream_idx, 1)
+            self._iasolver.F[user_idx] = np.delete(
+                self._iasolver.F[user_idx], stream_idx, 1)
+            self._iasolver.full_F[user_idx] = np.delete(
+                self._iasolver.full_F[user_idx], stream_idx, 1)
             self._iasolver.Ns[user_idx] -= 1
 
             # Note that the F member variable is the normalized
             # precoder. Since we removed one column, let's normalize it
             # again.
-            self._iasolver.F[user_idx] /= np.linalg.norm(self._iasolver.F[user_idx], 'fro')
+            self._iasolver.F[user_idx] /= np.linalg.norm(
+                self._iasolver.F[user_idx], 'fro')
 
             #
             self._iasolver.initialize_with = 'fix'
-            new_sum_capacity_APAGAR = self._iasolver.calc_sum_capacity()
+            #new_sum_capacity_APAGAR = self._iasolver.calc_sum_capacity()
             self._runned_iterations += self._iasolver.solve(
                 self._iasolver.Ns, self._iasolver.P)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Check if the new solution is better xxxxxxxxxxxxxx
             new_sum_capacity = self._iasolver.calc_sum_capacity()
-            new_sinrs = self._iasolver.calc_SINR_in_dB()
+            #new_sinrs = self._iasolver.calc_SINR_in_dB()
 
             # If the new solution is not better, we restore the previous
             # solution and set keep_going to False to stop the stream
@@ -1784,7 +1788,8 @@ class GreedStreamIASolver(object):
                 self._iasolver.clear()
 
                 # Now we set the precoders
-                self._iasolver.set_precoders(F=self._old_F, full_F=self._old_full_F, P=P)
+                self._iasolver.set_precoders(
+                    F=self._old_F, full_F=self._old_full_F, P=P)
                 self._iasolver.set_receive_filters(W_H=self._old_W_H)
 
                 keep_going = False
@@ -1819,7 +1824,8 @@ class GreedStreamIASolver(object):
         min_sinr_indexes = [np.argmin(s) for s in sinrs]
 
         # For each user we get his minimum sinr.
-        min_sinrs = [sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)]
+        min_sinrs = [
+            sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)]
 
         # Index of the users in ascending order of the sinrs. The fist
         # element is the index of the user with the minimum SINR.
@@ -1828,7 +1834,8 @@ class GreedStreamIASolver(object):
         # Let's discard any user that has only one stream, since we can't
         # reduce the number of streams of that user.
         valid_users_idx = np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
-        min_sinr_user_idx = [i for i in min_sinr_user_idx if i in valid_users_idx]
+        min_sinr_user_idx = [
+            i for i in min_sinr_user_idx if i in valid_users_idx]
 
         user_idx = min_sinr_user_idx[0]
         stream_idx = min_sinr_indexes[user_idx]

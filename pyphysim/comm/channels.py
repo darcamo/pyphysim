@@ -929,7 +929,7 @@ class MultiUserChannelMatrix(object):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : flot (default is 0.0)
+        noise_var : float (default is 0.0)
             The noise variance.
 
         Returns
@@ -981,7 +981,7 @@ class MultiUserChannelMatrix(object):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : flot (default is 0.0)
+        noise_var : float (default is 0.0)
             The noise variance.
 
         Returns
@@ -1999,7 +1999,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : flot (default is 0.0)
+        noise_var : float (default is 0.0)
             The noise variance.
         pe : float
             The power of the external interference source(s).
@@ -2065,7 +2065,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : flot (default is 0.0)
+        noise_var : float (default is 0.0)
             The noise variance.
         pe : float
             The power of the external interference source(s).
