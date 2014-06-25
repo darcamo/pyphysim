@@ -1510,6 +1510,13 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.simresults.params.add('temperature', 50.5)
         self.simresults.params.add('age', 3)
 
+        # xxxxx Add a result with accumulate set to True xxxxxxxxxxxxxxxxxx
+        result_acu = Result('name', Result.SUMTYPE, accumulate_values=True)
+        result_acu.update(13)
+        result_acu.update(30)
+        self.simresults.add_result(result_acu)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # Save to the file and get the actual filename used to save the file
         filename = self.simresults.save_to_file(base_filename)
 
@@ -1550,6 +1557,13 @@ class SimulationResultsTestCase(unittest.TestCase):
             del h5py
         except ImportError:  # pragma: no cover
             self.skipTest("The h5py module is not installed")
+
+        # # xxxxx Add a result with accumulate set to True xxxxxxxxxxxxxxxxxx
+        # result_acu = Result('name', Result.RATIOTYPE, accumulate_values=True)
+        # result_acu.update(13, 15)
+        # result_acu.update(30, 43)
+        # self.simresults.add_result(result_acu)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Set sime simulation parameters
         self.simresults.params.add('factor', [0.5, 0.6])

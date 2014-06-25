@@ -8,6 +8,7 @@ __revision__ = "$Revision$"
 
 import numpy as np
 import os.path
+import warnings
 
 from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, \
@@ -1309,8 +1310,9 @@ class Result(object):
     # variables
     @staticmethod
     def save_to_hdf5_dataset(parent, results_list):
-        """Create an HDF5 dataset in `parent` and fill it with the Result
-        objects in `results_list`.
+        """
+        Create an HDF5 dataset in `parent` and fill it with the Result objects
+        in `results_list`.
 
         Parameters
         ----------
@@ -1329,8 +1331,13 @@ class Result(object):
         See also
         --------
         load_from_hdf5_dataset
-
         """
+        # When using the hdf5 format to save the Result object it is not
+        # possible to save the accumulated values (if there is any)
+        if results_list[0]._accumulate_values_bool is True:  # pylint: disable=W0212
+            warnings.warn(
+                'Cannot save the accumulated values in a Result to an hdf5 file.')
+
         dtype = [('_value', float), ('_total', float), ('num_updates', int),
                  ('_result_sum', float), ('_result_squared_sum', float)]
         name = results_list[0].name
