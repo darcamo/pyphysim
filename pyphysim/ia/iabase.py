@@ -155,7 +155,11 @@ class IASolverBaseClass(object):
     def noise_var(self):
         """Get method for the noise_var property."""
         if self._noise_var is None:
-            return self._multiUserChannel.noise_var
+            noise_var = self._multiUserChannel.noise_var
+            if noise_var is None:
+                return 0.0
+            else:
+                return noise_var
         else:
             return self._noise_var
 

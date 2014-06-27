@@ -365,9 +365,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         self._last_noise = None  # Store the AWGN noise array from the last
                                  # time any of the corrupt*_data methods
                                  # were called.
-        self._noise_var = None  # Store the noise variance. If None, then
-                                # no noise is added in the "corrupt_*data"
-                                # methods.
+        self._noise_var = None  # Store the noise variance. If it is None,
+                                # then no noise is added in the
+                                # "corrupt_*data" methods.
 
         self._W = None  # Post processing filters (a list of 2D numpy
                         # arrays) for each user
@@ -915,7 +915,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return Qk
 
-    def calc_Q(self, k, F_all_users, noise_var=0.0):
+    def calc_Q(self, k, F_all_users):
         """
         Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver.
@@ -944,9 +944,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \sigma_n^2 \mtI_{N_k}$$
-        Rnk = np.eye(self.Nr[k]) * noise_var
-        Qk = self._calc_Q_impl(k, F_all_users) + Rnk
-        return Qk
+        Qk = self._calc_Q_impl(k, F_all_users)
+
+        if self.noise_var is not None:
+            Rnk = np.eye(self.Nr[k]) * self.noise_var
+            return Qk + Rnk
+        else:
+            return Qk
 
     def _calc_JP_Q_impl(self, k, F_all_users):
         """
@@ -967,7 +971,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return Qk
 
-    def calc_JP_Q(self, k, F_all_users, noise_var=0.0):
+    def calc_JP_Q(self, k, F_all_users):
         """
         Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
@@ -996,9 +1000,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \sigma_n^2 \mtI_{N_k}$$
-        Qk = (self._calc_JP_Q_impl(k, F_all_users)
-              + np.eye(self.Nr[k]) * noise_var)
-        return Qk
+        Qk = self._calc_JP_Q_impl(k, F_all_users)
+
+        if self.noise_var is not None:
+            Rnk = np.eye(self.Nr[k]) * self.noise_var
+            return Qk + Rnk
+        else:
+            return Qk
 
     def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, N0_or_Rek=0.0):
         """
@@ -1591,11 +1599,11 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
     @property
     def big_H_no_ext_int(self):
-        """Get method for the big_H_no_est_int property.
+        """
+        Get method for the big_H_no_est_int property.
 
         big_H_no_est_int is similar to big_H, but does not include the last
         column(s) corresponding to the external interference channel.
-
         """
         return self.big_H[:, :np.sum(self.Nt)]
 
@@ -1682,8 +1690,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return MultiUserChannelMatrix.corrupt_concatenated_data(self, data)
 
     def get_Hk_without_ext_int(self, k):
-        """Get the channel from all transmitters (without including the
-        external interference sources) to receiver `k`.
+        """
+        Get the channel from all transmitters (without including the external
+        interference sources) to receiver `k`.
 
         Parameters
         ----------
@@ -1722,7 +1731,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         >>> print(multiH.get_Hk_without_ext_int(1))
         [[10 11 12 13]
          [15 16 17 18]]
-
         """
         receive_channels = single_matrix_to_matrix_of_matrices(
             self.big_H[:, :np.sum(self.Nt)], self.Nr)
@@ -1732,7 +1740,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     # get_Hk_without_ext_int method from the
     # MultiUserChannelMatrix class. therefore, we don't need to test it.
     def get_Hk_with_ext_int(self, k):
-        """Get the channel from all transmitters (including the external
+        """
+        Get the channel from all transmitters (including the external
         interference sources) to receiver `k`.
 
         This method is essentially the same as the get_Hk method.
@@ -1774,13 +1783,13 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         >>> print(multiH.get_Hk_with_ext_int(1))
         [[10 11 12 13 14]
          [15 16 17 18 19]]
-
         """
         return MultiUserChannelMatrix.get_Hk(self, k)  # pragma: no cover
 
     @staticmethod
     def _prepare_input_parans(Nr, Nt, K, NtE):
-        """Helper method used in the init_from_channel_matrix and randomize
+        """
+        Helper method used in the init_from_channel_matrix and randomize
         method definitions.
 
         Parameters
@@ -1800,7 +1809,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         -------
         output : a tuple
             The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt)
-
         """
         if isinstance(NtE, Iterable):
             # We have multiple external interference sources
@@ -1824,7 +1832,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return (full_Nr, full_Nt, full_K, extIntK, extIntNt)
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K, NtE):
-        """Initializes the multiuser channel matrix from the given
+        """
+        Initializes the multiuser channel matrix from the given
         `channel_matrix`.
 
         Note that `channel_matrix` must also include the channel terms for
@@ -1853,7 +1862,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         ------
         ValueError
             If the arguments are invalid.
-
         """
         (full_Nr, full_Nt, full_K, extIntK, extIntNt) \
             = MultiUserChannelMatrixExtInt._prepare_input_parans(
@@ -1866,7 +1874,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             self, channel_matrix, full_Nr, full_Nt, full_K)
 
     def randomize(self, Nr, Nt, K, NtE):
-        """Generates a random channel matrix for all users as well as for the
+        """
+        Generates a random channel matrix for all users as well as for the
         external interference source(s).
 
         Parameters
@@ -1949,15 +1958,38 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
-    def calc_cov_matrix_extint_plus_noise(self, noise_var=0, pe=1):
-        """Calculates the covariance matrix of the external interference
-        plus noise.
+    def calc_cov_matrix_extint_without_noise(self, pe=1):
+        """
+        Calculates the covariance matrix of the external interference without
+        include the noise.
 
         Parameters
         ----------
-        noise_var : float, optional [default=0]
-            Noise variance. If not specified, then only the covariance
-            matrix of the external interference will be returned.
+        pe : float, optional [default=1]
+            External interference power (in linear scale)
+
+        Returns
+        -------
+        R : 1D array of numpy matrices
+            Return a numpy array, where each element is the covariance
+            matrix of the external interference at one receiver.
+        """
+        # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H$$
+        R = np.empty(self.Nr.size, dtype=np.ndarray)
+        cum_Nr = np.hstack([0, np.cumsum(self.Nr)])
+
+        for ii in range(self.Nr.size):
+            extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
+            R[ii] = pe * np.dot(extH, extH.transpose().conjugate())
+        return R
+
+    def calc_cov_matrix_extint_plus_noise(self, pe=1):
+        """
+        Calculates the covariance matrix of the external interference plus
+        noise.
+
+        Parameters
+        ----------
         pe : float, optional [default=1]
             External interference power (in linear scale)
 
@@ -1966,22 +1998,27 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         R : 1D array of numpy matrices
             Return a numpy array, where each element is the covariance
             matrix of the external interference plus noise at one receiver.
-
         """
         # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H + \sigma_n^2 \mtI$$
         # where $Ke$ is the number of external interference sources and
-        # ${e_j}$ is the j-th external interference source
+        # ${e_j}$ is the j-th external interference source.
 
-        R = np.empty(self.Nr.size, dtype=np.ndarray)
-        cum_Nr = np.hstack([0, np.cumsum(self.Nr)])
+        if self.noise_var is None:
+            noise_var = 0.0
+        else:
+            noise_var = self.noise_var
 
-        for ii in range(self.Nr.size):
-            extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
-            R[ii] = (pe * np.dot(extH, extH.transpose().conjugate())
-                     + np.eye(self.Nr[ii]) * noise_var)
+        # Calculate the covariance matrix of the external interference
+        # without noise ...
+        R = self.calc_cov_matrix_extint_without_noise(pe)
+
+        # ... and then add the noise
+        for i in range(len(R)):
+            R[i] += np.eye(self.Nr[i]) * noise_var
+
         return R
 
-    def calc_Q(self, k, F_all_users, noise_var=0.0, pe=1.0):
+    def calc_Q(self, k, F_all_users, pe=1.0):
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver.
@@ -2012,7 +2049,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \mtR_e$$
-        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        Rek = self.calc_cov_matrix_extint_plus_noise(pe)
         Qk = self._calc_Q_impl(k, F_all_users) + Rek[k]
 
         return Qk
@@ -2047,7 +2084,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return Qk
 
-    def calc_JP_Q(self, k, F_all_users, noise_var=0.0, pe=1.0):
+    def calc_JP_Q(self, k, F_all_users, pe=1.0):
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
@@ -2078,12 +2115,12 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \mtR_e$$
-        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        Rek = self.calc_cov_matrix_extint_plus_noise(pe)
         Qk = self._calc_JP_Q(k, F_all_users) + Rek[k]
 
         return Qk
 
-    def calc_SINR(self, F, U, noise_power=0.0, pe=1.0):
+    def calc_SINR(self, F, U, pe=1.0):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
@@ -2098,8 +2135,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
         pe : float
             Power of the external interference source.
 
@@ -2111,7 +2146,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
-        Re = self.calc_cov_matrix_extint_plus_noise(noise_power, pe)
+        Re = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
@@ -2149,7 +2184,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             Hk, F_all_users, Rek)
 
     def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
-        """Calculates the second part in the equation of the Blk covariance
+        """
+        Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
         include the identity matrix).
 
@@ -2177,7 +2213,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
     def _calc_JP_SINR_k(self, k, Fk, Uk, Bkl_all_l):
-        """Calculates the SINR of all streams of user 'k'.
+        """
+        Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
@@ -2201,7 +2238,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         Hk = self.get_Hk_without_ext_int(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
 
-    def calc_JP_SINR(self, F, U, noise_power=0.0, pe=1.0):
+    def calc_JP_SINR(self, F, U, pe=1.0):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
@@ -2216,8 +2253,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
 
         Returns
         -------
@@ -2227,7 +2262,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
-        Re = self.calc_cov_matrix_extint_plus_noise(noise_power, pe)
+        Re = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
             Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, Re[k])

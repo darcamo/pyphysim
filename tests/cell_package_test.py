@@ -501,7 +501,6 @@ class CellTestCase(unittest.TestCase):
         self.assertAlmostEqual(users[2].pos, (0-1.75j))
 
 
-# TODO: finish implementation
 class Cell3SecTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -670,7 +669,6 @@ class Cell3SecTestCase(unittest.TestCase):
             self.C1.add_random_users_in_sector(2, 5)
 
 
-# TODO: finish implementation
 class CellWrapTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1007,7 +1005,6 @@ class ClusterTestCase(unittest.TestCase):
         Cinvalid = cell.Cluster(cell_radius=1.0, num_cells=20)
         self.assertEqual(len(Cinvalid.vertices), 0)
 
-    # TODO: Implement-me
     def test_add_random_users(self):
         # Test adding 2 users to the third cell in the cluster
         self.C2.add_random_users(3, 2, 'aqua')

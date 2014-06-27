@@ -226,11 +226,11 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # xxxxx Test the noise_var property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # It starts as "None"
         self.assertIsNone(self.iasolver._noise_var)
-        # If we try to get the value of the last_noise_var property it will
-        # return the value of the last_noise_var property of the
+        # If we try to get the value of the noise_var property it will
+        # return the value of the noise_var property of the
         # multiUserChannel object
         self.assertEqual(self.iasolver.noise_var, 0.0)
-        self.iasolver._multiUserChannel._last_noise_var = 1.3
+        self.iasolver._multiUserChannel.noise_var = 1.3
         self.assertEqual(self.iasolver.noise_var, 1.3)
         # But if we set the noise_var property to some (non negative) value
         # it will be respected.
@@ -1680,8 +1680,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             # Repeat the test, but now without setting the noise variance
             # explicitly. It should use the self.noise_var property from
             # the IA solver class, which in turn will use the
-            # last_noise_var property of the Mutiuser channel class.
-            self.iasolver._multiUserChannel._last_noise_var = 0.14
+            # noise_var property of the Mutiuser channel class.
+            self.iasolver._multiUserChannel.noise_var = 0.14
 
             # xxxxx Calculates the Second Part xxxxxxxxxxxxxxxxxxxxxxxxxxxx
             expected_Bkl = np.empty(self.Ns[k], dtype=np.ndarray)
@@ -1886,7 +1886,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         Nr = np.array([3, 3, 3])
         Ns = np.array([1, 1, 1])
         multiUserChannel = self.iasolver._multiUserChannel
-        multiUserChannel._last_noise_var = 1e-10
+        multiUserChannel.noise_var = 1e-10
 
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
@@ -2546,7 +2546,6 @@ class MMSEIASolverTestCase(CustomTestCase):
             self._save_state(filename='MMSE_test_calc_Vi_state.pickle')
             raise  # re-raises the last exception
 
-    # TODO: Finish the implementation
     def test_updateF(self):
         # We are only testing the transmit powers here. If the precoders
         # are not calculated correctly then the test for the solve method

@@ -619,7 +619,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
             Qk,
             expected_Q0 + noise_var * np.eye(2))
@@ -638,13 +639,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             np.dot(H12_F2,
                    H12_F2.transpose().conjugate())
 
+        self.multiH.noise_var = 0.0
         Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q1)
 
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
             Qk,
             expected_Q1 + noise_var * np.eye(2))
@@ -665,13 +668,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             np.dot(H21_F1,
                    H21_F1.transpose().conjugate())
 
-        Qk = self.multiH.calc_Q(k, F_all_k)
+        # Calculate Qk without noise
+        Qk = self.multiH._calc_Q_impl(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
 
         # Now with noise variance different of 0
         noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
             Qk,
             expected_Q2 + noise_var * np.eye(2))
@@ -686,6 +691,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         self.multiH.randomize(Nr, Nt, K)
+        noise_var = round(0.1 * np.random.rand(), 4)
+        self.multiH.noise_var = noise_var
 
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -709,13 +716,12 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             np.dot(H0_F2,
                    H0_F2.transpose().conjugate())
 
-        Qk = self.multiH.calc_JP_Q(k, F_all_k)
-        # Test if Qk is equal to the expected output
+        # Test if Qk (without noise) is equal to the expected output
+        Qk = self.multiH._calc_JP_Q_impl(k, F_all_k)
         np.testing.assert_array_almost_equal(Qk, expected_Q0)
 
         # Now with noise variance different of 0
-        noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
             Qk,
             expected_Q0 + noise_var * np.eye(2))
@@ -736,13 +742,12 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             np.dot(H1_F2,
                    H1_F2.transpose().conjugate())
 
-        Qk = self.multiH.calc_JP_Q(k, F_all_k)
-        # Test if Qk is equal to the expected output
+        # Test if Qk (without noise) is equal to the expected output
+        Qk = self.multiH._calc_JP_Q_impl(k, F_all_k)
         np.testing.assert_array_almost_equal(Qk, expected_Q1)
 
         # Now with noise variance different of 0
-        noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
             Qk,
             expected_Q1 + noise_var * np.eye(2))
@@ -763,13 +768,12 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             np.dot(H2_F1,
                    H2_F1.transpose().conjugate())
 
-        Qk = self.multiH.calc_JP_Q(k, F_all_k)
-        # Test if Qk is equal to the expected output
+        # Test if Qk (without noise) is equal to the expected output
+        Qk = self.multiH._calc_JP_Q_impl(k, F_all_k)
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
 
         # Now with noise variance different of 0
-        noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
             Qk,
             expected_Q2 + noise_var * np.eye(2))
@@ -783,6 +787,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         noise_power = 0.1
+        self.multiH.noise_var = noise_power
 
         self.multiH.randomize(Nr, Nt, K)
         F = np.empty(K, dtype=np.ndarray)
@@ -796,10 +801,12 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hkk = self.multiH.get_Hkl(k, k)
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
-            expected_first_part = (self.multiH.calc_Q(k, F)
+            # The _calc_Q_impl method does not include the noise, while the
+            # calc_Q method does.
+            expected_first_part = (self.multiH._calc_Q_impl(k, F)
                                    + np.dot(HkkFk, HkkFk.conjugate().T))
             expected_first_part_with_noise = (
-                self.multiH.calc_Q(k, F, noise_power)
+                self.multiH.calc_Q(k, F)
                 + np.dot(HkkFk, HkkFk.conjugate().T))
 
             # Test without noise
@@ -1120,6 +1127,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Ns = Nt
         iPu = 1.2
         noise_power = 0.1
+        self.multiH.noise_var = noise_power
 
         self.multiH.randomize(Nr, Nt, K)
 
@@ -1134,10 +1142,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
-            expected_first_part = (self.multiH.calc_JP_Q(k, F)
+            expected_first_part = (self.multiH._calc_JP_Q_impl(k, F)
                                    + np.dot(HkFk, HkFk.conjugate().T))
             expected_first_part_with_noise = (
-                self.multiH.calc_JP_Q(k, F, noise_power)
+                self.multiH.calc_JP_Q(k, F)
                 + np.dot(HkFk, HkFk.conjugate().T))
 
             # Test without noise
@@ -1828,6 +1836,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # self.NtE = np.array([1, 2])
         noise_var = 0.01
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
+
         H1 = self.multiH.big_H[0:2, 10:]
         H2 = self.multiH.big_H[2:6, 10:]
         H3 = self.multiH.big_H[6:12, 10:]
@@ -1846,24 +1855,27 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_cov_int_plus_noise[1] = expected_cov_int[1] + noise_cov2
         expected_cov_int_plus_noise[2] = expected_cov_int[2] + noise_cov3
 
-        cov_int = self.multiH.calc_cov_matrix_extint_plus_noise()
+        cov_int = self.multiH.calc_cov_matrix_extint_plus_noise(pe=1.0)
+        # Set the noise variance
+        self.multiH.noise_var = noise_var
         cov_int_plus_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var)
+            pe=1.0)
 
+        # Test without noise
         self.assertEqual(cov_int.size, expected_cov_int.size)
         np.testing.assert_array_almost_equal(cov_int[0], expected_cov_int[0])
         np.testing.assert_array_almost_equal(cov_int[1], expected_cov_int[1])
         np.testing.assert_array_almost_equal(cov_int[2], expected_cov_int[2])
 
-        self.assertEqual(cov_int_plus_noise.size,
-                         expected_cov_int_plus_noise.size)
-
-        np.testing.assert_array_almost_equal(cov_int_plus_noise[0],
-                                             expected_cov_int_plus_noise[0])
-        np.testing.assert_array_almost_equal(cov_int_plus_noise[1],
-                                             expected_cov_int_plus_noise[1])
-        np.testing.assert_array_almost_equal(cov_int_plus_noise[2],
-                                             expected_cov_int_plus_noise[2])
+        # Test with the noise
+        self.assertEqual(
+            cov_int_plus_noise.size, expected_cov_int_plus_noise.size)
+        np.testing.assert_array_almost_equal(
+            cov_int_plus_noise[0], expected_cov_int_plus_noise[0])
+        np.testing.assert_array_almost_equal(
+            cov_int_plus_noise[1], expected_cov_int_plus_noise[1])
+        np.testing.assert_array_almost_equal(
+            cov_int_plus_noise[2], expected_cov_int_plus_noise[2])
 
     def test_calc_Q(self):
         K = 3
@@ -1907,7 +1919,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             # np.dot(R0_e1, R0_e1.conjugate().T)
             )
 
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # test without noise
+        self.multiH.noise_var = None
+        Qk = self.multiH.calc_Q(k, F_all_k, pe=0.0)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk,
                                              expected_Q0_no_ext_int_or_noise)
@@ -1916,13 +1930,14 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_Q0_no_noise = (expected_Q0_no_ext_int_or_noise +
                                 np.dot(R0_e0, R0_e0.conjugate().T) +
                                 np.dot(R0_e1, R0_e1.conjugate().T))
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0)
+        Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q0_no_noise)
 
         # Now with external interference and noise
         noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_Q(k, F_all_k)
         expected_Q0 = expected_Q0_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1947,7 +1962,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H12_F2.transpose().conjugate())
             )
 
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # test without noise
+        self.multiH.noise_var = None
+        Qk = self.multiH.calc_Q(k, F_all_k, pe=0.0)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk,
                                              expected_Q1_no_ext_int_or_noise)
@@ -1956,13 +1973,14 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_Q1_no_noise = (expected_Q1_no_ext_int_or_noise +
                                 np.dot(R1_e0, R1_e0.conjugate().T) +
                                 np.dot(R1_e1, R1_e1.conjugate().T))
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0)
+        Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q1_no_noise)
 
         # Now with external interference and noise
         noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_Q(k, F_all_k)
         expected_Q1 = expected_Q1_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q1)
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1987,7 +2005,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H21_F1.transpose().conjugate())
             )
 
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test without noise
+        self.multiH.noise_var = None
+        Qk = self.multiH.calc_Q(k, F_all_k, pe=0.0)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk,
                                              expected_Q2_no_ext_int_or_noise)
@@ -1996,13 +2016,14 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         expected_Q2_no_noise = (expected_Q2_no_ext_int_or_noise +
                                 np.dot(R2_e0, R2_e0.conjugate().T) +
                                 np.dot(R2_e1, R2_e1.conjugate().T))
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=0.0)
+        Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q2_no_noise)
 
         # Now with external interference and noise
         noise_var = round(0.1 * np.random.rand(), 4)
-        Qk = self.multiH.calc_Q(k, F_all_k, noise_var=noise_var)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_Q(k, F_all_k)
         expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2016,7 +2037,12 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
 
+        noise_var = round(0.1 * np.random.rand(), 4)
+        Pe = round(np.random.rand(), 4)
+
         self.multiH.randomize(Nr, Nt, K, NtE)
+        # We don't set the noise variance here because the first tests will
+        # be without noise.
 
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -2025,12 +2051,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                           / np.linalg.norm(F_all_k[k], 'fro')
                           * np.sqrt(P[k]))
 
-        noise_var = round(0.1 * np.random.rand(), 4)
-        Pe = round(np.random.rand(), 4)
-
-        Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=0.0,
-            pe=Pe)
+        Re_no_noise = self.multiH.calc_cov_matrix_extint_without_noise(pe=Pe)
         # Re_with_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
         #     noise_var=noise_var,
         #     pe=Pe)
@@ -2053,7 +2074,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             np.dot(H0_F2,
                    H0_F2.transpose().conjugate()))
 
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=0.0)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk,
                                              expected_Q0_no_ext_int_or_noise)
@@ -2061,12 +2082,13 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Now with external interference
         expected_Q0_no_noise = (expected_Q0_no_ext_int_or_noise +
                                 Re_no_noise[0])
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=Pe)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=Pe)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q0_no_noise)
 
         # Now with external interference and noise
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var, pe=Pe)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=Pe)
         expected_Q0 = expected_Q0_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2089,7 +2111,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H1_F2.transpose().conjugate())
             )
 
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test without noise
+        self.multiH.noise_var = None
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=0.0)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk,
                                              expected_Q1_no_ext_int_or_noise)
@@ -2097,12 +2121,13 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Now with external interference
         expected_Q1_no_noise = (expected_Q1_no_ext_int_or_noise +
                                 Re_no_noise[1])
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=Pe)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=Pe)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q1_no_noise)
 
         # Now with external interference and noise
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var, pe=Pe)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=Pe)
         expected_Q1 = expected_Q1_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2125,7 +2150,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H2_F1.transpose().conjugate())
             )
 
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=0.0)
+        # Test without noise
+        self.multiH.noise_var = None
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=0.0)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk,
                                              expected_Q2_no_ext_int_or_noise)
@@ -2133,12 +2160,13 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Now with external interference
         expected_Q2_no_noise = (expected_Q2_no_ext_int_or_noise +
                                 Re_no_noise[2])
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=0.0, pe=Pe)
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=Pe)
         # Test if Qk is equal to the expected output
         np.testing.assert_array_almost_equal(Qk, expected_Q2_no_noise)
 
         # Now with external interference and noise
-        Qk = self.multiH.calc_JP_Q(k, F_all_k, noise_var=noise_var, pe=Pe)
+        self.multiH.noise_var = noise_var
+        Qk = self.multiH.calc_JP_Q(k, F_all_k, pe=Pe)
         expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2154,13 +2182,14 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         Pe = 0.7
 
         self.multiH.randomize(Nr, Nt, K, NtE)
+        self.multiH.noise_var = None
+
         F = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=0.0, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
@@ -2179,8 +2208,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with noise variance different from zero
         noise_var = 0.13
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_var, pe=Pe)
+        self.multiH.noise_var = noise_var
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
@@ -2189,7 +2218,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Fk = F[k]
             HkkFk = np.dot(Hkk, Fk)
             expected_first_part = (
-                self.multiH.calc_Q(k, F, noise_var=noise_var, pe=Pe)
+                self.multiH.calc_Q(k, F, pe=Pe)
                 + np.dot(HkkFk, HkkFk.conjugate().T))
 
             np.testing.assert_array_almost_equal(
@@ -2206,8 +2235,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_var, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         F = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -2252,9 +2280,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         noise_power = 0.568
 
         self.multiH.randomize(Nr, Nt, K, NtE)
+        self.multiH.noise_var = noise_power
 
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         F = np.empty(K, dtype=np.ndarray)
         for k in range(K):
@@ -2263,8 +2291,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         for k in range(K):
             # We only have the stream 0
-            expected_Bk0 = self.multiH.calc_Q(
-                k, F, noise_var=noise_power, pe=Pe)
+            expected_Bk0 = self.multiH.calc_Q(k, F, pe=Pe)
             Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, Re[k])[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
@@ -2283,9 +2310,9 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         multiUserChannel.randomize(Nr, Nt, K, NtE)
+        multiUserChannel.noise_var = noise_power
 
-        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         F = np.empty(K, dtype=np.ndarray)
         U = np.empty(K, dtype=np.ndarray)
@@ -2327,8 +2354,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         U = iasolver.full_W
 
         Pe = 0.01
-        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
-            noise_var=0.0001, pe=Pe)
+        multiUserChannel.noise_var = 0.001
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         for k in range(K):
             Hkk = multiUserChannel.get_Hkl(k, k)
@@ -2376,11 +2403,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxxxxxxx Noise Variance = 0.0 and Pe = 0 xxxxxxxxxxxxxxxxxxxxxx
         Pe = 0.00
         noise_power = 0.00
-        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        multiUserChannel.noise_var = noise_power
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         SINR_all_users = multiUserChannel.calc_SINR(
-            F, U, noise_power=noise_power, pe=Pe)
+            F, U, pe=Pe)
 
         # SINR of all users should be super high (inf)
         self.assertTrue(np.all(SINR_all_users[0] > 1e10))
@@ -2416,11 +2443,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxxxxxxx Noise Variance = 0.01 and Pe = 0.63 xxxxxxxxxxxxxxxxxx
         Pe = 0.01
         noise_power = 0.63
-        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        multiUserChannel.noise_var = noise_power
+        Re = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         SINR_all_users = multiUserChannel.calc_SINR(
-            F, U, noise_power=noise_power, pe=Pe)
+            F, U, pe=Pe)
 
         # SINR should lower than 10 for these values of noise variance and Pe
         self.assertTrue(np.all(SINR_all_users[0] < 10))
@@ -2462,6 +2489,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         Pe = 1.2
 
         self.multiH.randomize(Nr, Nt, K, NtE)
+        self.multiH.noise_var = noise_power
 
         (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H_no_ext_int,
@@ -2476,10 +2504,15 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk_without_ext_int(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
+
+            # Without noise
+            self.multiH.noise_var = None
             expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=0.0)
                                    + np.dot(HkFk, HkFk.conjugate().T))
+            # With noise
+            self.multiH.noise_var = noise_power
             expected_first_part_with_noise = self.multiH.calc_JP_Q(
-                k, F, noise_power, pe=0.0) + np.dot(HkFk, HkFk.conjugate().T)
+                k, F, pe=0.0) + np.dot(HkFk, HkFk.conjugate().T)
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -2495,10 +2528,10 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test with external interference xxxxxxxxxxxxxxxxxxxxxx
-        Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=0.0, pe=Pe)
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        self.multiH.noise_var = None
+        Re_no_noise = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
+        self.multiH.noise_var = noise_power
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         # For ones stream the expected Bkl is equivalent to the Q matrix
         # plus the direct channel part.
@@ -2506,10 +2539,16 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk_without_ext_int(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
+
+            # without noise
+            self.multiH.noise_var = None
             expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=Pe)
                                    + np.dot(HkFk, HkFk.conjugate().T))
+
+            # with noise
+            self.multiH.noise_var = noise_power
             expected_first_part_with_noise = (
-                self.multiH.calc_JP_Q(k, F, noise_power, pe=Pe)
+                self.multiH.calc_JP_Q(k, F, pe=Pe)
                 + np.dot(HkFk, HkFk.conjugate().T))
 
             # Test without noise
@@ -2648,8 +2687,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # xxxxx Test first with no external interference xxxxxxxxxxxxxxxxxx
         Pe = 0.00
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        self.multiH.noise_var = noise_power
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         for k in range(K):
             Hk = self.multiH.get_Hk_without_ext_int(k)
@@ -2676,8 +2715,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # xxxxx Repeat the test, but now with external interference xxxxxxx
         Pe = 0.1
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(
-            noise_var=noise_power, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
         for k in range(K):
             Hk = self.multiH.get_Hk_without_ext_int(k)
@@ -2723,8 +2761,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         for k in range(K):
             U[k] = aux[k, k].conjugate().T
 
-        SINR_all_users = self.multiH.calc_JP_SINR(
-            F, U, noise_power=0.0, pe=0.0)
+        SINR_all_users = self.multiH.calc_JP_SINR(F, U, pe=0.0)
 
         # xxxxxxxxxx Noise Variance of 0.0, Pe of 0.0 xxxxxxxxxxxxxxxxxxxxx
         # k = 0
@@ -2751,11 +2788,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Noise Variance of 0.01, Pe of 0.63 xxxxxxxxxxxxxxxxxx
         noise_var = 0.01
+        self.multiH.noise_var = noise_var
         Pe = 0.63
-        Re = self.multiH.calc_cov_matrix_extint_plus_noise(noise_var, pe=Pe)
+        Re = self.multiH.calc_cov_matrix_extint_plus_noise(pe=Pe)
 
-        SINR_all_users = self.multiH.calc_JP_SINR(
-            F, U, noise_power=noise_var, pe=Pe)
+        SINR_all_users = self.multiH.calc_JP_SINR(F, U, pe=Pe)
 
         # k = 0
         B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
@@ -3452,11 +3489,12 @@ class BDWithExtIntBaseTestCase(unittest.TestCase):
         # Generate the multi-user channel
         mu_channel = channels.MultiUserChannelMatrixExtInt()
         mu_channel.randomize(Nr, Nt, K, Nti)
+        mu_channel.noise_var = noise_var
 
         bd_obj = blockdiagonalization.BDWithExtIntBase(K, iPu, noise_var, pe)
-        W_all_k = bd_obj.calc_whitening_matrices(mu_channel, noise_var)
+        W_all_k = bd_obj.calc_whitening_matrices(mu_channel)
 
-        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(pe)
         for W, R in zip(W_all_k, R_all_k):
             np.testing.assert_array_almost_equal(
                 W,
@@ -3752,7 +3790,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         Nti = 1
         iPu = 1e-1  # Power for each user (linear scale)
         pe = 1e-3  # External interference power (in linear scale)
-        noise_var = 1e-4
+        noise_var = 1e-1
 
         # The modulator and packet_length are required in the
         # effective_throughput metric case
@@ -3761,6 +3799,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
         multiUserChannel.randomize(Nr, Nt, K, Nti)
+        multiUserChannel.noise_var = noise_var
 
         # Channel from all transmitters to the first receiver
         H1 = multiUserChannel.get_Hk_without_ext_int(0)
@@ -3770,7 +3809,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         # Create the enhancedBD object
         enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
 
-        noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe)
 
         #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
         enhancedBD_obj.set_ext_int_handling_metric(None)
