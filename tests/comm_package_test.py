@@ -1070,7 +1070,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         F = iasolver.full_F
         U = iasolver.full_W
 
-        SINR_all_users = multiUserChannel.calc_SINR(F, U, noise_power=0.0)
+        multiUserChannel.noise_var = None
+        SINR_all_users = multiUserChannel.calc_SINR(F, U)
 
         # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
@@ -1097,8 +1098,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
-        iasolver.noise_var = 0.1
-        SINR_all_users = multiUserChannel.calc_SINR(F, U, noise_power=0.1)
+        noise_var = 0.1
+        iasolver.noise_var = noise_var
+        multiUserChannel.noise_var = noise_var
+        SINR_all_users = multiUserChannel.calc_SINR(F, U)
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
             F, k=0, N0_or_Rek=0.1)
         expected_SINR0 = multiUserChannel._calc_SINR_k(
@@ -1397,7 +1400,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             U[k] = aux[k, k].conjugate().T
 
 
-        SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=0.0)
+        SINR_all_users = self.multiH.calc_JP_SINR(F, U)
 
         # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
@@ -1424,7 +1427,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
-        SINR_all_users = self.multiH.calc_JP_SINR(F, U, noise_power=0.1)
+        self.multiH.noise_var = 0.1
+        SINR_all_users = self.multiH.calc_JP_SINR(F, U)
         B0l_all_l = self.multiH._calc_JP_Bkl_cov_matrix_all_l(
             F, k=0, N0_or_Rek=0.1)
         expected_SINR0 = self.multiH._calc_JP_SINR_k(

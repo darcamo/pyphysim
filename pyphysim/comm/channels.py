@@ -808,7 +808,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         return output
 
     def corrupt_data(self, data):
-        """Corrupt data passed through the channel.
+        """
+        Corrupt data passed through the channel.
 
         If the noise_var is supplied then an white noise will also be
         added.
@@ -935,8 +936,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
 
         Returns
         -------
@@ -947,10 +946,12 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Qk = self._calc_Q_impl(k, F_all_users)
 
         if self.noise_var is not None:
+            # If self.noise_var is not None we add the covariance matrix of
+            # the noise
             Rnk = np.eye(self.Nr[k]) * self.noise_var
-            return Qk + Rnk
-        else:
-            return Qk
+            Qk += Rnk
+
+        return Qk
 
     def _calc_JP_Q_impl(self, k, F_all_users):
         """
@@ -991,8 +992,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
 
         Returns
         -------
@@ -1038,6 +1037,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         # where $\mtR e_k$ is the covariance matrix of the (external
         # interference plus) noise.
         # Note that here the power is already included in `Fk`.
+        if N0_or_Rek is None:
+            N0_or_Rek = 0.0
 
         if isinstance(N0_or_Rek, Number):
             noise_power = N0_or_Rek
@@ -1224,6 +1225,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         # The first part in Bkl is given by
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtI_{N^{[k]}}$$
         # Note that here the power is already included in `Fk`.
+        if noise_power is None:
+            noise_power = 0.0
 
         Rek = (noise_power * np.eye(self.Nr[k]))
         Hk = self.get_Hk(k)
@@ -1383,14 +1386,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return SINR_k
 
-    def calc_SINR(self, F, U, noise_power=0.0):
+    def calc_SINR(self, F, U):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -1398,8 +1400,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
 
         Returns
         -------
@@ -1410,7 +1410,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         SINRs = np.empty(K, dtype=np.ndarray)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, noise_power)
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k,
+                                                        self.noise_var)
             SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
@@ -1475,14 +1476,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Hk = self.get_Hk(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
 
-    def calc_JP_SINR(self, F, U, noise_power=0.0):
+    def calc_JP_SINR(self, F, U):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -1490,8 +1490,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
 
         Returns
         -------
@@ -1502,7 +1500,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         SINRs = np.empty(K, dtype=np.ndarray)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power)
+            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k,
+                                                           self.noise_var)
             SINRs[k] = self._calc_JP_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
@@ -1633,8 +1632,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         """
         Corrupt data passed through the channel.
 
-        If the noise_var is supplied then an white noise will also be
-        added.
+        If the noise_var member variable is not None then an white noise
+        will also be added.
 
         Parameters
         ----------
@@ -1664,8 +1663,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         """
         Corrupt data passed through the channel.
 
-        If the noise_var is supplied then an white noise will also be
-        added.
+        If the noise_var member variable is not None then an white noise
+        will also be added.
 
         Parameters
         ----------
@@ -2003,18 +2002,16 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         # where $Ke$ is the number of external interference sources and
         # ${e_j}$ is the j-th external interference source.
 
-        if self.noise_var is None:
-            noise_var = 0.0
-        else:
-            noise_var = self.noise_var
-
         # Calculate the covariance matrix of the external interference
-        # without noise ...
+        # without noise.
         R = self.calc_cov_matrix_extint_without_noise(pe)
 
-        # ... and then add the noise
-        for i in range(len(R)):
-            R[i] += np.eye(self.Nr[i]) * noise_var
+        if self.noise_var is not None:
+            # If self.noise_var is not None then let's add the noise
+            # covariance matrix
+            noise_var = self.noise_var
+            for i in range(len(R)):
+                R[i] += np.eye(self.Nr[i]) * noise_var
 
         return R
 
@@ -2038,8 +2035,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
         pe : float
             The power of the external interference source(s).
 
@@ -2104,8 +2099,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
         pe : float
             The power of the external interference source(s).
 
@@ -2126,8 +2119,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -2244,8 +2236,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
