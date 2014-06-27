@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1103
+
 """Module with implementation of channel related classes.
 
 The :class:`MultiUserChannelMatrix` and
@@ -285,8 +287,9 @@ class JakesSampleGenerator(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class MultiUserChannelMatrix(object):
-    """Stores the (fast fading) channel matrix of a multi-user scenario. The
+class MultiUserChannelMatrix(object):  # pylint: disable=R0902
+    """
+    Stores the (fast fading) channel matrix of a multi-user scenario. The
     path-loss from each transmitter to each receiver is also be accounted if
     the set_pathloss is called to set the path-loss matrix.
 
@@ -362,9 +365,9 @@ class MultiUserChannelMatrix(object):
         self._last_noise = None  # Store the AWGN noise array from the last
                                  # time any of the corrupt*_data methods
                                  # were called.
-        self._last_noise_var = 0.0  # Store the noise variance from the
-                                    # last time any of the corrupt*_data
-                                    # methods were called.
+        self._noise_var = None  # Store the noise variance. If None, then
+                                # no noise is added in the "corrupt_*data"
+                                # methods.
 
         self._W = None  # Post processing filters (a list of 2D numpy
                         # arrays) for each user
@@ -372,7 +375,8 @@ class MultiUserChannelMatrix(object):
                             # matrix.
 
     def set_channel_seed(self, seed=None):
-        """Set the seed of the RandomState object used to generate the random
+        """
+        Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
 
         Parameters
@@ -380,12 +384,12 @@ class MultiUserChannelMatrix(object):
         seed : Int or array like
             Random seed initializing the pseudo-random number
             generator. See np.random.RandomState help for more info.
-
         """
         self._RS_channel.seed(seed=seed)
 
-    def set_noise_seed(self, seed):
-        """Set the seed of the RandomState object used to generate the random
+    def set_noise_seed(self, seed=None):
+        """
+        Set the seed of the RandomState object used to generate the random
         noise elements (when the corrupt data function is called).
 
         Parameters
@@ -393,7 +397,6 @@ class MultiUserChannelMatrix(object):
         seed : Int or array like
             Random seed initializing the pseudo-random number
             generator. See np.random.RandomState help for more info.
-
         """
         self._RS_noise.seed(seed)
 
@@ -474,9 +477,16 @@ class MultiUserChannelMatrix(object):
         return self._last_noise
 
     @property
-    def last_noise_var(self):
-        """Get method for the last_noise_var property."""
-        return self._last_noise_var
+    def noise_var(self):
+        """Get method for the noise_var property."""
+        return self._noise_var
+
+    @noise_var.setter
+    def noise_var(self, value):
+        """Set method for the noise_var property."""
+        if value is not None:
+            assert value >= 0.0, "Noise variance must be >= 0."
+        self._noise_var = value
 
     @staticmethod
     def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
@@ -752,10 +762,12 @@ class MultiUserChannelMatrix(object):
                 self._big_W = block_diag(*self.W)
         return self._big_W
 
-    def corrupt_concatenated_data(self, data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_concatenated_data(self, data):
+        """
+        Corrupt data passed through the channel.
 
-        If the noise_var is supplied then white noise will also be added.
+        If self.noise_var is set to some scalar number then white noise
+        will also be added.
 
         Parameters
         ----------
@@ -765,9 +777,6 @@ class MultiUserChannelMatrix(object):
             NSymb. That is, the number of rows corresponds to the sum of
             the number of transmit antennas of all users and the number of
             columns correspond to the number of transmitted symbols.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -776,21 +785,21 @@ class MultiUserChannelMatrix(object):
             to the sum of the number of receive antennas of all users and
             the number of columns correspond to the number of transmitted
             symbols.
-
         """
         # Note that self.big_H already accounts the path loss (while
         # self._big_H_no_pathloss does not)
 
         output = np.dot(self.big_H, data)
-        if noise_var is not None:
+
+        # Add the noise, if self.noise_var is not None
+        if self.noise_var is not None:
             awgn_noise = (
-                randn_c_RS(self._RS_noise, *output.shape) * np.sqrt(noise_var))
+                randn_c_RS(self._RS_noise, *output.shape)
+                * np.sqrt(self.noise_var))
             output = output + awgn_noise
             self._last_noise = awgn_noise
-            self._last_noise_var = noise_var
         else:
             self._last_noise = None
-            self._last_noise_var = 0.0
 
         # Apply the post processing filter (if there is one set)
         if self.big_W is not None:
@@ -798,7 +807,7 @@ class MultiUserChannelMatrix(object):
 
         return output
 
-    def corrupt_data(self, data, noise_var=None):
+    def corrupt_data(self, data):
         """Corrupt data passed through the channel.
 
         If the noise_var is supplied then an white noise will also be
@@ -812,9 +821,6 @@ class MultiUserChannelMatrix(object):
             dimension Nt_k x NSymbs, where Nt_k is the number of transmit
             antennas of the k-th user and NSymbs is the number of
             transmitted symbols.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -833,7 +839,7 @@ class MultiUserChannelMatrix(object):
 
         concatenated_data = np.vstack(data)
         concatenated_output = self.corrupt_concatenated_data(
-            concatenated_data, noise_var)
+            concatenated_data)
 
         output = np.zeros(self.K, dtype=np.ndarray)
         cumNr = np.hstack([0, np.cumsum(self._Nr)])
@@ -1376,7 +1382,7 @@ class MultiUserChannelMatrix(object):
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         Parameters
         ----------
@@ -1468,7 +1474,7 @@ class MultiUserChannelMatrix(object):
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         Parameters
         ----------
@@ -1493,8 +1499,10 @@ class MultiUserChannelMatrix(object):
         return SINRs
 
 
-class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
-    """Very similar to the MultiUserChannelMatrix class, but the
+class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
+        MultiUserChannelMatrix):
+    """
+    Very similar to the MultiUserChannelMatrix class, but the
     MultiUserChannelMatrixExtInt also includes the effect of an external
     interference.
 
@@ -1613,8 +1621,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         H = MultiUserChannelMatrix._get_H(self)
         return H[:self.K, :self.K]
 
-    def corrupt_data(self, data, ext_int_data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_data(self, data, ext_int_data):
+        """
+        Corrupt data passed through the channel.
 
         If the noise_var is supplied then an white noise will also be
         added.
@@ -1633,9 +1642,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             by the l-th external interference source, which must have a
             dimension of NtEl x NSymbs, where NtEl is the number of
             transmit antennas of the l-th external interference source.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -1644,10 +1650,11 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             2D numpy array) of a user.
         """
         input_data = np.hstack([data, ext_int_data])
-        return MultiUserChannelMatrix.corrupt_data(self, input_data, noise_var)
+        return MultiUserChannelMatrix.corrupt_data(self, input_data)
 
-    def corrupt_concatenated_data(self, data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_concatenated_data(self, data):
+        """
+        Corrupt data passed through the channel.
 
         If the noise_var is supplied then an white noise will also be
         added.
@@ -1662,9 +1669,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             corresponds to the sum of the number of transmit antennas of
             all users and external interference sources and the number of
             columns correspond to the number of transmitted symbols.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -1675,9 +1679,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             symbols.
 
         """
-        return MultiUserChannelMatrix.corrupt_concatenated_data(self,
-                                                                data,
-                                                                noise_var)
+        return MultiUserChannelMatrix.corrupt_concatenated_data(self, data)
 
     def get_Hk_without_ext_int(self, k):
         """Get the channel from all transmitters (without including the
@@ -2088,7 +2090,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         Parameters
         ----------
@@ -2206,7 +2208,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         Parameters
         ----------

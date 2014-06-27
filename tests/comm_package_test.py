@@ -475,7 +475,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # call the code that does the noise addition, but with a variance
         # so low that the expected output should be the same (we do this in
         # order to be able to test it).
-        output3 = self.multiH.corrupt_data(input_data, 1e-20)
+        self.multiH.noise_var = 1e-20
+        output3 = self.multiH.corrupt_data(input_data)
         np.testing.assert_array_almost_equal(output3[0], expected_output2[0])
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
@@ -554,6 +555,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
     def test_last_noise_property(self):
         noise_var = 1e-2
+        self.multiH.noise_var = noise_var
+
         H = np.eye(6)
         self.multiH.init_from_channel_matrix(H,
                                              np.array([2, 2, 2]),
@@ -562,7 +565,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         data = randn_c(6, 10)
 
-        corrupted_data = self.multiH.corrupt_concatenated_data(data, noise_var)
+        corrupted_data = self.multiH.corrupt_concatenated_data(data)
         last_noise = self.multiH.last_noise
 
         expected_corrupted_data = data + last_noise
@@ -570,15 +573,15 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_corrupted_data,
                                              corrupted_data)
 
-        last_noise_var = self.multiH.last_noise_var
-        self.assertAlmostEqual(noise_var, last_noise_var)
+        self.assertAlmostEqual(noise_var, self.multiH.noise_var)
 
         # Call corrupt_concatenated_data again, but without noise var. This
-        # should set last_noise to None and last_noise_var to zero.
+        # should set last_noise to None and noise_var to None.
+        self.multiH.noise_var = None
         corrupted_data = self.multiH.corrupt_concatenated_data(data)
         np.testing.assert_array_almost_equal(corrupted_data, data)
         self.assertIsNone(self.multiH.last_noise)
-        self.assertAlmostEqual(self.multiH.last_noise_var, 0.0)
+        self.assertIsNone(self.multiH.noise_var)
 
     def test_calc_Q(self):
         K = 3
@@ -970,6 +973,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
     def test_underline_calc_SINR_k(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel.noise_var = 0.0
+
         #iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
@@ -1052,6 +1057,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         multiUserChannel.randomize(Nr, Nt, K)
+        multiUserChannel.noise_var = 0.0
         iasolver = ClosedFormIASolver(multiUserChannel)
         iasolver.solve(Ns, P)
         F = iasolver.full_F
@@ -2314,6 +2320,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                                                      SINR_k_all_l[l])
 
         # xxxxxxxxxx Repeat the tests, but now using an IA solution xxxxxxx
+        multiUserChannel.noise_var = 0.0
         iasolver = ClosedFormIASolver(multiUserChannel)
         iasolver.solve(Ns=2)
         F = iasolver.full_F
@@ -2360,6 +2367,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
         multiUserChannel.randomize(Nr, Nt, K, NtE)
 
+        multiUserChannel.noise_var = 0.0
         iasolver = ClosedFormIASolver(multiUserChannel)
         iasolver.solve(Ns, P)
         F = iasolver.full_F
