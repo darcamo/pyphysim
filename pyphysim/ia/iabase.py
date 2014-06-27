@@ -21,7 +21,7 @@ from ..util.conversion import linear2dB
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Base Class for all IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class IASolverBaseClass(object):
+class IASolverBaseClass(object):  # pylint: disable=R0902
     """
     Base class for all Interference Alignment Algorithms.
 
@@ -319,9 +319,6 @@ class IASolverBaseClass(object):
 
         self._W = W
         self._W_H = W_H
-
-        pass
-
 
     def _calc_equivalent_channel(self, k):
         """

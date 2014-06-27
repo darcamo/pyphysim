@@ -10,3 +10,4 @@
 -/.ropeproject
 -*.npz
 -*.mat
+-*ltxpng*
