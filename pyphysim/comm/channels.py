@@ -287,6 +287,8 @@ class JakesSampleGenerator(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: Maybe remove the N0_or_Rek argument of the "*calc_Bkl*" methods and
+# use the value of self.noise_var whenever possible.
 class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     """
     Stores the (fast fading) channel matrix of a multi-user scenario. The

@@ -16,12 +16,12 @@ __revision__ = "$Revision$"
 import sys
 import os
 try:
+    current_dir = os.path.abspath(os.path.dirname(__file__))
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
 except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 import unittest
 import doctest
