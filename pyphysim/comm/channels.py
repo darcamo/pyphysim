@@ -333,7 +333,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
     In order to get the channel matrix of a specific user `k` to another
     user `l`, call the `get_Hkl` method.
-
     """
 
     def __init__(self):
@@ -949,7 +948,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         if self.noise_var is not None:
             # If self.noise_var is not None we add the covariance matrix of
-            # the noise
+            # the noise.
             Rnk = np.eye(self.Nr[k]) * self.noise_var
             Qk += Rnk
 
@@ -1519,10 +1518,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     non-uniform size) where each block is a channel from one transmitter to
     one receiver and the block size is equal to the number of receive
     antennas of the receiver times the number of transmit antennas of the
-    transmitter. The difference compared with the MultiUserChannelMatrix
-    class is that in the MultiUserChannelMatrixExtInt class the
-    interference user counts as one more user, but with zero receive
-    antennas.
+    transmitter. The difference compared with MultiUserChannelMatrix is
+    that in the MultiUserChannelMatrixExtInt class the interference user
+    counts as one more user, but with zero receive antennas.
 
     For instance, in a 3-users scenario the block (1,0) corresponds to the
     channel between the transmit antennas of user 0 and the receive
@@ -1557,7 +1555,6 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     The methods from the MultiUserChannelMatrix class that makes sense were
     reimplemented here to include information regarding the external
     interference.
-
     """
 
     def __init__(self):
@@ -1971,18 +1968,18 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        R : 1D array of numpy matrices
+        R_all_k : 1D array of numpy matrices
             Return a numpy array, where each element is the covariance
             matrix of the external interference at one receiver.
         """
         # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H$$
-        R = np.empty(self.Nr.size, dtype=np.ndarray)
+        R_all_k = np.empty(self.Nr.size, dtype=np.ndarray)
         cum_Nr = np.hstack([0, np.cumsum(self.Nr)])
 
         for ii in range(self.Nr.size):
             extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
-            R[ii] = pe * np.dot(extH, extH.transpose().conjugate())
-        return R
+            R_all_k[ii] = pe * np.dot(extH, extH.transpose().conjugate())
+        return R_all_k
 
     def calc_cov_matrix_extint_plus_noise(self, pe=1):
         """
@@ -1996,7 +1993,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        R : 1D array of numpy matrices
+        R_all_k : 1D array of numpy matrices
             Return a numpy array, where each element is the covariance
             matrix of the external interference plus noise at one receiver.
         """
@@ -2006,16 +2003,16 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         # Calculate the covariance matrix of the external interference
         # without noise.
-        R = self.calc_cov_matrix_extint_without_noise(pe)
+        R_all_k = self.calc_cov_matrix_extint_without_noise(pe)
 
         if self.noise_var is not None:
             # If self.noise_var is not None then let's add the noise
             # covariance matrix
             noise_var = self.noise_var
-            for i in range(len(R)):
-                R[i] += np.eye(self.Nr[i]) * noise_var
+            for i in range(len(R_all_k)):
+                R_all_k[i] += np.eye(self.Nr[i]) * noise_var
 
-        return R
+        return R_all_k
 
     def calc_Q(self, k, F_all_users, pe=1.0):
         """
@@ -2046,8 +2043,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \mtR_e$$
-        Rek = self.calc_cov_matrix_extint_plus_noise(pe)
-        Qk = self._calc_Q_impl(k, F_all_users) + Rek[k]
+        Rek_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
+        Qk = self._calc_Q_impl(k, F_all_users) + Rek_all_k[k]
 
         return Qk
 
@@ -2110,8 +2107,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \mtR_e$$
-        Rek = self.calc_cov_matrix_extint_plus_noise(pe)
-        Qk = self._calc_JP_Q(k, F_all_users) + Rek[k]
+        Rek_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
+        Qk = self._calc_JP_Q(k, F_all_users) + Rek_all_k[k]
 
         return Qk
 
@@ -2140,10 +2137,10 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
-        Re = self.calc_cov_matrix_extint_plus_noise(pe)
+        Re_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, Re_all_k[k])
             SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
@@ -2255,9 +2252,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
-        Re = self.calc_cov_matrix_extint_plus_noise(pe)
+        Re_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, Re[k])
+            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, Re_all_k[k])
             SINRs[k] = self._calc_JP_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
