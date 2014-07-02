@@ -16,15 +16,16 @@ import numpy as np
 __all__ = ['MimoBase', 'Blast', 'Alamouti']
 
 # TODO: maybe you can use the weave module (inline or blitz methods) from
-# scipy to spped up things here.
+# scipy to speed up things here.
 # See http://docs.scipy.org/doc/scipy/reference/tutorial/weave.html
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx MimoBase Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MimoBase Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MimoBase(object):
-    """Base Class for MIMO schemes.
+    """
+    Base Class for MIMO schemes.
 
     All subclasses must implement the following methods:
 
@@ -37,14 +38,14 @@ class MimoBase(object):
     - :meth:`decode`:
       Analogous to the encode method, the decode method must perform
       everything performed at the receiver.
-
     """
 
     def __init__(self):
         pass
 
     def getNumberOfLayers(self):  # pragma: no cover
-        """Get the number of layers of the MIMO scheme.
+        """
+        Get the number of layers of the MIMO scheme.
 
         Notes
         -----
@@ -55,7 +56,8 @@ class MimoBase(object):
 
     @staticmethod
     def _calcZeroForceFilter(channel):
-        """Calculates the Zero-Force filter to cancel the inter-stream
+        """
+        Calculates the Zero-Force filter to cancel the inter-stream
         interference.
 
         Parameters
@@ -72,13 +74,13 @@ class MimoBase(object):
         -----
         The Zero-Force filter basically corresponds to the pseudo-inverse
         of the channel matrix.
-
         """
         return np.linalg.pinv(channel)
 
     @staticmethod
     def _calcMMSEFilter(channel, noise_var):
-        """Calculates the MMSE filter to cancel the inter-stream interference.
+        """
+        Calculates the MMSE filter to cancel the inter-stream interference.
 
         Parameters
         ----------
@@ -93,9 +95,10 @@ class MimoBase(object):
             The MMSE receive filter.
         """
         H = channel
-        H_H = H.transpose().conjugate()
+        H_H = H.conj().T
         Nt = H.shape[1]
-        W = np.dot(np.linalg.inv(np.dot(H_H, H) + noise_var * np.eye(Nt)), H_H)
+        W = np.linalg.solve(np.dot(H_H, H) + noise_var * np.eye(Nt), H_H)
+
         return W
 
     def encode(self, transmit_data):  # pragma: no cover, pylint: disable=W0613
@@ -119,7 +122,8 @@ class MimoBase(object):
 # xxxxxxxxxxxxxxx Blast Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Blast(MimoBase):
-    """MIMO class for the BLAST scheme.
+    """
+    MIMO class for the BLAST scheme.
 
     The number of streams need to be specified during object creation.
 
@@ -127,11 +131,11 @@ class Blast(MimoBase):
     :meth:`set_noise_var` method). Of the noise variance is positive the
     MMSE filter will be used, otherwise noise variance will be ignored and
     the Zero-Forcing filter will be used.
-
     """
 
     def __init__(self, nStreams):
-        """Initialized the Blast object.
+        """
+        Initialized the Blast object.
 
         Parameters
         ----------
@@ -145,7 +149,8 @@ class Blast(MimoBase):
         self.nStreams = nStreams
 
     def getNumberOfLayers(self):
-        """Get the number of layers of the Blast scheme.
+        """
+        Get the number of layers of the Blast scheme.
 
         Returns
         -------
@@ -155,7 +160,8 @@ class Blast(MimoBase):
         return self.nStreams
 
     def set_noise_var(self, noise_var):
-        """Set the noise variance for the MMSE receive filter.
+        """
+        Set the noise variance for the MMSE receive filter.
 
         If noise_var is non-positive then the Zero-Force filter will be
         used instead.
@@ -166,7 +172,6 @@ class Blast(MimoBase):
             Noise variance for the MMSE filter (if `noise_var` is
             positive). If `noise_var` is negative then the Zero-Forcing
             filter will be used and `noise_var` will be ignored.
-
         """
         self.noise_var = noise_var
         if noise_var > 0:
@@ -177,8 +182,10 @@ class Blast(MimoBase):
             self.calc_filter = MimoBase._calcZeroForceFilter
 
     def _encode(self, transmit_data):
-        """Encode the transmit data array to be transmitted using the BLAST
-        scheme, but **WITHOUT** dividing the power among the transmit antennas.
+        """
+        Encode the transmit data array to be transmitted using the BLAST
+        scheme, but **WITHOUT** dividing the power among the transmit
+        antennas.
 
         The idea is that the encode method will call _encode and perform
         the power division. This separation allows better code reuse.
@@ -204,7 +211,6 @@ class Blast(MimoBase):
         See also
         --------
         encode
-
         """
         num_elements = transmit_data.size
         if num_elements % self.nStreams != 0:
@@ -217,7 +223,8 @@ class Blast(MimoBase):
             self.nStreams, num_elements / self.nStreams, order='F')
 
     def encode(self, transmit_data):
-        """Encode the transmit data array to be transmitted using the BLAST
+        """
+        Encode the transmit data array to be transmitted using the BLAST
         scheme.
 
         Parameters
@@ -272,7 +279,8 @@ class Blast(MimoBase):
         return decoded_data
 
     def decode(self, received_data, channel):
-        """Decode the received data array.
+        """
+        Decode the received data array.
 
         Parameters
         ----------
@@ -294,16 +302,19 @@ class Blast(MimoBase):
 # xxxxxxxxxxxxxxx Alamouti Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Alamouti(MimoBase):
-    """MIMO class for the Alamouti scheme.
+    """
+    MIMO class for the Alamouti scheme.
     """
 
     def __init__(self, ):
-        """Initialized the Alamouti object.
+        """
+        Initialized the Alamouti object.
         """
         MimoBase.__init__(self)
 
     def getNumberOfLayers(self):
-        """Get the number of layers of the Alamouti scheme.
+        """
+        Get the number of layers of the Alamouti scheme.
 
         The number of layers in the Alamouti scheme is always equal to
         one.
@@ -312,14 +323,14 @@ class Alamouti(MimoBase):
         -------
         Nl : int
             Number of layers of the Alamouti scheme, which is always one.
-
         """
         return 1
 
     @staticmethod
     def _encode(transmit_data):
-        """Perform the Alamouti encoding, but without dividing the power
-        among the transmit antennas.
+        """
+        Perform the Alamouti encoding, but without dividing the power among
+        the transmit antennas.
 
         The idea is that the encode method will call _encode and perform
         the power division. This separation allows better code reuse.
@@ -349,7 +360,8 @@ class Alamouti(MimoBase):
         return encoded_data
 
     def encode(self, transmit_data):
-        """Perform the Alamouiti encoding.
+        """
+        Perform the Alamouiti encoding.
 
         Parameters
         ----------
@@ -365,9 +377,10 @@ class Alamouti(MimoBase):
 
     @staticmethod
     def _decode(received_data, channel):
-        """Perform the decoding of the received_data for the Alamouit
-        scheme with the channel `channel`, but does not compensate for the
-        power division among transmit antennas.
+        """
+        Perform the decoding of the received_data for the Alamouit scheme with
+        the channel `channel`, but does not compensate for the power
+        division among transmit antennas.
 
         The idea is that the decode method will call _decode and perform
         the power compensation. This separation allows better code reuse.
@@ -389,7 +402,6 @@ class Alamouti(MimoBase):
         See also
         --------
         decode
-
         """
         Ns = received_data.shape[1]
         # Number of Alamouti codewords
@@ -421,8 +433,9 @@ class Alamouti(MimoBase):
         return decoded_data
 
     def decode(self, received_data, channel):
-        """Perform the decoding of the received_data for the Alamouit
-        scheme with the channel `channel`.
+        """
+        Perform the decoding of the received_data for the Alamouit scheme with
+        the channel `channel`.
 
         Parameters
         ----------
