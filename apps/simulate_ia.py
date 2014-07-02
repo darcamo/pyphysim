@@ -124,10 +124,6 @@ class IASimulationRunner(SimulationRunner):
         self.multiUserChannel.randomize(Nr, Nt, K)
         self.multiUserChannel.noise_var = noise_var
 
-        # We wouldn't need to explicitly set self.ia_solver.noise_var
-        # variable if the multiUserChannel object had the correct value at
-        # this point.
-        self.ia_solver.noise_var = noise_var
         self.ia_solver.clear()
         self.ia_solver.solve(Ns)
 

@@ -224,20 +224,23 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test the noise_var property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # It starts as "None"
-        self.assertIsNone(self.iasolver._noise_var)
+        # The noise_var property in the IA solver object basically returns
+        # the noise_var of the channel object (or zero if it is not zet in
+        # the channel object).
+        self.assertIsNone(multiUserChannel.noise_var)
+
         # If we try to get the value of the noise_var property it will
         # return the value of the noise_var property of the
         # multiUserChannel object
-        self.assertEqual(self.iasolver.noise_var, 0.0)
-        self.iasolver._multiUserChannel.noise_var = 1.3
+        self.assertAlmostEqual(self.iasolver.noise_var, 0.0)
+
+        # If we change the noise_var property int the channel object it
+        # will change in the IA solver object.
+        multiUserChannel.noise_var = 1.3
         self.assertEqual(self.iasolver.noise_var, 1.3)
-        # But if we set the noise_var property to some (non negative) value
-        # it will be respected.
-        self.iasolver.noise_var = 1.5
+
+        multiUserChannel.noise_var = 1.5
         self.assertEqual(self.iasolver.noise_var, 1.5)
-        with self.assertRaises(AssertionError):
-            self.iasolver.noise_var = -0.6
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_randomizeF(self):
@@ -959,7 +962,10 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
     def test_solve_and_calc_equivalent_channel(self):
         Ns = 1
         P = [0.8, 1.1, 0.956]
+        self.iasolver._multiUserChannel.noise_var = 1e-4
+
         self.iasolver.solve(Ns, P)
+
         for l in range(3):
             for k in range(3):
                 Hlk = self.iasolver._get_channel(l, k)
@@ -1386,7 +1392,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
             iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
 
         iasolver.max_iterations = 200
-        iasolver.noise_var = 1e-10
+        multiUserChannel.noise_var = 1e-10
 
         iasolver.solve(Ns, P)
 
@@ -1478,12 +1484,6 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
     def test_calc_SINR_old(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
-
-        # xxxxxxxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        multiUserChannel.set_channel_seed(42)
-        multiUserChannel.set_noise_seed(456)
-        np.random.seed(25)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         iasolver = AlternatingMinIASolver(multiUserChannel)
         K = 3
         Nr = 4
@@ -1558,7 +1558,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Repeat the calculation, but now including the noise
         noise_var = 1e-2
-        iasolver.noise_var = noise_var
+        multiUserChannel.noise_var = noise_var
         SINRs = iasolver.calc_SINR_old()
 
         expected_SINRs2 = np.empty(K, dtype=np.ndarray)
@@ -1701,7 +1701,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
-        self.iasolver.noise_var = 1.0
+        self.iasolver._multiUserChannel.noise_var = 1.0
 
         # Calculates Bkl for all streams (l index) of all users (k index)
         for k in range(self.K):
@@ -1828,7 +1828,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 
         # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
-        iasolver.noise_var = 0.1
+        multiUserChannel.noise_var = 0.1
         SINR_all_users = iasolver.calc_SINR()
         B0l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=0, noise_power=0.1)
         expected_SINR0 = iasolver._calc_SINR_k(0, B0l_all_l)
@@ -2028,7 +2028,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
             filename='MaxSINR_test_solve_state.pickle',
             iasolver=iasolver, Nr=Nr, Nt=Nt, K=K)
 
-        iasolver.noise_var = 1e-4
+        multiUserChannel.noise_var = 1e-4
         iasolver.max_iterations = 200
         try:
             iasolver.randomizeF(Ns, P)
@@ -2135,9 +2135,9 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
+        multiUserChannel.noise_var = 1e-8
 
         iasolver = MaxSinrIASolver(multiUserChannel)
-        iasolver.noise_var = 1e-50
 
         iasolver.solve(Ns, P)
 
@@ -2177,14 +2177,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         # Transmit power of all users
         self.P = np.array([1.2, 1.5, 0.9])
 
-        # xxxxx Debug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        np.random.seed(42)  # Used in the generation of the random precoder
-        self.iasolver._multiUserChannel.set_channel_seed(324)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-        #self.iasolver.randomizeF(self.Ns, self.P)
-        #self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
     def test_getCost(self):
         self.iasolver.randomizeF(self.Ns, self.P)
@@ -2579,7 +2572,7 @@ class MMSEIASolverTestCase(CustomTestCase):
             filename='MMSE_test_solve_state.pickle',
             iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
 
-        self.iasolver.noise_var = 1e-3
+        self.iasolver._multiUserChannel.noise_var = 1e-3
         P = self.P
 
         self.iasolver.max_iterations = 200
@@ -2761,7 +2754,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         multiUserChannel.randomize(Nr, Nt, K)
 
         iasolver = MMSEIASolver(multiUserChannel)
-        iasolver.noise_var = 0.1
+        multiUserChannel.noise_var = 0.1
 
         iasolver.solve(Ns, P)
 

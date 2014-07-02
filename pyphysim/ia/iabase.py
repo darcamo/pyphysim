@@ -75,9 +75,6 @@ class IASolverBaseClass(object):
         self._P = None  # Power of each user (P is an 1D numpy array). If
                         # not set (_P is None), then a power of 1 will be
                         # used for each transmitter.
-        self._noise_var = None  # If None, then the value of noise_var
-                                # in the multiUserChannel object will be
-                                # used.
 
         # Precoder and receive filters (numpy arrays of numpy arrays)
         self._F = None  # Precoder: One precoder for each user
@@ -154,20 +151,11 @@ class IASolverBaseClass(object):
     @property
     def noise_var(self):
         """Get method for the noise_var property."""
-        if self._noise_var is None:
-            noise_var = self._multiUserChannel.noise_var
-            if noise_var is None:
-                return 0.0
-            else:
-                return noise_var
+        noise_var = self._multiUserChannel.noise_var
+        if noise_var is None:
+            return 0.0
         else:
-            return self._noise_var
-
-    @noise_var.setter
-    def noise_var(self, value):
-        """Set method for the noise_var property."""
-        assert value >= 0.0, "Noise variance must be >= 0."
-        self._noise_var = value
+            return noise_var
 
     @property
     def F(self):
