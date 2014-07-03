@@ -2,7 +2,7 @@
         SNR = [20 25 30]
         M = 4
         modulator = PSK
-        NSymbs = 1000000
+        NSymbs = 100
         K = 3
         Nr = 4
         Nt = 4

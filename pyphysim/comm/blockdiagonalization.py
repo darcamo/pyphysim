@@ -641,7 +641,8 @@ class BDWithExtIntBase(BlockDiaginalizer):
     into account the external interference.
     """
     def __init__(self, num_users, iPu, noise_var, pe):
-        """Initializes the EnhancedBD object.
+        """
+        Initializes the EnhancedBD object.
 
         Parameters
         ----------
@@ -657,8 +658,13 @@ class BDWithExtIntBase(BlockDiaginalizer):
         BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
-    def calc_whitening_matrices(self, mu_channel, noise_var):
+    def calc_whitening_matrices(self, mu_channel):
         """
+        Calculates the whitening receive filters for each user.
+
+        Note that to consider the noise variance it must be set in the
+        provided mu_channel object.
+
         Parameters
         ----------
         mu_channel : MultiUserChannelMatrixExtInt object.
@@ -675,8 +681,7 @@ class BDWithExtIntBase(BlockDiaginalizer):
             for a receiver.
         """
         K = mu_channel.K
-        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(
-            noise_var, self.pe)
+        R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(self.pe)
         W_all_k = [calc_whitening_matrix(R_all_k[k]).conjugate().T
                    for k in range(K)]
         return W_all_k
@@ -739,8 +744,9 @@ class WhiteningBD(BDWithExtIntBase):
         return Wk_all_users
 
     def block_diagonalize_no_waterfilling(self, mu_channel):
-        """Perform the block diagonalization of `mu_channel` taking the
-        external interference into account.
+        """
+        Perform the block diagonalization of `mu_channel` taking the external
+        interference into account.
 
         Parameters
         ----------
@@ -759,7 +765,6 @@ class WhiteningBD(BDWithExtIntBase):
             filter for a user.
         Ns_all_users: 1D numpy array of ints
             Number of streams of each user.
-
         """
         Nr = mu_channel.Nr
         Nt = mu_channel.Nt
@@ -768,8 +773,7 @@ class WhiteningBD(BDWithExtIntBase):
         H_matrix = mu_channel.big_H_no_ext_int
 
         # Get the whitening filters. This is a list of 2D numpy arrays
-        whitening_filter_all_k = self.calc_whitening_matrices(mu_channel,
-                                                              self.noise_var)
+        whitening_filter_all_k = self.calc_whitening_matrices(mu_channel)
 
         # Creates a block diagonal matrix with the whitening filters for
         # each user in the "diagonal" of this block diagonal matrix.
@@ -1176,8 +1180,7 @@ class EnhancedBD(BDWithExtIntBase):
         Nr = mu_channel.Nr
         Nt = mu_channel.Nt
         H_matrix = mu_channel.big_H_no_ext_int
-        Re = mu_channel.calc_cov_matrix_extint_plus_noise(
-            self.noise_var, self.pe)
+        Re = mu_channel.calc_cov_matrix_extint_plus_noise(self.pe)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1256,8 +1259,7 @@ class EnhancedBD(BDWithExtIntBase):
         Nr = mu_channel.Nr
         Nt = mu_channel.Nt
         H_matrix = mu_channel.big_H_no_ext_int
-        Re = mu_channel.calc_cov_matrix_extint_plus_noise(
-            self.noise_var, self.pe)
+        Re = mu_channel.calc_cov_matrix_extint_plus_noise(self.pe)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

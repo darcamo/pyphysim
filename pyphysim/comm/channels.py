@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pylint: disable=E1103
+
 """Module with implementation of channel related classes.
 
 The :class:`MultiUserChannelMatrix` and
@@ -261,8 +263,11 @@ class JakesSampleGenerator(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class MultiUserChannelMatrix(object):
-    """Stores the (fast fading) channel matrix of a multi-user scenario. The
+# TODO: Maybe remove the N0_or_Rek argument of the "*calc_Bkl*" methods and
+# use the value of self.noise_var whenever possible.
+class MultiUserChannelMatrix(object):  # pylint: disable=R0902
+    """
+    Stores the (fast fading) channel matrix of a multi-user scenario. The
     path-loss from each transmitter to each receiver is also be accounted if
     the set_pathloss is called to set the path-loss matrix.
 
@@ -304,7 +309,6 @@ class MultiUserChannelMatrix(object):
 
     In order to get the channel matrix of a specific user `k` to another
     user `l`, call the `get_Hkl` method.
-
     """
 
     def __init__(self):
@@ -338,9 +342,9 @@ class MultiUserChannelMatrix(object):
         self._last_noise = None  # Store the AWGN noise array from the last
                                  # time any of the corrupt*_data methods
                                  # were called.
-        self._last_noise_var = 0.0  # Store the noise variance from the
-                                    # last time any of the corrupt*_data
-                                    # methods were called.
+        self._noise_var = None  # Store the noise variance. If it is None,
+                                # then no noise is added in the
+                                # "corrupt_*data" methods.
 
         self._W = None  # Post processing filters (a list of 2D numpy
                         # arrays) for each user
@@ -348,7 +352,8 @@ class MultiUserChannelMatrix(object):
                             # matrix.
 
     def set_channel_seed(self, seed=None):
-        """Set the seed of the RandomState object used to generate the random
+        """
+        Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
 
         Parameters
@@ -356,12 +361,12 @@ class MultiUserChannelMatrix(object):
         seed : Int or array like
             Random seed initializing the pseudo-random number
             generator. See np.random.RandomState help for more info.
-
         """
         self._RS_channel.seed(seed=seed)
 
-    def set_noise_seed(self, seed):
-        """Set the seed of the RandomState object used to generate the random
+    def set_noise_seed(self, seed=None):
+        """
+        Set the seed of the RandomState object used to generate the random
         noise elements (when the corrupt data function is called).
 
         Parameters
@@ -369,7 +374,6 @@ class MultiUserChannelMatrix(object):
         seed : Int or array like
             Random seed initializing the pseudo-random number
             generator. See np.random.RandomState help for more info.
-
         """
         self._RS_noise.seed(seed)
 
@@ -450,9 +454,16 @@ class MultiUserChannelMatrix(object):
         return self._last_noise
 
     @property
-    def last_noise_var(self):
-        """Get method for the last_noise_var property."""
-        return self._last_noise_var
+    def noise_var(self):
+        """Get method for the noise_var property."""
+        return self._noise_var
+
+    @noise_var.setter
+    def noise_var(self, value):
+        """Set method for the noise_var property."""
+        if value is not None:
+            assert value >= 0.0, "Noise variance must be >= 0."
+        self._noise_var = value
 
     @staticmethod
     def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
@@ -728,10 +739,12 @@ class MultiUserChannelMatrix(object):
                 self._big_W = block_diag(*self.W)
         return self._big_W
 
-    def corrupt_concatenated_data(self, data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_concatenated_data(self, data):
+        """
+        Corrupt data passed through the channel.
 
-        If the noise_var is supplied then white noise will also be added.
+        If self.noise_var is set to some scalar number then white noise
+        will also be added.
 
         Parameters
         ----------
@@ -741,9 +754,6 @@ class MultiUserChannelMatrix(object):
             NSymb. That is, the number of rows corresponds to the sum of
             the number of transmit antennas of all users and the number of
             columns correspond to the number of transmitted symbols.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -752,21 +762,21 @@ class MultiUserChannelMatrix(object):
             to the sum of the number of receive antennas of all users and
             the number of columns correspond to the number of transmitted
             symbols.
-
         """
         # Note that self.big_H already accounts the path loss (while
         # self._big_H_no_pathloss does not)
 
         output = np.dot(self.big_H, data)
-        if noise_var is not None:
+
+        # Add the noise, if self.noise_var is not None
+        if self.noise_var is not None:
             awgn_noise = (
-                randn_c_RS(self._RS_noise, *output.shape) * np.sqrt(noise_var))
+                randn_c_RS(self._RS_noise, *output.shape)
+                * np.sqrt(self.noise_var))
             output = output + awgn_noise
             self._last_noise = awgn_noise
-            self._last_noise_var = noise_var
         else:
             self._last_noise = None
-            self._last_noise_var = 0.0
 
         # Apply the post processing filter (if there is one set)
         if self.big_W is not None:
@@ -774,8 +784,9 @@ class MultiUserChannelMatrix(object):
 
         return output
 
-    def corrupt_data(self, data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_data(self, data):
+        """
+        Corrupt data passed through the channel.
 
         If the noise_var is supplied then an white noise will also be
         added.
@@ -788,9 +799,6 @@ class MultiUserChannelMatrix(object):
             dimension Nt_k x NSymbs, where Nt_k is the number of transmit
             antennas of the k-th user and NSymbs is the number of
             transmitted symbols.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -809,7 +817,7 @@ class MultiUserChannelMatrix(object):
 
         concatenated_data = np.vstack(data)
         concatenated_output = self.corrupt_concatenated_data(
-            concatenated_data, noise_var)
+            concatenated_data)
 
         output = np.zeros(self.K, dtype=np.ndarray)
         cumNr = np.hstack([0, np.cumsum(self._Nr)])
@@ -885,7 +893,7 @@ class MultiUserChannelMatrix(object):
 
         return Qk
 
-    def calc_Q(self, k, F_all_users, noise_var=0.0):
+    def calc_Q(self, k, F_all_users):
         """
         Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver.
@@ -905,8 +913,6 @@ class MultiUserChannelMatrix(object):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
 
         Returns
         -------
@@ -914,8 +920,14 @@ class MultiUserChannelMatrix(object):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \sigma_n^2 \mtI_{N_k}$$
-        Rnk = np.eye(self.Nr[k]) * noise_var
-        Qk = self._calc_Q_impl(k, F_all_users) + Rnk
+        Qk = self._calc_Q_impl(k, F_all_users)
+
+        if self.noise_var is not None:
+            # If self.noise_var is not None we add the covariance matrix of
+            # the noise.
+            Rnk = np.eye(self.Nr[k]) * self.noise_var
+            Qk += Rnk
+
         return Qk
 
     def _calc_JP_Q_impl(self, k, F_all_users):
@@ -937,7 +949,7 @@ class MultiUserChannelMatrix(object):
 
         return Qk
 
-    def calc_JP_Q(self, k, F_all_users, noise_var=0.0):
+    def calc_JP_Q(self, k, F_all_users):
         """
         Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
@@ -957,8 +969,6 @@ class MultiUserChannelMatrix(object):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
 
         Returns
         -------
@@ -966,9 +976,13 @@ class MultiUserChannelMatrix(object):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \sigma_n^2 \mtI_{N_k}$$
-        Qk = (self._calc_JP_Q_impl(k, F_all_users)
-              + np.eye(self.Nr[k]) * noise_var)
-        return Qk
+        Qk = self._calc_JP_Q_impl(k, F_all_users)
+
+        if self.noise_var is not None:
+            Rnk = np.eye(self.Nr[k]) * self.noise_var
+            return Qk + Rnk
+        else:
+            return Qk
 
     def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, N0_or_Rek=0.0):
         """
@@ -1000,6 +1014,8 @@ class MultiUserChannelMatrix(object):
         # where $\mtR e_k$ is the covariance matrix of the (external
         # interference plus) noise.
         # Note that here the power is already included in `Fk`.
+        if N0_or_Rek is None:
+            N0_or_Rek = 0.0
 
         if isinstance(N0_or_Rek, Number):
             noise_power = N0_or_Rek
@@ -1186,6 +1202,8 @@ class MultiUserChannelMatrix(object):
         # The first part in Bkl is given by
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtI_{N^{[k]}}$$
         # Note that here the power is already included in `Fk`.
+        if noise_power is None:
+            noise_power = 0.0
 
         Rek = (noise_power * np.eye(self.Nr[k]))
         Hk = self.get_Hk(k)
@@ -1345,14 +1363,13 @@ class MultiUserChannelMatrix(object):
 
         return SINR_k
 
-    def calc_SINR(self, F, U, noise_power=0.0):
+    def calc_SINR(self, F, U):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -1360,8 +1377,6 @@ class MultiUserChannelMatrix(object):
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
 
         Returns
         -------
@@ -1372,7 +1387,8 @@ class MultiUserChannelMatrix(object):
         SINRs = np.empty(K, dtype=np.ndarray)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, noise_power)
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k,
+                                                        self.noise_var)
             SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
@@ -1437,14 +1453,13 @@ class MultiUserChannelMatrix(object):
         Hk = self.get_Hk(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
 
-    def calc_JP_SINR(self, F, U, noise_power=0.0):
+    def calc_JP_SINR(self, F, U):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -1452,8 +1467,6 @@ class MultiUserChannelMatrix(object):
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
 
         Returns
         -------
@@ -1464,13 +1477,16 @@ class MultiUserChannelMatrix(object):
         SINRs = np.empty(K, dtype=np.ndarray)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_power)
+            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k,
+                                                           self.noise_var)
             SINRs[k] = self._calc_JP_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
 
-class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
-    """Very similar to the MultiUserChannelMatrix class, but the
+class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
+        MultiUserChannelMatrix):
+    """
+    Very similar to the MultiUserChannelMatrix class, but the
     MultiUserChannelMatrixExtInt also includes the effect of an external
     interference.
 
@@ -1478,10 +1494,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
     non-uniform size) where each block is a channel from one transmitter to
     one receiver and the block size is equal to the number of receive
     antennas of the receiver times the number of transmit antennas of the
-    transmitter. The difference compared with the MultiUserChannelMatrix
-    class is that in the MultiUserChannelMatrixExtInt class the
-    interference user counts as one more user, but with zero receive
-    antennas.
+    transmitter. The difference compared with MultiUserChannelMatrix is
+    that in the MultiUserChannelMatrixExtInt class the interference user
+    counts as one more user, but with zero receive antennas.
 
     For instance, in a 3-users scenario the block (1,0) corresponds to the
     channel between the transmit antennas of user 0 and the receive
@@ -1516,7 +1531,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
     The methods from the MultiUserChannelMatrix class that makes sense were
     reimplemented here to include information regarding the external
     interference.
-
     """
 
     def __init__(self):
@@ -1559,11 +1573,11 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
     @property
     def big_H_no_ext_int(self):
-        """Get method for the big_H_no_est_int property.
+        """
+        Get method for the big_H_no_est_int property.
 
         big_H_no_est_int is similar to big_H, but does not include the last
         column(s) corresponding to the external interference channel.
-
         """
         return self.big_H[:, :np.sum(self.Nt)]
 
@@ -1589,11 +1603,12 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         H = MultiUserChannelMatrix._get_H(self)
         return H[:self.K, :self.K]
 
-    def corrupt_data(self, data, ext_int_data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_data(self, data, ext_int_data):
+        """
+        Corrupt data passed through the channel.
 
-        If the noise_var is supplied then an white noise will also be
-        added.
+        If the noise_var member variable is not None then an white noise
+        will also be added.
 
         Parameters
         ----------
@@ -1609,9 +1624,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             by the l-th external interference source, which must have a
             dimension of NtEl x NSymbs, where NtEl is the number of
             transmit antennas of the l-th external interference source.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -1620,13 +1632,14 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             2D numpy array) of a user.
         """
         input_data = np.hstack([data, ext_int_data])
-        return MultiUserChannelMatrix.corrupt_data(self, input_data, noise_var)
+        return MultiUserChannelMatrix.corrupt_data(self, input_data)
 
-    def corrupt_concatenated_data(self, data, noise_var=None):
-        """Corrupt data passed through the channel.
+    def corrupt_concatenated_data(self, data):
+        """
+        Corrupt data passed through the channel.
 
-        If the noise_var is supplied then an white noise will also be
-        added.
+        If the noise_var member variable is not None then an white noise
+        will also be added.
 
         Parameters
         ----------
@@ -1638,9 +1651,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             corresponds to the sum of the number of transmit antennas of
             all users and external interference sources and the number of
             columns correspond to the number of transmitted symbols.
-        noise_var : float, optional (default to None)
-            Variance of the AWGN noise. If not provided, no noise will be
-            added.
 
         Returns
         -------
@@ -1651,13 +1661,12 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             symbols.
 
         """
-        return MultiUserChannelMatrix.corrupt_concatenated_data(self,
-                                                                data,
-                                                                noise_var)
+        return MultiUserChannelMatrix.corrupt_concatenated_data(self, data)
 
     def get_Hk_without_ext_int(self, k):
-        """Get the channel from all transmitters (without including the
-        external interference sources) to receiver `k`.
+        """
+        Get the channel from all transmitters (without including the external
+        interference sources) to receiver `k`.
 
         Parameters
         ----------
@@ -1696,7 +1705,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         >>> print(multiH.get_Hk_without_ext_int(1))
         [[10 11 12 13]
          [15 16 17 18]]
-
         """
         receive_channels = single_matrix_to_matrix_of_matrices(
             self.big_H[:, :np.sum(self.Nt)], self.Nr)
@@ -1706,7 +1714,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
     # get_Hk_without_ext_int method from the
     # MultiUserChannelMatrix class. therefore, we don't need to test it.
     def get_Hk_with_ext_int(self, k):
-        """Get the channel from all transmitters (including the external
+        """
+        Get the channel from all transmitters (including the external
         interference sources) to receiver `k`.
 
         This method is essentially the same as the get_Hk method.
@@ -1748,13 +1757,13 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         >>> print(multiH.get_Hk_with_ext_int(1))
         [[10 11 12 13 14]
          [15 16 17 18 19]]
-
         """
         return MultiUserChannelMatrix.get_Hk(self, k)  # pragma: no cover
 
     @staticmethod
     def _prepare_input_parans(Nr, Nt, K, NtE):
-        """Helper method used in the init_from_channel_matrix and randomize
+        """
+        Helper method used in the init_from_channel_matrix and randomize
         method definitions.
 
         Parameters
@@ -1774,7 +1783,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         -------
         output : a tuple
             The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt)
-
         """
         if isinstance(NtE, Iterable):
             # We have multiple external interference sources
@@ -1798,7 +1806,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return (full_Nr, full_Nt, full_K, extIntK, extIntNt)
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K, NtE):
-        """Initializes the multiuser channel matrix from the given
+        """
+        Initializes the multiuser channel matrix from the given
         `channel_matrix`.
 
         Note that `channel_matrix` must also include the channel terms for
@@ -1827,7 +1836,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         ------
         ValueError
             If the arguments are invalid.
-
         """
         (full_Nr, full_Nt, full_K, extIntK, extIntNt) \
             = MultiUserChannelMatrixExtInt._prepare_input_parans(
@@ -1840,7 +1848,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             self, channel_matrix, full_Nr, full_Nt, full_K)
 
     def randomize(self, Nr, Nt, K, NtE):
-        """Generates a random channel matrix for all users as well as for the
+        """
+        Generates a random channel matrix for all users as well as for the
         external interference source(s).
 
         Parameters
@@ -1923,39 +1932,65 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
-    def calc_cov_matrix_extint_plus_noise(self, noise_var=0, pe=1):
-        """Calculates the covariance matrix of the external interference
-        plus noise.
+    def calc_cov_matrix_extint_without_noise(self, pe=1):
+        """
+        Calculates the covariance matrix of the external interference without
+        include the noise.
 
         Parameters
         ----------
-        noise_var : float, optional [default=0]
-            Noise variance. If not specified, then only the covariance
-            matrix of the external interference will be returned.
         pe : float, optional [default=1]
             External interference power (in linear scale)
 
         Returns
         -------
-        R : 1D array of numpy matrices
+        R_all_k : 1D array of numpy matrices
             Return a numpy array, where each element is the covariance
-            matrix of the external interference plus noise at one receiver.
-
+            matrix of the external interference at one receiver.
         """
-        # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H + \sigma_n^2 \mtI$$
-        # where $Ke$ is the number of external interference sources and
-        # ${e_j}$ is the j-th external interference source
-
-        R = np.empty(self.Nr.size, dtype=np.ndarray)
+        # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H$$
+        R_all_k = np.empty(self.Nr.size, dtype=np.ndarray)
         cum_Nr = np.hstack([0, np.cumsum(self.Nr)])
 
         for ii in range(self.Nr.size):
             extH = self.big_H[cum_Nr[ii]:cum_Nr[ii + 1], np.sum(self.Nt):]
-            R[ii] = (pe * np.dot(extH, extH.transpose().conjugate())
-                     + np.eye(self.Nr[ii]) * noise_var)
-        return R
+            R_all_k[ii] = pe * np.dot(extH, extH.transpose().conjugate())
+        return R_all_k
 
-    def calc_Q(self, k, F_all_users, noise_var=0.0, pe=1.0):
+    def calc_cov_matrix_extint_plus_noise(self, pe=1):
+        """
+        Calculates the covariance matrix of the external interference plus
+        noise.
+
+        Parameters
+        ----------
+        pe : float, optional [default=1]
+            External interference power (in linear scale)
+
+        Returns
+        -------
+        R_all_k : 1D array of numpy matrices
+            Return a numpy array, where each element is the covariance
+            matrix of the external interference plus noise at one receiver.
+        """
+        # $$\mtR_e = \sum_{j=1}^{Ke} P_{e_j} \mtH_{k{e_j}} \mtH_{k{e_j}}^H + \sigma_n^2 \mtI$$
+        # where $Ke$ is the number of external interference sources and
+        # ${e_j}$ is the j-th external interference source.
+
+        # Calculate the covariance matrix of the external interference
+        # without noise.
+        R_all_k = self.calc_cov_matrix_extint_without_noise(pe)
+
+        if self.noise_var is not None:
+            # If self.noise_var is not None then let's add the noise
+            # covariance matrix
+            noise_var = self.noise_var
+            for i in range(len(R_all_k)):
+                R_all_k[i] += np.eye(self.Nr[i]) * noise_var
+
+        return R_all_k
+
+    def calc_Q(self, k, F_all_users, pe=1.0):
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver.
@@ -1975,8 +2010,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
         pe : float
             The power of the external interference source(s).
 
@@ -1986,8 +2019,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \mtR_e$$
-        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
-        Qk = self._calc_Q_impl(k, F_all_users) + Rek[k]
+        Rek_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
+        Qk = self._calc_Q_impl(k, F_all_users) + Rek_all_k[k]
 
         return Qk
 
@@ -2021,7 +2054,7 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
 
         return Qk
 
-    def calc_JP_Q(self, k, F_all_users, noise_var=0.0, pe=1.0):
+    def calc_JP_Q(self, k, F_all_users, pe=1.0):
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
@@ -2041,8 +2074,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        noise_var : float (default is 0.0)
-            The noise variance.
         pe : float
             The power of the external interference source(s).
 
@@ -2052,19 +2083,18 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \mtR_e$$
-        Rek = self.calc_cov_matrix_extint_plus_noise(noise_var, pe)
-        Qk = self._calc_JP_Q(k, F_all_users) + Rek[k]
+        Rek_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
+        Qk = self._calc_JP_Q(k, F_all_users) + Rek_all_k[k]
 
         return Qk
 
-    def calc_SINR(self, F, U, noise_power=0.0, pe=1.0):
+    def calc_SINR(self, F, U, pe=1.0):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -2072,8 +2102,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
         pe : float
             Power of the external interference source.
 
@@ -2085,10 +2113,10 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
-        Re = self.calc_cov_matrix_extint_plus_noise(noise_power, pe)
+        Re_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, Re[k])
+            Bkl_all_l = self._calc_Bkl_cov_matrix_all_l(F, k, Re_all_k[k])
             SINRs[k] = self._calc_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
@@ -2123,7 +2151,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             Hk, F_all_users, Rek)
 
     def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
-        """Calculates the second part in the equation of the Blk covariance
+        """
+        Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
         include the identity matrix).
 
@@ -2151,7 +2180,8 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
     def _calc_JP_SINR_k(self, k, Fk, Uk, Bkl_all_l):
-        """Calculates the SINR of all streams of user 'k'.
+        """
+        Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
@@ -2175,14 +2205,13 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         Hk = self.get_Hk_without_ext_int(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
 
-    def calc_JP_SINR(self, F, U, noise_power=0.0, pe=1.0):
+    def calc_JP_SINR(self, F, U, pe=1.0):
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
 
         The noise variance used will be the value of the noise_var
-        property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        property.
 
         Parameters
         ----------
@@ -2190,8 +2219,6 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
-        noise_power : float
-            The noise power.
 
         Returns
         -------
@@ -2201,9 +2228,9 @@ class MultiUserChannelMatrixExtInt(MultiUserChannelMatrix):
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
-        Re = self.calc_cov_matrix_extint_plus_noise(noise_power, pe)
+        Re_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, Re[k])
+            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, Re_all_k[k])
             SINRs[k] = self._calc_JP_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs

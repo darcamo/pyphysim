@@ -78,6 +78,7 @@ def main():
         # Creat the channel
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
+        multiUserChannel.noise_var = noise_var
 
         # Creat the IA solver object
         mmse_ia_solver = algorithms.MMSEIASolver(multiUserChannel)

@@ -122,10 +122,8 @@ class IASimulationRunner(SimulationRunner):
         # if the IA algorithm chooses a precoder that sends zero energy in
         # some stream.
         self.multiUserChannel.randomize(Nr, Nt, K)
-        # We wouldn't need to explicitly set self.ia_solver.noise_var
-        # variable if the multiUserChannel object had the correct value at
-        # this point.
-        self.ia_solver.noise_var = noise_var
+        self.multiUserChannel.noise_var = noise_var
+
         self.ia_solver.clear()
         self.ia_solver.solve(Ns)
 
@@ -160,7 +158,7 @@ class IASimulationRunner(SimulationRunner):
         multi_user_channel = self.ia_solver._multiUserChannel
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
-            transmit_signal_precoded, noise_var)
+            transmit_signal_precoded)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
@@ -221,8 +219,6 @@ class IASimulationRunner(SimulationRunner):
 
         ia_runned_iterationsResult = Result.create(
             "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1, accumulate_values=False)
-
-        import pudb; pudb.set_trace()  ## DEBUG ##
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
@@ -712,7 +708,6 @@ def main_plot(algorithms_to_simulate, index=0):
                         'initialize_with': initialize_with}
         _plot_ber(mmse_results, fixed_params, ax, 'MMSE', '-m*')
         _plot_sum_capacity(mmse_results, fixed_params, ax2, 'MMSE', '-m*')
-        #SNR_mmse, ber_mmse, ber_errors_mmse, fmt='-m*', elinewidth=2.0, label='MMSE.')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx BER Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -733,7 +728,7 @@ def main_plot(algorithms_to_simulate, index=0):
     ax2.set_xlabel('SNR')
     ax2.set_ylabel('Sum Capacity')
     title = 'Sum Capacity for Different Algorithms ({max_iterations} Max Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}'.replace("{max_iterations}", str(max_iterations))
-    ax2.set_title(title.format(**alt_min_results.params.parameters))
+    ax2.set_title(title.format(**parameters_dict))
 
     leg2 = ax2.legend(fancybox=True, shadow=True, loc=2)
     ax2.grid(True, which='both', axis='both')

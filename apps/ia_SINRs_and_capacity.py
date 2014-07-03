@@ -70,6 +70,7 @@ if __name__ == '__main__':
 
     multiuserchannel = channels.MultiUserChannelMatrix()
     multiuserchannel.randomize(Nr, Nt, K)
+    multiuserchannel.noise_var = noise_var
 
     alt_min_solver = AlternatingMinIASolver(multiuserchannel)
     alt_min_solver.max_iterations = max_iterations

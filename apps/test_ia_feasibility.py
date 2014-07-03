@@ -37,7 +37,7 @@ if __name__ == '__main__':
     print "noise_var: {0}".format(noise_var)
 
     multiuserchannel.randomize(Nr, Nt, K)
-    multiuserchannel._last_noise_var = noise_var
+    multiuserchannel.noise_var = noise_var
 
     ia_solver = algorithms.AlternatingMinIASolver(multiuserchannel)
     ia_solver2 = algorithms.MMSEIASolver(multiuserchannel)

@@ -75,9 +75,6 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         self._P = None  # Power of each user (P is an 1D numpy array). If
                         # not set (_P is None), then a power of 1 will be
                         # used for each transmitter.
-        self._noise_var = None  # If None, then the value of last_noise_var
-                                # in the multiUserChannel object will be
-                                # used.
 
         # Precoder and receive filters (numpy arrays of numpy arrays)
         self._F = None  # Precoder: One precoder for each user
@@ -154,16 +151,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     @property
     def noise_var(self):
         """Get method for the noise_var property."""
-        if self._noise_var is None:
-            return self._multiUserChannel.last_noise_var
+        noise_var = self._multiUserChannel.noise_var
+        if noise_var is None:
+            return 0.0
         else:
-            return self._noise_var
-
-    @noise_var.setter
-    def noise_var(self, value):
-        """Set method for the noise_var property."""
-        assert value >= 0.0, "Noise variance must be >= 0."
-        self._noise_var = value
+            return noise_var
 
     @property
     def F(self):
@@ -621,7 +613,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         This method is deprecated since it's not the correct way to
         calculate the SINR. Use the calc_SINR method instead.
@@ -669,7 +661,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         Returns
         -------
@@ -691,7 +683,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The noise variance used will be the value of the noise_var
         property, which, if not explicitly set, will use the
-        last_noise_var property of the multiuserchannel object.
+        noise_var property of the multiuserchannel object.
 
         Returns
         -------

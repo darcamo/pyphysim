@@ -36,6 +36,8 @@ if __name__ == '__main__':
     Nt = np.ones(K, dtype=int) * 4
     Ns = np.ones(K, dtype=int) * 2
     multi_user_channel = channels.MultiUserChannelMatrix()
+    multi_user_channel.noise_var = noise_var
+
     #ia_solver = algorithms.AlternatingMinIASolver(multi_user_channel)
     ia_solver = algorithms.MaxSinrIASolver(multi_user_channel)
     ia_solver.noise_var = noise_var
@@ -76,7 +78,7 @@ if __name__ == '__main__':
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
-            transmit_signal_precoded, noise_var)
+            transmit_signal_precoded)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
