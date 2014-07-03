@@ -18,6 +18,7 @@ import numpy as np
 from scipy import optimize
 import itertools
 from copy import copy
+from abc import ABCMeta, abstractmethod
 
 from .iabase import IASolverBaseClass
 from ..util.misc import peig, leig, update_inv_sum_diag, \
@@ -283,6 +284,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         The multiuser channel.
     """
 
+    # The IterativeIASolverBaseClass is an abstract class and the
+    # '_updateF' and '_updateW' methods (marked as abstract) must be
+    # implemented in a subclass.
+    __metaclass__ = ABCMeta
+
     def __init__(self, multiUserChannel):
         """
         Parameters
@@ -390,6 +396,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         IASolverBaseClass.clear(self)
         self._runned_iterations = 0
 
+    @abstractmethod
     def _updateF(self):  # pragma: no cover
         """
         Update the precoders.
@@ -404,6 +411,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         raise NotImplementedError("_updateF: Not implemented")
 
+    @abstractmethod
     def _updateW(self):  # pragma: no cover
         """
         Update the receive filters.

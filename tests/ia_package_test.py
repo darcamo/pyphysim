@@ -168,17 +168,41 @@ class IaDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx IA Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Since IASolverBaseClass is an abstract class, lets define a concrete
+# class so that we can test it.
+class IASolverBaseClassConcret(IASolverBaseClass):
+    """
+    Concrete class derived from IASolverBaseClass for testing purposes.
+    """
+    def solve(self, Ns, P=None):
+        pass
+
+
+# Since IterativeIASolverBaseClass is an abstract class, lets define a
+# concrete class so that we can test it.
+class IterativeIASolverBaseClassConcrete(IterativeIASolverBaseClass):
+    """
+    Concrete class derived from IterativeIASolverBaseClass for testing
+    purposes.
+    """
+    def _updateW(self):
+        pass
+
+    def _updateF(self):
+        pass
+
+
 class IASolverBaseClassTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
-        self.iasolver = IASolverBaseClass(multiUserChannel)
+        self.iasolver = IASolverBaseClassConcret(multiUserChannel)
 
     def test_init(self):
         # Try to initialize the IASolverBaseClass object with some
         # parameter which is not a MultiUserChannelMatrix object
         with self.assertRaises(ValueError):
-            IASolverBaseClass(3)
+            IASolverBaseClassConcret(3)
 
     def test_get_cost(self):
         self.assertEqual(self.iasolver.get_cost(), -1)
@@ -317,9 +341,9 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
-        iasolver1 = IASolverBaseClass(multiUserChannel)
-        iasolver2 = IASolverBaseClass(multiUserChannel)
-        iasolver3 = IASolverBaseClass(multiUserChannel)
+        iasolver1 = IASolverBaseClassConcret(multiUserChannel)
+        iasolver2 = IASolverBaseClassConcret(multiUserChannel)
+        iasolver3 = IASolverBaseClassConcret(multiUserChannel)
         P = np.array([1.2, 0.8, 1.1])
 
         with self.assertRaises(RuntimeError):
@@ -375,7 +399,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
-        iasolver1 = IASolverBaseClass(multiUserChannel)
+        iasolver1 = IASolverBaseClassConcret(multiUserChannel)
 
         P = np.array([1.2, 0.8, 1.1])
         iasolver1.randomizeF([2, 3, 2], P)
@@ -749,10 +773,6 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_B21, B2[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_solve(self):
-        with self.assertRaises(NotImplementedError):
-            self.iasolver.solve(Ns=1)
-
     def test_calc_SINR_k(self):
         # This test is implemented in the MaxSinrIASolerTestCase class.
         pass
@@ -1085,7 +1105,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
     def test_initialize_with_property(self):
         channel = channels.MultiUserChannelMatrix()
-        solver = IterativeIASolverBaseClass(channel)
+        solver = IterativeIASolverBaseClassConcrete(channel)
 
         self.assertEqual(solver.initialize_with, 'random')
         solver.initialize_with = 'fix'
