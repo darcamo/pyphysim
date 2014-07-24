@@ -35,7 +35,7 @@ __all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt',
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
-                           RS=None, start_time=0.0):
+                           RS=None):
     """
     Generates channel samples according to the Jakes model.
 
@@ -66,8 +66,6 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
     RS : A numpy.random.RandomState object.
         The RandomState object used to generate the random values. If not
         provided, the global RandomState in numpy will be used.
-    start_time : float
-        The first value (start time) of `t` in :eq:`jakes_model`.
 
     Returns
     -------
@@ -81,55 +79,7 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
     """
     # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
 
-    # if RS is None:
-    #     # If RS was not provided, we set it to the numpy.random module. That
-    #     # way, when the rand "method" in RS is called it will actually call
-    #     # the global rand function in numpy.random.  RandomState object in
-    #     # numpy.
-    #     RS = np.random
-
-    # # xxxxx Time samples xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # t = np.arange(start_time, NSamples * Ts + start_time, Ts * 1.0000000001)
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # # xxxxx Generate phi_l and psi_l xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # if shape is None:
-    #     # The dimension of phi_l and psi_l will be L x 1. We set the last
-    #     # dimensions as 1, instead of setting the dimension of phi_l and
-    #     # psi_l simply as (L,), because it will be broadcasted later by
-    #     # numpy when we multiply with the time.
-    #     phi_l = 2 * np.pi * RS.rand(L, 1)
-    #     psi_l = 2 * np.pi * RS.rand(L, 1)
-    # else:
-    #     # The dimension of phi_l and psi_l will be L x Shape x 1. We set
-    #     # the last dimensions as 1, instead of setting the dimension of
-    #     # phi_l and psi_l simply as (L,), because it will be broadcasted
-    #     # later by numpy when we multiply with the time.
-    #     new_shape = [L]
-    #     new_shape.extend(shape)
-    #     new_shape.append(1)
-    #     phi_l = 2 * np.pi * RS.rand(*new_shape)
-    #     psi_l = 2 * np.pi * RS.rand(*new_shape)
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # # xxxxx Calculates h xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # t_aux = np.tile(t, [L, 1])
-    # # If shape is Not None we need to modify the shape of t_aux. We will
-    # # add new dimensions (with value 1) for the dimensions specified in
-    # # `shape` so that numpy broadcast will allow us to perform the
-    # # multiplications required to calculate `h` later.
-    # if shape is not None:
-    #     new_shape = [L]
-    #     new_shape.extend([1] * len(shape))
-    #     new_shape.append(NSamples)
-    #     t_aux.shape = new_shape
-
-    # # $h = \sqrt{1.0 / L} \sum \exp(1j (2 \pi Fd \cos(\phi_l) t + \psi_l))$
-    # h = np.sqrt(1.0 / L) * np.sum(np.exp(1j * (2 * np.pi * Fd * np.cos(phi_l) * t_aux + psi_l)), axis=0)
-    # return h
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    obj = JakesSampleGenerator(Fd, Ts, L, shape, RS, start_time)
+    obj = JakesSampleGenerator(Fd, Ts, L, shape, RS)
     return obj.generate_channel_samples(NSamples)
 
 
@@ -169,9 +119,10 @@ class JakesSampleGenerator(object):
     --------
     generate_jakes_samples
     """
+    # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
 
     def __init__(self, Fd=100, Ts=1e-3, L=8,
-                 shape=None, RS=None, start_time=0.0):
+                 shape=None, RS=None):
         self.Fd = Fd
         self.Ts = Ts
         self.L = L
@@ -187,7 +138,7 @@ class JakesSampleGenerator(object):
 
         # self._current_time will be update after each call to the
         # generate_channel_samples method.
-        self._current_time = start_time
+        self._current_time = 0.0
 
         # xxxxx Generate phi_l and psi_l xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self._shape = shape
@@ -222,8 +173,13 @@ class JakesSampleGenerator(object):
 
         Returns
         -------
-        t_aux : Numpy Array
-            The numpy array with the time samples.
+        t : Numpy Array
+            The numpy array with the time samples. The shape of the
+            generated time variable is "(1, A, NSamples)", where 'A' is has
+            as many '1's as the length of self._shape.
+            Ex: If self._shape is None then the shape of the returned 't'
+            variable is (1, NSamples). If self._shape is (2,3) then the
+            shape of the returned 't' variable is (1, 1, 1, NSamples)
 
         Notes
         -----
@@ -231,22 +187,42 @@ class JakesSampleGenerator(object):
         self._current_time to reflect the advance of the time after
         generating the new samples.
         """
+        # Generate a 1D numpy with the time samples
         t = np.arange(
             self._current_time,  # Start time
             NSamples * self.Ts + self._current_time,
             self.Ts * 1.0000000001)
-        t_aux = np.tile(t, [self.L, 1])
-        if self._shape is not None:
-            new_shape = [self.L]
-            new_shape.extend([1] * len(self._shape))
-            new_shape.append(NSamples)
-            t_aux.shape = new_shape
 
         # Update the self._current_time variable with the value of the next
         # time sample that should be generated when _generate_time_samples
         # is called again.
         self._current_time = t[-1] + self.Ts
-        return t_aux
+
+        # Now we will change the shape of the 't' variable to an
+        # appropriated shape for later use.
+        if self._shape is not None:
+            # Ex: If self._shape is (2,3) then the shape of the generated
+            # 't' variable should be (1,1,1,NSNSamples). The first
+            # dimension correspond to the number of taps (that is, self.L),
+            # the following two dimensions correspond to the dimensions in
+            # self._shape, and the last dimension corresponds to the number
+            # of time samples.
+            #
+            # Note that we use '1' for all dimensions except the last one
+            # and numpy will replicate to the correct value later thanks to
+            # broadcast.
+            t.shape = [1] * (len(self._shape) + 1) + [int(NSamples)]
+        else:
+            # Since self._shape is None, we only need one dimension for the
+            # taps (that is, self.L) and another dimension for the actual
+            # time samples.
+            #
+            # Note that we use '1' for all dimensions except the last one
+            # and numpy will replicate to the correct value later thanks to
+            # broadcast.
+            t.shape = (1, NSamples)
+
+        return t
 
     def generate_channel_samples(self, NSamples):
         """
@@ -690,7 +666,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
          [12 13]]
         """
         channel = self.H  # This will call the _get_H method, which already
-                          # applies the path loss (of there is any)
+                          # applies the path loss (if there is any)
         return channel[k, l]
 
     def get_Hk(self, k):

@@ -1692,6 +1692,9 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         self._F = norm_Vi
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx GreedStreamIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class GreedStreamIASolver(object):
     """
     Implements the Greed Stream Interference Alignment algorithm variation.
