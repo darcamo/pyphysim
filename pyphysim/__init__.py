@@ -5,3 +5,5 @@
 The Pyphysim library provides many useful classes and functions to
 perform Monte Carlo simulations of communications systems.
 """
+
+__version__ = 0.1

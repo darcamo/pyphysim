@@ -12,6 +12,7 @@ the 'ia' package that implement the IA algorithms.
 __revision__ = "$Revision$"
 
 import numpy as np
+from abc import ABCMeta, abstractmethod
 
 from ..comm import channels
 from ..util.misc import randn_c_RS, leig
@@ -21,7 +22,7 @@ from ..util.conversion import linear2dB
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Base Class for all IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class IASolverBaseClass(object):  # pylint: disable=R0902
+class IASolverBaseClass(object):  #pylint: disable=R0902
     """
     Base class for all Interference Alignment Algorithms.
 
@@ -53,6 +54,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     multiUserChannel : A MultiUserChannelMatrix object.
         The multiuser channel.
     """
+
+    # The IASolverBaseClass is an abstract class and the 'solve' method
+    # (marked as abstract) must be implemented in a subclass.
+    __metaclass__ = ABCMeta
+
     def __init__(self, multiUserChannel):
         """Initialize the variables that every IA solver will have.
 
@@ -866,6 +872,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         return SINR_k
 
+    @abstractmethod
     def solve(self, Ns, P=None):
         """
         Find the IA solution.

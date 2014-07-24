@@ -1099,7 +1099,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
         noise_var = 0.1
-        iasolver.noise_var = noise_var
         multiUserChannel.noise_var = noise_var
         SINR_all_users = multiUserChannel.calc_SINR(F, U)
         B0l_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(

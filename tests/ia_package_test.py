@@ -168,17 +168,41 @@ class IaDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx IA Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Since IASolverBaseClass is an abstract class, lets define a concrete
+# class so that we can test it.
+class IASolverBaseClassConcret(IASolverBaseClass):
+    """
+    Concrete class derived from IASolverBaseClass for testing purposes.
+    """
+    def solve(self, Ns, P=None):
+        pass
+
+
+# Since IterativeIASolverBaseClass is an abstract class, lets define a
+# concrete class so that we can test it.
+class IterativeIASolverBaseClassConcrete(IterativeIASolverBaseClass):
+    """
+    Concrete class derived from IterativeIASolverBaseClass for testing
+    purposes.
+    """
+    def _updateW(self):
+        pass
+
+    def _updateF(self):
+        pass
+
+
 class IASolverBaseClassTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.MultiUserChannelMatrix()
-        self.iasolver = IASolverBaseClass(multiUserChannel)
+        self.iasolver = IASolverBaseClassConcret(multiUserChannel)
 
     def test_init(self):
         # Try to initialize the IASolverBaseClass object with some
         # parameter which is not a MultiUserChannelMatrix object
         with self.assertRaises(ValueError):
-            IASolverBaseClass(3)
+            IASolverBaseClassConcret(3)
 
     def test_get_cost(self):
         self.assertEqual(self.iasolver.get_cost(), -1)
@@ -317,9 +341,9 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
-        iasolver1 = IASolverBaseClass(multiUserChannel)
-        iasolver2 = IASolverBaseClass(multiUserChannel)
-        iasolver3 = IASolverBaseClass(multiUserChannel)
+        iasolver1 = IASolverBaseClassConcret(multiUserChannel)
+        iasolver2 = IASolverBaseClassConcret(multiUserChannel)
+        iasolver3 = IASolverBaseClassConcret(multiUserChannel)
         P = np.array([1.2, 0.8, 1.1])
 
         with self.assertRaises(RuntimeError):
@@ -375,7 +399,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
-        iasolver1 = IASolverBaseClass(multiUserChannel)
+        iasolver1 = IASolverBaseClassConcret(multiUserChannel)
 
         P = np.array([1.2, 0.8, 1.1])
         iasolver1.randomizeF([2, 3, 2], P)
@@ -749,10 +773,6 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_B21, B2[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_solve(self):
-        with self.assertRaises(NotImplementedError):
-            self.iasolver.solve(Ns=1)
-
     def test_calc_SINR_k(self):
         # This test is implemented in the MaxSinrIASolerTestCase class.
         pass
@@ -1085,11 +1105,20 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
     def test_initialize_with_property(self):
         channel = channels.MultiUserChannelMatrix()
-        solver = IterativeIASolverBaseClass(channel)
+        solver = IterativeIASolverBaseClassConcrete(channel)
 
         self.assertEqual(solver.initialize_with, 'random')
         solver.initialize_with = 'fix'
         self.assertEqual(solver.initialize_with, 'fix')
+
+        solver.initialize_with = 'closed_form'
+        self.assertEqual(solver.initialize_with, 'closed_form')
+
+        solver.initialize_with = 'alt_min'
+        self.assertEqual(solver.initialize_with, 'alt_min')
+
+        solver.initialize_with = 'svd'
+        self.assertEqual(solver.initialize_with, 'svd')
 
         with self.assertRaises(RuntimeError):
             solver.initialize_with = 'invalid_option'
@@ -1102,6 +1131,131 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
             # inside 'solve_init' method) is called. Since that is not the
             # case here, an exception should be raised.
             solver._dont_initialize_F_and_only_and_find_W()
+
+    def test_solve_init(self):
+        channel = channels.MultiUserChannelMatrix()
+        channel.randomize(4, 4, 3)
+        solver = IterativeIASolverBaseClassConcrete(channel)
+        solver.clear()  # Not really necessary, since we just created the
+                        # solver object
+
+        # xxxxxxxxxx Test the random initialization xxxxxxxxxxxxxxxxxxxxxxx
+        solver.initialize_with = 'random'
+        # Initialize the normalized precoder of each suer with a random one
+        # (with 2 streams)
+
+        Ns = 2
+        solver._solve_init(Ns=Ns, P=1.0)
+
+        # solver._F was randomly initialized
+        self.assertIsNotNone(solver._F)
+        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F[0].shape, (4, Ns))
+        self.assertEqual(solver._F[1].shape, (4, Ns))
+        self.assertEqual(solver._F[2].shape, (4, Ns))
+        self.assertAlmostEqual(np.linalg.norm(solver._F[0]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[1]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[2]), 1.0)
+
+        # The other variables are still None
+        self.assertIsNone(solver._full_F)
+        self.assertIsNone(solver._W)
+        self.assertIsNone(solver._W_H)
+        self.assertIsNone(solver._full_W)
+        self.assertIsNone(solver._full_W_H)
+
+        solver.clear()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the closed form initialization xxxxxxxxxxxxxxxxxx
+        solver.initialize_with = 'closed_form'
+        solver._solve_init(Ns=Ns, P=1.0)
+
+        # solver._F was initialized from the closed form solution
+        self.assertIsNotNone(solver._F)
+        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F[0].shape, (4, Ns))
+        self.assertEqual(solver._F[1].shape, (4, Ns))
+        self.assertEqual(solver._F[2].shape, (4, Ns))
+        self.assertAlmostEqual(np.linalg.norm(solver._F[0]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[1]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[2]), 1.0)
+
+        # solver._W was initialized from the closed form solution
+        self.assertIsNotNone(solver._W)
+        self.assertEqual(solver._W.shape, (3,))
+        self.assertEqual(solver._W[0].shape, (4, Ns))
+        self.assertEqual(solver._W[1].shape, (4, Ns))
+        self.assertEqual(solver._W[2].shape, (4, Ns))
+
+        # The other variables are still None
+        self.assertIsNone(solver._full_F)
+        self.assertIsNone(solver._W_H)
+        self.assertIsNone(solver._full_W)
+        self.assertIsNone(solver._full_W_H)
+
+        solver.clear()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the alt_min initialization xxxxxxxxxxxxxxxxxxxxxx
+        solver.initialize_with = 'alt_min'
+        solver._solve_init(Ns=Ns, P=1.0)
+
+        # solver._F was initialized from the closed form solution
+        self.assertIsNotNone(solver._F)
+        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F[0].shape, (4, Ns))
+        self.assertEqual(solver._F[1].shape, (4, Ns))
+        self.assertEqual(solver._F[2].shape, (4, Ns))
+        self.assertAlmostEqual(np.linalg.norm(solver._F[0]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[1]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[2]), 1.0)
+
+        # solver._W was initialized from the closed form solution
+        self.assertIsNotNone(solver._W)
+        self.assertEqual(solver._W.shape, (3,))
+        self.assertEqual(solver._W[0].shape, (4, Ns))
+        self.assertEqual(solver._W[1].shape, (4, Ns))
+        self.assertEqual(solver._W[2].shape, (4, Ns))
+
+        # The other variables are still None
+        self.assertIsNone(solver._full_F)
+        self.assertIsNone(solver._W_H)
+        self.assertIsNone(solver._full_W)
+        self.assertIsNone(solver._full_W_H)
+
+        solver.clear()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the SVD initialization xxxxxxxxxxxxxxxxxxxxxxxxxx
+        solver.initialize_with = 'svd'
+        # Initialize the normalized precoder of each suer with a random one
+        # (with 2 streams)
+        solver._solve_init(Ns=Ns, P=1.0)
+
+        # solver._F was randomly initialized
+        self.assertIsNotNone(solver._F)
+        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F[0].shape, (4, Ns))
+        self.assertEqual(solver._F[1].shape, (4, Ns))
+        self.assertEqual(solver._F[2].shape, (4, Ns))
+        self.assertAlmostEqual(np.linalg.norm(solver._F[0]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[1]), 1.0)
+        self.assertAlmostEqual(np.linalg.norm(solver._F[2]), 1.0)
+
+        # The other variables are still None
+        self.assertIsNone(solver._full_F)
+        self.assertIsNone(solver._W)
+        self.assertIsNone(solver._W_H)
+        self.assertIsNone(solver._full_W)
+        self.assertIsNone(solver._full_W_H)
+
+        solver.clear()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the Fix initialization xxxxxxxxxxxxxxxxxxxxxxxxxx
+        # It is not really necessary to test this case
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_clear(self):
         # This method is tested in the AlternatingMinIASolverTestCase class

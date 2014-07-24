@@ -18,10 +18,11 @@ import numpy as np
 from scipy import optimize
 import itertools
 from copy import copy
+from abc import ABCMeta, abstractmethod
 
 from .iabase import IASolverBaseClass
 from ..util.misc import peig, leig, update_inv_sum_diag, \
-    get_principal_component_matrix
+    get_principal_component_matrix, least_right_singular_vectors
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver',
@@ -283,6 +284,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         The multiuser channel.
     """
 
+    # The IterativeIASolverBaseClass is an abstract class and the
+    # '_updateF' and '_updateW' methods (marked as abstract) must be
+    # implemented in a subclass.
+    __metaclass__ = ABCMeta
+
     def __init__(self, multiUserChannel):
         """
         Parameters
@@ -359,7 +365,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     @initialize_with.setter
     def initialize_with(self, value):
         """Set method for the initialize_with property."""
-        options = ['random', 'alt_min', 'closed_form', 'fix']
+        options = ['random', 'alt_min', 'closed_form', 'fix', 'svd']
         if value in options:
             self._initialize_with = value
         else:
@@ -390,6 +396,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         IASolverBaseClass.clear(self)
         self._runned_iterations = 0
 
+    @abstractmethod
     def _updateF(self):  # pragma: no cover
         """
         Update the precoders.
@@ -404,6 +411,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         raise NotImplementedError("_updateF: Not implemented")
 
+    @abstractmethod
     def _updateW(self):  # pragma: no cover
         """
         Update the receive filters.
@@ -455,12 +463,52 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self.randomizeF(Ns, P)
         self._updateW()
 
-    def _dont_initialize_F_and_only_and_find_W(self):
+    def _initialize_F_with_svd_and_find_W(self, Ns, P):
+        """
+        Initialize the IA Solution from the most significant singular vectors
+        of each user's channel.
+
+        The implementation here simple initializes the precoder variable of
+        each user as the most significant singular vector(s) of that
+        user. After that, calculate the initial receive filters.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            Number of streams of each user.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+        """
+        if isinstance(Ns, int):
+            Ns = np.ones(self.K, dtype=int) * Ns
+
+        # Create the precoder variable
+        self._F = np.empty(self.K, dtype=np.ndarray)
+
+        # Set the precoder of each user with the most significant singular
+        # vector(s) of that user's channel
+        for k in range(self.K):
+            Hkk = self._get_channel(k, k)
+            # The second variable returned by least_right_singular_vectors
+            # has the corresponds to the most significant singular
+            # vectors.
+            _, V1, _ = least_right_singular_vectors(Hkk, self.Nr[k] - Ns[k])
+            self._F[k] = V1 / np.linalg.norm(V1, 'fro')
+
+        # Calculate the receive filters
+        self._updateW()
+
+    def _dont_initialize_F_and_only_and_find_W(self, dummy1=None, dummy2=None):
         """
         Initialize the IA Solution from a random matrix.
 
         The implementation here simple initializes the precoder variable
         and then calculates the initial receive filter.
+
+        Note: The `dummy1` and `dummy2` arguments have no effect. They only
+        exist to keep the signature of this method equal to the signature
+        of other *initialize* methods.
         """
         # The current value of self._F and self._full_F will be used.
         if self._F is None:
@@ -475,7 +523,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._updateW()
 
     def _initialize_F_and_W_from_closed_form(self, Ns, P):
-        """Initialize the IA Solution from the closed form IA solver.
+        """
+        Initialize the IA Solution from the closed form IA solver.
 
         Parameters
         ----------
@@ -543,23 +592,16 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         self.P = P
 
-        # initialize_with can be: 'random', 'closed_form', or 'alt_min''
-        if self.initialize_with == 'closed_form':
-            self._initialize_F_and_W_from_closed_form(Ns, P)
-        elif self.initialize_with == 'alt_min':
-            self._initialize_F_and_W_from_alt_min(Ns, P)
-        elif self.initialize_with == 'random':
-            self._initialize_F_randomly_and_find_W(Ns, P)
-        elif self.initialize_with == 'fix':
-            # Note that for this initialization type we ignore the 'Ns' and
-            # 'P' parameters. Since this initialization method should only
-            # be used after the 'solve' method has been called before with
-            # another initialization method then these parameters have
-            # already been set.
-            self._dont_initialize_F_and_only_and_find_W()
-        else:  # pragma: no cover
-            msg = 'unknown initialization option for the IA sovler: {0}'
-            raise RuntimeError(msg.format(self.initialize_with))
+        # initialize_with can be: 'random', 'fix', 'closed_form', 'alt_min', or 'svd'
+        options = {
+            'random': self._initialize_F_randomly_and_find_W,
+            'alt_min': self._initialize_F_and_W_from_alt_min,
+            'closed_form': self._initialize_F_and_W_from_closed_form,
+            'fix': self._dont_initialize_F_and_only_and_find_W,
+            'svd': self._initialize_F_with_svd_and_find_W}
+
+        initialzie_func = options[self.initialize_with]
+        initialzie_func(Ns, P)
 
     def _solve_finalize(self):  # pragma: no cover
         """Perform any post processing after the solution has been found.
