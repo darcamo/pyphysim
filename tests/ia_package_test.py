@@ -2934,29 +2934,9 @@ class MMSEIASolverTestCase(CustomTestCase):
         np.testing.assert_array_equal(Ns, np.array([2, 2, 2]))
 
 
-# TODO: finish implementation
 class GreedStreamIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
-        # multiUserChannel = channels.MultiUserChannelMatrix()
-        # mmse_iasolver = MMSEIASolver(multiUserChannel)
-        # max_sinr_iasolver = MaxSinrIASolver(multiUserChannel)
-        # alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
-
-        # self.iasolver = GreedStreamIASolver(alt_min_iasolver)
-
-        # self.K = 3
-        # self.Nt = np.ones(self.K, dtype=int) * 4
-        # self.Nr = np.ones(self.K, dtype=int) * 4
-        # # Note that for this configuration IA is not feasible
-        # self.Ns = np.ones(self.K, dtype=int) * 3
-
-        # # Transmit power of all users
-        # self.P = np.array([1.2, 1.5, 0.9])
-
-        # # Randomize the channel
-        # multiUserChannel.randomize(self.Nr, self.Nt, self.K)
-
         pass
 
     def test_solve(self):
