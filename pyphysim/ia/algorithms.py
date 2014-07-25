@@ -19,6 +19,7 @@ from scipy import optimize
 import itertools
 from copy import copy
 from abc import ABCMeta, abstractmethod
+from itertools import product
 
 from .iabase import IASolverBaseClass
 from ..util.misc import peig, leig, update_inv_sum_diag, \
@@ -445,6 +446,13 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def _before_initialize_W_func(self):
+        """
+        Method run in any of the initialize methods after the precoder is
+        initialized but before the receive filter is initialized.
+        """
+        pass
+
     def _initialize_F_randomly_and_find_W(self, Ns, P):
         """
         Initialize the IA Solution from a random matrix.
@@ -461,6 +469,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             for each user.
         """
         self.randomizeF(Ns, P)
+
+        # Method called before the _updateW method
+        self._before_initialize_W_func()
+
+        # Calculate the receive filters
         self._updateW()
 
     def _initialize_F_with_svd_and_find_W(self, Ns, P):
@@ -496,6 +509,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             _, V1, _ = least_right_singular_vectors(Hkk, self.Nr[k] - Ns[k])
             self._F[k] = V1 / np.linalg.norm(V1, 'fro')
 
+        # Method called before the _updateW method
+        self._before_initialize_W_func()
+
         # Calculate the receive filters
         self._updateW()
 
@@ -520,6 +536,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # from the initialized precoders.
         self._Ns = np.array([F.shape[1] for F in self._F])
 
+        # Method called before the _updateW method
+        self._before_initialize_W_func()
+
         self._updateW()
 
     def _initialize_F_and_W_from_closed_form(self, Ns, P):
@@ -542,6 +561,10 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         self._closed_form_ia_solver.solve(Ns, P)
         self._F = self._closed_form_ia_solver.F
+
+        # Method called before the _updateW method
+        self._before_initialize_W_func()
+
         self._W = self._closed_form_ia_solver.W
 
     def _initialize_F_and_W_from_alt_min(self, Ns, P):
@@ -568,6 +591,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._alt_min_ia_solver.solve(Ns, P)
 
         self._F = self._alt_min_ia_solver.F
+
+        # Method called before the _updateW method
+        self._before_initialize_W_func()
 
         self._W = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
@@ -764,8 +790,6 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         "step" part of the algorithm, then reimplement also the _step()
         method.
         """
-        self._solve_init(Ns, P)
-
         if isinstance(Ns, int):
             Ns = np.ones(self.K, dtype=int) * Ns
         else:
@@ -775,6 +799,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                                  # can modify self._Ns internally without
                                  # changing the original Ns variable passed
                                  # to the randomizeF method.
+
+        self._solve_init(Ns, P)
 
         # This will be used to detect of the precoder did not
         # significativelly change
@@ -850,6 +876,18 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         self._C = []    # Basis of the interference subspace for each user
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # Overwrite the set property for 'initialize_with' to remove the
+    # 'alt_min' initialization type, since it does not make sense.
+    @IterativeIASolverBaseClass.initialize_with.setter
+    def initialize_with(self, value):
+        """Set method for the initialize_with property."""
+        if value == 'alt_min':
+            msg = "Can't use '{0}' initialization with '{1}' class '{0}'".format(
+                value, self.__class__.__name__)
+            raise RuntimeError(msg)
+
+        IterativeIASolverBaseClass.initialize_with.fset(self, value)
+
     def get_cost(self):
         """
         Get the Cost of the algorithm for the current iteration of the
@@ -883,17 +921,12 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         return Cost
 
-    def _solve_init(self, Ns, P):
+    def _before_initialize_W_func(self):
         """
-        Code run in the `solve` method before the loop that run the `step`
-        method.
-
-        The implementation here simple initializes the precoder variable
-        and then calculates the initial receive filter.
+        Method run in any of the initialize methods after the precoder is
+        initialized but before the receive filter is initialized.
         """
-        self.randomizeF(Ns, P)
         self._updateC()
-        self._updateW()
 
     def _step(self):
         """Performs one iteration of the algorithm.
@@ -907,10 +940,31 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         updateC, updateF, updateW
 
         """
+        # Note that before the `_step` method is called the first time, the
+        # _solve_init method must be called. It will initialize the
+        # precoders, the C matrices and the receive filters.
 
-        self._updateC()
-        self._updateF()
-        self._updateW()
+        self._updateF()  # Depend on the value of C
+        self._updateC()  # The value of C depend on the precoders F
+
+        # Note that in the Alternating Minimizations algorithm we do not
+        # need to update the receive filters at each iteration, since the
+        # precoders only depend on the values of the 'C' matrices. Because
+        # of that, we will only update the receive filters in the
+        # _solve_finalize method, which is called after the algorithm
+        # converged.
+
+    def _solve_finalize(self):  # pragma: no cover
+        """Perform any post processing after the solution has been found.
+        """
+        # Note that in the Alternating Minimizations algorithm we do not
+        # need to update the receive filters at each iteration, since the
+        # precoders only depend on the values of the 'C' matrices. Because
+        # of that, we will only update the receive filters in the
+        # _solve_finalize method, which is called only once after the
+        # algorithm converged.
+        self._updateW()  # Depend on the value of C
+        IterativeIASolverBaseClass._solve_finalize(self)
 
     def _updateC(self):
         """Update the value of Ck for all K users.
@@ -963,6 +1017,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         step
         """
         # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)\mtH_{k,l}$
+
         # xxxxx Calculates the temporary variable Y[k] for all k xxxxxxxxxx
         # Note that $\mtY[k] = (\mtI - \mtC_k \mtC_k^H)$
 
@@ -1710,15 +1765,15 @@ class GreedStreamIASolver(object):
     number of streams that yielded the largest sum capacity.
     """
 
-    def __init__(self, iasovler_obj):
+    def __init__(self, iasolver_obj):
         """
 
         Parameters
         ----------
-        iasovler_obj : A ia solver object.
+        iasolver_obj : A ia solver object.
             Must be an object of a derived class of IterativeIASolverBaseClass.
         """
-        self._iasolver = iasovler_obj
+        self._iasolver = iasolver_obj
         self._runned_iterations = 0
 
         # #IASolverBaseClass.__init__(self, multiUserChannel)
@@ -1755,7 +1810,7 @@ class GreedStreamIASolver(object):
             Number of streams of each user.
         P : 1D numpy array
             Power of each user. If not provided, a value of 1 will be used
-            for each ,user.
+            for each user.
 
         Returns
         -------
@@ -1885,5 +1940,94 @@ class GreedStreamIASolver(object):
         user_idx = min_sinr_user_idx[0]
         stream_idx = min_sinr_indexes[user_idx]
         return user_idx, stream_idx
+
+
+class BruteForceStreamIASolver(object):
+    """
+    Implements the Brute Force Stream Interference Alignment algorithm
+    variation.
+
+    This is not a new IA algorithm, but rather a variation of existing IA
+    algorithms. The idea is to use another IA algorithm to find the IA
+    solution for each possible stream configuration (number of streams for
+    each user) and keep the best one.
+
+    Note: IA algorithms can provide different performance for the same
+    number of streams but with different initializations. To reduce this
+    variability we set the initialization method to 'svd' (see
+    'initialize_with' property in the IterativeIASolverBaseClass class) so
+    that the initialization is always the same.
+    """
+
+    def __init__(self, iasolver_obj):
+        """
+
+        Parameters
+        ----------
+        iasolver_obj : A ia solver object.
+            Must be an object of a derived class of IterativeIASolverBaseClass.
+        """
+        self._iasolver = iasolver_obj
+        self._runned_iterations = 0
+        self._stream_combinations = ()  # store every possible stream combination
+        self._every_sum_capacity = []  # store sum capacity for each stream combination
+
+    def solve(self, Ns, P=None):
+        """
+        Find the IA solution.
+
+        This method updates the 'F' and 'W' member variables.
+
+        Parameters
+        ----------
+        Ns : int or 1D numpy array
+            MAXIMUM number of streams of each user. All possible values
+            from 1 to Ns (or Ns[k], if Ns is an array) will tried.
+        P : 1D numpy array
+            Power of each user. If not provided, a value of 1 will be used
+            for each user.
+
+        Returns
+        -------
+        Number of iterations the iterative interference alignment algorithm
+        run.
+        """
+        # self._iasolver.clear()
+        # self._runned_iterations = 0
+
+        # self._iasolver.initialize_with = 'svd'
+        # K = self._iasolver.K
+
+        # if isinstance(Ns, int):
+        #     Ns = np.ones(K, dtype=int) * Ns
+
+        # # xxxxxxxxxx Find all possible stream configurations xxxxxxxxxxxxxx
+        # # First we create a list of K lists, where each inner list has the
+        # # possible number of streams of one user.
+        # # Ex: If Ns is [2, 2, 3] then the list of lists will be
+        # # [[1, 2], [1, 2], [1, 2, 3]]
+        # each_user_variation = [range(1, Ns[i]+1) for i in range(K)]
+
+        # # Calculate all possible combinations of the inner lists.
+        # self._stream_combinations = tuple(product(*each_user_variation))
+
+        # # xxxxx Find the solution for each stream configuration xxxxxxxxxxx
+        # self._every_sum_capacity = []
+        # for comb in self._stream_combinations:
+        #     self._iasolver.clear()
+        #     self._runned_iterations += self._iasolver.solve(np.array(comb), P)
+        #     self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())
+
+
+
+
+        #     pass
+
+        # # TODO: Implement-me
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+        pass
+
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

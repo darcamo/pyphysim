@@ -33,9 +33,9 @@ from numpy.linalg import norm
 
 from pyphysim.comm import channels
 import pyphysim.ia  # Import the package ia
-from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
-    MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
-    IterativeIASolverBaseClass, GreedStreamIASolver
+from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, \
+    MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
+    IterativeIASolverBaseClass, GreedStreamIASolver, BruteForceStreamIASolver
 from pyphysim.util.misc import peig, leig, randn_c
 
 
@@ -1427,10 +1427,14 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_updateW(self):
-        self.iasolver.randomizeF(self.Ns, self.P)
+        # Initialize with some random precoders and then call _updateC()
+        # and _updateW()
+        self.iasolver._solve_init(self.Ns, self.P)
 
         # Call updateC, updateF and updateW
-        self.iasolver._step()
+        self.iasolver._updateF()  # Depend on the value of C
+        self.iasolver._updateC()
+        self.iasolver._updateW()  # Depend on the value of C
 
         # xxxxx Calculates the expected receive filter for user 0 xxxxxxxxx
         tildeH0 = np.dot(
@@ -1499,7 +1503,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         Ns = np.array([2, 2])
         multiUserChannel = self.iasolver._multiUserChannel
         multiUserChannel.randomize(Nr, Nt, K)
-        self.iasolver.randomizeF(Ns, P)
+        self.iasolver._solve_init(Ns, P)
 
         # Call updateC, updateF and updateW
         self.iasolver._step()
@@ -1547,7 +1551,6 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
         iasolver.max_iterations = 200
         multiUserChannel.noise_var = 1e-10
-
         iasolver.solve(Ns, P)
 
         full_F0 = np.matrix(iasolver.full_F[0])
@@ -1620,21 +1623,18 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
             raise  # re-raises the last exception
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # print "Darlan"
+        # # print "Darlan"
+        # print P
         # print np.linalg.norm(full_F0, 'fro')**2
         # print np.linalg.norm(full_F1, 'fro')**2
         # print np.linalg.norm(full_F2, 'fro')**2
-        # print
+        # # print
         # print np.linalg.norm(full_W_H0 * H01 * full_F1)**2
         # print np.linalg.norm(full_W_H0 * H02 * full_F2)**2
         # print np.linalg.norm(full_W_H1 * H10 * full_F0)**2
         # print np.linalg.norm(full_W_H1 * H12 * full_F2)**2
         # print np.linalg.norm(full_W_H2 * H20 * full_F0)**2
         # print np.linalg.norm(full_W_H2 * H21 * full_F1)**2
-
-        # print
-        # print
-        # print map(linear2dB, iasolver.calc_SINR())
 
     def test_calc_SINR_old(self):
         multiUserChannel = channels.MultiUserChannelMatrix()
@@ -2965,7 +2965,7 @@ class GreedStreamIASolverTestCase(CustomTestCase):
             filename='GreedStream_test_solve_state.pickle',
             iasolver=iasolver._iasolver, Nr=Nr, Nt=Nt, K=K)
 
-        # xxxxxxxxxx Fint the solution xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Find the solution xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         iasolver._iasolver.max_iterations = 200
         iasolver.solve(Ns, P)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3053,6 +3053,73 @@ class GreedStreamIASolverTestCase(CustomTestCase):
             self._save_state('GreedStream_test_solve_state.pickle')
             raise  # re-raises the last exception
 
+
+# TODO: finish implementation
+class BruteForceStreamIASolverTestCase(CustomTestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_solve(self):
+        # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        multiUserChannel = channels.MultiUserChannelMatrix()
+        alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
+
+        iasolver = BruteForceStreamIASolver(alt_min_iasolver)
+
+        K = 3
+        Nt = np.ones(K, dtype=int) * 4
+        Nr = np.ones(K, dtype=int) * 4
+        # Note that for this configuration IA is not feasible
+        Ns = np.array([3, 4, 2])  # np.ones(K, dtype=int) * 3
+
+        # Transmit power of all users
+        P = np.array([1.2, 1.5, 0.9])
+
+        # Randomize the channel
+        multiUserChannel.randomize(Nr, Nt, K)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state_and_randomize_channel(
+            filename='GreedStream_test_solve_state.pickle',
+            iasolver=iasolver._iasolver, Nr=Nr, Nt=Nt, K=K)
+
+        # xxxxxxxxxx Find the solution xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        iasolver._iasolver.max_iterations = 200
+        iasolver.solve(Ns, P)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # xxxxxxxxxx Soltion found by the algorithm xxxxxxxxxxxxxxxxxxxxxxx
+        # full_F0 = np.matrix(iasolver._iasolver.full_F[0])
+        # full_F1 = np.matrix(iasolver._iasolver.full_F[1])
+        # full_F2 = np.matrix(iasolver._iasolver.full_F[2])
+
+        # full_W_H0 = np.matrix(iasolver._iasolver.full_W_H[0])
+        # full_W_H1 = np.matrix(iasolver._iasolver.full_W_H[1])
+        # full_W_H2 = np.matrix(iasolver._iasolver.full_W_H[2])
+
+        # H00 = np.matrix(iasolver._iasolver._get_channel(0, 0))
+        # H01 = np.matrix(iasolver._iasolver._get_channel(0, 1))
+        # H02 = np.matrix(iasolver._iasolver._get_channel(0, 2))
+        # H10 = np.matrix(iasolver._iasolver._get_channel(1, 0))
+        # H11 = np.matrix(iasolver._iasolver._get_channel(1, 1))
+        # H12 = np.matrix(iasolver._iasolver._get_channel(1, 2))
+        # H20 = np.matrix(iasolver._iasolver._get_channel(2, 0))
+        # H21 = np.matrix(iasolver._iasolver._get_channel(2, 1))
+        # H22 = np.matrix(iasolver._iasolver._get_channel(2, 2))
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        try:
+            # TODO: Finish the implementation
+            pass
+
+        except AssertionError:  # pragma: no cover
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state('GreedStream_test_solve_state.pickle')
+            raise  # re-raises the last exception
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
