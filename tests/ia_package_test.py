@@ -2995,12 +2995,6 @@ class GreedStreamIASolverTestCase(CustomTestCase):
             # Note that the values in final_Ns can be lower than or equal to
             # the values in Ns.
             final_Ns = iasolver._iasolver.Ns
-
-            # # For this particular test (no path loss) we know that the
-            # # algorithm will always prefer to stay in the feasible case. That
-            # # means that the total number of streams will be less than or equal
-            # # to 6.
-            # self.assertTrue(final_Ns.sum() <= 6, msg='Expected 6 os less streams, but got {0}'.format(final_Ns.sum()))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test if the transmit power limit is respected xxxxxxxxx
@@ -3054,7 +3048,6 @@ class GreedStreamIASolverTestCase(CustomTestCase):
             raise  # re-raises the last exception
 
 
-# TODO: finish implementation
 class BruteForceStreamIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
@@ -3116,12 +3109,6 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
             # Note that the values in final_Ns can be lower than or equal to
             # the values in Ns.
             final_Ns = iasolver._iasolver.Ns
-
-            # # For this particular test (no path loss) we know that the
-            # # algorithm will always prefer to stay in the feasible case. That
-            # # means that the total number of streams will be less than or equal
-            # # to 6.
-            # self.assertTrue(final_Ns.sum() <= 6, msg='Expected 6 os less streams, but got {0}'.format(final_Ns.sum()))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test if the transmit power limit is respected xxxxxxxxx
