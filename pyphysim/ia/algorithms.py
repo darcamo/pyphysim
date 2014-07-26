@@ -1969,8 +1969,16 @@ class BruteForceStreamIASolver(object):
         """
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
+
         self._stream_combinations = ()  # store every possible stream combination
         self._every_sum_capacity = []  # store sum capacity for each stream combination
+
+        # Store the full_F, W_H and Ns for the previous stream
+        # configuration
+        self._best_F = None
+        self._best_full_F = None
+        self._best_W_H = None
+        self._best_Ns = None
 
     def solve(self, Ns, P=None):
         """
@@ -1992,42 +2000,67 @@ class BruteForceStreamIASolver(object):
         Number of iterations the iterative interference alignment algorithm
         run.
         """
-        # self._iasolver.clear()
-        # self._runned_iterations = 0
+        self._iasolver.clear()
+        self._runned_iterations = 0
 
-        # self._iasolver.initialize_with = 'svd'
-        # K = self._iasolver.K
+        self._iasolver.initialize_with = 'svd'
+        K = self._iasolver.K
 
-        # if isinstance(Ns, int):
-        #     Ns = np.ones(K, dtype=int) * Ns
+        if isinstance(Ns, int):
+            Ns = np.ones(K, dtype=int) * Ns
 
-        # # xxxxxxxxxx Find all possible stream configurations xxxxxxxxxxxxxx
-        # # First we create a list of K lists, where each inner list has the
-        # # possible number of streams of one user.
-        # # Ex: If Ns is [2, 2, 3] then the list of lists will be
-        # # [[1, 2], [1, 2], [1, 2, 3]]
-        # each_user_variation = [range(1, Ns[i]+1) for i in range(K)]
+        # xxxxxxxxxx Find all possible stream configurations xxxxxxxxxxxxxx
+        # First we create a list of K lists, where each inner list has the
+        # possible number of streams of one user.
+        # Ex: If Ns is [2, 2, 3] then the list of lists will be
+        # [[1, 2], [1, 2], [1, 2, 3]]
+        each_user_variation = [range(1, Ns[i]+1) for i in range(K)]
 
-        # # Calculate all possible combinations of the inner lists.
-        # self._stream_combinations = tuple(product(*each_user_variation))
+        # Calculate all possible combinations of the inner lists.
+        self._stream_combinations = tuple(product(*each_user_variation))
 
-        # # xxxxx Find the solution for each stream configuration xxxxxxxxxxx
-        # self._every_sum_capacity = []
-        # for comb in self._stream_combinations:
-        #     self._iasolver.clear()
-        #     self._runned_iterations += self._iasolver.solve(np.array(comb), P)
-        #     self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())
+        # xxxxx Find the solution for each stream configuration xxxxxxxxxxx
+        self._every_sum_capacity = []
 
+        # xxxxx Compute the solution for the first combination xxxxxxxxxxxx
+        stream_combinations = iter(self._stream_combinations)
+        comb = stream_combinations.next()
+        self._iasolver.clear()
+        self._runned_iterations += self._iasolver.solve(np.array(comb), P)
+        self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())
 
+        self._best_F = self._iasolver._F
+        self._best_full_F = self._iasolver._full_F
+        self._best_W_H = self._iasolver._W_H
+        self._best_Ns = self._iasolver.Ns
+        best_sum_capacity = self._every_sum_capacity[-1]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Compute the solution for the remaining combinations xxxxxxx
+        for comb in stream_combinations:
+            self._iasolver.clear()
+            self._runned_iterations += self._iasolver.solve(np.array(comb), P)
+            self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())
 
-        #     pass
+            # If the current solution is better then the best one, store it
+            # as the new best solution.
+            if self._every_sum_capacity[-1] > best_sum_capacity:
+                best_sum_capacity = self._every_sum_capacity[-1]
+                self._best_F = self._iasolver._F
+                self._best_full_F = self._iasolver._full_F
+                self._best_W_H = self._iasolver._W_H
+                self._best_Ns = self._iasolver.Ns
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # # TODO: Implement-me
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now that we tested every possible solution, lets keep the best
+        # one we found
+        self._iasolver.clear()
+        self._iasolver._F = self._best_F
+        self._iasolver._full_F = self._best_full_F
+        self._iasolver._W_H = self._best_W_H
+        self._iasolver._Ns = self._best_Ns
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
-        pass
-
+        return self._runned_iterations
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
