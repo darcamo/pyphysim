@@ -1980,6 +1980,34 @@ class BruteForceStreamIASolver(object):
         self._best_W_H = None
         self._best_Ns = None
 
+    def clear(self):
+        """Clear the BruteForceStreamIASolver object.
+        """
+        self._stream_combinations = ()  # store every possible stream combination
+        self._every_sum_capacity = []  # store sum capacity for each stream combination
+
+        # Store the full_F, W_H and Ns for the previous stream
+        # configuration
+        self._best_F = None
+        self._best_full_F = None
+        self._best_W_H = None
+        self._best_Ns = None
+
+    @property
+    def runned_iterations(self):
+        """Get method for the runned_iterations property."""
+        return self._runned_iterations
+
+    @property
+    def stream_combinations(self):
+        """Get method for the stream_combinations property."""
+        return self._stream_combinations
+
+    @property
+    def every_sum_capacity(self):
+        """Get method for the every_sum_capacity property."""
+        return self._every_sum_capacity
+
     def solve(self, Ns, P=None):
         """
         Find the IA solution.
