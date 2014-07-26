@@ -57,3 +57,6 @@ docs/_build/
 
 # Ignore .c files created in the process of compiling any C extension.
 *_c.c
+
+# Emacs related
+flycheck*
