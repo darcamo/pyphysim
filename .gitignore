@@ -51,6 +51,7 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+docs/autosummary_folder/
 
 # Ignore some files created in the tests
 /tests/*.out
