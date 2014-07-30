@@ -59,5 +59,10 @@ docs/autosummary_folder/
 # Ignore .c files created in the process of compiling any C extension.
 *_c.c
 
+# Ignore folder created by IPython. This folder is created when I start a
+# ipython notebook server in the ipython_notebooks/ folder and change one
+# of the notebooks there.
+ipython_notebooks/.ipynb_checkpoints
+
 # Emacs related
 flycheck*
