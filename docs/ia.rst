@@ -11,4 +11,5 @@ Modules in the ia package
    :toctree: autosummary_folder/ia
    :template: module_template.txt
 
-   ia
+   iabase
+   algorithms
