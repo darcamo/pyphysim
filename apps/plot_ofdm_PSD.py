@@ -17,8 +17,7 @@ import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
 
-from pyphysim import comm
-import pyphysim.comm.ofdm
+from pyphysim.comm import ofdm
 
 
 if __name__ == '__main__':
@@ -35,7 +34,7 @@ if __name__ == '__main__':
     # bit1 --> +1
     ip_mod = 2 * ip_bits - 1
 
-    ofdm = comm.ofdm.OFDM(64, 16, 52)
+    ofdm = ofdm.OFDM(64, 16, 52)
     ofdm_symbols = ofdm.modulate(ip_mod)
 
     # MATLAB code to plot the power spectral density
