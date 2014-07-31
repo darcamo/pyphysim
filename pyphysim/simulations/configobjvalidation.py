@@ -9,11 +9,8 @@ This module is not intended to be used directly. The functions defined here
 are used in the "simulations" module.
 """
 
-__revision__ = "$Revision$"
-
 import numpy as np
 import validate
-
 
 __all__ = ["real_numpy_array_check", "real_scalar_or_real_numpy_array_check",
            "integer_numpy_array_check",

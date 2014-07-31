@@ -3,14 +3,12 @@
 
 # pylint: disable=E1101,E1103,W0403
 
-"""Tests for the modules in the simulations package.
+"""
+Tests for the modules in the simulations package.
 
 Each module has doctests for its functions and all we need to do is run all
 of them.
 """
-
-__revision__ = "$Revision$"
-
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys

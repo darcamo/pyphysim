@@ -9,8 +9,6 @@ This module should probably only be imported in the other modules inside
 the 'ia' package that implement the IA algorithms.
 """
 
-__revision__ = "$Revision$"
-
 import numpy as np
 from abc import ABCMeta, abstractmethod
 

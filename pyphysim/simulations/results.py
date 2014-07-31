@@ -3,9 +3,6 @@
 
 """Module containing simulation result classes."""
 
-__revision__ = "$Revision$"
-
-
 import numpy as np
 import os.path
 import warnings
@@ -19,16 +16,10 @@ try:
 except ImportError:  # pragma: no cover
     import pickle
 
-# try:
-#     import tables as tb
-# except ImportError:  # pragma: no cover
-#     pass
-
 try:
     from pandas import DataFrame
 except ImportError:  # pragma: no cover
     pass
-
 
 __all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 

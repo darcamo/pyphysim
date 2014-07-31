@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Simple script to simpulate a CoMP transmission with the possible stream
-reduction"""
+"""
+Simple script to simpulate a CoMP transmission with the possible stream
+reduction
+"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -23,6 +25,7 @@ from pyphysim.simulations import progressbar
 from pyphysim.cell import cell
 from pyphysim.comm import blockdiagonalization
 from pyphysim.comm import pathloss, channels, modulators
+
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

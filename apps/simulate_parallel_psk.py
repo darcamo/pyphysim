@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Perform the simulation of the transmission of PSK symbols through an
+"""
+Perform the simulation of the transmission of PSK symbols through an
 awgn channel.
 
 This performs the same simulation "in serial" and "in parallel" as an
 example of the diferences between both methods in a SimulationRunner
 subclass.
-
 """
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx

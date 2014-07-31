@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module containing useful general functions that don't belong to another
-module.
-
 """
-__revision__ = "$Revision$"
+Module containing useful general functions that don't belong to another
+module.
+"""
 
 import math
 import numpy as np

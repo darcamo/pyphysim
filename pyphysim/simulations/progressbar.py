@@ -27,10 +27,6 @@ not the progressbar such that the task code can always call the progress
 method and you only change the progressbar object.
 """
 
-from __future__ import print_function
-
-__revision__ = "$Revision$"
-
 import sys
 import os
 import multiprocessing

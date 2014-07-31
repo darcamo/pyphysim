@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Subspace related stuff.
+"""
+Subspace related stuff.
 
-This includes projections and metrics for subspaces."""
+This includes projections and metrics for subspaces.
+"""

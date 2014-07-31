@@ -15,8 +15,6 @@ calc_path_loss methods to actually calculate the path loss.
 
 """
 
-__revision__ = "$Revision$"
-
 try:
     from matplotlib import pyplot as plt
     _MATPLOTLIB_AVAILABLE = True

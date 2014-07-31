@@ -3,8 +3,6 @@
 
 """module docstring"""
 
-__revision__ = "$Revision$"
-
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
@@ -14,7 +12,6 @@ try:
 except NameError:
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 from time import time
@@ -33,6 +30,7 @@ from pyphysim.simulations.progressbar import ProgressbarText
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 #calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
+
 
 def calc_capacity(sinr):
     """Calculate the Sum capacity.

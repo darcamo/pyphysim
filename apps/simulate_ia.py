@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module containing simulation runners for the several Interference
-Alignment algorithms in the algorithms.ia module."""
-
-__revision__ = "$Revision$"
+"""
+Module containing simulation runners for the several Interference
+Alignment algorithms in the algorithms.ia module.
+"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -15,7 +15,6 @@ try:
 except NameError:
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 from time import time

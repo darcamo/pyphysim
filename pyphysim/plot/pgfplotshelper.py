@@ -26,8 +26,6 @@ One example of tex code for a plot using pgfplots is show below
 
 """
 
-__revision__ = "$Revision$"
-
 
 def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
     """

@@ -6,8 +6,6 @@
 The doWF method performs the waterfilling algorithm.
 """
 
-__revision__ = "$Revision$"
-
 import numpy as np
 
 __all__ = ['doWF']

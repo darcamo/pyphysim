@@ -9,8 +9,6 @@ and `getNumberOfLayers`.
 
 """
 
-__revision__ = "$Revision$"
-
 import numpy as np
 
 __all__ = ['MimoBase', 'Blast', 'Alamouti']

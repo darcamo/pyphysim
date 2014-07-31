@@ -3,13 +3,12 @@
 
 # pylint: disable=E1101
 
-"""Tests for the modules in the subspace package.
+"""
+Tests for the modules in the subspace package.
 
 Each module has doctests for its functions and all we need to do is run all
 of them them.
 """
-
-__revision__ = "$Revision$"
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys

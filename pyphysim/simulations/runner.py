@@ -3,9 +3,6 @@
 
 """Module containing the simulation runner."""
 
-__revision__ = "$Revision$"
-
-
 from time import time
 import sys
 import os
@@ -18,7 +15,6 @@ from .results import SimulationResults, Result
 from ..util.misc import pretty_time
 from .progressbar import ProgressbarText, ProgressbarText2, \
     ProgressbarText3, ProgressbarZMQServer
-
 
 __all__ = ["get_partial_results_filename", "SimulationRunner"]
 

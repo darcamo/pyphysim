@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""module docstring"""
-
-__revision__ = "$Revision$"
+"""Module implementing OFDM modulation and demodulation."""
 
 import numpy as np
 

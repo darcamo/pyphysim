@@ -3,13 +3,10 @@
 
 """Implement several metrics for subspaces."""
 
-__revision__ = "$Revision$"
-
 import numpy as np
 import math
 
 from .projections import calcProjectionMatrix
-
 
 __all__ = ["calc_principal_angles",
            "calc_chordal_distance_from_principal_angles",

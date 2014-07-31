@@ -17,19 +17,12 @@ More specifically, the :mod:`simulations` module implements the classes:
 For a description of how to implement Monte Carlo simulations using the
 classes defined in the :mod:`simulations` module see the section
 :ref:`implementing_monte_carlo_simulations`.
-
-
-
-
 """
-
-__revision__ = "$Revision$"
 
 # pylint: disable=W0614,W0401
 from .parameters import *
 from .runner import *
 from .results import *
-
 
 
 ## HDF5

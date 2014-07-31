@@ -18,8 +18,6 @@ model is shown in the Figure below.
 
 """
 
-__revision__ = "$Revision$"
-
 from collections import Iterable
 # The "Number" class is a base class that we can use to check with
 # isinstance to see if something is a number

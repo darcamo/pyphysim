@@ -3,8 +3,6 @@
 
 """Module implementing helper functions for simulators."""
 
-__revision__ = "$Revision$"
-
 import sys
 import argparse
 

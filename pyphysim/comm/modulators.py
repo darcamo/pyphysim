@@ -12,10 +12,6 @@ self.setConstellation method in their __init__ method, as well as implement
 the calcTheoreticalSER and calcTheoreticalBER methods.
 """
 
-__revision__ = "$Revision: $"
-
-__all__ = ['Modulator', 'PSK', 'QPSK', 'BPSK', 'QAM']
-
 try:
     import matplotlib.pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
@@ -29,6 +25,8 @@ from ..util.misc import level2bits, qfunc
 from ..util.conversion import gray2binary, binary2gray, dB2Linear
 
 PI = np.pi
+
+__all__ = ['Modulator', 'PSK', 'QPSK', 'BPSK', 'QAM']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

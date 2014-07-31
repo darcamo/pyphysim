@@ -3,8 +3,6 @@
 
 """Module related to subspace projection."""
 
-__revision__ = "$Revision$"
-
 import numpy as np
 
 

@@ -6,8 +6,6 @@ Script that reads a SimulationResults file and save the corresponding
 partial results.
 """
 
-__revision__ = "$Revision$"
-
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os

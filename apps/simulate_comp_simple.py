@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Simple script to simpulate a CoMP transmission which consists of a
-simple block diagonalization of the channel."""
+"""
+Simple script to simpulate a CoMP transmission which consists of a
+simple block diagonalization of the channel.
+"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -21,6 +23,7 @@ from pyphysim.util import conversion, misc
 from pyphysim.simulations import progressbar
 from pyphysim.cell import cell
 from pyphysim.comm import pathloss, channels, modulators, blockdiagonalization
+
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

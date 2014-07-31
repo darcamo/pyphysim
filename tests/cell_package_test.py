@@ -3,14 +3,12 @@
 
 # pylint: disable=E1101
 
-"""Tests for the modules in the cell package.
+"""
+Tests for the modules in the cell package.
 
 Each module has several doctests that we run in addition to the unittests
 defined here.
-
 """
-
-__revision__ = "$Revision$"
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys

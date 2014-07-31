@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Draw the waterfilling solution using TiKz.
+"""
+Draw the waterfilling solution using TiKz.
 
 The genLatexCode returns latex code that can draw the provided solution by
 the waterfilling algorithm, while the drawWF creates a file with this

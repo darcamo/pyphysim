@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module containing simulation runners for the several MIMO schemes
-algorithms in the comm.mimo module."""
-
-__revision__ = "$Revision$"
+"""
+Module containing simulation runners for the several MIMO schemes
+algorithms in the comm.mimo module.
+"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -16,7 +16,6 @@ except NameError:
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
 from pprint import pprint
@@ -26,6 +25,7 @@ from pyphysim.comm import modulators, mimo
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # TODO: Implement-me
 class MIMOSimulationRunner(SimulationRunner):

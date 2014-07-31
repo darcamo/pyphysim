@@ -3,13 +3,12 @@
 
 # pylint: disable=E1101,E0611
 
-"""Tests for the modules in the comm package.
+"""
+Tests for the modules in the comm package.
 
 Each module has several doctests that we run in addition to the unittests
 defined here.
 """
-
-__revision__ = "$Revision$"
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -39,6 +38,7 @@ from pyphysim.util.conversion import dB2Linear, linear2dB, \
     single_matrix_to_matrix_of_matrices
 from pyphysim.subspace.projections import calcProjectionMatrix
 from pyphysim.comm.mimo import Blast, Alamouti
+
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class CommDoctestsTestCase(unittest.TestCase):

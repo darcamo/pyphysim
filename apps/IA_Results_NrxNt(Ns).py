@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""module docstring"""
-
-
-__revision__ = "$Revision$"
-
-"Script para gerar os plots"
-
+"""Script para gerar os plots"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -39,8 +33,8 @@ except Exception as e:
     initialized = False
     max_iterations = "{0}".format(5)
 
-## xxxxxxxxxx Function Definitions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+## xxxxxxxxxx Function Definitions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def get_ber_for_given_num_iter(result_obj, max_iterations):
     """Docstring"""
     ber = result_obj.get_result_values_list(

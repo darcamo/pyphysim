@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module that implements Cell related classes."""
-
-__revision__ = "$Revision$"
+"""Module that implements Cell and Cluster related classes."""
 
 try:
     from matplotlib import patches
@@ -18,7 +16,7 @@ import itertools
 from io import BytesIO
 import cmath
 
-from . import shapes
+from ..cell import shapes
 
 __all__ = ['Node', 'CellBase', 'Cell', 'Cell3Sec', 'Cluster', 'Grid']
 

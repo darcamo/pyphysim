@@ -12,8 +12,6 @@ the IA algorithm object. This includes generating the channel and setting
 the noise variance.
 """
 
-__revision__ = "$Revision$"
-
 import numpy as np
 from scipy import optimize
 import itertools

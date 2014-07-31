@@ -16,10 +16,8 @@ except NameError:
 import numpy as np
 from time import time
 
-from pyphysim.util import conversion, misc
-from pyphysim.simulations import progressbar
-from pyphysim.cell import cell
-from pyphysim.comm import pathloss, channels, modulators, blockdiagonalization
+from pyphysim.util import conversion
+from pyphysim.comm import channels, modulators, blockdiagonalization
 
 tic = time()
 

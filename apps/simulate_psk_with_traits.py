@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Perform the simulation of the transmission of PSK symbols through an
-awgn channel.
-
 """
+Perform the simulation of the transmission of PSK symbols through an
+awgn channel.
+"""
+
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os

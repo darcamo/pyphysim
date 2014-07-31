@@ -6,9 +6,6 @@ Script that reads two files with saved SimulationResults and combine
 them into a new SimulationResults which is saved to a new file.
 """
 
-__revision__ = "$Revision$"
-
-
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
