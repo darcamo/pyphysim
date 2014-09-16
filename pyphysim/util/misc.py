@@ -16,6 +16,137 @@ from scipy.special import erfc
 # erf can also be found in the mpmath library
 
 
+def gmd(U, S, V_H, tol=0.0):
+    """
+    Perform the Geometric Mean Decomposition of a matrix A, whose SVD is
+    given by `[U, S, V_H] = np.linalg.svd(A)`.
+
+    The Geometric Mean Decomposition (GMD) is described in paper "Joint
+    Transceiver Design for MIMO Communications Using Geometric Mean
+    Decomposition."
+
+    Parameters
+    ----------
+    U, S, V_H : 2D numpy arrays
+       The three matrices obtained from the SVD of the original matrix you
+       want to decompose.
+
+    Returns
+    -------
+    Q, R, P : 2D numpy array
+        The three matrices `Q`, `R` and `P` such that `A = QRP^H`, `R` is
+        an upper triangular matrix and `Q` and `P` are unitary matrices.
+    """
+    # Note: The code here was adapted from the MATLAB code provided by the
+    # original GMD authors in
+    # http://www.sal.ufl.edu/yjiang/papers/gmd.m
+
+    # \(\mtA = \mtU \mtS \mtV^H\)
+    # \(\mtR = \mtU_r \mtS \mtV_r^H\)
+    # \(A = \mtU \mtU_r^H S \mtV_R \mtV\)
+    m = U.shape[0]
+    n = V_H.shape[0]
+
+    # Initialize R, P and Q
+    R = np.zeros([m, n])
+    P = V_H.conj().T
+    Q = U
+
+    # 'd' is a vector with the singular values
+    d = np.copy(S)  # We copy here to avoid changing 'S'
+
+    l = min(m, n)
+    p = np.sum(S >= tol)    # Number of singular values >= tol
+
+    # If there is no singular value greater then the tolerance, then we
+    # return nothing
+    if p < 1:
+        return
+
+    # If we only have one singular value, that will be our diagonal
+    # element
+    if p < 2:
+        R[0,0] = d[0]
+
+    z = np.zeros([p-1])     # Vector
+    large = 1               # index of the largest diagonal element
+    small = p-1             # index of the smallest diagonal element
+    perm = np.r_[0 : p]     # perm (i) = location in d of i-th largest entry
+    invperm = np.r_[0 : p]  # maps diagonal entries to perm
+
+    # Geometric Mean of the 'p' largest singular values
+    sigma_bar = np.prod(S[0:p])**(1./p)
+
+    for k in range(p-1):
+        flag = 0
+
+        # xxxxx If flag is changed to 1 here we will not rotate xxxxxxx
+        if d[k] >= sigma_bar:
+            i = perm[small]
+            small = small - 1
+            if d [i] >= sigma_bar:
+                flag = 1
+        else:
+            i = perm[large]
+            large = large + 1
+            if d[i] <= sigma_bar:
+                flag = 1
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        k1 = k + 1
+        if i != k1:         # Apply permutation Pi of paper
+            t = d[k1]       # Interchange d[i] and d[k1]
+            d[k1] = d[i]
+            d[i] = t
+
+            j = invperm[k1] # Update perm arrays
+            perm[j] = i
+            invperm[i] = j
+
+            # Interchange columns i and k+1 of the Q and P matrices
+            I = np.array([k1, i])
+            J = np.array([i, k1])
+            Q[:, I] = Q[:, J]
+            P[:, I] = P[:, J]
+
+        # Deltas
+        delta1 = d[k]
+        delta2 = d[k1]
+        sq_delta1 = delta1**2
+        sq_delta2 = delta2**2
+        if flag:
+            c = 1
+            s = 0
+        else:
+            c = math.sqrt((sigma_bar**2 - sq_delta2)/(sq_delta1 - sq_delta2))
+            s = math.sqrt(1 - c**2)
+
+        d[k1] = delta1 * delta2 / sigma_bar # = y in paper
+        z[k] = s * c * (sq_delta2 - sq_delta1) / sigma_bar # = x in paper
+        R[k, k] = sigma_bar
+
+        if k > 0:
+            R[0:k, k] = z[0:k] * c # new column of R
+            z[0:k] = -z[0:k] * s   # new column of Z
+
+        # First Givens Rotation matrix
+        G1 = np.array([[c, -s], [s, c]])
+
+        J = np.array([k, k1])
+        P[:, J] = P[:, J].dot(G1) # apply G1 to P
+
+        # Second Givens Rotation Matrix
+        G2 = (1/sigma_bar) * np.array([[c*delta1, -s*delta2],
+                                       [s*delta2, c*delta1]])
+
+        Q[:, J] = Q[:, J].dot(G2) # apply G2 to Q
+
+    R[p-1, p-1] = sigma_bar
+    R[0:p-1, p-1] = z
+
+    return [Q, R, P]
+
+
 def peig(A, n):
     """Returns a matrix whose columns are the `n` dominant eigenvectors
     of `A` (eigenvectors corresponding to the `n` dominant

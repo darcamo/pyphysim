@@ -23,6 +23,7 @@ except NameError:  # pragma: no cover
 import unittest
 import doctest
 import numpy as np
+from math import sqrt
 
 from pyphysim.util import misc, conversion
 
@@ -239,6 +240,47 @@ class ConversionTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
+
+    def test_gmd(self):
+        A = np.array([[6, 8, 0, 4],
+                      [8, 6, 7, 6],
+                      [10, 9, 7, 3],
+                      [6, 2, 9, 2]])
+
+        # TODO: Implement-me
+        [U, S, V_H] = np.linalg.svd(A)
+        tol=1e-6
+
+        Q, R, P = misc.gmd(U, S, V_H)
+
+        # xxxxxxxxxx Test if Q and P are unitary xxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_almost_equal(np.eye(4), Q.dot(Q.conj().T))
+        np.testing.assert_almost_equal(np.eye(4), Q.conj().T.dot(Q))
+
+        np.testing.assert_almost_equal(np.eye(4), P.dot(P.conj().T))
+        np.testing.assert_almost_equal(np.eye(4), P.conj().T.dot(P))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if R is an upper triangular matrix xxxxxxxxxxxxxx
+        # Furthermore, all diagonal elements must be the geometric mean of
+        # the singular values of 'A'
+        lambda_bar = np.prod(S)**(1./4.)
+        np.testing.assert_almost_equal(R.diagonal(), lambda_bar)
+
+        for i in range(4):
+            # Elements in the diagonal or above it are not equal to zero
+            for j in range(i,4):
+                self.assertNotAlmostEqual(0.0, R[i,j])
+
+            # Elemetns below the diagonal are equal to zero
+            for j in range(i):
+                self.assertAlmostEqual(0.0, R[i,j])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the decomposition is right xxxxxxxxxxxxxxxxxxx
+        np.testing.assert_almost_equal(A, Q.dot(R).dot(P.conj().T))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_peig(self):
         A = np.array(
             [[2 - 0j, 3 + 12j, 7 + 1j],
