@@ -17,12 +17,13 @@ except NameError:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+from matplotlib import pyplot as plt
 import numpy as np
 from pprint import pprint
 
 from pyphysim.simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result
 from pyphysim.comm import modulators, mimo
-from pyphysim.util.conversion import dB2Linear
+from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.util import misc
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -226,7 +227,7 @@ def simulate_general(runner, results_filename):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Replace any parameter mention in results_filename xxxxxxxxxxxxx
-    results_filename = results_filename.format(**runner.params.parameters)
+    runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -264,16 +265,11 @@ def simulate_general(runner, results_filename):
         runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Save the simulation results to a file xxxxxxxxxxxxxxxxxxxx
-    results_filename = '{0}.pickle'.format(results_filename)
-    runner.results.save_to_file(results_filename)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
     print "Runned iterations: {0}".format(runner.runned_reps)
     print "Elapsed Time: {0}".format(runner.elapsed_time)
     print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
 
-    return runner.results, results_filename
+    return runner.results, runner.results_filename
 
 
 def simulate_alamouti(config_file_name='mimo_alamouti_config_file.txt'):
@@ -307,38 +303,71 @@ def simulate_blast(config_file_name='mimo_blast_config_file.txt'):
 
     return results, filename
 
-
-def plot_ber_and_ser(results, plot_title = None, block=True):
+def get_ebn0_vec(results):
     """
+    Get the Eb/N0 vector suitable for the plot.
 
     Parameters
     ----------
     results : A SimulationResults object
         The results from a simulation.
+    """
+    SNR = np.array(results.params['SNR'])
+
+    modulator = results.params['modulator']
+    if modulator == 'BPSK':
+        K = 1
+    elif modulator == 'QPSK':
+        K = 2
+    else:
+        M = results.params['M']
+        K = np.round(np.log2(M))
+
+    ebn0 = SNR + linear2dB(1./K)
+
+    return ebn0
+
+def plot_ber_and_ser(results, ax=None, plot_title=None, block=True, color=None):
+    """
+    Plot the BER and the SER in `results`.
+
+    Parameters
+    ----------
+    results : A SimulationResults object
+        The results from a simulation.
+    ax : A matplotlib axis.
+        The axis to plot the curve. If not specified a new one will be
+        created.
     plot_title : str
         The tittle of the plot. Any mention to "{parameter name}" will be
         replaced by the parameter value.
     block : bool
         If True the plot will block and code will only continue after the
         plot window is closed. Set it to False if you want iterative mode.
+    color : str
+        The color for the curves. Must be something that matplotlib can
+        understand, such as 'blue', 'b', 'green', 'g', etc.
     """
-    from matplotlib import pyplot as plt
-
     ber = results.get_result_values_list('ber')
     ser = results.get_result_values_list('ser')
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
+    #EBN0 = get_ebn0_vec(results)
 
-    # modulator_name = '{0}-{1}'.format(results.params['M'],
-    #                                   results.params['modulator'])
-
-    # Can only plot if we simulated for more then one value of SNR
+    # Can only plot if we simulated for more then one value of EBN0
     if SNR.size > 1:
-        fig = plt.figure()
-        ax = plt.axes()
-        ax.semilogy(SNR, ber, '--g*', label='BER')
-        ax.semilogy(SNR, ser, '--b*', label='SER')
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        if color == None:
+            ax.semilogy(SNR, ber, linestyle='dashed', marker='*', label='BER')
+            ax.semilogy(SNR, ser, linestyle='solid', marker='s', label='SER')
+        else:
+            ax.semilogy(SNR, ber, linestyle='dashed', marker='*',
+                        color=color, label='BER')
+            ax.semilogy(SNR, ser, linestyle='solid', marker='s',
+                        color=color, label='SER')
         plt.xlabel('SNR')
         plt.ylabel('Error')
         if plot_title is not None:
@@ -346,13 +375,17 @@ def plot_ber_and_ser(results, plot_title = None, block=True):
 
         ax.legend()
 
-        ax.grid(True, which='both', axis='both')
+        ax.grid(True, which='major', axis='both')
         plt.show(block=block)
 
 
 if __name__ == '__main__':
-    results, filename = simulate_alamouti()
-    plot_ber_and_ser(results, plot_title='BER and SER for {M}-{modulator} with Alamouti (Nr={Nr})', block=True)
+    fig, ax = plt.subplots()
 
-    # results, filename = simulate_blast()
-    # plot_ber_and_ser(results, plot_title='BER and SER for {M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})', block=True)
+    results1, filename1 = simulate_alamouti()
+    plot_ber_and_ser(results1, ax=ax, plot_title='BER and SER for {M}-{modulator} with Alamouti (Nr={Nr})', color='green', block=True)
+
+    #plt.hold(True)
+
+    # results2, filename2 = simulate_blast()
+    # plot_ber_and_ser(results2, ax=ax, plot_title='BER and SER for {M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})', color='blue', block=True)
