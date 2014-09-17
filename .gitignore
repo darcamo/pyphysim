@@ -54,7 +54,7 @@ docs/_build/
 docs/autosummary_folder/
 
 # Ignore some files created in the tests
-/tests/*.out
+*.out
 
 # Ignore .c files created in the process of compiling any C extension.
 *_c.c
