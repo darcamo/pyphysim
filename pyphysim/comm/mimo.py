@@ -10,6 +10,7 @@ and `getNumberOfLayers`.
 """
 
 import numpy as np
+import math
 
 __all__ = ['MimoBase', 'Blast', 'Alamouti']
 
@@ -244,7 +245,7 @@ class Blast(MimoBase):
             If the number of elements in `transmit_data` is not multiple of
             the number of transmit antennas.
         """
-        return self._encode(transmit_data) / np.sqrt(self.nStreams)
+        return self._encode(transmit_data) / math.sqrt(self.nStreams)
 
     def _decode(self, received_data, channel):
         """
@@ -295,7 +296,8 @@ class Blast(MimoBase):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        return self._decode(received_data, channel) * np.sqrt(self.nStreams)
+        return self._decode(received_data, channel) * math.sqrt(self.nStreams)
+
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -373,7 +375,7 @@ class Alamouti(MimoBase):
         encoded_data : 2D numpy array
             The encoded `transmit_data`.
         """
-        return self._encode(transmit_data) / np.sqrt(2)
+        return self._encode(transmit_data) / math.sqrt(2)
 
     @staticmethod
     def _decode(received_data, channel):
@@ -450,5 +452,5 @@ class Alamouti(MimoBase):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        return self._decode(received_data, channel) * np.sqrt(2)
+        return self._decode(received_data, channel) * math.sqrt(2)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
