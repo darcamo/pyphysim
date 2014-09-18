@@ -3446,7 +3446,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         Pu = self.Pu
         noise_var = self.noise_var
         num_users = self.num_users
-        #num_antenas = self.num_antenas
+        # num_antenas = self.num_antenas
         channel = randn_c(self.iNr, self.iNt)
 
         (newH, _) = blockdiagonalization.block_diagonalize(

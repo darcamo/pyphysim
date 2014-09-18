@@ -21,7 +21,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 from pprint import pprint
 
-from pyphysim.simulations.core import SimulationRunner, SimulationParameters, SimulationResults, Result
+from pyphysim.simulations.core import SimulationRunner, SimulationParameters, \
+    SimulationResults, Result
 from pyphysim.comm import modulators, mimo
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.util import misc
@@ -126,7 +127,8 @@ class MIMOSimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create(
             "num_symbols", Result.SUMTYPE, numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors",
+                                        Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -147,8 +149,9 @@ class MIMOSimulationRunner(SimulationRunner):
         return simResults
 
     # def _keep_going(self, current_params, simulation_results, current_rep):
-    #     #return True
-    #     cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
+    #     cumulated_bit_errors \
+    #         = simulation_results['bit_errors'][-1].get_result()
+
     #     max_bit_errors = current_params['max_bit_errors']
     #     return cumulated_bit_errors < max_bit_errors
 
@@ -242,15 +245,19 @@ def simulate_general(runner, results_filename):
         cl = Client()
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
-        dview.execute('%reset')  # Reset the engines so that we don't have
-                                 # variables there from last computations
+
+        # Reset the engines so that we don't have variables there from last
+        # computations
+        dview.execute('%reset')
+
         dview.execute('import sys')
         # We use block=True to ensure that all engines have modified their
         # path to include the folder with the simulator before we create
         # the load lanced view in the following.
         dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
 
-        # But for the actual simulation we are better using a load balanced view
+        # But for the actual simulation we are better using a load balanced
+        # view
         lview = cl.load_balanced_view()
     except Exception:  # pylint: disable=W0703
         # If we can't get an IPython view then we will perform the
@@ -327,7 +334,9 @@ def get_ebn0_vec(results):
 
     return ebn0
 
-def plot_ber_and_ser(results, ax=None, plot_title=None, block=True, color=None):
+
+def plot_ber_and_ser(results,
+                     ax=None, plot_title=None, block=True, color=None):
     """
     Plot the BER and the SER in `results`.
 

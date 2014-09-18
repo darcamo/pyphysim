@@ -107,7 +107,9 @@ class MimoBase(object):
         msg = 'encode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
-    def decode(self, received_data, channel):  # pragma: no cover, pylint: disable=W0613
+    def decode(self,
+               received_data,   # pylint: disable=W0613
+               channel):        # pragma: no cover, pylint: disable=W0613
         """
         Method to decode the transmit data array to be transmitted using some
         MIMO shceme. This method must be implemented in a subclass.
