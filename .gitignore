@@ -66,6 +66,7 @@ ipython_notebooks/.ipynb_checkpoints
 
 # Emacs related
 flycheck*
+*flymake*
 
 # Pickle files
 *.pickle
