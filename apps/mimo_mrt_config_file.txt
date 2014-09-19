@@ -3,8 +3,8 @@
         M = 4
         modulator = BPSK
         NSymbs = 200
-        Nr = 1
         Nt = 2
+        Nr = 1
 [General]
         rep_max = 5000
         max_bit_errors = 3000

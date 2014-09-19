@@ -299,6 +299,171 @@ class Blast(MimoBase):
         return self._decode(received_data, channel) * math.sqrt(self.nStreams)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MRT xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class MRT(MimoBase):
+    """
+    MIMO class for the MRT scheme.
+
+    The number of streams for the MRT scheme is always equal to one, but it
+    still employs multiple transmit antennas.
+    """
+
+    def __init__(self, ):
+        """
+        Initialized the MRT object.
+        """
+        MimoBase.__init__(self)
+
+    def getNumberOfLayers(self):  # pragma: no cover
+        """
+        Get the number of layers of the MRT scheme.
+
+        The returned value is always equal to 1.
+        """
+        return 1
+
+    def encode(self, transmit_data, channel):
+        """
+        Encode the transmit data array to be transmitted using the MRT scheme.
+
+        The MRT scheme corresponds to multiplying the symbol from each
+        transmit antenna with a complex number corresponding to the inverse
+        of the phase of the channel so as to ensure that the signals add
+        constructively at the receiver. This also means that the MRT echeme
+        only be applied to senarios with a single receive antenna.
+
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            A numpy array with the data to be transmitted.
+        channel : 1D numpy array
+            MISO channel vector. It must be a 1D numpy array, where the
+            number of receive antennas is assumed to be equal to 1.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data`.
+        """
+        Nt = channel.shape[-1]
+
+        # Add an extra first dimension so that broadcast does the right
+        # thing later
+        x = transmit_data[np.newaxis, :]
+
+        # Calculate the transmit filter 'W'
+        if len(channel.shape) == 1:
+            # Channel must be a 1D numpy array with dimention Nt
+            # W will have dimension (Nt x 1)
+            W = np.exp(-1j * np.angle(channel[:, np.newaxis]))
+        else:
+            Nr = channel.shape[0]
+            if Nr != 1:
+                raise ValueError("The MRT scheme is only defined for the "
+                                 "scenario with a single receive antenna")
+            W = np.exp(-1j * np.angle(channel)).T
+
+        # Elementwise multiplication
+        encoded_data = (W * x) / math.sqrt(Nt)
+        return encoded_data
+
+    def decode(self, received_data, channel):
+        """
+        Decode the received data array.
+
+        Parameters
+        ----------
+        received_data : 2D or 1D numpy array
+            Received data, which was encoded with the MRT scheme and
+            corrupted by the channel `channel`.
+        channel : 1D or 2D numpy array
+            MIMO channel matrix. If it is a 1D numpy array assume the
+            number of receive antennas is equal to 1. If it is 1D then
+            `received_data` also needs to be 1D.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data.
+        """
+        Nt = channel.shape[-1]
+        if len(channel.shape) == 1:
+            # Channel is 1D. Since this is MRT, there is no need for a
+            # fancy receiver. All we need to do is to divide by the channel
+            # sum of the channel absolute values and compensate for the
+            # power division applied at the transmission side.
+            decoded_data \
+                = math.sqrt(Nt) * received_data / np.sum(np.abs(channel))
+        else:
+            # Channel is 2D. Note that the first dimension corresponding
+            # to the number of receive antennas MUST be equal to 1.
+            Nr = channel.shape[0]
+            if Nr != 1:
+                raise ValueError("The MRT scheme is only defined for the "
+                                 "scenario with a single receive antenna")
+
+            decoded_data \
+                = math.sqrt(Nt) * received_data / np.sum(np.abs(channel))
+            decoded_data.shape = (decoded_data.size)
+
+        return decoded_data
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx MRC Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class MRC(Blast):
+    """
+    MIMO class for the MRC scheme.
+
+    The number of streams need to be specified during object creation.
+
+    The receive filter used will depend on the noise variance (see the
+    :meth:`set_noise_var` method). Of the noise variance is positive the
+    MMSE filter will be used, otherwise noise variance will be ignored and
+    the Zero-Forcing filter will be used.
+
+    The receive filter in the `Blast` class already does the maximum ratio
+    combining. Therefore, this MRC class simply inherits from the Blast
+    class and only exists for completion.
+    """
+
+    def __init__(self, nStreams):
+        """
+        Initialized the MRC object.
+
+        Parameters
+        ----------
+        nStreams : int
+            The number of transmit streams.
+        """
+        Blast.__init__(self, nStreams)
+
+    # def decode(self, received_data, channel):
+    #     """
+    #     Decode the received data array.
+
+    #     Parameters
+    #     ----------
+    #     received_data : 2D numpy array
+    #         Received data, which was encoded with the Blast scheme and
+    #         corrupted by the channel `channel`.
+    #     channel : 2D numpy array
+    #         MIMO channel matrix.
+
+    #     Returns
+    #     -------
+    #     decoded_data : 1D numpy array
+    #         The decoded data.
+    #     """
+    #     equiv_channel = np.dot(channel.conj().T, channel)
+    #     equiv_received_data = np.dot(channel.conj().T, received_data)
+    #     return self._decode(equiv_received_data, equiv_channel) * math.sqrt(
+    #         self.nStreams)
+
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Alamouti Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

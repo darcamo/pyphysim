@@ -64,13 +64,14 @@ class MIMOSimulationRunner(SimulationRunner):
                              'QAM': modulators.QAM,
                              'BPSK': modulators.BPSK}
 
-        if self.params['modulator'] == 'BPSK' or self.params['modulator'] == 'QPSK':
-            self.modulator = modulator_options[self.params['modulator']]()
+        modulator_string = self.params['modulator']
+        if modulator_string == 'BPSK' or modulator_string == 'QPSK':
+            self.modulator = modulator_options[modulator_string]()
         else:
-            self.modulator = modulator_options[self.params['modulator']](M)
+            self.modulator = modulator_options[modulator_string](M)
 
         # Create the MIMO object
-        if MimoSchemeClass is mimo.Blast:
+        if MimoSchemeClass is mimo.Blast or MimoSchemeClass is mimo.MRC:
             self.mimo_object = MimoSchemeClass(self.params['Nt'])
         else:
             self.mimo_object = MimoSchemeClass()
@@ -80,7 +81,12 @@ class MIMOSimulationRunner(SimulationRunner):
         NSymbs = current_parameters["NSymbs"]
         M = self.modulator.M
         Nr = current_parameters["Nr"]
+        Nt = current_parameters["Nt"]
         SNR = current_parameters["SNR"]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Create the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        channel = misc.randn_c(Nr, Nt)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -93,12 +99,15 @@ class MIMOSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Encode with the MIMO scheme xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        transmit_signal = self.mimo_object.encode(
-            modulatedData)
+        if isinstance(self.mimo_object, mimo.MRT):
+            transmit_signal = self.mimo_object.encode(
+                modulatedData, channel)
+        else:
+            transmit_signal = self.mimo_object.encode(
+                modulatedData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        channel = misc.randn_c(Nr, 2)
         noiseVar = 1 / dB2Linear(SNR)
         awgn_noise = (misc.randn_c(Nr, NSymbs) * np.sqrt(noiseVar))
         received_signal = np.dot(channel, transmit_signal) + awgn_noise
@@ -176,6 +185,7 @@ class AlamoutiSimulationRunner(MIMOSimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
         NSymbs=integer(min=10, max=1000000, default=200)
         Nr=integer(min=1,default=1)
+        Nt=integer(min=2,max=2,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
         max_bit_errors=integer(min=1, default=3000)
@@ -208,8 +218,8 @@ class BlastSimulationRunner(MIMOSimulationRunner):
         M=integer(min=4, max=512, default=16)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
         NSymbs=integer(min=10, max=1000000, default=200)
-        Nt=integer(min=2,default=2)
-        Nr=integer(min=2,default=2)
+        Nt=integer(min=1,default=2)
+        Nr=integer(min=1,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
         max_bit_errors=integer(min=1, default=3000)
@@ -223,7 +233,80 @@ class BlastSimulationRunner(MIMOSimulationRunner):
             spec)
 
 
+class MRCSimulationRunner(MIMOSimulationRunner):
+    """
+    Implements a simulation runner for a transmission with the Alternating
+    Minimizations Interference Alignment Algorithm.
+
+    Parameters
+    ----------
+    config_filename : string
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
+    """
+
+    def __init__(self, config_filename):
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:21)
+        M=integer(min=4, max=512, default=16)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        Nt=integer(min=1,default=2)
+        Nr=integer(min=1,default=2)
+        [General]
+        rep_max=integer(min=1, default=5000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+
+        MIMOSimulationRunner.__init__(
+            self,
+            mimo.MRC,
+            config_filename,
+            spec)
+
+
+class MRTSimulationRunner(MIMOSimulationRunner):
+    """
+    Implements a simulation runner for a transmission with the Alternating
+    Minimizations Interference Alignment Algorithm.
+
+    Parameters
+    ----------
+    config_filename : string
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
+    """
+
+    def __init__(self, config_filename):
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:21)
+        M=integer(min=4, max=512, default=16)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        Nt=integer(min=2,default=2)
+        Nr=integer(min=1,default=2)
+        [General]
+        rep_max=integer(min=1, default=5000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+
+        MIMOSimulationRunner.__init__(
+            self,
+            mimo.MRT,
+            config_filename,
+            spec)
+
+
+
 def simulate_general(runner, results_filename):
+    """
+    Function with the general code to simulate the MIMO schemes.
+    """
+
     # xxxxxxxxxx Print the simulation parameters xxxxxxxxxxxxxxxxxxxxxxxxxx
     pprint(runner.params.parameters)
     print("MIMO Scheme: {0}".format(runner.mimo_object.__class__))
@@ -310,6 +393,39 @@ def simulate_blast(config_file_name='mimo_blast_config_file.txt'):
 
     return results, filename
 
+
+def simulate_mrc(config_file_name='mimo_mrc_config_file.txt'):
+    from apps.simulate_mimo import MRCSimulationRunner
+
+    # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
+    runner = MRCSimulationRunner(config_file_name)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results, filename = simulate_general(
+        runner,
+        'mrc_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results, filename
+
+
+def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
+    from apps.simulate_mimo import MRTSimulationRunner
+
+    # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
+    runner = MRTSimulationRunner(config_file_name)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results, filename = simulate_general(
+        runner,
+        'mrt_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results, filename
+
+
 def get_ebn0_vec(results):
     """
     Get the Eb/N0 vector suitable for the plot.
@@ -362,22 +478,22 @@ def plot_ber_and_ser(results,
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
-    #EBN0 = get_ebn0_vec(results)
+    EBN0 = get_ebn0_vec(results)
 
     # Can only plot if we simulated for more then one value of EBN0
-    if SNR.size > 1:
+    if EBN0.size > 1:
         if ax is None:
-            fig, ax = plt.subplots()
+            _, ax = plt.subplots()
 
-        if color == None:
-            ax.semilogy(SNR, ber, linestyle='dashed', marker='*', label='BER')
-            ax.semilogy(SNR, ser, linestyle='solid', marker='s', label='SER')
+        if color is None:
+            ax.semilogy(EBN0, ber, linestyle='dashed', marker='*', label='BER')
+            ax.semilogy(EBN0, ser, linestyle='solid', marker='s', label='SER')
         else:
-            ax.semilogy(SNR, ber, linestyle='dashed', marker='*',
+            ax.semilogy(EBN0, ber, linestyle='dashed', marker='*',
                         color=color, label='BER')
-            ax.semilogy(SNR, ser, linestyle='solid', marker='s',
+            ax.semilogy(EBN0, ser, linestyle='solid', marker='s',
                         color=color, label='SER')
-        plt.xlabel('SNR')
+        plt.xlabel('EBN0')
         plt.ylabel('Error')
         if plot_title is not None:
             plt.title(plot_title.format(**results.params.parameters))
@@ -392,9 +508,27 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
 
     results1, filename1 = simulate_alamouti()
-    plot_ber_and_ser(results1, ax=ax, plot_title='BER and SER for {M}-{modulator} with Alamouti (Nr={Nr})', color='green', block=True)
+    plot_ber_and_ser(
+        results1, ax=ax,
+        plot_title='{M}-{modulator} with Alamouti (Nr={Nr})',
+        color='green', block=False)
 
-    #plt.hold(True)
+    plt.hold(True)
 
-    # results2, filename2 = simulate_blast()
-    # plot_ber_and_ser(results2, ax=ax, plot_title='BER and SER for {M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})', color='blue', block=True)
+    results2, filename2 = simulate_blast()
+    plot_ber_and_ser(
+        results2, ax=ax,
+        plot_title='{M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})',
+        color='blue', block=False)
+
+    results3, filename3 = simulate_mrc()
+    plot_ber_and_ser(
+        results3, ax=ax,
+        plot_title='{M}-{modulator} with MRC (Nr={Nr}, Nt={Nt})',
+        color='red', block=False)
+
+    results4, filename4 = simulate_mrt()
+    plot_ber_and_ser(
+        results4, ax=ax,
+        plot_title='{M}-{modulator} with MRT (Nr={Nr}, Nt={Nt})',
+        color='magenta', block=True)

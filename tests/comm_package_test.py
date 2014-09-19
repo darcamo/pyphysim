@@ -23,6 +23,7 @@ except NameError:  # pragma: no cover
 import warnings
 import unittest
 import doctest
+import math
 import numpy as np
 from scipy.linalg import block_diag
 from matplotlib import pylab
@@ -37,7 +38,7 @@ from pyphysim.util.misc import randn_c, least_right_singular_vectors, \
 from pyphysim.util.conversion import dB2Linear, linear2dB, \
     single_matrix_to_matrix_of_matrices
 from pyphysim.subspace.projections import calcProjectionMatrix
-from pyphysim.comm.mimo import Blast, Alamouti
+from pyphysim.comm.mimo import Blast, Alamouti, MRC, MRT
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -3149,7 +3150,129 @@ class BlastTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
 
 
-# Implement test classes for other mimo schemes
+class MRTTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.mrt_object = MRT()
+
+    def test_getNumberOfLayers(self):
+        self.assertEqual(self.mrt_object.getNumberOfLayers(), 1)
+
+    def test_encode(self):
+        data = np.r_[0:15]
+
+        # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Nt = 2
+        channel = randn_c(Nt)
+
+        data_aux = data.reshape(1, data.size)  # Useful for broadcasting
+        encoded_data = self.mrt_object.encode(data, channel)
+        W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1)
+
+        expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Nt = 4
+        channel = randn_c(Nt)
+
+        data_aux = data.reshape(1, data.size)  # Useful for broadcasting
+        encoded_data = self.mrt_object.encode(data, channel)
+        W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1)
+
+        expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the case where the channel is 2D xxxxxxxxxxxxxxxx
+        # Note tha in this case even though the channel is a 2D numpy array
+        # the size of the first dimension (receive antennas) must be equal
+        # to 1.
+        Nt = 4
+        channel2 = randn_c(1, Nt)
+
+        data_aux = data.reshape(1, data.size)  # Useful for broadcasting
+        encoded_data = self.mrt_object.encode(data, channel2)
+        W = np.exp(-1j * np.angle(channel2)).reshape(Nt, 1)
+
+        expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_decode(self):
+        Nt = 4
+
+        # xxxxxxxxxx test the case with a single receive antenna xxxxxxxxxx
+        channel = randn_c(Nt)
+
+        data = np.r_[0:15]
+        encoded_data = self.mrt_object.encode(data, channel)
+
+        # Add '0.1' as a noise term
+        received_data = channel.dot(encoded_data) + 0.0001
+        decoded_data = self.mrt_object.decode(received_data, channel)
+
+        self.assertEqual(len(decoded_data.shape), 1)
+        np.testing.assert_array_almost_equal(decoded_data, data, decimal=4)
+
+        # Now we are explicitting changing the shape of the channel
+        # variable to include the first dimension corresponding to a single
+        # receive antenna
+        channel.shape = (1, Nt)
+        # The encoded data should be the same
+        encoded_data = self.mrt_object.encode(data, channel)
+
+        # Add '0.1' as a noise term
+        received_data = channel.dot(encoded_data) + 0.0001
+        decoded_data = self.mrt_object.decode(received_data, channel)
+
+        self.assertEqual(len(decoded_data.shape), 1)
+        np.testing.assert_array_almost_equal(decoded_data, data, decimal=4)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+class MRCTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.mrc_object = MRC(1)
+
+    def test_decode(self):
+        num_streams = self.mrc_object.getNumberOfLayers()
+
+        data = np.r_[0:15]
+        encoded_data = self.mrc_object.encode(data)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with an identity channel
+        channel = np.eye(num_streams)
+        decoded_data1 = self.mrc_object.decode(encoded_data, channel)
+        np.testing.assert_array_almost_equal(decoded_data1, data)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with a random channel and a zero-force filter
+        self.mrc_object.set_noise_var(-1)  # This should use the ZF filter
+        self.assertEqual(
+            self.mrc_object.calc_filter, mimo.MimoBase._calcZeroForceFilter)
+        channel = randn_c(4, num_streams)  # 4 receive antennas
+        received_data2 = np.dot(channel, encoded_data)
+        decoded_data2 = self.mrc_object.decode(received_data2, channel)
+        np.testing.assert_array_almost_equal(decoded_data2, data)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test with a random channel and a MMSE filter
+        self.mrc_object.set_noise_var(0.00000001)
+        self.assertNotEqual(
+            self.mrc_object.calc_filter, mimo.MimoBase._calcMMSEFilter)
+        channel = randn_c(4, num_streams)  # 4 receive antennas
+        received_data3 = np.dot(channel, encoded_data)
+        decoded_data3 = self.mrc_object.decode(received_data3, channel)
+        np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
+
+
 class AlamoutiTestCase(unittest.TestCase):
     """Unittests for the Alamouti class in the mimo module.
     """
