@@ -833,8 +833,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
         for k in range(K):
-            expected_first_part = 0.0  # First part in the equation of Bkl
-                                       # (the double summation)
+            # First part in the equation of Bkl (the double summation)
+            expected_first_part = 0.0
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
@@ -982,7 +982,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         multiUserChannel = channels.MultiUserChannelMatrix()
         multiUserChannel.noise_var = 0.0
 
-        #iasolver = MaxSinrIASolver(multiUserChannel)
+        # iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4
@@ -1176,8 +1176,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
         for k in range(K):
-            expected_first_part = 0.0  # First part in the equation of Bkl
-                                       # (the double summation)
+            # First part in the equation of Bkl (the double summation)
+            expected_first_part = 0.0
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
@@ -1384,7 +1384,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Nt = np.ones(K, dtype=int) * 2
         Ns = Nt
         iPu = 1.2
-        #noise_power = 0.001
+        # noise_power = 0.001
 
         self.multiH.randomize(Nr, Nt, K)
 
@@ -1397,7 +1397,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         U = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             U[k] = aux[k, k].conjugate().T
-
 
         SINR_all_users = self.multiH.calc_JP_SINR(F, U)
 
@@ -2246,8 +2245,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
         for k in range(K):
-            expected_first_part = 0.0  # First part in the equation of Bkl
-                                       # (the double summation)
+            # First part in the equation of Bkl (the double summation)
+            expected_first_part = 0.0
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
@@ -2300,7 +2299,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
     def test_underline_calc_SINR_k(self):
         multiUserChannel = channels.MultiUserChannelMatrixExtInt()
-        #iasolver = MaxSinrIASolver(multiUserChannel)
+        # iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4
@@ -2892,7 +2891,8 @@ class OfdmTestCase(unittest.TestCase):
         # Now lets change the number of used subcarriers and repeat the
         # tests so that the case when zeropad is performed is also tested.
         self.ofdm_object.num_used_subcarriers = 60
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
+        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
+            input_signal.size)
         # We used 60 subcarriers, but we have 52 elements -> We need to add
         # 8 zeros at the end of the unput data
         self.assertEqual(zeropad, 8)
@@ -2928,7 +2928,9 @@ class OfdmTestCase(unittest.TestCase):
               0., 0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.,
               12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.,
               25., 26., 27., 28., 29., 30., 31., 32.]])
-        np.testing.assert_array_equal(self.ofdm_object._prepare_input_signal(input_signal), expected_data3)
+        np.testing.assert_array_equal(
+            self.ofdm_object._prepare_input_signal(input_signal),
+            expected_data3)
 
     def test_prepare_decoded_signal(self):
         input1 = np.r_[1:105]
@@ -2937,8 +2939,8 @@ class OfdmTestCase(unittest.TestCase):
         np.testing.assert_array_equal(output, input1)
 
     def test_modulate(self):
-        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52
-                                     # used subcarriers)
+        # Exactly two OFDM symbols (with 52 used subcarriers)
+        input_signal = np.r_[1:105]
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
@@ -2979,8 +2981,8 @@ class OfdmTestCase(unittest.TestCase):
 
     def test_demodulate(self):
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
-        input_signal = np.r_[1:105]  # Exactly two OFDM symbols (with 52
-                                     # used subcarriers)
+        # Exactly two OFDM symbols (with 52 used subcarriers)
+        input_signal = np.r_[1:105]
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
@@ -2996,8 +2998,8 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
-        input_signal2 = np.r_[1:105]  # Exactly two OFDM symbols (with 52
-                                      # used subcarriers)
+        # Exactly two OFDM symbols (with 52 used subcarriers)
+        input_signal2 = np.r_[1:105]
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols2 = self.ofdm_object.modulate(input_signal2)
 
@@ -3011,8 +3013,8 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
-        input_signal3 = np.r_[1:110]  # Exactly two OFDM symbols (with 52
-                                      # used subcarriers)
+        # Exactly two OFDM symbols (with 52 used subcarriers)
+        input_signal3 = np.r_[1:110]
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols3 = self.ofdm_object.modulate(input_signal3)
 
@@ -3051,7 +3053,7 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     # generating 1's and 0's
     ip_bits = np.random.random_integers(0, 1, num_bits)
     # Number of modulated symbols
-    #num_mod_symbols = num_bits * 1
+    # num_mod_symbols = num_bits * 1
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # BPSK modulation
@@ -3129,7 +3131,8 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a zero-force filter
         self.blast_object.set_noise_var(-1)  # This should use the ZF filter
-        self.assertEqual(self.blast_object.calc_filter, mimo.MimoBase._calcZeroForceFilter)
+        self.assertEqual(self.blast_object.calc_filter,
+                         mimo.MimoBase._calcZeroForceFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         received_data2 = np.dot(channel, encoded_data)
         decoded_data2 = self.blast_object.decode(received_data2, channel)
@@ -3138,7 +3141,8 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a MMSE filter
         self.blast_object.set_noise_var(0.00000001)
-        self.assertNotEqual(self.blast_object.calc_filter, mimo.MimoBase._calcMMSEFilter)
+        self.assertNotEqual(self.blast_object.calc_filter,
+                            mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.blast_object.decode(received_data3, channel)
@@ -3203,7 +3207,7 @@ class WaterfillingTestCase(unittest.TestCase):
         - `Es`: Symbol energy (in linear scale)
         """
         # See the link below this example
-        #http://jungwon.comoj.com/ucsd_ece287b_spr12/lecture_slides/lecture4.pdf
+        # http://jungwon.comoj.com/ucsd_ece287b_spr12/lecture_slides/lecture4.pdf
 
         # Abs of the parallel channels
         vtChannels_abs = np.array([1.90, 1.76, 1.76, 1.35, 1.35, .733, .733,
@@ -3338,7 +3342,8 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # xxxxx Test the Individual power restriction of each user xxxxxxxx
         # Cummulated number of transmit antennas
         cum_Nt = np.cumsum(
-            np.hstack([0, np.ones(self.num_users, dtype=int) * self.num_antenas]))
+            np.hstack([0,
+                       np.ones(self.num_users, dtype=int) * self.num_antenas]))
 
         individual_powers = []
         for i in range(self.num_users):
@@ -3533,12 +3538,17 @@ class WhiteningBDTestCase(unittest.TestCase):
         H2 = multiUserChannel.get_Hk_without_ext_int(1)
 
         # Create the whiteningBD object and the regular BD object
-        whiteningBD_obj = blockdiagonalization.WhiteningBD(K, iPu, noise_var, pe)
+        whiteningBD_obj = blockdiagonalization.WhiteningBD(
+            K, iPu, noise_var, pe)
 
-        #noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(noise_var, pe)
+        # noise_plus_int_cov_matrix \
+        #     = multiUserChannel.calc_cov_matrix_extint_plus_noise(
+        #         noise_var, pe)
 
-        #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
-        (Ms_all, Wk_all, Ns_all) = whiteningBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        # xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxx
+        (Ms_all, Wk_all, Ns_all) \
+            = whiteningBD_obj.block_diagonalize_no_waterfilling(
+                multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -3561,7 +3571,6 @@ class WhiteningBDTestCase(unittest.TestCase):
         self.assertAlmostEqual(np.linalg.norm(np.dot(H1, Ms2), 'fro'), 0)
         self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, Ms2), 'fro'), 0)
         self.assertAlmostEqual(np.linalg.norm(np.dot(H2, Ms1), 'fro'), 0)
-
 
         # # xxxxxxxxxx Now lets test the receive filter xxxxxxxxxxxxxxxxxxxxx
         # print
@@ -3601,8 +3610,6 @@ class WhiteningBDTestCase(unittest.TestCase):
         # print np.dot(Wk, np.dot(big_H, Ms)).round(4)
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
-
         # # Equivalent sinrs (in linear scale)
         # sinrs = np.empty(K, dtype=np.ndarray)
         # sinrs[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
@@ -3625,14 +3632,12 @@ class WhiteningBDTestCase(unittest.TestCase):
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # # xxxxxxxxxx For comparison, lets perform the regular BD xxxxxxxxxx
-        # (newH, Ms_good_regular_bd) = regularBD_obj.block_diagonalize_no_waterfilling(multiUserChannel.big_H_no_ext_int)
+        # (newH, Ms_good_regular_bd) \
+        #     = regularBD_obj.block_diagonalize_no_waterfilling(
+        #         multiUserChannel.big_H_no_ext_int)
         # Wk_all_regular_bd = regularBD_obj.calc_receive_filter(newH)
         # regularBD_obj._calc_linear_SINRs
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-
-
 
         # # Test if the effective_throughput obtains a better spectral
         # # efficiency then the capacity and not handling interference.
@@ -3732,9 +3737,12 @@ class EnhancedBDTestCase(unittest.TestCase):
         Heq_k_P2 = np.dot(Heq_k, P2)
         Heq_k_P3 = np.dot(Heq_k, P3)
 
-        W1 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k_P1, P1)
-        W2 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k_P2, P2)
-        W3 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k_P3, P3)
+        W1 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(
+            Heq_k_P1, P1)
+        W2 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(
+            Heq_k_P2, P2)
+        W3 = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(
+            Heq_k_P3, P3)
         # Note that since P3 is actually including all streams, then the
         # performance is the same as if we don't reduce streams. However W3
         # and W_full are different matrices, since W3 has to compensate the
@@ -3742,7 +3750,8 @@ class EnhancedBDTestCase(unittest.TestCase):
         # does not. The performance is the same because no energy is lost
         # due to stream reduction and the Frobenius norms of W3 and W_full
         # are equal.
-        W_full = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(Heq_k)
+        W_full = blockdiagonalization.EnhancedBD.calc_receive_filter_user_k(
+            Heq_k)
 
         np.testing.assert_array_almost_equal(np.dot(W1, np.dot(Heq_k, P1)),
                                              np.eye(1))
@@ -3766,7 +3775,8 @@ class EnhancedBDTestCase(unittest.TestCase):
         # # purposes we can specify a different Wk
         # Wk = np.array([[1, 1], [1.5, 0.5]])
         # Rk = np.array([[0.5, 0.2], [0.25, 0.1]])
-        # SINRs = blockdiagonalization.EnhancedBD._calc_linear_SINRs(Heq_k_red, Wk, Rk)
+        # SINRs = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
+        #     Heq_k_red, Wk, Rk)
         # print SINRs
         pass
 
@@ -3812,11 +3822,14 @@ class EnhancedBDTestCase(unittest.TestCase):
         # Create the enhancedBD object
         enhancedBD_obj = blockdiagonalization.EnhancedBD(K, iPu, noise_var, pe)
 
-        noise_plus_int_cov_matrix = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe)
+        noise_plus_int_cov_matrix \
+            = multiUserChannel.calc_cov_matrix_extint_plus_noise(pe)
 
-        #xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxxx
+        # xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxx
         enhancedBD_obj.set_ext_int_handling_metric(None)
-        (Ms_all, Wk_all, Ns_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (Ms_all, Wk_all, Ns_all) \
+            = enhancedBD_obj.block_diagonalize_no_waterfilling(
+                multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -3868,7 +3881,9 @@ class EnhancedBDTestCase(unittest.TestCase):
             'naive',
             {'num_streams': num_streams})
 
-        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_naive_all, Wk_naive_all, Ns_naive_all) \
+            = enhancedBD_obj.block_diagonalize_no_waterfilling(
+                multiUserChannel)
         MsPk_naive_1 = MsPk_naive_all[0]
         MsPk_naive_2 = MsPk_naive_all[1]
 
@@ -3923,7 +3938,9 @@ class EnhancedBDTestCase(unittest.TestCase):
             'fixed',
             {'num_streams': num_streams})
 
-        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) \
+            = enhancedBD_obj.block_diagonalize_no_waterfilling(
+                multiUserChannel)
         MsPk_fixed_1 = MsPk_fixed_all[0]
         MsPk_fixed_2 = MsPk_fixed_all[1]
 
@@ -3975,7 +3992,9 @@ class EnhancedBDTestCase(unittest.TestCase):
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the capacity metric
         enhancedBD_obj.set_ext_int_handling_metric('capacity')
-        (MsPk_all, Wk_cap_all, Ns_cap_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_all, Wk_cap_all, Ns_cap_all) \
+            = enhancedBD_obj.block_diagonalize_no_waterfilling(
+                multiUserChannel)
         MsPk_cap_1 = MsPk_all[0]
         MsPk_cap_2 = MsPk_all[1]
 
@@ -4025,7 +4044,9 @@ class EnhancedBDTestCase(unittest.TestCase):
             {'modulator': psk_obj,
              'packet_length': packet_length})
 
-        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) = enhancedBD_obj.block_diagonalize_no_waterfilling(multiUserChannel)
+        (MsPk_effec_all, Wk_effec_all, Ns_effec_all) \
+            = enhancedBD_obj.block_diagonalize_no_waterfilling(
+                multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
 
@@ -4120,18 +4141,20 @@ class PSKTestCase(unittest.TestCase):
         SNR_values = np.array([-5, 0, 5, 10])
 
         # xxxxxxxxxx Test for the 4-PSK xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        theoretical_ser = np.array([0.57388349, 0.31731051, 0.07535798, 0.0015654])
+        theoretical_ser = np.array(
+            [0.57388349, 0.31731051, 0.07535798, 0.0015654])
         np.testing.assert_array_almost_equal(
             self.psk_obj.calcTheoreticalSER(SNR_values),
             theoretical_ser)
 
-        #self.psk_obj.calcTheoreticalBER
+        # self.psk_obj.calcTheoreticalBER
         np.testing.assert_array_almost_equal(
             self.psk_obj.calcTheoreticalBER(SNR_values),
             theoretical_ser / 2.)
 
         # xxxxxxxxxx Test for the 8 PSK xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        theoretical_ser2 = np.array([0.76087121, 0.58837243, 0.33584978, 0.08700502])
+        theoretical_ser2 = np.array(
+            [0.76087121, 0.58837243, 0.33584978, 0.08700502])
         np.testing.assert_array_almost_equal(
             self.psk_obj2.calcTheoreticalSER(SNR_values),
             theoretical_ser2)
@@ -4443,7 +4466,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
 
         # TODO: Finish the implementation below
         # Test if calc_path_loss works with shadowing for multiple values.
-        #self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+        # self.pl.calc_path_loss([1.2, 1.4, 1.6]),
 
     def test_calc_which_distance(self):
         # Test which_distance and which_distance_dB for a single value.

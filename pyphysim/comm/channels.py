@@ -22,6 +22,7 @@ from collections import Iterable
 # The "Number" class is a base class that we can use to check with
 # isinstance to see if something is a number
 from numbers import Number
+import math
 import numpy as np
 from scipy.linalg import block_diag
 from ..util.conversion import single_matrix_to_matrix_of_matrices
@@ -127,10 +128,10 @@ class JakesSampleGenerator(object):
         self.shape = shape
 
         if RS is None:
-        # If RS was not provided, we set it to the numpy.random module. That
-        # way, when the rand "method" in RS is called it will actually call
-        # the global rand function in numpy.random.  RandomState object in
-        # numpy.
+            # If RS was not provided, we set it to the numpy.random
+            # module. That way, when the rand "method" in RS is called it
+            # will actually call the global rand function in numpy.random.
+            # RandomState object in numpy.
             RS = np.random
         self.RS = RS
 
@@ -246,7 +247,7 @@ class JakesSampleGenerator(object):
         t = self._generate_time_samples(NSamples)
 
         # Finally calculate the channel samples
-        h = (np.sqrt(1.0 / self.L) *
+        h = (math.sqrt(1.0 / self.L) *
              np.sum(np.exp(1j * (2 * np.pi * self.Fd
                                  * np.cos(self._phi_l) * t + self._psi_l)),
                     axis=0))
@@ -337,17 +338,17 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         self._RS_channel = np.random.RandomState()
         self._RS_noise = np.random.RandomState()
 
-        self._last_noise = None  # Store the AWGN noise array from the last
-                                 # time any of the corrupt*_data methods
-                                 # were called.
-        self._noise_var = None  # Store the noise variance. If it is None,
-                                # then no noise is added in the
-                                # "corrupt_*data" methods.
+        # Store the AWGN noise array from the last time any of the
+        # corrupt*_data methods were called.
+        self._last_noise = None
+        # Store the noise variance. If it is None, then no noise is added
+        # in the "corrupt_*data" methods.
+        self._noise_var = None
 
-        self._W = None  # Post processing filters (a list of 2D numpy
-                        # arrays) for each user
-        self._big_W = None  # Same as _W, but as a single block diagonal
-                            # matrix.
+        # Post processing filters (a list of 2D numpy arrays) for each user
+        self._W = None
+        # Same as _W, but as a single block diagonal matrix.
+        self._big_W = None
 
     def set_channel_seed(self, seed=None):
         """
@@ -663,8 +664,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         [[ 8  9]
          [12 13]]
         """
-        channel = self.H  # This will call the _get_H method, which already
-                          # applies the path loss (if there is any)
+        # This will call the _get_H method, which already applies the path
+        # loss (if there is any)
+        channel = self.H
         return channel[k, l]
 
     def get_Hk(self, k):
@@ -721,8 +723,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             The post processing filters of each user.
         """
         self._W = filters
-        self._big_W = None  # This will be set in the get property only
-                            # when required.
+        # This will be set in the get property only when required.
+        self._big_W = None
 
     @property
     def W(self):
@@ -770,7 +772,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         if self.noise_var is not None:
             awgn_noise = (
                 randn_c_RS(self._RS_noise, *output.shape)
-                * np.sqrt(self.noise_var))
+                * math.sqrt(self.noise_var))
             output = output + awgn_noise
             self._last_noise = awgn_noise
         else:
@@ -1356,8 +1358,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             denominator = np.dot(Ukl_H,
                                  np.dot(Bkl_all_l[l], Ukl))
             SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
-            SINR_k[l] = np.abs(SINR_kl)  # The imaginary part should be
-                                         # negligible
+            # The imaginary part should be negligible
+            SINR_k[l] = np.abs(SINR_kl)
 
         return SINR_k
 
@@ -1421,8 +1423,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             denominator = np.dot(Ukl_H,
                                  np.dot(Bkl_all_l[l], Ukl))
             SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
-            SINR_k[l] = np.abs(SINR_kl)  # The imaginary part should be
-                                         # negligible
+            # The imaginary part should be negligible
+            SINR_k[l] = np.abs(SINR_kl)
 
         return SINR_k
 
@@ -1533,9 +1535,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
     def __init__(self):
         MultiUserChannelMatrix.__init__(self)
-        self._extIntK = 0  # Number of external interference sources
-        self._extIntNt = 0  # Number of transmit antennas of the external
-                            # interference sources.
+        self._extIntK = 0       # Number of external interference sources
+        # Number of transmit antennas of the external interference sources.
+        self._extIntNt = 0
 
     # Property to get the number of external interference sources
     @property
