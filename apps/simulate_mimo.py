@@ -90,7 +90,10 @@ class MIMOSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        num_layers = self.mimo_object.getNumberOfLayers()
+        if isinstance(self.mimo_object, mimo.SVDMimo):
+            num_layers = Nt
+        else:
+            num_layers = self.mimo_object.getNumberOfLayers()
         inputData = np.random.randint(0, M, NSymbs * num_layers)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -99,7 +102,7 @@ class MIMOSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Encode with the MIMO scheme xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if isinstance(self.mimo_object, mimo.MRT):
+        if (isinstance(self.mimo_object, mimo.MRT) or isinstance(self.mimo_object, mimo.SVDMimo)):
             transmit_signal = self.mimo_object.encode(
                 modulatedData, channel)
         else:
@@ -301,6 +304,39 @@ class MRTSimulationRunner(MIMOSimulationRunner):
             spec)
 
 
+class SVDMimoSimulationRunner(MIMOSimulationRunner):
+    """
+    Implements a simulation runner for a transmission with the SVD MIMO
+    scheme.
+
+    Parameters
+    ----------
+    config_filename : string
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
+    """
+
+    def __init__(self, config_filename):
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:21)
+        M=integer(min=4, max=512, default=16)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        Nt=integer(min=1,default=2)
+        Nr=integer(min=1,default=2)
+        [General]
+        rep_max=integer(min=1, default=5000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+
+        MIMOSimulationRunner.__init__(
+            self,
+            mimo.SVDMimo,
+            config_filename,
+            spec)
+
 
 def simulate_general(runner, results_filename):
     """
@@ -426,6 +462,22 @@ def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
     return results, filename
 
 
+def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
+    from apps.simulate_mimo import SVDMimoSimulationRunner
+
+    # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
+    runner = SVDMimoSimulationRunner(config_file_name)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results, filename = simulate_general(
+        runner,
+        'svdmimo_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results, filename
+
+
 def get_ebn0_vec(results):
     """
     Get the Eb/N0 vector suitable for the plot.
@@ -531,4 +583,10 @@ if __name__ == '__main__':
     plot_ber_and_ser(
         results4, ax=ax,
         plot_title='{M}-{modulator} with MRT (Nr={Nr}, Nt={Nt})',
-        color='magenta', block=True)
+        color='magenta', block=False)
+
+    results5, filename5 = simulate_svdmimo()
+    plot_ber_and_ser(
+        results5, ax=ax,
+        plot_title='{M}-{modulator} with SVDMimo (Nr={Nr}, Nt={Nt})',
+        color='cyan', block=True)

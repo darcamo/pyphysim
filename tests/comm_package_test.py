@@ -38,7 +38,7 @@ from pyphysim.util.misc import randn_c, least_right_singular_vectors, \
 from pyphysim.util.conversion import dB2Linear, linear2dB, \
     single_matrix_to_matrix_of_matrices
 from pyphysim.subspace.projections import calcProjectionMatrix
-from pyphysim.comm.mimo import Blast, Alamouti, MRC, MRT
+from pyphysim.comm.mimo import Blast, Alamouti, MRC, MRT, SVDMimo
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -3271,6 +3271,59 @@ class MRCTestCase(unittest.TestCase):
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.mrc_object.decode(received_data3, channel)
         np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
+
+
+class SVDMimoTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.svdmimo_object = SVDMimo()
+
+    def test_encode(self):
+        # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Nt = 2
+        Nr = 2
+        data = np.r_[0:15*Nt]
+        data_aux = data.reshape(Nt, -1)
+        channel = randn_c(Nr, Nt)
+
+        encoded_data = self.svdmimo_object.encode(data, channel)
+
+        U, S, V_H = np.linalg.svd(channel)
+        W = V_H.conj().T / math.sqrt(Nt)
+        expected_encoded_data = W.dot(data_aux)
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Nt = 4
+        Nr = 4
+        data = np.r_[0:15*Nt]
+        data_aux = data.reshape(Nt, -1)
+        channel = randn_c(Nr, Nt)
+
+        encoded_data = self.svdmimo_object.encode(data, channel)
+
+        U, S, V_H = np.linalg.svd(channel)
+        W = V_H.conj().T / math.sqrt(Nt)
+        expected_encoded_data = W.dot(data_aux)
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_decode(self):
+        # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
+        Nt = 2
+        Nr = 2
+        data = np.r_[0:15*Nt]
+        channel = randn_c(Nr, Nt)
+
+        encoded_data = self.svdmimo_object.encode(data, channel)
+        received_data = channel.dot(encoded_data)
+        decoded_data = self.svdmimo_object.decode(received_data, channel)
+        np.testing.assert_array_almost_equal(data,
+                                             decoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class AlamoutiTestCase(unittest.TestCase):
