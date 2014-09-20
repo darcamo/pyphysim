@@ -14,6 +14,7 @@ try:
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
+from abc import ABCMeta, abstractmethod
 import numpy as np
 from io import BytesIO
 import cmath
@@ -106,10 +107,15 @@ class Coordinate(object):
 
 
 class Shape(Coordinate):
-    """Base class for all 2D shapes.
+    """
+    Base class for all 2D shapes.
 
     Each subclass must implement the _get_vertex_positions method.
     """
+    # The Shape class is an abstract class and all methods marked as
+    # 'abstract' must be implemented in a subclass.
+    __metaclass__ = ABCMeta
+
     def __init__(self, pos, radius, rotation=0):
         """Initializes the shape.
 
@@ -173,6 +179,7 @@ class Shape(Coordinate):
         self._rotation = value
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    @abstractmethod
     def _get_vertex_positions(self):  # pragma: no cover
         """
         Calculates the vertex positions ignoring any rotation and considering

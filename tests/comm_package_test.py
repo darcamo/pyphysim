@@ -1134,6 +1134,12 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.multiH.randomize(Nr, Nt, K)
 
+        # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # This method is raising warnings
+        # Fix the warnings
+        # import pudb; pudb.set_trace()  ## DEBUG ##
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H, K, iPu, noise_power)
 
@@ -3084,15 +3090,6 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class MimoBaseTestCase(unittest.TestCase):
-    def setUp(self):
-        """Called before each test."""
-        self.mimo_base = mimo.MimoBase()
-
-    def test_dummy(self):
-        pass
-
-
 class BlastTestCase(unittest.TestCase):
     """Unittests for the Blast class in the mimo module.
     """
@@ -4597,19 +4594,6 @@ class QAMTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class PathLossBaseTestCase(unittest.TestCase):
-    def setUp(self):
-        """Called before each test."""
-        self.pl = pathloss.PathLossBase()
-
-    # This is here to make code nosetests coverage happy
-    def test_not_implemented_methods(self):
-        with self.assertRaises(NotImplementedError):
-            self.pl.which_distance_dB(None)
-        with self.assertRaises(NotImplementedError):
-            self.pl._calc_deterministic_path_loss_dB(None)
-
-
 class PathLossFreeSpaceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

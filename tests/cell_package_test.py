@@ -27,20 +27,41 @@ import numpy as np
 
 from pyphysim.cell import shapes, cell
 
+class ConcreteShape(shapes.Shape):
+    """
+    Concrete version of the Shape class.
+
+    Because the shapes.Shape class is an abstract class, we define a
+    concrete version here only for testing purposes.
+    """
+
+    def __init__(self, pos, radius, rotation=0):
+        """Initialize the shape.
+        """
+        shapes.Shape.__init__(self, pos, radius, rotation)
+
+    def _get_vertex_positions(self):
+        """This method will not be called in our tests.
+        """
+        pass
+
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class CellDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the cell
+    """
+    Teste case that run all the doctests in the modules of the cell
     package.
     """
 
     def test_shapes(self):
-        """Run doctests in the shapes module.
+        """
+        Run doctests in the shapes module.
         """
         doctest.testmod(shapes)
 
     def test_cell(self):
-        """Run doctests in the cell module.
+        """
+        Run doctests in the cell module.
         """
         doctest.testmod(cell)
 
@@ -84,10 +105,10 @@ class CoordinateTestCase(unittest.TestCase):
 class ShapeTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        #         shapes.Shape(pos, radius, rotation)
-        self.S1 = shapes.Shape(0 + 0j, 1.5, 0)
-        self.S2 = shapes.Shape(2 + 3j, 2, 0)
-        self.S3 = shapes.Shape(3 + 5j, 1.2, 30)
+        #         ConcreteShape(pos, radius, rotation)
+        self.S1 = ConcreteShape(0 + 0j, 1.5, 0)
+        self.S2 = ConcreteShape(2 + 3j, 2, 0)
+        self.S3 = ConcreteShape(3 + 5j, 1.2, 30)
 
     def test_radius_property(self):
         self.assertAlmostEqual(self.S1.radius, 1.5)
@@ -120,8 +141,8 @@ class ShapeTestCase(unittest.TestCase):
         """Test the static method Shape._rotate
         """
         cur_pos = 1 - 2j
-        self.assertAlmostEqual(shapes.Shape.calc_rotated_pos(cur_pos, 90), 2 + 1j)
-        self.assertAlmostEqual(shapes.Shape.calc_rotated_pos(cur_pos, 180), -1 + 2j)
+        self.assertAlmostEqual(ConcreteShape.calc_rotated_pos(cur_pos, 90), 2 + 1j)
+        self.assertAlmostEqual(ConcreteShape.calc_rotated_pos(cur_pos, 180), -1 + 2j)
 
 
 class HexagonTestCase(unittest.TestCase):

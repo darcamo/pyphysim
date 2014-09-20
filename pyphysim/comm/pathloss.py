@@ -21,6 +21,7 @@ try:
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
+from abc import ABCMeta, abstractmethod
 import warnings
 import numpy as np
 from collections import Iterable
@@ -32,7 +33,8 @@ __all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1',
 
 
 class PathLossBase(object):
-    """Base class for the different Path Loss models.
+    """
+    Base class for the different Path Loss models.
 
     The common interface for the path loss classes is provided by the
     calc_path_loss_dB or the calc_path_loss methods to actually calculate
@@ -50,12 +52,16 @@ class PathLossBase(object):
     the which_distance_dB and which_distance functions regardless of the
     value of the use_shadow_bool variable.
     """
+    # The PathLossBase class is an abstract class and all methods marked as
+    # 'abstract' must be implemented in a subclass.
+    __metaclass__ = ABCMeta
 
     def __init__(self, ):
         self.sigma_shadow = 8  # Shadow standard deviation
         self.use_shadow_bool = False
 
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
+    @abstractmethod
     def which_distance_dB(self, PL):
         """Calculates the distance that yields the given path loss (in dB).
 
@@ -76,6 +82,7 @@ class PathLossBase(object):
         msg = 'which_distance_dB must be reimplemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
+    @abstractmethod
     def _calc_deterministic_path_loss_dB(self, d):
         """Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.

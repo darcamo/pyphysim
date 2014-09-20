@@ -9,6 +9,7 @@ and `getNumberOfLayers`.
 
 """
 
+from abc import ABCMeta, abstractmethod
 import numpy as np
 import math
 import warnings
@@ -39,10 +40,14 @@ class MimoBase(object):
       Analogous to the encode method, the decode method must perform
       everything performed at the receiver.
     """
+    # The MimoBase class is an abstract class and all methods marked as
+    # 'abstract' must be implemented in a subclass.
+    __metaclass__ = ABCMeta
 
     def __init__(self):
         pass
 
+    @abstractmethod
     def getNumberOfLayers(self):  # pragma: no cover
         """
         Get the number of layers of the MIMO scheme.
@@ -101,6 +106,7 @@ class MimoBase(object):
 
         return W
 
+    @abstractmethod
     def encode(self, transmit_data):  # pragma: no cover, pylint: disable=W0613
         """
         Method to encode the transmit data array to be transmitted using some
@@ -109,6 +115,7 @@ class MimoBase(object):
         msg = 'encode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
+    @abstractmethod
     def decode(self,
                received_data,   # pylint: disable=W0613
                channel):        # pragma: no cover, pylint: disable=W0613
