@@ -33,7 +33,8 @@ __all__ = ['Modulator', 'PSK', 'QPSK', 'BPSK', 'QAM']
 # xxxxx Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class Modulator(object):
-    """Base class for digital modulators.
+    """
+    Base class for digital modulators.
 
     The derived classes need to at least call setConstellation to set the
     constellation in their constructors as well as implement
@@ -79,7 +80,8 @@ class Modulator(object):
 
     @property
     def M(self):
-        """Get method for the M property.
+        """
+        Get method for the M property.
 
         The `M` property corresponds to the number of symbols in the
         constellation.
@@ -92,7 +94,8 @@ class Modulator(object):
 
     @property
     def K(self):
-        """Get method for the K property.
+        """
+        Get method for the K property.
 
         The `K` property corresponds to the number of bits represented by
         each symbol in the constellation. It is equal to log2(M), where `M`
@@ -108,7 +111,8 @@ class Modulator(object):
         return "{0} object".format(self.name)
 
     def setConstellation(self, symbols):
-        """Set the constellation of the modulator.
+        """
+        Set the constellation of the modulator.
 
         This function should be called in the constructor of the derived
         classes.
@@ -117,7 +121,6 @@ class Modulator(object):
         ----------
         symbols : numpy array
             A an numpy array with the symbol table.
-
         """
         M = symbols.size
         self._M = M
@@ -152,7 +155,8 @@ class Modulator(object):
         plt.show()
 
     def modulate(self, inputData):
-        """Modulate the input data (decimal data).
+        """
+        Modulate the input data (decimal data).
 
         Parameters
         ----------
@@ -170,7 +174,6 @@ class Modulator(object):
             If inputData has any invalid value such as values greater than
             self._M - 1. Note that inputData should not have negative values
             but no check is done for this.
-
         """
         try:
             return self.symbols[inputData]
@@ -178,7 +181,8 @@ class Modulator(object):
             raise ValueError("Input data must be between 0 and 2^M")
 
     def demodulate(self, receivedData):
-        """Demodulate the data.
+        """
+        Demodulate the data.
 
         Parameters
         ----------
@@ -230,7 +234,8 @@ class Modulator(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def calcTheoreticalSER(self, SNR):  # pragma: no cover
-        """Calculates the theoretical symbol error rate.
+        """
+        Calculates the theoretical symbol error rate.
 
         Parameters
         ----------
@@ -254,7 +259,8 @@ class Modulator(object):
         raise NotImplementedError("calcTheoreticalSER: Not implemented")
 
     def calcTheoreticalBER(self, SNR):  # pragma: no cover
-        """Calculates the theoretical bit error rate.
+        """
+        Calculates the theoretical bit error rate.
 
         Parameters
         ----------
@@ -278,7 +284,8 @@ class Modulator(object):
         raise NotImplementedError("calcTheoreticalBER: Not implemented")
 
     def calcTheoreticalPER(self, SNR, packet_length):
-        """Calculates the theoretical package error rate.
+        """
+        Calculates the theoretical package error rate.
 
         A package is a group of bits, where if a single bit is in error
         then the whole package is considered to be in error.
@@ -315,7 +322,8 @@ class Modulator(object):
         return PER
 
     def calcTheoreticalSpectralEfficiency(self, SNR, packet_length=None):
-        """Calculates the theoretical spectral efficiency.
+        """
+        Calculates the theoretical spectral efficiency.
 
         If there was no error in the transmission, the spectral efficiency
         would be equal to the `K` property, that is, equal to the number of
@@ -347,7 +355,6 @@ class Modulator(object):
         calcTheoreticalBER,
         calcTheoreticalPER,
         K
-
         """
         if packet_length is None:
             se = self.K * (1 - self.calcTheoreticalBER(SNR))
