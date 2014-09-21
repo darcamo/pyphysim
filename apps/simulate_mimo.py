@@ -29,7 +29,6 @@ from pyphysim.util import misc
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# TODO: Implement-me
 class MIMOSimulationRunner(SimulationRunner):
     """
     Base class for the MIMO simulation runners.
@@ -71,10 +70,7 @@ class MIMOSimulationRunner(SimulationRunner):
             self.modulator = modulator_options[modulator_string](M)
 
         # Create the MIMO object
-        if MimoSchemeClass is mimo.Blast or MimoSchemeClass is mimo.MRC:
-            self.mimo_object = MimoSchemeClass(self.params['Nt'])
-        else:
-            self.mimo_object = MimoSchemeClass()
+        self.mimo_object = MimoSchemeClass()
 
     def _run_simulation(self, current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
@@ -87,13 +83,11 @@ class MIMOSimulationRunner(SimulationRunner):
 
         # xxxxxxxxxx Create the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         channel = misc.randn_c(Nr, Nt)
+        self.mimo_object.set_channel_matrix(channel)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if isinstance(self.mimo_object, mimo.SVDMimo):
-            num_layers = Nt
-        else:
-            num_layers = self.mimo_object.getNumberOfLayers()
+        num_layers = self.mimo_object.getNumberOfLayers()
         inputData = np.random.randint(0, M, NSymbs * num_layers)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -102,12 +96,7 @@ class MIMOSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Encode with the MIMO scheme xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if (isinstance(self.mimo_object, mimo.MRT) or isinstance(self.mimo_object, mimo.SVDMimo)):
-            transmit_signal = self.mimo_object.encode(
-                modulatedData, channel)
-        else:
-            transmit_signal = self.mimo_object.encode(
-                modulatedData)
+        transmit_signal = self.mimo_object.encode(modulatedData)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -117,8 +106,7 @@ class MIMOSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Decode with the MIMO Scheme xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        mimo_decoded_data = self.mimo_object.decode(
-            received_signal, channel)
+        mimo_decoded_data = self.mimo_object.decode(received_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -345,7 +333,7 @@ def simulate_general(runner, results_filename):
 
     # xxxxxxxxxx Print the simulation parameters xxxxxxxxxxxxxxxxxxxxxxxxxx
     pprint(runner.params.parameters)
-    print("MIMO Scheme: {0}".format(runner.mimo_object.__class__))
+    print("MIMO Scheme: {0}".format(runner.mimo_object.__class__.__name__))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Replace any parameter mention in results_filename xxxxxxxxxxxxx

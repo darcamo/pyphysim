@@ -3095,14 +3095,23 @@ class BlastTestCase(unittest.TestCase):
     """
     def setUp(self):
         """Called before each test."""
-        self.blast_object = Blast(3)
+        self.blast_object = Blast()
 
     def test_getNumberOfLayers(self):
+        channel = np.eye(3)
+        self.blast_object.set_channel_matrix(channel)
+
         self.assertEqual(self.blast_object.getNumberOfLayers(), 3)
-        blast2 = Blast(5)
+
+        channel2 = np.eye(5)
+        blast2 = Blast(channel2)
         self.assertEqual(blast2.getNumberOfLayers(), 5)
 
     def test_encode(self):
+        channel = np.eye(3)
+        # Set the channel so that the getNumberOfLayers method works
+        self.blast_object.set_channel_matrix(channel)
+
         # Test if an exception is raised when the number of input symbols
         # is not multiple of the number of transmit antennas
         data = np.r_[0:14]
@@ -3118,12 +3127,13 @@ class BlastTestCase(unittest.TestCase):
 
     def test_decode(self):
         data = np.r_[0:15]
-        encoded_data = self.blast_object.encode(data)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with an identity channel
         channel = np.eye(3)
-        decoded_data1 = self.blast_object.decode(encoded_data, channel)
+        self.blast_object.set_channel_matrix(channel)
+        encoded_data = self.blast_object.encode(data)
+        decoded_data1 = self.blast_object.decode(encoded_data)
         np.testing.assert_array_almost_equal(decoded_data1, data)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3132,8 +3142,9 @@ class BlastTestCase(unittest.TestCase):
         self.assertEqual(self.blast_object.calc_filter,
                          mimo.MimoBase._calcZeroForceFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
+        self.blast_object.set_channel_matrix(channel)
         received_data2 = np.dot(channel, encoded_data)
-        decoded_data2 = self.blast_object.decode(received_data2, channel)
+        decoded_data2 = self.blast_object.decode(received_data2)
         np.testing.assert_array_almost_equal(decoded_data2, data)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3142,8 +3153,9 @@ class BlastTestCase(unittest.TestCase):
         self.assertNotEqual(self.blast_object.calc_filter,
                             mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
+        self.blast_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
-        decoded_data3 = self.blast_object.decode(received_data3, channel)
+        decoded_data3 = self.blast_object.decode(received_data3)
         np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
 
 
@@ -3161,12 +3173,14 @@ class MRTTestCase(unittest.TestCase):
         # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         channel = randn_c(Nt)
+        self.mrt_object.set_channel_matrix(channel)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
-        encoded_data = self.mrt_object.encode(data, channel)
-        W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1)
+        W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1) / math.sqrt(Nt)
+        encoded_data = self.mrt_object.encode(data)
 
-        expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
+
+        expected_encoded_data = W * data_aux
         np.testing.assert_array_almost_equal(expected_encoded_data,
                                              encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3174,9 +3188,10 @@ class MRTTestCase(unittest.TestCase):
         # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 4
         channel = randn_c(Nt)
+        self.mrt_object.set_channel_matrix(channel)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
-        encoded_data = self.mrt_object.encode(data, channel)
+        encoded_data = self.mrt_object.encode(data)
         W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1)
 
         expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
@@ -3190,9 +3205,10 @@ class MRTTestCase(unittest.TestCase):
         # to 1.
         Nt = 4
         channel2 = randn_c(1, Nt)
+        self.mrt_object.set_channel_matrix(channel2)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
-        encoded_data = self.mrt_object.encode(data, channel2)
+        encoded_data = self.mrt_object.encode(data)
         W = np.exp(-1j * np.angle(channel2)).reshape(Nt, 1)
 
         expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
@@ -3205,13 +3221,14 @@ class MRTTestCase(unittest.TestCase):
 
         # xxxxxxxxxx test the case with a single receive antenna xxxxxxxxxx
         channel = randn_c(Nt)
+        self.mrt_object.set_channel_matrix(channel)
 
         data = np.r_[0:15]
-        encoded_data = self.mrt_object.encode(data, channel)
+        encoded_data = self.mrt_object.encode(data)
 
         # Add '0.1' as a noise term
         received_data = channel.dot(encoded_data) + 0.0001
-        decoded_data = self.mrt_object.decode(received_data, channel)
+        decoded_data = self.mrt_object.decode(received_data)
 
         self.assertEqual(len(decoded_data.shape), 1)
         np.testing.assert_array_almost_equal(decoded_data, data, decimal=4)
@@ -3220,12 +3237,13 @@ class MRTTestCase(unittest.TestCase):
         # variable to include the first dimension corresponding to a single
         # receive antenna
         channel.shape = (1, Nt)
+        self.mrt_object.set_channel_matrix(channel)
         # The encoded data should be the same
-        encoded_data = self.mrt_object.encode(data, channel)
+        encoded_data = self.mrt_object.encode(data)
 
         # Add '0.1' as a noise term
         received_data = channel.dot(encoded_data) + 0.0001
-        decoded_data = self.mrt_object.decode(received_data, channel)
+        decoded_data = self.mrt_object.decode(received_data)
 
         self.assertEqual(len(decoded_data.shape), 1)
         np.testing.assert_array_almost_equal(decoded_data, data, decimal=4)
@@ -3235,18 +3253,18 @@ class MRTTestCase(unittest.TestCase):
 class MRCTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.mrc_object = MRC(1)
+        self.mrc_object = MRC()
 
     def test_decode(self):
-        num_streams = self.mrc_object.getNumberOfLayers()
-
         data = np.r_[0:15]
-        encoded_data = self.mrc_object.encode(data)
+        num_streams = 3
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with an identity channel
         channel = np.eye(num_streams)
-        decoded_data1 = self.mrc_object.decode(encoded_data, channel)
+        self.mrc_object.set_channel_matrix(channel)
+        encoded_data = self.mrc_object.encode(data)
+        decoded_data1 = self.mrc_object.decode(encoded_data)
         np.testing.assert_array_almost_equal(decoded_data1, data)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3255,8 +3273,9 @@ class MRCTestCase(unittest.TestCase):
         self.assertEqual(
             self.mrc_object.calc_filter, mimo.MimoBase._calcZeroForceFilter)
         channel = randn_c(4, num_streams)  # 4 receive antennas
+        self.mrc_object.set_channel_matrix(channel)
         received_data2 = np.dot(channel, encoded_data)
-        decoded_data2 = self.mrc_object.decode(received_data2, channel)
+        decoded_data2 = self.mrc_object.decode(received_data2)
         np.testing.assert_array_almost_equal(decoded_data2, data)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3265,8 +3284,9 @@ class MRCTestCase(unittest.TestCase):
         self.assertNotEqual(
             self.mrc_object.calc_filter, mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, num_streams)  # 4 receive antennas
+        self.mrc_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
-        decoded_data3 = self.mrc_object.decode(received_data3, channel)
+        decoded_data3 = self.mrc_object.decode(received_data3)
         np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
 
 
@@ -3282,8 +3302,9 @@ class SVDMimoTestCase(unittest.TestCase):
         data = np.r_[0:15*Nt]
         data_aux = data.reshape(Nt, -1)
         channel = randn_c(Nr, Nt)
+        self.svdmimo_object.set_channel_matrix(channel)
 
-        encoded_data = self.svdmimo_object.encode(data, channel)
+        encoded_data = self.svdmimo_object.encode(data)
 
         U, S, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
@@ -3298,8 +3319,9 @@ class SVDMimoTestCase(unittest.TestCase):
         data = np.r_[0:15*Nt]
         data_aux = data.reshape(Nt, -1)
         channel = randn_c(Nr, Nt)
+        self.svdmimo_object.set_channel_matrix(channel)
 
-        encoded_data = self.svdmimo_object.encode(data, channel)
+        encoded_data = self.svdmimo_object.encode(data)
 
         U, S, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
@@ -3314,10 +3336,11 @@ class SVDMimoTestCase(unittest.TestCase):
         Nr = 2
         data = np.r_[0:15*Nt]
         channel = randn_c(Nr, Nt)
+        self.svdmimo_object.set_channel_matrix(channel)
 
-        encoded_data = self.svdmimo_object.encode(data, channel)
+        encoded_data = self.svdmimo_object.encode(data)
         received_data = channel.dot(encoded_data)
-        decoded_data = self.svdmimo_object.decode(received_data, channel)
+        decoded_data = self.svdmimo_object.decode(received_data)
         np.testing.assert_array_almost_equal(data,
                                              decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3335,6 +3358,18 @@ class AlamoutiTestCase(unittest.TestCase):
         # The number of layers in the Alamouti scheme is always equal to
         # one.
         self.assertEqual(self.alamouti_object.getNumberOfLayers(), 1)
+
+    def test_set_channel_matrix(self):
+        self.alamouti_object.set_channel_matrix(randn_c(2))
+        self.assertEqual(self.alamouti_object.Nt, 2)
+        self.assertEqual(self.alamouti_object.Nr, 1)
+
+        self.alamouti_object.set_channel_matrix(randn_c(4, 2))
+        self.assertEqual(self.alamouti_object.Nt, 2)
+        self.assertEqual(self.alamouti_object.Nr, 4)
+
+        with self.assertRaises(ValueError):
+            self.alamouti_object.set_channel_matrix(randn_c(4, 3))
 
     def test_encode(self):
         data = np.r_[0:16] + np.r_[0:16] * 1j
@@ -3357,8 +3392,9 @@ class AlamoutiTestCase(unittest.TestCase):
         encoded_data = self.alamouti_object.encode(data)
         # We will test the deconding with a random channel
         channel = randn_c(3, 2)
+        self.alamouti_object.set_channel_matrix(channel)
         received_data = np.dot(channel, encoded_data)
-        decoded_data = self.alamouti_object.decode(received_data, channel)
+        decoded_data = self.alamouti_object.decode(received_data)
         np.testing.assert_array_almost_equal(decoded_data, data)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
