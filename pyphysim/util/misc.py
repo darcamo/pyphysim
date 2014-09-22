@@ -49,8 +49,8 @@ def gmd(U, S, V_H, tol=0.0):
 
     # Initialize R, P and Q
     R = np.zeros([m, n])
-    P = V_H.conj().T
-    Q = U
+    P = V_H.conj().T.copy()
+    Q = U.copy()
 
     # 'd' is a vector with the singular values
     d = np.copy(S)  # We copy here to avoid changing 'S'
@@ -144,7 +144,7 @@ def gmd(U, S, V_H, tol=0.0):
     R[p-1, p-1] = sigma_bar
     R[0:p-1, p-1] = z
 
-    return [Q, R, P]
+    return (Q, R, P)
 
 
 def peig(A, n):

@@ -247,11 +247,21 @@ class MiscFunctionsTestCase(unittest.TestCase):
                       [10, 9, 7, 3],
                       [6, 2, 9, 2]])
 
-        # TODO: Implement-me
         [U, S, V_H] = np.linalg.svd(A)
-        tol=1e-6
+        # Store the SVD so that we can test later that gmd did not change
+        # the input parameters
+        U2 = U.copy()
+        S2 = S.copy()
+        V_H2 = V_H.copy()
 
-        Q, R, P = misc.gmd(U, S, V_H)
+        tol = 1e-6
+        Q, R, P = misc.gmd(U, S, V_H, tol)
+
+        # xxxxxxxxxx Test if the input parameters were changed xxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(U, U2)
+        np.testing.assert_array_almost_equal(S, S2)
+        np.testing.assert_array_almost_equal(V_H, V_H2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if Q and P are unitary xxxxxxxxxxxxxxxxxxxxxxxxxx
         np.testing.assert_almost_equal(np.eye(4), Q.dot(Q.conj().T))
@@ -269,12 +279,12 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         for i in range(4):
             # Elements in the diagonal or above it are not equal to zero
-            for j in range(i,4):
-                self.assertNotAlmostEqual(0.0, R[i,j])
+            for j in range(i, 4):
+                self.assertNotAlmostEqual(0.0, R[i, j])
 
             # Elemetns below the diagonal are equal to zero
             for j in range(i):
-                self.assertAlmostEqual(0.0, R[i,j])
+                self.assertAlmostEqual(0.0, R[i, j])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if the decomposition is right xxxxxxxxxxxxxxxxxxx
