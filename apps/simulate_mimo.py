@@ -20,6 +20,7 @@ except NameError:
 from matplotlib import pyplot as plt
 import numpy as np
 from pprint import pprint
+from copy import copy
 
 from pyphysim.simulations.core import SimulationRunner, SimulationParameters, \
     SimulationResults, Result
@@ -541,10 +542,9 @@ def get_ebn0_vec(results):
     return ebn0
 
 
-def plot_ber_and_ser(results,
-                     ax=None, plot_title=None, block=True, color=None):
+def plot_ber(results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
     """
-    Plot the BER and the SER in `results`.
+    Plot the BER in `results`.
 
     Parameters
     ----------
@@ -553,84 +553,191 @@ def plot_ber_and_ser(results,
     ax : A matplotlib axis.
         The axis to plot the curve. If not specified a new one will be
         created.
-    plot_title : str
-        The tittle of the plot. Any mention to "{parameter name}" will be
-        replaced by the parameter value.
+    name : str
+        The name of the curve to be plotted.
     block : bool
         If True the plot will block and code will only continue after the
         plot window is closed. Set it to False if you want iterative mode.
-    color : str
-        The color for the curves. Must be something that matplotlib can
-        understand, such as 'blue', 'b', 'green', 'g', etc.
+    X_axis : str
+        The values to use for the X axis. This can be either 'SNR' or
+        'EbN0'.
+    plot_args : dict
+        A dictionary with extra options to pass to matplotlib.
+        Ex: plot_args={'color':'green', 'linestyle':'dashed'}
+
+    Returns
+    -------
+    ax : A matplotlib axis.
+        The axis where the curve was plotted.
     """
     ber = results.get_result_values_list('ber')
+
+    # Get the SNR from the simulation parameters
+    SNR = np.array(results.params['SNR'])
+    EBN0 = get_ebn0_vec(results)
+
+    if X_axis == 'SNR':
+        X = SNR
+    else:
+        X = EBN0
+
+    # Can only plot if we simulated for more then one value of X
+    if X.size > 1:
+        if name is None:
+            label = 'BER'
+        else:
+            label = 'BER for {0}'.format(name)
+
+        if ax is None:
+            _, cur_ax = plt.subplots()
+            plt.xlabel(X_axis)
+            plt.ylabel('Error')
+            cur_ax.legend()
+            cur_ax.grid(True, which='major', axis='both')
+        else:
+            cur_ax = ax
+
+        cur_ax.semilogy(X, ber, marker='*', label=label, **plot_args)
+        cur_ax.legend(loc=3)
+        plt.show(block=block)
+
+        return ax
+
+
+def plot_ser(results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+    """
+    Plot the SER in `results`.
+
+    Parameters
+    ----------
+    results : A SimulationResults object
+        The results from a simulation.
+    ax : A matplotlib axis.
+        The axis to plot the curve. If not specified a new one will be
+        created.
+    name : str
+        The name of the curve to be plotted.
+    block : bool
+        If True the plot will block and code will only continue after the
+        plot window is closed. Set it to False if you want iterative mode.
+    X_axis : str
+        The values to use for the X axis. This can be either 'SNR' or
+        'EbN0'.
+    plot_args : dict
+        A dictionary with extra options to pass to matplotlib.
+        Ex: plot_args={'color':'green', 'linestyle':'dashed'}
+
+    Returns
+    -------
+    ax : A matplotlib axis.
+        The axis where the curve was plotted.
+    """
     ser = results.get_result_values_list('ser')
 
     # Get the SNR from the simulation parameters
     SNR = np.array(results.params['SNR'])
     EBN0 = get_ebn0_vec(results)
 
-    # Can only plot if we simulated for more then one value of EBN0
-    if EBN0.size > 1:
-        if ax is None:
-            _, ax = plt.subplots()
+    if X_axis == 'SNR':
+        X = SNR
+    else:
+        X = EBN0
 
-        if color is None:
-            ax.semilogy(EBN0, ber, linestyle='dashed', marker='*', label='BER')
-            ax.semilogy(EBN0, ser, linestyle='solid', marker='s', label='SER')
+    # Can only plot if we simulated for more then one value of X
+    if X.size > 1:
+        if name is None:
+            label = 'SER'
         else:
-            ax.semilogy(EBN0, ber, linestyle='dashed', marker='*',
-                        color=color, label='BER')
-            ax.semilogy(EBN0, ser, linestyle='solid', marker='s',
-                        color=color, label='SER')
-        plt.xlabel('EBN0')
-        plt.ylabel('Error')
-        if plot_title is not None:
-            plt.title(plot_title.format(**results.params.parameters))
+            label = 'SER for {0}'.format(name)
 
-        ax.legend()
+        if ax is None:
+            _, cur_ax = plt.subplots()
+            plt.xlabel(X_axis)
+            plt.ylabel('Error')
+            cur_ax.legend()
+            cur_ax.grid(True, which='major', axis='both')
+        else:
+            cur_ax = ax
 
-        ax.grid(True, which='major', axis='both')
+        cur_ax.semilogy(X, ser, marker='*', label=label, **plot_args)
+        cur_ax.legend(loc=3)
         plt.show(block=block)
+
+        return ax
+
+
+def plot_ber_and_ser(results,
+                     ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+    """
+    Plot the BER and the SER.
+
+    Parameters
+    ----------
+    results : A SimulationResults object
+        The results from a simulation.
+    ax : A matplotlib axis.
+        The axis to plot the curve. If not specified a new one will be
+        created.
+    name : str
+        The name of the curve to be plotted.
+    block : bool
+        If True the plot will block and code will only continue after the
+        plot window is closed. Set it to False if you want iterative mode.
+    X_axis : str
+        The values to use for the X axis. This can be either 'SNR' or
+        'EbN0'.
+    plot_args : dict
+        A dictionary with extra options to pass to matplotlib.
+        Ex: plot_args={'color':'green', 'linestyle':'dashed'}
+
+    Returns
+    -------
+    ax : A matplotlib axis.
+        The axis where the curve was plotted.
+    """
+    new_ax = plot_ber(results, ax, name, block, X_axis, plot_args)
+    plot_args2 = copy(plot_args)
+    plot_args2['linestyle']='dashed'
+    plot_ser(results, new_ax, name, block, X_axis, plot_args2)
 
 
 if __name__ == '__main__':
     fig, ax = plt.subplots()
+    X_axis = 'EBN0'  # SNR or EBN0
+
+    # xxxxxxxxxx Plot Labels and Tittle xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    plt.xlabel(X_axis)
+    plt.ylabel('Error')
+    plt.title('Comparison of multiple MIMO schemes')
+    ax.grid(True, which='major', axis='both')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     results1, filename1 = simulate_alamouti()
-    plot_ber_and_ser(
-        results1, ax=ax,
-        plot_title='{M}-{modulator} with Alamouti (Nr={Nr})',
-        color='green', block=False)
-
-    plt.hold(True)
+    plot_ber(
+        results1, ax=ax, name='Alamouti',
+        block=False, X_axis=X_axis, plot_args={'color':'green'})
 
     results2, filename2 = simulate_blast()
-    plot_ber_and_ser(
-        results2, ax=ax,
-        plot_title='{M}-{modulator} with BLAST (Nr={Nr}, Nt={Nt})',
-        color='blue', block=False)
+    plot_ber(
+        results2, ax=ax, name='BLAST',
+        block=False, X_axis=X_axis, plot_args={'color':'blue'})
 
     results3, filename3 = simulate_mrc()
-    plot_ber_and_ser(
-        results3, ax=ax,
-        plot_title='{M}-{modulator} with MRC (Nr={Nr}, Nt={Nt})',
-        color='red', block=False)
+    plot_ber(
+        results3, ax=ax, name='MRC',
+        block=False, X_axis=X_axis, plot_args={'color':'red'})
 
     results4, filename4 = simulate_mrt()
-    plot_ber_and_ser(
-        results4, ax=ax,
-        plot_title='{M}-{modulator} with MRT (Nr={Nr}, Nt={Nt})',
-        color='magenta', block=False)
+    plot_ber(
+        results4, ax=ax, name='MRT',
+        block=False, X_axis=X_axis, plot_args={'color':'magenta'})
 
     results5, filename5 = simulate_svdmimo()
-    plot_ber_and_ser(
-        results5, ax=ax,
-        plot_title='{M}-{modulator} with SVDMimo (Nr={Nr}, Nt={Nt})',
-        color='cyan', block=False)
+    plot_ber(
+        results5, ax=ax, name='SVD MIMO',
+        block=False, X_axis=X_axis, plot_args={'color':'cyan'})
 
     results7, filename7 = simulate_gmdmimo()
-    plot_ber_and_ser(
-        results7, ax=ax,
-        plot_title='{M}-{modulator} with GMDMimo (Nr={Nr}, Nt={Nt})',
-        color='pink', block=True)
+    plot_ber(
+        results7, ax=ax, name='GMD MIMO',
+        block=True, X_axis=X_axis, plot_args={'color':'pink'})
