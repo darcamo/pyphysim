@@ -249,7 +249,7 @@ class Blast(MimoBase):
         else:
             self.calc_filter = MimoBase._calcZeroForceFilter
 
-    def _encode(self, transmit_data):
+    def _encode(self, transmit_data, reshape_order='F'):
         """
         Encode the transmit data array to be transmitted using the BLAST
         scheme, but **WITHOUT** dividing the power among the transmit
@@ -263,6 +263,9 @@ class Blast(MimoBase):
         transmit_data : 1D numpy array
             A numpy array with a number of elements which is a multiple of
             the number of transmit antennas.
+        reshape_order : str
+            Memory layout used when reshaping the numpy array. This can be
+            either 'F' (default) or 'C'.
 
         Returns
         -------
@@ -288,7 +291,7 @@ class Blast(MimoBase):
                    " number of transmit antennas")
             raise ValueError(msg)
 
-        return transmit_data.reshape(nStreams, num_elements / nStreams, order='F')
+        return transmit_data.reshape(nStreams, -1, order=reshape_order)
 
     def encode(self, transmit_data):
         """
@@ -314,7 +317,7 @@ class Blast(MimoBase):
         """
         return self._encode(transmit_data) / math.sqrt(self.Nt)
 
-    def _decode(self, received_data):
+    def _decode(self, received_data, channel, reshape_order='F'):
         """
         Decode the received data array, but does not compensate for the power
         division among transmit antennas.
@@ -327,6 +330,11 @@ class Blast(MimoBase):
         received_data : 2D received data
             Received data, which was encoded with the Blast scheme and
             corrupted by the channel `channel`.
+        channel : 2D numpy array
+            MIMO channel matrix.
+        reshape_order : str
+            Memory layout used when reshaping the numpy array. This can be
+            either 'F' (default) or 'C'.
 
         Returns
         -------
@@ -340,8 +348,8 @@ class Blast(MimoBase):
         """
         nStreams = self.getNumberOfLayers()
         Ns = received_data.shape[1]
-        W = self.calc_filter(self._channel)
-        decoded_data = W.dot(received_data).reshape(nStreams * Ns, order='F')
+        W = self.calc_filter(channel)
+        decoded_data = W.dot(received_data).reshape(-1, order=reshape_order)
         return decoded_data
 
     def decode(self, received_data):
@@ -361,7 +369,7 @@ class Blast(MimoBase):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        return self._decode(received_data) * math.sqrt(self.Nt)
+        return self._decode(received_data, self._channel) * math.sqrt(self.Nt)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
