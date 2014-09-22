@@ -326,6 +326,40 @@ class SVDMimoSimulationRunner(MIMOSimulationRunner):
             spec)
 
 
+class GMDMimoSimulationRunner(MIMOSimulationRunner):
+    """
+    Implements a simulation runner for a transmission with the GMD MIMO
+    scheme.
+
+    Parameters
+    ----------
+    config_filename : string
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
+    """
+
+    def __init__(self, config_filename):
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:21)
+        M=integer(min=4, max=512, default=16)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        Nt=integer(min=1,default=2)
+        Nr=integer(min=1,default=2)
+        [General]
+        rep_max=integer(min=1, default=5000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+
+        MIMOSimulationRunner.__init__(
+            self,
+            mimo.GMDMimo,
+            config_filename,
+            spec)
+
+
 def simulate_general(runner, results_filename):
     """
     Function with the general code to simulate the MIMO schemes.
@@ -466,6 +500,22 @@ def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
     return results, filename
 
 
+def simulate_gmdmimo(config_file_name='mimo_gmdmimo_config_file.txt'):
+    from apps.simulate_mimo import GMDMimoSimulationRunner
+
+    # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
+    runner = GMDMimoSimulationRunner(config_file_name)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results, filename = simulate_general(
+        runner,
+        'gmdmimo_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results, filename
+
+
 def get_ebn0_vec(results):
     """
     Get the Eb/N0 vector suitable for the plot.
@@ -577,4 +627,10 @@ if __name__ == '__main__':
     plot_ber_and_ser(
         results5, ax=ax,
         plot_title='{M}-{modulator} with SVDMimo (Nr={Nr}, Nt={Nt})',
-        color='cyan', block=True)
+        color='cyan', block=False)
+
+    results7, filename7 = simulate_gmdmimo()
+    plot_ber_and_ser(
+        results7, ax=ax,
+        plot_title='{M}-{modulator} with GMDMimo (Nr={Nr}, Nt={Nt})',
+        color='pink', block=True)

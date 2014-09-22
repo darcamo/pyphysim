@@ -34,11 +34,11 @@ from pyphysim.comm import modulators, blockdiagonalization, ofdm, mimo, pathloss
     waterfilling, channels
 from pyphysim.ia.algorithms import ClosedFormIASolver
 from pyphysim.util.misc import randn_c, least_right_singular_vectors, \
-    calc_shannon_sum_capacity, calc_whitening_matrix
+    calc_shannon_sum_capacity, calc_whitening_matrix, gmd
 from pyphysim.util.conversion import dB2Linear, linear2dB, \
     single_matrix_to_matrix_of_matrices
 from pyphysim.subspace.projections import calcProjectionMatrix
-from pyphysim.comm.mimo import Blast, Alamouti, MRC, MRT, SVDMimo
+from pyphysim.comm.mimo import Blast, Alamouti, MRC, MRT, SVDMimo, GMDMimo
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -3341,6 +3341,49 @@ class SVDMimoTestCase(unittest.TestCase):
         encoded_data = self.svdmimo_object.encode(data)
         received_data = channel.dot(encoded_data)
         decoded_data = self.svdmimo_object.decode(received_data)
+        np.testing.assert_array_almost_equal(data,
+                                             decoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+class GMDMimoTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.gmdmimo_object = GMDMimo()
+
+    def test_encode(self):
+        # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Nt = 2
+        Nr = 2
+        data = np.r_[0:15*Nt]
+
+        channel = randn_c(Nr, Nt)
+        self.gmdmimo_object.set_channel_matrix(channel)
+
+        encoded_data = self.gmdmimo_object.encode(data)
+
+        # data_aux = data.reshape(Nt, -1)
+        U, S, V_H = np.linalg.svd(channel)
+        Q, R, P = gmd(U, S, V_H)
+        W = P / math.sqrt(Nt)
+
+        expected_encoded_data = W.dot(data.reshape(Nr, -1))
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_decode(self):
+        # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
+        Nt = 2
+        Nr = 2
+        data = np.r_[0:15*Nt]
+        channel = randn_c(Nr, Nt)
+        self.gmdmimo_object.set_channel_matrix(channel)
+
+        encoded_data = self.gmdmimo_object.encode(data)
+        received_data = channel.dot(encoded_data)
+
+        decoded_data = self.gmdmimo_object.decode(received_data)
         np.testing.assert_array_almost_equal(data,
                                              decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

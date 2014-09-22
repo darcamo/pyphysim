@@ -13,6 +13,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import math
 import warnings
+from pyphysim.util.misc import gmd
 
 __all__ = ['MimoBase', 'Blast', 'Alamouti', 'MRT', 'MRC', 'SVDMimo']
 
@@ -589,6 +590,91 @@ class SVDMimo(Blast):
 
         # Return the decoded data as a 1D numpy array
         return decoded_data.reshape(decoded_data.size,)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx GMD MIMO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class GMDMimo(Blast):
+    """
+    MIMO class for the GMD based MIMO scheme.
+    """
+
+    def __init__(self, channel=None):
+        """
+        Initialized the SVD MIMO object.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        """
+        Blast.__init__(self, channel)
+
+    def encode(self, transmit_data):
+        """
+        Encode the transmit data array to be transmitted using the GMD MIMO
+        scheme.
+
+        The GMD MIMO scheme is based on the Geometric Mean Decomposition
+        (GMD) of the channel. The channel is decomposed into `H = Q R P^H`,
+        where `R` is an upper triangular matrix with all diagonal elements
+        being equal to the geometric mean of the singular values of the
+        channel matrix `H`.
+
+        corresponds to using the 'U' and 'V' matrices
+        from the SVD decomposition of the channel as the precoder and
+        receive filter.
+
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            A numpy array with the data to be transmitted.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data`.
+        """
+        num_elements = transmit_data.size
+        if num_elements % self.Nt != 0:
+            msg = ("Input array number of elements must be a multiple of the"
+                   " number of transmit antennas")
+            raise ValueError(msg)
+
+        # The encode method will precode the transmit_data using the
+        # matrix 'P' obtained from the gmd.
+        U, S, V_H = np.linalg.svd(self._channel)
+        Q, R, P = gmd(U, S, V_H)
+        W = P / math.sqrt(self.Nt)
+
+        X = transmit_data.reshape(self.Nt, -1)
+        encoded_data = W.dot(X)
+
+        return encoded_data
+
+    def decode(self, received_data):
+        """
+        Perform the decoding of the received_data for the GMD MIMO.
+
+        Parameters
+        ----------
+        received_data`: 2D numpy array
+            Received data, which was encoded with the Alamouit scheme and
+            corrupted by the channel `channel`.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data.
+        """
+        U, S, V_H = np.linalg.svd(self._channel)
+        Q, R, P = gmd(U, S, V_H)
+        channel_eq = Q.dot(R)
+
+        decoded_data = self._decode(
+            received_data, channel_eq, reshape_order='C') * math.sqrt(self.Nt)
+        return decoded_data
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
