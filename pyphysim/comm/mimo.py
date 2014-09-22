@@ -878,6 +878,145 @@ class SVDMimo(Blast):
         return decoded_data.reshape(decoded_data.size,)
 
 
+class SVDMimo2(SVDMimo):
+    """
+    MIMO class for the SVD MIMO scheme.
+
+    The classical SVD approach utilizes matrix 'W' for precoding at the
+    transmitter. The columns 'w_i' of matrix 'W' are the eigenvectors of
+    'H H^H', where 'H' is the channel matrix.
+    """
+
+    def __init__(self, ):
+        """
+        Initialized the SVD MIMO object.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        """
+        SVDMimo.__init__(self, channel=None)
+
+    @staticmethod
+    def _calc_precoder(channel):
+        """
+        Calculate the precoder acording to the SVD MIMO scheme.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            The channel matrix.
+
+        Returns
+        -------
+        W : 2D numpy array
+            The precoder
+        """
+        Nr, Nt = channel.shape
+        channel_sq = channel.dot(channel.conj().T)
+        [_, V] = np.linalg.eig(channel_sq)
+
+        # The transmit filter is the eigenvectors of 'H H^H', where 'H' is
+        # the channel matrix. Notice that we also need to divide by
+        # sqrt(Nt) to make sure 'W' has a unitary norm.
+        W = V / math.sqrt(Nt)
+        return W
+
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Calculate the receive filter for the SVD MIMO scheme.
+
+        If `noise_var` is None then the receive filter will be calculated
+        according to the Zero Forcing criterium. If `noise_var` is provided
+        then the MMSE criterium will be used instead.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            The channel matrix.
+        noise_var : float
+            The noise variance.
+        """
+        W = SVDMimo2._calc_precoder(channel)
+        channel_equiv = channel.dot(W)
+
+        if noise_var is None:
+            G = SVDMimo2._calcZeroForceFilter(channel_equiv)
+        else:
+            G = SVDMimo2._calcMMSEFilter(channel_equiv, noise_var)
+        return G
+
+    def encode(self, transmit_data):
+        """
+        Encode the transmit data array to be transmitted using the SVD MIMO
+        scheme.
+
+        The SVD MIMO scheme corresponds to using the 'U' and 'V' matrices
+        from the SVD decomposition of the channel as the precoder and
+        receive filter.
+
+        Parameters
+        ----------
+        transmit_data : 1D numpy array
+            A numpy array with the data to be transmitted.
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        encoded_data : 2D numpy array
+            The encoded `transmit_data`.
+        """
+        num_elements = transmit_data.size
+        if num_elements % self.Nt != 0:
+            msg = ("Input array number of elements must be a multiple of the"
+                   " number of transmit antennas")
+            raise ValueError(msg)
+
+        X = transmit_data.reshape(self.Nt, -1)
+        # channel_sq = channel.dot(channel.conj().T)
+        # [_, V] = np.linalg.eig(channel_sq)
+
+        # # The transmit filter is the eigenvectors of 'H H^H', where 'H' is
+        # # the channel matrix. Notice that we also need to divide by
+        # # sqrt(Nt) to make sure 'W' has a unitary norm.
+        # W = V / math.sqrt(Nt)
+
+        W = self._calc_precoder(self._channel)
+
+        encoded_data = W.dot(X)
+
+        return encoded_data
+
+    def decode(self, received_data):
+        """
+        Perform the decoding of the received_data for the SVD MIMO scheme.
+
+        Parameters
+        ----------
+        received_data`: 2D numpy array
+            Received data, which was encoded with the Alamouit scheme and
+            corrupted by the channel `channel`.
+
+        Returns
+        -------
+        decoded_data : 1D numpy array
+            The decoded data.
+        """
+        # W = self._calc_precoder(channel)
+
+        # Nr, Nt = channel.shape
+        # U, S, V_H = np.linalg.svd(channel)
+        #G = np.diag(1./S).dot(U.conj().T) * math.sqrt(Nt)
+        G = self._calc_receive_filter(self._channel)
+        decoded_data = G.dot(received_data)
+
+        # Return the decoded data as a 1D numpy array
+        return decoded_data.reshape(decoded_data.size,)
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx GMD MIMO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

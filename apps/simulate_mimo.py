@@ -346,6 +346,40 @@ class SVDMimoSimulationRunner(MIMOSimulationRunner):
             read_command_line_args=read_command_line_args)
 
 
+class SVDMimo2SimulationRunner(MIMOSimulationRunner):
+    """
+    Implements a simulation runner for a transmission with the SVD MIMO
+    scheme.
+
+    Parameters
+    ----------
+    config_filename : string
+        Name of the file containing the simulation parameters. If the file
+        does not exist, a new file will be created with the provided name
+        containing the default parameter values.
+    """
+
+    def __init__(self, config_filename):
+        spec = """[Scenario]
+        SNR=real_numpy_array(min=0, max=100, default=0:5:21)
+        M=integer(min=4, max=512, default=16)
+        modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
+        NSymbs=integer(min=10, max=1000000, default=200)
+        Nt=integer(min=1,default=2)
+        Nr=integer(min=1,default=2)
+        [General]
+        rep_max=integer(min=1, default=5000)
+        max_bit_errors=integer(min=1, default=3000)
+        unpacked_parameters=string_list(default=list('SNR'))
+        """.split("\n")
+
+        MIMOSimulationRunner.__init__(
+            self,
+            mimo.SVDMimo2,
+            config_filename,
+            spec)
+
+
 class GMDMimoSimulationRunner(MIMOSimulationRunner):
     """
     Implements a simulation runner for a transmission with the GMD MIMO
@@ -518,6 +552,22 @@ def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
     results, filename = simulate_general(
         runner,
         'svdmimo_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    return results, filename
+
+
+def simulate_svdmimo2(config_file_name='mimo_svdmimo2_config_file.txt'):
+    from apps.simulate_mimo import SVDMimoSimulationRunner
+
+    # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
+    runner = SVDMimo2SimulationRunner(config_file_name)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results, filename = simulate_general(
+        runner,
+        'svdmimo2_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -774,6 +824,11 @@ if __name__ == '__main__':
     plot_ber(
         results5, ax=ax, name='SVD MIMO',
         block=False, X_axis=X_axis, plot_args={'color': 'cyan'})
+
+    results6, filename6 = simulate_svdmimo2()
+    plot_ber(
+        results6, ax=ax, name='SVD2 MIMO',
+        block=False, X_axis=X_axis, plot_args={'color':'blue'})
 
     results7, filename7 = simulate_gmdmimo()
     plot_ber(
