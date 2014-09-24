@@ -540,9 +540,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         channel_matrix : 2D numpy array
             A matrix concatenating the channel of all users (from each
             transmitter to each receiver).
-        Nr : 1D numpy array
+        Nr : int or 1D numpy array
             Number of antennas at each receiver.
-        Nt : 1D numpy array
+        Nt : int or 1D numpy array
             Number of antennas at each transmitter.
         K : int
             Number of transmit/receive pairs.
@@ -553,6 +553,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             If the arguments are invalid.
 
         """
+        # If Nt or Nr (or both) is (are) int assume the same value should
+        # be used for all users.
+        if isinstance(Nr, int):
+            Nr = np.ones(K, dtype=int) * Nr
+        if isinstance(Nt, int):
+            Nt = np.ones(K, dtype=int) * Nt
+
         if channel_matrix.shape != (np.sum(Nr), np.sum(Nt)):
             msg = ("Shape of the channel_matrix must be equal to the sum or"
                    " receive antennas of all users times the sum of the "
