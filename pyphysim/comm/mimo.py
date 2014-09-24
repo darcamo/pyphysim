@@ -29,7 +29,7 @@ class MimoBase(object):
     """
     Base Class for MIMO schemes.
 
-    All subclasses must implement the following methods:
+    All subclasses must implement at least the following methods:
 
     - :meth:`getNumberOfLayers`:
       Should return the number of layers of that specific MIMO scheme
@@ -40,6 +40,9 @@ class MimoBase(object):
     - :meth:`decode`:
       Analogous to the encode method, the decode method must perform
       everything performed at the receiver.
+
+    Other optional methods that might be useful implementing in subclasses
+    are the `_calc_precoder` and `_calc_receive_filter` methods.
     """
     # The MimoBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
@@ -84,6 +87,42 @@ class MimoBase(object):
         Get the number of receive antennas
         """
         return self._channel.shape[0]
+
+    @staticmethod
+    def _calc_precoder(channel):
+        """
+        Calculate the linear precoder for the MIMO scheme, if there is any.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+
+        Returns
+        -------
+        W : 2D numpy array
+            The precoder that can be aplied to the input data.
+        """
+        raise NotImplementedError('_calc_precoder still needs to be implemented')
+
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Calculate the receive filter for the MIMO scheme, if there is any.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        G_H : 2D numpy array
+            The receive_filter that can be aplied to the input data.
+        """
+        raise NotImplementedError('_calc_receive_filter still needs to be implemented')
 
     @abstractmethod
     def getNumberOfLayers(self):  # pragma: no cover
@@ -163,6 +202,74 @@ class MimoBase(object):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
 
+class MisoBase(MimoBase):  # pylint: disable=W0223
+    """
+    Base Class for MISO schemes.
+
+    All subclasses must implement at least the following methods:
+
+    - :meth:`encode`:
+      The encode method must perform everything executed at the transmitter
+      for that specific MIMO scheme. This also include the power division
+      among the transmit antennas.
+    - :meth:`decode`:
+      Analogous to the encode method, the decode method must perform
+      everything performed at the receiver.
+
+    Other optional methods that might be useful implementing in subclasses
+    are the `_calc_precoder` and `_calc_receive_filter` methods.
+    """
+
+    def __init__(self, channel=None):
+        """
+        Initialized the MimoBase object.
+
+        Parameters
+        ----------
+        channel : 1D or 2D numpy array
+            MISO channel matrix/vector. MISO schemes are defined for
+            scenarios with multiple transmit antennas and a single receive
+            antenna. If `channel` is 2D, then the first dimension size must
+            be equal to 1.
+        """
+        MimoBase.__init__(self, channel=None)
+        if channel is not None:
+            self.set_channel_matrix(channel)
+
+    def set_channel_matrix(self, channel):
+        """
+        Set the channel matrix.
+
+        Parameters
+        ----------
+        channel : 1D or 2D numpy array
+            MISO channel vector. A MISO scheme is defined for the scenario
+            with multiple transmit antennas and a single receive
+            antenna. If channel is 2D then the first dimension size must be
+            equal to 1.
+        """
+        # We will store the channel as a 2D numpy to be consistent with the
+        # other MIMO classes
+        if len(channel.shape) == 1:
+            super(MisoBase, self).set_channel_matrix(channel[np.newaxis, :])
+        else:
+            Nr = channel.shape[0]
+            if Nr != 1:
+                raise ValueError("The MRT scheme is only defined for the "
+                                 "scenario with a single receive antenna")
+            # By calling the parent set_channel_matrix method the self._W and
+            # self._G_H will be set to None
+            super(MisoBase, self).set_channel_matrix(channel)
+
+    def getNumberOfLayers(self):  # pragma: no cover
+        """
+        Get the number of layers of the MISO scheme.
+
+        Because a MISO scheme only has one receive antenna then then number
+        of layers is always equal to 1.
+        """
+        return 1
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Blast Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -190,9 +297,7 @@ class Blast(MimoBase):
             MIMO channel matrix.
         """
         MimoBase.__init__(self, channel)
-        # Function to calculate the receive filter
-        self.calc_filter = MimoBase._calcZeroForceFilter
-        self.noise_var = 0
+        self._noise_var = 0
 
     def set_channel_matrix(self, channel):
         """
@@ -215,7 +320,7 @@ class Blast(MimoBase):
                        self.__class__.__name__)
             warnings.warn(msg)
 
-        self._channel = channel
+        super(Blast, self).set_channel_matrix(channel)
 
     def getNumberOfLayers(self):
         """
@@ -242,57 +347,64 @@ class Blast(MimoBase):
             positive). If `noise_var` is negative then the Zero-Forcing
             filter will be used and `noise_var` will be ignored.
         """
-        self.noise_var = noise_var
-        if noise_var > 0:
-            self.calc_filter = lambda H: MimoBase._calcMMSEFilter(
-                H,
-                self.noise_var)
+        if noise_var is None:
+            self._noise_var = 0.0
+
+        elif noise_var > 0:
+            self._noise_var = noise_var
         else:
-            self.calc_filter = MimoBase._calcZeroForceFilter
+            raise ValueError('Noise variance must be a non-negative value.')
 
-    def _encode(self, transmit_data, reshape_order='F'):
+    @staticmethod
+    def _calc_precoder(channel):
         """
-        Encode the transmit data array to be transmitted using the BLAST
-        scheme, but **WITHOUT** dividing the power among the transmit
-        antennas.
+        Calculate the linear precoder for the BLAST scheme.
 
-        The idea is that the encode method will call _encode and perform
-        the power division. This separation allows better code reuse.
+        The BLAST scheme simple send the data through the multiple streams
+        without any particular precoding. Therefore, its linear precoder is
+        equivalent to an identity matrix.
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
-            A numpy array with a number of elements which is a multiple of
-            the number of transmit antennas.
-        reshape_order : str
-            Memory layout used when reshaping the numpy array. This can be
-            either 'F' (default) or 'C'.
+        channel : 2D numpy array
+            MIMO channel matrix.
 
         Returns
         -------
-        encoded_data : 2D numpy array
-            The encoded `transmit_data` (without dividing the power among
-            transmit antennas).
-
-        Raises
-        ------
-        ValueError
-            If the number of elements in `transmit_data` is not multiple of
-            the number of transmit antennas.
-
-        See also
-        --------
-        encode
+        W : 2D numpy array
+            The precoder that can be aplied to the input data.
         """
-        num_elements = transmit_data.size
-        nStreams = self.getNumberOfLayers()
-        if num_elements % nStreams != 0:
-            # Note this is a single string
-            msg = ("Input array number of elements must be a multiple of the"
-                   " number of transmit antennas")
-            raise ValueError(msg)
+        Nt = channel.shape[1]
+        return np.eye(Nt) / math.sqrt(Nt)
 
-        return transmit_data.reshape(nStreams, -1, order=reshape_order)
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Calculate the receive filter for the MIMO scheme, if there is any.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        G_H : 2D numpy array
+            The receive_filter that can be aplied to the input data.
+        """
+        Nt = channel.shape[1]
+
+        if noise_var is None:
+            noise_var = 0.0
+
+        if noise_var > 0:
+            G_H = Blast._calcMMSEFilter(channel, noise_var)
+        else:
+            G_H = Blast._calcZeroForceFilter(channel)
+
+        return G_H * math.sqrt(Nt)
 
     def encode(self, transmit_data):
         """
@@ -316,42 +428,17 @@ class Blast(MimoBase):
             If the number of elements in `transmit_data` is not multiple of
             the number of transmit antennas.
         """
-        return self._encode(transmit_data) / math.sqrt(self.Nt)
-
-    def _decode(self, received_data, channel, reshape_order='F'):
-        """
-        Decode the received data array, but does not compensate for the power
-        division among transmit antennas.
-
-        The idea is that the decode method will call _decode and perform
-        the power compensation. This separation allows better code reuse.
-
-        Parameters
-        ----------
-        received_data : 2D received data
-            Received data, which was encoded with the Blast scheme and
-            corrupted by the channel `channel`.
-        channel : 2D numpy array
-            MIMO channel matrix.
-        reshape_order : str
-            Memory layout used when reshaping the numpy array. This can be
-            either 'F' (default) or 'C'.
-
-        Returns
-        -------
-        decoded_data : 1D numpy array
-            The decoded data (without power compensating the power division
-            performed during transmission).
-
-        See also
-        --------
-        decode
-        """
+        num_elements = transmit_data.size
         nStreams = self.getNumberOfLayers()
-        Ns = received_data.shape[1]
-        W = self.calc_filter(channel)
-        decoded_data = W.dot(received_data).reshape(-1, order=reshape_order)
-        return decoded_data
+        if num_elements % nStreams != 0:
+            # Note this is a single string
+            msg = ("Input array number of elements must be a multiple of the"
+                   " number of transmit antennas")
+            raise ValueError(msg)
+
+        encoded_data = (transmit_data.reshape(nStreams, -1, order='F')
+                        / math.sqrt(self.Nt))
+        return encoded_data
 
     def decode(self, received_data):
         """
@@ -370,13 +457,15 @@ class Blast(MimoBase):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        return self._decode(received_data, self._channel) * math.sqrt(self.Nt)
+        G_H = self._calc_receive_filter(self._channel, self._noise_var)
+        decoded_data = G_H.dot(received_data).reshape(-1, order='F')
+        return decoded_data
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx MRT xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class MRT(MimoBase):
+class MRT(MisoBase):
     """
     MIMO class for the MRT scheme.
 
@@ -397,40 +486,53 @@ class MRT(MimoBase):
             MISO channel vector. It must be a 1D numpy array, where the
             number of receive antennas is assumed to be equal to 1.
         """
-        MimoBase.__init__(self, channel=None)
-        if channel is not None:
-            self.set_channel_matrix(channel)
+        MisoBase.__init__(self, channel)
 
-    def set_channel_matrix(self, channel):
+    @staticmethod
+    def _calc_precoder(channel):
         """
-        Set the channel matrix.
+        Calculate the linear precoder for the MRT scheme.
+
+        The MRT scheme corresponds to multiplying the symbol from each
+        transmit antenna with a complex number corresponding to the inverse
+        of the phase of the channel so as to ensure that the signals add
+        constructively at the receiver. This also means that the MRT echeme
+        only be applied to senarios with a single receive antenna.
 
         Parameters
         ----------
-        channel : 1D or 2D numpy array
-            MISO channel vector. The MRT MIMO scheme is defined for the
-            scenario with multiple transmit antennas and a single receive
-            antenna. If channel is 2D then the first dimension size must be
-            equal to 1.
-        """
-        # We will store the channel as a 2D numpy to be consistent with the
-        # other MIMO classes
-        if len(channel.shape) == 1:
-            self._channel = channel[np.newaxis, :]
-        else:
-            Nr = channel.shape[0]
-            if Nr != 1:
-                raise ValueError("The MRT scheme is only defined for the "
-                                 "scenario with a single receive antenna")
-            self._channel = channel
+        channel : 2D numpy array
+            MIMO channel matrix with dimention (1, Nt).
 
-    def getNumberOfLayers(self):  # pragma: no cover
+        Returns
+        -------
+        W : 2D numpy array
+            The precoder that can be aplied to the input data.
         """
-        Get the number of layers of the MRT scheme.
+        Nt = channel.shape[1]
+        W = np.exp(-1j * np.angle(channel)).T / math.sqrt(Nt)
+        return W
 
-        The returned value is always equal to 1.
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
         """
-        return 1
+        Calculate the receive filter for the MRT scheme.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        G_H : 2D numpy array
+            The receive_filter that can be aplied to the input data.
+        """
+        Nt = channel.shape[1]
+        G_H = math.sqrt(Nt) / np.sum(np.abs(channel))
+        return G_H
 
     def encode(self, transmit_data):
         """
@@ -455,7 +557,7 @@ class MRT(MimoBase):
         # Add an extra first dimension so that broadcast does the right
         # thing later
         x = transmit_data[np.newaxis, :]
-        W = np.exp(-1j * np.angle(self._channel)).T / math.sqrt(self.Nt)
+        W = self._calc_precoder(self._channel)
 
         # Elementwise multiplication (use broadcast)
         encoded_data = (W * x)
@@ -476,8 +578,8 @@ class MRT(MimoBase):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        decoded_data \
-            = math.sqrt(self.Nt) * received_data / np.sum(np.abs(self._channel))
+        G_H = self._calc_receive_filter(self._channel)
+        decoded_data = G_H * received_data
         decoded_data.shape = (decoded_data.size)
 
         return decoded_data
@@ -511,6 +613,24 @@ class MRC(Blast):
         """
         Blast.__init__(self, channel)
 
+    def set_channel_matrix(self, channel):
+        """
+        Set the channel matrix.
+
+        Parameters
+        ----------
+        channel : 1D or 2D numpy array
+            MIMO channel matrix. The MRC MIMO scheme is defined for the
+            scenario with multiple receive antennas and a single receive
+            antenna. If channel is 1D assume that the number of transmit
+            antennas is equal to 1.
+        """
+        # We will store the channel as a 2D numpy to be consistent with the
+        # other MIMO classes
+        if len(channel.shape) == 1:
+            super(MRC, self).set_channel_matrix(channel[:, np.newaxis])
+        else:
+            super(MRC, self).set_channel_matrix(channel)
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SVD MIMO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -530,6 +650,57 @@ class SVDMimo(Blast):
             MIMO channel matrix.
         """
         Blast.__init__(self, channel)
+
+    @staticmethod
+    def _calc_precoder(channel):
+        """
+        Calculate the linear precoder for the MRT scheme.
+
+        The MRT scheme corresponds to multiplying the symbol from each
+        transmit antenna with a complex number corresponding to the inverse
+        of the phase of the channel so as to ensure that the signals add
+        constructively at the receiver. This also means that the MRT echeme
+        only be applied to senarios with a single receive antenna.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix with dimention (1, Nt).
+
+        Returns
+        -------
+        W : 2D numpy array
+            The precoder that can be aplied to the input data.
+        """
+        Nt = channel.shape[1]
+        _, _, V_H = np.linalg.svd(channel)
+        # The precoder is the 'V' matrix from the SVD decomposition of the
+        # channel. Notice that we also need to divide by sqrt(Nt) to make
+        # sure 'W' has a unitary norm.
+        W = V_H.conj().T / math.sqrt(Nt)
+        return W
+
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Calculate the receive filter for the MRT scheme.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        G_H : 2D numpy array
+            The receive_filter that can be aplied to the input data.
+        """
+        Nt = channel.shape[1]
+        U, S, _ = np.linalg.svd(channel)
+        G_H = np.diag(1./S).dot(U.conj().T) * math.sqrt(Nt)
+        return G_H
 
     def encode(self, transmit_data):
         """
@@ -557,12 +728,8 @@ class SVDMimo(Blast):
             raise ValueError(msg)
 
         X = transmit_data.reshape(self.Nt, -1)
-        _, _, V_H = np.linalg.svd(self._channel)
 
-        # The transmit filter is the 'V' matrix from the SVD decomposition
-        # of the channel. Notice that we also need to divide by sqrt(Nt) to
-        # make sure 'W' has a unitary norm.
-        W = V_H.conj().T / math.sqrt(self.Nt)
+        W = self._calc_precoder(self._channel)
         encoded_data = W.dot(X)
 
         return encoded_data
@@ -583,10 +750,8 @@ class SVDMimo(Blast):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        U, S, _ = np.linalg.svd(self._channel)
-        G = np.diag(1./S).dot(U.conj().T) * math.sqrt(self.Nt)
-
-        decoded_data = G.dot(received_data)
+        G_H = self._calc_receive_filter(self._channel)
+        decoded_data = G_H.dot(received_data)
 
         # Return the decoded data as a 1D numpy array
         return decoded_data.reshape(decoded_data.size,)
@@ -610,6 +775,35 @@ class GMDMimo(Blast):
             MIMO channel matrix.
         """
         Blast.__init__(self, channel)
+
+    @staticmethod
+    def _calc_precoder(channel):
+        """
+        Calculate the linear precoder for the MRT scheme.
+
+        The MRT scheme corresponds to multiplying the symbol from each
+        transmit antenna with a complex number corresponding to the inverse
+        of the phase of the channel so as to ensure that the signals add
+        constructively at the receiver. This also means that the MRT echeme
+        only be applied to senarios with a single receive antenna.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix with dimention (1, Nt).
+
+        Returns
+        -------
+        W : 2D numpy array
+            The precoder that can be aplied to the input data.
+        """
+        Nt = channel.shape[1]
+        # The encode method will precode the transmit_data using the
+        # matrix 'P' obtained from the gmd.
+        U, S, V_H = np.linalg.svd(channel)
+        _, _, P = gmd(U, S, V_H)
+        W = P / math.sqrt(Nt)
+        return W
 
     def encode(self, transmit_data):
         """
@@ -642,12 +836,7 @@ class GMDMimo(Blast):
                    " number of transmit antennas")
             raise ValueError(msg)
 
-        # The encode method will precode the transmit_data using the
-        # matrix 'P' obtained from the gmd.
-        U, S, V_H = np.linalg.svd(self._channel)
-        _, _, P = gmd(U, S, V_H)
-        W = P / math.sqrt(self.Nt)
-
+        W = self._calc_precoder(self._channel)
         X = transmit_data.reshape(self.Nt, -1)
         encoded_data = W.dot(X)
 
@@ -672,8 +861,9 @@ class GMDMimo(Blast):
         Q, R, _ = gmd(U, S, V_H)
         channel_eq = Q.dot(R)
 
-        decoded_data = self._decode(
-            received_data, channel_eq, reshape_order='C') * math.sqrt(self.Nt)
+        # Use the _calc_receive_filter method from the base class (Blast)
+        G_H = self._calc_receive_filter(channel_eq, self._noise_var)
+        decoded_data = G_H.dot(received_data).reshape(-1)
         return decoded_data
 
 
@@ -695,10 +885,28 @@ class Alamouti(MimoBase):
             MIMO channel matrix.
         """
         MimoBase.__init__(self, channel)
-        # if self.Nt != 2:
-        #     msg = ("Invalid channel dimensions. Alamouti MIMO scheme requires"
-        #            " exact two transmit antennas.")
-        #     raise ValueError(msg)
+
+    @staticmethod
+    def _calc_precoder(channel):
+        """
+        Not defined.
+
+        There is no linear precoder for the Almost scheme and thus an
+        exception is called if this method is ever called.
+        """
+        raise RuntimeError("Alamouti scheme has no linear precoder")
+
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Not defined.
+
+        There is no linear receive filter for the Almost scheme that can be
+        directly applied to the received data. Thus, an exception is called
+        if this method is ever called.
+        """
+        raise RuntimeError("Alamouti scheme has no linear receive filter that"
+                           " can be directly applied to the received data")
 
     def set_channel_matrix(self, channel):
         """
@@ -710,14 +918,14 @@ class Alamouti(MimoBase):
             MIMO channel matrix.
         """
         if len(channel.shape) == 1:
-            self._channel = channel[np.newaxis, :]
+            super(Alamouti, self).set_channel_matrix(channel[np.newaxis, :])
         else:
             _, Nt = channel.shape
             if Nt != 2:
                 msg = ("The number of transmit antennas must be equal to 2 for"
                        " the {0} scheme").format(self.__class__.__name__)
                 raise ValueError(msg)
-            self._channel = channel
+            super(Alamouti, self).set_channel_matrix(channel)
 
     def getNumberOfLayers(self):
         """

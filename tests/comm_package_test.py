@@ -3138,9 +3138,7 @@ class BlastTestCase(unittest.TestCase):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a zero-force filter
-        self.blast_object.set_noise_var(-1)  # This should use the ZF filter
-        self.assertEqual(self.blast_object.calc_filter,
-                         mimo.MimoBase._calcZeroForceFilter)
+        self.blast_object.set_noise_var(None)  # This should use the ZF filter
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         self.blast_object.set_channel_matrix(channel)
         received_data2 = np.dot(channel, encoded_data)
@@ -3150,8 +3148,6 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a MMSE filter
         self.blast_object.set_noise_var(0.00000001)
-        self.assertNotEqual(self.blast_object.calc_filter,
-                            mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
         self.blast_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
@@ -3163,6 +3159,23 @@ class MRTTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.mrt_object = MRT()
+
+    def test_init(self):
+        channel1 = randn_c(3)
+        mrt_object1 = MRT(channel1)
+        self.assertEqual(3, mrt_object1.Nt)
+        self.assertEqual(1, mrt_object1.Nr)
+
+        channel2 = randn_c(1, 3)
+        mrt_object2 = MRT(channel2)
+        self.assertEqual(3, mrt_object2.Nt)
+        self.assertEqual(1, mrt_object2.Nr)
+
+        channel3 = randn_c(2, 3)
+        # Number of receive antennas must be exact 1. Since channel3 has 2
+        # receive antennas, an exception should be raised
+        with self.assertRaises(ValueError):
+            MRT(channel3)
 
     def test_getNumberOfLayers(self):
         self.assertEqual(self.mrt_object.getNumberOfLayers(), 1)
@@ -3269,9 +3282,7 @@ class MRCTestCase(unittest.TestCase):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a zero-force filter
-        self.mrc_object.set_noise_var(-1)  # This should use the ZF filter
-        self.assertEqual(
-            self.mrc_object.calc_filter, mimo.MimoBase._calcZeroForceFilter)
+        self.mrc_object.set_noise_var(None)  # This should use the ZF filter
         channel = randn_c(4, num_streams)  # 4 receive antennas
         self.mrc_object.set_channel_matrix(channel)
         received_data2 = np.dot(channel, encoded_data)
@@ -3281,8 +3292,6 @@ class MRCTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a MMSE filter
         self.mrc_object.set_noise_var(0.00000001)
-        self.assertNotEqual(
-            self.mrc_object.calc_filter, mimo.MimoBase._calcMMSEFilter)
         channel = randn_c(4, num_streams)  # 4 receive antennas
         self.mrc_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
