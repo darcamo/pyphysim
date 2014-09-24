@@ -557,7 +557,7 @@ class SVDMimo(Blast):
             raise ValueError(msg)
 
         X = transmit_data.reshape(self.Nt, -1)
-        U, S, V_H = np.linalg.svd(self._channel)
+        _, _, V_H = np.linalg.svd(self._channel)
 
         # The transmit filter is the 'V' matrix from the SVD decomposition
         # of the channel. Notice that we also need to divide by sqrt(Nt) to
@@ -583,7 +583,7 @@ class SVDMimo(Blast):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        U, S, V_H = np.linalg.svd(self._channel)
+        U, S, _ = np.linalg.svd(self._channel)
         G = np.diag(1./S).dot(U.conj().T) * math.sqrt(self.Nt)
 
         decoded_data = G.dot(received_data)
@@ -645,7 +645,7 @@ class GMDMimo(Blast):
         # The encode method will precode the transmit_data using the
         # matrix 'P' obtained from the gmd.
         U, S, V_H = np.linalg.svd(self._channel)
-        Q, R, P = gmd(U, S, V_H)
+        _, _, P = gmd(U, S, V_H)
         W = P / math.sqrt(self.Nt)
 
         X = transmit_data.reshape(self.Nt, -1)
@@ -669,7 +669,7 @@ class GMDMimo(Blast):
             The decoded data.
         """
         U, S, V_H = np.linalg.svd(self._channel)
-        Q, R, P = gmd(U, S, V_H)
+        Q, R, _ = gmd(U, S, V_H)
         channel_eq = Q.dot(R)
 
         decoded_data = self._decode(
