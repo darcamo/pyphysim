@@ -21,7 +21,7 @@ from pyphysim.ia import algorithms
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
-from pyphysim.simulations.progressbar import ProgressbarText
+from pyphysim.simulations.progressbar import ProgressbarText2
 
 
 def gen_codebook(codebook_size, dimension):
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     ia_solver = algorithms.MaxSinrIASolver(multi_user_channel_quant)
     ia_solver.max_iterations = 120
 
-    pb = ProgressbarText(rep_max, '*', message="Simulating for SNR: {0}".format(SNR))
+    pb = ProgressbarText2(rep_max, '*', message="SNR {0} - {{elapsed_time}}".format(SNR))
 
     symbolErrors = 0
     bitErrors = 0
