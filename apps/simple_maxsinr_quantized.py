@@ -43,7 +43,7 @@ def gen_codebook(codebook_size, dimension):
     codebook = np.empty([codebook_size, dimension], dtype=complex)
     for i in range(codebook_size):
         H = misc.randn_c(dimension, 1)
-        [U, S, V_H] = np.linalg.svd(H)
+        [U, _, _] = np.linalg.svd(H)
         codebook[i] = U[:, 0]
 
     return codebook
