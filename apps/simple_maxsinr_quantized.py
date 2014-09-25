@@ -48,13 +48,40 @@ def gen_codebook(codebook_size, dimension):
 
     return codebook
 
-def calc_angle_dist(mat, codeword):
+
+def calc_dist(vec, codeword):
     """
-    Calculate the distance (angle based) between `mat` and `codeword`.
+    Calculate the distance between `vec` and `codeword`.
+
+    First `vec` is normalized, since `codeword` has a unitary norm. Then
+    the distance will be the square of the euclidean distance between
+    normalized `vec` and `codeword`.
 
     Parameters
     ----------
-    mat : 1D numpy array
+    vec : 1D numpy array
+        The matrix to be quantized
+    codeword : 1D numpy array
+        One codeword from the codebook. The norm of the codeworkd should be
+        equal to 1.
+
+    Returns
+    -------
+    dist : float
+        The distance between `vec` and `codeword`. This is basically the
+        square of the sine between the two input vectors.
+    """
+    H = vec / np.linalg.norm(vec)
+    return np.linalg.norm(H - codeword)**2
+
+
+def calc_angle_dist(vec, codeword):
+    """
+    Calculate the distance (angle based) between `vec` and `codeword`.
+
+    Parameters
+    ----------
+    vec : 1D numpy array
         The matrix to be quantized
     codeword : 1D numpy array
         One codeword from the codebook.
@@ -62,12 +89,12 @@ def calc_angle_dist(mat, codeword):
     Returns
     -------
     dist : float
-        The distance between `mat` and `codeword`. This is basically the
+        The distance between `vec` and `codeword`. This is basically the
         square of the sine between the two input vectors.
     """
     cos_sq = (
         np.abs(
-            mat.conj().dot(codeword) / (np.linalg.norm(mat) * np.linalg.norm(codeword))
+            vec.conj().dot(codeword) / (np.linalg.norm(vec) * np.linalg.norm(codeword))
         )) ** 2
     sin_sq = 1 - cos_sq
 
@@ -90,7 +117,7 @@ def quant_small_matrix(small_matrix, codebook):
     quantized_small_matrix
     """
     small_matrix_vec = small_matrix.reshape(-1)
-    dists = [calc_angle_dist(small_matrix_vec, c) for c in codebook]
+    dists = [calc_dist(small_matrix_vec, c) for c in codebook]
     index = np.argmin(dists)
 
     quantized_small_matrix = codebook[index].reshape(small_matrix.shape)
@@ -155,12 +182,12 @@ if __name__ == '__main__1':
 
 
 if __name__ == '__main__':
-    SNR = 30.0
+    SNR = 15.0
     noise_var = 1 / dB2Linear(SNR)
-    M = 4
+    M = 2
     NSymbs = 50
     rep_max = 300
-    modulator = modulators.QAM(M)
+    modulator = modulators.BPSK()
     K = 3
     Nr = np.ones(K, dtype=int) * 2
     Nt = np.ones(K, dtype=int) * 2
@@ -181,7 +208,7 @@ if __name__ == '__main__':
     numBits = 0
 
     # xxxxxxxxxx Quantization paramters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    codebook_size = 1024
+    codebook_size = 512
     dimension = 4
     codebook = gen_codebook(codebook_size, dimension)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
