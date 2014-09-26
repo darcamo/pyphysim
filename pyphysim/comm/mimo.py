@@ -74,14 +74,24 @@ def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
         noise_var = 0.0
 
     # This matrix will always be square
-    channel_eq = G_H.dot(channel.dot(W))
+    channel_eq = np.dot(G_H, channel.dot(W))
     sum_all_antennas = np.sum(channel_eq, axis=1)
     s = np.diag(channel_eq)
     i = sum_all_antennas - s
 
     S = np.abs(s)**2
     I = np.abs(i)**2
-    N = noise_var * np.linalg.norm(G_H, axis=1)**2
+
+    if isinstance(G_H, np.ndarray):
+        # G_H is a numpy array. Lets calculate the norm considering the
+        # second axis (axis 1). That is, calculate the norm of each row in
+        # G_H. The square of this norm will gives us the amount of noise
+        # amplification in each stream.
+        N = noise_var * np.linalg.norm(G_H, axis=1)**2
+    else:
+        # G_H is a single number. The square of its absolute value will
+        # gives us the noise amplification of the single stream.
+        N = noise_var * abs(G_H)**2
 
     sinrs = S/(I + N)
 
