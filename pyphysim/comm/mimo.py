@@ -14,12 +14,78 @@ import numpy as np
 import math
 import warnings
 from pyphysim.util.misc import gmd
+from pyphysim.util.conversion import linear2dB
 
 __all__ = ['MimoBase', 'Blast', 'Alamouti', 'MRT', 'MRC', 'SVDMimo']
 
 # TODO: maybe you can use the weave module (inline or blitz methods) from
 # scipy to speed up things here.
 # See http://docs.scipy.org/doc/scipy/reference/tutorial/weave.html
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Functions to calculate the SINRs xxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def calc_post_processing_SINRs(channel, W, G_H, noise_var=None):
+    """
+    Calculate the post processing SINRs (in dB) of all streams for a given
+    MIMO scheme.
+
+    Parameters
+    ----------
+    channel : 2D numpy array
+        The MIMO channel.
+    W : 2D numpy array
+        The precoder for the MIMO scheme.
+    G_H : 2D numpy array
+        The receive filter for the MIMO scheme.
+    noise_var : float
+        The noise variance
+
+    Returns
+    -------
+    sinrs : 1D numpy array
+        The SINR of all streams (in linear scale).
+    """
+    return linear2dB(calc_post_processing_linear_SINRs(channel, W, G_H, noise_var))
+
+def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
+    """
+    Calculate the post processing SINRs (in linear scale) of all streams
+    for a given MIMO scheme.
+
+    Parameters
+    ----------
+    channel : 2D numpy array
+        The MIMO channel.
+    W : 2D numpy array
+        The precoder for the MIMO scheme.
+    G_H : 2D numpy array
+        The receive filter for the MIMO scheme.
+    noise_var : float
+        The noise variance
+
+    Returns
+    -------
+    sinrs : 1D numpy array.
+        The SINR of all streams (in linear scale).
+    """
+    if noise_var is None:
+        noise_var = 0.0
+
+    # This matrix will always be square
+    channel_eq = G_H.dot(channel.dot(W))
+    sum_all_antennas = np.sum(channel_eq, axis=1)
+    s = np.diag(channel_eq)
+    i = sum_all_antennas - s
+
+    S = np.abs(s)**2
+    I = np.abs(i)**2
+    N = noise_var * np.linalg.norm(G_H, axis=1)**2
+
+    sinrs = S/(I + N)
+
+    return sinrs
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
