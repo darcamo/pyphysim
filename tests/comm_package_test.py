@@ -3575,13 +3575,13 @@ class GMDMimoTestCase(unittest.TestCase):
         # that we need to pass the channel, the precoder, the receive
         # filter and the noise variance.
         sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
-        np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
+        np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 1)
 
         # Calculate the SINR using method in the MIMO class. Note that we
         # only need to pass the noise variance, since the mimo object knows
         # the channel and it can calculate the precoder and receive filter.
         sinrs_other = self.gmdmimo_object.calc_linear_SINRs(noise_var)
-        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 2)
+        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 1)
 
 
 class AlamoutiTestCase(unittest.TestCase):
