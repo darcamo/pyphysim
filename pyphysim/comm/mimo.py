@@ -805,6 +805,31 @@ class GMDMimo(Blast):
         W = P / math.sqrt(Nt)
         return W
 
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Calculate the receive filter for the MRT scheme.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        G_H : 2D numpy array
+            The receive_filter that can be aplied to the input data.
+        """
+        U, S, V_H = np.linalg.svd(channel)
+        Q, R, _ = gmd(U, S, V_H)
+        channel_eq = Q.dot(R)
+
+        # Use the _calc_receive_filter method from the base class (Blast)
+        G_H = Blast._calc_receive_filter(channel_eq, noise_var)
+        return G_H
+
     def encode(self, transmit_data):
         """
         Encode the transmit data array to be transmitted using the GMD MIMO
@@ -857,12 +882,7 @@ class GMDMimo(Blast):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        U, S, V_H = np.linalg.svd(self._channel)
-        Q, R, _ = gmd(U, S, V_H)
-        channel_eq = Q.dot(R)
-
-        # Use the _calc_receive_filter method from the base class (Blast)
-        G_H = self._calc_receive_filter(channel_eq, self._noise_var)
+        G_H = self._calc_receive_filter(self._channel, self._noise_var)
         decoded_data = G_H.dot(received_data).reshape(-1)
         return decoded_data
 
