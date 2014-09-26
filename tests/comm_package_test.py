@@ -3237,11 +3237,19 @@ class BlastTestCase(unittest.TestCase):
 
         W = self.blast_object._calc_precoder(channel)
         G_H = self.blast_object._calc_receive_filter(channel, noise_var)
-        sinrs = calc_post_processing_SINRs(
-            channel, W, G_H, noise_var)
-
         expected_sinrs = linear2dB(calc_SINRs(channel, W, G_H, noise_var))
+
+        # Calculate the SINR using the function in the mimo module. Note
+        # that we need to pass the channel, the precoder, the receive
+        # filter and the noise variance.
+        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
         np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
+
+        # Calculate the SINR using method in the MIMO class. Note that we
+        # only need to pass the noise variance, since the mimo object knows
+        # the channel and it can calculate the precoder and receive filter.
+        sinrs_other = self.blast_object.calc_linear_SINRs(noise_var)
+        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 2)
 
 
 class MRTTestCase(unittest.TestCase):
@@ -3354,21 +3362,26 @@ class MRTTestCase(unittest.TestCase):
     def test_calc_post_processing_SINRs(self):
         Nr = 1
         Nt = 3
-        noise_var = 0.01
+        noise_var = 0.001
         channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
         self.mrt_object.set_channel_matrix(channel)
 
         W = self.mrt_object._calc_precoder(channel)
         G_H = self.mrt_object._calc_receive_filter(channel, noise_var)
-        # For the MRT scheme, the receive filter will be a number, instead
-        # of an array. We convert it to a 2D array with dimension 1x1,
-        # since the SINR calculation functions expect a 2D array object.
         G_H = np.array([[G_H]])
-        sinrs = calc_post_processing_SINRs(
-            channel, W, G_H, noise_var)
-
         expected_sinrs = linear2dB(calc_SINRs(channel, W, G_H, noise_var))
+
+        # Calculate the SINR using the function in the mimo module. Note
+        # that we need to pass the channel, the precoder, the receive
+        # filter and the noise variance.
+        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
         np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
+
+        # Calculate the SINR using method in the MIMO class. Note that we
+        # only need to pass the noise variance, since the mimo object knows
+        # the channel and it can calculate the precoder and receive filter.
+        sinrs_other = self.mrt_object.calc_linear_SINRs(noise_var)
+        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 2)
 
 
 class MRCTestCase(unittest.TestCase):
@@ -3409,17 +3422,25 @@ class MRCTestCase(unittest.TestCase):
     def test_calc_post_processing_SINRs(self):
         Nr = 3
         Nt = 1
-        noise_var = 0.01
+        noise_var = 0.001
         channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
         self.mrc_object.set_channel_matrix(channel)
 
         W = self.mrc_object._calc_precoder(channel)
         G_H = self.mrc_object._calc_receive_filter(channel, noise_var)
-        sinrs = calc_post_processing_SINRs(
-            channel, W, G_H, noise_var)
-
         expected_sinrs = linear2dB(calc_SINRs(channel, W, G_H, noise_var))
+
+        # Calculate the SINR using the function in the mimo module. Note
+        # that we need to pass the channel, the precoder, the receive
+        # filter and the noise variance.
+        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
         np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
+
+        # Calculate the SINR using method in the MIMO class. Note that we
+        # only need to pass the noise variance, since the mimo object knows
+        # the channel and it can calculate the precoder and receive filter.
+        sinrs_other = self.mrc_object.calc_linear_SINRs(noise_var)
+        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 2)
 
 
 class SVDMimoTestCase(unittest.TestCase):
@@ -3438,11 +3459,10 @@ class SVDMimoTestCase(unittest.TestCase):
 
         encoded_data = self.svdmimo_object.encode(data)
 
-        U, S, V_H = np.linalg.svd(channel)
+        _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
         expected_encoded_data = W.dot(data_aux)
-        np.testing.assert_array_almost_equal(expected_encoded_data,
-                                             encoded_data)
+        np.testing.assert_array_almost_equal(expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3455,11 +3475,10 @@ class SVDMimoTestCase(unittest.TestCase):
 
         encoded_data = self.svdmimo_object.encode(data)
 
-        U, S, V_H = np.linalg.svd(channel)
+        _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
         expected_encoded_data = W.dot(data_aux)
-        np.testing.assert_array_almost_equal(expected_encoded_data,
-                                             encoded_data)
+        np.testing.assert_array_almost_equal(expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
@@ -3473,8 +3492,7 @@ class SVDMimoTestCase(unittest.TestCase):
         encoded_data = self.svdmimo_object.encode(data)
         received_data = channel.dot(encoded_data)
         decoded_data = self.svdmimo_object.decode(received_data)
-        np.testing.assert_array_almost_equal(data,
-                                             decoded_data)
+        np.testing.assert_array_almost_equal(data, decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_post_processing_SINRs(self):
@@ -3486,10 +3504,19 @@ class SVDMimoTestCase(unittest.TestCase):
 
         W = self.svdmimo_object._calc_precoder(channel)
         G_H = self.svdmimo_object._calc_receive_filter(channel, noise_var)
-        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
-
         expected_sinrs = linear2dB(calc_SINRs(channel, W, G_H, noise_var))
+
+        # Calculate the SINR using the function in the mimo module. Note
+        # that we need to pass the channel, the precoder, the receive
+        # filter and the noise variance.
+        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
         np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
+
+        # Calculate the SINR using method in the MIMO class. Note that we
+        # only need to pass the noise variance, since the mimo object knows
+        # the channel and it can calculate the precoder and receive filter.
+        sinrs_other = self.svdmimo_object.calc_linear_SINRs(noise_var)
+        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 2)
 
 
 class GMDMimoTestCase(unittest.TestCase):
@@ -3510,12 +3537,11 @@ class GMDMimoTestCase(unittest.TestCase):
 
         # data_aux = data.reshape(Nt, -1)
         U, S, V_H = np.linalg.svd(channel)
-        Q, R, P = gmd(U, S, V_H)
+        _, _, P = gmd(U, S, V_H)
         W = P / math.sqrt(Nt)
 
         expected_encoded_data = W.dot(data.reshape(Nr, -1))
-        np.testing.assert_array_almost_equal(expected_encoded_data,
-                                             encoded_data)
+        np.testing.assert_array_almost_equal(expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
@@ -3530,8 +3556,7 @@ class GMDMimoTestCase(unittest.TestCase):
         received_data = channel.dot(encoded_data)
 
         decoded_data = self.gmdmimo_object.decode(received_data)
-        np.testing.assert_array_almost_equal(data,
-                                             decoded_data)
+        np.testing.assert_array_almost_equal(data, decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_post_processing_SINRs(self):
@@ -3543,10 +3568,19 @@ class GMDMimoTestCase(unittest.TestCase):
 
         W = self.gmdmimo_object._calc_precoder(channel)
         G_H = self.gmdmimo_object._calc_receive_filter(channel, noise_var)
-        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
-
         expected_sinrs = linear2dB(calc_SINRs(channel, W, G_H, noise_var))
+
+        # Calculate the SINR using the function in the mimo module. Note
+        # that we need to pass the channel, the precoder, the receive
+        # filter and the noise variance.
+        sinrs = calc_post_processing_SINRs(channel, W, G_H, noise_var)
         np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
+
+        # Calculate the SINR using method in the MIMO class. Note that we
+        # only need to pass the noise variance, since the mimo object knows
+        # the channel and it can calculate the precoder and receive filter.
+        sinrs_other = self.gmdmimo_object.calc_linear_SINRs(noise_var)
+        np.testing.assert_array_almost_equal(sinrs_other, expected_sinrs, 2)
 
 
 class AlamoutiTestCase(unittest.TestCase):
@@ -3599,6 +3633,10 @@ class AlamoutiTestCase(unittest.TestCase):
         received_data = np.dot(channel, encoded_data)
         decoded_data = self.alamouti_object.decode(received_data)
         np.testing.assert_array_almost_equal(decoded_data, data)
+
+    def test_calc_post_processing_SINRs(self):
+        # TODO: Implement-me
+        pass
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

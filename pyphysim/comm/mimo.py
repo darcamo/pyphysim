@@ -117,8 +117,19 @@ class MimoBase(object):
       Analogous to the encode method, the decode method must perform
       everything performed at the receiver.
 
-    Other optional methods that might be useful implementing in subclasses
-    are the `_calc_precoder` and `_calc_receive_filter` methods.
+    If possible, subclasses should implement the `_calc_precoder` and
+    `_calc_receive_filter` static methods and use them in the
+    implementation of `encode` and `decode`. This will allow using the
+    `calc_linear_SINRs` and `calc_SINRs` methods to calculate the post
+    processing SINRs. Note that calling the `_calcZeroForceFilter` and
+    `_calcMMSEFilter` methods in the implementation of the receive filter
+    calculation can be useful.
+
+    If you can't implement the `_calc_precoder` and `_calc_receive_filter`
+    static methods` (because there is no linear precoder or receive filter
+    for the MIMO shcme in the subclass, for instance), then you should
+    implement the `calc_linear_SINRs` and `calc_SINRs` methods in the
+    subclass instead.
     """
     # The MimoBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
@@ -258,6 +269,41 @@ class MimoBase(object):
         W = np.linalg.solve(np.dot(H_H, H) + noise_var * np.eye(Nt), H_H)
 
         return W
+
+    def calc_linear_SINRs(self, noise_var):
+        """
+        Calculate the SINRs (in linear scale) of the multiple streams.
+
+        Parameters
+        ----------
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        sinrs : 1D numpy array
+            The sinrs (in linear scale) of the multiple streams.
+        """
+        W = self._calc_precoder(self._channel)
+        G_H = self._calc_receive_filter(self._channel, noise_var)
+        sinrs = sinrs = calc_post_processing_SINRs(self._channel, W, G_H, noise_var)
+        return sinrs
+
+    def calc_SINRs(self, noise_var):
+        """
+        Calculate the SINRs (in dB) of the multiple streams.
+
+        Parameters
+        ----------
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        SINRs : 1D numpy array
+            The SINRs (in dB) of the multiple streams.
+        """
+        return linear2dB(self.calc_linear_SINRs(noise_var))
 
     @abstractmethod
     def encode(self, transmit_data):  # pragma: no cover, pylint: disable=W0613
