@@ -14,12 +14,88 @@ import numpy as np
 import math
 import warnings
 from pyphysim.util.misc import gmd
+from pyphysim.util.conversion import linear2dB
 
 __all__ = ['MimoBase', 'Blast', 'Alamouti', 'MRT', 'MRC', 'SVDMimo']
 
 # TODO: maybe you can use the weave module (inline or blitz methods) from
 # scipy to speed up things here.
 # See http://docs.scipy.org/doc/scipy/reference/tutorial/weave.html
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Functions to calculate the SINRs xxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def calc_post_processing_SINRs(channel, W, G_H, noise_var=None):
+    """
+    Calculate the post processing SINRs (in dB) of all streams for a given
+    MIMO scheme.
+
+    Parameters
+    ----------
+    channel : 2D numpy array
+        The MIMO channel.
+    W : 2D numpy array
+        The precoder for the MIMO scheme.
+    G_H : 2D numpy array
+        The receive filter for the MIMO scheme.
+    noise_var : float
+        The noise variance
+
+    Returns
+    -------
+    sinrs : 1D numpy array
+        The SINR of all streams (in linear scale).
+    """
+    return linear2dB(calc_post_processing_linear_SINRs(channel, W, G_H, noise_var))
+
+def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
+    """
+    Calculate the post processing SINRs (in linear scale) of all streams
+    for a given MIMO scheme.
+
+    Parameters
+    ----------
+    channel : 2D numpy array
+        The MIMO channel.
+    W : 2D numpy array
+        The precoder for the MIMO scheme.
+    G_H : 2D numpy array
+        The receive filter for the MIMO scheme.
+    noise_var : float
+        The noise variance
+
+    Returns
+    -------
+    sinrs : 1D numpy array.
+        The SINR of all streams (in linear scale).
+    """
+    if noise_var is None:
+        noise_var = 0.0
+
+    # This matrix will always be square
+    channel_eq = np.dot(G_H, channel.dot(W))
+    sum_all_antennas = np.sum(channel_eq, axis=1)
+    s = np.diag(channel_eq)
+    i = sum_all_antennas - s
+
+    S = np.abs(s)**2
+    I = np.abs(i)**2
+
+    if isinstance(G_H, np.ndarray):
+        # G_H is a numpy array. Lets calculate the norm considering the
+        # second axis (axis 1). That is, calculate the norm of each row in
+        # G_H. The square of this norm will gives us the amount of noise
+        # amplification in each stream.
+        N = noise_var * np.linalg.norm(G_H, axis=1)**2
+    else:
+        # G_H is a single number. The square of its absolute value will
+        # gives us the noise amplification of the single stream.
+        N = noise_var * abs(G_H)**2
+
+    sinrs = S/(I + N)
+
+    return sinrs
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -41,8 +117,18 @@ class MimoBase(object):
       Analogous to the encode method, the decode method must perform
       everything performed at the receiver.
 
-    Other optional methods that might be useful implementing in subclasses
-    are the `_calc_precoder` and `_calc_receive_filter` methods.
+    If possible, subclasses should implement the `_calc_precoder` and
+    `_calc_receive_filter` static methods and use them in the
+    implementation of `encode` and `decode`. This will allow using the
+    `calc_linear_SINRs` and `calc_SINRs` methods to calculate the post
+    processing SINRs. Note that calling the `_calcZeroForceFilter` and
+    `_calcMMSEFilter` methods in the implementation of the receive filter
+    calculation can be useful.
+
+    If you can't implement the `_calc_precoder` and `_calc_receive_filter`
+    static methods` (because there is no linear precoder or receive filter
+    for the MIMO shcme in the subclass, for instance), then you should
+    implement the `calc_linear_SINRs` method in the subclass instead.
     """
     # The MimoBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
@@ -182,6 +268,41 @@ class MimoBase(object):
         W = np.linalg.solve(np.dot(H_H, H) + noise_var * np.eye(Nt), H_H)
 
         return W
+
+    def calc_linear_SINRs(self, noise_var):
+        """
+        Calculate the SINRs (in linear scale) of the multiple streams.
+
+        Parameters
+        ----------
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        sinrs : 1D numpy array
+            The sinrs (in linear scale) of the multiple streams.
+        """
+        W = self._calc_precoder(self._channel)
+        G_H = self._calc_receive_filter(self._channel, noise_var)
+        sinrs = sinrs = calc_post_processing_SINRs(self._channel, W, G_H, noise_var)
+        return sinrs
+
+    def calc_SINRs(self, noise_var):
+        """
+        Calculate the SINRs (in dB) of the multiple streams.
+
+        Parameters
+        ----------
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        SINRs : 1D numpy array
+            The SINRs (in dB) of the multiple streams.
+        """
+        return linear2dB(self.calc_linear_SINRs(noise_var))
 
     @abstractmethod
     def encode(self, transmit_data):  # pragma: no cover, pylint: disable=W0613
@@ -350,7 +471,7 @@ class Blast(MimoBase):
         if noise_var is None:
             self._noise_var = 0.0
 
-        elif noise_var > 0:
+        elif noise_var >= 0.0:
             self._noise_var = noise_var
         else:
             raise ValueError('Noise variance must be a non-negative value.')
@@ -805,6 +926,31 @@ class GMDMimo(Blast):
         W = P / math.sqrt(Nt)
         return W
 
+    @staticmethod
+    def _calc_receive_filter(channel, noise_var=None):
+        """
+        Calculate the receive filter for the MRT scheme.
+
+        Parameters
+        ----------
+        channel : 2D numpy array
+            MIMO channel matrix.
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        G_H : 2D numpy array
+            The receive_filter that can be aplied to the input data.
+        """
+        U, S, V_H = np.linalg.svd(channel)
+        Q, R, _ = gmd(U, S, V_H)
+        channel_eq = Q.dot(R)
+
+        # Use the _calc_receive_filter method from the base class (Blast)
+        G_H = Blast._calc_receive_filter(channel_eq, noise_var)
+        return G_H
+
     def encode(self, transmit_data):
         """
         Encode the transmit data array to be transmitted using the GMD MIMO
@@ -857,12 +1003,7 @@ class GMDMimo(Blast):
         decoded_data : 1D numpy array
             The decoded data.
         """
-        U, S, V_H = np.linalg.svd(self._channel)
-        Q, R, _ = gmd(U, S, V_H)
-        channel_eq = Q.dot(R)
-
-        # Use the _calc_receive_filter method from the base class (Blast)
-        G_H = self._calc_receive_filter(channel_eq, self._noise_var)
+        G_H = self._calc_receive_filter(self._channel, self._noise_var)
         decoded_data = G_H.dot(received_data).reshape(-1)
         return decoded_data
 
@@ -940,6 +1081,25 @@ class Alamouti(MimoBase):
             Number of layers of the Alamouti scheme, which is always one.
         """
         return 1
+
+    def calc_linear_SINRs(self, noise_var):
+        """
+        Calculate the SINRs (in linear scale) of the multiple streams.
+
+        Parameters
+        ----------
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        sinrs : 1D numpy array
+            The sinrs (in linear scale) of the multiple streams.
+        """
+        # The linear post-processing SINR for the Alamouti scheme is given by
+        # \[\frac{\Vert \mtH \Vert_F^2}{2 \sigma_N} \]
+        sinr = np.linalg.norm(self._channel, 'fro')**2 / noise_var
+        return sinr
 
     @staticmethod
     def _encode(transmit_data):
