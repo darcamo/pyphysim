@@ -128,8 +128,7 @@ class MimoBase(object):
     If you can't implement the `_calc_precoder` and `_calc_receive_filter`
     static methods` (because there is no linear precoder or receive filter
     for the MIMO shcme in the subclass, for instance), then you should
-    implement the `calc_linear_SINRs` and `calc_SINRs` methods in the
-    subclass instead.
+    implement the `calc_linear_SINRs` method in the subclass instead.
     """
     # The MimoBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
@@ -1082,6 +1081,25 @@ class Alamouti(MimoBase):
             Number of layers of the Alamouti scheme, which is always one.
         """
         return 1
+
+    def calc_linear_SINRs(self, noise_var):
+        """
+        Calculate the SINRs (in linear scale) of the multiple streams.
+
+        Parameters
+        ----------
+        noise_var : float
+            The noise variance.
+
+        Returns
+        -------
+        sinrs : 1D numpy array
+            The sinrs (in linear scale) of the multiple streams.
+        """
+        # The linear post-processing SINR for the Alamouti scheme is given by
+        # \[\frac{\Vert \mtH \Vert_F^2}{2 \sigma_N} \]
+        sinr = np.linalg.norm(self._channel, 'fro')**2 / noise_var
+        return sinr
 
     @staticmethod
     def _encode(transmit_data):

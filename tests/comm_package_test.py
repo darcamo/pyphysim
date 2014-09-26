@@ -3564,6 +3564,7 @@ class GMDMimoTestCase(unittest.TestCase):
         Nt = 3
         noise_var = 0.01
         channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        self.gmdmimo_object.set_noise_var(noise_var)
         self.gmdmimo_object.set_channel_matrix(channel)
 
         W = self.gmdmimo_object._calc_precoder(channel)
@@ -3635,9 +3636,22 @@ class AlamoutiTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(decoded_data, data)
 
     def test_calc_post_processing_SINRs(self):
-        # TODO: Implement-me
-        pass
+        Nr = 1
+        Nt = 2
+        noise_var = 0.01
+        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        self.alamouti_object.set_channel_matrix(channel)
 
+        # W = self.alamouti_object._calc_precoder(channel)
+        # G_H = self.alamouti_object._calc_receive_filter(channel, noise_var)
+
+        expected_sinrs = linear2dB((np.linalg.norm(channel, 'fro')**2)/noise_var)
+
+        # Calculate the SINR using method in the Alamouti class. Note that
+        # we only need to pass the noise variance, since the mimo object
+        # knows the channel.
+        sinrs = self.alamouti_object.calc_SINRs(noise_var)
+        np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
