@@ -350,7 +350,7 @@ class Blast(MimoBase):
         if noise_var is None:
             self._noise_var = 0.0
 
-        elif noise_var > 0:
+        elif noise_var >= 0.0:
             self._noise_var = noise_var
         else:
             raise ValueError('Noise variance must be a non-negative value.')
