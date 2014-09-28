@@ -438,6 +438,20 @@ class MiscFunctionsTestCase(unittest.TestCase):
             np.array([1.88354706, 9.81370681]),
             8)
 
+        # xxxxxxxxxx Test a numpy bug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # When numpy is manually installed, but without lapack, it will use
+        # its own internal SVD implementation. This implementation has a
+        # bug for complex matrices with more columns then rows, where the
+        # returned right singular vectors for the 0 valued singular vectors
+        # will be all zeros. We test this here to make sure the installed
+        # version of numpy was compiled with lapack to avoid this bug.
+        M = 8                           # Number of rows
+        N = 12                          # Number of columns
+        [U, S, V_H] = np.linalg.svd(
+            np.random.randn(M, N) + 1j*np.random.randn(M, N), full_matrices=True)
+        # Test if all the last N - M rows are equal to zero (the bug) or not.
+        self.assertNotAlmostEqual(np.linalg.norm(V_H[M-N:]), 0.0)
+
     def test_calc_unorm_autocorr(self):
         x = np.array([4., 2, 1, 3, 7, 3, 8])
         unorm_autocor = misc.calc_unorm_autocorr(x)
