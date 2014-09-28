@@ -16,7 +16,7 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:  # pragma: no cover
+except NameError:               # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -39,7 +39,7 @@ from pyphysim.util.conversion import dB2Linear, linear2dB, \
     single_matrix_to_matrix_of_matrices
 from pyphysim.subspace.projections import calcProjectionMatrix
 from pyphysim.comm.mimo import Blast, Alamouti, MRC, MRT, SVDMimo, GMDMimo, \
-    calc_post_processing_linear_SINRs, calc_post_processing_SINRs
+    calc_post_processing_SINRs
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -1134,12 +1134,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.multiH.noise_var = noise_power
 
         self.multiH.randomize(Nr, Nt, K)
-
-        # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # This method is raising warnings
-        # Fix the warnings
-        # import pudb; pudb.set_trace()  ## DEBUG ##
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         (_, Ms_good) = blockdiagonalization.block_diagonalize(
             self.multiH.big_H, K, iPu, noise_power)
