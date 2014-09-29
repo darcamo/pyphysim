@@ -203,10 +203,11 @@ class ClosedFormIASolver(IASolverBaseClass):
             Ns = np.ones(3, dtype=int) * Ns
         else:
             assert len(Ns) == 3
-        self._Ns = np.array(Ns)  # This will create a new array so that we
-                                 # can modify self._Ns internally without
-                                 # changing the original Ns variable passed
-                                 # to the solve method.
+
+        # This will create a new array so that we can modify self._Ns
+        # internally without changing the original Ns variable passed to
+        # the solve method.
+        self._Ns = np.array(Ns)
 
         self.P = P
 
@@ -297,12 +298,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         IASolverBaseClass.__init__(self, multiUserChannel)
 
-        self._runned_iterations = 0  # Count how many times the step method
-                                     # was called. This will be reseted to
-                                     # zero whenever the channel or the
-                                     # precoder is reinitialized.
-        self.max_iterations = 50  # Number of times the step method is
-                                  # called in the solve method.
+        # Count how many times the step method was called. This will be
+        # reseted to zero whenever the channel or the precoder is
+        # reinitialized.
+        self._runned_iterations = 0
+        # Number of times the step method is called in the solve method.
+        self.max_iterations = 50
 
         # Relative change of the precoder in one iteration to the next
         # one. If the relative change from one iteration to the next one is
@@ -616,7 +617,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         """
         self.P = P
 
-        # initialize_with can be: 'random', 'fix', 'closed_form', 'alt_min', or 'svd'
+        # initialize_with can be: 'random', 'fix', 'closed_form',
+        # 'alt_min', or 'svd'
         options = {
             'random': self._initialize_F_randomly_and_find_W,
             'alt_min': self._initialize_F_and_W_from_alt_min,
@@ -628,13 +630,16 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         initialzie_func(Ns, P)
 
     def _solve_finalize(self):  # pragma: no cover
-        """Perform any post processing after the solution has been found.
         """
-        # Some of the found precoders may be a singular matrix. In that
-        # case, we need to remove the dimensions with zero energy from both
-        # the found precoder and the receive filter.
-        mod_users = []  # Store the index of the users from which we need
-                        # to modify the precoders and receive filters
+        Perform any post processing after the solution has been found.
+
+        Some of the found precoders may be a singular matrix. In that case,
+        we need to remove the dimensions with zero energy from both the
+        found precoder and the receive filter.
+        """
+        # Store the index of the users from which we need to modify the
+        # precoders and receive filters
+        mod_users = []
         num_significant_sing_values = []
         for k in range(self.K):
             # We only need to perform further actions if more then one
@@ -793,10 +798,10 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         else:
             assert len(Ns) == self.K
 
-        self._Ns = np.array(Ns)  # This will create a new array so that we
-                                 # can modify self._Ns internally without
-                                 # changing the original Ns variable passed
-                                 # to the randomizeF method.
+        # This will create a new array so that we can modify self._Ns
+        # internally without changing the original Ns variable passed to
+        # the randomizeF method.
+        self._Ns = np.array(Ns)
 
         self._solve_init(Ns, P)
 
@@ -880,9 +885,8 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     def initialize_with(self, value):
         """Set method for the initialize_with property."""
         if value == 'alt_min':
-            msg = "Can't use '{0}' initialization with '{1}' class '{0}'".format(
-                value, self.__class__.__name__)
-            raise RuntimeError(msg)
+            msg = "Can't use '{0}' initialization with '{1}' class '{0}'"
+            raise RuntimeError(msg.format(value, self.__class__.__name__))
 
         IterativeIASolverBaseClass.initialize_with.fset(self, value)
 
@@ -989,9 +993,9 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         for k in np.arange(self.K):
             ### TODO: Implement and test with external interference
-            # We are inside only of the first for loop
-            # Add the external interference contribution
-            #self._C[k] = self.calc_Q(k) + self.Rk[k]
+            # # We are inside only of the first for loop
+            # # Add the external interference contribution
+            # self._C[k] = self.calc_Q(k) + self.Rk[k]
 
             # C[k] will receive the Ni most dominant eigenvectors of C[k]
             self._C[k] = peig(self.calc_Q(k), Ni[k])[0]
@@ -1046,8 +1050,6 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         # Every element in newF is a matrix. We want to replace each
         # element by the least dominant eigenvectors of that element.
-
-        #self._F = map(lambda x, y: leig(x, y)[0], newF, self.Ns)
         for k in range(self.K):
             self._F[k] = leig(newF[k], self.Ns[k])[0]
             self._F[k] = self._F[k] / np.linalg.norm(self._F[k], 'fro')
@@ -1419,8 +1421,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """Calculates the receive filter of all users for the reverse channel.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
-        F = self._W  # The precoder is the receive filter of the direct
-                    # channel
+        F = self._W  # The precoder is the receive filter of the direct channel
         for k in range(self.K):
             Hkk = self._get_channel_rev(k, k)
             Bkl_all_l = self._calc_Bkl_cov_matrix_all_l_rev(k)
@@ -1844,7 +1845,6 @@ class GreedStreamIASolver(object):
             self._old_Ns = copy(self._iasolver.Ns)
 
             old_sum_capacity = self._iasolver.calc_sum_capacity()
-            #old_sinrs = self._iasolver.calc_SINR_in_dB()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Find the index of the stream to be removed xxxxxxx
@@ -1868,14 +1868,12 @@ class GreedStreamIASolver(object):
 
             #
             self._iasolver.initialize_with = 'fix'
-            #new_sum_capacity_APAGAR = self._iasolver.calc_sum_capacity()
             self._runned_iterations += self._iasolver.solve(
                 self._iasolver.Ns, self._iasolver.P)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Check if the new solution is better xxxxxxxxxxxxxx
             new_sum_capacity = self._iasolver.calc_sum_capacity()
-            #new_sinrs = self._iasolver.calc_SINR_in_dB()
 
             # If the new solution is not better, we restore the previous
             # solution and set keep_going to False to stop the stream
@@ -1940,6 +1938,9 @@ class GreedStreamIASolver(object):
         return user_idx, stream_idx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx BruteForceStreamIASolver xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BruteForceStreamIASolver(object):
     """
     Implements the Brute Force Stream Interference Alignment algorithm
@@ -1968,8 +1969,10 @@ class BruteForceStreamIASolver(object):
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
 
-        self._stream_combinations = ()  # store every possible stream combination
-        self._every_sum_capacity = []  # store sum capacity for each stream combination
+        # store every possible stream combination
+        self._stream_combinations = ()
+        # store sum capacity for each stream combination
+        self._every_sum_capacity = []
 
         # Store the full_F, W_H and Ns for the previous stream
         # configuration
@@ -1979,10 +1982,13 @@ class BruteForceStreamIASolver(object):
         self._best_Ns = None
 
     def clear(self):
-        """Clear the BruteForceStreamIASolver object.
         """
-        self._stream_combinations = ()  # store every possible stream combination
-        self._every_sum_capacity = []  # store sum capacity for each stream combination
+        Clear the BruteForceStreamIASolver object.
+        """
+        # store every possible stream combination
+        self._stream_combinations = ()
+        # store sum capacity for each stream combination
+        self._every_sum_capacity = []
 
         # Store the full_F, W_H and Ns for the previous stream
         # configuration

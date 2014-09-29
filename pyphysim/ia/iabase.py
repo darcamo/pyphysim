@@ -20,7 +20,7 @@ from ..util.conversion import linear2dB
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Base Class for all IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class IASolverBaseClass(object):  #pylint: disable=R0902
+class IASolverBaseClass(object):  # pylint: disable=R0902
     """
     Base class for all Interference Alignment Algorithms.
 
@@ -58,7 +58,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
     __metaclass__ = ABCMeta
 
     def __init__(self, multiUserChannel):
-        """Initialize the variables that every IA solver will have.
+        """
+        Initialize the variables that every IA solver will have.
 
         Parameters
         ----------
@@ -75,23 +76,28 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
         # Number of streams per user
         self._Ns = None
+        # Power of each user (P is an 1D numpy array). If not set (_P is
+        # None), then a power of 1 will be used for each transmitter.
+        self._P = None
 
-        self._P = None  # Power of each user (P is an 1D numpy array). If
-                        # not set (_P is None), then a power of 1 will be
-                        # used for each transmitter.
+        # xxxxxxxxxx Precoder and receive filters xxxxxxxxxxxxxxxxxxxxxxxxx
+        # These are numpy arrays of numpy arrays
 
-        # Precoder and receive filters (numpy arrays of numpy arrays)
-        self._F = None  # Precoder: One precoder for each user
-        self._full_F = None  # Precoder: Same as _F, but scaled with the
-                             # correct power value in self.P
+        # Precoder: One precoder for each user
+        self._F = None
+        # Precoder: Same as _F, but scaled with the correct power value in
+        # self.P
+        self._full_F = None
         self._W = None  # Receive filter: One for each user
         self._W_H = None  # Receive filter: One for each user
         self._full_W_H = None
         self._full_W = None
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Other member variables
-        self._rs = np.random.RandomState()  # RandomState object used to
-                                            # randomize the precoder
+        # xxxxxxxxxx Other member variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # RandomState object used to randomize the precoder
+        self._rs = np.random.RandomState()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _clear_receive_filter(self):
         """
@@ -154,7 +160,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
     @property
     def noise_var(self):
-        """Get method for the noise_var property."""
+        """
+        Get method for the noise_var property.
+        """
         noise_var = self._multiUserChannel.noise_var
         if noise_var is None:
             return 0.0
@@ -163,12 +171,16 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
     @property
     def F(self):
-        """Transmit precoder of all users."""
+        """
+        Transmit precoder of all users.
+        """
         return self._F
 
     @property
     def full_F(self):
-        """Transmit precoder of all users."""
+        """
+        Transmit precoder of all users.
+        """
         if self._full_F is None:
             self._full_F = self._F * np.sqrt(self.P)
         return self._full_F
@@ -226,7 +238,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
     # channel.
     @property
     def W(self):
-        """Receive filter of all users."""
+        """
+        Receive filter of all users.
+        """
         # If self._W is None but self._W_H is not None than we need to
         # update self_W from self._W_H.
         if self._W is None:
@@ -238,7 +252,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
     @property
     def W_H(self):
-        """Get method for the W_H property."""
+        """
+        Get method for the W_H property.
+        """
         # If self._W_H is None but self._W is not None than we need to
         # update self_W_H from self._W.
         if self._W_H is None:
@@ -327,6 +343,11 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         k : int
             The index of the desired user.
 
+        Returns
+        -------
+        Hk_eq : 2D numpy array
+            The equivalent channel.
+
         Notes
         -----
         This method is used only internaly in order to calculate the "W"
@@ -345,7 +366,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
     @property
     def P(self):
-        """Transmit power of all users.
+        """
+        Transmit power of all users.
         """
         if self._P is None:
             P = np.ones(self.K, dtype=float)
@@ -378,7 +400,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
     @property
     def Ns(self):
-        """Number of streams of all users.
+        """
+        Number of streams of all users.
 
         Returns
         -------
@@ -390,7 +413,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
     # xxxxx Properties to read the channel related variables xxxxxxxxxxxxxx
     @property
     def K(self):
-        """The number of users.
+        """
+        The number of users.
 
         Returns
         -------
@@ -398,12 +422,14 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
             The number of users.
         """
         K = self._multiUserChannel.K
-        assert K > 0, 'You must initialize the channel object before using the IA solver object.'
+        assert K > 0, ("You must initialize the channel object before"
+                       " using the IA solver object.")
         return K
 
     @property
     def Nr(self):
-        """Number of receive antennas of all users.
+        """
+        Number of receive antennas of all users.
 
         Returns
         -------
@@ -414,7 +440,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
 
     @property
     def Nt(self):
-        """Number of transmit antennas of all users.
+        """
+        Number of transmit antennas of all users.
 
         Returns
         -------
@@ -424,7 +451,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return self._multiUserChannel.Nt
 
     def randomizeF(self, Ns, P=None):
-        """Generates a random precoder for each user.
+        """
+        Generates a random precoder for each user.
 
         Parameters
         ----------
@@ -458,7 +486,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
     # This method is just an alias for the get_channel method of the
     # multiuserchannel object associated with the IA Solver.xs
     def _get_channel(self, k, l):
-        """Get the channel from transmitter l to receiver k.
+        """
+        Get the channel from transmitter l to receiver k.
 
         Parameters
         ----------
@@ -475,8 +504,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return self._multiUserChannel.get_Hkl(k, l)
 
     def _get_channel_rev(self, k, l):
-        """Get the channel from transmitter l to receiver k in the reverse
-        network.
+        """
+        Get the channel from transmitter l to receiver k in the reverse network.
 
         Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
         transmitter :math:`l` to receiver :math:`k` in the direct
@@ -502,13 +531,13 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         Notes
         -----
         See Section III of [Cadambe2008]_ for details.
-
         """
         return self._get_channel(l, k).transpose().conjugate()
 
     def calc_Q(self, k):
-        """Calculates the interference covariance matrix at the
-        :math:`k`-th receiver.
+        """
+        Calculates the interference covariance matrix at the :math:`k`-th
+        receiver.
 
         The interference covariance matrix at the :math:`k`-th receiver,
         :math:`\\mtQ k`, is given by
@@ -531,7 +560,6 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         Notes
         -----
         This is impacted by the self.P attribute.
-
         """
         Qk = self._multiUserChannel.calc_Q(k, self.full_F)
         return Qk
@@ -540,8 +568,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
     # we need the receive filter and IASolverBaseClass does not know how to
     # calculate it
     def calc_Q_rev(self, k):
-        """Calculates the interference covariance matrix at the
-        :math:`k`-th receiver in the reverse network.
+        """
+        Calculates the interference covariance matrix at the :math:`k`-th
+        receiver in the reverse network.
 
         Parameters
         ----------
@@ -574,8 +603,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return Qk
 
     def calc_remaining_interference_percentage(self, k, Qk=None):
-        """Calculates the percentage of the interference in the desired
-        signal space according to equation (30) in [Cadambe2008]_.
+        """
+        Calculates the percentage of the interference in the desired signal
+        space according to equation (30) in [Cadambe2008]_.
 
         The percentage :math:`p_k` of the interference in the desired
         signal space is given by
@@ -599,7 +629,6 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         -----
         `Qk` must be a symmetric matrix so that its eigenvalues are real and
         positive (any covariance matrix is a symmetric matrix).
-
         """
         # $$p_k = \frac{\sum_{j=1}^{Ns[k]} \lambda_j [\mtQ k]}{Tr[\mtQ k]}$$
 
@@ -711,8 +740,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return np.sum(np.log2(1+np.hstack(self.calc_SINR())))
 
     def _calc_Bkl_cov_matrix_first_part(self, k):
-        """Calculates the first part in the equation of the Blk covariance
-        matrix in equation (28) of [Cadambe2008]_.
+        """
+        Calculates the first part in the equation of the Blk covariance matrix
+        in equation (28) of [Cadambe2008]_.
 
         The first part is given by
 
@@ -729,7 +759,6 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         -------
         Bkl_first_part : 2D numpy complex array
             First part in equation (28) of [Cadambe2008]_.
-
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
         first_part = 0.0
@@ -744,9 +773,10 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return first_part
 
     def _calc_Bkl_cov_matrix_second_part(self, k, l):
-        """Calculates the second part in the equation of the Blk covariance
-        matrix in equation (28) of [Cadambe2008]_ (note that it does not
-        include the identity matrix).
+        """
+        Calculates the second part in the equation of the Blk covariance matrix
+        in equation (28) of [Cadambe2008]_ (note that it does not include
+        the identity matrix).
 
         The second part is given by
 
@@ -763,7 +793,6 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         -------
         second_part : 2D numpy complex array.
             Second part in equation (28) of [Cadambe2008]_.
-
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
         Hkk = self._get_channel(k, k)
@@ -774,9 +803,9 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return second_part
 
     def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=None):
-        """Calculates the interference-plus-noise covariance matrix for all
-        streams at receiver :math:`k` according to equation (28) in
-        [Cadambe2008]_.
+        """
+        Calculates the interference-plus-noise covariance matrix for all streams
+        at receiver :math:`k` according to equation (28) in [Cadambe2008]_.
 
         The interference-plus-noise covariance matrix for stream :math:`l`
         of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
@@ -816,7 +845,6 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         function as is done here allows us to calculate the first part in
         equation (28) of [Cadambe2008]_ only once, since it is the same for
         all streams.
-
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \sigma_n^2 \mtI_{N^{[k]}}$$
         if noise_power is None:
@@ -832,7 +860,8 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         return Bkl_all_l
 
     def _calc_SINR_k(self, k, Bkl_all_l):
-        """Calculates the SINR of all streams of user 'k'.
+        """
+        Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
@@ -846,7 +875,6 @@ class IASolverBaseClass(object):  #pylint: disable=R0902
         -------
         SINR_k : 1D numpy array
             The SINR for the different streams of user k.
-
         """
         Hkk = self._get_channel(k, k)
         Vk = self.full_F[k]

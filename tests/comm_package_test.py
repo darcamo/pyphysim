@@ -2867,8 +2867,9 @@ class OfdmTestCase(unittest.TestCase):
         self.assertEqual(self.ofdm_object.num_used_subcarriers, 64)
 
     def test_prepare_input_signal(self, ):
-        input_signal = np.r_[1:53]  # 52 elements -> exactly the number of
-                                    # used subcarriers in the OFDM object
+        # 52 elements -> exactly the number of used subcarriers in the OFDM
+        # object
+        input_signal = np.r_[1:53]
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets first test the case where we use exactly 52 subcarriers from
@@ -3225,7 +3226,7 @@ class BlastTestCase(unittest.TestCase):
         Nr = 4
         Nt = 3
         noise_var = 0.001
-        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(Nr, Nt)
         self.blast_object.set_noise_var(noise_var)
         self.blast_object.set_channel_matrix(channel)
 
@@ -3282,7 +3283,6 @@ class MRTTestCase(unittest.TestCase):
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
         W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1) / math.sqrt(Nt)
         encoded_data = self.mrt_object.encode(data)
-
 
         expected_encoded_data = W * data_aux
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -3357,7 +3357,7 @@ class MRTTestCase(unittest.TestCase):
         Nr = 1
         Nt = 3
         noise_var = 0.001
-        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(Nr, Nt)
         self.mrt_object.set_channel_matrix(channel)
 
         W = self.mrt_object._calc_precoder(channel)
@@ -3417,7 +3417,7 @@ class MRCTestCase(unittest.TestCase):
         Nr = 3
         Nt = 1
         noise_var = 0.001
-        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(Nr, Nt)
         self.mrc_object.set_channel_matrix(channel)
 
         W = self.mrc_object._calc_precoder(channel)
@@ -3456,7 +3456,8 @@ class SVDMimoTestCase(unittest.TestCase):
         _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
         expected_encoded_data = W.dot(data_aux)
-        np.testing.assert_array_almost_equal(expected_encoded_data, encoded_data)
+        np.testing.assert_array_almost_equal(
+            expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3472,7 +3473,8 @@ class SVDMimoTestCase(unittest.TestCase):
         _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
         expected_encoded_data = W.dot(data_aux)
-        np.testing.assert_array_almost_equal(expected_encoded_data, encoded_data)
+        np.testing.assert_array_almost_equal(
+            expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
@@ -3493,7 +3495,7 @@ class SVDMimoTestCase(unittest.TestCase):
         Nr = 3
         Nt = 3
         noise_var = 0.01
-        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(Nr, Nt)
         self.svdmimo_object.set_channel_matrix(channel)
 
         W = self.svdmimo_object._calc_precoder(channel)
@@ -3535,7 +3537,8 @@ class GMDMimoTestCase(unittest.TestCase):
         W = P / math.sqrt(Nt)
 
         expected_encoded_data = W.dot(data.reshape(Nr, -1))
-        np.testing.assert_array_almost_equal(expected_encoded_data, encoded_data)
+        np.testing.assert_array_almost_equal(
+            expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
@@ -3557,7 +3560,7 @@ class GMDMimoTestCase(unittest.TestCase):
         Nr = 3
         Nt = 3
         noise_var = 0.01
-        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(Nr, Nt)
         self.gmdmimo_object.set_noise_var(noise_var)
         self.gmdmimo_object.set_channel_matrix(channel)
 
@@ -3633,13 +3636,14 @@ class AlamoutiTestCase(unittest.TestCase):
         Nr = 1
         Nt = 2
         noise_var = 0.01
-        channel = randn_c(Nr, Nt)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(Nr, Nt)
         self.alamouti_object.set_channel_matrix(channel)
 
         # W = self.alamouti_object._calc_precoder(channel)
         # G_H = self.alamouti_object._calc_receive_filter(channel, noise_var)
 
-        expected_sinrs = linear2dB((np.linalg.norm(channel, 'fro')**2)/noise_var)
+        expected_sinrs = linear2dB(
+            (np.linalg.norm(channel, 'fro')**2)/noise_var)
 
         # Calculate the SINR using method in the Alamouti class. Note that
         # we only need to pass the noise variance, since the mimo object
@@ -3808,7 +3812,10 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder with total power of `Pu`,
             # while the other base stations will use less power.
-            individual_powers.append(np.linalg.norm(Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antenas], 'fro') ** 2)
+            individual_powers.append(
+                np.linalg.norm(
+                    Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antenas], 'fro'
+                ) ** 2)
             # 1e-12 is included to avoid false test fails due to small
             # precision errors
             tol = 1e-12
@@ -3857,7 +3864,9 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
-            individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
+            individual_powers.append(
+                np.linalg.norm(
+                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
             self.assertGreaterEqual(Pu + tol,
                                     individual_powers[-1])
 
@@ -3901,7 +3910,10 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # Most likelly only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
-            individual_powers.append(np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
+            individual_powers.append(
+                np.linalg.norm(
+                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro'
+                ) ** 2)
             self.assertGreaterEqual(Pu + tol,
                                     individual_powers[-1])
 

@@ -23,7 +23,6 @@ except NameError:  # pragma: no cover
 import unittest
 import doctest
 import numpy as np
-from math import sqrt
 
 from pyphysim.util import misc, conversion
 
@@ -142,17 +141,18 @@ class ConversionTestCase(unittest.TestCase):
         expected2 = np.array([[1, 1, 1], [1, 1, 1], [4, 4, 4], [4, 4, 4],
                               [4, 4, 4], [4, 4, 4], [7, 7, 7], [7, 7, 7],
                               [7, 7, 7], [7, 7, 7], [7, 7, 7], [7, 7, 7]])
-        expected3 = np.array([[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [5, 5, 5, 5, 5],
-                              [5, 5, 5, 5, 5], [5, 5, 5, 5, 5], [5, 5, 5, 5, 5],
-                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
-                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8]])
+        expected3 = np.array(
+            [[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [5, 5, 5, 5, 5],
+             [5, 5, 5, 5, 5], [5, 5, 5, 5, 5], [5, 5, 5, 5, 5],
+             [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
+             [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8]])
         np.testing.assert_array_equal(expected1, matrix_of_matrices3[0])
         np.testing.assert_array_equal(expected2, matrix_of_matrices3[1])
         np.testing.assert_array_equal(expected3, matrix_of_matrices3[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Convert 'single 1D array' to 1D array of 1D arrays xxxxxxxx
-        #nrows = np.array([2, 4, 6])
+        # nrows = np.array([2, 4, 6])
         expected1 = np.ones(2) * 2
         expected2 = np.ones(4) * 4
         expected3 = np.ones(6) * 6
@@ -307,8 +307,10 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         expected_V_n3 = np.array(
             [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j, 0.69593520],
-             [0.68522942, -0.24255902 + 0.37567057j, -0.02693857 + 0.57425752j],
-             [0.38918583 + 0.09728652j, 0.80863645, -0.40625488 - 0.14189355j]])
+             [0.68522942, -0.24255902 + 0.37567057j,
+              -0.02693857 + 0.57425752j],
+             [0.38918583 + 0.09728652j, 0.80863645,
+              -0.40625488 - 0.14189355j]])
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -345,8 +347,10 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         expected_V_n3 = np.array(
             [[0.69593520, 0.15266747 - 0.35048035j, 0.27354856 + 0.54286421j],
-             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j, 0.68522942],
-             [-0.40625488 - 0.14189355j, 0.80863645, 0.38918583 + 0.09728652j]])
+             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j,
+              0.68522942],
+             [-0.40625488 - 0.14189355j, 0.80863645,
+              0.38918583 + 0.09728652j]])
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -447,8 +451,9 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # version of numpy was compiled with lapack to avoid this bug.
         M = 8                           # Number of rows
         N = 12                          # Number of columns
-        [U, S, V_H] = np.linalg.svd(
-            np.random.randn(M, N) + 1j*np.random.randn(M, N), full_matrices=True)
+        [_, _, V_H] = np.linalg.svd(
+            np.random.randn(M, N) + 1j * np.random.randn(M, N),
+            full_matrices=True)
         # Test if all the last N - M rows are equal to zero (the bug) or not.
         self.assertNotAlmostEqual(np.linalg.norm(V_H[M-N:]), 0.0)
 
@@ -461,7 +466,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
     def test_calc_autocorr(self):
         x = np.array([4., 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
-        expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
+        expected_autocor = np.array(
+            [1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
     def test_calc_confidence_interval(self):
@@ -562,7 +568,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # Return None when a valid range representation does not exist,
         # such as when the array has a single element or when the array is
         # not an arithmetic progression.
-        self.assertIsNone(misc.get_range_representation(np.array([6, 10, 20, 50])))
+        self.assertIsNone(
+            misc.get_range_representation(np.array([6, 10, 20, 50])))
 
     def test_get_mixed_range_representation(self):
         a = np.array([2])
@@ -615,7 +622,9 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_c = "1_(1)_6,10_(5)_40,50,100"
         self.assertEqual(expr_c, expected_expr_c)
 
-        c = np.array([1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100, 150, 200, 250, 300, 1000])
+        c = np.array(
+            [1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100, 150,
+             200, 250, 300, 1000])
         expr_c = misc.get_mixed_range_representation(c, True)
         expected_expr_c = "1_(1)_6,10_(5)_40,50_(50)_300,1000"
         self.assertEqual(expr_c, expected_expr_c)
@@ -635,7 +644,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_c = "11.0,10.2:-1.2:4.2"
         self.assertEqual(expr_c, expected_expr_c)
 
-        c = np.array([11.0, 10.2, 8.4, 8.2, 8.0, 7.8, 7.6, 5, 3, 1, -1, -3, -10])
+        c = np.array([11.0, 10.2, 8.4, 8.2, 8.0, 7.8, 7.6, 5, 3, 1, -1,
+                      -3, -10])
         expr_c = misc.get_mixed_range_representation(c)
         expected_expr_c = "11.0,10.2,8.4:-0.2:7.6,5.0:-2.0:-3.0,-10.0"
         self.assertEqual(expr_c, expected_expr_c)
@@ -662,21 +672,25 @@ class MiscFunctionsTestCase(unittest.TestCase):
                        'value2': np.array([5, 10, 18, 20, 25, 30]),
                        'value3': 76}
         new_name2 = misc.replace_dict_values(name, dictionary2)
-        expected_new_name2 = 'something bla bla - [5,10,18,20,25,30] something else 76'
+        expected_new_name2 \
+            = 'something bla bla - [5,10,18,20,25,30] something else 76'
         self.assertEqual(new_name2, expected_new_name2)
 
         # Value3 has parts that are arithmetic progressions and others that
         # are not an arithmetic progression
         dictionary3 = {'value1': 'bla bla',
-                       'value2': np.array([2, 5, 10, 15, 20, 25, 30, 31, 32, 50]),
+                       'value2': np.array([2, 5, 10, 15, 20, 25,
+                                           30, 31, 32, 50]),
                        'value3': 76}
         new_name3 = misc.replace_dict_values(name, dictionary3, True)
-        expected_new_name3 = 'something bla bla - [2,5_(5)_30,31,32,50] something else 76'
+        expected_new_name3 \
+            = 'something bla bla - [2,5_(5)_30,31,32,50] something else 76'
         self.assertEqual(new_name3, expected_new_name3)
 
         # Now we test the same thing, but with the third parameter being False
         new_name4 = misc.replace_dict_values(name, dictionary3, False)
-        expected_new_name4 = 'something bla bla - [2,5:5:30,31,32,50] something else 76'
+        expected_new_name4 \
+            = 'something bla bla - [2,5:5:30,31,32,50] something else 76'
         self.assertEqual(new_name4, expected_new_name4)
 
     def test_pretty_time(self):
@@ -704,7 +718,6 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertEqual(misc.pretty_time(6135), '1h:42m:15s')
 
         self.assertEqual(misc.pretty_time(6137), '1h:42m:17s')
-
 
     def test_calc_decorrelation_matrix(self):
         A = misc.randn_c(3, 3)

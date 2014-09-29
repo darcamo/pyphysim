@@ -213,7 +213,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         array_string = "[0,5,10:15,20]"
         parsed_array = real_scalar_or_real_numpy_array_check(
             array_string, min=0, max=30)
-        expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
+        expected_parsed_array = np.array(
+            [0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
@@ -247,7 +248,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             integer_scalar_or_integer_numpy_array_check(value),
             expected_parsed_value)
         self.assertTrue(
-            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+            isinstance(integer_scalar_or_integer_numpy_array_check(value),
+                       int))
 
         value = "76"
         expected_parsed_value = 76
@@ -255,7 +257,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             integer_scalar_or_integer_numpy_array_check(value),
             expected_parsed_value)
         self.assertTrue(
-            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+            isinstance(integer_scalar_or_integer_numpy_array_check(value),
+                       int))
 
         # Test validation against the minimum and maximum allowed value
         value = "6"
@@ -387,7 +390,8 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
             union['fourth'],
             np.array(['A', 'B', 'C']))
 
-        self.assertEqual(set(union.unpacked_parameters), set(['third', 'fourth']))
+        self.assertEqual(set(union.unpacked_parameters),
+                         set(['third', 'fourth']))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -467,7 +471,8 @@ class SimulationParametersTestCase(unittest.TestCase):
             # unpacking have '*' appended to their name.
             self.assertEqual(
                 self.sim_params.__repr__(),
-                """{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], 'third*': [1 3 2 5], 'first': 10}""")
+                "{'second': 20, 'fifth': 10, 'fourth*': ['A', 'B'], "
+                "'third*': [1 3 2 5], 'first': 10}")
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Test if we can unset a parameter that was previously set to be
@@ -487,8 +492,8 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Remove parameters second and third
         self.sim_params.remove('second')
-        self.sim_params.remove('third')  # Note that this parameter was
-                                         # marked to be unpacked
+        # Note that this parameter was marked to be unpacked
+        self.sim_params.remove('third')
 
         expected_parameters = {'first': 10,
                                'fourth': ['A', 'B'],
@@ -652,13 +657,15 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # now lets fix the 'fourth' parameter and let the 'third' vary.
         fixed_fourth_A = {'fourth': 'A'}
-        fixed_fourth_A_indexes = self.sim_params.get_pack_indexes(fixed_fourth_A)
+        fixed_fourth_A_indexes = self.sim_params.get_pack_indexes(
+            fixed_fourth_A)
         self.assertEqual(len(fixed_fourth_A_indexes), 12)
         for i in fixed_fourth_A_indexes:
             self.assertEqual(unpacked_list[i]['fourth'], 'A')
 
         fixed_fourth_B = {'fourth': 'B'}
-        fixed_fourth_B_indexes = self.sim_params.get_pack_indexes(fixed_fourth_B)
+        fixed_fourth_B_indexes = self.sim_params.get_pack_indexes(
+            fixed_fourth_B)
         self.assertEqual(len(fixed_fourth_B_indexes), 12)
         for i in fixed_fourth_B_indexes:
             self.assertEqual(unpacked_list[i]['fourth'], 'B')
@@ -730,7 +737,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         fourth_unpacked_param = self.sim_params.get_unpacked_params_list()[3]
         fourth_unpacked_param.save_to_pickled_file(filename2)
 
-        fourth_unpacked_param2 = SimulationParameters.load_from_pickled_file(filename2)
+        fourth_unpacked_param2 = SimulationParameters.load_from_pickled_file(
+            filename2)
         self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
 
         # Delete the where the parameters were saved
@@ -770,7 +778,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         fourth_unpacked_param = self.sim_params.get_unpacked_params_list()[3]
         fourth_unpacked_param.save_to_hdf5_file(filename2)
 
-        fourth_unpacked_param2 = SimulationParameters.load_from_hdf5_file(filename2)
+        fourth_unpacked_param2 = SimulationParameters.load_from_hdf5_file(
+            filename2)
         self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
 
         # Delete the where the parameters were saved
@@ -796,7 +805,8 @@ class SimulationParametersTestCase(unittest.TestCase):
             pass
 
         fid = open(filename, 'w')
-        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n"
+                  "[IA Algorithm]\nmax_iterations=60")
         fid.close()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -838,7 +848,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Lets create an invalid config file and try to load the parameters
         # First we provide an invalid value for M
         fid = open(filename, 'w')
-        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=-4\nmodulator=PSK\n[IA Algorithm]\nmax_iterations=60")
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=-4\nmodulator=PSK\n"
+                  "[IA Algorithm]\nmax_iterations=60")
         fid.close()
 
         with self.assertRaises(Exception):
@@ -847,7 +858,8 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Now we do not provide the required parameter max_iterations
         fid = open(filename, 'w')
-        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n[IA Algorithm]")
+        fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n"
+                  "[IA Algorithm]")
         fid.close()
 
         with self.assertRaises(Exception):
@@ -901,12 +913,14 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test the parameters of the combined object xxxxxxxxxxx
         # Note that combine_simulation_parameters is already tested
-        comb_params = combine_simulation_parameters(results1.params, results3.params)
+        comb_params = combine_simulation_parameters(results1.params,
+                                                    results3.params)
         # Test if the parameters of the combined result object are correct
         self.assertEqual(comb_params, union.params)
 
         # xxxxxxxxxx Test the results of the combined object xxxxxxxxxxxxxx
-        self.assertEqual(set(union.get_result_names()), set(['elapsed_time', 'lala']))
+        self.assertEqual(set(union.get_result_names()),
+                         set(['elapsed_time', 'lala']))
 
         # The unpacked param list of union is (the order might be different)
         # [{'bias': 1.3, 'SNR': 0.0, 'extra': 2.2},
@@ -935,7 +949,7 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         # value of 4.1, which is repeated in results1 and results3.
 
         all_indexes = set(range(union.params.get_num_unpacked_variations()))
-        index_extra_4dot1 = set(union.params.get_pack_indexes({'extra':4.1}))
+        index_extra_4dot1 = set(union.params.get_pack_indexes({'extra': 4.1}))
         other_indexes = all_indexes - index_extra_4dot1
 
         for index in index_extra_4dot1:
@@ -947,22 +961,27 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         # Calculate the expected lala results
         expected_lala_results = list(
             repeat(0, union.params.get_num_unpacked_variations()))
-        for index, variation in enumerate(union.params.get_unpacked_params_list()):
+        for index, variation in enumerate(
+                union.params.get_unpacked_params_list()):
             count = 0.
             snr = variation['SNR']
             extra = variation['extra']
 
             try:
-                r1index = results1.params.get_pack_indexes({'SNR': snr, 'extra': extra})
+                r1index = results1.params.get_pack_indexes(
+                    {'SNR': snr, 'extra': extra})
                 count += 1.
-                expected_lala_results[index] += results1['lala'][r1index].get_result()
+                expected_lala_results[index] \
+                    += results1['lala'][r1index].get_result()
             except ValueError:
                 pass
 
             try:
-                r3index = results3.params.get_pack_indexes({'SNR': snr, 'extra': extra})
+                r3index = results3.params.get_pack_indexes(
+                    {'SNR': snr, 'extra': extra})
                 count += 1.
-                expected_lala_results[index] += results3['lala'][r3index].get_result()
+                expected_lala_results[index] \
+                    += results3['lala'][r3index].get_result()
             except ValueError:
                 pass
             expected_lala_results[index] /= count
@@ -985,10 +1004,10 @@ class ResultTestCase(unittest.TestCase):
         self.result4 = Result("name4", Result.CHOICETYPE, choice_num=6)
 
     def test_get_update_type(self):
-        """Test the two properties, one to get the update type code and
-        other to get the update type name. Note that both properties
-        reflect the value of the same variable, the self._update_type
-        variable.
+        """
+        Test the two properties, one to get the update type code and other to
+        get the update type name. Note that both properties reflect the
+        value of the same variable, the self._update_type variable.
         """
         self.assertEqual(self.result1.type_code, Result.SUMTYPE)
         self.assertEqual(self.result1.type_name, "SUMTYPE")
@@ -1002,8 +1021,8 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result4.type_code, Result.CHOICETYPE)
         self.assertEqual(self.result4.type_name, "CHOICETYPE")
 
-        self.assertEqual(4, len(
-            set([Result.SUMTYPE, Result.RATIOTYPE, Result.MISCTYPE, Result.CHOICETYPE])))
+        self.assertEqual(4, len(set([Result.SUMTYPE, Result.RATIOTYPE,
+                                     Result.MISCTYPE, Result.CHOICETYPE])))
 
     def test_update(self):
         # Test the update function of the SUMTYPE
@@ -1101,7 +1120,8 @@ class ResultTestCase(unittest.TestCase):
         result4.update(3)
         result4.update(4)
         np.testing.assert_array_almost_equal(result4._value, [1, 1, 0, 2, 1])
-        np.testing.assert_array_almost_equal(result4.get_result(), [.2, .2, 0, .4, .2])
+        np.testing.assert_array_almost_equal(
+            result4.get_result(), [.2, .2, 0, .4, .2])
         self.assertEqual(result4._total, 5)
         self.assertEqual(result4._value_list, [3, 1, 0, 3, 4])
         self.assertEqual(result4._total_list, [])
@@ -1115,8 +1135,8 @@ class ResultTestCase(unittest.TestCase):
 
         result1_other = Result.create("name", Result.SUMTYPE, 11)
         expected_result_sum1 = result_sum_before1 + result1_other._result_sum
-        expected_result_sqr_sum1 = result_sum_sqr_before1 + \
-                                  result1_other._result_squared_sum
+        expected_result_sqr_sum1 = (result_sum_sqr_before1
+                                    + result1_other._result_squared_sum)
 
         self.result1.merge(result1_other)
         self.assertEqual(self.result1.name, "name")
@@ -1136,8 +1156,8 @@ class ResultTestCase(unittest.TestCase):
         result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50)
         result2_other.update(12, 18)
         expected_result_sum2 = result_sum_before2 + result2_other._result_sum
-        expected_result_sqr_sum2 = result_sum_sqr_before2 + \
-                                  result2_other._result_squared_sum
+        expected_result_sqr_sum2 = (result_sum_sqr_before2
+                                    + result2_other._result_squared_sum)
 
         self.result2.merge(result2_other)
         self.assertEqual(self.result2.name, "name2")
@@ -1164,7 +1184,8 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(3)
         self.result4.merge(result4_other)
         self.assertEqual(self.result4.name, 'name4')
-        np.testing.assert_array_almost_equal(self.result4._value, [1, 1, 1, 2, 0, 0])
+        np.testing.assert_array_almost_equal(
+            self.result4._value, [1, 1, 1, 2, 0, 0])
         self.assertEqual(self.result4._total, 5)
         np.testing.assert_array_almost_equal(self.result4.get_result(),
                                              [.2, .2, .2, .4, 0, 0])
@@ -1280,10 +1301,14 @@ class ResultTestCase(unittest.TestCase):
         self.assertAlmostEqual(result2.get_result_var(), expected_var2)
 
     def test_representation(self):
-        self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
-        self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
-        self.assertEqual(self.result3.__repr__(),                         "Result -> name3: Nothing yet")
-        self.assertEqual(self.result4.__repr__(), "Result -> name4: Nothing yet")
+        self.assertEqual(self.result1.__repr__(),
+                         "Result -> name: Nothing yet")
+        self.assertEqual(self.result2.__repr__(),
+                         "Result -> name2: 0/0 -> NaN")
+        self.assertEqual(self.result3.__repr__(),
+                         "Result -> name3: Nothing yet")
+        self.assertEqual(self.result4.__repr__(),
+                         "Result -> name4: Nothing yet")
 
         self.result1.update(10)
         self.result2.update(2, 4)
@@ -1292,9 +1317,11 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(2)
 
         self.assertEqual(self.result1.__repr__(), "Result -> name: 10")
-        self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
+        self.assertEqual(
+            self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
-        self.assertEqual(self.result4.__repr__(), "Result -> name4: [ 0.   0.   0.5  0.5  0.   0. ]")
+        self.assertEqual(self.result4.__repr__(),
+                         "Result -> name4: [ 0.   0.   0.5  0.5  0.   0. ]")
 
     def test_equal_and_not_equal_operators(self):
         self.result1.update(10)
@@ -1495,7 +1522,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         lala_result.update(13)
         lele_result.update(8, 10)
         lele_result.update(3, 10)
-        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
+        elapsed_time_result2 = Result.create(
+            'elapsed_time', Result.SUMTYPE, 20)
         simresults.add_result(lala_result)
         simresults.add_result(lele_result)
         simresults.add_result(elapsed_time_result2)
@@ -1565,11 +1593,12 @@ class SimulationResultsTestCase(unittest.TestCase):
         simresults.append_result(result_other)
 
         P = 95  # Confidence level of 95%
-        list_of_confidence_intervals = simresults.get_result_values_confidence_intervals(
-            'name', P)
+        list_of_confidence_intervals \
+            = simresults.get_result_values_confidence_intervals('name', P)
 
         # Calculates the expected list of confidence intervals
-        expected_list_of_confidence_intervals = [i.get_confidence_interval(P) for i in simresults['name']]
+        expected_list_of_confidence_intervals \
+            = [i.get_confidence_interval(P) for i in simresults['name']]
 
         # Test of they are equal
         for a, b in zip(list_of_confidence_intervals,
@@ -1666,7 +1695,8 @@ class SimulationResultsTestCase(unittest.TestCase):
 
         # Load from the file
         simresults2 = SimulationResults.load_from_hdf5_file(filename)
-        self.assertEqual(simresults2.original_filename, '{0}.h5'.format(base_filename))
+        self.assertEqual(simresults2.original_filename,
+                         '{0}.h5'.format(base_filename))
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
                          set(simresults2.get_result_names()))
@@ -1703,7 +1733,6 @@ class SimulationResultsTestCase(unittest.TestCase):
             os.remove(filename)
         except OSError:  # pragma: no cover
             pass
-
 
     # def test_save_to_and_load_from_pytables_file(self):
     #     filename = 'results_pytables.h5'
@@ -1752,7 +1781,8 @@ class SimulationResultsTestCase(unittest.TestCase):
     #                      simresults2.params.unpacked_parameters[0])
 
     def test_to_dataframe(self):
-        # Create some dummy parameters (including two parameters set to be unpacked)
+        # Create some dummy parameters (including two parameters set to be
+        # unpacked)
         params = SimulationParameters()
         params.add("extra", 2.3)
         params.add("SNR", np.array([0, 3, 6, 9]))
@@ -1766,8 +1796,10 @@ class SimulationResultsTestCase(unittest.TestCase):
             extra = p['extra']
             SNR = p['SNR']
             bias = p['bias']
-            results.append_result(Result.create('res1', Result.SUMTYPE, extra*SNR+bias))
-            results.append_result(Result.create('res2', Result.SUMTYPE, bias*SNR+extra))
+            results.append_result(Result.create(
+                'res1', Result.SUMTYPE, extra*SNR+bias))
+            results.append_result(Result.create(
+                'res2', Result.SUMTYPE, bias*SNR+extra))
         results.set_parameters(params)
 
         # Now lets convert this SimulationResults object to a pandas
@@ -1782,7 +1814,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         expected_bias = [a['bias'] for a in params.get_unpacked_params_list()]
         expected_SNR = [a['SNR'] for a in params.get_unpacked_params_list()]
         expected_name = [a['Name'] for a in params.get_unpacked_params_list()]
-        expected_extra = [a['extra'] for a in params.get_unpacked_params_list()]
+        expected_extra \
+            = [a['extra'] for a in params.get_unpacked_params_list()]
         np.testing.assert_array_equal(df.bias, expected_bias)
         np.testing.assert_array_equal(df.SNR, expected_SNR)
         np.testing.assert_array_equal(df.Name, expected_name)
@@ -1797,6 +1830,7 @@ class SimulationResultsTestCase(unittest.TestCase):
             expected_res2 = bias*SNR+extra
             self.assertAlmostEqual(expected_res1, df.res1[index])
             self.assertAlmostEqual(expected_res2, df.res2[index])
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Runner Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1821,7 +1855,8 @@ def _delete_pickle_files():
 
 
 def _delete_progressbar_output_files():  # pragma: no cover
-    """Delete all the files with *results*.txt names in the current folder.
+    """
+    Delete all the files with *results*.txt names in the current folder.
     """
     progressbar_files = glob.glob('*results*.txt')
     for f in progressbar_files:  # pragma: no cover
@@ -1829,7 +1864,6 @@ def _delete_progressbar_output_files():  # pragma: no cover
             os.remove(f)
         except OSError:  # pragma: nocover
             pass
-
 
 
 # Define a _DummyRunner class for the testing the simulate and
@@ -1901,7 +1935,7 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
         value2 = 1.2 * P + random_value2
         sim_results.add_new_result('result2', Result.RATIOTYPE, value2, 1)
 
-        #self.rs2.seed()
+        # self.rs2.seed()
         random_value3 = self.rs2.rand()
         value3 = 1.2 * P + random_value3
         sim_results.add_new_result('result3', Result.RATIOTYPE, value3, 1)
@@ -1930,7 +1964,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertEqual(self.runner.progressbar_message, "Progress")
 
     def test_not_implemented_methods(self):
-        #self.assertRaises(NotImplementedError, self.S1._get_vertex_positions)
+        # self.assertRaises(NotImplementedError,
+        #                   self.S1._get_vertex_positions)
         with self.assertRaises(NotImplementedError):
             self.runner._run_simulation(None)
 
@@ -1950,7 +1985,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # 'simulate' method of dummyrunner.
         dummyrunner.results.set_parameters(dummyrunner.params)
 
-        self.assertEqual(dummyrunner.results_filename, "some_name_1.3_[2.2,4.1].pickle")
+        self.assertEqual(
+            dummyrunner.results_filename, "some_name_1.3_[2.2,4.1].pickle")
 
     def test_simulate(self):
         from tests.simulations_package_test import _DummyRunner
@@ -1965,25 +2001,28 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        dummyrunner.simulate()  # The results will be the SNR values
-                                # multiplied by 1.2. plus the bias
-                                # parameter
+        # The results will be the SNR values multiplied by 1.2. plus the
+        # bias parameter
+        dummyrunner.simulate()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         results_extra_1 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
-        np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
+        np.testing.assert_array_almost_equal(
+            results_extra_1, expected_results_extra_1)
 
         results_extra_2 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
-        np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
+        np.testing.assert_array_almost_equal(
+            results_extra_2, expected_results_extra_2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
-        results = SimulationResults.load_from_file(dummyrunner.results_filename)
+        results = SimulationResults.load_from_file(
+            dummyrunner.results_filename)
         self.assertEqual(results, dummyrunner.results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2041,7 +2080,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         # Now we perform the simulation
         dummyrunner.simulate(param_variation_index=4)
-        pr = SimulationResults.load_from_file('partial_results/dummyrunner_results_bias_1.3_unpack_04.pickle')
+        pr = SimulationResults.load_from_file(
+            'partial_results/dummyrunner_results_bias_1.3_unpack_04.pickle')
 
         #  Get the parameters from the laoded result
         bias = pr.params['bias']
@@ -2065,8 +2105,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
             cl = Client(profile="tests")
 
             dview = cl.direct_view()
-            dview.execute('%reset')  # Reset the engines so that we don't have
-                                     # variables there from last computations
+            # Reset the engines so that we don't have variables there from
+            # last computations
+            dview.execute('%reset')
             dview.execute('import sys')
             # We use block=True to ensure that all engines have modified
             # their path to include the folder with the simulator before we
@@ -2085,7 +2126,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         runner = _DummyRunner()
         runner.progressbar_message = 'bla'
-        #runner.update_progress_function_style = 'text1'
+        # runner.update_progress_function_style = 'text1'
 
         # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
         filename = 'runner_results_bias_{bias}'
@@ -2106,12 +2147,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         results_extra_1 = runner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
-        np.testing.assert_array_almost_equal(results_extra_1, expected_results_extra_1)
+        np.testing.assert_array_almost_equal(
+            results_extra_1, expected_results_extra_1)
 
         results_extra_2 = runner.results.get_result_values_list(
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
-        np.testing.assert_array_almost_equal(results_extra_2, expected_results_extra_2)
+        np.testing.assert_array_almost_equal(
+            results_extra_2, expected_results_extra_2)
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
         results = SimulationResults.load_from_file(runner.results_filename)
@@ -2159,8 +2202,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
             cl = Client(profile="tests")
 
             dview = cl.direct_view()
-            dview.execute('%reset')  # Reset the engines so that we don't have
-                                     # variables there from last computations
+            # Reset the engines so that we don't have variables there from
+            # last computations
+            dview.execute('%reset')
             dview.execute('import sys')
             # We use block=True to ensure that all engines have modified
             # their path to include the folder with the simulator before we
@@ -2240,8 +2284,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
 # file and return its content as a string.
 def _get_progress_string_from_file(filename):
     try:
-    #     fid = open(filename, 'r', newlines='\n')
-    # except Exception as _:
+        # fid = open(filename, 'r', newlines='\n')
+        # except Exception as _:
         fid = open(filename, 'r')
     finally:
         content_string = fid.read()
@@ -2280,7 +2324,8 @@ class ProgressbarTextTestCase(unittest.TestCase):
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
-        self.pbar = progressbar.ProgressbarText(50, '*', message, output=self.out)
+        self.pbar = progressbar.ProgressbarText(
+            50, '*', message, output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
@@ -2289,19 +2334,25 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar.width = 80
         self.pbar._perform_initialization()
 
-        self.assertEqual(self.out.getvalue(), """--------------------------- ProgressbarText Unittest --------------------------1
-       1       2       3       4       5       6       7       8       9       0
--------0-------0-------0-------0-------0-------0-------0-------0-------0-------0\n""")
+        self.assertEqual(
+            self.out.getvalue(),
+            ("--------------------------- ProgressbarText Unittest -------"
+             "-------------------1\n       1       2       3       4      "
+             " 5       6       7       8       9       0\n-------0-------0"
+             "-------0-------0-------0-------0-------0-------0-------0----"
+             "---0\n"))
 
-        # Setting the width to a value below 40 should actually set the width to 40
+        # Setting the width to a value below 40 should actually set the
+        # width to 40
         self.pbar2.width = 30
         self.assertEqual(self.pbar2.width, 40)
 
         self.pbar2._message = "Just a Message"
         self.pbar2._perform_initialization()
-        self.assertEqual(self.out2.getvalue(), """------------ Just a Message -----------1
-   1   2   3   4   5   6   7   8   9   0
----0---0---0---0---0---0---0---0---0---0\n""")
+        self.assertEqual(self.out2.getvalue(),
+                         "------------ Just a Message -----------1\n"
+                         "   1   2   3   4   5   6   7   8   9   0\n"
+                         "---0---0---0---0---0---0---0---0---0---0\n")
 
     def test_progress(self):
         # Before the first time the progress method is called, the
@@ -2315,11 +2366,11 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar.progress(10)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-            #self.out.getvalue(),
-            """------------ ProgressbarText Unittest -----------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-**********""")
+            # self.out.getvalue(),
+            "------------ ProgressbarText Unittest -----------1\n"
+            "    1    2    3    4    5    6    7    8    9    0\n"
+            "----0----0----0----0----0----0----0----0----0----0\n"
+            "**********")
 
         # After calling the "progress" method but before the progress
         # reaches 100% the _start_time is greater than zero while the
@@ -2331,30 +2382,33 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar.progress(35)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-            """------------ ProgressbarText Unittest -----------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-***********************************""")
+            "------------ ProgressbarText Unittest -----------1\n"
+            "    1    2    3    4    5    6    7    8    9    0\n"
+            "----0----0----0----0----0----0----0----0----0----0\n"
+            "***********************************")
 
         sleep(0.01)
 
         # Progress to 100% -> Note that in the case of 100% a new line is
         # added at the end.
-        self.pbar.progress(55)  # Anything greater than or equal the final
-                                # count will set the progress to 100%
+        #
+        # Anything greater than or equal the final count will set the
+        # progress to 100%
+        self.pbar.progress(55)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-            """------------ ProgressbarText Unittest -----------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-**************************************************\n""")
+            "------------ ProgressbarText Unittest -----------1\n"
+            "    1    2    3    4    5    6    7    8    9    0\n"
+            "----0----0----0----0----0----0----0----0----0----0\n"
+            "**************************************************\n")
 
         # After progress reaches 100 both _start_time and _stop_time
         # variables are greater than zero.
         self.assertTrue(self.pbar._start_time > 0.0)
         self.assertTrue(self.pbar._stop_time > 0.0)
-        self.assertEqual(self.pbar.elapsed_time,
-                         misc.pretty_time(self.pbar._stop_time - self.pbar._start_time))
+        self.assertEqual(
+            self.pbar.elapsed_time,
+            misc.pretty_time(self.pbar._stop_time - self.pbar._start_time))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with pbar2, which uses the default progress message and the
@@ -2362,10 +2416,10 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar2.progress(20)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out2),
-            """------------------- % Progress ------------------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
+            "------------------- % Progress ------------------1\n"
+            "    1    2    3    4    5    6    7    8    9    0\n"
+            "----0----0----0----0----0----0----0----0----0----0\n"
+            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 
     def test_str(self):
         self.pbar.progress(10)
@@ -2382,16 +2436,9 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         pbar3.progress(1)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
-            """------------------- % Progress ------------------1
-    1    2    3    4    5    6    7    8    9    0
-----0----0----0----0----0----0----0----0----0----0
-""")
-
-        # # Test the case when finalcount is zero.
-        # pbar4 = progressbar.ProgressbarText(0, output=self.out2)
-        # # Any progress will get the bar to 100%
-        # pbar4.progress(1)
-        # self.assertEqual(self.out2.getvalue(), """------------------- % Progress ------------------1\n    1    2    3    4    5    6    7    8    9    0\n----0----0----0----0----0----0----0----0----0----0\n**************************************************\n""")
+            "------------------- % Progress ------------------1\n"
+            "    1    2    3    4    5    6    7    8    9    0\n"
+            "----0----0----0----0----0----0----0----0----0----0\n")
 
     def test_deleting_progress_file_after_progress_finished(self):
         out = open('test_progress_file1.txt', 'w')
@@ -2409,22 +2456,22 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         pbar.delete_progress_file_after_completion = True
         pbar.progress(15)
         pbar.progress(37)
-        pbar.progress(50)  # Progress finishes and there is not explicit
-                           # call to the stop method.
+        # Progress finishes and there is not explicit call to the stop method.
+        pbar.progress(50)
 
         pbar2.delete_progress_file_after_completion = True
         pbar2.progress(7)
         pbar2.progress(21)
-        pbar2.stop()  # Explicitly call the stop method to finish the
-                      # progress.
+        # Explicitly call the stop method to finish the progress.
+        pbar2.stop()
 
         pbar3.delete_progress_file_after_completion = True
         pbar3.progress(10)
         pbar3.progress(21)
         pbar3.progress(28)
-        del pbar3 # Progress will not finish, but we will explicitly delete
-                  # pbar3 here to test if the file it is writing to is
-                  # delete in that case.
+        # Progress will not finish, but we will explicitly delete pbar3
+        # here to test if the file it is writing to is delete in that case.
+        del pbar3
 
         # Close the output files.
         out.close()
@@ -2449,13 +2496,15 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""")
         with self.assertRaises(OSError):
             os.remove('test_progress_file3.txt')
 
+
 class ProgressbarText2TestCase(unittest.TestCase):
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
-        self.pbar = progressbar.ProgressbarText2(50, '*', message, output=self.out)
+        self.pbar = progressbar.ProgressbarText2(
+            50, '*', message, output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
@@ -2478,10 +2527,11 @@ class ProgressbarText2TestCase(unittest.TestCase):
                          '[**************         30%                      ]')
 
         self.assertEqual(
-            self.pbar._get_percentage_representation(70,
-                                                     central_message='{percent}% (Time: {elapsed_time})',
-                                                     left_side='',
-                                                     right_side=''),
+            self.pbar._get_percentage_representation(
+                70,
+                central_message='{percent}% (Time: {elapsed_time})',
+                left_side='',
+                right_side=''),
             '*****************70% (Time: 0.00s)*               ')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2492,33 +2542,48 @@ class ProgressbarText2TestCase(unittest.TestCase):
                                                       central_message='',
                                                       left_side='',
                                                       right_side=''),
-            '****************************************                                        ')
+            "****************************************"
+            "                                        ")
 
         self.assertEqual(
             self.pbar2._get_percentage_representation(50, central_message=''),
-            '[***************************************                                       ]')
+            '[***************************************'
+            '                                       ]')
 
         self.assertEqual(
             self.pbar2._get_percentage_representation(25, central_message=''),
-            '[*******************                                                           ]')
+            '[*******************'
+            '                                                           ]')
 
         self.assertEqual(
             self.pbar2._get_percentage_representation(
                 70,
                 central_message='Progress: {percent}'),
-            '[*********************************Progress: 70*********                        ]')
+            '[*********************************Progress: 70*********'
+            '                        ]')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_progress(self):
         self.pbar.progress(15)
-        self.assertEqual(self.out.getvalue(), "\r[**************         30%                      ]  ProgressbarText Unittest")
+        self.assertEqual(
+            self.out.getvalue(),
+            "\r[**************         30%                      ]"
+            "  ProgressbarText Unittest")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r[**************         30%                      ]  ProgressbarText Unittest\r[**********************100%**********************]  ProgressbarText Unittest\n")
+        self.assertEqual(
+            self.out.getvalue(),
+            "\r[**************         30%                      ]"
+            "  ProgressbarText Unittest\r"
+            "[**********************100%**********************]"
+            "  ProgressbarText Unittest\n")
 
         # Progressbar with no message -> Use a default message
         self.pbar2.progress(15)
-        self.assertEqual(self.out2.getvalue(), "\r[**************         30%                      ]  15 of 50 complete")
+        self.assertEqual(
+            self.out2.getvalue(),
+            "\r[**************         30%                      ]"
+            "  15 of 50 complete")
 
 
 class ProgressbarText3TestCase(unittest.TestCase):
@@ -2527,7 +2592,8 @@ class ProgressbarText3TestCase(unittest.TestCase):
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
-        self.pbar = progressbar.ProgressbarText3(50, '*', message, output=self.out)
+        self.pbar = progressbar.ProgressbarText3(
+            50, '*', message, output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
@@ -2535,17 +2601,21 @@ class ProgressbarText3TestCase(unittest.TestCase):
     def test_progress(self):
         self.pbar.progress(15)
 
-        # print
-        #print self.out.getvalue()
-
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********")
+        self.assertEqual(
+            self.out.getvalue(),
+            "\r********* ProgressbarText Unittest 15/50 *********")
 
         self.pbar.progress(50)
-        self.assertEqual(self.out.getvalue(), "\r********* ProgressbarText Unittest 15/50 *********\r********* ProgressbarText Unittest 50/50 *********")
+        self.assertEqual(
+            self.out.getvalue(),
+            "\r********* ProgressbarText Unittest 15/50 *********\r"
+            "********* ProgressbarText Unittest 50/50 *********")
 
         # Test with no message (use default message)
         self.pbar2.progress(40)
-        self.assertEqual(self.out2.getvalue(), "\r********************** 40/50 *********************")
+        self.assertEqual(
+            self.out2.getvalue(),
+            "\r********************** 40/50 *********************")
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
@@ -2553,9 +2623,13 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
 
-        self.mpbar = progressbar.ProgressbarMultiProcessServer(message="Some message", sleep_time=0.001, filename=self.output_filename)
-        self.proxybar1 = self.mpbar.register_client_and_get_proxy_progressbar(10)
-        self.proxybar2 = self.mpbar.register_client_and_get_proxy_progressbar(15)
+        self.mpbar = progressbar.ProgressbarMultiProcessServer(
+            message="Some message", sleep_time=0.001,
+            filename=self.output_filename)
+        self.proxybar1 = self.mpbar.register_client_and_get_proxy_progressbar(
+            10)
+        self.proxybar2 = self.mpbar.register_client_and_get_proxy_progressbar(
+            15)
 
     def test_register(self):
         # Test last_id and total_final_count of the main progress bar
@@ -2604,7 +2678,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 
         # Then the second process updates its progress
         self.proxybar2.progress(6)
-        #self.mpbar.stop_updater()
+        # self.mpbar.stop_updater()
 
         # Sleep for a very short time so that the
         # ProgressbarMultiProcessServer object has time to create the file
@@ -2621,23 +2695,19 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         progress_string = _get_progress_string_from_file(self.output_filename)
 
         # Expected string with the progress output
-        expected_progress_string = """[**************         30%                      ]  Some message"""
-
+        expected_progress_string = ("[**************         30%             "
+                                    "         ]  Some message")
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string),
             expected_progress_string)
-
-        # expected_progress_string = """------------------ Some message -----------------1
-#     1    2    3    4    5    6    7    8    9    0
-# ----0----0----0----0----0----0----0----0----0----0
-# ************************"""
 
     def test_start_and_stop_updater_process(self):
         self.assertFalse(self.mpbar.running.is_set())
         self.assertEqual(self.mpbar._start_updater_count, 0)
         self.mpbar.start_updater()
-        sleep(0.1)  # We need some time for the process to start and
-                    # self.mpbar.running is set
+        # We need some time for the process to start and self.mpbar.running
+        # is set
+        sleep(0.1)
         self.assertEqual(self.mpbar._start_updater_count, 1)
         self.assertTrue(self.mpbar.running.is_set())
 
@@ -2665,9 +2735,13 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQTextTestCase.out"
 
-        self.zmqbar = progressbar.ProgressbarZMQServer(message="Some message", sleep_time=0.1, filename=self.output_filename, port=7755)
-        self.proxybar1 = self.zmqbar.register_client_and_get_proxy_progressbar(10)
-        self.proxybar2 = self.zmqbar.register_client_and_get_proxy_progressbar(15)
+        self.zmqbar = progressbar.ProgressbarZMQServer(
+            message="Some message", sleep_time=0.1,
+            filename=self.output_filename, port=7755)
+        self.proxybar1 \
+            = self.zmqbar.register_client_and_get_proxy_progressbar(10)
+        self.proxybar2 \
+            = self.zmqbar.register_client_and_get_proxy_progressbar(15)
 
     def tearDown(self):
         self.zmqbar.stop_updater()
@@ -2713,14 +2787,18 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         # Before the first time the progress method in self.proxybar1 and
         # self.proxybar2 is called their "_progress_func" variable points
         # to the "_connect_and_update_progress" method
-        self.assertTrue(self.proxybar1._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
-        self.assertTrue(self.proxybar2._progress_func == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(
+            self.proxybar1._progress_func
+            == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(
+            self.proxybar2._progress_func
+            == progressbar.ProgressbarZMQClient._connect_and_update_progress)
 
     def test_update_progress(self):
         self.zmqbar.start_updater()
         self.proxybar1.progress(5)
-        self.proxybar2(10)  # We can also use a "call syntax" for the
-                            # progress progressbars
+        # We can also use a "call syntax" for the progress progressbars
+        self.proxybar2(10)
         sleep(0.3)
 
         # Open and read the progress from the file. We open in binary mode
@@ -2729,7 +2807,8 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         progress_string = _get_progress_string_from_file(self.output_filename)
 
         # Expected string with the progress output
-        expected_progress_string = """[***********************60%**                    ]  Some message"""
+        expected_progress_string = ("[***********************60%**          "
+                                    "          ]  Some message")
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string),
             expected_progress_string)
@@ -2740,11 +2819,11 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
 
         # After the stop_updater method the progressbar should be full
         progress_string2 = _get_progress_string_from_file(self.output_filename)
-        expected_progress_string2 = """[**********************100%**********************]  Some message\n"""
+        expected_progress_string2 = ("[**********************100%************"
+                                     "**********]  Some message\n")
         self.assertEqual(
             _get_clear_string_from_stringio_object(progress_string2),
             expected_progress_string2)
-
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
