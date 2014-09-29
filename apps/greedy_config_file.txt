@@ -1,0 +1,19 @@
+[Scenario]
+        SNR = 0:5:30
+        M = 4
+        modulator = PSK
+        NSymbs = 100
+        K = 3
+        Nr = 3
+        Nt = 3
+        Ns = 3
+[IA Algorithm]
+        max_iterations = [120]
+        initialize_with = random, 
+[General]
+        max_bit_errors = 3000
+        unpacked_parameters = SNR, max_iterations, initialize_with
+        rep_max = 2
+[Plot]
+        max_iterations_plot = 120
+        initialize_with_plot = random
