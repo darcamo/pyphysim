@@ -930,14 +930,36 @@ class Result(object):
 
     """
     # Like an Enumeration for the type of results.
-    (SUMTYPE, RATIOTYPE, MISCTYPE) = range(3)
+    (SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE) = range(4)
     _all_types = {
         SUMTYPE: "SUMTYPE",
         RATIOTYPE: "RATIOTYPE",
         MISCTYPE: "MISCTYPE",
+        CHOICETYPE: "CHOICETYPE",
     }
 
-    def __init__(self, name, update_type_code, accumulate_values=False):
+    def __init__(self, name, update_type_code, accumulate_values=False, choice_num=None):
+        """
+        Constructor for the result object.
+
+        Parameters
+        ----------
+        name : str
+            Name of the Result.
+        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE}
+            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
+        accumulate_values : bool
+            If True, then the values `value` and `total` will be
+            accumulated in the `update` (and merge) method(s). This means
+            that the Result object will use more memory as more and more
+            values are accumulated, but having all values sometimes is
+            useful to perform statistical calculations. This is useful for
+            debugging/testing.
+        choice_num : int
+            Number of different choices for the CHOICETYPE type. This is a
+            required parameter for the CHOICETYPE type, but it is ignored
+            for the other types
+        """
         self.name = name
         self._update_type_code = update_type_code
         self._value = 0
@@ -949,6 +971,14 @@ class Result(object):
                                         # this variable.
         self.num_updates = 0  # Number of times the Result object was
                               # updated
+
+        if update_type_code == Result.CHOICETYPE:
+            if not isinstance(choice_num, int):
+                raise RuntimeError(
+                    "'choice_num' argument for the Result object must be "
+                    "an integer for the CHOICETYPE type.")
+            else:
+                self._value = np.zeros(choice_num, dtype=float)
 
         # Accumulation of values: This is useful for debugging/testing
         self._accumulate_values_bool = accumulate_values
@@ -968,8 +998,12 @@ class Result(object):
         other : Result object
             The other Result object.
         """
-        # All class attributes with the exception of num_updates
-        attributes = ['name', '_update_type_code', '_value', '_total',
+        # All class attributes with the exception of 'num_updates' and
+        # '_value'. The value of 'num_updates' is not important for
+        # equality comparison. The value of '_value' is important, but it
+        # is not included in 'attributes' because it will be explicitly
+        # tested later
+        attributes = ['name', '_update_type_code', '_total',
                       '_accumulate_values_bool', '_value_list',
                       '_total_list', '_result_squared_sum', '_result_sum']
         if self is other:  # pragma: no cover
@@ -978,6 +1012,16 @@ class Result(object):
         result = True
         for att in attributes:
             if getattr(self, att) != getattr(other, att):
+                result = False
+
+        # Test if the '_value' fields are equal in both objects
+        if self._update_type_code == Result.CHOICETYPE:
+            # For the CHOICETYPE _value is a numpy array and thus we need
+            # to use 'all_true'
+            if np.alltrue(self._value == other._value) == False:
+                result = False
+        else:
+            if self._value != other._value:
                 result = False
 
         return result
@@ -1018,13 +1062,14 @@ class Result(object):
         ----------
         name : str
             Name of the Result.
-        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE}
-            Type of the result (SUMTYPE, RATIOTYPE or MISCTYPE).
+        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE}
+            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
         value : anything, but usually a number
             Value of the result.
         total : same type as `value`
             Total value of the result (used only for the RATIOTYPE and
-            ignored for the other types).
+            CHOICETYPE). For the CHOICETYPE it is interpreted as the number
+            of different choices.
         accumulate_values : bool
             If True, then the values `value` and `total` will be
             accumulated in the `update` (and merge) method(s). This means
@@ -1032,6 +1077,10 @@ class Result(object):
             values are accumulated, but having all values sometimes is
             useful to perform statistical calculations. This is useful for
             debugging/testing.
+        choice_num : int
+            Number of different choices for the CHOICETYPE type. This is a
+            required parameter for the CHOICETYPE type, but it is ignored
+            for the other types
 
         Returns
         -------
@@ -1047,8 +1096,12 @@ class Result(object):
         --------
         update
         """
-        result = Result(name, update_type, accumulate_values)
-        result.update(value, total)
+        if update_type == Result.CHOICETYPE:
+            result = Result(name, update_type, accumulate_values, choice_num=total)
+            result.update(value)
+        else:
+            result = Result(name, update_type, accumulate_values)
+            result.update(value, total)
         return result
 
     @property
@@ -1167,13 +1220,25 @@ class Result(object):
             self._value = value
             if self._accumulate_values_bool is True:
                 self._value_list.append(value)
+
+        def __update_CHOICETYPE_value(value, dummy):
+            """Update the Result object when its type is CHOICETYPE."""
+            # The provided 'value' is used as an index to increase the
+            # choice in self._value, which is stored as a numpy array.
+            assert type(value) == int, (
+                "Value for the CHOICETYPE must be an integer.")
+            self._value[value] += 1
+            self._total += 1
+            if self._accumulate_values_bool is True:
+                self._value_list.append(value)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Now we fill the dictionary with the functions
         possible_updates = {
             Result.RATIOTYPE: __update_RATIOTYPE_value,
             Result.MISCTYPE: __update_by_replacing_current_value,
-            Result.SUMTYPE: __update_SUMTYPE_value}
+            Result.SUMTYPE: __update_SUMTYPE_value,
+            Result.CHOICETYPE: __update_CHOICETYPE_value}
 
         # Call the apropriated update method. If self._update_type_code does
         # not contain a key in the possible_updates dictionary (that is, a
@@ -1227,8 +1292,9 @@ class Result(object):
             return "Nothing yet".format(self.name)
         else:
             if self._update_type_code == Result.RATIOTYPE:
-                #assert self._total != 0, 'Total should not be zero'
                 return float(self._value) / self._total
+            elif self._update_type_code == Result.CHOICETYPE:
+                return self._value / float(self._total)
             else:
                 return self._value
 

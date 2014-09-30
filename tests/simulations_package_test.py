@@ -982,6 +982,7 @@ class ResultTestCase(unittest.TestCase):
         self.result1 = Result("name", Result.SUMTYPE)
         self.result2 = Result("name2", Result.RATIOTYPE)
         self.result3 = Result("name3", Result.MISCTYPE)
+        self.result4 = Result("name4", Result.CHOICETYPE, choice_num=6)
 
     def test_get_update_type(self):
         """Test the two properties, one to get the update type code and
@@ -997,6 +998,12 @@ class ResultTestCase(unittest.TestCase):
 
         self.assertEqual(self.result3.type_code, Result.MISCTYPE)
         self.assertEqual(self.result3.type_name, "MISCTYPE")
+
+        self.assertEqual(self.result4.type_code, Result.CHOICETYPE)
+        self.assertEqual(self.result4.type_name, "CHOICETYPE")
+
+        self.assertEqual(4, len(
+            set([Result.SUMTYPE, Result.RATIOTYPE, Result.MISCTYPE, Result.CHOICETYPE])))
 
     def test_update(self):
         # Test the update function of the SUMTYPE
@@ -1025,6 +1032,17 @@ class ResultTestCase(unittest.TestCase):
         self.result3.update(0.4)
         self.assertEqual(self.result3.get_result(), 0.4)
 
+        # Test the update function of the CHOICETYPE.
+        self.result4.update(0)
+        self.result4.update(1)
+        self.result4.update(0)
+        self.result4.update(4)
+        np.testing.assert_array_almost_equal(
+            self.result4.get_result(), [.5, .25, 0, 0, .25, 0])
+        self.result4.update(5)
+        np.testing.assert_array_almost_equal(
+            self.result4.get_result(), [.4, .2, 0, 0, .2, .2])
+
         # Test if an exception is raised when updating a Result of the
         # RATIOTYPE without specifying both the value and the total.
         with self.assertRaises(ValueError):
@@ -1035,6 +1053,13 @@ class ResultTestCase(unittest.TestCase):
         result_invalid = Result('invalid', 'invalid_type')
         with self.assertRaises(ValueError):
             result_invalid.update(10)
+
+        # Test if an exception is raised for the CHOICETYPE if the updated
+        # value is not a correct index.
+        with self.assertRaises(IndexError):
+            self.result4.update(8)
+        with self.assertRaises(AssertionError):
+            self.result4.update(3.4)
 
     def test_update_with_accumulate(self):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
@@ -1067,6 +1092,19 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result3.get_result(), 2)
         self.assertEqual(result3._value_list, [3, "some string", 2])
         self.assertEqual(result3._total_list, [])
+
+        result4 = Result(
+            'name', Result.CHOICETYPE, accumulate_values=True, choice_num=5)
+        result4.update(3)
+        result4.update(1)
+        result4.update(0)
+        result4.update(3)
+        result4.update(4)
+        np.testing.assert_array_almost_equal(result4._value, [1, 1, 0, 2, 1])
+        np.testing.assert_array_almost_equal(result4.get_result(), [.2, .2, 0, .4, .2])
+        self.assertEqual(result4._total, 5)
+        self.assertEqual(result4._value_list, [3, 1, 0, 3, 4])
+        self.assertEqual(result4._total_list, [])
 
     def test_merge(self):
         # Test merge of Results of SUMTYPE
@@ -1114,18 +1152,32 @@ class ResultTestCase(unittest.TestCase):
         # Test merge of Results of MISCTYPE
         # There is no merge for misc type and an exception should be raised
         self.result3.update(0.4)
-        result3_other = Result.create("name3", Result.MISCTYPE, 0.3)
+        result3_other = Result.create("name3", Result.MISCTYPE, 3)
         with self.assertRaises(AssertionError):
             self.result3.merge(result3_other)
 
-        # Test merging results with different name or type
-        result4 = Result.create("name4", Result.SUMTYPE, 3)
-        with self.assertRaises(AssertionError):
-            self.result1.merge(result4)
+        # Test merge of Results of CHOICETYPE
+        result4_other = Result.create("name4", Result.CHOICETYPE, 3, 6)
+        result4_other.update(2)
+        self.result4.update(1)
+        self.result4.update(0)
+        self.result4.update(3)
+        self.result4.merge(result4_other)
+        self.assertEqual(self.result4.name, 'name4')
+        np.testing.assert_array_almost_equal(self.result4._value, [1, 1, 1, 2, 0, 0])
+        self.assertEqual(self.result4._total, 5)
+        np.testing.assert_array_almost_equal(self.result4.get_result(),
+                                             [.2, .2, .2, .4, 0, 0])
+        self.assertEqual(self.result4.num_updates, 5)
 
-        result5 = Result.create("name", Result.RATIOTYPE, 3, 4)
+        # Test merging results with different name or type
+        result5 = Result.create("name5", Result.SUMTYPE, 3)
         with self.assertRaises(AssertionError):
             self.result1.merge(result5)
+
+        result6 = Result.create("name", Result.RATIOTYPE, 3, 4)
+        with self.assertRaises(AssertionError):
+            self.result1.merge(result6)
 
     def test_merge_with_accumulate(self):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
@@ -1176,6 +1228,20 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result3._value_list, [])
         self.assertEqual(result3._total_list, [])
 
+        # Test for the CHOICETYPE type
+        result4 = Result.create(
+            'name4', Result.CHOICETYPE, 2, 4, accumulate_values=True)
+        result4.update(0)
+        result4.update(3)
+        result4_other = Result.create(
+            'name4', Result.CHOICETYPE, 0, 4, accumulate_values=True)
+        result4_other.update(3)
+        result4.merge(result4_other)
+        self.assertEqual(result4._value_list, [2, 0, 3, 0, 3])
+        self.assertEqual(result4._total_list, [])
+        np.testing.assert_array_almost_equal(result4.get_result(),
+                                             np.array([2, 0, 1, 2])/5.)
+
     def test_get_result_mean_and_var(self):
         # Test for Result.SUMTYPE
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
@@ -1216,16 +1282,19 @@ class ResultTestCase(unittest.TestCase):
     def test_representation(self):
         self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
-        self.assertEqual(self.result3.__repr__(),
-                         "Result -> name3: Nothing yet")
+        self.assertEqual(self.result3.__repr__(),                         "Result -> name3: Nothing yet")
+        self.assertEqual(self.result4.__repr__(), "Result -> name4: Nothing yet")
 
         self.result1.update(10)
         self.result2.update(2, 4)
         self.result3.update(0.4)
+        self.result4.update(3)
+        self.result4.update(2)
 
         self.assertEqual(self.result1.__repr__(), "Result -> name: 10")
         self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
+        self.assertEqual(self.result4.__repr__(), "Result -> name4: [ 0.   0.   0.5  0.5  0.   0. ]")
 
     def test_equal_and_not_equal_operators(self):
         self.result1.update(10)
@@ -1236,9 +1305,27 @@ class ResultTestCase(unittest.TestCase):
         self.assertTrue(self.result1 == result1)
         self.assertFalse(self.result1 != result1)
 
+        result1_other = Result.create("name", Result.SUMTYPE, 7)
+        result1_other.update(9)
+        self.assertFalse(self.result1 == result1_other)
+        self.assertTrue(self.result1 != result1_other)
+
         result1._update_type_code = 1
         self.assertFalse(self.result1 == result1)
         self.assertTrue(self.result1 != result1)
+
+        # Also test for the CHOICETYPE type, since it store the _value
+        # member variable as a numpy array
+        self.result4.update(3)
+        self.result4.update(1)
+        result4 = Result.create('name4', Result.CHOICETYPE, 1, 4)
+        result4.update(3)
+        result4_other = Result.create('name4', Result.CHOICETYPE, 1, 6)
+        result4_other.update(3)
+        self.assertTrue(self.result4 == result4_other)
+        result4_other.update(2)
+        self.result4.update(1)
+        self.assertFalse(self.result4 == result4_other)
 
     def test_calc_confidence_interval(self):
         # Test if an exceptions is raised for a Result object of the
