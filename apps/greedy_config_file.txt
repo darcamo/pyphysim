@@ -1,5 +1,5 @@
 [Scenario]
-        SNR = 0:5:30
+        SNR = 0:5:31
         M = 4
         modulator = PSK
         NSymbs = 100
@@ -13,7 +13,7 @@
 [General]
         max_bit_errors = 3000
         unpacked_parameters = SNR, max_iterations, initialize_with
-        rep_max = 2
+        rep_max = 100
 [Plot]
         max_iterations_plot = 120
         initialize_with_plot = random
