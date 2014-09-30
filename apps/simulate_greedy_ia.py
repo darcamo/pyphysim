@@ -127,6 +127,13 @@ class IASimulationRunner(SimulationRunner):
         Ns = current_parameters["Ns"]
         SNR = current_parameters["SNR"]
 
+        # Store the original (maximum) number of streams for each user for
+        # later usage
+        if isinstance(Ns, int):
+            orig_Ns = np.ones(K, dtype=int) * Ns
+        else:
+            orig_Ns = Ns.copy()
+
         # Dependent parameters
         noise_var = 1 / dB2Linear(SNR)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -241,8 +248,15 @@ class IASimulationRunner(SimulationRunner):
             "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1,
             accumulate_values=False)
 
-        # stream_statistics = Result.create(
-        #     "stream_statistics", Result.MISCTYPE, Ns, accumulate_values=True)
+        # xxxxxxxxxx chosen stream configuration index xxxxxxxxxxxxxxxxxxxx
+        # Interpret Ns as a multidimensional index
+        stream_index_multi = Ns - 1
+        # Convert to a 1D index suitable for storing
+        stream_index = int(np.ravel_multi_index(stream_index_multi, orig_Ns))
+        num_choices = np.prod(orig_Ns)
+        stream_statistics = Result.create(
+            "stream_statistics", Result.CHOICETYPE, stream_index, num_choices)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
@@ -254,7 +268,7 @@ class IASimulationRunner(SimulationRunner):
         simResults.add_result(ia_costResult)
         simResults.add_result(sum_capacityResult)
         simResults.add_result(ia_runned_iterationsResult)
-        # simResults.add_result(stream_statistics)
+        simResults.add_result(stream_statistics)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return simResults
