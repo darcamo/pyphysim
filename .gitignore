@@ -70,3 +70,6 @@ flycheck*
 
 # Pickle files
 *.pickle
+
+# h5 files
+*.h5
