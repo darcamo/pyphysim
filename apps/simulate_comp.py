@@ -28,7 +28,8 @@ except NameError:
 import numpy as np
 from scipy.linalg import block_diag
 
-from pyphysim.simulations.core import SimulationRunner, SimulationResults, Result, SimulationParameters
+from pyphysim.simulations.core import SimulationRunner, \
+    SimulationResults, Result, SimulationParameters
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
 from pyphysim.util.conversion import dB2Linear, dBm2Linear
 from pyphysim.util import misc
@@ -133,7 +134,8 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         self.pe = 0
 
         # Path loss (in linear scale) from the cell center to
-        # self.path_loss_border = self.path_loss_obj.calc_path_loss(self.cell_radius)
+        # self.path_loss_border = self.path_loss_obj.calc_path_loss(
+        #     self.cell_radius)
 
         # Cell Grid
         self.cell_grid = cell.Grid()
@@ -359,36 +361,43 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         # None Metric
         (MsPk_all_users_None,
          Wk_all_users_None,
-         Ns_all_users_None) = self.bd_obj_None.block_diagonalize_no_waterfilling(
+         Ns_all_users_None) \
+            = self.bd_obj_None.block_diagonalize_no_waterfilling(
             self.multiuser_channel)
 
         # Naive Metric
         (MsPk_all_users_naive,
          Wk_all_users_naive,
-         Ns_all_users_naive) = self.bd_obj_naive.block_diagonalize_no_waterfilling(
+         Ns_all_users_naive) \
+            = self.bd_obj_naive.block_diagonalize_no_waterfilling(
             self.multiuser_channel)
 
         # Fixed Metric
         (MsPk_all_users_fixed,
          Wk_all_users_fixed,
-         Ns_all_users_fixed) = self.bd_obj_fixed.block_diagonalize_no_waterfilling(
+         Ns_all_users_fixed) \
+            = self.bd_obj_fixed.block_diagonalize_no_waterfilling(
             self.multiuser_channel)
 
         # Capacity Metric
         (MsPk_all_users_capacity,
          Wk_all_users_capacity,
-         Ns_all_users_capacity) = self.bd_obj_capacity.block_diagonalize_no_waterfilling(
+         Ns_all_users_capacity) \
+            = self.bd_obj_capacity.block_diagonalize_no_waterfilling(
             self.multiuser_channel)
 
         # effective_throughput Metric
         (MsPk_all_users_effec_throughput,
          Wk_all_users_effec_throughput,
-         Ns_all_users_effec_throughput) = self.bd_obj_effec_throughput.block_diagonalize_no_waterfilling(
+         Ns_all_users_effec_throughput) \
+            = self.bd_obj_effec_throughput.block_diagonalize_no_waterfilling(
             self.multiuser_channel)
 
         (Ms_all_users_Whitening,
          Wk_all_users_Whitening,
-         Ns_all_users_Whitening) = self.bd_obj_whitening.block_diagonalize_no_waterfilling(self.multiuser_channel)
+         Ns_all_users_Whitening) \
+            = self.bd_obj_whitening.block_diagonalize_no_waterfilling(
+                self.multiuser_channel)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -575,11 +584,16 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         # the external interferece sources' data.
         precoded_data = np.dot(np.hstack(MsPk_all_users),
                                symbols)
-        # external_int_data_all_metrics = np.sqrt(self.pe) * misc.randn_c_RS(self.ext_data_RS, self.ext_int_rank, self.NSymbs)
+
+        # external_int_data_all_metrics = (
+        #     np.sqrt(self.pe)
+        #     * misc.randn_c_RS(
+        #         self.ext_data_RS, self.ext_int_rank, self.NSymbs))
+
         all_data = np.vstack([precoded_data,
                               external_int_data_all_metrics])
 
-        #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
+        # xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxx
         self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal = self.multiuser_channel.corrupt_concatenated_data(
             all_data
@@ -632,7 +646,6 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         SINR_all_k = self.multiuser_channel.calc_JP_SINR(MsPk_all_users,
                                                          Uk_all_users)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
         # None metric
         ber_result = Result.create(
@@ -798,8 +811,10 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
     per_naive = np.array(results.get_result_values_list('per_naive'))
     per_fixed = np.array(results.get_result_values_list('per_fixed'))
     per_capacity = np.array(results.get_result_values_list('per_capacity'))
-    per_effective_throughput = np.array(results.get_result_values_list('per_effec_throughput'))
-    per_effective_whitening = np.array(results.get_result_values_list('per_Whitening'))
+    per_effective_throughput = np.array(
+        results.get_result_values_list('per_effec_throughput'))
+    per_effective_whitening = np.array(
+        results.get_result_values_list('per_Whitening'))
 
     if ax is None:
         fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -848,7 +863,9 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
     return fig
 
 
-## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     from apps.simulate_comp import BDSimulationRunner
 
@@ -866,7 +883,7 @@ if __name__ == '__main__':
         print ("Elapsed Time: {0}".format(runner.elapsed_time))
 
 
-## xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
     try:
         from matplotlib import pyplot as plt
@@ -878,8 +895,9 @@ if __name__ == '__main__1':
     params = SimulationParameters.load_from_config_file('bd_config_file.txt')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    ## xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'.format(**params.parameters)
+    # xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'
+    results_filename.format(**params.parameters)
     results = SimulationResults.load_from_file(
         '{0}{1}'.format(results_filename, '.pickle'))
 
@@ -891,11 +909,14 @@ if __name__ == '__main__1':
         spec_fig = plot_spectral_efficience_all_metrics(results, Pe_dBm)
         # spec_fig.tight_layout()
         spec_fig.subplots_adjust(bottom=0.08, right=0.98, top=0.95, left=0.07)
-        spec_fig.savefig('{0}_Pe_{1}_spec_effic.pdf'.format(results_filename, Pe_dBm))
+        spec_fig.savefig('{0}_Pe_{1}_spec_effic.pdf'.format(
+            results_filename, Pe_dBm))
 
         per_all_fig = plot_per_all_metrics(results, Pe_dBm)
         # per_all_fig.tight_layout()
-        per_all_fig.subplots_adjust(bottom=0.08, right=0.98, top=0.95, left=0.07)
-        per_all_fig.savefig('{0}_Pe_{1}_per_all.pdf'.format(results_filename, Pe_dBm))
+        per_all_fig.subplots_adjust(
+            bottom=0.08, right=0.98, top=0.95, left=0.07)
+        per_all_fig.savefig('{0}_Pe_{1}_per_all.pdf'.format(
+            results_filename, Pe_dBm))
 
         plt.show()

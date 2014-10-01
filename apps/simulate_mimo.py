@@ -542,7 +542,8 @@ def get_ebn0_vec(results):
     return ebn0
 
 
-def plot_ber(results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+def plot_ber(
+        results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
     """
     Plot the BER in `results`.
 
@@ -604,7 +605,8 @@ def plot_ber(results, ax=None, name=None, block=True, X_axis='SNR', plot_args=No
         return ax
 
 
-def plot_ser(results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+def plot_ser(
+        results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
     """
     Plot the SER in `results`.
 
@@ -666,8 +668,8 @@ def plot_ser(results, ax=None, name=None, block=True, X_axis='SNR', plot_args=No
         return ax
 
 
-def plot_ber_and_ser(results,
-                     ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+def plot_ber_and_ser(
+        results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
     """
     Plot the BER and the SER.
 
@@ -697,7 +699,7 @@ def plot_ber_and_ser(results,
     """
     new_ax = plot_ber(results, ax, name, block, X_axis, plot_args)
     plot_args2 = copy(plot_args)
-    plot_args2['linestyle']='dashed'
+    plot_args2['linestyle'] = 'dashed'
     plot_ser(results, new_ax, name, block, X_axis, plot_args2)
 
 
@@ -715,29 +717,29 @@ if __name__ == '__main__':
     results1, filename1 = simulate_alamouti()
     plot_ber(
         results1, ax=ax, name='Alamouti',
-        block=False, X_axis=X_axis, plot_args={'color':'green'})
+        block=False, X_axis=X_axis, plot_args={'color': 'green'})
 
     results2, filename2 = simulate_blast()
     plot_ber(
         results2, ax=ax, name='BLAST',
-        block=False, X_axis=X_axis, plot_args={'color':'blue'})
+        block=False, X_axis=X_axis, plot_args={'color': 'blue'})
 
     results3, filename3 = simulate_mrc()
     plot_ber(
         results3, ax=ax, name='MRC',
-        block=False, X_axis=X_axis, plot_args={'color':'red'})
+        block=False, X_axis=X_axis, plot_args={'color': 'red'})
 
     results4, filename4 = simulate_mrt()
     plot_ber(
         results4, ax=ax, name='MRT',
-        block=False, X_axis=X_axis, plot_args={'color':'magenta'})
+        block=False, X_axis=X_axis, plot_args={'color': 'magenta'})
 
     results5, filename5 = simulate_svdmimo()
     plot_ber(
         results5, ax=ax, name='SVD MIMO',
-        block=False, X_axis=X_axis, plot_args={'color':'cyan'})
+        block=False, X_axis=X_axis, plot_args={'color': 'cyan'})
 
     results7, filename7 = simulate_gmdmimo()
     plot_ber(
         results7, ax=ax, name='GMD MIMO',
-        block=True, X_axis=X_axis, plot_args={'color':'pink'})
+        block=True, X_axis=X_axis, plot_args={'color': 'pink'})

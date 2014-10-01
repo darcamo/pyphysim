@@ -46,8 +46,7 @@ M = 4
 modulator = modulators.PSK(M)
 
 # Transmission Parameters
-NSymbs = 500  # Number of symbols (per stream per user simulated at each
-              # iteration
+NSymbs = 500  # Number of symbols (/stream /user simulated at each iteration
 SNR_dB = 15.
 N0_dBm = -116.4  # Noise power (in dBm)
 
@@ -58,7 +57,8 @@ ext_int_rank = 1  # Rank of the external interference
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 rep_max = 20000   # Maximum number of repetitions for each
 
-pbar = progressbar.ProgressbarText(rep_max, message="Simulating for SNR: {0}".format(SNR_dB))
+pbar = progressbar.ProgressbarText(
+    rep_max, message="Simulating for SNR: {0}".format(SNR_dB))
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
@@ -120,7 +120,7 @@ for rep in range(rep_max):
         multiuser_channel.big_H[:, 0:np.sum(Nt)],
         num_cells,
         transmit_power,
-        #noise_var
+        # noise_var
         1e-50
     )
 

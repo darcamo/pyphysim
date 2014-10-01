@@ -62,11 +62,11 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         self.params.add('NSymbs', NSymbs)
 
         self.rep_max = 1000
-        #self.max_bit_errors = 1. / 100. * NSymbs * self.rep_max
+        # self.max_bit_errors = 1. / 100. * NSymbs * self.rep_max
         max_bit_errors = 1. / 100. * NSymbs * self.rep_max
         self.params.add('max_bit_errors', max_bit_errors)
 
-        #self.progressbar_message = None
+        # self.progressbar_message = None
         self.progressbar_message = "{0}-PSK".format(M) + \
                                    " Simulation - SNR: {SNR}"
 
@@ -120,7 +120,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create(
             "num_symbols", Result.SUMTYPE, numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create(
+            "bit_errors", Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -162,7 +163,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         """
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors
-        cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
+        cumulated_bit_errors \
+            = simulation_results['bit_errors'][-1].get_result()
         max_bit_errors = current_params['max_bit_errors']
         return cumulated_bit_errors < max_bit_errors
 
@@ -204,7 +206,6 @@ if __name__ == '__main__':
     dview.execute('import sys')
     dview.execute('sys.path.append("{0}")'.format(parent_dir))
 
-    #from pylab import *
     from matplotlib import pyplot as plt
     from apps.simulate_parallel_psk import VerySimplePskSimulationRunner
 
@@ -223,12 +224,14 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Print the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    SNR_p, ber_p, ser_p, theoretical_ber_p, theoretical_ser_p = sim_p.get_data_to_be_plotted()
+    SNR_p, ber_p, ser_p, theoretical_ber_p, theoretical_ser_p \
+        = sim_p.get_data_to_be_plotted()
     print "SER_P: {0}".format(ser_p)
     print "BER_P: {0}".format(ber_p)
     print sim_p.elapsed_time
 
-    SNR_s, ber_s, ser_s, theoretical_ber_s, theoretical_ser_s = sim_s.get_data_to_be_plotted()
+    SNR_s, ber_s, ser_s, theoretical_ber_s, theoretical_ser_s \
+        = sim_s.get_data_to_be_plotted()
     print "SER_s: {0}".format(ser_s)
     print "BER_s: {0}".format(ber_s)
     print sim_s.elapsed_time
@@ -251,11 +254,12 @@ if __name__ == '__main__':
 
         ax1.set_xlabel('SNR')
         ax1.set_ylabel('Error')
-        ax1.set_title('{0} modulation (Parallel Simulation)'.format(modulator_obj.name))
+        ax1.set_title(
+            '{0} modulation (Parallel Simulation)'.format(modulator_obj.name))
         ax1.legend()
 
         ax1.grid(True, which='both', axis='both')
-        #plt.show()
+        # plt.show()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -273,7 +277,8 @@ if __name__ == '__main__':
 
         ax2.set_xlabel('SNR')
         ax2.set_ylabel('Error')
-        ax2.set_title('{0} modulation (Serial Simulation)'.format(modulator_obj.name))
+        ax2.set_title(
+            '{0} modulation (Serial Simulation)'.format(modulator_obj.name))
         ax2.legend()
 
         ax2.grid(True, which='both', axis='both')

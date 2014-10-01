@@ -53,17 +53,19 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
         """
         pointsString = ""
         for index in range(0, numChannels):
-            pointsString += ("{num}/{value},".format(num=index, value=points[index]))
+            pointsString += (
+                "{num}/{value},".format(num=index, value=points[index]))
 
         # The last element must not have a comma at the end
         # index = numChannels-1
-        # pointsString += ("{num}/{value}".format(num=index,value=vtInvChannels[index]))
+        # pointsString += (
+        #     "{num}/{value}".format(num=index,value=vtInvChannels[index]))
 
-                          # Remove the last ',' character
+        # Remove the last ',' character
         return pointsString.rstrip(',')
     # ----- End of auxiliary function -------------------------------------
 
-    ## Code
+    # Code
     vtInvChannels = float(noiseVar) / np.squeeze(vtChannels)
     numChannels = vtChannels.size
     xMax = numChannels * channelLength + 0.2
@@ -173,7 +175,7 @@ def _test_drawwf():
     noiseVar = 2.5119e-14
     Pt = 0.2512
     (vtOptP, mu) = waterfilling.doWF(vtChannels, Pt, noiseVar)
-    #print (vtOptP, mu)
+    # print (vtOptP, mu)
 
     drawWF(vtChannels, mu, noiseVar)
     os.system("pdflatex texCode.tex > /dev/null")
@@ -186,7 +188,7 @@ if __name__ == '__main__':  # pragma: no cover
 
 
 if __name__ == '__main__1':  # pragma: no cover
-    #vtChannels = np.abs(randn_c(4,1))
+    # vtChannels = np.abs(randn_c(4,1))
     vtChannels = np.array([0.49702888, 0.59012981, 0.43485267, 0.6692608])
     Power = 4
     noise_var = 0.1
@@ -201,4 +203,4 @@ if __name__ == '__main__1':  # pragma: no cover
 
     print sum(vtOptP)
 
-    #drawWF(vtChannels, mu, noise_var)
+    # drawWF(vtChannels, mu, noise_var)

@@ -42,7 +42,8 @@ if __name__ == '__main__':
     from pylab import *
     sim = VerySimpleQamSimulationRunner()
     sim.simulate()
-    SNR, ber, ser, theoretical_ber, theoretical_ser = sim.get_data_to_be_plotted()
+    SNR, ber, ser, theoretical_ber, theoretical_ser \
+        = sim.get_data_to_be_plotted()
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -53,7 +54,8 @@ if __name__ == '__main__':
 
         xlabel('SNR')
         ylabel('Error')
-        title('BER and SER for {0} modulation in AWGN channel'.format(sim.modulator.name))
+        msg = 'BER and SER for {0} modulation in AWGN channel'
+        title(msg.format(sim.modulator.name))
         legend()
 
         grid(True, which='both', axis='both')

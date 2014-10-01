@@ -52,7 +52,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         self.rep_max = 1000
         self.max_bit_errors = 1. / 100. * self.NSymbs * self.rep_max
 
-        #self.progressbar_message = None
+        # self.progressbar_message = None
         self.progressbar_message = "{0}-PSK".format(M) + \
                                    " Simulation - SNR: {SNR}"
 
@@ -105,7 +105,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create(
             "num_symbols", Result.SUMTYPE, numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create(
+            "bit_errors", Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -153,7 +154,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         """
         # Return true as long as cumulated_bit_errors is lower then
         # max_bit_errors
-        cumulated_bit_errors = simulation_results['bit_errors'][-1].get_result()
+        cumulated_bit_errors \
+            = simulation_results['bit_errors'][-1].get_result()
         return cumulated_bit_errors < self.max_bit_errors
 
     def get_data_to_be_plotted(self):
@@ -172,11 +174,13 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
         return (SNR, ber, ser, theoretical_ber, theoretical_ser)
 
+
 if __name__ == '__main__':
     from pylab import *
     sim = VerySimplePskSimulationRunner()
     sim.simulate()
-    SNR, ber, ser, theoretical_ber, theoretical_ser = sim.get_data_to_be_plotted()
+    SNR, ber, ser, theoretical_ber, theoretical_ser \
+        = sim.get_data_to_be_plotted()
 
     # Can only plot if we simulated for more then one value of SNR
     if SNR.size > 1:
@@ -187,7 +191,8 @@ if __name__ == '__main__':
 
         xlabel('SNR')
         ylabel('Error')
-        title('BER and SER for {0} modulation in AWGN channel'.format(sim.modulator.name))
+        msg = 'BER and SER for {0} modulation in AWGN channel'
+        title(msg.format(sim.modulator.name))
         legend()
 
         grid(True, which='both', axis='both')

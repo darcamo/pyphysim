@@ -41,7 +41,7 @@ num_clusters = 1
 # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Nr = np.ones(num_cells, dtype=int) * 2  # Number of receive antennas
 Nt = np.ones(num_cells, dtype=int) * 2  # Number of transmit antennas
-#Ns_BD = Nt  # Number of streams (per user) in the BD algorithm
+# Ns_BD = Nt  # Number of streams (per user) in the BD algorithm
 path_loss_obj = pathloss.PathLoss3GPP1()
 multiuser_channel = channels.MultiUserChannelMatrixExtInt()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -53,8 +53,7 @@ packet_length = 60
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Transmission Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-NSymbs = 500  # Number of symbols (per stream per user simulated at each
-              # iteration
+NSymbs = 500  # Number of symbols (/stream /user simulated at each iteration
 SNR_dB = 15.
 N0_dBm = -116.4  # Noise power (in dBm)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -67,7 +66,9 @@ ext_int_rank = 1  # Rank of the external interference
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 rep_max = 10000   # Maximum number of repetitions for each
 
-pbar = progressbar.ProgressbarText(rep_max, message="Simulating for SNR: {0}, Pe_dBm: {1}".format(SNR_dB, Pe_dBm))
+pbar = progressbar.ProgressbarText(
+    rep_max,
+    message="Simulating for SNR: {0}, Pe_dBm: {1}".format(SNR_dB, Pe_dBm))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -124,15 +125,17 @@ for rep in range(rep_max):
     multiuser_channel.set_pathloss(pathloss, pathlossInt)
 
     # Create the comp_obj
-    comp_obj = blockdiagonalization.EnhancedBD(num_cells, transmit_power, noise_var, pe)
-    #comp_obj.set_ext_int_handling_metric('capacity')
+    comp_obj = blockdiagonalization.EnhancedBD(
+        num_cells, transmit_power, noise_var, pe)
+    # comp_obj.set_ext_int_handling_metric('capacity')
     comp_obj.set_ext_int_handling_metric('effective_throughput',
                                          {'modulator': modulator,
                                           'packet_length': packet_length})
 
     (MsPk_all_users,
      Wk_all_users,
-     Ns_all_users) = comp_obj.block_diagonalize_no_waterfilling(multiuser_channel)
+     Ns_all_users) \
+        = comp_obj.block_diagonalize_no_waterfilling(multiuser_channel)
 
     # xxxxx Performs the actual transmission for each user xxxxxxxxxxxxxxxx
     # Generate input data and modulate it
