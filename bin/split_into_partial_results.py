@@ -26,7 +26,8 @@ def main():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('name', help="The name of the SimulationResults file.")
-    parser.add_argument('folder', help="The name of the second SimulationResults file.",
+    parser.add_argument('folder',
+                        help="The name of the second SimulationResults file.",
                         nargs='?')
 
     args = parser.parse_args()
@@ -49,7 +50,8 @@ def main():
     all_results_names = results.get_result_names()
 
     for i, p in enumerate(results.params.get_unpacked_params_list()):
-        partial_filename = get_partial_results_filename(original_filename, p, folder)
+        partial_filename = get_partial_results_filename(
+            original_filename, p, folder)
         partial_filename_with_replacements = replace_dict_values(
             partial_filename,
             results.params.parameters,

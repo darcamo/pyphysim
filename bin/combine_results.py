@@ -24,11 +24,14 @@ def main():
     """Main function of the script.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('first', help="The name of the first SimulationResults file.")
-    parser.add_argument('second', help="The name of the second SimulationResults file.")
+    parser.add_argument('first',
+                        help="The name of the first SimulationResults file.")
+    parser.add_argument('second',
+                        help="The name of the second SimulationResults file.")
     parser.add_argument(
         'output',
-        help="The name that will be used to save the combinedSimulationResults file.",
+        help=("The name that will be used to save the combined "
+              "SimulationResults file."),
         nargs='?')
 
     args = parser.parse_args()
