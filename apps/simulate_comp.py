@@ -42,7 +42,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
     Simulation runner for a Block Diagonalization transmission.
     """
 
-    def __init__(self, ):
+    def __init__(self, read_command_line_args=True, save_parsed_file=False):
         default_config_file = 'bd_config_file.txt'
 
         # xxxxxxxxxx Simulation Parameters Specification xxxxxxxxxxxxxxxxxx
@@ -76,9 +76,12 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         # xxxxxxxxxx Initialize parameters configuration xxxxxxxxxxxxxxxxxx
         # Among other things, this will create the self.params object with
         # the simulation parameters read from the config file.
-        SimulationRunner.__init__(self,
-                                  default_config_file=default_config_file,
-                                  config_spec=spec)
+        SimulationRunner.__init__(
+            self,
+            default_config_file=default_config_file,
+            config_spec=spec,
+            read_command_line_args=read_command_line_args,
+            save_parsed_file=save_parsed_file)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -138,6 +141,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
                                        self.params['num_cells'],
                                        self.params['cell_radius'])
         self.noise_var = dBm2Linear(self.params['N0'])
+        self.multiuser_channel.noise_var = self.noise_var
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
         # progressbar will write the progress to a file with appropriated
@@ -578,8 +582,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         #xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxxx
         self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal = self.multiuser_channel.corrupt_concatenated_data(
-            all_data,
-            self.noise_var
+            all_data
         )
 
         # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -627,8 +630,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         for ii in range(Wk_all_users.size):
             Uk_all_users[ii] = Wk_all_users[ii].conjugate().T
         SINR_all_k = self.multiuser_channel.calc_JP_SINR(MsPk_all_users,
-                                                         Uk_all_users,
-                                                         self.noise_var)
+                                                         Uk_all_users)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
