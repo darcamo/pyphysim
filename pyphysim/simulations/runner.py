@@ -194,9 +194,9 @@ class SimulationRunner(object):
 
         self.results = SimulationResults()
 
-        self._pbar = None  # This variable will be used later to store the
-                           # progressbar object when it is created in the
-                           # _get_update_progress_function method
+        # This variable will be used later to store the progressbar object
+        # when it is created in the _get_update_progress_function method
+        self._pbar = None
 
         # xxxxxxxxxx update_progress_function_style xxxxxxxxxxxxxxxxxxxxxxx
         # --- When the simulation is performed Serially -------------------
@@ -448,8 +448,8 @@ class SimulationRunner(object):
 
         """
         self._elapsed_time = 0.0
-        self._runned_reps = []  # Number of iterations performed by
-                                # simulation when it finished
+        # Number of iterations performed by simulation when it finished
+        self._runned_reps = []
         self.results = SimulationResults()
 
     def __run_simulation_and_track_elapsed_time(self, current_parameters):
@@ -610,7 +610,7 @@ class SimulationRunner(object):
                                          **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
             self._pbar.delete_progress_file_after_completion = True
-        elif self.update_progress_function_style == 'text2':  # pragma: no cover
+        elif self.update_progress_function_style == 'text2':
             # We will use the ProgressbarText2 class
             self._pbar = ProgressbarText2(self.rep_max, '*', message,
                                           output=output_progress_sinc,
@@ -625,7 +625,7 @@ class SimulationRunner(object):
             # self.update_progress_function_style should basically do what
             # _get_update_progress_function is supposed to do.
 
-            #pylint: disable=E1102
+            # pylint: disable=E1102
             update_progress_func = self.update_progress_function_style(
                 self.rep_max, self.progressbar_message)  # pragma: no cover
 
@@ -681,8 +681,8 @@ class SimulationRunner(object):
                 if self.progress_output_type == 'screen':
                     filename = None
                 else:
-                    sleep_time = 30.0  # Lets update the progress every 30
-                                       # seconds
+                    # Lets update the progress every 30 seconds
+                    sleep_time = 30.0
                     filename = '{0}_progress.txt'.format(
                         self._results_base_filename)
 
@@ -830,7 +830,8 @@ class SimulationRunner(object):
             update_progress_func(current_rep)
 
             # Save partial results each 500 iterations
-            if current_rep % 500 == 0 and self._results_base_filename is not None:
+            if (current_rep % 500 == 0
+               and self._results_base_filename is not None):
                 self.__save_partial_results(current_rep,
                                             current_params,
                                             current_sim_results,
@@ -940,7 +941,8 @@ class SimulationRunner(object):
         start : int (default is 1)
             The index of the first variation.
         """
-        if self.update_progress_function_style is None or self.progress_output_type != 'screen':
+        if (self.update_progress_function_style is None
+           or self.progress_output_type != 'screen'):
             for i in itertools.repeat(''):
                 yield 0
         else:  # pragma: no cover
@@ -1013,7 +1015,8 @@ class SimulationRunner(object):
         # Get the number of variations of the transmit parameters
         num_variations = self.params.get_num_unpacked_variations()
 
-        ## xxxxx Start of the code unique to the serial version xxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Start of the code unique to the serial version xxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create the var_print_iter Iterator
         # Each time the 'next' method of var_print_iter is called it will
@@ -1148,7 +1151,9 @@ class SimulationRunner(object):
         # Get the number of variations of the transmit parameters
         num_variations = self.params.get_num_unpacked_variations()
 
-        ## xxxxx Start of the code unique to the parallel version xxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Start of the code unique to the parallel version xxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
         if self.update_progress_function_style is not None:  # pragma: no cover
@@ -1167,7 +1172,7 @@ class SimulationRunner(object):
         # class of 'self' (that is, the subclass of SimulationRunner that
         # you are trying to run) is pickle-able.
         self._async_results = view.map(
-            #simulate_for_current_params,
+            # simulate_for_current_params,
             SimulationRunner._simulate_for_current_params_parallel,
             # We need to pass the SimulationRunner
             # object to the IPython engine ...
