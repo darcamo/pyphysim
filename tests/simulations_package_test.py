@@ -1401,6 +1401,9 @@ class SimulationResultsTestCase(unittest.TestCase):
         result2.update(3, 10)
         result2.update(8, 10)
         self.simresults.add_result(result2)
+        result4 = Result.create('lulu', Result.CHOICETYPE, 3, 6)
+        result4.update(1)
+        self.simresults.add_result(result4)
 
         # Second SimulationResults object
         self.other_simresults = SimulationResults()
@@ -1410,6 +1413,10 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.other_simresults.add_result(result1_other)
         self.other_simresults.add_result(result2_other)
         self.other_simresults.add_result(result3)
+        result4_other = Result.create('lulu', Result.CHOICETYPE, 0, 6)
+        result4_other.update(5)
+        result4_other.update(5)
+        self.other_simresults.add_result(result4_other)
 
     def test_params_property(self):
         params = SimulationParameters()
@@ -1433,12 +1440,12 @@ class SimulationResultsTestCase(unittest.TestCase):
         # The output of the get_result_names is a list of names. We
         # transform it into a set in this test only to make the order of
         # the names uninportant.
-        expected_output = set(['lala', 'lele'])
+        expected_output = set(['lala', 'lele', 'lulu'])
         self.assertEqual(set(self.simresults.get_result_names()),
                          expected_output)
         # Test also the representation of the SimulationResults object
         self.assertEqual(self.simresults.__repr__(),
-                         """SimulationResults: ['lala', 'lele']""")
+                         """SimulationResults: ['lala', 'lele', 'lulu']""")
 
     def test_add_result(self):
         # Add a result with the same name of an existing result -> Should
@@ -1452,7 +1459,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         result3 = Result.create('lili', Result.MISCTYPE, "a string")
         self.simresults.add_result(result3)
         self.assertEqual(set(self.simresults.get_result_names()),
-                         set(["lala", "lele", "lili"]))
+                         set(["lala", "lele", "lili", "lulu"]))
         self.assertEqual(self.simresults['lili'][0].get_result(), "a string")
 
     def test_append_result(self):
@@ -1480,10 +1487,11 @@ class SimulationResultsTestCase(unittest.TestCase):
         # a single result for 'lili' and two results for both 'lala' and
         # 'lele'..
         self.assertEqual(set(self.simresults.get_result_names()),
-                         set(["lala", "lele", "lili"]))
+                         set(["lulu", "lala", "lele", "lili"]))
         self.assertEqual(len(self.simresults['lala']), 2)
         self.assertEqual(len(self.simresults['lele']), 2)
         self.assertEqual(len(self.simresults['lili']), 1)
+        self.assertEqual(len(self.simresults['lulu']), 2)
 
     def test_merge_all_results(self):
         # Note that even though there is a 'lili' result in
@@ -1510,7 +1518,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         emptyresults.merge_all_results(self.simresults)
         self.assertEqual(
             set(emptyresults.get_result_names()),
-            set(['lala', 'lele']))
+            set(['lala', 'lele', 'lulu']))
 
     def test_equal_and_not_equal_operators(self):
         elapsed_time_result = Result.create('elapsed_time', Result.SUMTYPE, 30)
@@ -1519,13 +1527,16 @@ class SimulationResultsTestCase(unittest.TestCase):
         simresults = SimulationResults()
         lala_result = Result('lala', Result.SUMTYPE)
         lele_result = Result('lele', Result.RATIOTYPE)
+        lulu_result = Result('lulu', Result.CHOICETYPE, choice_num=6)
         lala_result.update(13)
         lele_result.update(8, 10)
         lele_result.update(3, 10)
-        elapsed_time_result2 = Result.create(
-            'elapsed_time', Result.SUMTYPE, 20)
+        lulu_result.update(3)
+        lulu_result.update(1)
+        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
         simresults.add_result(lala_result)
         simresults.add_result(lele_result)
+        simresults.add_result(lulu_result)
         simresults.add_result(elapsed_time_result2)
 
         # Note that the elapsed_time result is different, but it is not
@@ -1566,6 +1577,14 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(
             self.simresults.get_result_values_list('lele'),
             [0.55, 0.4])
+
+        lulu_list = self.simresults.get_result_values_list('lulu')
+        np.testing.assert_array_almost_equal(
+            lulu_list[0],
+            np.array([0., 0.5, 0., 0.5, 0., 0.]))
+        np.testing.assert_array_almost_equal(
+            lulu_list[1],
+            np.array([0.33333333, 0., 0., 0., 0., 0.66666667]))
 
         # There is only one result for 'lili', which comes from
         # self.other_simresults.
@@ -1646,11 +1665,17 @@ class SimulationResultsTestCase(unittest.TestCase):
                          simresults2['lala'][0].type_code)
         self.assertEqual(self.simresults['lele'][0].type_code,
                          simresults2['lele'][0].type_code)
+        self.assertEqual(self.simresults['lulu'][0].type_code,
+                         simresults2['lulu'][0].type_code)
 
         self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
                                simresults2['lala'][0].get_result(),)
         self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
                                simresults2['lele'][0].get_result(),)
+        np.testing.assert_array_almost_equal(self.simresults['lulu'][0].get_result(),
+                                             simresults2['lulu'][0].get_result(),)
+        self.assertAlmostEqual(self.simresults['name'][0].get_result(),
+                               simresults2['name'][0].get_result(),)
 
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
