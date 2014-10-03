@@ -1498,8 +1498,6 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         self._mu = None
-        # Tolerance used to stop the bisection method
-        self._bisection_tol = 1e-3
 
     def _solve_init(self, Ns, P):
         """
@@ -1671,14 +1669,30 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if mu_i is None:
             # xxxxx Define the function that will be optimized xxxxxxxxxxxx
-            def func(mu, sum_term, Hii_herm_U, P):
+            def func(local_mu, local_sum_term, local_Hii_herm_U, local_P):
                 """
-                Function that will be optimized to find the best value of mu.
+                Function that will be optimized to find the best value of local_mu.
                 """
-                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu(
+                    local_sum_term, local_mu, local_Hii_herm_U)
                 norm = np.linalg.norm(Vi, 'fro')
-                cost = (norm ** 2) - P
+                cost = (norm ** 2) - local_P
                 return cost
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxx Scale Hii_herm_U and sum_term xxxxxxxxxxxxxxxxxxxx
+            # Depending of the transmit power the value of 'Hii^H Ui' and
+            # `sum_term` can be very big (or maybe very small). This may
+            # cause precision problems in the optimization of the Lagrange
+            # multiplier mu. To avoid this problem we will scale both
+            # 'Hii^H Ui' and `sum_term` by this `scale_factor` to avoid
+            # that.
+            #
+            # Note that THIS WILL NOT CHANGE the final value of Vi,
+            # although the Lagrange multiplier will be different.
+            scale_factor = np.linalg.norm(Hii_herm_U)
+            Hii_herm_U = Hii_herm_U / scale_factor
+            sum_term = sum_term / scale_factor
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             min_mu_i = 0

@@ -2554,10 +2554,12 @@ class MMSEIASolverTestCase(CustomTestCase):
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
     def test_updateW(self):
-        self.iasolver._initialize_F_and_W_from_closed_form(self.Ns, self.P)
-        P = self.iasolver.P
+        self.iasolver._multiUserChannel.noise_var = 1e-2
+        P = self.P
+        # self.iasolver._initialize_F_and_W_from_closed_form(self.Ns, self.P)
+        self.iasolver._initialize_F_randomly_and_find_W(self.Ns, P)
 
-        np.testing.assert_array_almost_equal(self.iasolver.P, self.P)
+        np.testing.assert_array_almost_equal(self.iasolver.P, P)
 
         F0 = self.iasolver.F[0]
         F1 = self.iasolver.F[1]
@@ -2623,6 +2625,79 @@ class MMSEIASolverTestCase(CustomTestCase):
                                              expected_W1)
         np.testing.assert_array_almost_equal(self.iasolver.W[2],
                                              expected_W2)
+
+    def test_updateW_with_very_small_power(self):
+        self.iasolver._multiUserChannel.noise_var = 1e-22
+        P = self.P * 1e-20
+        # self.iasolver._initialize_F_and_W_from_closed_form(self.Ns, self.P)
+        self.iasolver._initialize_F_randomly_and_find_W(self.Ns, P)
+
+        np.testing.assert_array_almost_equal(self.iasolver.P, P)
+
+        F0 = self.iasolver.F[0]
+        F1 = self.iasolver.F[1]
+        F2 = self.iasolver.F[2]
+
+        H00 = self.iasolver._get_channel(0, 0)
+        H11 = self.iasolver._get_channel(1, 1)
+        H22 = self.iasolver._get_channel(2, 2)
+        H01 = self.iasolver._get_channel(0, 1)
+        H02 = self.iasolver._get_channel(0, 2)
+        H10 = self.iasolver._get_channel(1, 0)
+        H12 = self.iasolver._get_channel(1, 2)
+        H20 = self.iasolver._get_channel(2, 0)
+        H21 = self.iasolver._get_channel(2, 1)
+
+        # xxxxx Calculates the expected receive filter for the user 0 xxxxx
+        H00_F0 = np.sqrt(P[0]) * np.dot(H00, F0)
+        H01_F1 = np.sqrt(P[1]) * np.dot(H01, F1)
+        H02_F2 = np.sqrt(P[2]) * np.dot(H02, F2)
+        sum0 = (np.dot(H00_F0, H00_F0.conj().T)
+                + np.dot(H01_F1, H01_F1.conj().T)
+                + np.dot(H02_F2, H02_F2.conj().T))
+        expected_W0 = np.dot(
+            np.linalg.inv(sum0 + self.iasolver.noise_var * np.eye(self.Nr[0])),
+            H00_F0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculates the expected receive filter for the user 1 xxxxx
+        H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
+        H10_F0 = np.sqrt(P[0]) * np.dot(H10, F0)
+        H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
+        H12_F2 = np.sqrt(P[2]) * np.dot(H12, F2)
+        sum1 = (
+            np.dot(H10_F0, H10_F0.conj().T)
+            + np.dot(H11_F1, H11_F1.conj().T)
+            + np.dot(H12_F2, H12_F2.conj().T))
+        expected_W1 = np.dot(
+            np.linalg.inv(sum1 + self.iasolver.noise_var * np.eye(self.Nr[1])),
+            H11_F1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Calculates the expected receive filter for the user 2 xxxxx
+        H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
+        H20_F0 = np.sqrt(P[0]) * np.dot(H20, F0)
+        H21_F1 = np.sqrt(P[1]) * np.dot(H21, F1)
+        H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
+        sum2 = (
+            np.dot(H20_F0, H20_F0.conj().T)
+            + np.dot(H21_F1, H21_F1.conj().T)
+            + np.dot(H22_F2, H22_F2.conj().T))
+        expected_W2 = np.dot(
+            np.linalg.inv(sum2 + self.iasolver.noise_var * np.eye(self.Nr[1])),
+            H22_F2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Update the receive filters
+        self.iasolver._updateW()
+
+        # Test if the update was performed correctly
+        np.testing.assert_array_almost_equal(1e-10 * self.iasolver.W[0],
+                                             1e-10 * expected_W0)
+        np.testing.assert_array_almost_equal(1e-10 * self.iasolver.W[1],
+                                             1e-10 * expected_W1)
+        np.testing.assert_array_almost_equal(1e-10 * self.iasolver.W[2],
+                                             1e-10 * expected_W2)
 
     def test_calc_Vi_for_a_given_mu(self):
         sum_term = randn_c(3, 3)
@@ -2762,9 +2837,10 @@ class MMSEIASolverTestCase(CustomTestCase):
         # We are only testing the transmit powers here. If the precoders
         # are not calculated correctly then the test for the solve method
         # should fail.
-
-        self.iasolver.P = np.array([0.67, 0.89, 1.1])
-        self.iasolver._initialize_F_and_W_from_closed_form(1, 1)
+        Ns = 2
+        P = np.array([0.67, 0.89, 1.1])
+        self.iasolver._multiUserChannel.noise_var = 0.5
+        self.iasolver._initialize_F_randomly_and_find_W(Ns, P)
         self.iasolver._updateF()
 
         self.assertAlmostEqual(norm(self.iasolver.F[0], 'fro') ** 2, 1.0)
@@ -2783,6 +2859,46 @@ class MMSEIASolverTestCase(CustomTestCase):
             (norm(self.iasolver.full_F[2], 'fro') ** 2
              <=
              1.0000000001 * self.iasolver.P[2]))
+
+    def test_updateF_with_very_small_power(self):
+        # If a previous run of this test failed, this will load the state
+        # of the failed test so that it is reproduced.
+        self._maybe_load_state_and_randomize_channel(
+            filename='MMSE_test_updateF_with_very_small_power.pickle',
+            iasolver=self.iasolver, Nr=self.Nr, Nt=self.Nt, K=self.K)
+
+        # We are only testing the transmit powers here. If the precoders
+        # are not calculated correctly then the test for the solve method
+        # should fail.
+        Ns = 1
+        P = np.array([0.67, 0.89, 1.1]) * 1e-14
+        self.iasolver._multiUserChannel.noise_var = 0.5e-14
+        self.iasolver._initialize_F_randomly_and_find_W(Ns, P)
+        self.iasolver._updateF()
+
+        self.assertAlmostEqual(norm(self.iasolver.F[0], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[1], 'fro') ** 2, 1.0)
+        self.assertAlmostEqual(norm(self.iasolver.F[2], 'fro') ** 2, 1.0)
+
+        try:
+            self.assertTrue(
+                (norm(self.iasolver.full_F[0], 'fro') ** 2
+                 <=
+                 1.000001 * self.iasolver.P[0]))
+            self.assertTrue(
+                (norm(self.iasolver.full_F[1], 'fro') ** 2
+                 <=
+                 1.000001 * self.iasolver.P[1]))
+            self.assertTrue(
+                (norm(self.iasolver.full_F[2], 'fro') ** 2
+                 <=
+                 1.000001 * self.iasolver.P[2]))
+
+        except AssertionError:  # pragma: nocover
+            # Since this test failed, let's save its state so that we can
+            # reproduce it
+            self._save_state(filename='MMSE_test_updateF_with_very_small_power.pickle')
+            raise  # re-raises the last exception
 
     def test_solve(self):
         # If a previous run of this test failed, this will load the state
