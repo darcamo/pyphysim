@@ -661,85 +661,85 @@ class SimulationResults(object):
             obj = pickle.load(inputfile)
         return obj
 
-    def save_to_hdf5_file(self, filename, attrs=None):
-        """
-        Save the SimulationResults to the file `filename` using the HDF5 format
-        standard.
+    # def save_to_hdf5_file(self, filename, attrs=None):
+    #     """
+    #     Save the SimulationResults to the file `filename` using the HDF5 format
+    #     standard.
 
-        The string in `filename` can have placeholders for string
-        replacements with any parameter value.
+    #     The string in `filename` can have placeholders for string
+    #     replacements with any parameter value.
 
-        Parameters
-        ----------
-        filename : src
-            Name of the file to save the results. This can have string
-            placements for replacements of simulation parameters. For
-            instance, is `filename` is "somename_{age}.pickle" and the
-            value of an 'age' parameter is '3', then the actual name used
-            to save the file will be "somename_3.pickle"
-        attrs : a dictionary
-            Extra attributes to add to the HDF5 file.
+    #     Parameters
+    #     ----------
+    #     filename : src
+    #         Name of the file to save the results. This can have string
+    #         placements for replacements of simulation parameters. For
+    #         instance, is `filename` is "somename_{age}.pickle" and the
+    #         value of an 'age' parameter is '3', then the actual name used
+    #         to save the file will be "somename_3.pickle"
+    #     attrs : a dictionary
+    #         Extra attributes to add to the HDF5 file.
 
-        Returns
-        -------
-        new_filename : string
-            The name of the file where the results were saved. This will be
-            equivalent to `filename` after string replacements (with the
-            simulation parameters) are done.
+    #     Returns
+    #     -------
+    #     new_filename : string
+    #         The name of the file where the results were saved. This will be
+    #         equivalent to `filename` after string replacements (with the
+    #         simulation parameters) are done.
 
-        See also
-        --------
-        load_from_hdf5_file
-        """
-        # Get the file extension (if there is any). If it is not equal to
-        # '.pickle' that means we need to add the '.pickle' extension.
-        ext = os.path.splitext(filename)[-1]
-        if ext != '.h5':
-            filename = '{0}.h5'.format(filename)
+    #     See also
+    #     --------
+    #     load_from_hdf5_file
+    #     """
+    #     # Get the file extension (if there is any). If it is not equal to
+    #     # '.pickle' that means we need to add the '.pickle' extension.
+    #     ext = os.path.splitext(filename)[-1]
+    #     if ext != '.h5':
+    #         filename = '{0}.h5'.format(filename)
 
-        # Save the original filename before string replacements
-        self.original_filename = filename
+    #     # Save the original filename before string replacements
+    #     self.original_filename = filename
 
-        filename = self.get_filename_with_replaced_params(filename)
+    #     filename = self.get_filename_with_replaced_params(filename)
 
-        if attrs is None:
-            attrs = {}
+    #     if attrs is None:
+    #         attrs = {}
 
-        import h5py
-        fid = h5py.File(filename, 'w')
+    #     import h5py
+    #     fid = h5py.File(filename, 'w')
 
-        # Save the TITTLE attribute to be more consistent with what
-        # Pytables would do.
-        fid.attrs.create("TITLE", "Simulation Results file")
+    #     # Save the TITTLE attribute to be more consistent with what
+    #     # Pytables would do.
+    #     fid.attrs.create("TITLE", "Simulation Results file")
 
-        # Save the original_filename variable
-        fid.attrs.create("original_filename", self.original_filename)
+    #     # Save the original_filename variable
+    #     fid.attrs.create("original_filename", self.original_filename)
 
-        # Add the attributes, if any
-        if isinstance(attrs, dict):  # pragma: no cover
-            # attr is a dictionary of attributes
-            for name, value in attrs.items():
-                fid.attrs.create(name, value)
+    #     # Add the attributes, if any
+    #     if isinstance(attrs, dict):  # pragma: no cover
+    #         # attr is a dictionary of attributes
+    #         for name, value in attrs.items():
+    #             fid.attrs.create(name, value)
 
-        # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
-        g = fid.create_group('results')
-        # Save the TITTLE attribute to be more consistent with what
-        # Pytables would do.
-        g.attrs.create("TITLE", "Simulation Results")
-        for r in self:
-            Result.save_to_hdf5_dataset(g, r)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
+    #     g = fid.create_group('results')
+    #     # Save the TITTLE attribute to be more consistent with what
+    #     # Pytables would do.
+    #     g.attrs.create("TITLE", "Simulation Results")
+    #     for r in self:
+    #         Result.save_to_hdf5_dataset(g, r)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
-        pg = fid.create_group('parameters')
-        # Save the TITTLE attribute to be more consistent with what
-        # Pytables would do.
-        pg.attrs.create("TITLE", "Simulation Parameters")
-        self.params.save_to_hdf5_group(pg)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
+    #     pg = fid.create_group('parameters')
+    #     # Save the TITTLE attribute to be more consistent with what
+    #     # Pytables would do.
+    #     pg.attrs.create("TITLE", "Simulation Parameters")
+    #     self.params.save_to_hdf5_group(pg)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        fid.close()
-        return filename
+    #     fid.close()
+    #     return filename
 
     # # TODO: Test if this method saves all the information that the
     # # save_to_hdf5_file method saves.
@@ -772,57 +772,57 @@ class SimulationResults(object):
 
     #     fid.close()
 
-    @staticmethod
-    def load_from_hdf5_file(filename):
-        """Load a SimulationResults object from an HDF5 file saved with the
-        save_to_hdf5_file method.
+    # @staticmethod
+    # def load_from_hdf5_file(filename):
+    #     """Load a SimulationResults object from an HDF5 file saved with the
+    #     save_to_hdf5_file method.
 
-        Parameters
-        ----------
-        filename : src
-            Name of the file from which the SimulationResults should be loaded.
+    #     Parameters
+    #     ----------
+    #     filename : src
+    #         Name of the file from which the SimulationResults should be loaded.
 
-        Returns
-        -------
-        simresults : A SimulationResults object.
-            The SimulationResults object loaded from the file.
+    #     Returns
+    #     -------
+    #     simresults : A SimulationResults object.
+    #         The SimulationResults object loaded from the file.
 
-        See also
-        --------
-        save_to_hdf5_file
-        """
-        simresults = SimulationResults()
+    #     See also
+    #     --------
+    #     save_to_hdf5_file
+    #     """
+    #     simresults = SimulationResults()
 
-        import h5py
-        fid = h5py.File(filename, 'r')
+    #     import h5py
+    #     fid = h5py.File(filename, 'r')
 
-        # Get the original filename variable
-        simresults.original_filename = fid.attrs['original_filename']
+    #     # Get the original filename variable
+    #     simresults.original_filename = fid.attrs['original_filename']
 
-        # xxxxxxxxxx Results group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        rg = fid['results']
+    #     # xxxxxxxxxx Results group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     rg = fid['results']
 
-        for result_name in rg:
-            ds = rg[result_name]
-            # simresults._results[result_name] \
-            #     = Result.load_from_hdf5_dataset(ds)
-            result = Result.load_from_hdf5_dataset(ds)[-1]
-            simresults.add_result(result)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     for result_name in rg:
+    #         ds = rg[result_name]
+    #         # simresults._results[result_name] \
+    #         #     = Result.load_from_hdf5_dataset(ds)
+    #         result = Result.load_from_hdf5_dataset(ds)[-1]
+    #         simresults.add_result(result)
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Parameters grop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        try:
-            # We only set the simulation parameters if it was stored in the
-            # hdf5 file.
-            pg = fid['parameters']
-            simresults.set_parameters(
-                SimulationParameters.load_from_hdf5_group(pg))
-        except KeyError:  # pragma: no cover
-            pass
+    #     # xxxxxxxxxx Parameters grop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     try:
+    #         # We only set the simulation parameters if it was stored in the
+    #         # hdf5 file.
+    #         pg = fid['parameters']
+    #         simresults.set_parameters(
+    #             SimulationParameters.load_from_hdf5_group(pg))
+    #     except KeyError:  # pragma: no cover
+    #         pass
 
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        fid.close()
-        return simresults
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     fid.close()
+    #     return simresults
 
     def to_dataframe(self):
         """
@@ -1363,55 +1363,55 @@ class Result(object):
         n = self.num_updates
         return calc_confidence_interval(mean, std, n, P)
 
-    # TODO: Save the _value_list, _total_list and _accumulate_values_bool
-    # variables
-    @staticmethod
-    def save_to_hdf5_dataset(parent, results_list):
-        """
-        Create an HDF5 dataset in `parent` and fill it with the Result objects
-        in `results_list`.
+    # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # # variables
+    # @staticmethod
+    # def save_to_hdf5_dataset(parent, results_list):
+    #     """
+    #     Create an HDF5 dataset in `parent` and fill it with the Result objects
+    #     in `results_list`.
 
-        Parameters
-        ----------
-        parent : An HDF5 group (usually) or file.
-            The parent that will contain the dataset.
-        results_list : A python list of Result objects.
-            A list of Result objects. All of these objects must have the
-            same name and update type.
+    #     Parameters
+    #     ----------
+    #     parent : An HDF5 group (usually) or file.
+    #         The parent that will contain the dataset.
+    #     results_list : A python list of Result objects.
+    #         A list of Result objects. All of these objects must have the
+    #         same name and update type.
 
-        Notes
-        -----
-        This method is called from the save_to_hdf5_file method in the
-        SimulationResults class. It uses the python h5py library and
-        `parent` is supposed to be an HDF5 group created with that library.
+    #     Notes
+    #     -----
+    #     This method is called from the save_to_hdf5_file method in the
+    #     SimulationResults class. It uses the python h5py library and
+    #     `parent` is supposed to be an HDF5 group created with that library.
 
-        See also
-        --------
-        load_from_hdf5_dataset
-        """
-        # When using the hdf5 format to save the Result object it is not
-        # possible to save the accumulated values (if there is any)
-        if results_list[0]._accumulate_values_bool is True:  # pylint: disable=W0212
-            warnings.warn(
-                'Cannot save the accumulated values in a Result to an hdf5 file.')
+    #     See also
+    #     --------
+    #     load_from_hdf5_dataset
+    #     """
+    #     # When using the hdf5 format to save the Result object it is not
+    #     # possible to save the accumulated values (if there is any)
+    #     if results_list[0]._accumulate_values_bool is True:  # pylint: disable=W0212
+    #         warnings.warn(
+    #             'Cannot save the accumulated values in a Result to an hdf5 file.')
 
-        dtype = [('_value', float), ('_total', float), ('num_updates', int),
-                 ('_result_sum', float), ('_result_squared_sum', float)]
-        name = results_list[0].name
-        size = len(results_list)
-        ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
+    #     dtype = [('_value', float), ('_total', float), ('num_updates', int),
+    #              ('_result_sum', float), ('_result_squared_sum', float)]
+    #     name = results_list[0].name
+    #     size = len(results_list)
+    #     ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
 
-        r = None
-        for i, r in enumerate(results_list):
-            # pylint: disable=W0212
-            ds[i] = (r._value, r._total, r.num_updates, r._result_sum,
-                     r._result_squared_sum)
+    #     r = None
+    #     for i, r in enumerate(results_list):
+    #         # pylint: disable=W0212
+    #         ds[i] = (r._value, r._total, r.num_updates, r._result_sum,
+    #                  r._result_squared_sum)
 
-        if r is not None:
-            ds.attrs.create('update_type_code', data=r.type_code)
-        # Save the TITTLE attribute to be more consistent with what
-        # Pytables would do.
-        ds.attrs.create("TITLE", name)
+    #     if r is not None:
+    #         ds.attrs.create('update_type_code', data=r.type_code)
+    #     # Save the TITTLE attribute to be more consistent with what
+    #     # Pytables would do.
+    #     ds.attrs.create("TITLE", name)
 
     # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
     # # variables
@@ -1444,47 +1444,47 @@ class Result(object):
     #     pytables_file.setNodeAttr(table, 'update_type_code', r.type_code)
     #     table.flush()
 
-    @staticmethod
-    def load_from_hdf5_dataset(ds):
-        """Load a list of Rersult objects from an HDF5 dataset.
+    # @staticmethod
+    # def load_from_hdf5_dataset(ds):
+    #     """Load a list of Rersult objects from an HDF5 dataset.
 
-        This dataset was suposelly saved with the save_to_hdf5_dataset
-        function.
+    #     This dataset was suposelly saved with the save_to_hdf5_dataset
+    #     function.
 
-        Parameters
-        ----------
-        ds : An HDF5 Dataset
-            The dataset to be loaded.
+    #     Parameters
+    #     ----------
+    #     ds : An HDF5 Dataset
+    #         The dataset to be loaded.
 
-        Returns
-        -------
-        results_list : A list of Result objects.
-            The list of Result objects loaded from the dataset.
+    #     Returns
+    #     -------
+    #     results_list : A list of Result objects.
+    #         The list of Result objects loaded from the dataset.
 
-        Notes
-        -----
-        This method is called from the load_from_hdf5_file method in the
-        SimulationResults class. It uses the python h5py library and
-        `ds` is supposed to be an HDF5 dataset created with that library.
+    #     Notes
+    #     -----
+    #     This method is called from the load_from_hdf5_file method in the
+    #     SimulationResults class. It uses the python h5py library and
+    #     `ds` is supposed to be an HDF5 dataset created with that library.
 
-        See also
-        --------
-        save_to_hdf5_dataset
+    #     See also
+    #     --------
+    #     save_to_hdf5_dataset
 
-        """
-        results_list = []
+    #     """
+    #     results_list = []
 
-        name = ds.name.split('/')[-1]
-        update_type_code = ds.attrs['update_type_code']
-        for data in ds:
-            r = Result.create(name,
-                              update_type_code,
-                              data['_value'],
-                              data['_total'])
-            r.num_updates = data['num_updates']
-            r._result_sum = data['_result_sum']
-            r._result_squared_sum = data['_result_squared_sum']
-            results_list.append(r)
-        return results_list
+    #     name = ds.name.split('/')[-1]
+    #     update_type_code = ds.attrs['update_type_code']
+    #     for data in ds:
+    #         r = Result.create(name,
+    #                           update_type_code,
+    #                           data['_value'],
+    #                           data['_total'])
+    #         r.num_updates = data['num_updates']
+    #         r._result_sum = data['_result_sum']
+    #         r._result_squared_sum = data['_result_squared_sum']
+    #         results_list.append(r)
+    #     return results_list
 
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
