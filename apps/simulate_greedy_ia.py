@@ -25,10 +25,11 @@ from pyphysim.simulations.runner import SimulationRunner
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import SimulationResults, Result
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
-from pyphysim.comm import modulators, channels
-from pyphysim.util.conversion import dB2Linear
+from pyphysim.comm import modulators, channels, pathloss
+from pyphysim.util.conversion import dB2Linear, dBm2Linear
 from pyphysim.util import misc
 from pyphysim.ia import algorithms
+from pyphysim.cell import cell
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -57,15 +58,21 @@ class IASimulationRunner(SimulationRunner):
         Constructor of the IASimulationRunner class.
         """
 
-        spec = """[Scenario]
+        spec = """[Grid]
+        cell_radius=float(min=0.01, default=1.0)
+        num_cells=integer(min=3,default=3)
+        num_clusters=integer(min=1,default=1)
+
+        [Scenario]
+        NSymbs=integer(min=10, max=1000000, default=200)
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
-        NSymbs=integer(min=10, max=1000000, default=200)
-        K=integer(min=2,default=3)
         Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
         Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
+        N0=float(default=-116.4)
+        scenario=option('NoPathLoss', 'Random', default="NoPathLoss")
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
         initialize_with=string_list(default=list('random'))
@@ -78,21 +85,85 @@ class IASimulationRunner(SimulationRunner):
         SimulationRunner.__init__(
             self, default_config_file, spec, read_command_line_args)
 
-        # Set the max_bit_errors and rep_max attributes
-        self.max_bit_errors = self.params['max_bit_errors']
+        # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Maximum number of repetitions for each unpacked parameters set
         self.rep_max = self.params['rep_max']
 
-        # Create the modulator object
+        # # max_bit_errors is used in the _keep_going method to stop the
+        # # simulation earlier if possible. We stop the simulation if the
+        # # accumulated number of bit errors becomes greater then 5% of the
+        # # total number of simulated bits
+        # self.max_bit_errors = self.params['max_bit_errors']
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Channel and Path Loss Parameters xxxxxxxxxxxxxxxxxxxxx
+        # Create the channel object
+        self.multiUserChannel = channels.MultiUserChannelMatrix()
+
+        # Create the Path loss object
+        self.path_loss_obj = pathloss.PathLoss3GPP1()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx RandomState objects seeds xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # This is only useful to reproduce a simulation for debugging
+        # purposed
+        self.channel_seed = None  # 22522
+        self.noise_seed = None  # 4445
+        self.data_gen_seed = np.random.randint(10000)  # 2105
+        #
+        self.multiUserChannel.set_channel_seed(self.channel_seed)
+        self.multiUserChannel.set_noise_seed(self.noise_seed)
+        self.data_RS = np.random.RandomState(self.data_gen_seed)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Create the modulator object xxxxxxxxxxxxxxxxxxxxxxxxxx
         M = self.params['M']
         modulator_options = {'PSK': modulators.PSK,
                              'QPSK': modulators.QPSK,
                              'QAM': modulators.QAM,
                              'BPSK': modulators.BPSK}
         self.modulator = modulator_options[self.params['modulator']](M)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Create the channel object
-        self.multiUserChannel = channels.MultiUserChannelMatrix()
+        # xxxxxxxxxx Progress Bar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # This can be either 'screen' or 'file'. If it is 'file' then the
+        # progressbar will write the progress to a file with appropriated
+        # filename
+        self.progress_output_type = 'screen'
 
+        # Set the progressbar message
+        self.progressbar_message = "SNR: {{SNR}}".format(
+            self.modulator.name)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Cell Grid
+        self.cell_grid = cell.Grid()
+        self.cell_grid.create_clusters(self.params['num_clusters'],
+                                       self.params['num_cells'],
+                                       self.params['cell_radius'])
+
+        # Note that the Noise variance will be set in the
+        # _on_simulate_current_params_start method. In the NoPathLoss
+        # scenario it will be set as 1.0 regardless of the value of
+        # params['N0'] to avoid problens in the IA algorithms. In the other
+        # scenarios it will be set to self.params['N0'].
+        #
+        # In any case the transmit power will be calculated accordingly in
+        # the _run_simulation method and the simulation results will still
+        # be correct.
+        self.noise_var = None
+
+        # Linear path loss from cell center to cell border.
+        self._path_loss_border = self.path_loss_obj.calc_path_loss(
+            self.params['cell_radius'])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # TODO: Move code below to the _on_simulate_current_params_start
+        # method
+        # xxxxxxxxxx Interference Alignment objects xxxxxxxxxxxxxxxxxxxxxxx
         # Create the basic IA Solver object
         self.ia_solver = algorithms.MMSEIASolver(self.multiUserChannel)
 
@@ -105,27 +176,129 @@ class IASimulationRunner(SimulationRunner):
                 self.ia_solver)
         else:
             raise ValueError("Invalid choice: '{0}'".format(alg))
-
-        # This can be either 'screen' or 'file'. If it is 'file' then the
-        # progressbar will write the progress to a file with appropriated
-        # filename
-        self.progress_output_type = 'screen'
-
-        # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "SNR: {{SNR}}".format(
-            self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    @staticmethod
+    def _calc_transmit_power(SNR_dB, noise_var, path_loss=1.0):
+        """
+        Calculates the required transmit power (in linear scale) to
+        achieve the desired mean SNR value at the cell border.
+
+        This method calculates the path loss at the cell border and
+        then finds the transmit power that gives the desired mean SNR
+        at the cell border.
+
+        Parameters
+        ----------
+        SNR_dB : float
+            SNR value (in dB)
+        noise_var : float
+            Noise variance
+        path_loss : float
+            Path loss (in linear scale) to consider in the transmit power
+            calculation. The case without considering path loss corresponds
+            to path_loss=1.
+
+        Returns
+        -------
+        transmit_power : float
+            Desired transmit power (in linear scale).
+        """
+        snr = dB2Linear(SNR_dB)
+        pt = snr * noise_var / path_loss
+        return pt
+
+    def _create_users_channels_according_to_scenario(self, current_params):
+        """
+        Prepare the channel object for the current iteration.
+
+        This will create user in random positons and calculate pathloss (if
+        the scenario includes it). After that, it will generate random
+        channels from all transmitters to all receivers.
+
+        Parameters
+        ----------
+        current_params : SimulationParameters obj.
+            The parameters for the current iteration.
+        """
+        # Generate a random channel and set the path loss
+        self.multiUserChannel.randomize(current_params['Nr'],
+                                        current_params['Nt'],
+                                        current_params['num_cells'])
+
+        # xxxxxxxxxx Set the path loss if necessary xxxxxxxxxxxxxxxxxxxxxxx
+        scenario = current_params['scenario']
+        if scenario == 'NoPathLoss':
+            # Clear any user in this cluster (from other iterations) This
+            # will have no impact in the multiuser channel object.
+            self._create_no_path_loss_scenario(current_params)
+        elif scenario == 'Random':
+            # This will create users in the grid (change self.cell_grid)
+            self._create_random_users_scenario(current_params)
+
+            # Get the first cluster from self.cell_grid
+            cluster0 = self.cell_grid.get_cluster_from_index(0)
+
+            # Calculates the distances between each transmitter and each
+            # receiver. This `dists` matrix may be indexed as
+            # dists[user, cell].
+            dists = cluster0.calc_dist_all_users_to_each_cell()
+            # Path loss from each base station to each user
+            pathloss = self.path_loss_obj.calc_path_loss(dists)
+
+            # Set the path loss in themulti user channel object
+            self.multiUserChannel.set_pathloss(pathloss)
+        else:
+            raise RuntimeError(
+                "Invalid scenario: {0}".format(scenario))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def _create_random_users_scenario(self, current_params):
+        """
+        Run this method to set variables specific to the 'Random'
+        scenario.
+
+        The 'Random' scenario places a user at a random location in each
+        cell.
+        """
+        cluster0 = self.cell_grid.get_cluster_from_index(0)
+        cell_ids = np.arange(1, current_params['num_cells'] + 1)
+
+        cluster0.delete_all_users()
+        cluster0.add_random_users(cell_ids)
+
+    def _create_no_path_loss_scenario(self, current_params):
+        """
+        Run this method to set variables specific to the 'NoPathLoss' scenario.
+        """
+        cluster0 = self.cell_grid.get_cluster_from_index(0)
+        cluster0.delete_all_users()
 
     def _run_simulation(self,   # pylint: disable=R0914,R0915
                         current_parameters):
+        # xxxxxxxxxx Prepare the scenario for this iteration. xxxxxxxxxxxxx
+        # This will create user in random positons and calculate pathloss
+        # (if the scenario includes it). After that, it will generate
+        # random channels from all transmitters to all receivers.
+        self._create_users_channels_according_to_scenario(current_parameters)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]
-        K = current_parameters["K"]
-        Nr = current_parameters["Nr"]
-        Nt = current_parameters["Nt"]
+        K = current_parameters["num_cells"]
+        # Nr = current_parameters["Nr"]
+        # Nt = current_parameters["Nt"]
         Ns = current_parameters["Ns"]
         SNR = current_parameters["SNR"]
+
+        if current_parameters['scenario'] == 'NoPathLoss':
+            pt = self._calc_transmit_power(SNR, self.noise_var)
+        elif current_parameters['scenario'] == 'Random':
+            pt = self._calc_transmit_power(
+                SNR, self.noise_var, self._path_loss_border)
+        else:
+            raise ValueError('Invalid scenario')
 
         # Store the original (maximum) number of streams for each user for
         # later usage
@@ -133,9 +306,6 @@ class IASimulationRunner(SimulationRunner):
             orig_Ns = np.ones(K, dtype=int) * Ns
         else:
             orig_Ns = Ns.copy()
-
-        # Dependent parameters
-        noise_var = 1 / dB2Linear(SNR)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calc. precoders and receive filters for IA xxxxxxxxxxxxxxxx
@@ -144,18 +314,15 @@ class IASimulationRunner(SimulationRunner):
         # that it is not always equal to Ns. It can be lower for some user
         # if the IA algorithm chooses a precoder that sends zero energy in
         # some stream.
-        self.multiUserChannel.randomize(Nr, Nt, K)
-        self.multiUserChannel.noise_var = noise_var
-
         self.ia_solver.clear()
         self.ia_solver.initialize_with = current_parameters['initialize_with']
-        self.ia_top_object.solve(Ns=Ns, P=1)
+        self.ia_top_object.solve(Ns=Ns, P=pt)
 
         # If any of the Nr, Nt or Ns variables were integers (meaning all
         # users have the same value) we will convert them by numpy arrays
         # with correct size (K).
-        Nr = self.ia_solver.Nr
-        Nt = self.ia_solver.Nt
+        # Nr = self.ia_solver.Nr
+        # Nt = self.ia_solver.Nt
         Ns = self.ia_solver.Ns
 
         cumNs = np.cumsum(self.ia_solver.Ns)
@@ -163,7 +330,7 @@ class IASimulationRunner(SimulationRunner):
 
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # inputData has the data of all users (vertically stacked)
-        inputData = np.random.randint(0, M, [np.sum(Ns), NSymbs])
+        inputData = self.data_RS.randint(0, M, [np.sum(Ns), NSymbs])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -326,7 +493,20 @@ class IASimulationRunner(SimulationRunner):
     # parameter. Re-implement this method any subclass that does not need
     # them.
     def _on_simulate_current_params_start(self, current_params):
+        # IMPORTANT: Re-seed the channel and the noise RandomState
+        # objects. Without this, when you perform the simulation in
+        # parallel (call the simulate_in_parallel method(from the
+        # SimulationRunner class) you will get the same channel samples and
+        # noise for all parallel process.
         self.multiUserChannel.re_seed()
+
+        if current_params['scenario'] == 'NoPathLoss':
+            self.noise_var = 1.0
+            self.multiUserChannel.noise_var = self.noise_var
+        else:
+            self.noise_var = dBm2Linear(self.params['N0'])
+            self.multiUserChannel.noise_var = self.noise_var
+
         self.ia_solver.max_iterations = current_params['max_iterations']
 
 
@@ -338,8 +518,8 @@ def main_simulate():
     """
     tic = time()
 
-    base_name = ("results_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter"
-                 "_{max_iterations}_{initialize_with}")
+    base_name = ("BLA_results_{scenario}_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})"
+                 "_MaxIter_{max_iterations}_({initialize_with})")
 
     greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
     greedy_runner.set_results_filename("greedy_{0}".format(base_name))
@@ -348,6 +528,8 @@ def main_simulate():
     brute_runner.set_results_filename("brute_force_{0}".format(base_name))
 
     simulate_do_what_i_mean([greedy_runner, brute_runner], parent_dir)
+    # greedy_runner.simulate()
+    # brute_runner.simulate()
 
     toc = time()
     print "Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic))
@@ -405,17 +587,24 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     config_file = 'greedy_config_file.txt'
 
     # xxxxxxxxxx Config spec for the config file xxxxxxxxxxxxxxxxxxxxxxxxxx
-    spec = """[Scenario]
+    spec = """[Grid]
+        cell_radius=float(min=0.01, default=1.0)
+        num_cells=integer(min=3,default=3)
+        num_clusters=integer(min=1,default=1)
+
+        [Scenario]
+        NSymbs=integer(min=10, max=1000000, default=200)
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
-        NSymbs=integer(min=10, max=1000000, default=200)
-        K=integer(min=2,default=3)
         Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
         Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
         Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
+        N0=float(default=-116.4)
+        scenario=option('NoPathLoss', 'Random', default="NoPathLoss")
         [IA Algorithm]
         max_iterations=integer_numpy_array(min=1, default=60)
+        initialize_with=string_list(default=list('random'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
@@ -497,3 +686,7 @@ if __name__ == '__main__':
     from apps.simulate_greedy_ia import IASimulationRunner
     main_simulate()
     # main_plot()
+
+    # greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
+    # greedy_runner.set_results_filename("greedy_teste_APAGAR")
+    # greedy_runner.simulate()
