@@ -1743,7 +1743,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         """
         # Note that _mu should never be negative. By setting the values to
         # -1 here if after the solve method some element in _mu is still
-        # negative then something was not write.
+        # negative then something was not right.
         self._mu = -1.0 * np.ones(self.K, dtype=float)
 
         Vi = np.zeros(self.K, dtype=np.ndarray)
