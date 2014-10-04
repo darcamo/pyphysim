@@ -814,6 +814,7 @@ class SimulationRunner(object):
                 current_params)
             current_rep = 1
 
+        last_tic = time()
         # Run more iterations until one of the stop criteria is
         # reached. Note that if partial results were loaded successfully
         # from file and they already achieve the stop criteria then the
@@ -829,13 +830,15 @@ class SimulationRunner(object):
             current_rep += 1
             update_progress_func(current_rep)
 
-            # Save partial results each 500 iterations
-            if (current_rep % 500 == 0
+            toc = time()
+            # Save partial results each 500 iterations as well as each 5 minutes
+            if ((toc - last_tic > 300 or current_rep % 500 == 0)
                and self._results_base_filename is not None):
                 self.__save_partial_results(current_rep,
                                             current_params,
                                             current_sim_results,
                                             partial_results_filename)
+                last_tic = time()
 
         # If the while loop ended before rep_max repetitions (because
         # _keep_going returned false) then set the progressbar to full.
@@ -849,6 +852,7 @@ class SimulationRunner(object):
                                                 current_sim_results)
 
         # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
+        # Save partial results for current parameters after all repetitions
         if self._results_base_filename is not None:
             self.__save_partial_results(current_rep,
                                         current_params,
