@@ -116,21 +116,21 @@ if __name__ == '__main__':
 
     SNR = greedy_results.params['SNR']
 
-    print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    print "xxxxxxxxxxxxxxx Greedy Results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print("xxxxxxxxxxxxxxx Greedy Results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     for idx, snr in enumerate(SNR):
-        print "SNR: {0}".format(snr)
+        print("SNR: {0}".format(snr))
         statistic_table = get_pretty_statistic_table(
             greedy_stream_statistics[idx])
         print_statistics_table(statistic_table)
         print
 
-    print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    print "xxxxxxxxxxxxxxx Brute Force Results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print("xxxxxxxxxxxxxxx Brute Force Results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     for idx, snr in enumerate(SNR):
-        print "SNR: {0}".format(snr)
+        print("SNR: {0}".format(snr))
         statistic_table = get_pretty_statistic_table(
             brute_force_stream_statistics[idx])
         print_statistics_table(statistic_table)

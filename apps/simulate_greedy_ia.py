@@ -377,7 +377,7 @@ class IASimulationRunner(SimulationRunner):
         sirn_all_k = self.ia_solver.calc_SINR()
         calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
         # Array with the sum capacity of each user
-        sum_capacity = map(calc_capacity, sirn_all_k)
+        sum_capacity = list(map(calc_capacity, sirn_all_k))
         # Total sum capacity
         total_sum_capacity = np.sum(sum_capacity)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -420,7 +420,8 @@ class IASimulationRunner(SimulationRunner):
         stream_index_multi = Ns - 1
         # Convert to a 1D index suitable for storing
         stream_index = int(np.ravel_multi_index(stream_index_multi, orig_Ns))
-        num_choices = np.prod(orig_Ns)
+        num_choices = int(np.prod(orig_Ns))
+
         stream_statistics = Result.create(
             "stream_statistics", Result.CHOICETYPE, stream_index, num_choices)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -532,7 +533,7 @@ def main_simulate():
     # brute_runner.simulate()
 
     toc = time()
-    print "Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic))
+    print("Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic)))
 
 
 # This function is only used in the implementation of the main_plot
