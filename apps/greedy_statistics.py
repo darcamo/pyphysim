@@ -17,7 +17,6 @@ except NameError:
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from pprint import pprint
 import itertools
 import numpy as np
 
@@ -103,7 +102,8 @@ def print_statistics_table(statistic_table):
     """
     # Remoce rows in statistic_table which have a zero percentage
     filtered_table = [(a, b) for (a, b) in statistic_table if b != 0]
-    pprint(filtered_table, width=20)
+    for line in filtered_table:
+        print '{0}: {1}%'.format(line[0], line[1])
 
 
 if __name__ == '__main__':
@@ -134,4 +134,3 @@ if __name__ == '__main__':
         statistic_table = get_pretty_statistic_table(
             brute_force_stream_statistics[idx])
         print_statistics_table(statistic_table)
-        print
