@@ -661,7 +661,14 @@ class SimulationResults(object):
 
         # For python3 compatibility the file must be opened in binary mode
         with open(filename, 'wb') as output:
-            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+            # We use the protocol version 2, since it is the highest
+            # protocol that is supported by both python 2 and python
+            # 3. Note that we still need to be careful when unpickling,
+            # since a file pickled with python 2 might raise a
+            # UnicodeDecodeError exception when unpickled with python 3. We
+            # solve this in the `load_from_config_file` method by
+            # specifying the encoding when unpickling the file.
+            pickle.dump(self, output, protocol=2)
 
         return filename
 
@@ -680,7 +687,26 @@ class SimulationResults(object):
             The SimulationResults object loaded from the file `filename`.
         """
         with open(filename, 'rb') as inputfile:
-            obj = pickle.load(inputfile)
+            try:
+                obj = pickle.load(inputfile)
+            except UnicodeDecodeError:
+                # If we pickle with python 2 and try to unpickle with
+                # python 3 we might get a UnicodeDecodeError exception. In
+                # that case, let's try to unpickle specifying the
+                # 'iso-8859-1' encoding to see if it works.
+                obj = pickle.load(inputfile, encoding='iso-8859-1')
+            # except ValueError:
+            #     # If we pickle with python 3 and try to unpickle with
+            #     # python 2 we might get a ValueError (due to unsupported
+            #     # pickle protocol).
+            #     #
+            #     # By raising an IOError (the same exception raised by
+            #     # python when the file does not exist this will be
+            #     # interpreted as "there is no partial file". This will then
+            #     # overwrite the old partial result file in the first time
+            #     # partial results are saved.
+            #     raise IOError("Could not unpickle file '{0}'".format(filename))
+
         return obj
 
     # def save_to_hdf5_file(self, filename, attrs=None):

@@ -2099,7 +2099,7 @@ class BruteForceStreamIASolver(object):
 
         # xxxxx Compute the solution for the first combination xxxxxxxxxxxx
         stream_combinations = iter(self._stream_combinations)
-        comb = stream_combinations.next()
+        comb = next(stream_combinations)
         self._iasolver.clear()
         self._runned_iterations += self._iasolver.solve(np.array(comb), P)
         self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())

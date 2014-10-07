@@ -1,19 +1,24 @@
+[Grid]
+        cell_radius = 1.0
+        num_cells = 3
+        num_clusters = 1
 [Scenario]
         SNR = 0:5:31
         M = 4
         modulator = PSK
         NSymbs = 100
-        K = 3
         Nr = 3
         Nt = 3
         Ns = 3
+        N0 = -116.4  # Ignored in the NoPathLoss scenario
+        scenario = Random  # Either NoPathLoss or Random
 [IA Algorithm]
         max_iterations = [120]
         initialize_with = random, 
 [General]
         max_bit_errors = 3000
         unpacked_parameters = SNR, max_iterations, initialize_with
-        rep_max = 100
+        rep_max = 50
 [Plot]
         max_iterations_plot = 120
         initialize_with_plot = random
