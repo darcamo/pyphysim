@@ -53,8 +53,7 @@ class IASimulationRunner(SimulationRunner):
         If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, default_config_file, alg='greedy',
-                 read_command_line_args=True):
+    def __init__(self, default_config_file, read_command_line_args=True):
         """
         Constructor of the IASimulationRunner class.
         """
@@ -63,24 +62,24 @@ class IASimulationRunner(SimulationRunner):
         cell_radius=float(min=0.01, default=1.0)
         num_cells=integer(min=3,default=3)
         num_clusters=integer(min=1,default=1)
-
         [Scenario]
         NSymbs=integer(min=10, max=1000000, default=200)
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
-        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
-        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
-        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=3)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=3)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=3)
         N0=float(default=-116.4)
-        scenario=option('NoPathLoss', 'Random', default="NoPathLoss")
+        scenario=string_list(default=list('Random', 'NoPathLoss'))
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1, default=60)
+        max_iterations=integer(min=1, default=120)
         initialize_with=string_list(default=list('random'))
+        stream_sel_method=string_list(default=list('greedy', 'brute'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
-        unpacked_parameters=string_list(default=list('SNR'))
+        unpacked_parameters=string_list(default=list('SNR','stream_sel_method','scenario','initialize_with'))
         """.split("\n")
 
         SimulationRunner.__init__(
@@ -167,16 +166,10 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxx Interference Alignment objects xxxxxxxxxxxxxxxxxxxxxxx
         # Create the basic IA Solver object
         self.ia_solver = algorithms.MMSEIASolver(self.multiUserChannel)
-
-        # Create the 'top' IA solver object: either "greedy" or the "brute
-        # force". This object will use the basic IA solver object.
-        if alg == 'greedy':
-            self.ia_top_object = algorithms.GreedStreamIASolver(self.ia_solver)
-        elif alg == 'brute':
-            self.ia_top_object = algorithms.BruteForceStreamIASolver(
-                self.ia_solver)
-        else:
-            raise ValueError("Invalid choice: '{0}'".format(alg))
+        # This will be created in the _on_simulate_current_params_start
+        # method. The class of self.ia_top_object will depend on the value
+        # of the 'stream_sel_method' parameter
+        self.ia_top_object = None
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     @staticmethod
@@ -489,11 +482,6 @@ class IASimulationRunner(SimulationRunner):
 
         return True
 
-    # Except for the closed form algorithm, all the other algorithms
-    # algorithms are iterative and we need to set the maximum number of
-    # iterations of the iterative algorithm. We do this by implementing the
-    # _on_simulate_current_params_start method.
-    #
     # Here we will both set the max_iterations and the initialize_with
     # parameter. Re-implement this method any subclass that does not need
     # them.
@@ -514,6 +502,28 @@ class IASimulationRunner(SimulationRunner):
 
         self.ia_solver.max_iterations = current_params['max_iterations']
 
+        # Parameter choosing the stream selection method. The value can be
+        # either 'greedy' or 'brute'. The value 'none' is also accepted, in
+        # which case no stream selection is performed.
+        alg = current_params['stream_sel_method']
+        # Create the 'top' IA solver object: either "greedy" or the "brute
+        # force" depending on the value of the 'stream_sel_method'
+        # parameter. This object will use the basic IA solver object.  Note
+        # that if 'stream_sel_method' is equal to 'none' then no IA
+        # top object will be used and self.ia_top_object is set to
+        # self.ia_solver so that we run the regular IA algorithm.
+        if alg == 'greedy':
+            self.ia_top_object = algorithms.GreedStreamIASolver(self.ia_solver)
+        elif alg == 'brute':
+            self.ia_top_object = algorithms.BruteForceStreamIASolver(
+                self.ia_solver)
+        elif alg == 'none':
+            # For the no stream selection case the IA top object will be
+            # the same as the IA basic object
+            self.ia_top_object = self.ia_solver
+        else:
+            raise ValueError("Invalid stream selection method: '{0}'".format(alg))
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -523,18 +533,13 @@ def main_simulate():
     """
     tic = time()
 
-    base_name = ("BLA_results_{scenario}_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})"
+    base_name = ("IA_stream_sel_results_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})"
                  "_MaxIter_{max_iterations}_({initialize_with})")
 
-    greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
-    greedy_runner.set_results_filename("greedy_{0}".format(base_name))
+    runner = IASimulationRunner('greedy_config_file.txt')
+    runner.set_results_filename("greedy_{0}".format(base_name))
 
-    brute_runner = IASimulationRunner('greedy_config_file.txt', 'brute')
-    brute_runner.set_results_filename("brute_force_{0}".format(base_name))
-
-    simulate_do_what_i_mean([greedy_runner, brute_runner], parent_dir)
-    # greedy_runner.simulate()
-    # brute_runner.simulate()
+    simulate_do_what_i_mean(runner, parent_dir)
 
     toc = time()
     print("Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic)))
@@ -691,8 +696,8 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     from apps.simulate_greedy_ia import IASimulationRunner
-    # main_simulate()
-    main_plot()
+    main_simulate()
+    # main_plot()
 
     # greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
     # greedy_runner.set_results_filename("greedy_teste_APAGAR")
