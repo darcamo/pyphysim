@@ -44,7 +44,7 @@ from pyphysim.simulations.simulationhelpers import get_common_parser
 from pyphysim.simulations.parameters import SimulationParameters, \
     combine_simulation_parameters
 from pyphysim.simulations.results import Result, SimulationResults
-from pyphysim.simulations.runner import SimulationRunner
+from pyphysim.simulations.runner import SimulationRunner, SkipThisOne
 from pyphysim.util import misc
 
 
@@ -919,8 +919,10 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         self.assertEqual(comb_params, union.params)
 
         # xxxxxxxxxx Test the results of the combined object xxxxxxxxxxxxxx
+        # Note that the 'elapsed_time' and 'num_skipped_reps' results are
+        # always added by the SimulationRunner class.
         self.assertEqual(set(union.get_result_names()),
-                         set(['elapsed_time', 'lala']))
+                         set(['elapsed_time', 'lala', 'num_skipped_reps']))
 
         # The unpacked param list of union is (the order might be different)
         # [{'bias': 1.3, 'SNR': 0.0, 'extra': 2.2},
@@ -1520,6 +1522,28 @@ class SimulationResultsTestCase(unittest.TestCase):
             set(emptyresults.get_result_names()),
             set(['lala', 'lele', 'lulu']))
 
+        # xxxxx Test the merge with the num_skipped_reps result xxxxxxxxxxx
+        simresults1 = SimulationResults()
+        simresults2 = SimulationResults()
+        simresults1.add_new_result('name1', Result.SUMTYPE, 3)
+        simresults1.add_new_result('num_skipped_reps', Result.SUMTYPE, 3)
+        simresults2.add_new_result('name1', Result.SUMTYPE, 2)
+        simresults1.merge_all_results(simresults2)
+        self.assertEqual(
+            set(simresults1.get_result_names()),
+            set(['name1', 'num_skipped_reps']))
+        self.assertEqual(
+            set(simresults2.get_result_names()),
+            set(['name1']))
+
+        simresults3 = SimulationResults()
+        simresults3.add_new_result('name1', Result.SUMTYPE, 4)
+        simresults3.merge_all_results(simresults1)
+        self.assertEqual(
+            set(simresults3.get_result_names()),
+            set(['name1', 'num_skipped_reps']))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_equal_and_not_equal_operators(self):
         elapsed_time_result = Result.create('elapsed_time', Result.SUMTYPE, 30)
         self.simresults.add_result(elapsed_time_result)
@@ -1968,6 +1992,56 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
         return sim_results
 
 
+# Define a _DummyRunnerWithSkip class for the testing the simulate when a
+# SkipThisOne exception is raised in the implemented _run_simulation
+# method.
+class _DummyRunnerWithSkip(SimulationRunner):
+    def __init__(self):
+        SimulationRunner.__init__(self, read_command_line_args=False)
+        # This is used only for testing purposes. You would not have this
+        # attribute in derives classes from SimulationRunner
+        self._num_skipped = -1
+
+        self.rep_max = 5
+        self.update_progress_function_style = None
+        # Now we add a dummy parameter to our runner object
+        self.params.add('SNR', np.array([0., 5., 10., 15., 20.]))
+        self.params.add('bias', 1.3)
+        self.params.add('extra', np.array([2.2, 4.1]))
+        self.params.set_unpack_parameter('SNR')
+        self.params.set_unpack_parameter('extra')
+        self.delete_partial_results_bool = True
+
+    @staticmethod
+    def calc_result(SNR, bias, extra):
+        value = 1.2 * SNR + bias + extra
+        return value
+
+    def _run_simulation(self, current_params):
+        # In practice, you would raise a SkipThisOne exception when some
+        # problem occurs, such as a bad channel realization, singular
+        # matrix in some algorithm, etc. Here will will raise this
+        # exception in the first two times the _run_simulation method is
+        # called for testing purposes.
+        if self._num_skipped < 2:
+            self._num_skipped += 1
+            if self._num_skipped > 0:
+                raise SkipThisOne('Skipping this one')
+            else:
+                print "lalala"
+
+        SNR = current_params['SNR']
+        bias = current_params['bias']
+        extra = current_params['extra']
+        sim_results = SimulationResults()
+
+        value = self.calc_result(SNR, bias, extra)
+
+        # The correct result will be SNR * 1.2 + 1.3 + extra
+        sim_results.add_new_result('lala', Result.RATIOTYPE, value, 1)
+        return sim_results
+
+
 class SimulationRunnerTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationRunner class in the runner module.
@@ -2300,6 +2374,81 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertNotAlmostEqual(result3[2], result3[3])
         self.assertNotAlmostEqual(result3[3], result3[4])
         self.assertEqual(len(set(result3)), 5)  # 5 different elements
+
+    # Test the simulate method when the SkipThisOne exception is raised in
+    # the _run_simulation method.
+    def test_simulate_with_skipthisone(self):
+        from tests.simulations_package_test import _DummyRunnerWithSkip
+        dummyrunner = _DummyRunnerWithSkip()
+
+        # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
+        filename = 'dummyrunnerwithskip_results_bias_{bias}'
+        dummyrunner.set_results_filename(filename)
+        # This will make the progressbar print to a file, instead of stdout
+        dummyrunner.progress_output_type = 'file'  # Default is 'screen'
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # The results will be the SNR values multiplied by 1.2. plus the
+        # bias parameter
+        dummyrunner.simulate()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        results_extra_1 = dummyrunner.results.get_result_values_list(
+            'lala', {'extra': 2.2})
+        expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
+        np.testing.assert_array_almost_equal(
+            results_extra_1, expected_results_extra_1)
+
+        results_extra_2 = dummyrunner.results.get_result_values_list(
+            'lala', {'extra': 4.1})
+        expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
+        np.testing.assert_array_almost_equal(
+            results_extra_2, expected_results_extra_2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
+        results = SimulationResults.load_from_file(
+            dummyrunner.results_filename)
+        self.assertEqual(results, dummyrunner.results)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # Now we do not set the results filename
+        # dummyrunner2 = _DummyRunner()
+        # dummyrunner2.simulate()
+
+        # self.assertEqual(dummyrunner.results, dummyrunner2.results)
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # xxxxxxxxxx Repeat the test with wrong partial results xxxxxxxxxxx
+        # # First we run a usual simulation and keep the partial results
+        # dummyrunner3 = _DummyRunner()
+        # dummyrunner3.set_results_filename('dummyrunner3_results')
+        # dummyrunner3.delete_partial_results_bool = False
+        # dummyrunner3.simulate()
+
+        # # Now we change the bias parameter
+        # dummyrunner3.params.add('bias', 1.5)
+
+        # # If we run a simulation with different parameters it will try to
+        # # load the partial results with wrong parameters and an exception
+        # # should be raised
+        # with self.assertRaises(ValueError):
+        #     dummyrunner3.simulate()
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # # xxxxxxxxxx Repeat the test loading the partial results xxxxxxxxxx
+        # dummyrunner4 = _DummyRunner()
+        # dummyrunner4.set_results_filename('dummyrunner3_results')
+        # dummyrunner4.delete_partial_results_bool = True
+        # dummyrunner4.simulate()
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Delete the pickle files in the same folder
+        _delete_pickle_files()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -409,8 +409,30 @@ class SimulationResults(object):
         # Otherwise, we merge each Result from `self` with the Result from
         # `other`
         else:
-            for item in self._results.keys():
-                self._results[item][-1].merge(other[item][-1])
+            for item in self.get_result_names():
+                # The 'num_skipped_reps' result is different from the other
+                # results in the sense that it is created by the
+                # SimulationRunner class to count how many times a
+                # SkipThisOne exception is raised. It is not created at the
+                # same time as the other Result objects, but we want to
+                # allow merging two SimulationResults objects even if one
+                # of them does not have a 'num_skipped_reps' Result object.
+                if item != 'num_skipped_reps':
+                    self._results[item][-1].merge(other[item][-1])
+
+            # Merge the 'num_skipped_reps' Result if the second object has
+            # it.
+            if 'num_skipped_reps' in other.get_result_names():
+                # It the second SimulationResults has the the
+                # 'num_skipped_reps' Result, but the first one has not,
+                # then first we create a 'num_skipped_reps' Result for the
+                # first SimulationResults object.
+                if 'num_skipped_reps' not in self.get_result_names():
+                    self.add_new_result('num_skipped_reps', Result.SUMTYPE, 0)
+
+                # Now we merge 'num_skipped_reps' from both of them
+                self._results['num_skipped_reps'][-1].merge(
+                    other['num_skipped_reps'][-1])
 
     def get_result_names(self):
         """Get the names of all results stored in the SimulationResults

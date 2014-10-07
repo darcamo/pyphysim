@@ -16,7 +16,7 @@ from ..util.misc import pretty_time
 from .progressbar import ProgressbarText, ProgressbarText2, \
     ProgressbarText3, ProgressbarZMQServer
 
-__all__ = ["get_partial_results_filename", "SimulationRunner"]
+__all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -65,6 +65,35 @@ def get_partial_results_filename(results_base_filename,
             partial_results_folder, partial_results_filename)
 
     return partial_results_filename
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Exception xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SkipThisOne(Exception):
+    """
+    Exception that can be raised in the `_run_simulation` method to skip
+    the current repetition.
+
+    The `simulate` method will not count a run of `_run_simulation` if it
+    throws a `SkipThisOne` exception.
+    """
+
+    def __init__(self, msg):
+        """
+        Paramters
+        ---------
+        msg : str
+            The message with more information on why the exception was
+            raised.
+        """
+        self.msg = msg
+
+    def __str__(self):
+        """
+        Convert the exception object to a suitable string representation.
+        """
+        return "SkipThisOne: {0}".format(self.msg)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -784,6 +813,9 @@ class SimulationRunner(object):
             # execute the except block instead.
             current_sim_results = SimulationResults.load_from_file(
                 partial_results_filename)
+            num_skipped_reps_result = Result.create(
+                "num_skipped_reps", Result.SUMTYPE, 0)
+            current_sim_results.add_result(num_skipped_reps_result)
 
             # Note that at this point we have successfully loaded the
             # partial results from the file. However, we still need to
@@ -812,6 +844,8 @@ class SimulationRunner(object):
             # Perform the first iteration of _run_simulation
             current_sim_results = self.__run_simulation_and_track_elapsed_time(
                 current_params)
+            # Add the extra 'num_skipped_reps' Result.
+            current_sim_results.add_new_result('num_skipped_reps', Result.SUMTYPE, 0)
             current_rep = 1
 
         last_tic = time()
@@ -824,11 +858,28 @@ class SimulationRunner(object):
                                 current_rep)
                and
                current_rep < self.rep_max):
-            current_sim_results.merge_all_results(
-                self.__run_simulation_and_track_elapsed_time(current_params))
+            # xxxxxxxxxx Run one repetition of the simulation xxxxxxxxxxxxx
+            try:
+                # Run one repetition of the `_run_simulation` and merge the
+                # new results. If `_run_simulation` raises a SkipThisOne
+                # exception, then we do not increase current_rep or the
+                # current progress, since there is no new result to merge.
+                current_sim_results.merge_all_results(
+                    self.__run_simulation_and_track_elapsed_time(current_params))
 
-            current_rep += 1
-            update_progress_func(current_rep)
+                current_rep += 1
+                update_progress_func(current_rep)
+            except SkipThisOne:
+                # Each time a SkipThisOne exception is raised we increase
+                # the num_skipped_reps_reps result to indicate that, but we
+                # don't increase the current progress or the
+                # current_rep. After that, the while loop will continue the
+                # simulation.
+                current_sim_results['num_skipped_reps'][-1].update(1)
+                # TODO: Maybe log that one repetition was skippet
+                # print("\nAlready skipped {0} repetitions").format(
+                #     current_sim_results['num_skipped_reps'][-1].get_result())
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             toc = time()
             # Save partial results each 500 iterations as well as each 5 minutes
