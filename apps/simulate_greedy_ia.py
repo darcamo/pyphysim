@@ -21,7 +21,8 @@ from time import time
 import numpy as np
 # from pprint import pprint
 
-from pyphysim.simulations.runner import SimulationRunner
+from numpy.linalg.linalg import LinAlgError
+from pyphysim.simulations.runner import SimulationRunner, SkipThisOne
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import SimulationResults, Result
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
@@ -316,7 +317,10 @@ class IASimulationRunner(SimulationRunner):
         # some stream.
         self.ia_solver.clear()
         self.ia_solver.initialize_with = current_parameters['initialize_with']
-        self.ia_top_object.solve(Ns=Ns, P=pt)
+        try:
+            self.ia_top_object.solve(Ns=Ns, P=pt)
+        except (RuntimeError, LinAlgError):
+            raise SkipThisOne("Could not find the IA solution. Skipping this repetition")
 
         # If any of the Nr, Nt or Ns variables were integers (meaning all
         # users have the same value) we will convert them by numpy arrays
