@@ -627,8 +627,10 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = ("results_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter"
-                 "_{max_iterations}_{initialize_with}")
+    base_name = ("BLA_results_{scenario}_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})"
+                 "_MaxIter_{max_iterations}_({initialize_with})")
+    # base_name = ("results_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter"
+    #              "_{max_iterations}_{initialize_with}")
     base_name = misc.replace_dict_values(base_name, params.parameters, True)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -655,7 +657,7 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     ax.set_xlabel('SNR')
     ax.set_ylabel('BER')
     title = ("BER for Different Algorithms ({max_iterations} Max Iterations)\n"
-             "K={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}")
+             "K={num_cells}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}")
     title = title.replace("{max_iterations}", str(max_iterations))
     ax.set_title(title.format(**parameters_dict))
 
@@ -664,21 +666,21 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     ax.grid(True, which='both', axis='both')
 
     # plt.show(block=False)
-    fig.savefig('ber_all_ia_algorithms.pgf')
+    # fig.savefig('ber_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Sum Capacity Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ax2.set_xlabel('SNR')
     ax2.set_ylabel('Sum Capacity')
     title = ("Sum Capacity for Different Algorithms ({max_iterations} Max "
-             "Iterations)\nK={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}")
+             "Iterations)\nK={num_cells}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}")
     title = title.replace("{max_iterations}", str(max_iterations))
     ax2.set_title(title.format(**parameters_dict))
 
     ax2.legend(fancybox=True, shadow=True, loc=2)
     ax2.grid(True, which='both', axis='both')
     # plt.show()
-    fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
+    # fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.show()
@@ -689,8 +691,8 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     from apps.simulate_greedy_ia import IASimulationRunner
-    main_simulate()
-    # main_plot()
+    # main_simulate()
+    main_plot()
 
     # greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
     # greedy_runner.set_results_filename("greedy_teste_APAGAR")
