@@ -1708,12 +1708,41 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 self._mu[i] = mu_i
 
             else:
-                # If we are not done yet then we need to perform the
-                # bisection method to find the best mu value between
-                # min_mu_i and max_mu_i
-                mu_i = optimize.newton(  # pylint: disable= E1101
-                    func, min_mu_i,
-                    args=(sum_term, Hii_herm_U, self.P[i]))
+                try:
+                    # If we are not done yet then we need to perform the
+                    # bisection method to find the best mu value between
+                    # min_mu_i and max_mu_i
+                    mu_i = optimize.newton(  # pylint: disable= E1101
+                        func, min_mu_i,
+                        args=(sum_term, Hii_herm_U, self.P[i]), maxiter=200)
+                except RuntimeError:
+                    # We get a RuntimeError if the maximum number of
+                    # iterations has been reached.
+                    raise RuntimeError(
+                        "Could not find optimum Lagrange multiplier in 200"
+                        " iterations.")
+
+                # xxxxxxxxxx Handle case where a bad mu_i was found xxxxxxx
+                # Sometimes the optimization algorithm finds a solution,
+                # but it is clearly wrong with a very high vamue of
+                # mu_i. In that case we will do some scaling and try again.
+                if abs(mu_i) > 1e20:
+                    mu_i = optimize.newton(
+                        func, min_mu_i,
+                        args=(sum_term * 10, Hii_herm_U * 10, self.P[i]), maxiter=200)
+                    mu_i = mu_i / 10.
+                    cost = func(mu_i, sum_term, Hii_herm_U, self.P[i])
+                    # If our new solution is still bad then we raise a
+                    # RuntimeError exception to indicate that a good
+                    # solution was not found
+                    if cost > self.P[i]/1e6:
+                        # Cost is still positive. The current value for mu
+                        # can't be used, since the power restriction will
+                        # not be valid. Note that we allow a positive cost
+                        # lower then self.P[i]/1e6 since this will be
+                        # relatively close to zero.
+                        raise RuntimeError("Could not find a good Lagrange multiplier")
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
                 # Now that we have the best value for mu_i, lets calculate Vi
                 Vi = self._calc_Vi_for_a_given_mu(
