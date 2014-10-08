@@ -651,7 +651,7 @@ class SimulationParameters(object):
             Name of the file to save the parameters.
         """
         with open(filename, 'wb') as output:
-            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, output, protocol=2)
 
     @staticmethod
     def load_from_pickled_file(filename):
