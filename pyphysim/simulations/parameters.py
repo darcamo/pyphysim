@@ -538,7 +538,7 @@ class SimulationParameters(object):
             len(self.parameters[i]) for i in self.unpacked_parameters]
         aux = np.arange(0, self.get_num_unpacked_variations())
         aux.shape = dimensions
-        indexes = eval(  # pylint: disable=W0123
+        indexes = eval(
             "aux" + "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -737,8 +737,10 @@ class SimulationParameters(object):
         fdict = {
             'real_numpy_array': real_numpy_array_check,
             'integer_numpy_array': integer_numpy_array_check,
-            'integer_scalar_or_integer_numpy_array_check': integer_scalar_or_integer_numpy_array_check,
-            'real_scalar_or_real_numpy_array_check': real_scalar_or_real_numpy_array_check}
+            'integer_scalar_or_integer_numpy_array_check':
+            integer_scalar_or_integer_numpy_array_check,
+            'real_scalar_or_real_numpy_array_check':
+            real_scalar_or_real_numpy_array_check}
         validator = Validator(fdict)
 
         # The 'copy' argument indicates that if we save the ConfigObj
@@ -902,7 +904,8 @@ class SimulationParameters(object):
     #     -----
     #     This method is called from the save_to_pytables_file method in the
     #     SimulationResults class. It uses the python pytables library and
-    #     `group` is supposed to be an pytables group created with that library.
+    #     `group` is supposed to be an pytables group created with that
+    #     library.
 
     #     See also
     #     --------
@@ -925,7 +928,8 @@ class SimulationParameters(object):
 
     @staticmethod
     def load_from_hdf5_group(group):
-        """Load the simulation parameters from an HDF5 group.
+        """
+        Load the simulation parameters from an HDF5 group.
 
         This function is called in the load_from_hdf5_file function in the
         SimulationResults class.
@@ -965,11 +969,13 @@ class SimulationParameters(object):
     @staticmethod
     def load_from_hdf5_file(filename):
         """
+        Load the simulation parameters from an HDF5 file.
 
         Parameters
         ----------
         filename : str
-            Name of the file from which the SimulationParameters should be loaded.
+            Name of the file from which the SimulationParameters should be
+            loaded.
 
         Returns
         -------

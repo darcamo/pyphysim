@@ -1557,7 +1557,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         lele_result.update(3, 10)
         lulu_result.update(3)
         lulu_result.update(1)
-        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
+        elapsed_time_result2 = Result.create(
+            'elapsed_time', Result.SUMTYPE, 20)
         simresults.add_result(lala_result)
         simresults.add_result(lele_result)
         simresults.add_result(lulu_result)
@@ -1696,8 +1697,9 @@ class SimulationResultsTestCase(unittest.TestCase):
                                simresults2['lala'][0].get_result(),)
         self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
                                simresults2['lele'][0].get_result(),)
-        np.testing.assert_array_almost_equal(self.simresults['lulu'][0].get_result(),
-                                             simresults2['lulu'][0].get_result(),)
+        np.testing.assert_array_almost_equal(
+            self.simresults['lulu'][0].get_result(),
+            simresults2['lulu'][0].get_result(),)
         self.assertAlmostEqual(self.simresults['name'][0].get_result(),
                                simresults2['name'][0].get_result(),)
 
@@ -1722,7 +1724,8 @@ class SimulationResultsTestCase(unittest.TestCase):
     #         self.skipTest("The h5py module is not installed")
 
     #     # # xxxxx Add a result with accumulate set to True xxxxxxxxxxxxxxxxxx
-    #     # result_acu = Result('name', Result.RATIOTYPE, accumulate_values=True)
+    #     # result_acu = Result('name', Result.RATIOTYPE,
+    #     #                     accumulate_values=True)
     #     # result_acu.update(13, 15)
     #     # result_acu.update(30, 43)
     #     # self.simresults.add_result(result_acu)
