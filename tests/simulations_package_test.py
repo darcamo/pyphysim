@@ -2028,7 +2028,7 @@ class _DummyRunnerWithSkip(SimulationRunner):
             if self._num_skipped > 0:
                 raise SkipThisOne('Skipping this one')
             else:
-                print "lalala"
+                pass
 
         SNR = current_params['SNR']
         bias = current_params['bias']
