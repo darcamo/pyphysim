@@ -522,7 +522,8 @@ class IASimulationRunner(SimulationRunner):
             # the same as the IA basic object
             self.ia_top_object = self.ia_solver
         else:
-            raise ValueError("Invalid stream selection method: '{0}'".format(alg))
+            raise ValueError(
+                "Invalid stream selection method: '{0}'".format(alg))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -601,24 +602,24 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
         cell_radius=float(min=0.01, default=1.0)
         num_cells=integer(min=3,default=3)
         num_clusters=integer(min=1,default=1)
-
         [Scenario]
         NSymbs=integer(min=10, max=1000000, default=200)
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
         M=integer(min=4, max=512, default=4)
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="PSK")
-        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
-        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=2)
-        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=1)
+        Nr=integer_scalar_or_integer_numpy_array_check(min=2,default=3)
+        Nt=integer_scalar_or_integer_numpy_array_check(min=2,default=3)
+        Ns=integer_scalar_or_integer_numpy_array_check(min=1,default=3)
         N0=float(default=-116.4)
-        scenario=option('NoPathLoss', 'Random', default="NoPathLoss")
+        scenario=string_list(default=list('Random', 'NoPathLoss'))
         [IA Algorithm]
-        max_iterations=integer_numpy_array(min=1, default=60)
+        max_iterations=integer(min=1, default=120)
         initialize_with=string_list(default=list('random'))
+        stream_sel_method=string_list(default=list('greedy', 'brute'))
         [General]
         rep_max=integer(min=1, default=2000)
         max_bit_errors=integer(min=1, default=3000)
-        unpacked_parameters=string_list(default=list('SNR'))
+        unpacked_parameters=string_list(default=list('SNR','stream_sel_method','scenario','initialize_with'))
         [Plot]
         max_iterations_plot=integer(default=5)
         initialize_with_plot=option('random', 'alt_min', default='random')
@@ -632,8 +633,8 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Results base name xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    base_name = ("BLA_results_{scenario}_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})"
-                 "_MaxIter_{max_iterations}_({initialize_with})")
+    base_name = ("IA_stream_sel_results_{SNR}_{M}-{modulator}_{Nr}x{Nt}"
+                 "_({Ns})_MaxIter_{max_iterations}_({initialize_with})")
     # base_name = ("results_{SNR}_{M}-{modulator}_{Nr}x{Nt}_({Ns})_MaxIter"
     #              "_{max_iterations}_{initialize_with}")
     base_name = misc.replace_dict_values(base_name, params.parameters, True)
@@ -642,21 +643,48 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     fig, ax = plt.subplots(nrows=1, ncols=1)
     fig2, ax2 = plt.subplots(nrows=1, ncols=1)
 
-    greedy_results = SimulationResults.load_from_file(
+    # Include results with the Greedy and Brute Force stream selection
+    # algorithms
+    results = SimulationResults.load_from_file(
         'greedy_{0}.pickle'.format(base_name))
-    brute_force_results = SimulationResults.load_from_file(
-        'brute_force_{0}.pickle'.format(base_name))
 
     # We only get the parameters from the greedy object, since we use the
     # same parameters for greedy and brute force
-    parameters_dict = greedy_results.params.parameters
-    fixed_params = {'max_iterations': max_iterations}
+    parameters_dict = results.params.parameters
+    # Fixed parameters for the Greedy stream selection algorithm in the
+    # "NoPathLoss" scenario
+    greedy_nopl_fixed_params = {'max_iterations': max_iterations,
+                                'stream_sel_method': 'greedy',
+                                'initialize_with': 'random',
+                                'scenario': 'NoPathLoss'}
+    # Fixed parameters for the Greedy stream selection algorithm in the
+    # "Random" scenario (path loss with random positions for the users)
+    greedy_random_fixed_params = {'max_iterations': max_iterations,
+                                  'stream_sel_method': 'greedy',
+                                  'initialize_with': 'random',
+                                  'scenario': 'Random'}
+    # Fixed parameters for the Brute Force stream selection algorithm in
+    # the "NoPathLoss" scenario
+    brute_nopl_fixed_params = {'max_iterations': max_iterations,
+                               'stream_sel_method': 'brute',
+                               'initialize_with': 'random',
+                               'scenario': 'NoPathLoss'}
+    # Fixed parameters for the Brute Force stream selection algorithm in
+    # the "Random" scenario (path loss with random positions for the users)
+    brute_random_fixed_params = {'max_iterations': max_iterations,
+                                 'stream_sel_method': 'brute',
+                                 'initialize_with': 'random',
+                                 'scenario': 'Random'}
 
-    _plot_ber(greedy_results, fixed_params, ax, 'Greedy', '-r*')
-    _plot_sum_capacity(greedy_results, fixed_params, ax2, 'Greedy', '-r*')
-    _plot_ber(brute_force_results, fixed_params, ax, 'Brute Force', '-b*')
-    _plot_sum_capacity(
-        brute_force_results, fixed_params, ax2, 'Brute Force', '-b*')
+    _plot_ber(results, greedy_nopl_fixed_params, ax,
+              'Greedy (No PL)', '-r*')
+    _plot_ber(results, greedy_random_fixed_params, ax,
+              'Greedy (With PL)', '-r*')
+
+    _plot_sum_capacity(results, greedy_nopl_fixed_params, ax2,
+                       'Greedy (No PL)', '-r*')
+    _plot_sum_capacity(results, greedy_random_fixed_params, ax2,
+                       'Greedy (With PL)', '-r*')
 
     # xxxxxxxxxx BER Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ax.set_xlabel('SNR')
@@ -678,7 +706,8 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     ax2.set_xlabel('SNR')
     ax2.set_ylabel('Sum Capacity')
     title = ("Sum Capacity for Different Algorithms ({max_iterations} Max "
-             "Iterations)\nK={num_cells}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}")
+             "Iterations)\nK={num_cells}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-"
+             "{modulator}")
     title = title.replace("{max_iterations}", str(max_iterations))
     ax2.set_title(title.format(**parameters_dict))
 
