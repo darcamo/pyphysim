@@ -48,6 +48,20 @@ from pyphysim.simulations.runner import SimulationRunner, SkipThisOne
 from pyphysim.util import misc
 
 
+def delete_file_if_possible(filename):
+    """
+    Try to delete the file with name `filename`.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the file to be removed.
+    """
+    try:
+        os.remove(filename)
+    except OSError:  # pragma: no cover
+        pass
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -712,10 +726,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         filename = 'params.pickle'
         # Let's make sure the file does not exist
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
+        delete_file_if_possible(filename)
 
         # Save to the file
         self.sim_params.save_to_pickled_file(filename)
@@ -730,7 +741,7 @@ class SimulationParametersTestCase(unittest.TestCase):
                          sim_params2.get_num_unpacked_variations())
 
         # Delete the where the parameters were saved
-        os.remove(filename)
+        delete_file_if_possible(filename)
 
         # xxxxx Test saving and loading one of the unpacked variations xxxx
         filename2 = 'params_3.pickle'
@@ -742,7 +753,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
 
         # Delete the where the parameters were saved
-        os.remove(filename2)
+        delete_file_if_possible(filename2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_hdf5_file(self):
@@ -753,10 +764,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         filename = 'params.h5'
         # Let's make sure the file does not exist
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
+        delete_file_if_possible(filename)
 
         # Save to the file
         self.sim_params.save_to_hdf5_file(filename)
@@ -771,7 +779,7 @@ class SimulationParametersTestCase(unittest.TestCase):
                          sim_params2.get_num_unpacked_variations())
 
         # Delete the where the parameters were saved
-        os.remove(filename)
+        delete_file_if_possible(filename)
 
         # xxxxx Test saving and loading one of the unpacked variations xxxx
         filename2 = 'params_3.pickle'
@@ -783,7 +791,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
 
         # Delete the where the parameters were saved
-        os.remove(filename2)
+        delete_file_if_possible(filename2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_load_from_config_file(self):
@@ -799,10 +807,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         filename = 'test_config_file.txt'
 
         # xxxxxxxxxx Write the config file xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
+        # First we delete the file if it exists
+        delete_file_if_possible(filename)
 
         fid = open(filename, 'w')
         fid.write("modo=test\n[Scenario]\nSNR=0,5,10\nM=4\nmodulator=PSK\n"
@@ -868,10 +874,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
-        try:
-            os.remove(filename)
-        except OSError:  # pragma: no cover
-            pass
+        delete_file_if_possible(filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -1712,7 +1715,7 @@ class SimulationResultsTestCase(unittest.TestCase):
                                simresults2.params['factor'])
 
         # Delete the where the results were saved
-        os.remove(filename)
+        delete_file_if_possible(filename)
 
     # def test_save_to_and_load_from_hdf5_file(self):
     #     base_filename = 'results_({age})_({temperature})_({factor})'
@@ -2836,10 +2839,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
     # necessary cost.
     def test_updater(self):
         # Remove old file from previous test run
-        try:
-            os.remove(self.output_filename)
-        except OSError:  # Pragma: no cover
-            pass
+        delete_file_if_possible(self.output_filename)
 
         # Suppose that the first process already started and called the
         # proxybar1 to update its progress.
