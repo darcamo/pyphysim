@@ -28,6 +28,7 @@ import glob
 from time import sleep
 from io import StringIO
 from itertools import repeat
+from copy import copy
 
 try:
     from IPython.parallel import CompositeError
@@ -755,6 +756,99 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Delete the where the parameters were saved
         delete_file_if_possible(filename2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_save_and_load_sanity(self):
+        # Test if when saving and loading the simulation parameters the
+        # list of unpacked parameters is in the same order.
+        #
+        # Previously the order of the list of unpacked parameters could
+        # change after saving and loading the SimulationParameters object
+        # from a file. This would cause problems for the SimulationResults
+        # class. This bug was fixed by making sure the order of the
+        # unpacked parameters list is fixed (sorted by alphabetic order)
+        # and here we test for the bug in case it ever comes back after
+        # some code change.
+        params = SimulationParameters.create({
+            'first': np.array([0, 5, 10, 26]),
+            'second': ['aha', 'ahe'],
+            'third': [10],
+            'fourth': [30],
+            'fifth': ['hum', 'mian'],
+            'sixth': ['a', 'b', 'c'],
+            'seventh': ['ok', 'not ok', 'maybe']})
+
+        filename = 'paramsfile.pickle'
+
+        # Test without unpacking any parameter
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the first one and test
+        params.set_unpack_parameter('first')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the second one and test again
+        params.set_unpack_parameter('second')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the third one and test again
+        params.set_unpack_parameter('third')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the fourth one and test again
+        params.set_unpack_parameter('fourth')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the fifth one and test again
+        params.set_unpack_parameter('fifth')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the sixth one and test again
+        params.set_unpack_parameter('sixth')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
+
+        # Unpack the seventh one and test again
+        params.set_unpack_parameter('seventh')
+        unpacked_parameters = copy(params.unpacked_parameters)
+        delete_file_if_possible(filename)
+        params.save_to_pickled_file(filename)
+        params2 = SimulationParameters.load_from_pickled_file(filename)
+        self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
+        delete_file_if_possible(filename)
 
     def test_save_to_and_load_from_hdf5_file(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))

@@ -169,7 +169,7 @@ class SimulationParameters(object):
     @property
     def unpacked_parameters(self):
         """Names of the parameters marked to be unpacked."""
-        return list(self._unpacked_parameters_set)
+        return sorted(self._unpacked_parameters_set)
 
     @property
     def fixed_parameters(self):
@@ -519,6 +519,8 @@ class SimulationParameters(object):
         # List to store the indexes (as strings) of the fixed parameters,
         # as well as ":" for the varying parameter,
         param_indexes = []
+        # Note that self.unpacked_parameters is a sorted list, which
+        # guarantees a predictable order
         for i in self.unpacked_parameters:
             if i in varying_param:
                 param_indexes.append(':')
@@ -597,7 +599,10 @@ class SimulationParameters(object):
         # Dictionary that stores the name and an iterator of a parameter
         # marked to be unpacked
         unpacked_params_iter_dict = OrderedDict()
-        for i in self._unpacked_parameters_set:
+        # The sorted function is important to guarantee that the keys
+        # returned from _unpacked_parameters_set will have a predictable
+        # order
+        for i in sorted(self._unpacked_parameters_set):
             unpacked_params_iter_dict[i] = get_iter_from_name(i)
         keys = list(unpacked_params_iter_dict.keys())
 
