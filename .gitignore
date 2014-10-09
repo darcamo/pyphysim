@@ -73,3 +73,6 @@ flycheck*
 
 # h5 files
 *.h5
+
+# Ignore text files with the progress created by the progressbar classes
+*_progress_*.txt
