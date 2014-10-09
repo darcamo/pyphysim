@@ -677,14 +677,24 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
                                  'scenario': 'Random'}
 
     _plot_ber(results, greedy_nopl_fixed_params, ax,
-              'Greedy (No PL)', '-r*')
+              'Greedy (No PL)', '-b*')
     _plot_ber(results, greedy_random_fixed_params, ax,
               'Greedy (With PL)', '-r*')
 
     _plot_sum_capacity(results, greedy_nopl_fixed_params, ax2,
-                       'Greedy (No PL)', '-r*')
+                       'Greedy (No PL)', '-b*')
     _plot_sum_capacity(results, greedy_random_fixed_params, ax2,
                        'Greedy (With PL)', '-r*')
+
+    _plot_ber(results, brute_nopl_fixed_params, ax,
+              'Brute Force (No PL)', '-co')
+    _plot_ber(results, brute_random_fixed_params, ax,
+              'Brute Force (With PL)', '-mo')
+
+    _plot_sum_capacity(results, brute_nopl_fixed_params, ax2,
+                       'Brute Force (No PL)', '-co')
+    _plot_sum_capacity(results, brute_random_fixed_params, ax2,
+                       'Brute Force (With PL)', '-mo')
 
     # xxxxxxxxxx BER Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ax.set_xlabel('SNR')
@@ -725,8 +735,8 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     from apps.simulate_greedy_ia import IASimulationRunner
-    main_simulate()
-    # main_plot()
+    # main_simulate()
+    main_plot()
 
     # greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
     # greedy_runner.set_results_filename("greedy_teste_APAGAR")
