@@ -3,7 +3,8 @@
 
 # pylint: disable=E1101
 
-"""Implement classes to represent the progress of a task.
+"""
+Implement classes to represent the progress of a task.
 
 Use the ProgressbarText class for tasks that do not use multiprocessing,
 and the ProgressbarMultiProcessServer class for tasks using multiprocessing.
@@ -41,9 +42,10 @@ except ImportError:  # pragma: no cover
 
 from ..util.misc import pretty_time
 
-__all__ = ['DummyProgressbar', 'ProgressbarText', 'ProgressbarText2',
-           'ProgressbarText3', 'ProgressbarMultiProcessServer',
-           'ProgressbarZMQServer', 'center_message']
+__all__ = ['DummyProgressbar', 'ProgressBarBase', 'ProgressbarText',
+           'ProgressbarText2', 'ProgressbarText3',
+           'ProgressbarMultiProcessServer', 'ProgressbarZMQServer',
+           'center_message']
 
 
 # If this function is ever used outside this file, then move it to the
@@ -130,17 +132,9 @@ class DummyProgressbar(object):  # pragma: no cover
 # xxxxxxxxxx DummyProgressbar - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarTextBase - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# The code here and in some of the derived classes is inspired in the code
-# located in
-# http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/
-# /examples/notebooks/Progress%20Bars.ipynb
-#
-class ProgressbarTextBase(object):  # pylint: disable=R0902
+class ProgressBarBase(object):
     """
-    Base class for Text progressbars.
+    Base class for all ProgressBar classes.
 
     Parameters
     ----------
@@ -149,20 +143,16 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
         method is called with a number that number is added with the
         current amount in the progressbar. When the amount becomes equal to
         `finalcount` the bar will be 100% complete.
-    progresschar : str, optional (default to '*')
-        The character used to represent progress.
     message : str, optional
         A message to be shown in the top of the progressbar.
-    output : File like object
-        Object with a 'write' method, which controls where the progress-bar
-        will be printed. By default sys.stdout is used, which means that
-        the progress will be printed in the standard output.
+
+    Notes
+    -----
+    Derived classes should implement `_update_iteration` and
+    `_display_current_progress`. Optionally derived class might also
+    `implement _perform_initialization` and `_perform_finalizations`
     """
-    def __init__(self,
-                 finalcount,
-                 progresschar='*',
-                 message='',
-                 output=sys.stdout):
+    def __init__(self, finalcount):
         """
         Initializes the progressbar object.
 
@@ -173,33 +163,13 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
             progress method is called with a number that number is added
             with the current amount in the progressbar. When the amount
             becomes equal to `finalcount` the bar will be 100% complete.
-        progresschar : str, optional (default to '*')
-            The character used to represent progress.
         message : str, optional
             A message to be shown in the top of the progressbar.
-        output : File like object
-            Object with a 'write' method, which controls where the
-            progress-bar will be printed. By default sys.stdout is used,
-            which means that the progress will be printed in the standard
-            output.
         """
-        self.prog_bar = ""
-
         self.finalcount = finalcount
-        self.progresschar = progresschar
 
-        # If output points to a file (and not to stdout) and this is set to
-        # True, then the file will be erased after the progress finishes.
-        self.delete_progress_file_after_completion = False
-
-        self._width = 50   # This should be a multiple of 10 and the lower
-                           # possible value is 40.
-
-        # By default, self._output points to sys.stdout so I can use the
-        # write/flush methods to display the progress bar.
-        self._output = output
-        self._message = message  # THIS WILL BE IGNORED
-
+        # This will be set to True after the `start` method is called to
+        # initialize the progressbar.
         self._initialized = False
 
         # This will be set to true when the progress reaches 100%. When
@@ -215,23 +185,6 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
         # called for the first time (either manually or in the `progress`
         # method. It will be used for tracking the elapsed time.
         self._stop_time = 0.0
-
-        # If true, an empty line will be printed when the progress finishes
-        self._print_empty_line_at_the_end = True
-
-    def __del__(self):
-        """
-        Delete the output file if there is any and
-        delete_progress_file_after_completion was set to True when the
-        progressbar object is deleted.
-        """
-        # In case the progressbar object is deleted before the progress
-        # finishes the `stop` method will not be called and thus the output
-        # file (if there is any) would not be deleted even if
-        # delete_progress_file_after_completion was set to True. Therefore,
-        # we implement the __del__ method here to call the
-        # _maybe_delete_output_file method to do that.
-        self._maybe_delete_output_file()
 
     @property
     def elapsed_time(self):
@@ -264,7 +217,228 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
         percentage = (count / float(self.finalcount)) * 100.0
         return percentage
 
+    def _perform_initialization(self):
+        """
+        Perform any initializations for the progressbar.
+
+        This method should be implemented in sub-classes if any
+        initialization code should be run.
+        """
+        pass
+
+    def _perform_finalizations(self):
+        """
+        Perform any finalization (cleanings) after the progressbar stops.
+
+        This method should be implemented in sub-classes if any
+        finalization code should be run.
+        """
+        pass
+
+    def start(self):
+        """
+        Start the progressbar.
+
+        This method should be called just before the progressbar is used
+        for the first time. Among possible other things, it will store the
+        current time so that the elapsed time can be tracked.
+        """
+        if self._initialized is False:
+            self._start_time = time.time()
+            self._perform_initialization()
+            self._initialized = True
+
+    def stop(self):
+        """
+        Stop the progressbar.
+
+        This method is automatically called in the `progress` method when
+        the progress reaches 100%. If manually called, any subsequent call
+        to the `progress` method will be ignored.
+        """
+        if self._finalized is False:
+            self._stop_time = time.time()
+
+            # When progress reaches 100% we set the internal variable
+            # to True so that any subsequent calls to the `progress`
+            # method will be ignored.
+            self._finalized = True
+
+            self._perform_finalizations()
+
+    # pylint:disable=R0201,W0613
+    def _update_iteration(self, count):  # pragma: no cover
+        """
+        Update the self.prog_bar member variable according with the new
+        `count`.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+        """
+        raise NotImplementedError("Implement this method in a subclass")
+
+    def _display_current_progress(self, ):
+        """
+        Refresh the progress representation.
+
+        This method should be defined in a subclass.
+        """
+        raise NotImplementedError("Implement this method in a subclass")
+
+    def progress(self, count):
+        """
+        Updates the current progress.
+
+        Calling this function will update the the current progress.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+
+        Notes
+        -----
+        How the progressbar is actually represented depends on the
+        subclass.  In the subclasses implement the `_update_iteration`
+        method to update the current representation of the progressbar and
+        the `_update_progress_display` to actually display the current
+        progress.
+        """
+        if self._finalized is False:
+            # Start the progressbar. This only have an effect the first
+            # time it is called. It initializes the elapsed time tracking
+            # and call the _perform_initialization method to perform any
+            # initialization.
+            self.start()
+
+            # Sanity check. If count is greater then self.finalcount we set
+            # it to self.finalcount
+            if count > self.finalcount:
+                count = self.finalcount
+
+            # Update the progressbar representation. this is up to the
+            # subclass. Note that this method should not refresh the
+            # progressbar, which is left to the _display_current_progress
+            # method.
+            self._update_iteration(count)
+
+            # Refresh the progress representation.
+            self._display_current_progress()
+
+            # If count is equal to self.finalcount we have reached
+            # 100%. In that case, we also write a final newline
+            # character.
+            if count == self.finalcount:
+                self.stop()
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarTextBase - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# The code here and in some of the derived classes is inspired in the code
+# located in
+# http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/
+# /examples/notebooks/Progress%20Bars.ipynb
+#
+class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
+    """
+    Base class for Text progressbars.
+
+    Parameters
+    ----------
+    finalcount : int
+        The total amount that corresponds to 100%. Each time the progress
+        method is called with a number that number is added with the
+        current amount in the progressbar. When the amount becomes equal to
+        `finalcount` the bar will be 100% complete.
+    progresschar : str, optional (default to '*')
+        The character used to represent progress.
+    message : str, optional
+        A message to be shown in the top of the progressbar.
+    output : File like object
+        Object with a 'write' method, which controls where the progress-bar
+        will be printed. By default sys.stdout is used, which means that
+        the progress will be printed in the standard output.
+
+    Notes
+    -----
+    Derived classes must implement at least `_update_iteration` and this
+    method should update the `prog_bar` member variable with the text
+    representation of the progress.
+    """
+    def __init__(self,
+                 finalcount,
+                 progresschar='*',
+                 message='',
+                 output=sys.stdout):
+        """
+        Initializes the progressbar object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        progresschar : str, optional (default to '*')
+            The character used to represent progress.
+        message : str, optional
+            A message to be shown in the top of the progressbar.
+        output : File like object
+            Object with a 'write' method, which controls where the
+            progress-bar will be printed. By default sys.stdout is used,
+            which means that the progress will be printed in the standard
+            output.
+        """
+        super(ProgressbarTextBase, self).__init__(finalcount)
+
+        # This will be updated with the progress and should contain the
+        # whole string representation of the progressbar.
+        self.prog_bar = "Progress Representation"
+        self.old_prog_bar = ""
+
+        # character used to represent progress
+        self.progresschar = progresschar
+
+        # If output points to a file (and not to stdout) and this is set to
+        # True, then the file will be erased after the progress finishes.
+        self.delete_progress_file_after_completion = False
+
+        # This should be a multiple of 10. The lower possible value is 40.
+        self._width = 50
+
+        # By default, self._output points to sys.stdout so I can use the
+        # write/flush methods to display the progress bar.
+        self._output = output
+        self._message = message  # THIS WILL BE IGNORED
+
+        # If true, an empty line will be printed when the progress finishes
+        self._print_empty_line_at_the_end = True
+
+    def __del__(self):
+        """
+        Delete the output file if there is any and
+        delete_progress_file_after_completion was set to True when the
+        progressbar object is deleted.
+        """
+        # In case the progressbar object is deleted before the progress
+        # finishes the `stop` method will not be called and thus the output
+        # file (if there is any) would not be deleted even if
+        # delete_progress_file_after_completion was set to True. Therefore,
+        # we implement the __del__ method here to call the
+        # _maybe_delete_output_file method to do that.
+        self._maybe_delete_output_file()
+
     # xxxxxxxxxx width property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Text progressbars have a width property indicating the width (in
+    # number of characters) of the full progress.
     @property
     def width(self):
         """Get method for the width property."""
@@ -287,6 +461,9 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
                                        left_side='[',
                                        right_side=']'):
         """
+        Get the percent representation as a string suitable to the text
+        progressbar.
+
         Parameters
         ----------
         percent : float
@@ -339,28 +516,6 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
 
         return prog_bar
 
-    def _perform_initialization(self):
-        """
-        Perform the initializations.
-
-        This method should be derived in sub-classes if any initialization
-        code should be run.
-        """
-        pass
-
-    def start(self):
-        """
-        Start the progressbar.
-
-        This method should be called just before the progressbar is used
-        for the first time. Among possible other things, it will store the
-        current time so that the elapsed time can be tracked.
-        """
-        if self._initialized is False:
-            self._start_time = time.time()
-            self._perform_initialization()
-            self._initialized = True
-
     def _maybe_delete_output_file(self):
         """
         Delete the output file (if there is any) when
@@ -387,109 +542,57 @@ class ProgressbarTextBase(object):  # pylint: disable=R0902
                 # any file
                 pass
 
-    def stop(self):
+    def _perform_finalizations(self):
         """
-        Stop the progressbar.
-
-        This method is automatically called in the `progress` method when
-        the progress reaches 100%. If manually called, any subsequent call
-        to the `progress` method will be ignored.
+        Perform any finalization (cleanings) after the progressbar stops.
         """
-        if self._finalized is False:
-            self._stop_time = time.time()
+        if self._print_empty_line_at_the_end is True:
+            # Print an empty line after the last iteration to be consistent
+            # with the ProgressbarText class
+            self._output.write(u"\n")
 
-            if self._print_empty_line_at_the_end is True:
-                # Print an empty line after the last iteration to be consistent
-                # with the ProgressbarText class
-                self._output.write(u"\n")
-                self._output.flush()  # Flush everything to guarantee that
-                                      # at this point everything is written
-                                      # to the output.
-
-            # When progress reaches 100% we set the internal variable
-            # to True so that any subsequent calls to the `progress`
-            # method will be ignored.
-            self._finalized = True
+            # Flush everything to guarantee that at this point everything
+            # is written to the output.
+            self._output.flush()
 
             # This will only delete the output file if self._output
             # actually points to a file and if
             # self.delete_progress_file_after_completion is set to True
             self._maybe_delete_output_file()
 
-    def progress(self, count):
+    def _display_current_progress(self):
         """
-        Updates the progress bar.
+        Refresh the progress representation.
 
-        Parameters
-        ----------
-        count : int
-            The current count to be represented in the progressbar. The
-            progressbar represents this count as a percent value of
-            self.finalcount
+        All text progressbars should implement the `_update_iteration` to
+        update the `prog_bar` member variable with the text representation
+        of the progressbar.
 
-        Notes
-        -----
-        How the progressbar is actually represented depends on the
-        `_update_iteration` method, which is left to be implemented in a
-        subclass.
+        This method is responsable to sending this text representation to
+        the output.
         """
-        if self._finalized is False:
-            # Start the progressbar. This only have an effect the first
-            # time it is called. It initializes the elapsed time tracking
-            # and call the _perform_initialization method to perform any
-            # initialization.
-            self.start()
-
-            # Sanity check. If count is greater then self.finalcount we set
-            # it to self.finalcount
-            if count > self.finalcount:
-                count = self.finalcount
-
+        # We will only write the progress if it actually changed since
+        # the last time. This is specially useful when the output is a
+        # file and it will avoid writing many unnecessary equal lines to
+        # the file.
+        if self.old_prog_bar != self.prog_bar:
             # Save the current prog_bar variable before it is updated in
             # the _update_iteration method.
-            old_prog_bar = self.prog_bar
+            self.old_prog_bar = self.prog_bar
 
-            # Update the prog_bar variable. Note that the _update_iteration
-            # method is implemented in a subclass.
-            self._update_iteration(count)
+            # We simple change the cursor to the beginning of the line and
+            # write the string representation of the prog_bar variable.
+            self._output.write(u'\r')
+            self._output.write(u'{0}'.format((self.prog_bar)))
 
-            # We will only write the progress if it actually changed since
-            # the last time. This is specially useful when the output is a
-            # file and it will avoid writing many unnecessary equal lines to
-            # the file.
-            if old_prog_bar != self.prog_bar:
-                # We simple change the cursor to the beginning of the line and
-                # write the string representation of the prog_bar variable.
-                self._output.write(u'\r')
-                self._output.write(u'{0}'.format((self.prog_bar)))
+            # Flush everything to guarantee that at this point
+            # everything is written to the output.
+            self._output.flush()
 
-                # Flush everything to guarantee that at this point
-                # everything is written to the output.
-                self._output.flush()
-
-                # If count is equal to self.finalcount we have reached
-                # 100%. In that case, we also write a final newline
-                # character.
-                if count == self.finalcount:
-                    self.stop()
-
+    # The string representation of a text progressbar should display the
+    # whole progressbar
     def __str__(self):
         return str(self.prog_bar)
-
-    # pylint:disable=R0201,W0613
-    def _update_iteration(self, count):  # pragma: no cover
-        """
-        Update the self.prog_bar member variable according with the new
-        `count`.
-
-        Parameters
-        ----------
-        count : int
-            The current count to be represented in the progressbar. The
-            progressbar represents this count as a percent value of
-            self.finalcount
-        """
-        raise NotImplementedError("Implement this method in a subclass")
 # xxxxxxxxxx ProgressbarTextBase - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -569,9 +672,9 @@ class ProgressbarText(ProgressbarTextBase):
         ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
                                      output)
 
-        self.progresscharcount = 0  # stores how many characters where
-                                    # already printed in a previous call to
-                                    # the `progress` function
+        # stores how many characters where already printed in a previous
+        # call to the `progress` function
+        self.progresscharcount = 0
 
     def __get_initialization_bartitle(self):
         """
@@ -761,9 +864,15 @@ class ProgressbarText2(ProgressbarTextBase):
             progressbar represents this count as a percent value of
             self.finalcount
         """
-        # Update the self.prog_bar variable with the current count, but
-        # without the message (if there is one)
-        self._update_prog_bar(self._count_to_percent(count))
+        # Convert `count` to the equivalent percentage
+        percent_count = self._count_to_percent(count)
+
+        # Update the self.prog_bar variable with (only) the current
+        # percentage representation. The message is not included and will
+        # be appended after this.
+        self.prog_bar = self._get_percentage_representation(
+            percent_count, central_message='{percent}%',
+            left_side='[', right_side=']')
 
         # Append the message to the self.prog_bar variable if there is one
         # (or a default message if there is no message set)..
@@ -772,14 +881,6 @@ class ProgressbarText2(ProgressbarTextBase):
             self.prog_bar += "  {0}".format(message)
         else:
             self.prog_bar += '  %d of %d complete' % (count, self.finalcount)
-
-    def _update_prog_bar(self, count):
-        """Updates the self.prog_bar member variable."""
-        self.prog_bar = self._get_percentage_representation(
-            count,
-            central_message='{percent}%',
-            left_side='[',
-            right_side=']')
 # xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -873,7 +974,6 @@ class ProgressbarText3(ProgressbarTextBase):
             self.prog_bar = center_message(full_count,
                                            length=self.width,
                                            fill_char=self.progresschar)
-
 # xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -952,9 +1052,9 @@ class ProgressbarDistributedServerBase(object):
 
         # The event will be set when the process updating the progressbar
         # is running and unset (clear) when it is stopped.
-        self.running = multiprocessing.Event()  # Starts unset. Is is set
-                                                # in the _update_progress
-                                                # function
+        #
+        # Starts unset. Is is set in the _update_progress function
+        self.running = multiprocessing.Event()
 
         # Each time the start_updater method is called this variable is
         # increased by one and each time the stop_updater method is called
