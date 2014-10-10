@@ -129,7 +129,7 @@ if __name__ == '__main__':
         'stream_statistics', fixed_params={
             'initialize_with': 'random',
             'stream_sel_method': 'greedy',
-            'scenario': 'NoPathLoss'})
+            'scenario': 'Random'})
     brute_force_nopl_stream_statistics = results.get_result_values_list(
         'stream_statistics', fixed_params={
             'initialize_with': 'random',
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         'stream_statistics', fixed_params={
             'initialize_with': 'random',
             'stream_sel_method': 'brute',
-            'scenario': 'NoPathLoss'})
+            'scenario': 'Random'})
 
     SNR = results.params['SNR']
 
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     for idx, snr in enumerate(SNR):
         print("SNR: {0}".format(snr))
         statistic_table = get_pretty_statistic_table(
-            greedy_nopl_stream_statistics[idx])
+            greedy_withpl_stream_statistics[idx])
         print_statistics_table(statistic_table)
         print
 
@@ -159,5 +159,5 @@ if __name__ == '__main__':
     for idx, snr in enumerate(SNR):
         print("SNR: {0}".format(snr))
         statistic_table = get_pretty_statistic_table(
-            brute_force_nopl_stream_statistics[idx])
+            brute_force_withpl_stream_statistics[idx])
         print_statistics_table(statistic_table)
