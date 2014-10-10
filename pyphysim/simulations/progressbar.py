@@ -45,7 +45,7 @@ from ..util.misc import pretty_time
 __all__ = ['DummyProgressbar', 'ProgressBarBase', 'ProgressbarText',
            'ProgressbarText2', 'ProgressbarText3',
            'ProgressbarMultiProcessServer', 'ProgressbarZMQServer',
-           'center_message']
+           'ProgressBarIPython', 'center_message']
 
 
 # If this function is ever used outside this file, then move it to the
@@ -269,8 +269,7 @@ class ProgressBarBase(object):
     # pylint:disable=R0201,W0613
     def _update_iteration(self, count):  # pragma: no cover
         """
-        Update the self.prog_bar member variable according with the new
-        `count`.
+        Update the progressbar according with the new `count`.
 
         Parameters
         ----------
@@ -975,6 +974,77 @@ class ProgressbarText3(ProgressbarTextBase):
                                            length=self.width,
                                            fill_char=self.progresschar)
 # xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressBarIPython xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class ProgressBarIPython(ProgressBarBase):
+    """
+    Progressbar for IPython notebooks.
+
+    The progressbar will be rendered using IPython widgets.
+    """
+
+    def __init__(self, finalcount):
+        """
+        Initializes the progressbar object.
+
+        Parameters
+        ----------
+        finalcount : int
+            The total amount that corresponds to 100%. Each time the
+            progress method is called with a number that number is added
+            with the current amount in the progressbar. When the amount
+            becomes equal to `finalcount` the bar will be 100% complete.
+        """
+        from IPython.html.widgets import FloatProgressWidget
+        super(ProgressBarIPython, self).__init__(finalcount)
+
+        # IPython already provide us a nice widget to represent
+        # progressbars.
+        self.prog_bar = FloatProgressWidget()
+
+    def _update_iteration(self, count):
+        """
+        Update the self.prog_bar member variable according with the new
+        `count`.
+
+        Parameters
+        ----------
+        count : int
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
+        """
+        percentage = self._count_to_percent(count)
+
+        # Update the IPython progressbar widget
+        self.prog_bar.value = percentage
+
+    def _display_current_progress(self):
+        """
+        Refresh the progress representation.
+        """
+        # This method is called averytime the `progress` method is
+        # called. However, for progressbar using IPython widgets we only
+        # need to display the widget once and IPython will take care of
+        # redisplaying it whenever the widget changes. Therefore, we don't
+        # need to do anything here and we will display the widget in the
+        # `_perform_initialization` method instead, since it is called only
+        # once.
+        pass
+
+    def _perform_initialization(self):
+        """
+        Perform any initializations for the progressbar.
+
+        This method should be implemented in sub-classes if any
+        initialization code should be run.
+        """
+        from IPython.display import display
+        display(self.prog_bar)
+# xxxxxxxxxx ProgressBarIPython - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
