@@ -143,8 +143,6 @@ class ProgressBarBase(object):
         method is called with a number that number is added with the
         current amount in the progressbar. When the amount becomes equal to
         `finalcount` the bar will be 100% complete.
-    message : str, optional
-        A message to be shown in the top of the progressbar.
 
     Notes
     -----
@@ -163,8 +161,6 @@ class ProgressBarBase(object):
             progress method is called with a number that number is added
             with the current amount in the progressbar. When the amount
             becomes equal to `finalcount` the bar will be 100% complete.
-        message : str, optional
-            A message to be shown in the top of the progressbar.
         """
         self.finalcount = finalcount
 
@@ -986,7 +982,7 @@ class ProgressBarIPython(ProgressBarBase):
     The progressbar will be rendered using IPython widgets.
     """
 
-    def __init__(self, finalcount):
+    def __init__(self, finalcount, side_message=None):
         """
         Initializes the progressbar object.
 
@@ -997,13 +993,32 @@ class ProgressBarIPython(ProgressBarBase):
             progress method is called with a number that number is added
             with the current amount in the progressbar. When the amount
             becomes equal to `finalcount` the bar will be 100% complete.
+        side_message : str
+            A message to display on the right side of the progressbar. This
+            is rendered as Latex and thus can contain math.
         """
-        from IPython.html.widgets import FloatProgressWidget
+        from IPython.html.widgets import FloatProgressWidget, \
+            ContainerWidget, LatexWidget
         super(ProgressBarIPython, self).__init__(finalcount)
 
         # IPython already provide us a nice widget to represent
         # progressbars.
         self.prog_bar = FloatProgressWidget()
+
+        # If `side_message` is provided then we will add the message as a
+        # LatexWidget with the message as the value.
+        self.side_message = LatexWidget()
+        self.side_message.set_css({'font-size': '14pt'})
+        if side_message is None:
+            self.side_message.visible = False
+        else:
+            self.side_message.value = side_message
+            self.side_message.disabled = True
+
+        # In order to put the float progressbar and the message side by
+        # side we use a container.
+        self.container_widget = ContainerWidget()
+        self.container_widget.children = [self.prog_bar, self.side_message]
 
     def _update_iteration(self, count):
         """
@@ -1043,7 +1058,14 @@ class ProgressBarIPython(ProgressBarBase):
         initialization code should be run.
         """
         from IPython.display import display
-        display(self.prog_bar)
+        # Display the container with the progressbar and the message. Not
+        # that if no message was provided the the message widget inside the
+        # container will be invisible
+        display(self.container_widget)
+
+        # Make the container pack its children horizontally
+        self.container_widget.remove_class('vbox')
+        self.container_widget.add_class('hbox')
 # xxxxxxxxxx ProgressBarIPython - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
