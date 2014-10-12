@@ -593,6 +593,9 @@ def plot_ber(
     ax : A matplotlib axis.
         The axis where the curve was plotted.
     """
+    if plot_args is None:
+        plot_args = {}
+
     ber = results.get_result_values_list('ber')
 
     # Get the SNR from the simulation parameters
@@ -656,6 +659,9 @@ def plot_ser(
     ax : A matplotlib axis.
         The axis where the curve was plotted.
     """
+    if plot_args is None:
+        plot_args = {}
+
     ser = results.get_result_values_list('ser')
 
     # Get the SNR from the simulation parameters
@@ -719,6 +725,9 @@ def plot_ber_and_ser(
     ax : A matplotlib axis.
         The axis where the curve was plotted.
     """
+    if plot_args is None:
+        plot_args = {}
+
     new_ax = plot_ber(results, ax, name, block, X_axis, plot_args)
     plot_args2 = copy(plot_args)
     plot_args2['linestyle'] = 'dashed'
