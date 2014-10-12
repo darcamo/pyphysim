@@ -625,7 +625,12 @@ def plot_ber(
 
         cur_ax.semilogy(X, ber, marker='*', label=label, **plot_args)
         cur_ax.legend(loc=3)
-        plt.show(block=block)
+        try:
+            # There is no 'block' keyword argument when running inside
+            # IPython notebook
+            plt.show(block=block)
+        except TypeError:
+            plt.show()
 
         return ax
 
