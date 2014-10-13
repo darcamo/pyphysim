@@ -1008,7 +1008,7 @@ class ProgressBarIPython(ProgressBarBase):
         # If `side_message` is provided then we will add the message as a
         # LatexWidget with the message as the value.
         self.side_message = LatexWidget()
-        self.side_message.set_css({'font-size': '14pt'})
+        self.side_message.set_css({'font-size': '14pt', 'margin-left': '10pt'})
         if side_message is None:
             self.side_message.visible = False
         else:
