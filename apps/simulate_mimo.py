@@ -42,10 +42,14 @@ class MIMOSimulationRunner(SimulationRunner):
     ----------
     MimoSchemeClass : The class of the MIMO scheme object
         The MIMO scheme class, which should be a subclass of comm.mimo
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, MimoSchemeClass, config_filename, spec):
-        SimulationRunner.__init__(self)
+    def __init__(self, MimoSchemeClass, config_filename, spec,
+                 read_command_line_args=True):
+        SimulationRunner.__init__(
+            self, read_command_line_args=read_command_line_args)
 
         # Read the simulation configuration from the file. What is read and
         self.params = SimulationParameters.load_from_config_file(
@@ -168,9 +172,11 @@ class AlamoutiSimulationRunner(MIMOSimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
         M=integer(min=4, max=512, default=16)
@@ -188,7 +194,8 @@ class AlamoutiSimulationRunner(MIMOSimulationRunner):
             self,
             mimo.Alamouti,
             config_filename,
-            spec)
+            spec,
+            read_command_line_args=read_command_line_args)
 
 
 class BlastSimulationRunner(MIMOSimulationRunner):
@@ -202,9 +209,11 @@ class BlastSimulationRunner(MIMOSimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
         M=integer(min=4, max=512, default=16)
@@ -222,7 +231,8 @@ class BlastSimulationRunner(MIMOSimulationRunner):
             self,
             mimo.Blast,
             config_filename,
-            spec)
+            spec,
+            read_command_line_args=read_command_line_args)
 
 
 class MRCSimulationRunner(MIMOSimulationRunner):
@@ -236,9 +246,11 @@ class MRCSimulationRunner(MIMOSimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
         M=integer(min=4, max=512, default=16)
@@ -256,7 +268,8 @@ class MRCSimulationRunner(MIMOSimulationRunner):
             self,
             mimo.MRC,
             config_filename,
-            spec)
+            spec,
+            read_command_line_args=read_command_line_args)
 
 
 class MRTSimulationRunner(MIMOSimulationRunner):
@@ -270,9 +283,11 @@ class MRTSimulationRunner(MIMOSimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
         M=integer(min=4, max=512, default=16)
@@ -290,7 +305,8 @@ class MRTSimulationRunner(MIMOSimulationRunner):
             self,
             mimo.MRT,
             config_filename,
-            spec)
+            spec,
+            read_command_line_args=read_command_line_args)
 
 
 class SVDMimoSimulationRunner(MIMOSimulationRunner):
@@ -304,9 +320,11 @@ class SVDMimoSimulationRunner(MIMOSimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
         M=integer(min=4, max=512, default=16)
@@ -324,7 +342,8 @@ class SVDMimoSimulationRunner(MIMOSimulationRunner):
             self,
             mimo.SVDMimo,
             config_filename,
-            spec)
+            spec,
+            read_command_line_args=read_command_line_args)
 
 
 class GMDMimoSimulationRunner(MIMOSimulationRunner):
@@ -338,9 +357,11 @@ class GMDMimoSimulationRunner(MIMOSimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values.
+    read_command_line_args : bool
+        If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
         M=integer(min=4, max=512, default=16)
@@ -358,7 +379,8 @@ class GMDMimoSimulationRunner(MIMOSimulationRunner):
             self,
             mimo.GMDMimo,
             config_filename,
-            spec)
+            spec,
+            read_command_line_args=read_command_line_args)
 
 
 def simulate_general(runner, results_filename):
@@ -571,6 +593,9 @@ def plot_ber(
     ax : A matplotlib axis.
         The axis where the curve was plotted.
     """
+    if plot_args is None:
+        plot_args = {}
+
     ber = results.get_result_values_list('ber')
 
     # Get the SNR from the simulation parameters
@@ -600,7 +625,12 @@ def plot_ber(
 
         cur_ax.semilogy(X, ber, marker='*', label=label, **plot_args)
         cur_ax.legend(loc=3)
-        plt.show(block=block)
+        try:
+            # There is no 'block' keyword argument when running inside
+            # IPython notebook
+            plt.show(block=block)
+        except TypeError:
+            plt.show()
 
         return ax
 
@@ -634,6 +664,9 @@ def plot_ser(
     ax : A matplotlib axis.
         The axis where the curve was plotted.
     """
+    if plot_args is None:
+        plot_args = {}
+
     ser = results.get_result_values_list('ser')
 
     # Get the SNR from the simulation parameters
@@ -697,6 +730,9 @@ def plot_ber_and_ser(
     ax : A matplotlib axis.
         The axis where the curve was plotted.
     """
+    if plot_args is None:
+        plot_args = {}
+
     new_ax = plot_ber(results, ax, name, block, X_axis, plot_args)
     plot_args2 = copy(plot_args)
     plot_args2['linestyle'] = 'dashed'

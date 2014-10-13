@@ -14,7 +14,7 @@ from .results import SimulationResults, Result
 
 from ..util.misc import pretty_time
 from .progressbar import ProgressbarText, ProgressbarText2, \
-    ProgressbarText3, ProgressbarZMQServer
+    ProgressbarText3, ProgressbarZMQServer, ProgressBarIPython
 
 __all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
 
@@ -646,6 +646,10 @@ class SimulationRunner(object):
                                           **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
             self._pbar.delete_progress_file_after_completion = True
+        elif self.update_progress_function_style == 'ipython':
+            self._pbar = ProgressBarIPython(self.rep_max, message)
+            update_progress_func = self._pbar.progress
+
         elif callable(self.update_progress_function_style) is True:
             # We will use a custom function to update the progress. Note
             # that we call self.update_progress_function_style to return
@@ -997,7 +1001,8 @@ class SimulationRunner(object):
             The index of the first variation.
         """
         if (self.update_progress_function_style is None
-           or self.progress_output_type != 'screen'):
+           or self.progress_output_type != 'screen'
+           or self.update_progress_function_style == 'ipython'):
             for i in itertools.repeat(''):
                 yield 0
         else:  # pragma: no cover
@@ -1157,10 +1162,9 @@ class SimulationRunner(object):
 
         Parameters
         ----------
-        view : A view of the IPython engines.
-            A DirectView of the available IPython engines. The parallel
-            processing will happen by calling the 'map' method of the
-            provided view to simulate in parallel the different
+        view : A ´view´ of the IPython engines.
+            The parallel processing will happen by calling the 'map' method
+            of the provided view to simulate in parallel the different
             configurations of transmission parameters.
         wait : Bool
             If True then the self.wait_parallel_simulation method will be
