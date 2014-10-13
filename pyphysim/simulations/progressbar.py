@@ -1058,8 +1058,8 @@ class ProgressBarIPython(ProgressBarBase):
         initialization code should be run.
         """
         from IPython.display import display
-        # Display the container with the progressbar and the message. Not
-        # that if no message was provided the the message widget inside the
+        # Display the container with the progressbar and the message.
+        # If no message was provided the the text widget inside the
         # container will be invisible
         display(self.container_widget)
 
