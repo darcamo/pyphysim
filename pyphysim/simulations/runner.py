@@ -1162,10 +1162,9 @@ class SimulationRunner(object):
 
         Parameters
         ----------
-        view : A view of the IPython engines.
-            A DirectView of the available IPython engines. The parallel
-            processing will happen by calling the 'map' method of the
-            provided view to simulate in parallel the different
+        view : A ´view´ of the IPython engines.
+            The parallel processing will happen by calling the 'map' method
+            of the provided view to simulate in parallel the different
             configurations of transmission parameters.
         wait : Bool
             If True then the self.wait_parallel_simulation method will be
