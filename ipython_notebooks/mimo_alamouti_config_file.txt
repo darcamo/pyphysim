@@ -1,0 +1,12 @@
+[Scenario]
+        SNR = [  0.   5.  10.  15.  20.]
+        M = 16
+        modulator = QAM
+        NSymbs = 200
+        Nr = 1
+        Nt = 2
+[General]
+        rep_max = 5000
+        max_bit_errors = 3000
+        unpacked_parameters = SNR,
+        
