@@ -23,7 +23,8 @@ __all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
 
 
 class Coordinate(object):
-    """Base class for a coordinate in a grid.
+    """
+    Base class for a coordinate in a grid.
 
     A Coordinate object knows its location in the grid (represented as a
     complex number) and how to calculate the distance from it to another
@@ -31,7 +32,8 @@ class Coordinate(object):
     """
 
     def __init__(self, pos):
-        """Initializes the Coordinate object.
+        """
+        Initializes the Coordinate object.
 
         Parameters
         ----------
@@ -53,7 +55,8 @@ class Coordinate(object):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def calc_dist(self, other):
-        """Calculates the distance to another coordinate.
+        """
+        Calculates the distance to another coordinate.
 
         Parameters
         ----------
@@ -117,7 +120,8 @@ class Shape(Coordinate):
     __metaclass__ = ABCMeta
 
     def __init__(self, pos, radius, rotation=0):
-        """Initializes the shape.
+        """
+        Initializes the shape.
 
         Parameters
         ----------
@@ -219,7 +223,8 @@ class Shape(Coordinate):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def is_point_inside_shape(self, point):
-        """Test is a point is inside the shape.
+        """
+        Test is a point is inside the shape.
 
         Parameters
         ----------
@@ -241,16 +246,16 @@ class Shape(Coordinate):
         # 1.2. However, since Matplotlib version 1.2 the pnpoly function is
         # deprecated
 
-        ## pnpoly returns 1 if point is inside the polygon and 0 otherwise
+        # # pnpoly returns 1 if point is inside the polygon and 0 otherwise
         # import matplotlib.nxutils as mnx
         # return mnx.pnpoly(point.real, point.imag,
         #                   from_complex_array_to_real_matrix(
         #                       self.vertices)) == 1
 
     def get_border_point(self, angle, ratio):  # pylint: disable=R0914
-        """Calculates the coordinate of the point that intercepts the
-        border of the shape if we go from the origin with a given angle
-        (in degrees).
+        """
+        Calculates the coordinate of the point that intercepts the border of
+        the shape if we go from the origin with a given angle (in degrees).
 
         Parameters
         ----------
@@ -267,7 +272,6 @@ class Shape(Coordinate):
             border with the desired angle. If ratio is equal to one the
             point will be in the end of the line (touching the shape's
             border)
-
         """
         angle_rad = np.pi * angle / 180.
 
@@ -339,7 +343,8 @@ class Shape(Coordinate):
         return (1 - ratio) * self.pos + ratio * point
 
     def plot(self, ax=None):  # pragma: no cover
-        """Plot the shape using the matplotlib library.
+        """
+        Plot the shape using the matplotlib library.
 
         Parameters
         ----------
@@ -448,7 +453,8 @@ class Shape(Coordinate):
 
 
 class Hexagon(Shape):
-    """Hexagon shape class.
+    """
+    Hexagon shape class.
 
     Besides the `pos`, `radius` and `rotation` properties from the Shape
     base class, the Hexagon also has a height property (read-only) from the
@@ -456,7 +462,8 @@ class Hexagon(Shape):
     """
 
     def __init__(self, pos, radius, rotation=0):
-        """Initializes the Hexagon object.
+        """
+        Initializes the Hexagon object.
 
         Parameters
         ----------
@@ -496,10 +503,12 @@ class Hexagon(Shape):
 
 
 class Rectangle(Shape):
-    """Rectangle shape class.
+    """
+    Rectangle shape class.
     """
     def __init__(self, first, second, rotation=0):
-        """Initializes the Rectangle object.
+        """
+        Initializes the Rectangle object.
 
         The rectangle is initialized from two coordinates as well as from
         the rotation.
@@ -572,7 +581,8 @@ class Rectangle(Shape):
                                         axis_option='tight')
 
     def is_point_inside_shape(self, point):
-        """Test is a point is inside the rectangle
+        """
+        Test is a point is inside the rectangle
 
         Parameters
         ----------
@@ -603,11 +613,13 @@ class Rectangle(Shape):
 
 
 class Circle(Shape):
-    """Circle shape class.
+    """
+    Circle shape class.
     """
 
     def __init__(self, pos, radius):
-        """Initializes the Circle.
+        """
+        Initializes the Circle.
 
         A circle is initialized only from a coordinate and a radius.
 
@@ -617,7 +629,6 @@ class Circle(Shape):
             Coordinate of the center of the circle.
         radius : floar
             Circle's radius.
-
         """
         Shape.__init__(self, pos, radius)
 
@@ -647,9 +658,10 @@ class Circle(Shape):
         return vertex_positions
 
     def get_border_point(self, angle, ratio):
-        """Calculates the coordinate of the point that intercepts the
-        border of the circle if we go from the origin with a given angle
-        (in degrees).
+        """
+        Calculates the coordinate of the point that intercepts the border of
+        the circle if we go from the origin with a given angle (in
+        degrees).
 
         Parameters
         ----------
@@ -671,7 +683,8 @@ class Circle(Shape):
         return self.pos + np.exp(1j * angle_rad) * self.radius * ratio
 
     def is_point_inside_shape(self, point):
-        """Test is a point is inside the circle
+        """
+        Test is a point is inside the circle
 
         Parameters
         ----------
@@ -686,7 +699,8 @@ class Circle(Shape):
         return np.abs(self.pos - point) < self.radius
 
     def plot(self, ax=None):  # pragma: no cover
-        """Plot the circle using the Matplotlib library.
+        """
+        Plot the circle using the Matplotlib library.
 
         Parameters
         ----------
@@ -733,7 +747,8 @@ class Circle(Shape):
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def from_complex_array_to_real_matrix(a):
-    """Convert an array of complex numbers to a matrix of real numbers.
+    """
+    Convert an array of complex numbers to a matrix of real numbers.
 
     Parameters
     ----------
@@ -778,7 +793,7 @@ if __name__ == '__main__1':  # pragma: no cover
     ax = plt.axes()
     h = Hexagon(2 + 3j, 2, 30)
 
-    #print "Border Point is: {0}".format(point)
+    # print "Border Point is: {0}".format(point)
     h.plot(ax)
 
     POINT1 = h.get_border_point(90, 0.9)
@@ -795,7 +810,7 @@ if __name__ == '__main__1':  # pragma: no cover
 
     ax.plot(h.pos.real, h.pos.imag, 'ro')
 
-    #print h.vertices
+    # print h.vertices
     ax.axis('equal')
     plt.show()
 
@@ -829,7 +844,7 @@ if __name__ == '__main__1':  # pragma: no cover
     ax = plt.axes()
     c = Circle(2 + 3j, 2)
 
-    #print "Border Point is: {0}".format(point)
+    # print "Border Point is: {0}".format(point)
     c.plot(ax)
 
     for v in c.vertices:
@@ -837,6 +852,6 @@ if __name__ == '__main__1':  # pragma: no cover
 
     ax.plot(c.pos.real, c.pos.imag, 'ro')
 
-    #print c.vertices
+    # print c.vertices
     ax.axis('equal')
     plt.show()
