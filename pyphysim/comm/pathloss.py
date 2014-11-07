@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Implement classes for several Path loss models.
+"""
+Implement classes for several Path loss models.
 
 The base class PathLossBase implements the code common to every path loss
 model and only two methods need to be implemented in subclasses:
@@ -12,7 +13,6 @@ the desired path loss model and then call the calc_path_loss_dB or the
 calc_path_loss methods to actually calculate the path loss.
 
 .. TODO:: Verify the equations in the docstrings
-
 """
 
 try:
@@ -62,8 +62,9 @@ class PathLossBase(object):
 
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     @abstractmethod
-    def which_distance_dB(self, PL):
-        """Calculates the distance that yields the given path loss (in dB).
+    def which_distance_dB(self, PL):  # pragma: no cover
+        """
+        Calculates the distance that yields the given path loss (in dB).
 
         Parameters
         ----------
@@ -75,7 +76,6 @@ class PathLossBase(object):
         NotImplementedError
             If the which_distance_dB method of the PathLossBase class is
             called.
-
         """
         # Raises an exception if which_distance_dB is not implemented in a
         # subclass
@@ -83,9 +83,10 @@ class PathLossBase(object):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d):
-        """Calculates the Path Loss (in dB) for a given distance (in Km)
-        without including the shadowing.
+    def _calc_deterministic_path_loss_dB(self, d):  # pragma: no cover
+        """
+        Calculates the Path Loss (in dB) for a given distance (in Km) without
+        including the shadowing.
 
         Parameters
         ----------
@@ -97,7 +98,6 @@ class PathLossBase(object):
         NotImplementedError
             If the _calc_deterministic_path_loss_dB method of the
             PathLossBase class is called.
-
         """
         msg = ('_calc_deterministic_path_loss_dB must be reimplemented in '
                'the {0} class')
@@ -107,9 +107,11 @@ class PathLossBase(object):
     def plot_deterministic_path_loss_in_dB(
             self, d, ax=None, extra_args=None):  # pragma: no cover
         """
+        Plot the path loss (in dB) for the distance values in `d` (in Km).
+
         Parameters
         ----------
-        d : float or numpy array
+        d : numpy array
             Distance (in Km)
         ax : A matplotlib ax, optional
             The ax where the path loss will be plotted. If not provided, a
@@ -139,8 +141,8 @@ class PathLossBase(object):
             plt.show()
 
     def calc_path_loss_dB(self, d):
-        """Calculates the Path Loss (in dB) for a given distance (in
-        kilometers).
+        """
+        Calculates the Path Loss (in dB) for a given distance (in Km).
 
         Note that the returned value is positive, but should be understood
         as "a loss".
@@ -177,8 +179,8 @@ class PathLossBase(object):
         return PL
 
     def calc_path_loss(self, d):
-        """Calculates the path loss (in linear scale) for a given distance
-        (in kilometers).
+        """
+        Calculates the path loss (linear scale) for a given distance (in Km).
 
         Parameters
         ----------
@@ -194,8 +196,9 @@ class PathLossBase(object):
         return pl
 
     def which_distance(self, pl):
-        """Calculates the required distance (in kilometers) to achieve the
-        given path loss. It is the inverse of the calcPathLoss function.
+        """
+        Calculates the required distance (in Km) to achieve the given path
+        loss. It is the inverse of the calc_path_loss function.
 
         Parameters
         ----------
@@ -212,7 +215,8 @@ class PathLossBase(object):
 
 
 class PathLossFreeSpace(PathLossBase):
-    """Class to calculate the Path Loss in the free space.
+    """
+    Class to calculate the Path Loss in the free space.
 
     The common interface for the path loss classes is provided by the
     calc_path_loss_dB or the calc_path_loss methods to actually calculate
@@ -240,7 +244,6 @@ class PathLossFreeSpace(PathLossBase):
 
     >>> pl.which_distance_dB(90)
     0.83882020174144778
-
     """
 
     def __init__(self):
@@ -249,10 +252,11 @@ class PathLossFreeSpace(PathLossBase):
         self.fc = 900  # Frequency of the central carrier (in MHz)
 
     def which_distance_dB(self, PL):
-        """Calculates the required distance (in kilometers) to achieve the
-        given path loss (in dB).
+        """
+        Calculates the required distance (in Km) to achieve the given path loss
+        (in dB).
 
-        It is the inverse of the calcPathLoss function.
+        It is the inverse of the calc_path_loss function.
 
         :math:`10^{(PL/(10n) - \\log_{10}(fc) + 4.377911390697565)}`
 
@@ -267,9 +271,8 @@ class PathLossFreeSpace(PathLossBase):
         -------
         d : float of numpy array
             Distance (in Km).
-
         """
-        # $10^{(PL/(10n) - \log_{10}(fc) + 4.377911390697565)}$
+        #$10^{(PL/(10n) - \log_{10}(fc) + 4.377911390697565)}$
         # Note: the value "6.0" was subtracted to account the fact that
         # self.fc is in MHz.
         d = (10. ** (PL / (10. * self.n)
@@ -277,8 +280,8 @@ class PathLossFreeSpace(PathLossBase):
         return d
 
     def _calc_deterministic_path_loss_dB(self, d):
-        """Calculates the Path Loss (in dB) for a given distance (in
-        kilometers).
+        """
+        Calculates the Path Loss (in dB) for a given distance (in Km).
 
         Note that the returned value is positive, but should be understood
         as "a loss".
@@ -334,10 +337,11 @@ class PathLoss3GPP1(PathLossBase):
         PathLossBase.__init__(self)
 
     def which_distance_dB(self, PL):
-        """Calculates the required distance (in kilometers) to achieve the
-        given path loss (in dB).
+        """
+        Calculates the required distance (in Km) to achieve the given path loss
+        (in dB).
 
-        It is the inverse of the calcPathLoss function.
+        It is the inverse of the calc_path_loss function.
 
         Parameters
         ----------
@@ -354,7 +358,7 @@ class PathLoss3GPP1(PathLossBase):
 
     def _calc_deterministic_path_loss_dB(self, d):
         """
-        Calculates the Path Loss (in dB) for a given distance (in kilometers).
+        Calculates the Path Loss (in dB) for a given distance (in Km).
 
         Note that the returned value is positive, but should be understood
         as "a loss".
@@ -574,7 +578,7 @@ class PathLossOkomuraHata(PathLossBase):
 
     def _calc_deterministic_path_loss_dB(self, d):
         """
-        Calculates the Path Loss (in dB) for a given distance (in kilometers).
+        Calculates the Path Loss (in dB) for a given distance (in Km).
 
         Note that the returned value is positive, but should be understood
         as "a loss".
@@ -610,10 +614,11 @@ class PathLossOkomuraHata(PathLossBase):
         return L
 
     def which_distance_dB(self, PL):
-        """Calculates the required distance (in kilometers) to achieve the
-        given path loss (in dB).
+        """
+        Calculates the required distance (in Km) to achieve the given path loss
+        (in dB).
 
-        It is the inverse of the calcPathLoss function.
+        It is the inverse of the calc_path_loss function.
 
         Parameters
         ----------
