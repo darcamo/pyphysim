@@ -80,6 +80,51 @@ class CommDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx CHANNELS module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ModuleFunctionsTestCase(unittest.TestCase):
+    def test_calc_thermal_noise_power(self):
+        T = 23  # Temperature in degrees
+
+        # Test for 1Hz
+        delta_f = 1  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -174, places=0)
+
+        # Test for 10Hz
+        delta_f = 10  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -164, places=0)
+
+        # Test for 100Hz
+        delta_f = 100  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -154, places=0)
+
+        # Test for 200kHz
+        delta_f = 200e3  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -121, places=0)
+
+        # Test for 1MHz
+        delta_f = 1e6  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -114, places=0)
+
+        # Test for 5MHz
+        delta_f = 5e6  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -107, places=0)
+
+        # Test for 20MHz
+        delta_f = 20e6  # Bandwidth in Hz
+        noise_power_dBm = channels.calc_thermal_noise_power_dBm(
+            T, delta_f)
+        self.assertAlmostEqual(noise_power_dBm, -101, places=0)
+
     def test_generate_jakes_samples(self):
         Fd = 5     # Doppler frequency (in Hz)
         Ts = 1e-3  # Sampling interval (in seconds)
