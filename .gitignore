@@ -52,6 +52,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 docs/autosummary_folder/
+docs/Mathjax/*
 
 # Ignore some files created in the tests
 *.out
