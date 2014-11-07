@@ -214,7 +214,113 @@ class PathLossBase(object):
         return d
 
 
-class PathLossFreeSpace(PathLossBase):
+class PathLossGeneral(PathLossBase):
+    """
+    Class to calculate the path loss given the path loss for a reference
+    distance.
+
+    In its simplest form, the path loss can be calculated using the formula
+
+    :math:`L = 10 n \\log_{10} (d) + C`
+
+    where `L` is in dB, `n` is the path loss exponent (usually in the range
+    of 2 to 4) and `d` is the distance between the transmitter and the
+    receiver.
+
+    Parameters
+    ----------
+    n : float
+        The path loss exponent.
+    C : float
+        The constant `C` in the path loss formula.
+    """
+    # $L = 10n\log_{10}(d) + C$
+
+    def __init__(self, n, C):
+        """
+        Initializes the path loss object.
+
+        Parameters
+        ----------
+        n : float
+            The path loss exponent.
+        C : float
+            The constant `C` in the path loss formula.
+        """
+        PathLossBase.__init__(self)
+        self._n = n
+        self._C = C
+
+    @property
+    def n(self):
+        """Get method for the n property."""
+        return self._n
+
+    @n.setter
+    def n(self, value):
+        """Set method for the n property."""
+        self._n = value
+
+    @property
+    def C(self):
+        """Get method for the C property."""
+        return self._C
+
+    @C.setter
+    def C(self, value):
+        """Set method for the C property."""
+        self._C = value
+
+    def which_distance_dB(self, PL):
+        """
+        Calculates the required distance (in Km) to achieve the given path loss
+        (in dB).
+
+        It is the inverse of the calc_path_loss function.
+
+        :math:`10^{(PL/(10n) - C)}`
+
+        d = obj.whichDistance(dB2Linear(-PL));
+
+        Parameters
+        ----------
+        PL : float or numpy array
+            Path Loss (in dB).
+
+        Returns
+        -------
+        d : float or numpy array
+            Distance (in Km).
+        """
+        d = 10. ** ((PL - self._C) / (10. * self._n))
+        return d
+
+    def _calc_deterministic_path_loss_dB(self, d):
+        """
+        Calculates the Path Loss (in dB) for a given distance (in Km).
+
+        Note that the returned value is positive, but should be understood
+        as "a loss".
+
+        For d in Km and self.fc in MHz, the free space Path Loss is given by
+
+        :math:`PL = 10 n \\log_{10}(d) + C`
+
+        Parameters
+        ----------
+        d : float or numpy array
+            Distance (in Km).
+
+        Returns
+        -------
+        pl_dB : float or numpy array
+            Path loss in dB.
+        """
+        PL = (10 * self._n * np.log10(d)) + self._C
+        return PL
+
+
+class PathLossFreeSpace(PathLossGeneral):
     """
     Class to calculate the Path Loss in the free space.
 
@@ -228,6 +334,23 @@ class PathLossFreeSpace(PathLossBase):
     corresponding to the path loss coefficient, and the `fc` variable,
     corresponding to the frequency. The `n` variable defaults to 2 and `fc`
     defaults to 900 (that is, 900MHz).
+
+    The path loss (in dB) in free space is calculated as:
+
+    .. math::
+       PL = 10 n ( \\log_{10}(d)+\\log_{10}(fc * 1e6) - 4.3779113907)
+
+    Likewise, the which_distance_dB function calculates the value of
+
+    .. math::
+       10^{(PL/(10n) - \\log_{10}(fc) + 4.377911390697565)}
+
+    Parameters
+    ----------
+    n : float
+        Path loss exponent.
+    fc : float
+        Central carrier frequency (in MHz).
 
     Examples
     --------
@@ -243,74 +366,80 @@ class PathLossFreeSpace(PathLossBase):
     Determining the distance (in Km) that yields a path loss of 90dB.
 
     >>> pl.which_distance_dB(90)
-    0.83882020174144778
+    0.83882020174144811
     """
 
-    def __init__(self):
-        PathLossBase.__init__(self)
-        self.n = 2     # Path Loss Coefficient
-        self.fc = 900  # Frequency of the central carrier (in MHz)
-
-    def which_distance_dB(self, PL):
+    def __init__(self, n=2, fc=900):
         """
-        Calculates the required distance (in Km) to achieve the given path loss
-        (in dB).
-
-        It is the inverse of the calc_path_loss function.
-
-        :math:`10^{(PL/(10n) - \\log_{10}(fc) + 4.377911390697565)}`
-
-        d = obj.whichDistance(dB2Linear(-PL));
+        Initializes the PathLossFreeSpace object
 
         Parameters
         ----------
-        PL : float of numpy array
-            Path Loss (in dB).
-
-        Returns
-        -------
-        d : float of numpy array
-            Distance (in Km).
+        n : float
+            Path loss exponent.
+        fc : float
+            Central carrier frequency (in MHz)
         """
-        #$10^{(PL/(10n) - \log_{10}(fc) + 4.377911390697565)}$
-        # Note: the value "6.0" was subtracted to account the fact that
-        # self.fc is in MHz.
-        d = (10. ** (PL / (10. * self.n)
-                     - np.log10(self.fc) - 6.0 + 4.377911390697565))
-        return d
+        PathLossGeneral.__init__(self, n=n, C=0)
 
-    def _calc_deterministic_path_loss_dB(self, d):
+        # Note that the set property of self.fc will update self._C
+        self._fc = fc  # Frequency of the central carrier (in MHz)
+        self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
+
+    @property
+    def n(self):
+        """Get method for the n property."""
+        return self._n
+
+    @n.setter
+    def n(self, value):
+        """Set method for the n property."""
+        self._n = value
+        # If we change 'n', we need to update the C variable
+        self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
+
+    @property
+    def fc(self):
+        """Get method for the fc property."""
+        return self._fc
+
+    @fc.setter
+    def fc(self, value):
+        """Set method for the fc property."""
+        self._fc = value
+        # If we change 'fc', we need to update the C variable
+        self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
+
+    @staticmethod
+    def _calculate_C_from_fc_and_n(fc, n):
         """
-        Calculates the Path Loss (in dB) for a given distance (in Km).
-
-        Note that the returned value is positive, but should be understood
-        as "a loss".
-
-        For d in Km and self.fc in MHz, the free space Path Loss is given by
-        PL = 10 n ( log10(d) +log10(f * 1e6) - 4.3779113907 )
+        Calculate the value of the constant `C` for the frequency value `fc`
+        and path loss exponent `n`.
 
         Parameters
         ----------
-        d : float or numpy array
-            Distance (in Km).
+        fc : float
+            Central carrier frequency (in MHz)
+        n : float
+            Path loss exponent
 
         Returns
         -------
-        pl_dB : float or numpy array
-            Path loss in dB.
+        C : float
+            Constant `C` for the Free Space path loss model for the given
+            frequency and path loss exponent.
         """
-        # The value "6.0" was added to convert the frequency self.fc to MHz
-        PL = (10 * self.n
-              * (np.log10(d) + np.log10(self.fc) + 6.0 - 4.377911390697565))
-        return PL
+        #$PL = 10 n (\log_{10}(d)+\log_{10}(f * 1e6) - 4.3779113907)$
+        C = 10 * n * (np.log10(fc * 1e6) - 4.377911390697565)
+        return C
 
 
-class PathLoss3GPP1(PathLossBase):
+class PathLoss3GPP1(PathLossGeneral):
     """
     Class to calculate the Path Loss according to the model from 3GPP
     (scenario 1). That is, the Path Loss (in dB) is equal to
 
-    $128.1 + 37.6*\log10(d)$.
+    .. math:: PL = 128.1 + 37.6*\log10(d)
 
     This model is valid for LTE assumptions and at 2GHz frequency, where
     the distance is in Km.
@@ -326,58 +455,15 @@ class PathLoss3GPP1(PathLossBase):
     >>> pl.calc_path_loss_dB(1)     # log scale
     128.09999999999999
 
-    Determining the distance (in Km) that yields a path loss of 90dB.
+    Determining the distance (in Km) that yields a path loss of 130dB.
 
-    >>> pl.which_distance_dB(90)
-    0.09698445455772262
+    >>> pl.which_distance_dB(130)
+    1.1233935211892188
     """
 
     def __init__(self):
         # super(PathLossFreeSpace, self).__init__()
-        PathLossBase.__init__(self)
-
-    def which_distance_dB(self, PL):
-        """
-        Calculates the required distance (in Km) to achieve the given path loss
-        (in dB).
-
-        It is the inverse of the calc_path_loss function.
-
-        Parameters
-        ----------
-        PL : float or numpy array
-            Path loss (in dB).
-
-        Returns
-        -------
-        d : float of numpy array
-            Distance (in Km).
-        """
-        d = 10 ** ((PL - 128.1) / 37.6)
-        return d
-
-    def _calc_deterministic_path_loss_dB(self, d):
-        """
-        Calculates the Path Loss (in dB) for a given distance (in Km).
-
-        Note that the returned value is positive, but should be understood
-        as "a loss".
-
-        For d in Km and self.fc in Hz, the free space Path Loss is given by
-        PL = 10n ( log10(d) +log10(f) - 4.3779113907 )
-
-        Parameters
-        ----------
-        d : float or numpy array
-            Distance (in Km).
-
-        Returns
-        -------
-        PL : float
-            Path loss in dB.
-        """
-        PL = 128.1 + 37.6 * np.log10(d)
-        return PL
+        PathLossGeneral.__init__(self, n=3.76, C=128.1)
 
 
 # TODO: Test this class
@@ -627,7 +713,7 @@ class PathLossOkomuraHata(PathLossBase):
 
         Returns
         -------
-        d : float of numpy array
+        d : float or numpy array
             Distance (in Km).
         """
         # TODO: implement-me

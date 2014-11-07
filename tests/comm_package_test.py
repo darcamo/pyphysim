@@ -4903,27 +4903,76 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.pl.calc_path_loss(0.000011)
 
-        # Test for a single path loss value
-        self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
-                               4.88624535312e-10)
-        self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
-                               93.1102472958)
+        # xxxxxxxxxx Test for a single path loss value xxxxxxxxxxxxxxxxxxxx
+        n = 2
+        fc = 900
+        d = 1.2
+        expected_pl_in_dB = (
+            10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
 
-        # Test for multiple path loss values
+        self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
+                               expected_pl_in_dB)
+        self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
+                               dB2Linear(-expected_pl_in_dB))
+
+        # When we change 'n', this will impact path loss calculation
+        n = 2.7
+        self.pl.n = n
+        expected_pl_in_dB = (
+            10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
+                               expected_pl_in_dB)
+        self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
+                               dB2Linear(-expected_pl_in_dB))
+
+        # When we change 'fc', this will impact path loss calculation
+        fc = 1100
+        self.pl.fc = fc
+        expected_pl_in_dB = (
+            10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
+                               expected_pl_in_dB)
+        self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
+                               dB2Linear(-expected_pl_in_dB))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx est for multiple path loss values xxxxxxxxxxxxxxxxxxxx
+        d = np.array([1.2, 1.4, 1.6])
+        expected_pl_in_dB = (
+            10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss_dB([1.2, 1.4, 1.6]),
+            expected_pl_in_dB, 16)
+
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss([1.2, 1.4, 1.6]),
-            np.array([4.88624535e-10, 3.58989455e-10, 2.74851301e-10]), 16)
+            dB2Linear(-expected_pl_in_dB), 16)
 
-        # Test test_calc_path_loss with shadow
+        # Change 'n' and 'fc'
+        n = 2
+        fc = 900
+        self.pl.n = n
+        self.pl.fc = fc
+        expected_pl_in_dB = (
+            10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss_dB([1.2, 1.4, 1.6]),
+            expected_pl_in_dB, 16)
+
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+            dB2Linear(-expected_pl_in_dB), 16)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test test_calc_path_loss with shadow xxxxxxxxxxxxxxxxx
         self.pl.use_shadow_bool = True
         # We don't know the value of the shadowing to test it, but we can
         # at least test that the shadowing modified the path loss
         self.assertNotAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                   93.1102472958)
-
-        # TODO: Finish the implementation below
-        # Test if calc_path_loss works with shadowing for multiple values.
-        # self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_which_distance(self):
         # Test which_distance and which_distance_dB for a single value.
@@ -4939,6 +4988,48 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             self.pl.which_distance(np.array([4.88624535e-10, 7.0361933e-10])),
             np.array([1.2, 1.0]))
+
+        # xxxxx Sanity check
+        np.testing.assert_array_almost_equal(
+            self.pl.which_distance_dB(self.pl.calc_path_loss_dB([1.4, 1.1])),
+            np.array([1.4, 1.1]))
+        np.testing.assert_array_almost_equal(
+            self.pl.which_distance(self.pl.calc_path_loss([1.4, 1.1])),
+            np.array([1.4, 1.1]))
+        # xxxxx
+
+
+class PathLoss3GPP1TestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.pl = pathloss.PathLoss3GPP1()
+
+    def test_calc_path_loss(self):
+        # with a very small distance the path loss (in linear scale) would
+        # be negative, which is not valid. For these cases we should throw
+        # an exception.
+        with self.assertRaises(RuntimeError):
+            self.pl.calc_path_loss(1e-4)
+
+        # Test for a single path loss value
+        expected_pl = dB2Linear(-(128.1 + 37.6 * np.log10(1.2)))
+        self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
+                               expected_pl, places=14)
+
+        # Test for multiple path loss values
+        expected_pl = dB2Linear(
+            -(128.1 + 37.6 * np.log10(np.array([1.2, 1.5, 1.8, 2.3]))))
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss(np.array([1.2, 1.5, 1.8, 2.3])),
+            expected_pl,
+            decimal=16)
+
+    def test_calc_which_distance(self):
+        np.testing.assert_array_almost_equal(
+            self.pl.which_distance(
+                self.pl.calc_path_loss(np.array([1.2, 1.5, 1.8, 2.3]))),
+            np.array([1.2, 1.5, 1.8, 2.3]),
+            decimal=14)
 
 
 # TODO: finish implementation
