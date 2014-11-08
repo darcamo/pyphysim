@@ -66,7 +66,8 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
         points_and_errors_list = [
             "{0} +- {1}".format(a, b) for a, b in zip(points, error_points)]
         points_string = "\n".join(points_and_errors_list)
-        plot_line = "plot[error bars/.cd, y dir = both, y explicit]\ncoordinates{{{0}}};".format(points_string)
+        plot_line = ("plot[error bars/.cd, y dir = both, y explicit]\n"
+                     "coordinates{{{0}}};").format(points_string)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Get the whole addplot line xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -81,5 +82,4 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
         addplot_line += legend_line
 
     return addplot_line
-
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
