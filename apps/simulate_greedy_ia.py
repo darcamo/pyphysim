@@ -19,6 +19,7 @@ except NameError:
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 from time import time
 import numpy as np
+import pandas as pd
 # from pprint import pprint
 
 from numpy.linalg.linalg import LinAlgError
@@ -313,7 +314,8 @@ class IASimulationRunner(SimulationRunner):
         try:
             self.ia_top_object.solve(Ns=Ns, P=pt)
         except (RuntimeError, LinAlgError):
-            raise SkipThisOne("Could not find the IA solution. Skipping this repetition")
+            raise SkipThisOne(
+                "Could not find the IA solution. Skipping this repetition")
 
         # If any of the Nr, Nt or Ns variables were integers (meaning all
         # users have the same value) we will convert them by numpy arrays
@@ -589,6 +591,53 @@ def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
                 fmt=fmt, elinewidth=2.0, label=label)
 
 
+def get_dataframe_from_results(results):
+    """
+    Get a pandas DataFrame for the results in a well organized way suitable
+    for saving.
+
+    Parameters
+    ----------
+    results : TYPE
+    """
+    df = results.to_dataframe()
+
+    SNR = results.params['SNR']
+
+    brute_Random = df.loc[
+        (df['scenario'] == 'Random') & (df['stream_sel_method'] == 'brute'),
+        ['ber', 'sum_capacity']]
+    brute_Random.set_index(SNR, inplace=True)
+    brute_Random.columns = ['ber_br_PL', 'sum_cap_br_PL']
+
+    brute_NoPathLoss = df.loc[
+        (df['scenario'] == 'NoPathLoss')
+        & (df['stream_sel_method'] == 'brute'),
+        ['ber', 'sum_capacity']]
+    brute_NoPathLoss.set_index(SNR, inplace=True)
+    brute_NoPathLoss.columns = ['ber_br_NoPL', 'sum_cap_br_NoPL']
+
+    greedy_Random = df.loc[
+        (df['scenario'] == 'Random')
+        & (df['stream_sel_method'] == 'greedy'),
+        ['ber', 'sum_capacity']]
+    greedy_Random.set_index(SNR, inplace=True)
+    greedy_Random.columns = ['ber_gr_PL', 'sum_cap_gr_PL']
+
+    greedy_NoPathLoss = df.loc[
+        (df['scenario'] == 'NoPathLoss') &
+        (df['stream_sel_method'] == 'greedy'),
+        ['ber', 'sum_capacity']]
+    greedy_NoPathLoss.set_index(SNR, inplace=True)
+    greedy_NoPathLoss.columns = ['ber_gr_NoPL', 'sum_cap_gr_NoPL']
+
+    df2 = pd.concat(
+        [brute_Random, brute_NoPathLoss, greedy_Random, greedy_NoPathLoss],
+        axis=1)
+
+    return df2
+
+
 def main_plot(index=0):  # pylint: disable=R0914,R0915
     """
     Function called to plot the results from a previous simulation.
@@ -696,6 +745,12 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     _plot_sum_capacity(results, brute_random_fixed_params, ax2,
                        'Brute Force (With PL)', '-mo')
 
+    # Get a dataframe with the results in a well organized way
+    results_dataframe = get_dataframe_from_results(results)
+    filename = 'greedy_results_{M}-{modulator}.csv'.format(
+        **results.params.parameters)
+    results_dataframe.to_csv(filename, index_label='SNR')
+
     # xxxxxxxxxx BER Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ax.set_xlabel('SNR')
     ax.set_ylabel('BER')
@@ -709,7 +764,9 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     ax.grid(True, which='both', axis='both')
 
     # plt.show(block=False)
-    # fig.savefig('ber_all_ia_algorithms.pgf')
+    fig_base_name = "{Nr}x{Nt}_({Ns})_{M}-{modulator}".format(
+        **params.parameters)
+    fig.savefig('ber_{0}.pdf'.format(fig_base_name))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Sum Capacity Plot Options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -724,10 +781,23 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     ax2.legend(fancybox=True, shadow=True, loc=2)
     ax2.grid(True, which='both', axis='both')
     # plt.show()
-    # fig2.savefig('sum_capacity_all_ia_algorithms.pgf')
+    fig2.savefig('sum_capacity_{0}.pdf'.format(fig_base_name))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     plt.show()
+
+    # # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # # Simulation Time
+    # brute_PL_elapsed_time = [misc.pretty_time(i) for i in results.get_result_values_list('elapsed_time',fixed_params=brute_random_fixed_params)]
+    # brute_NoPL_elapsed_time = [misc.pretty_time(i) for i in results.get_result_values_list('elapsed_time',fixed_params=brute_nopl_fixed_params)]
+    # greedy_PL_elapsed_time = [misc.pretty_time(i) for i in results.get_result_values_list('elapsed_time',fixed_params=greedy_random_fixed_params)]
+    # greedy_NoPL_elapsed_time = [misc.pretty_time(i) for i in results.get_result_values_list('elapsed_time',fixed_params=greedy_nopl_fixed_params)]
+
+    # brute_PL_elapsed_time = np.array(results.get_result_values_list('elapsed_time',fixed_params=brute_random_fixed_params))
+    # brute_NoPL_elapsed_time = np.array(results.get_result_values_list('elapsed_time',fixed_params=brute_nopl_fixed_params))
+    # greedy_PL_elapsed_time = np.array(results.get_result_values_list('elapsed_time',fixed_params=greedy_random_fixed_params))
+    # greedy_NoPL_elapsed_time = np.array(results.get_result_values_list('elapsed_time',fixed_params=greedy_nopl_fixed_params))
+    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -735,7 +805,7 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
     from apps.simulate_greedy_ia import IASimulationRunner
-    # main_simulate()
+    main_simulate()
     main_plot()
 
     # greedy_runner = IASimulationRunner('greedy_config_file.txt', 'greedy')
