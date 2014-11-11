@@ -24,6 +24,7 @@ except ImportError:  # pragma: no cover
 from abc import ABCMeta, abstractmethod
 import warnings
 import numpy as np
+import math
 from collections import Iterable
 
 from ..util import conversion
@@ -316,7 +317,12 @@ class PathLossGeneral(PathLossBase):
         pl_dB : float or numpy array
             Path loss in dB.
         """
-        PL = (10 * self._n * np.log10(d)) + self._C
+        if isinstance(d, Iterable):
+            log10 = np.log10
+        else:
+            log10 = math.log10
+
+        PL = (10 * self._n * log10(d)) + self._C
         return PL
 
 
@@ -361,12 +367,12 @@ class PathLossFreeSpace(PathLossGeneral):
     >>> pl.calc_path_loss(1)        # linear scale
     7.036193308495632e-10
     >>> pl.calc_path_loss_dB(1)     # log scale
-    91.526622374835199
+    91.5266223748352
 
     Determining the distance (in Km) that yields a path loss of 90dB.
 
     >>> pl.which_distance_dB(90)
-    0.83882020174144811
+    0.8388202017414481
     """
 
     def __init__(self, n=2, fc=900):
@@ -430,7 +436,7 @@ class PathLossFreeSpace(PathLossGeneral):
             frequency and path loss exponent.
         """
         #$PL = 10 n (\log_{10}(d)+\log_{10}(f * 1e6) - 4.3779113907)$
-        C = 10 * n * (np.log10(fc * 1e6) - 4.377911390697565)
+        C = 10 * n * (math.log10(fc * 1e6) - 4.377911390697565)
         return C
 
 
@@ -453,7 +459,7 @@ class PathLoss3GPP1(PathLossGeneral):
     >>> pl.calc_path_loss(1)        # linear scale
     1.5488166189124858e-13
     >>> pl.calc_path_loss_dB(1)     # log scale
-    128.09999999999999
+    128.1
 
     Determining the distance (in Km) that yields a path loss of 130dB.
 
@@ -617,8 +623,8 @@ class PathLossOkomuraHata(PathLossBase):
 
             # Suburban and ruran areas (f in MHz
             # $a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$
-            a = ((1.1 * np.log10(self.fc) - 0.7)
-                 * self.hms - 1.56 * np.log10(self.fc) + 0.8)
+            a = ((1.1 * math.log10(self.fc) - 0.7)
+                 * self.hms - 1.56 * math.log10(self.fc) + 0.8)
         elif self.area_type == 'large city':
             # Note: The category of “large city” used by Hata implies
             # building heights greater than 15m.
@@ -626,12 +632,12 @@ class PathLossOkomuraHata(PathLossBase):
                 # If frequency is greater then 300MHz then the factor is
                 # given by
                 # $3.2 (\log(11.75*h_{ms})^2) - 4.97$
-                a = 3.2 * (np.log10(11.75 * self.hms)**2) - 4.97
+                a = 3.2 * (math.log10(11.75 * self.hms)**2) - 4.97
             else:
                 # If frequency is lower then 300MHz then the factor is
                 # given by
                 # $8.29 (\log(1.54 h_{ms}))^2 - 1.10$
-                a = 8.29 * (np.log10(1.54 * self.hms)**2) - 1.10
+                a = 8.29 * (math.log10(1.54 * self.hms)**2) - 1.10
         else:  # pragma: no cover
             raise RuntimeError('Invalid area type: {0}'.format(self.area_type))
 
@@ -652,12 +658,12 @@ class PathLossOkomuraHata(PathLossBase):
         elif self.area_type == 'open':
             # Value for 'open' areas
             # $K = 4.78 (\log(f))^2 - 18.33 \log(f) + 40.94$
-            K = (4.78 * (np.log10(self.fc)**2) - 18.33 * np.log10(self.fc)
+            K = (4.78 * (math.log10(self.fc)**2) - 18.33 * math.log10(self.fc)
                  + 40.94)
         elif self.area_type == 'suburban':
             # Value for 'suburban' areas
             # $K = 2 [\log(f/28)^2] + 5.4$
-            K = 2 * (np.log10(self.fc / 28.0)**2) + 5.4
+            K = 2 * (math.log10(self.fc / 28.0)**2) + 5.4
         else:
             K = 0
         return K
@@ -682,6 +688,11 @@ class PathLossOkomuraHata(PathLossBase):
         PL : float
             Path loss in dB.
         """
+        if isinstance(d, Iterable):
+            log10 = np.log10
+        else:
+            log10 = math.log10
+
         if np.any(d < 1.0) or np.any(d > 20.0):
             msg = ('Distance for the Okomura Hata model should be between'
                    ' 1Km and 20Km')
@@ -695,8 +706,8 @@ class PathLossOkomuraHata(PathLossBase):
         # Calculates the "'suburban'/'open area'" correction factor.
         K = self._calc_K()
 
-        L = (69.55 + 26.16 * np.log10(self.fc) - 13.82 * np.log10(self.hbs)
-             - a + (44.9 - 6.55 * np.log10(self.hbs)) * np.log10(d) - K)
+        L = (69.55 + 26.16 * log10(self.fc) - 13.82 * log10(self.hbs)
+             - a + (44.9 - 6.55 * log10(self.hbs)) * log10(d) - K)
         return L
 
     def which_distance_dB(self, PL):
