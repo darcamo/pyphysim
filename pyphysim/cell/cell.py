@@ -760,7 +760,7 @@ class CellSquare(shapes.Rectangle, CellBase):
         shapes.Rectangle.__init__(self, pos - half_side - 1j * half_side,
                                   pos + half_side + 1j * half_side, rotation)
         CellBase.__init__(self, pos,
-                          math.sqrt(2.0) * side_length,
+                          math.sqrt(2.0) * side_length/2.,
                           cell_id, rotation)
 
     def plot(self, ax=None):  # pragma: no cover
@@ -795,6 +795,46 @@ class CellSquare(shapes.Rectangle, CellBase):
             plt.show()
         else:
             ax.autoscale_view(False, True, True)
+
+    # We need to re-implement this method because if is a little different
+    # if self.is_pofor the square cell type
+    def add_user(self, new_user, relative_pos_bool=True):
+        """
+        Adds a new user to the cell.
+
+        Parameters
+        ----------
+        new_user : An object of the Node class
+            The new user to be added to the cell.
+        relative_pos_bool : bool, optional (default to True)
+            Indicates if the 'pos' attribute of the `new_user` is relative
+            to the center of the cell or not.
+
+        Raises
+        ------
+        ValueError
+            If the user position is outside the cell (the user won't be added).
+        """
+        if isinstance(new_user, Node):
+            if relative_pos_bool is True:
+                # If the position of the user is relative to the cell, that
+                # means that the real and imaginary parts of new_user.pos
+                # are in the [-1, 1] range. We need to convert them to an
+                # absolute coordinate.
+                half_side = abs(
+                    self._lower_coord.real - self._upper_coord.real) / 2
+
+                new_user.pos = new_user.pos * half_side + self.pos
+            if self.is_point_inside_shape(new_user.pos):
+                # pylint: disable=W0212
+                new_user.cell_id = self.id
+                new_user._relative_pos = new_user.pos - self.pos
+                self._users.append(new_user)
+            else:
+                raise ValueError("User position is outside the cell -> "
+                                 "User not added")
+        else:
+            raise TypeError("User must be Node object.")
 
 
 class CellWrap(CellBase):
