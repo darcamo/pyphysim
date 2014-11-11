@@ -61,6 +61,11 @@ class PathLossBase(object):
         self.sigma_shadow = 8  # Shadow standard deviation
         self.use_shadow_bool = False
 
+        # If this is True, then any negative path loss (in dB) that appears
+        # because a distance is too small will considered as 0dB. If this
+        # is False then an exception will be raised instead.
+        self.handle_small_distances_bool = False
+
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     @abstractmethod
     def which_distance_dB(self, PL):  # pragma: no cover
@@ -175,8 +180,21 @@ class PathLossBase(object):
         # The calculated path loss (in dB) must be positive. If it is not
         # positive that means that the distance 'd' is too small.
         if np.any(np.array(PL) < 0):
-            msg = "The distance is too small to calculate a valid path loss."
-            raise RuntimeError(msg.format(d))
+            if self.handle_small_distances_bool is True:
+                if isinstance(PL, Iterable):
+                    # If PL is the path loss for multiple distance values
+                    # and one (or more) of the path loss values is (are)
+                    # negative, set them to to zero (no path loss).
+                    PL[PL < 0] = 0.0
+                else:
+                    # If PL is the path loss for a single distance value
+                    # and it is negative (the distance is too small), let's
+                    # assume the path loss is equal to 0dB
+                    PL = 0.0
+            else:
+                msg = ("The distance is too small to calculate a valid"
+                       " path loss.")
+                raise RuntimeError(msg.format(d))
         return PL
 
     def calc_path_loss(self, d):

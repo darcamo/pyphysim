@@ -4945,8 +4945,15 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         # with a very small distance the path loss (in linear scale) would
         # be negative, which is not valid. For these cases we should throw
         # an exception.
+        self.pl.handle_small_distances_bool = False
         with self.assertRaises(RuntimeError):
             self.pl.calc_path_loss(0.000011)
+
+        self.pl.handle_small_distances_bool = True
+        self.assertAlmostEqual(self.pl.calc_path_loss(0.000011), 1.0)
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss_dB([0.000011, 0.00011, 0.0011]),
+            np.array([0., 12.35447608, 32.35447608]))
 
         # xxxxxxxxxx Test for a single path loss value xxxxxxxxxxxxxxxxxxxx
         n = 2
@@ -5050,24 +5057,40 @@ class PathLoss3GPP1TestCase(unittest.TestCase):
         self.pl = pathloss.PathLoss3GPP1()
 
     def test_calc_path_loss(self):
+        # xxxxxxxxxx Test the case for very small distances xxxxxxxxxxxxxxx
         # with a very small distance the path loss (in linear scale) would
         # be negative, which is not valid. For these cases we should throw
         # an exception.
+        self.pl.handle_small_distances_bool = False
         with self.assertRaises(RuntimeError):
             self.pl.calc_path_loss(1e-4)
 
-        # Test for a single path loss value
+        # With a very small distance the path loss (in linear scale) would
+        # be negative, which is not valid. If "handle_small_distances_bool"
+        # is set to True then a pathloss equal to 1.0 (in linear scale) is
+        # returned for small distances.
+        self.pl.handle_small_distances_bool = True
+        self.assertAlmostEqual(self.pl.calc_path_loss(1e-4), 1.0)
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss_dB(
+                np.array([1e-4, 2e-4, 8e-4, 1e-3, 5e-3])),
+            np.array([0., 0., 11.65618351, 15.3, 41.58127216]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for a single path loss value xxxxxxxxxxxxxxxxxxxx
         expected_pl = dB2Linear(-(128.1 + 37.6 * np.log10(1.2)))
         self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
                                expected_pl, places=14)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Test for multiple path loss values
+        # xxxxxxxxxx Test for multiple path loss values xxxxxxxxxxxxxxxxxxx
         expected_pl = dB2Linear(
             -(128.1 + 37.6 * np.log10(np.array([1.2, 1.5, 1.8, 2.3]))))
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss(np.array([1.2, 1.5, 1.8, 2.3])),
             expected_pl,
             decimal=16)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_which_distance(self):
         np.testing.assert_array_almost_equal(
@@ -5130,6 +5153,13 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
             self.pl._calc_deterministic_path_loss_dB(0.9)
             # and we test if captured 1 warning.
             self.assertEqual(len(w), 1, msg='Warning was not raised')
+
+        # Test with a single distance value
+        self.pl.area_type = 'open'
+        self.assertTrue(
+            isinstance(self.pl._calc_deterministic_path_loss_dB(20), float))
+        self.assertAlmostEqual(self.pl._calc_deterministic_path_loss_dB(20),
+                               145.000295737969)
 
         # Distances for which the path loss will be calculated
         d = np.linspace(1, 20, 20)
