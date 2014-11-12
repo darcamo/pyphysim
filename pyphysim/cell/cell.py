@@ -1486,8 +1486,10 @@ class Cluster(shapes.Shape):
         int_positions = np.unravel_index(np.arange(num_cells),
                                          (sqrt_num_cells, sqrt_num_cells))
 
-        cell_positions[:, 0] = side_length * (
-            int_positions[0] + 1j * int_positions[1])
+        cell_positions[:, 0] = (
+            side_length
+            *
+            (int_positions[1] + 1j * int_positions[0][::-1] - 0.5-0.5j))
 
         return cell_positions
 
