@@ -19,7 +19,7 @@ except NameError:
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib as mpl
+# import matplotlib as mpl
 
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.cell import cell
@@ -248,11 +248,17 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_nothing_dB)
+        sinr_array_pl_nothing_dB,
+        num_cells_per_side,
+        num_discrete_positions_per_cell)
     sinr_array_pl_3gpp_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_3gpp_dB)
+        sinr_array_pl_3gpp_dB,
+        num_cells_per_side,
+        num_discrete_positions_per_cell)
     sinr_array_pl_free_space_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_free_space_dB)
+        sinr_array_pl_free_space_dB,
+        num_cells_per_side,
+        num_discrete_positions_per_cell)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Plot each case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
