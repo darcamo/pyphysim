@@ -90,24 +90,19 @@ if __name__ == '__main__':
     # Square of 12 x 12 square cells
     num_cells_per_side = 12
     num_cells = num_cells_per_side ** 2
-    num_users_per_cell = 10
-    # num_users = num_cells * num_users_per_cell
 
-    # Discretization of ther possible positions
-    # num_discrete_positions_per_cell = 3  # Number of discrete positions
-    # step = 1. / (num_discrete_positions_per_cell + 1)
-    # aux = np.linspace(
-    #     -(1. - step), (1. - step), num_discrete_positions_per_cell)
-    # # import pudb; pudb.set_trace()  ## DEBUG ##
-
-    # aux = np.meshgrid(aux, aux, indexing='ij')
-    # user_relative_positions = aux[0] + 1j * aux[1]
+    # xxxxxxxxxx Discretization of ther possible positions xxxxxxxxxxxxxxxx
+    num_discrete_positions_per_cell = 15  # Number of discrete positions
+    step = 1. / (num_discrete_positions_per_cell + 1)
+    aux = np.linspace(
+        -(1. - step), (1. - step), num_discrete_positions_per_cell)
+    aux = np.meshgrid(aux, aux, indexing='ij')
+    user_relative_positions = aux[0] + 1j * aux[1]
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Transmit Power and noise
     Pt = dBm2Linear(20)  # 20 dBm transmit power
-    noise_var = 0.0  # dBm2Linear(-101)
-
-    rep_max = 1
+    noise_var = dBm2Linear(-97)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the cluster xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -127,60 +122,55 @@ if __name__ == '__main__':
     pl_obj.handle_small_distances_bool = True
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Output SINR vector xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    sinr_array = np.zeros([rep_max, num_cells], dtype=float)
+    # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
+    for c in cluster:
+        for rel_pos in user_relative_positions.flat:
+            user = cell.Node(rel_pos)
+            c.add_user(user, relative_pos_bool=True)
+    num_users_per_cell = user_relative_positions.size
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
-    # for c in cluster._cells:
-    #     for rel_pos in user_relative_positions.flat:
-    #         user = cell.Node(rel_pos)
-    #         c.add_user(user, relative_pos_bool=True)
+    # xxxxxxxxxx Output SINR vector xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    sinr_array = np.zeros([num_cells, num_users_per_cell], dtype=float)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Let's do the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    pbar = ProgressbarText(rep_max,
-                           message="Simulating {0} iterations".format(rep_max))
-    for rep in range(rep_max):
-        cluster.delete_all_users()
+    # pbar = ProgressbarText(rep_max,
+    #   message="Simulating {0} iterations".format(rep_max))
 
-        # xxxxxxxxxx Add one random user in each cell xxxxxxxxxxxxxxxxxxxxx
-        cluster.add_random_users(np.arange(num_cells), num_users_per_cell)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
+    dists = cluster.calc_dist_all_users_to_each_cell()
+    pl = pl_obj.calc_path_loss(dists)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
-        dists = cluster.calc_dist_all_users_to_each_cell()
-        pl = pl_obj.calc_path_loss(dists)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    for cell_idx in range(num_cells):
+        # Index of the users in the current cell
+        users_idx = get_cell_users_indexes(cell_idx, num_users_per_cell)
 
-        for cell_idx in range(num_cells):
-            # Index of the users in the current cell
-            users_idx = get_cell_users_indexes(cell_idx, num_users_per_cell)
+        # Get the desired power of the users in the cell
+        desired_power = Pt * pl[users_idx, cell_idx]
 
-            # Get the desired power of the users in the cell
-            desired_power = Pt * pl[users_idx, cell_idx]
+        # Mask to get path loss of all transmitters ...
+        mask = np.ones(num_cells, dtype=bool)
+        # ... except the desired transmitter
+        mask[cell_idx] = 0
 
-            # Mask to get path loss of all transmitters ...
-            mask = np.ones(num_cells, dtype=bool)
-            # ... except the desired transmitter
-            mask[cell_idx] = 0
+        # Calculate the sum of all interference powers
+        undesired_power = np.sum(
+            Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
+            axis=-1)
 
-            # Calculate the sum of all interference powers
-            undesired_power = np.sum(
-                Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
-                axis=-1)
+        # Calculate the SINR of the user
+        sinr_users_in_current_cell = (desired_power /
+                                      (undesired_power + noise_var))
+        sinr_array[cell_idx, :] = sinr_users_in_current_cell
 
-            # Calculate the SINR of the user
-            sinr_users_in_current_cell = (desired_power /
-                                          (undesired_power + noise_var))
-            sinr_array[rep, cell_idx] = np.mean(sinr_users_in_current_cell)
-        pbar.progress(rep+1)
+    sinr_array_dB = linear2dB(sinr_array)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # mean_sinrs = linear2dB(sinr_array).mean(axis=0)
     # print mean_sinrs
 
     # print np.mean(mean_sinrs)
-    print "Mean SINR value: {0}".format(linear2dB(sinr_array).mean())
+    print "Mean SINR value: {0}".format(sinr_array_dB.mean())
 
-
-    cluster.plot()
+    # cluster.plot()
