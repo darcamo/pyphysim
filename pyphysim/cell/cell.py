@@ -15,6 +15,7 @@ import numpy as np
 import itertools
 from io import BytesIO
 import cmath
+import math
 
 from ..cell import shapes
 
@@ -734,8 +735,111 @@ class Cell3Sec(CellBase):
             ax.autoscale_view(False, True, True)
 
 
+class CellSquare(shapes.Rectangle, CellBase):
+    """
+    Class representing a 'square' cell.
+    """
+
+    def __init__(self, pos, side_length, cell_id=None, rotation=0):
+        """
+        Initializes the CellSquare object.
+
+        Parameters
+        ----------
+        pos : complex
+            The central position of the cell in the complex grid.
+        side_length : float
+            The cell side length.
+        cell_id : int, optional
+            The cell ID. If not provided the cell won't have an ID and its
+            plot will shown a symbol in cell center instead of the cell ID.
+        rotation : float, optional (default to 0)
+            The rotation of the cell (regarding the cell center).
+        """
+        half_side = side_length / 2.
+        shapes.Rectangle.__init__(self, pos - half_side - 1j * half_side,
+                                  pos + half_side + 1j * half_side, rotation)
+        CellBase.__init__(self, pos,
+                          math.sqrt(2.0) * side_length/2.,
+                          cell_id, rotation)
+
+    def plot(self, ax=None):  # pragma: no cover
+        """
+        Plot the cell using the matplotlib library.
+
+        If an axes 'ax' is specified, then the shape is added to that
+        axis. Otherwise a new figure and axis are created and the shape is
+        plotted to that.
+
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cell will be plotted. If not provided, a new
+            figure (and axis) will be created.
+        """
+
+        stand_alone_plot = False
+
+        if ax is None:
+            # This is a stand alone plot. Lets create a new axes.
+            _, ax = plt.subplots(figsize=self.figsize)
+            stand_alone_plot = True
+
+        # Plot the shape part
+        shapes.Rectangle.plot(self, ax)
+        # Plot the node part as well as the users in the cell
+        self._plot_common_part(ax)
+
+        if stand_alone_plot is True:
+            ax.plot()
+            plt.show()
+        else:
+            ax.autoscale_view(False, True, True)
+
+    # We need to re-implement this method because if is a little different
+    # if self.is_pofor the square cell type
+    def add_user(self, new_user, relative_pos_bool=True):
+        """
+        Adds a new user to the cell.
+
+        Parameters
+        ----------
+        new_user : An object of the Node class
+            The new user to be added to the cell.
+        relative_pos_bool : bool, optional (default to True)
+            Indicates if the 'pos' attribute of the `new_user` is relative
+            to the center of the cell or not.
+
+        Raises
+        ------
+        ValueError
+            If the user position is outside the cell (the user won't be added).
+        """
+        if isinstance(new_user, Node):
+            if relative_pos_bool is True:
+                # If the position of the user is relative to the cell, that
+                # means that the real and imaginary parts of new_user.pos
+                # are in the [-1, 1] range. We need to convert them to an
+                # absolute coordinate.
+                half_side = abs(
+                    self._lower_coord.real - self._upper_coord.real) / 2
+
+                new_user.pos = new_user.pos * half_side + self.pos
+            if self.is_point_inside_shape(new_user.pos):
+                # pylint: disable=W0212
+                new_user.cell_id = self.id
+                new_user._relative_pos = new_user.pos - self.pos
+                self._users.append(new_user)
+            else:
+                raise ValueError("User position is outside the cell -> "
+                                 "User not added")
+        else:
+            raise TypeError("User must be Node object.")
+
+
 class CellWrap(CellBase):
-    """Class that wraps another cell.
+    """
+    Class that wraps another cell.
     """
     def __init__(self, pos, wrapped_cell, include_users_bool=False):
         """
@@ -904,7 +1008,7 @@ class Cluster(shapes.Shape):
             Central Position of the Cluster in the complex grid.
         cluster_id : int
             ID of the cluster.
-        cell_type : string (can be either 'simple' or '3sec'
+        cell_type : string (can be either 'simple', '3sec' or 'square')
             The type of the cell. If it is 'simple' it means the standard
             hexagon shaped cell. If '3sec' it means a 3 sectorized cell
             composed of 3 hexagons.
@@ -949,6 +1053,8 @@ class Cluster(shapes.Shape):
             CELLCLASS = Cell
         elif cell_type == '3sec':
             CELLCLASS = Cell3Sec
+        elif cell_type == 'square':
+            CELLCLASS = CellSquare
         else:  # pragma: no cover
             # Note that it the code should never get here, since if the
             # cell type is not valid an exception will be raised in the
@@ -1204,6 +1310,9 @@ class Cluster(shapes.Shape):
         elif cell_type == '3sec':
             cell_positions = Cluster._calc_cell_positions_3sec(
                 cell_radius, num_cells, rotation)
+        elif cell_type == 'square':
+            cell_positions = Cluster._calc_cell_positions_square(
+                cell_radius, num_cells, rotation)
         else:
             raise RuntimeError("Invalid cell type: '{0}'".format(cell_type))
 
@@ -1339,6 +1448,48 @@ class Cluster(shapes.Shape):
             cell_positions[:, 0] = shapes.Shape.calc_rotated_pos(
                 cell_positions[:, 0], rotation)
             cell_positions[:, 1] = rotation
+
+        return cell_positions
+
+    @staticmethod
+    def _calc_cell_positions_square(side_length, num_cells,
+                                    rotation=None):
+        """
+        Helper function used by the Cluster class.
+
+        The calc_cell_positions method calculates the position (and
+        rotation) of the 'num_cells' different cells, each with side
+        equal to 'cell_radius', so that they properly fit in the cluster.
+
+        Parameters
+        ----------
+        side_length : float
+            The side length of each square cell in the cluster.
+        num_cells : int
+            Number of cells in the cluster.
+        rotation : float
+            Rotation of the cluster.
+
+        Returns
+        -------
+        cell_positions : 2D numpy array
+            The first column of `cell_positions` has the positions of the
+            cells in a cluster with `num_cells` cells with radius
+            `cell_radius`. The second column has the rotation of each cell.
+        """
+        cell_positions = np.zeros([num_cells, 2], dtype=complex)
+        sqrt_num_cells = int(math.sqrt(num_cells))
+
+        if sqrt_num_cells ** 2 != num_cells:
+            raise ValueError("num_cells must be a perfect square number")
+
+        int_positions = np.unravel_index(np.arange(num_cells),
+                                         (sqrt_num_cells, sqrt_num_cells))
+
+        cell_positions[:, 0] = (
+            side_length
+            *
+            (int_positions[1] + 1j * int_positions[0][::-1] - 0.5-0.5j))
 
         return cell_positions
 

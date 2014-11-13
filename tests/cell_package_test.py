@@ -710,6 +710,28 @@ class Cell3SecTestCase(unittest.TestCase):
             self.C1.add_random_users_in_sector(2, 5)
 
 
+# TODO: finish implementation
+class CellSquareTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.C1 = cell.CellSquare(pos=2 - 3j,
+                                  side_length=2.5,
+                                  cell_id=1, rotation=0)
+        self.C2 = cell.CellSquare(
+            pos=-3.5 + 3j, side_length=2.5, cell_id=1, rotation=60)
+        self.C2.fill_color = 'r'
+        self.C2.fill_face_bool = True
+
+    # TODO: Add test methods for the CellSquare class
+    def test_some_method(self):
+        # self.C1.plot()
+
+        pass
+        # cluster = cell.Cluster(
+        #     cell_radius=1.5, num_cells=9, cell_type='square')
+        # cluster.plot()
+
+
 class CellWrapTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1023,6 +1045,29 @@ class ClusterTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(positions3[:, 1],
                                              48.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_cell_positions_square(self):
+        # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
+        positions = cell.Cluster._calc_cell_positions_square(
+            side_length=1.0, num_cells=9, rotation=None)
+
+        expected_positions = np.array([[-0.5+1.5j, 0.0+0.j],
+                                       [0.5+1.5j, 0.0+0.j],
+                                       [1.5+1.5j, 0.0+0.j],
+                                       [-0.5+0.5j, 0.0+0.j],
+                                       [0.5+0.5j, 0.0+0.j],
+                                       [1.5+0.5j, 0.0+0.j],
+                                       [-0.5-0.5j, 0.0+0.j],
+                                       [0.5-0.5j, 0.0+0.j],
+                                       [1.5-0.5j, 0.0+0.j]])
+        np.testing.assert_almost_equal(positions, expected_positions)
+
+        positions = cell.Cluster._calc_cell_positions_square(
+            side_length=1.5, num_cells=9, rotation=None)
+        np.testing.assert_almost_equal(positions, expected_positions * 1.5)
+
+        # xxxxxxxxxx Test with rotation of 30 degrees xxxxxxxxxxxxxxxxxxxxx
+        # TODO: implement-me
 
     def test_get_vertex_positions(self):
         # For a cluster of a single cell, the cluster vertexes are the same
