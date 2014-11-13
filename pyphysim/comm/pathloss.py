@@ -252,9 +252,9 @@ class PathLossGeneral(PathLossBase):
 
     In its simplest form, the path loss can be calculated using the formula
 
-    :math:`L = 10 n \\log_{10} (d) + C`
+    :math:`PL = 10 n \\log_{10} (d) + C`
 
-    where `L` is in dB, `n` is the path loss exponent (usually in the range
+    where `PL` is in dB, `n` is the path loss exponent (usually in the range
     of 2 to 4) and `d` is the distance between the transmitter and the
     receiver.
 
@@ -265,7 +265,7 @@ class PathLossGeneral(PathLossBase):
     C : float
         The constant `C` in the path loss formula.
     """
-    # $L = 10n\log_{10}(d) + C$
+    # $PL = 10n\log_{10}(d) + C$
 
     def __init__(self, n, C):
         """
@@ -281,6 +281,23 @@ class PathLossGeneral(PathLossBase):
         PathLossBase.__init__(self)
         self._n = n
         self._C = C
+
+    def _get_latex_repr(self):
+        """
+        Get the Latex representation (equation) for the PathLossGeneral class.
+        """
+        return '$PL = {0} \\log_{{10}} (d) + {1}$'.format(
+            10 * self.n, self.C)
+
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossGeneral class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLossGeneral (n={0}, C={1}): {2}".format(
+            self.n, self.C, self._get_latex_repr())
 
     @property
     def n(self):
@@ -422,6 +439,16 @@ class PathLossFreeSpace(PathLossGeneral):
         self._fc = fc  # Frequency of the central carrier (in MHz)
         self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
 
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossFreeSpace class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLossFreeSpace (n={0}, fc={1}): {2}".format(
+            self.n, self.fc, self._get_latex_repr())
+
     @property
     def n(self):
         """Get method for the n property."""
@@ -500,6 +527,15 @@ class PathLoss3GPP1(PathLossGeneral):
     def __init__(self):
         # super(PathLossFreeSpace, self).__init__()
         PathLossGeneral.__init__(self, n=3.76, C=128.1)
+
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossFreeSpace class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLoss3GPP1: {0}".format(self._get_latex_repr())
 
 
 # TODO: Test this class
