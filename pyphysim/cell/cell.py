@@ -1970,20 +1970,17 @@ class Cluster(shapes.Shape):
         """
         all_users = self.get_all_users()
 
-        # Distance between cells in the cluster
-        diffs = self.calc_dists_between_cells()
+        # Array with the position of all users in the cluster (no matter
+        # which cell they are assigned to)
+        all_users_pos = np.array([u.pos for u in all_users])
 
-        dists = np.empty([len(all_users), self.num_cells], dtype=float)
+        # Array with the position of each cell in the cluster
+        all_cells_pos = np.array([c.pos for c in self])
 
-        for i, user in enumerate(all_users):
-            # user.relative_pos + self._cell_pos_diffs[]
-            user_idx = user.cell_id - 1
-            for j in range(self.num_cells):
-                dists[i, j] = np.abs(user.relative_pos + diffs[user_idx, j])
+        # Calculate the distance from each user to each cell
+        all_dists = np.abs(all_users_pos[:, np.newaxis] - all_cells_pos)
 
-        return dists
-
-
+        return all_dists
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
