@@ -127,6 +127,10 @@ class PathLossBase(object):
             "**extra_args" (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
+        # First we disable the shadowing if it is set
+        old_use_shadow_bool = self.use_shadow_bool
+        self.use_shadow_bool = False
+
         if extra_args is None:
             extra_args = {}
 
@@ -137,8 +141,16 @@ class PathLossBase(object):
             ax = plt.axes()
             stand_alone_plot = True
 
-        PL = self._calc_deterministic_path_loss_dB(d)
+        # Calculate the deterministic path loss. Note that we use
+        # calc_path_loss_dB instead of _calc_deterministic_path_loss_dB
+        # because the latter does not respect handle_small_distances_bool.
+        PL = self.calc_path_loss_dB(d)
+
+        # Finally plot the path loss
         ax.plot(d, PL, **extra_args)
+
+        # Restore shadowing
+        self.use_shadow_bool = old_use_shadow_bool
 
         if stand_alone_plot is True:
             ax.set_ylabel('Path Loss (in dB)')
