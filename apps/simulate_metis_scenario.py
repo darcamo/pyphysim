@@ -110,6 +110,7 @@ if __name__ == '__main__':
     # Square of 12 x 12 square cells
     num_cells_per_side = 12
     num_cells = num_cells_per_side ** 2
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Discretization of ther possible positions xxxxxxxxxxxxxxxx
     num_discrete_positions_per_cell = 15  # Number of discrete positions
@@ -121,8 +122,8 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Transmit Power and noise
-    Pt = dBm2Linear(20)  # 20 dBm transmit power
-    noise_var = 0.0  # dBm2Linear(-97)
+    Pt = dBm2Linear(30)  # 20 dBm transmit power
+    noise_var = 0.0  # dBm2Linear(-116)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the cluster xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -161,10 +162,6 @@ if __name__ == '__main__':
     sinr_array_pl_free_space = np.zeros(
         [num_cells, num_users_per_cell], dtype=float)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Let's do the simulations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # pbar = ProgressbarText(rep_max,
-    #   message="Simulating {0} iterations".format(rep_max))
 
     # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
     dists = cluster.calc_dist_all_users_to_each_cell()
@@ -263,15 +260,25 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Plot each case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # No path loss
-    ax1 = plt.matshow(sinr_array_pl_nothing_dB2)
-    plt.colorbar()
+    fig1, ax1 = plt.subplots(figsize=(8, 6))
+    im1 = ax1.imshow(sinr_array_pl_nothing_dB2,
+                     interpolation='nearest', vmax=-1, vmin=-6.5)
+    ax1.set_title('No Path Loss')
+    fig1.colorbar(im1)
 
     # 3GPP path loss
-    ax2 = plt.matshow(sinr_array_pl_3gpp_dB2)
-    plt.colorbar()
+    fig2, ax2 = plt.subplots(figsize=(8, 6))
+    im2 = ax2.imshow(sinr_array_pl_3gpp_dB2,
+                     interpolation='nearest', vmax=30, vmin=-2.5)
+    ax2.set_title('3GPP Path Loss')
+    fig2.colorbar(im2)
 
-    ax3 = plt.matshow(sinr_array_pl_free_space_dB2)
-    plt.colorbar()
+    # Free Space path loss
+    fig3, ax3 = plt.subplots(figsize=(8, 6))
+    im3 = ax3.imshow(sinr_array_pl_free_space_dB2,
+                     interpolation='nearest', vmax=30, vmin=-2.5)
+    ax3.set_title('Free Space Path Loss')
+    fig3.colorbar(im3)
 
     plt.show()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
