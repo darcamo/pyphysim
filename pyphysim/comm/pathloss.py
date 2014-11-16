@@ -30,7 +30,7 @@ from collections import Iterable
 from ..util import conversion
 
 __all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1',
-           'PathLossOkomuraHata']
+           'PathLossMetisPS7', 'PathLossOkomuraHata']
 
 
 class PathLossBase(object):
@@ -127,6 +127,10 @@ class PathLossBase(object):
             "**extra_args" (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
+        # First we disable the shadowing if it is set
+        old_use_shadow_bool = self.use_shadow_bool
+        self.use_shadow_bool = False
+
         if extra_args is None:
             extra_args = {}
 
@@ -137,8 +141,16 @@ class PathLossBase(object):
             ax = plt.axes()
             stand_alone_plot = True
 
-        PL = self._calc_deterministic_path_loss_dB(d)
+        # Calculate the deterministic path loss. Note that we use
+        # calc_path_loss_dB instead of _calc_deterministic_path_loss_dB
+        # because the latter does not respect handle_small_distances_bool.
+        PL = self.calc_path_loss_dB(d)
+
+        # Finally plot the path loss
         ax.plot(d, PL, **extra_args)
+
+        # Restore shadowing
+        self.use_shadow_bool = old_use_shadow_bool
 
         if stand_alone_plot is True:
             ax.set_ylabel('Path Loss (in dB)')
@@ -240,9 +252,9 @@ class PathLossGeneral(PathLossBase):
 
     In its simplest form, the path loss can be calculated using the formula
 
-    :math:`L = 10 n \\log_{10} (d) + C`
+    :math:`PL = 10 n \\log_{10} (d) + C`
 
-    where `L` is in dB, `n` is the path loss exponent (usually in the range
+    where `PL` is in dB, `n` is the path loss exponent (usually in the range
     of 2 to 4) and `d` is the distance between the transmitter and the
     receiver.
 
@@ -253,7 +265,7 @@ class PathLossGeneral(PathLossBase):
     C : float
         The constant `C` in the path loss formula.
     """
-    # $L = 10n\log_{10}(d) + C$
+    # $PL = 10n\log_{10}(d) + C$
 
     def __init__(self, n, C):
         """
@@ -269,6 +281,23 @@ class PathLossGeneral(PathLossBase):
         PathLossBase.__init__(self)
         self._n = n
         self._C = C
+
+    def _get_latex_repr(self):
+        """
+        Get the Latex representation (equation) for the PathLossGeneral class.
+        """
+        return '$PL = {0} \\log_{{10}} (d) + {1}$'.format(
+            10 * self.n, self.C)
+
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossGeneral class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLossGeneral (n={0}, C={1}): {2}".format(
+            self.n, self.C, self._get_latex_repr())
 
     @property
     def n(self):
@@ -410,6 +439,16 @@ class PathLossFreeSpace(PathLossGeneral):
         self._fc = fc  # Frequency of the central carrier (in MHz)
         self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
 
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossFreeSpace class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLossFreeSpace (n={0}, fc={1}): {2}".format(
+            self.n, self.fc, self._get_latex_repr())
+
     @property
     def n(self):
         """Get method for the n property."""
@@ -489,6 +528,224 @@ class PathLoss3GPP1(PathLossGeneral):
         # super(PathLossFreeSpace, self).__init__()
         PathLossGeneral.__init__(self, n=3.76, C=128.1)
 
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossFreeSpace class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLoss3GPP1: {0}".format(self._get_latex_repr())
+
+
+class PathLossMetisPS7(PathLossBase):
+    """
+    Class to calculate the Path Loss (indoor) according to the model
+    described for the Propagation Scenario (PS) 7 of the METIS project.
+
+    This model is an indoor-2-indoor model.
+    """
+
+    def __init__(self, fc=900):
+        """
+        Initializes the PathLossFreeSpace object
+
+        Parameters
+        ----------
+        fc : float
+            Central carrier frequency (in MHz)
+        """
+        self._fc = fc  # Frequency (in MHz)
+
+    @property
+    def fc(self):
+        """Get method for the fc property."""
+        return self._fc
+
+    @fc.setter
+    def fc(self, value):
+        """Set method for the fc property."""
+        self._fc = value
+
+    def _calc_PS7_path_loss_dB_same_floor(self, d, num_walls=0):
+        """
+        Calculate the deterministic path loss according to the Propagation
+        Scenario (PS) 7 of the METIS project.
+
+        The path loss (in dB) is calculated as
+
+        .. math::
+           PL = A \\log_{10}(d) + B + C \\log_{10}(f_c/5) + X
+
+        The distance :math:`d` is in meters, while the frequency
+        :math:`f_c` is in Hz. Na others variables a different for the LOS
+        and NLOS cases.
+
+        For the LOS case we have:
+
+        .. math::
+           A = 18.7 B = 46.8, C = 20, X = 0
+
+        For the NLOS case we have:
+
+        .. math::
+           A = 36.8 B = 43.8, C = 20, X = 5 ( n_w - 1 )
+
+        where :math:`n_w` is the number of walls between the transmitter
+        and receiver.
+
+        Parameters
+        ----------
+        d : float or float numpy array.
+            Distance (in meters).
+        num_walls : int or int numpy array
+            Indicates how many walls the signal has to pass. If num_walls
+            is zero, then Line-of-Sight parameters are used. If it is
+            greater than zero then Non-Sign-of-Sight parameters are
+            used. If num_walls is a numpy array then it must have the same
+            dimension as `d` and it then specifies the number of walls for
+            each individual value of `d`
+
+        Returns
+        -------
+        pl_dB : float or numpy array
+            Path loss in dB.
+        """
+        if isinstance(num_walls, Iterable):
+            # Code for num_walls array. Since num_walls is an array then
+            # some values might be equal to zero while others might be
+            # equal to zero. We will calculate them separately.
+            LOS_index = (num_walls == 0)
+            NLOS_index = ~LOS_index
+
+            pl_dB = np.empty(len(d), dtype=float)
+            pl_dB[LOS_index] \
+                = self._calc_PS7_path_loss_dB_LOS_same_floor(d[LOS_index])
+
+            pl_dB[NLOS_index] \
+                = self._calc_PS7_path_loss_dB_NLOS_same_floor(
+                    d[NLOS_index],
+                    num_walls[NLOS_index])
+        else:
+            # Code for int num_walls
+            if num_walls == 0:
+                # Calculate the path loss for PS7 with LOS
+                pl_dB = self._calc_PS7_path_loss_dB_LOS_same_floor(d)
+            elif num_walls > 0:
+                # Calculate the path loss for PS7 without LOS
+                pl_dB = self._calc_PS7_path_loss_dB_NLOS_same_floor(d,
+                                                                    num_walls)
+
+        return pl_dB
+
+    def _calc_PS7_path_loss_dB_LOS_same_floor(self, d):
+        """
+        Calculate the deterministic path loss according to the Propagation
+        Scenario (PS) 7 of the METIS project for the LOS case.
+
+        The path loss (in dB) is calculated as
+
+        .. math::
+           PL = A \\log_{10}(d) + B + C \\log_{10}(f_c/5)
+
+        The distance :math:`d` is in meters, while the frequency
+        :math:`f_c` is in Hz.
+
+        The other variables (NLOS case) are:
+
+        .. math::
+           A = 18.7 B = 46.8, C = 20
+
+        where :math:`n_w` is the number of walls between the transmitter
+        and receiver.
+
+        Parameters
+        ----------
+        d : float or float numpy array.
+            Distance (in meters).
+        """
+        if isinstance(d, Iterable):
+            log10 = np.log10
+        else:
+            log10 = math.log10
+
+        # LOS parameters
+        A = 18.7
+        B = 46.8
+        C = 20
+
+        # self.fc is in MHz
+        fc_GHz = self.fc / 1e3
+
+        pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5)
+        return pl_dB
+
+    def _calc_PS7_path_loss_dB_NLOS_same_floor(self, d, num_walls=1):
+        """
+        Calculate the deterministic path loss according to the Propagation
+        Scenario (PS) 7 of the METIS project for the NLOS case.
+
+        The path loss (in dB) is calculated as
+
+        .. math::
+           PL = A \\log_{10}(d) + B + C \\log_{10}(f_c/5) + X
+
+        The distance :math:`d` is in meters, while the frequency
+        :math:`f_c` is in Hz.
+
+        The other variables (NLOS case) are:
+
+        .. math::
+           A = 36.8 B = 43.8, C = 20, X = 5 ( n_w - 1 )
+
+        where :math:`n_w` is the number of walls between the transmitter
+        and receiver.
+
+        Parameters
+        ----------
+        d : float of numpy array
+            Distance (in meters).
+        num_walls : int or numpy int array
+            Number of walls between the transmitter and the receiver. If it
+            is an int array it must have the same dimension as `d`.
+
+        Returns
+        -------
+        pl_dB : float or numpy array
+            Path loss in dB.
+        """
+        if isinstance(d, Iterable):
+            log10 = np.log10
+        else:
+            log10 = math.log10
+
+        # NLOS parameters
+        A = 36.8
+        B = 43.8
+        C = 20
+        X = 5 * (num_walls - 1)
+
+        # self.fc is in MHz
+        fc_GHz = self.fc / 1e3
+
+        # LOS values: A = 18.7 B = 46.8, C = 20, X = 0
+        # NLOS values: A = 36.8 B = 43.8, C = 20, X = 5 ( n_w - 1 )
+
+        # For the propagation between floors, we need to add the floor losses if
+        # the transmitter and receiver are in different floors as
+        # FL = 17 + 4 (n_f - 1)
+
+        # TODO: implement-me
+        pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5) + X
+        return pl_dB
+
+
+    def which_distance_dB(self, PL):
+        pass
+
+    def _calc_deterministic_path_loss_dB(self, d):
+        pass
+
 
 # TODO: Test this class
 # See http://w3.antd.nist.gov/wctg/manet/calcmodels_r1.pdf
@@ -544,7 +801,7 @@ class PathLossOkomuraHata(PathLossBase):
         self._fc = 900
 
         # area_type can be 'open', 'suburban', 'medium city', 'large city'.
-        # Note: The category of “large city” used by Hata implies building
+        # Note: The category of "large city" used by Hata implies building
         # heights greater than 15m.
         self._area_type = 'suburban'
 
@@ -644,7 +901,7 @@ class PathLossOkomuraHata(PathLossBase):
             a = ((1.1 * math.log10(self.fc) - 0.7)
                  * self.hms - 1.56 * math.log10(self.fc) + 0.8)
         elif self.area_type == 'large city':
-            # Note: The category of “large city” used by Hata implies
+            # Note: The category of "large city" used by Hata implies
             # building heights greater than 15m.
             if self.fc > 300:
                 # If frequency is greater then 300MHz then the factor is
