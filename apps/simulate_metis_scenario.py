@@ -50,9 +50,11 @@ def calc_wall_losses(side_length, room_positions, single_wall_loss_dB=5):
     all_room_positions_diffs = (room_positions.reshape(num_rooms, 1)
                                 - 1.0001*room_positions.reshape(1, num_rooms))
 
-    num_rooms_steps = np.floor(
-        np.abs(np.real(all_room_positions_diffs / side_length)) +
-        np.abs(np.imag(all_room_positions_diffs / side_length)))
+    num_rooms_steps \
+        = np.round(
+            np.absolute(np.real(all_room_positions_diffs / side_length)) +
+            np.absolute(np.imag(all_room_positions_diffs / side_length))
+        ).astype(int)
 
     wall_losses_dB = single_wall_loss_dB * num_rooms_steps
 
@@ -262,7 +264,7 @@ if __name__ == '__main__':
     # No path loss
     fig1, ax1 = plt.subplots(figsize=(8, 6))
     im1 = ax1.imshow(sinr_array_pl_nothing_dB2,
-                     interpolation='nearest', vmax=-1, vmin=-6.5)
+                     interpolation='nearest', vmax=-1.5, vmin=-5)
     ax1.set_title('No Path Loss')
     fig1.colorbar(im1)
 
