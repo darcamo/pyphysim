@@ -5101,6 +5101,133 @@ class PathLoss3GPP1TestCase(unittest.TestCase):
 
 
 # TODO: finish implementation
+class PathLossMetisPS7TestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.pl = pathloss.PathLossMetisPS7()
+
+    def test_calc_PS7_path_loss_dB_same_floor(self):
+        A = 36.8
+        B = 43.8
+        C = 20
+
+        num_walls = 1
+        X = 5 * (num_walls - 1)
+
+        fc_GHz = 0.9
+        d = 10.0
+
+        # xxxxxxxxxx Test NLOS case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Simple test
+        expected_pl_dB_NLOS \
+            = A * math.log10(d) + B + C * math.log10(fc_GHz / 5) + X
+        self.assertAlmostEqual(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=num_walls),
+            expected_pl_dB_NLOS)
+
+        # Test with a different frequency value
+        fc_GHz = 6.0
+        self.pl.fc = 6e3
+
+        expected_pl_dB_NLOS \
+            = A * math.log10(d) + B + C * math.log10(fc_GHz / 5) + X
+        self.assertAlmostEqual(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=num_walls),
+            expected_pl_dB_NLOS)
+
+        # Test with different number of walls
+        num_walls = 3
+        X = 5 * (num_walls - 1)
+        expected_pl_dB_NLOS \
+            = A * math.log10(d) + B + C * math.log10(fc_GHz / 5) + X
+        self.assertAlmostEqual(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=num_walls),
+            expected_pl_dB_NLOS)
+
+        # Test with d as an array
+        d = np.array([10., 50., 100., 1000.])
+        expected_pl_dB_NLOS \
+            = A * np.log10(d) + B + C * math.log10(fc_GHz / 5) + X
+        np.testing.assert_array_almost_equal(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=num_walls),
+            expected_pl_dB_NLOS)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the LOS Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        A = 18.7
+        B = 46.8
+        C = 20
+        X = 0
+
+        # Simple test
+        d = 10
+        expected_pl_dB_LOS \
+            = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
+        self.assertAlmostEqual(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
+            expected_pl_dB_LOS)
+
+        # Test with a different frequency
+        fc_GHz = 1.1
+        self.pl.fc = 1.1e3
+        expected_pl_dB_LOS \
+            = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
+        self.assertAlmostEqual(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
+            expected_pl_dB_LOS)
+
+        # Test with d as an array
+        d = np.array([10., 50., 100., 1000.])
+        expected_pl_dB_LOS \
+            = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
+        np.testing.assert_array_almost_equal(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
+            expected_pl_dB_LOS)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test with LOS and NLOS at the same time xxxxxxxxxxxxxx
+        # Now we test when `d` and `num_walls` are numpy arrays. Some of
+        # the values in num_walls array are equal to zero, while others are
+        # above zero. LOS path loss model must be used for the values in
+        # num_walls which are equal to zero while NLOS must be used for the
+        # other values.
+        num_walls = np.array([1, 2, 0, 2, 0], dtype=int)
+        d = np.array([30., 30., 30., 200., 10.])
+
+        LOS_index = (num_walls == 0)
+        NLOS_index = ~LOS_index
+
+        X = 5 * (num_walls[NLOS_index] - 1)
+
+        expected_pl_dB = np.empty(5, dtype=float)
+
+        # First calculated the expected path loss for the LOS values
+        A = 18.7
+        B = 46.8
+        C = 20
+        expected_pl_dB[LOS_index] \
+            = A * np.log10(d[LOS_index]) + B + C * math.log10(fc_GHz / 5)
+
+        # Now calculate the expected path loss for the NLOS values
+        A = 36.8
+        B = 43.8
+        C = 20
+
+        X = 5 * (num_walls[NLOS_index] - 1)
+        expected_pl_dB[NLOS_index] \
+            = A * np.log10(d[NLOS_index]) + B + C * math.log10(fc_GHz / 5) + X
+
+        np.testing.assert_array_almost_equal(
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls),
+            expected_pl_dB)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_path_loss(self):
+        pass
+
+
+
+# TODO: finish implementation
 class PathLossOkomuraHataTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
