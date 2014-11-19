@@ -1128,7 +1128,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         # self.fc is in MHz
         fc_GHz = self.fc / 1e3
 
-        pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5)
+        pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5.)
         return pl_dB
 
     def _calc_PS7_path_loss_dB_NLOS_same_floor(self, d, num_walls=1):
@@ -1186,7 +1186,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         # losses if the transmitter and receiver are in different floors as
         # FL = 17 + 4 (n_f - 1)
 
-        pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5) + X
+        pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5.) + X
         return pl_dB
 
     def which_distance_dB(self, PL):
