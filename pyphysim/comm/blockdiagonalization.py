@@ -422,7 +422,7 @@ class BlockDiaginalizer(object):
         #
         # Note: I think this only works if the number of receive transmit
         # is equal to the number of receive antennas
-        iNtU = Sigma.size / float(self.num_users)
+        iNtU = Sigma.size // self.num_users
 
         # First we perform the global waterfilling
         Ms_good = self._perform_global_waterfilling_power_scaling(
@@ -519,7 +519,7 @@ class BlockDiaginalizer(object):
         """
         # This only works of the number of transmit antennas is the same
         # for all transmitters.
-        iNtU = mtChannel.shape[1] / self.num_users
+        iNtU = mtChannel.shape[1] // self.num_users
 
         # Calculates the modulation matrix and the singular values of the
         # effective channel when this modulation matrix is applied.
