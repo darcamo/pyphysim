@@ -484,7 +484,7 @@ class PathLossOutdoorBase(PathLossBase):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.
@@ -530,7 +530,7 @@ class PathLossOutdoorBase(PathLossBase):
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args,
                                                       'Km')
 
-    def calc_path_loss_dB(self, d, **kargs):
+    def calc_path_loss_dB(self, d):
         """
         Calculates the Path Loss (in dB) for a given distance (in Km).
 
@@ -552,9 +552,9 @@ class PathLossOutdoorBase(PathLossBase):
         PL : float or numpy array
             Path loss (in dB) for the given distance(s).
         """
-        return super(PathLossOutdoorBase, self).calc_path_loss_dB(d, **kargs)
+        return super(PathLossOutdoorBase, self).calc_path_loss_dB(d)
 
-    def calc_path_loss(self, d, **kargs):
+    def calc_path_loss(self, d):
         """
         Calculates the path loss (linear scale) for a given distance (in Km).
 
@@ -573,7 +573,7 @@ class PathLossOutdoorBase(PathLossBase):
         pl : float or numpy array
             Path loss (in linear scale) for the given distance(s).
         """
-        pl = conversion.dB2Linear(-self.calc_path_loss_dB(d, **kargs))
+        pl = conversion.dB2Linear(-self.calc_path_loss_dB(d))
         return pl
 
     def which_distance(self, pl):
