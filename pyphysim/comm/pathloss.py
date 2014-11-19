@@ -57,6 +57,11 @@ class PathLossBase(object):
     # 'abstract' must be implemented in a subclass.
     __metaclass__ = ABCMeta
 
+    # Path loss type, such as 'indoor', 'outdoor', 'outdoor2indoor',
+    # etc. This should be set in subclasses appropriately. This is useful
+    # mainly for introspection.
+    _TYPE = 'base'
+
     def __init__(self):
         self.sigma_shadow = 8  # Shadow standard deviation
         self.use_shadow_bool = False
@@ -65,6 +70,11 @@ class PathLossBase(object):
         # because a distance is too small will considered as 0dB. If this
         # is False then an exception will be raised instead.
         self.handle_small_distances_bool = False
+
+    @property
+    def type(self):
+        """Get method for the type property."""
+        return self._TYPE
 
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     @abstractmethod
@@ -300,6 +310,8 @@ class PathLossIndoorBase(PathLossBase):
     the which_distance_dB and `which_distance` functions, regardless of the
     value of the use_shadow_bool variable.
     """
+    _TYPE = 'indoor'
+
     def __init__(self, ):
         PathLossBase.__init__(self)
 
@@ -458,6 +470,8 @@ class PathLossOutdoorBase(PathLossBase):
     the which_distance_dB and `which_distance` functions, regardless of the
     value of the use_shadow_bool variable.
     """
+    _TYPE = 'outdoor'
+
     def __init__(self, ):
         PathLossBase.__init__(self)
 
