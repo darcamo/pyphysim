@@ -4941,6 +4941,9 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         """Called before each test."""
         self.pl = pathloss.PathLossFreeSpace()
 
+    def test_type(self):
+        self.assertEqual(self.pl.type, 'outdoor')
+
     def test_calc_path_loss(self):
         # with a very small distance the path loss (in linear scale) would
         # be negative, which is not valid. For these cases we should throw
@@ -5056,6 +5059,9 @@ class PathLoss3GPP1TestCase(unittest.TestCase):
         """Called before each test."""
         self.pl = pathloss.PathLoss3GPP1()
 
+    def test_type(self):
+        self.assertEqual(self.pl.type, 'outdoor')
+
     def test_calc_path_loss(self):
         # xxxxxxxxxx Test the case for very small distances xxxxxxxxxxxxxxx
         # with a very small distance the path loss (in linear scale) would
@@ -5105,6 +5111,9 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.pl = pathloss.PathLossMetisPS7()
+
+    def test_type(self):
+        self.assertEqual(self.pl.type, 'indoor')
 
     def test_calc_PS7_path_loss_dB_same_floor(self):
         A = 36.8
@@ -5226,12 +5235,14 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         pass
 
 
-
 # TODO: finish implementation
 class PathLossOkomuraHataTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         self.pl = pathloss.PathLossOkomuraHata()
+
+    def test_type(self):
+        self.assertEqual(self.pl.type, 'outdoor')
 
     def test_model_parameters(self):
         self.assertAlmostEqual(self.pl.hms, 1.0)
