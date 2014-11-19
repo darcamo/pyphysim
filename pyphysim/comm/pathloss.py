@@ -6,11 +6,13 @@ Implement classes for several Path loss models.
 
 The base class PathLossBase implements the code common to every path loss
 model and only two methods need to be implemented in subclasses:
-which_distance_dB and _calc_deterministic_path_loss_dB.
+**which_distance_dB** and **_calc_deterministic_path_loss_dB**. However,
+instead of inheriting directly from :class:`PathLossBase`, inherit from
+either :class:`PathLossIndoorBase` or :class:`PathLossOutdoorBase`.
 
 The most common usage of a path loss class is to instantiate an object of
-the desired path loss model and then call the calc_path_loss_dB or the
-calc_path_loss methods to actually calculate the path loss.
+the desired path loss model and then call the **calc_path_loss_dB** or the
+**calc_path_loss** methods to actually calculate the path loss.
 
 .. TODO:: Verify the equations in the docstrings
 """
@@ -39,20 +41,21 @@ class PathLossBase(object):
     Base class for the different Path Loss models.
 
     The common interface for the path loss classes is provided by the
-    calc_path_loss_dB or the calc_path_loss methods to actually calculate
-    the path loss for a given distance, as well as the which_distance_dB or
-    which_distance methods to determine the distance that yields the given
-    path loss.
+    :meth:`calc_path_loss_dB` or the :meth:`calc_path_loss` methods to
+    actually calculate the path loss for a given distance, as well as the
+    :meth:`which_distance_dB` or :meth:`which_distance` methods to
+    determine the distance that yields the given path loss.
 
     Each subclass of PathLossBase NEED TO IMPLEMENT only the
-    "which_distance_dB" and the "_calc_deterministic_path_loss_dB"
-    functions.
+    :meth:`which_distance_dB` and the
+    :meth:`_calc_deterministic_path_loss_dB` functions.
 
-    If the use_shadow_bool is set to True then calling calc_path_loss_dB or
-    calc_path_loss will take the shadowing specified in the `sigma_shadow`
-    variable into account. However, shadowing is not taken into account in
-    the which_distance_dB and `which_distance` functions, regardless of the
-    value of the use_shadow_bool variable.
+    If the :attr:`use_shadow_bool` attribute is set to True then calling
+    :meth:`calc_path_loss_dB` or :meth:`calc_path_loss` will take the
+    shadowing specified in the :attr:`sigma_shadow` attribute into
+    account. However, shadowing is not taken into account in the
+    :meth:`which_distance_dB` and :meth:`which_distance` functions,
+    regardless of the value of the :attr:`use_shadow_bool` variable.
     """
     # The PathLossBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
@@ -88,6 +91,11 @@ class PathLossBase(object):
         PL : float or numpy array
             Path Loss (in dB)
 
+        Returns
+        -------
+        d : float or numpy array
+            Distance to get the desired path loss `PL`.
+
         Raises
         ------
         NotImplementedError
@@ -114,6 +122,11 @@ class PathLossBase(object):
         ----------------
         kwargs : dict
             Additional keywords that might be necessary in a subclass.
+
+        Returns
+        -------
+        PL : float or numpy array
+            Path loss (in dB).
 
         Raises
         ------
@@ -296,20 +309,21 @@ class PathLossIndoorBase(PathLossBase):
     Base class for the different Indoor Path Loss models.
 
     The common interface for the path loss classes is provided by the
-    calc_path_loss_dB or the calc_path_loss methods to actually calculate
-    the path loss for a given distance, as well as the which_distance_dB or
-    which_distance methods to determine the distance that yields the given
-    path loss.
+    :meth:`calc_path_loss_dB` or the :meth:`calc_path_loss` methods to
+    actually calculate the path loss for a given distance, as well as the
+    :meth:`which_distance_dB` or which_distance methods to determine the
+    distance that yields the given path loss.
 
     Each subclass of PathLossBase NEED TO IMPLEMENT only the
-    "which_distance_dB" and the "_calc_deterministic_path_loss_dB"
-    functions.
+    :meth:`which_distance_dB` and the
+    :meth:`_calc_deterministic_path_loss_dB` functions.
 
-    If the use_shadow_bool is set to True then calling calc_path_loss_dB or
-    calc_path_loss will take the shadowing specified in the `sigma_shadow`
-    variable into account. However, shadowing is not taken into account in
-    the which_distance_dB and `which_distance` functions, regardless of the
-    value of the use_shadow_bool variable.
+    If the :attr:`use_shadow_bool` is set to True then calling
+    :meth:`calc_path_loss_dB` or :meth:`calc_path_loss` will take the
+    shadowing specified in the :attr:`sigma_shadow` variable into
+    account. However, shadowing is not taken into account in the
+    :meth:`which_distance_dB` and :meth:`which_distance` functions,
+    regardless of the value of the :attr:`use_shadow_bool` variable.
     """
     _TYPE = 'indoor'
 
@@ -326,6 +340,11 @@ class PathLossIndoorBase(PathLossBase):
         ----------
         PL : float or numpy array
             Path Loss (in dB)
+
+        Returns
+        -------
+        d : float or numpy array
+            The distance to yield the given path loss.
 
         Raises
         ------
@@ -353,6 +372,11 @@ class PathLossIndoorBase(PathLossBase):
         ----------------
         kwargs : dict
             Additional keywords that might be necessary in a subclass.
+
+        Returns
+        -------
+        PL : float or numpy array
+            The calculated path loss.
 
         Raises
         ------
@@ -456,20 +480,21 @@ class PathLossOutdoorBase(PathLossBase):
     Base class for the different Outdoor Path Loss models.
 
     The common interface for the path loss classes is provided by the
-    calc_path_loss_dB or the calc_path_loss methods to actually calculate
-    the path loss for a given distance, as well as the which_distance_dB or
-    which_distance methods to determine the distance that yields the given
-    path loss.
+    :meth:`calc_path_loss_dB` or the :meth:`calc_path_loss` methods to
+    actually calculate the path loss for a given distance, as well as the
+    :meth:`which_distance_dB` or :meth:`which_distance` methods to
+    determine the distance that yields the given path loss.
 
     Each subclass of PathLossBase NEED TO IMPLEMENT only the
-    "which_distance_dB" and the "_calc_deterministic_path_loss_dB"
-    functions.
+    :meth:`which_distance_dB` and the
+    :meth:`_calc_deterministic_path_loss_dB` functions.
 
-    If the use_shadow_bool is set to True then calling calc_path_loss_dB or
-    calc_path_loss will take the shadowing specified in the `sigma_shadow`
-    variable into account. However, shadowing is not taken into account in
-    the which_distance_dB and `which_distance` functions, regardless of the
-    value of the use_shadow_bool variable.
+    If the :attr:`use_shadow_bool` is set to True then calling
+    :meth:`calc_path_loss_dB` or :meth:`calc_path_loss` will take the
+    shadowing specified in the :attr:`sigma_shadow` variable into
+    account. However, shadowing is not taken into account in the
+    :meth:`which_distance_dB` and :meth:`which_distance` functions,
+    regardless of the value of the :attr:`use_shadow_bool` variable.
     """
     _TYPE = 'outdoor'
 
@@ -486,6 +511,11 @@ class PathLossOutdoorBase(PathLossBase):
         ----------
         PL : float or numpy array
             Path Loss (in dB)
+
+        Returns
+        -------
+        d : float or numpy array
+            The distance that yields the given path loss.
 
         Raises
         ------
@@ -513,6 +543,11 @@ class PathLossOutdoorBase(PathLossBase):
         ----------------
         kwargs : dict
             Additional keywords that might be necessary in a subclass.
+
+        Returns
+        -------
+        PL : float or numpy array
+            The calculated path loss (in dB).
 
         Raises
         ------
@@ -650,6 +685,11 @@ class PathLossGeneral(PathLossOutdoorBase):
     def _get_latex_repr(self):
         """
         Get the Latex representation (equation) for the PathLossGeneral class.
+
+        The general equation is given by
+
+        .. math::
+           PL = 10 n \\log_{10} (d) + C
         """
         return '$PL = {0} \\log_{{10}} (d) + {1}$'.format(
             10 * self.n, self.C)
@@ -691,7 +731,8 @@ class PathLossGeneral(PathLossOutdoorBase):
 
         It is the inverse of the calc_path_loss function.
 
-        :math:`10^{(PL/(10n) - C)}`
+        .. math::
+           10^{(PL/(10n) - C)}
 
         d = obj.whichDistance(dB2Linear(-PL));
 
@@ -717,7 +758,8 @@ class PathLossGeneral(PathLossOutdoorBase):
 
         For d in Km and self.fc in MHz, the free space Path Loss is given by
 
-        :math:`PL = 10 n \\log_{10}(d) + C`
+        .. math::
+           PL = 10 n \\log_{10}(d) + C
 
         Parameters
         ----------
@@ -743,10 +785,10 @@ class PathLossFreeSpace(PathLossGeneral):
     Class to calculate the Path Loss in the free space.
 
     The common interface for the path loss classes is provided by the
-    calc_path_loss_dB or the calc_path_loss methods to actually calculate
-    the path loss for a given distance, as well as the which_distance_dB or
-    which_distance methods to determine the distance that yields the given
-    path loss.
+    :meth:`calc_path_loss_dB` or the :meth:`calc_path_loss` methods to
+    actually calculate the path loss for a given distance, as well as the
+    :meth:`which_distance_dB` or :meth:`which_distance` methods to
+    determine the distance that yields the given path loss.
 
     For the path loss in free space you also need to set the `n` variable,
     corresponding to the path loss coefficient, and the `fc` variable,
@@ -758,7 +800,8 @@ class PathLossFreeSpace(PathLossGeneral):
     .. math::
        PL = 10 n ( \\log_{10}(d)+\\log_{10}(fc * 1e6) - 4.3779113907)
 
-    Likewise, the which_distance_dB function calculates the value of
+    Likewise, the :meth:`which_distance_dB` function calculates the value
+    of
 
     .. math::
        10^{(PL/(10n) - \\log_{10}(fc) + 4.377911390697565)}
@@ -867,7 +910,8 @@ class PathLoss3GPP1(PathLossGeneral):
     Class to calculate the Path Loss according to the model from 3GPP
     (scenario 1). That is, the Path Loss (in dB) is equal to
 
-    .. math:: PL = 128.1 + 37.6*\log10(d)
+    .. math::
+       PL = 128.1 + 37.6*\log10(d)
 
     This model is valid for LTE assumptions and at 2GHz frequency, where
     the distance is in Km.
@@ -1120,13 +1164,14 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
     The exact formula depend on the area type, but in general the path loss
     is given by (in dB):
 
-    $$PL = 69.55 + 26.16 * \log(fc) - 13.82*\log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\log(h_{bs})) \log(d) - K$$
+    .. math::
+       PL = 69.55 + 26.16 * \\log(fc) - 13.82*\\log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\\log(h_{bs})) \\log(d) - K
 
-    The term '$a(h_{ms})$' is the mobile station correction factor (see
-    `_calc_mobile_antenna_height_correction_factor`).
+    The term :math:`a(h_{ms})` is the mobile station correction factor (see
+    :meth:`_calc_mobile_antenna_height_correction_factor`).
 
-    The term 'K' is a correction factor that depends on the area type (see
-    `_calc_K`).
+    The term :math:`K` is a correction factor that depends on the area type
+    (see :meth:`_calc_K`).
 
     The possible area types are (in ascending order):
     'open', 'suburban', 'medium city' and 'large city'.
@@ -1239,16 +1284,19 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         refined according to city sizes. For all area types, except 'large
         city', the mobile antenna correction factor is given by
 
-        $$a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$$
+        .. math::
+          a(h_{ms}) = (1.1 \\log(f) - 0.7) h_{ms} - 1.56 \\log(f) + 0.8
 
         For the 'large city' area type, the mobile antenna height
         correction is given by
 
-        $$a(h_{ms}) = 3.2 (\log(11.75*h_{ms})^2) - 4.97$$
+        .. math::
+           a(h_{ms}) = 3.2 (\\log(11.75*h_{ms})^2) - 4.97
 
         if the frequency is greater then 300MHz, or
 
-        $$a(h_{ms}) = 8.29 (\log(1.54 h_{ms}))^2 - 1.10$$
+        .. math::
+           a(h_{ms}) = 8.29 (\\log(1.54 h_{ms}))^2 - 1.10
 
         if the frequency is lower than 300MHz (and greater than 150MHz
         where the Okomura Hata model is valid).
@@ -1315,7 +1363,9 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         as "a loss".
 
         For d in Km and self.fc in Hz, the free space Path Loss is given by
-        PL = 10n ( log10(d) +log10(f) - 4.3779113907 )
+
+        .. math::
+           PL = 10n ( \\log_{10}(d) + \log_{10}(f) - 4.3779113907 )
 
         Parameters
         ----------
