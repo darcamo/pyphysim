@@ -99,7 +99,7 @@ def prepare_sinr_array_for_color_plot(sinr_array,
 
 if __name__ == '__main__':
     # xxxxxxxxxx Simulation Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    side_length = 10
+    side_length = 10  # 10 meters side length
     single_wall_loss_dB = 5
 
     # Square of 12 x 12 square cells
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     user_relative_positions = aux[0] + 1j * aux[1]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # Transmit Power and noise
+    # xxxxxxxxxx Transmit Power and noise xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     Pt = dBm2Linear(30)  # 20 dBm transmit power
     noise_var = 0.0  # dBm2Linear(-116)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -138,7 +138,8 @@ if __name__ == '__main__':
     pl_free_space_obj = pathloss.PathLossFreeSpace()
     pl_3gpp_obj.handle_small_distances_bool = True
     pl_free_space_obj.handle_small_distances_bool = True
-    # pl_metis_ps7 = pathloss.PathLossMetisPS7()
+    pl_metis_ps7_obj = pathloss.PathLossMetisPS7()
+    pl_metis_ps7_obj.handle_small_distances_bool = True
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
@@ -158,14 +159,30 @@ if __name__ == '__main__':
         [num_cells, num_users_per_cell], dtype=float)
     sinr_array_pl_free_space = np.zeros(
         [num_cells, num_users_per_cell], dtype=float)
+    sinr_array_pl_metis_ps7 = np.zeros(
+        [num_cells, num_users_per_cell], dtype=float)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
-    dists = cluster.calc_dist_all_users_to_each_cell()
-    pl_3gpp = pl_3gpp_obj.calc_path_loss(dists)
-    pl_free_space = pl_free_space_obj.calc_path_loss(dists)
+    # Distances (in meters) between each discrete point in each room and
+    # each room center (where the transmitter is located
+    dists_m = cluster.calc_dist_all_users_to_each_cell()
+    # 3GPP and Free Space path loss classes require distance values to be
+    # in Km. Therefore, we divide the distance in meters by 1000.
+    pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m/1000.)
+    pl_free_space = pl_free_space_obj.calc_path_loss(dists_m/1000.)
     pl_nothing = np.ones([num_cells * num_users_per_cell, num_cells],
                          dtype=float)
+
+    # We need to know the number of walls the signal must pass to reach the
+    # receiver to calculate the path loss for the METIS PS7 model.
+    num_walls_extended = np.repeat(num_walls, 15*15, axis=0)
+
+    # The METIS PS7 path loss model require distance values in meters,
+    # while the others are in Kms.
+    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(
+        dists_m,
+        num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     for cell_idx in range(num_cells):
@@ -226,19 +243,52 @@ if __name__ == '__main__':
         sinr_users_in_current_cell = (desired_power /
                                       (undesired_power + noise_var))
         sinr_array_pl_free_space[cell_idx, :] = sinr_users_in_current_cell
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Case with METIS PS7 path loss xxxxxxxxxxxxxxxxxxxxxxxx
+        pl = pl_metis_ps7
+
+        # Get the desired power of the users in the cell
+        desired_power = Pt * pl[users_idx, cell_idx]
+
+        # Calculate the sum of all interference powers
+        undesired_power = np.sum(
+            Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
+            axis=-1)
+
+        # Calculate the SINR of the user
+        sinr_users_in_current_cell = (desired_power /
+                                      (undesired_power + noise_var))
+        sinr_array_pl_metis_ps7[cell_idx, :] = sinr_users_in_current_cell
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Convert values to dB xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB = linear2dB(sinr_array_pl_nothing)
     sinr_array_pl_3gpp_dB = linear2dB(sinr_array_pl_3gpp)
     sinr_array_pl_free_space_dB = linear2dB(sinr_array_pl_free_space)
+    sinr_array_pl_metis_ps7_dB = linear2dB(sinr_array_pl_metis_ps7)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print "Mean SINR value (no PL): {0}".format(
-        sinr_array_pl_nothing_dB.mean())
-    print "Mean SINR value (3GPP): {0}".format(sinr_array_pl_3gpp_dB.mean())
-    print "Mean SINR value (Free Space): {0}".format(
-        sinr_array_pl_free_space_dB.mean())
+    print ("Min/Mean/Max SINR value (no PL):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_nothing_dB.min(),
+               sinr_array_pl_nothing_dB.mean(),
+               sinr_array_pl_nothing_dB.max())
+    print ("Min/Mean/Max SINR value (3GPP):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_3gpp_dB.min(),
+               sinr_array_pl_3gpp_dB.mean(),
+               sinr_array_pl_3gpp_dB.max())
+    print ("Min/Mean/Max SINR value (Free Space):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_free_space_dB.min(),
+               sinr_array_pl_free_space_dB.mean(),
+               sinr_array_pl_free_space_dB.max())
+    print ("Min/Mean/Max SINR value (METIS PS7):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_free_space_dB.min(),
+               sinr_array_pl_metis_ps7_dB.mean(),
+               sinr_array_pl_free_space_dB.max())
 
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
@@ -251,6 +301,10 @@ if __name__ == '__main__':
         num_discrete_positions_per_cell)
     sinr_array_pl_free_space_dB2 = prepare_sinr_array_for_color_plot(
         sinr_array_pl_free_space_dB,
+        num_cells_per_side,
+        num_discrete_positions_per_cell)
+    sinr_array_pl_metis_ps7_dB2 = prepare_sinr_array_for_color_plot(
+        sinr_array_pl_metis_ps7_dB,
         num_cells_per_side,
         num_discrete_positions_per_cell)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -276,6 +330,13 @@ if __name__ == '__main__':
                      interpolation='nearest', vmax=30, vmin=-2.5)
     ax3.set_title('Free Space Path Loss')
     fig3.colorbar(im3)
+
+    # METIS PS7 path loss
+    fig4, ax4 = plt.subplots(figsize=(8, 6))
+    im4 = ax4.imshow(sinr_array_pl_metis_ps7_dB2,
+                     interpolation='nearest', vmax=30, vmin=-2.5)
+    ax4.set_title('METIS PS7 Path Loss')
+    fig4.colorbar(im4)
 
     plt.show()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
