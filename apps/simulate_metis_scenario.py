@@ -27,9 +27,12 @@ from pyphysim.comm import pathloss
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def calc_wall_losses(side_length, room_positions, single_wall_loss_dB=5):
+def calc_num_walls(side_length, room_positions):
     """
-    Calculate the wall losses from each room to each other room.
+    Calculate the number of walls between each room to each other room.
+
+    This is used to calculated the wall losses as well as the indoor
+    pathloss.
 
     Parameters
     ----------
@@ -37,28 +40,24 @@ def calc_wall_losses(side_length, room_positions, single_wall_loss_dB=5):
         The side length of the square cell.
     cell_positions : 1D complex numpy array
         The positions of all cells in grid.
-    single_wall_loss_dB : float
-        The signal loss (in dB) when the signal passes a single wall.
 
     Returns
     -------
-    wall_losses_dB : 2D numpy array of floats
-        The wall losses (in dB) from each room to each room.
+    num_walls : 2D numpy array of ints
+        The number of walls from each room to each room.
     """
     num_rooms = room_positions.size
 
     all_room_positions_diffs = (room_positions.reshape(num_rooms, 1)
                                 - 1.0001*room_positions.reshape(1, num_rooms))
 
-    num_rooms_steps \
+    num_walls \
         = np.round(
             np.absolute(np.real(all_room_positions_diffs / side_length)) +
             np.absolute(np.imag(all_room_positions_diffs / side_length))
         ).astype(int)
 
-    wall_losses_dB = single_wall_loss_dB * num_rooms_steps
-
-    return wall_losses_dB
+    return num_walls
 
 
 def get_cell_users_indexes(cell_index, num_users_per_cell):
@@ -85,19 +84,12 @@ def prepare_sinr_array_for_color_plot(sinr_array,
     num_cells_per_side : TYPE
     num_discrete_positions_per_cell : TYPE
     """
-    # dummy = np.zeros(
-    #     [num_cells,
-    #      num_discrete_positions_per_cell * num_discrete_positions_per_cell])
     dummy = sinr_array
-    # for cell_idx in range(num_cells):
-    #     dummy[cell_idx] = cell_idx
-
     dummy2 = dummy.reshape(
         [num_cells_per_side,
          num_cells_per_side,
          num_discrete_positions_per_cell,
          num_discrete_positions_per_cell])
-
     dummy3 = np.swapaxes(dummy2, 1, 2).reshape(
         [num_cells_per_side * num_discrete_positions_per_cell,
          num_cells_per_side * num_discrete_positions_per_cell],
@@ -108,6 +100,7 @@ def prepare_sinr_array_for_color_plot(sinr_array,
 if __name__ == '__main__':
     # xxxxxxxxxx Simulation Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     side_length = 10
+    single_wall_loss_dB = 5
 
     # Square of 12 x 12 square cells
     num_cells_per_side = 12
@@ -135,7 +128,8 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Calculate cell positions and wall losses xxxxxxxxxxxxxxxxx
     cell_positions = np.array([c.pos for c in cluster])
-    wall_losses_dB = calc_wall_losses(side_length, cell_positions)
+    num_walls = calc_num_walls(side_length, cell_positions)
+    wall_losses_dB = num_walls * single_wall_loss_dB
     wall_losses = dB2Linear(-wall_losses_dB)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -144,6 +138,7 @@ if __name__ == '__main__':
     pl_free_space_obj = pathloss.PathLossFreeSpace()
     pl_3gpp_obj.handle_small_distances_bool = True
     pl_free_space_obj.handle_small_distances_bool = True
+    # pl_metis_ps7 = pathloss.PathLossMetisPS7()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
