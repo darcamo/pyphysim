@@ -977,6 +977,47 @@ class PathLossMetisPS7(PathLossIndoorBase):
         """Set method for the fc property."""
         self._fc = value
 
+    def _repr_latex_(self):
+        """
+        Get a Latex representation of the PathLossMetisPS7 class.
+
+        This is useful for representing the path loss object in an IPython
+        notebook.
+        """
+        return "PathLossMetisPS7 (fc={0}):\n{1}".format(
+            self.fc, self.get_latex_repr())
+
+    def get_latex_repr(self, num_walls=None):
+        """
+        Get the Latex representation (equation) for the PathLossGeneral class.
+
+        The general equation is given by
+
+        .. math::
+           PL = A \\log_{10}(d) + B + C \\log_{10}(f_c/5) + X
+
+        where the parameters A, B, C and X depend on the number of walls.
+
+        Parameters
+        ----------
+        num_walls : int or None
+            Number of walls. LOS is used if it is 0 and NLOS is used if it
+            is greater than zero. If it is None, then letters are used
+            instead of numeric values.
+        """
+        if num_walls is None:
+            values = {'A': 'A', 'B': 'B', 'C': 'C', 'X': 'X'}
+        else:
+            if num_walls == 0:
+                values = {'A': '18.7', 'B': '46.8', 'C': '20', 'X': '0'}
+            elif num_walls > 0:
+                values = {'A': '36.8', 'B': '43.8', 'C': '20',
+                          'X': str(5 * num_walls - 1)}
+            else:
+                raise ValueError("num_walls cannot be negative")
+
+        return "${A} \\log_{{10}}(d) + {B} + {C} \\log_{{10}}(f_c/5) + {X}$".format(**values)
+
     def _calc_PS7_path_loss_dB_same_floor(self, d, num_walls=0):
         """
         Calculate the deterministic path loss according to the Propagation
