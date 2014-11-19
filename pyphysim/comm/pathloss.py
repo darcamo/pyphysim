@@ -29,7 +29,8 @@ from collections import Iterable
 
 from ..util import conversion
 
-__all__ = ['PathLossBase', 'PathLossFreeSpace', 'PathLoss3GPP1',
+__all__ = ['PathLossBase', 'PathLossIndoorBase', 'PathLossOutdoorBase',
+           'PathLossGeneral', 'PathLossFreeSpace', 'PathLoss3GPP1',
            'PathLossMetisPS7', 'PathLossOkomuraHata']
 
 
