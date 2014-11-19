@@ -77,3 +77,10 @@ flycheck*
 
 # Ignore text files with the progress created by the progressbar classes
 *_progress_*.txt
+
+# Ignore MATLAB .m files
+*.m
+
+# Ignore some non-interesting files in the apps folder
+apps/profile
+apps/texCode.pdf
