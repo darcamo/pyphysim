@@ -135,6 +135,12 @@ class AccessPoint(Node):
         # IF of the access point
         self.id = ap_id
 
+        # xxxxx Appearance for plotting xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Set this to a number. If None, default value for Matplotlib will
+        # be used.
+        self.id_fontsize = None
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def __repr__(self):
         """
         Representation of a AccessPoint object.
@@ -182,6 +188,56 @@ class AccessPoint(Node):
         new_user.cell_id = self.id
         self._users.append(new_user)
 
+    def _plot_common_part(self, ax):  # pragma: no cover
+        """
+        Common code for plotting the classes. Each subclass must implement a
+        `plot` method in which it calls the command to plot the class shape
+        followed by _plot_common_part.
+
+        Parameters
+        ----------
+        ax : A matplotlib axis
+            The axis where the cell will be plotted.
+        """
+        # If self.id is None, plot a single marker at the center of the
+        # cell
+        if self.id is None:
+            self.plot_node(ax)
+        else:
+            # If self.id is not None, plot the cell ID at the center of the
+            # cell
+            plt.text(self.pos.real,
+                     self.pos.imag,
+                     '{0}'.format(self.id),
+                     color=self.marker_color,
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     fontsize=self.id_fontsize)
+
+        # Now we plot all the users in the cell
+        for user in self.users:
+            user.plot_node(ax)
+
+    def plot(self, ax=None):
+        """
+        Plot the AccessPoint using the matplotlib library.
+
+        Parameters
+        ----------
+        ax : A matplotlib axis, optional
+            The axis where the cell will be plotted. If not provided, a new
+            figure (and axis) will be created.
+        """
+        if ax is None:
+            # This is a stand alone plot. Lets create a new axes.
+            _, ax = plt.subplots()
+
+        # Plot the node part as well as the users in the cell
+        self._plot_common_part(ax)
+        # ax.set_ylim([-1, 1])
+        # ax.set_xlim([-1, 1])
+        plt.show()
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Cell classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -212,12 +268,6 @@ class CellBase(AccessPoint, shapes.Shape):  # pylint: disable=W0223
         """
         AccessPoint.__init__(self, pos, ap_id=cell_id)
         shapes.Shape.__init__(self, pos, radius, rotation)
-
-        # xxxxx Appearance for plotting xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Set this to a number. If None, default value for Matplotlib will
-        # be used.
-        self.cell_id_fontsize = None
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def __repr__(self):
         """
@@ -367,35 +417,6 @@ class CellBase(AccessPoint, shapes.Shape):  # pylint: disable=W0223
         """
         for _ in range(num_users):
             self.add_random_user(user_color, min_dist_ratio)
-
-    def _plot_common_part(self, ax):  # pragma: no cover
-        """Common code for plotting the classes. Each subclass must implement a
-        `plot` method in which it calls the command to plot the class shape
-        followed by _plot_common_part.
-
-        Parameters
-        ----------
-        ax : A matplotlib axis
-            The axis where the cell will be plotted.
-        """
-        # If self.id is None, plot a single marker at the center of the
-        # cell
-        if self.id is None:
-            self.plot_node(ax)
-        else:
-            # If self.id is not None, plot the cell ID at the center of the
-            # cell
-            plt.text(self.pos.real,
-                     self.pos.imag,
-                     '{0}'.format(self.id),
-                     color=self.marker_color,
-                     horizontalalignment='center',
-                     verticalalignment='center',
-                     fontsize=self.cell_id_fontsize)
-
-        # Now we plot all the users in the cell
-        for user in self.users:
-            user.plot_node(ax)
 
     def plot_border(self, ax=None):  # pragma: no cover
         """

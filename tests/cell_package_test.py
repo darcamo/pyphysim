@@ -866,7 +866,7 @@ class ClusterTestCase(unittest.TestCase):
     def test_cell_id_fontsize_property(self):
         self.assertIsNone(self.C1.cell_id_fontsize)
         for c in self.C1:
-            self.assertIsNone(c.cell_id_fontsize)
+            self.assertIsNone(c.id_fontsize)
 
         self.C1.cell_id_fontsize = 20
         self.assertEqual(self.C1.cell_id_fontsize, 20)
