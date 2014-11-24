@@ -17,14 +17,52 @@ except NameError:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+import math
 import numpy as np
 from matplotlib import pyplot as plt
 # import matplotlib as mpl
 
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
-from pyphysim.cell import cell
+from pyphysim.cell import shapes
 from pyphysim.comm import pathloss
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+def calc_room_positions_square(side_length, num_cells):
+    sqrt_num_cells = int(math.sqrt(num_cells))
+
+    if sqrt_num_cells ** 2 != num_cells:
+        raise ValueError("num_cells must be a perfect square number")
+
+    int_positions = np.unravel_index(np.arange(num_cells), (sqrt_num_cells,
+                                                            sqrt_num_cells))
+
+    cell_positions = (side_length * (int_positions[1] + 1j *
+                                     int_positions[0][::-1] - 0.5-0.5j))
+
+    # Shift the cell positions so that the origin becomes the center of all
+    # cells
+    shift = side_length * (sqrt_num_cells - 1) // 2
+    cell_positions = (cell_positions
+                      - shift - 1j * shift
+                      + side_length / 2. + 1j * side_length / 2.)
+
+    return cell_positions
+
+
+def plot_all_rooms(ax, all_rooms):
+    """
+    Plot all Rectangle shapes in `all_rooms` using the `ax` axis.
+
+    Parameters
+    ----------
+    ax  : matplotlib axis.
+        The axis where the rooms will be plotted.
+    all_rooms : shape.Rectangle object
+        The room to be plotted.
+    """
+    for room in all_rooms:
+        room.plot(ax)
 
 
 def calc_num_walls(side_length, room_positions):
@@ -114,6 +152,11 @@ if __name__ == '__main__':
         -(1. - step), (1. - step), num_discrete_positions_per_cell)
     aux = np.meshgrid(aux, aux, indexing='ij')
     user_relative_positions = aux[0] + 1j * aux[1]
+    num_users_per_cell = user_relative_positions.size
+
+    num_discrete_positions_per_dim = (num_discrete_positions_per_cell
+                                      *
+                                      num_cells_per_side)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Transmit Power and noise xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -121,13 +164,20 @@ if __name__ == '__main__':
     noise_var = 0.0  # dBm2Linear(-116)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Create the cluster xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    cluster = cell.Cluster(
-        cell_radius=side_length, num_cells=num_cells, cell_type='square')
+    # xxxxxxxxxx Create the rooms xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    cell_positions = calc_room_positions_square(side_length, num_cells)
+    all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
+                                  pos + side_length/2. + side_length*1j/2.)
+                 for pos in cell_positions]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # # xxxxxxxxxx Create the cluster xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # cluster = cell.Cluster(
+    #     cell_radius=side_length, num_cells=num_cells, cell_type='square')
+    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # xxxxxxxxxx Calculate cell positions and wall losses xxxxxxxxxxxxxxxxx
-    cell_positions = np.array([c.pos for c in cluster])
+    # cell_positions = np.array([c.pos for c in cluster])
     num_walls = calc_num_walls(side_length, cell_positions)
     wall_losses_dB = num_walls * single_wall_loss_dB
     wall_losses = dB2Linear(-wall_losses_dB)
@@ -143,11 +193,11 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
-    for c in cluster:
-        for rel_pos in user_relative_positions.flat:
-            user = cell.Node(rel_pos)
-            c.add_user(user, relative_pos_bool=True)
-    num_users_per_cell = user_relative_positions.size
+    user_relative_positions2 = user_relative_positions * side_length / 2.
+    cell_positions.shape = (12, 12)
+
+    user_positions = (cell_positions[:, :, np.newaxis, np.newaxis] +
+                      user_relative_positions2[np.newaxis, np.newaxis, :, :])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Output SINR vector xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -164,9 +214,9 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
-    # Distances (in meters) between each discrete point in each room and
-    # each room center (where the transmitter is located
-    dists_m = cluster.calc_dist_all_users_to_each_cell()
+    dists_m = np.abs(user_positions.flatten()[:, np.newaxis] -
+                     cell_positions.flatten()[np.newaxis, :])
+
     # 3GPP and Free Space path loss classes require distance values to be
     # in Km. Therefore, we divide the distance in meters by 1000.
     pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m/1000.)
@@ -183,7 +233,7 @@ if __name__ == '__main__':
     pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(
         dists_m,
         num_walls=num_walls_extended)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     for cell_idx in range(num_cells):
         # Index of the users in the current cell
