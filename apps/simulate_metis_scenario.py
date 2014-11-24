@@ -28,26 +28,26 @@ from pyphysim.comm import pathloss
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def calc_room_positions_square(side_length, num_cells):
-    sqrt_num_cells = int(math.sqrt(num_cells))
+def calc_room_positions_square(side_length, num_rooms):
+    sqrt_num_rooms = int(math.sqrt(num_rooms))
 
-    if sqrt_num_cells ** 2 != num_cells:
-        raise ValueError("num_cells must be a perfect square number")
+    if sqrt_num_rooms ** 2 != num_rooms:
+        raise ValueError("num_rooms must be a perfect square number")
 
-    int_positions = np.unravel_index(np.arange(num_cells), (sqrt_num_cells,
-                                                            sqrt_num_cells))
+    int_positions = np.unravel_index(np.arange(num_rooms), (sqrt_num_rooms,
+                                                            sqrt_num_rooms))
 
-    cell_positions = (side_length * (int_positions[1] + 1j *
+    room_positions = (side_length * (int_positions[1] + 1j *
                                      int_positions[0][::-1] - 0.5-0.5j))
 
-    # Shift the cell positions so that the origin becomes the center of all
-    # cells
-    shift = side_length * (sqrt_num_cells - 1) // 2
-    cell_positions = (cell_positions
+    # Shift the room positions so that the origin becomes the center of all
+    # rooms
+    shift = side_length * (sqrt_num_rooms - 1) // 2
+    room_positions = (room_positions
                       - shift - 1j * shift
                       + side_length / 2. + 1j * side_length / 2.)
 
-    return cell_positions
+    return room_positions
 
 
 def plot_all_rooms(ax, all_rooms):
@@ -75,9 +75,9 @@ def calc_num_walls(side_length, room_positions):
     Parameters
     ----------
     side_length : float
-        The side length of the square cell.
-    cell_positions : 1D complex numpy array
-        The positions of all cells in grid.
+        The side length of the square room.
+    room_positions : 1D complex numpy array
+        The positions of all rooms in grid.
 
     Returns
     -------
@@ -98,39 +98,39 @@ def calc_num_walls(side_length, room_positions):
     return num_walls
 
 
-def get_cell_users_indexes(cell_index, num_users_per_cell):
+def get_room_users_indexes(room_index, num_users_per_room):
     """
 
     Parameters
     ----------
-    cell_index : int
-        Index of the desired cell.
-    num_users_per_cell : int
-        Number of users in each cell.
+    room_index : int
+        Index of the desired room.
+    num_users_per_room : int
+        Number of users in each room.
     """
-    return np.arange(0, num_users_per_cell) + cell_index * num_users_per_cell
+    return np.arange(0, num_users_per_room) + room_index * num_users_per_room
 
 
 def prepare_sinr_array_for_color_plot(sinr_array,
-                                      num_cells_per_side,
-                                      num_discrete_positions_per_cell):
+                                      num_rooms_per_side,
+                                      num_discrete_positions_per_room):
     """
 
     Parameters
     ----------
     sinr_array : TYPE
-    num_cells_per_side : TYPE
-    num_discrete_positions_per_cell : TYPE
+    num_rooms_per_side : TYPE
+    num_discrete_positions_per_room : TYPE
     """
     dummy = sinr_array
     dummy2 = dummy.reshape(
-        [num_cells_per_side,
-         num_cells_per_side,
-         num_discrete_positions_per_cell,
-         num_discrete_positions_per_cell])
+        [num_rooms_per_side,
+         num_rooms_per_side,
+         num_discrete_positions_per_room,
+         num_discrete_positions_per_room])
     dummy3 = np.swapaxes(dummy2, 1, 2).reshape(
-        [num_cells_per_side * num_discrete_positions_per_cell,
-         num_cells_per_side * num_discrete_positions_per_cell],
+        [num_rooms_per_side * num_discrete_positions_per_room,
+         num_rooms_per_side * num_discrete_positions_per_room],
         order='C')
     return dummy3
 
@@ -140,23 +140,23 @@ if __name__ == '__main__':
     side_length = 10  # 10 meters side length
     single_wall_loss_dB = 5
 
-    # Square of 12 x 12 square cells
-    num_cells_per_side = 12
-    num_cells = num_cells_per_side ** 2
+    # Square of 12 x 12 square rooms
+    num_rooms_per_side = 12
+    num_rooms = num_rooms_per_side ** 2
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Discretization of ther possible positions xxxxxxxxxxxxxxxx
-    num_discrete_positions_per_cell = 15  # Number of discrete positions
-    step = 1. / (num_discrete_positions_per_cell + 1)
+    num_discrete_positions_per_room = 15  # Number of discrete positions
+    step = 1. / (num_discrete_positions_per_room + 1)
     aux = np.linspace(
-        -(1. - step), (1. - step), num_discrete_positions_per_cell)
+        -(1. - step), (1. - step), num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
     user_relative_positions = aux[0] + 1j * aux[1]
-    num_users_per_cell = user_relative_positions.size
+    num_users_per_room = user_relative_positions.size
 
-    num_discrete_positions_per_dim = (num_discrete_positions_per_cell
+    num_discrete_positions_per_dim = (num_discrete_positions_per_room
                                       *
-                                      num_cells_per_side)
+                                      num_rooms_per_side)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Transmit Power and noise xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -165,20 +165,20 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the rooms xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    cell_positions = calc_room_positions_square(side_length, num_cells)
+    room_positions = calc_room_positions_square(side_length, num_rooms)
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
                                   pos + side_length/2. + side_length*1j/2.)
-                 for pos in cell_positions]
+                 for pos in room_positions]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # # xxxxxxxxxx Create the cluster xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # cluster = cell.Cluster(
-    #     cell_radius=side_length, num_cells=num_cells, cell_type='square')
+    # cluster = room.Cluster(
+    #     room_radius=side_length, num_rooms=num_rooms, room_type='square')
     # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Calculate cell positions and wall losses xxxxxxxxxxxxxxxxx
-    # cell_positions = np.array([c.pos for c in cluster])
-    num_walls = calc_num_walls(side_length, cell_positions)
+    # xxxxxxxxxx Calculate room positions and wall losses xxxxxxxxxxxxxxxxx
+    # room_positions = np.array([c.pos for c in cluster])
+    num_walls = calc_num_walls(side_length, room_positions)
     wall_losses_dB = num_walls * single_wall_loss_dB
     wall_losses = dB2Linear(-wall_losses_dB)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -194,9 +194,9 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
     user_relative_positions2 = user_relative_positions * side_length / 2.
-    cell_positions.shape = (12, 12)
+    room_positions.shape = (12, 12)
 
-    user_positions = (cell_positions[:, :, np.newaxis, np.newaxis] +
+    user_positions = (room_positions[:, :, np.newaxis, np.newaxis] +
                       user_relative_positions2[np.newaxis, np.newaxis, :, :])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -204,24 +204,24 @@ if __name__ == '__main__':
     # One output for each case: no pathloss, 3GPP path loss and free space
     # path loss
     sinr_array_pl_nothing = np.zeros(
-        [num_cells, num_users_per_cell], dtype=float)
+        [num_rooms, num_users_per_room], dtype=float)
     sinr_array_pl_3gpp = np.zeros(
-        [num_cells, num_users_per_cell], dtype=float)
+        [num_rooms, num_users_per_room], dtype=float)
     sinr_array_pl_free_space = np.zeros(
-        [num_cells, num_users_per_cell], dtype=float)
+        [num_rooms, num_users_per_room], dtype=float)
     sinr_array_pl_metis_ps7 = np.zeros(
-        [num_cells, num_users_per_cell], dtype=float)
+        [num_rooms, num_users_per_room], dtype=float)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
     dists_m = np.abs(user_positions.flatten()[:, np.newaxis] -
-                     cell_positions.flatten()[np.newaxis, :])
+                     room_positions.flatten()[np.newaxis, :])
 
     # 3GPP and Free Space path loss classes require distance values to be
     # in Km. Therefore, we divide the distance in meters by 1000.
     pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m/1000.)
     pl_free_space = pl_free_space_obj.calc_path_loss(dists_m/1000.)
-    pl_nothing = np.ones([num_cells * num_users_per_cell, num_cells],
+    pl_nothing = np.ones([num_rooms * num_users_per_room, num_rooms],
                          dtype=float)
 
     # We need to know the number of walls the signal must pass to reach the
@@ -235,81 +235,81 @@ if __name__ == '__main__':
         num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    for cell_idx in range(num_cells):
-        # Index of the users in the current cell
-        users_idx = get_cell_users_indexes(cell_idx, num_users_per_cell)
+    for room_idx in range(num_rooms):
+        # Index of the users in the current room
+        users_idx = get_room_users_indexes(room_idx, num_users_per_room)
 
         # Mask to get path loss of all transmitters ...
-        mask = np.ones(num_cells, dtype=bool)
+        mask = np.ones(num_rooms, dtype=bool)
         # ... except the desired transmitter
-        mask[cell_idx] = 0
+        mask[room_idx] = 0
 
         # xxxxxxxxxx Case without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_nothing
 
-        # Get the desired power of the users in the cell
-        desired_power = Pt * pl[users_idx, cell_idx]
+        # Get the desired power of the users in the room
+        desired_power = Pt * pl[users_idx, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
+            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
             axis=-1)
 
         # Calculate the SINR of the user
-        sinr_users_in_current_cell = (desired_power /
+        sinr_users_in_current_room = (desired_power /
                                       (undesired_power + noise_var))
-        sinr_array_pl_nothing[cell_idx, :] = sinr_users_in_current_cell
+        sinr_array_pl_nothing[room_idx, :] = sinr_users_in_current_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with 3GPP pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_3gpp
 
-        # Get the desired power of the users in the cell
-        desired_power = Pt * pl[users_idx, cell_idx]
+        # Get the desired power of the users in the room
+        desired_power = Pt * pl[users_idx, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
+            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
             axis=-1)
 
         # Calculate the SINR of the user
-        sinr_users_in_current_cell = (desired_power /
+        sinr_users_in_current_room = (desired_power /
                                       (undesired_power + noise_var))
-        sinr_array_pl_3gpp[cell_idx, :] = sinr_users_in_current_cell
+        sinr_array_pl_3gpp[room_idx, :] = sinr_users_in_current_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with Free Space path loss xxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_free_space
 
-        # Get the desired power of the users in the cell
-        desired_power = Pt * pl[users_idx, cell_idx]
+        # Get the desired power of the users in the room
+        desired_power = Pt * pl[users_idx, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
+            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
             axis=-1)
 
         # Calculate the SINR of the user
-        sinr_users_in_current_cell = (desired_power /
+        sinr_users_in_current_room = (desired_power /
                                       (undesired_power + noise_var))
-        sinr_array_pl_free_space[cell_idx, :] = sinr_users_in_current_cell
+        sinr_array_pl_free_space[room_idx, :] = sinr_users_in_current_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with METIS PS7 path loss xxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_metis_ps7
 
-        # Get the desired power of the users in the cell
-        desired_power = Pt * pl[users_idx, cell_idx]
+        # Get the desired power of the users in the room
+        desired_power = Pt * pl[users_idx, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[cell_idx, mask],
+            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
             axis=-1)
 
         # Calculate the SINR of the user
-        sinr_users_in_current_cell = (desired_power /
+        sinr_users_in_current_room = (desired_power /
                                       (undesired_power + noise_var))
-        sinr_array_pl_metis_ps7[cell_idx, :] = sinr_users_in_current_cell
+        sinr_array_pl_metis_ps7[room_idx, :] = sinr_users_in_current_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Convert values to dB xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -343,20 +343,20 @@ if __name__ == '__main__':
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
         sinr_array_pl_nothing_dB,
-        num_cells_per_side,
-        num_discrete_positions_per_cell)
+        num_rooms_per_side,
+        num_discrete_positions_per_room)
     sinr_array_pl_3gpp_dB2 = prepare_sinr_array_for_color_plot(
         sinr_array_pl_3gpp_dB,
-        num_cells_per_side,
-        num_discrete_positions_per_cell)
+        num_rooms_per_side,
+        num_discrete_positions_per_room)
     sinr_array_pl_free_space_dB2 = prepare_sinr_array_for_color_plot(
         sinr_array_pl_free_space_dB,
-        num_cells_per_side,
-        num_discrete_positions_per_cell)
+        num_rooms_per_side,
+        num_discrete_positions_per_room)
     sinr_array_pl_metis_ps7_dB2 = prepare_sinr_array_for_color_plot(
         sinr_array_pl_metis_ps7_dB,
-        num_cells_per_side,
-        num_discrete_positions_per_cell)
+        num_rooms_per_side,
+        num_discrete_positions_per_room)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Plot each case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
