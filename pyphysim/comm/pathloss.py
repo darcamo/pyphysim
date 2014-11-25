@@ -1066,6 +1066,13 @@ class PathLossMetisPS7(PathLossIndoorBase):
             # Code for num_walls array. Since num_walls is an array then
             # some values might be equal to zero while others might be
             # equal to zero. We will calculate them separately.
+            #
+            # The dimension of num_walls must be equal to the dimension of
+            # d. Maybe some of the dimensions in num_walls are equal to 1
+            # and we must broadcast them first to be equal to the
+            # dimensions of d.
+            [_, num_walls] = np.broadcast_arrays(d, num_walls)
+
             LOS_index = (num_walls == 0)
             NLOS_index = ~LOS_index
 
