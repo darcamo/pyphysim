@@ -151,9 +151,9 @@ if __name__ == '__main__':
     aux = np.linspace(
         -(1. - step), (1. - step), num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
-    user_relative_positions = aux[0] + 1j * aux[1]
-    num_users_per_room = user_relative_positions.size
+    user_relative_positions = aux[1] + 1j * aux[0][::-1]
 
+    num_users_per_room = user_relative_positions.size
     num_discrete_positions_per_dim = (num_discrete_positions_per_room
                                       *
                                       num_rooms_per_side)
