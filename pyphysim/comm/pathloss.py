@@ -1029,7 +1029,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
            PL = A \\log_{10}(d) + B + C \\log_{10}(f_c/5) + X
 
         The distance :math:`d` is in meters, while the frequency
-        :math:`f_c` is in Hz. Na others variables a different for the LOS
+        :math:`f_c` is in GHz. Na others variables a different for the LOS
         and NLOS cases.
 
         For the LOS case we have:
@@ -1107,7 +1107,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
            PL = A \\log_{10}(d) + B + C \\log_{10}(f_c/5)
 
         The distance :math:`d` is in meters, while the frequency
-        :math:`f_c` is in Hz.
+        :math:`f_c` is in GHz.
 
         The other variables (NLOS case) are:
 
