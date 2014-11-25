@@ -29,6 +29,9 @@ from pyphysim.comm import pathloss
 
 
 def calc_room_positions_square(side_length, num_rooms):
+    """
+    Calculate the central positions of the square rooms.
+    """
     sqrt_num_rooms = int(math.sqrt(num_rooms))
 
     if sqrt_num_rooms ** 2 != num_rooms:
@@ -122,17 +125,12 @@ def prepare_sinr_array_for_color_plot(sinr_array,
     num_rooms_per_side : TYPE
     num_discrete_positions_per_room : TYPE
     """
-    dummy = sinr_array
-    dummy2 = dummy.reshape(
-        [num_rooms_per_side,
-         num_rooms_per_side,
-         num_discrete_positions_per_room,
-         num_discrete_positions_per_room])
-    dummy3 = np.swapaxes(dummy2, 1, 2).reshape(
+    out = np.swapaxes(sinr_array, 1, 2).reshape(
         [num_rooms_per_side * num_discrete_positions_per_room,
          num_rooms_per_side * num_discrete_positions_per_room],
         order='C')
-    return dummy3
+
+    return out
 
 
 if __name__ == '__main__':
@@ -171,13 +169,7 @@ if __name__ == '__main__':
                  for pos in room_positions]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # # xxxxxxxxxx Create the cluster xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # cluster = room.Cluster(
-    #     room_radius=side_length, num_rooms=num_rooms, room_type='square')
-    # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Calculate room positions and wall losses xxxxxxxxxxxxxxxxx
-    # room_positions = np.array([c.pos for c in cluster])
+    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     num_walls = calc_num_walls(side_length, room_positions)
     wall_losses_dB = num_walls * single_wall_loss_dB
     wall_losses = dB2Linear(-wall_losses_dB)
@@ -194,7 +186,7 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
     user_relative_positions2 = user_relative_positions * side_length / 2.
-    room_positions.shape = (12, 12)
+    room_positions.shape = (num_rooms_per_side, num_rooms_per_side)
 
     user_positions = (room_positions[:, :, np.newaxis, np.newaxis] +
                       user_relative_positions2[np.newaxis, np.newaxis, :, :])
@@ -204,38 +196,65 @@ if __name__ == '__main__':
     # One output for each case: no pathloss, 3GPP path loss and free space
     # path loss
     sinr_array_pl_nothing = np.zeros(
-        [num_rooms, num_users_per_room], dtype=float)
+        [num_rooms_per_side,
+         num_rooms_per_side,
+         num_discrete_positions_per_room,
+         num_discrete_positions_per_room], dtype=float)
     sinr_array_pl_3gpp = np.zeros(
-        [num_rooms, num_users_per_room], dtype=float)
+        [num_rooms_per_side,
+         num_rooms_per_side,
+         num_discrete_positions_per_room,
+         num_discrete_positions_per_room], dtype=float)
     sinr_array_pl_free_space = np.zeros(
-        [num_rooms, num_users_per_room], dtype=float)
+        [num_rooms_per_side,
+         num_rooms_per_side,
+         num_discrete_positions_per_room,
+         num_discrete_positions_per_room], dtype=float)
     sinr_array_pl_metis_ps7 = np.zeros(
-        [num_rooms, num_users_per_room], dtype=float)
+        [num_rooms_per_side,
+         num_rooms_per_side,
+         num_discrete_positions_per_room,
+         num_discrete_positions_per_room], dtype=float)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx AP Allocation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # 1 AP in each room
+    ap_positions = room_positions.flatten()
+    num_aps = num_rooms
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
-    dists_m = np.abs(user_positions.flatten()[:, np.newaxis] -
-                     room_positions.flatten()[np.newaxis, :])
+    # Dimension: (romm_row, room_c, user_row, user_col, num_APs)
+    dists_m = np.abs(
+        user_positions[:, :, :, :, np.newaxis]
+        - ap_positions.reshape([1, 1, 1, 1, -1]))
 
-    # 3GPP and Free Space path loss classes require distance values to be
-    # in Km. Therefore, we divide the distance in meters by 1000.
+    # The METIS PS7 path loss model require distance values in meters,
+    # while the others are in Kms. All distances were calculates in meters
+    # and, therefore, we divide the distance in by 1000 for 3GPP and free
+    # space.
     pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m/1000.)
     pl_free_space = pl_free_space_obj.calc_path_loss(dists_m/1000.)
-    pl_nothing = np.ones([num_rooms * num_users_per_room, num_rooms],
-                         dtype=float)
+    pl_nothing = np.ones(
+        [num_rooms_per_side,
+         num_rooms_per_side,
+         num_discrete_positions_per_room,
+         num_discrete_positions_per_room, num_aps],
+        dtype=float)
 
     # We need to know the number of walls the signal must pass to reach the
     # receiver to calculate the path loss for the METIS PS7 model.
-    num_walls_extended = np.repeat(num_walls, 15*15, axis=0)
-
-    # The METIS PS7 path loss model require distance values in meters,
-    # while the others are in Kms.
+    num_walls_extended = num_walls.reshape(
+        [num_rooms_per_side, num_rooms_per_side, 1, 1, num_rooms_per_side**2])
     pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(
         dists_m,
         num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     for room_idx in range(num_rooms):
+        room_r, room_c = np.unravel_index(
+            room_idx, [num_rooms_per_side, num_rooms_per_side])
+
         # Index of the users in the current room
         users_idx = get_room_users_indexes(room_idx, num_users_per_room)
 
@@ -248,68 +267,76 @@ if __name__ == '__main__':
         pl = pl_nothing
 
         # Get the desired power of the users in the room
-        desired_power = Pt * pl[users_idx, room_idx]
+        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
-            axis=-1)
+            Pt
+            * pl[room_r, room_c, :, :, mask]
+            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
+            axis=0)
 
-        # Calculate the SINR of the user
-        sinr_users_in_current_room = (desired_power /
-                                      (undesired_power + noise_var))
-        sinr_array_pl_nothing[room_idx, :] = sinr_users_in_current_room
+        # Calculate the SINR of the users in current room
+        sinrs_in_cur_room = (desired_power /
+                             (undesired_power + noise_var))
+        sinr_array_pl_nothing[room_r, room_c, :, :] = sinrs_in_cur_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with 3GPP pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_3gpp
 
         # Get the desired power of the users in the room
-        desired_power = Pt * pl[users_idx, room_idx]
+        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
-            axis=-1)
+            Pt
+            * pl[room_r, room_c, :, :, mask]
+            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
+            axis=0)
 
-        # Calculate the SINR of the user
-        sinr_users_in_current_room = (desired_power /
-                                      (undesired_power + noise_var))
-        sinr_array_pl_3gpp[room_idx, :] = sinr_users_in_current_room
+        # Calculate the SINR of the users in current room
+        sinrs_in_cur_room = (desired_power /
+                             (undesired_power + noise_var))
+        sinr_array_pl_3gpp[room_r, room_c, :, :] = sinrs_in_cur_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with Free Space path loss xxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_free_space
 
         # Get the desired power of the users in the room
-        desired_power = Pt * pl[users_idx, room_idx]
+        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
-            axis=-1)
+            Pt
+            * pl[room_r, room_c, :, :, mask]
+            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
+            axis=0)
 
-        # Calculate the SINR of the user
-        sinr_users_in_current_room = (desired_power /
-                                      (undesired_power + noise_var))
-        sinr_array_pl_free_space[room_idx, :] = sinr_users_in_current_room
+        # Calculate the SINR of the users in current room
+        sinrs_in_cur_room = (desired_power /
+                             (undesired_power + noise_var))
+        sinr_array_pl_free_space[room_r, room_c, :, :] = sinrs_in_cur_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with METIS PS7 path loss xxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_metis_ps7
 
         # Get the desired power of the users in the room
-        desired_power = Pt * pl[users_idx, room_idx]
+        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
 
         # Calculate the sum of all interference powers
         undesired_power = np.sum(
-            Pt * pl[users_idx][:, mask] * wall_losses[room_idx, mask],
-            axis=-1)
+            Pt
+            * pl[room_r, room_c, :, :, mask]
+            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
+            axis=0)
 
-        # Calculate the SINR of the user
-        sinr_users_in_current_room = (desired_power /
-                                      (undesired_power + noise_var))
-        sinr_array_pl_metis_ps7[room_idx, :] = sinr_users_in_current_room
+        # Calculate the SINR of the users in current room
+        sinrs_in_cur_room = (desired_power /
+                             (undesired_power + noise_var))
+        sinr_array_pl_metis_ps7[room_r, room_c, :, :] = sinrs_in_cur_room
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Convert values to dB xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
