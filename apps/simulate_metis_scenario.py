@@ -363,9 +363,9 @@ if __name__ == '__main__':
                sinr_array_pl_free_space_dB.max())
     print ("Min/Mean/Max SINR value (METIS PS7):"
            "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_free_space_dB.min(),
+               sinr_array_pl_metis_ps7_dB.min(),
                sinr_array_pl_metis_ps7_dB.mean(),
-               sinr_array_pl_free_space_dB.max())
+               sinr_array_pl_metis_ps7_dB.max())
 
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
