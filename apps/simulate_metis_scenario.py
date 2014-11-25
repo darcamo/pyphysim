@@ -133,6 +133,49 @@ def prepare_sinr_array_for_color_plot(sinr_array,
     return out
 
 
+def get_ap_positions(room_positions, decimation=1):
+    """
+    Get the array of AccessPoint positions for the desired decimation and
+    room_positions.
+
+    Each access point is placed in the center of the room where it is
+    located. The value of `decimation` controls the frequency of APs. A
+    value of 1 means one AP in each room. A value of 2 means one AP each 2
+    rooms and so on.
+
+    The valid decimation values are 1, 2, 4 and 9. Any other value will
+    raise an exception.
+
+    Parameters
+    ----------
+    room_positions : 2D numpy array with shape (n, n)
+        The positions of each room.
+    decimation : int
+        The decimation (in number of room) of the APs.
+
+    Returns
+    -------
+    ap_positions : 1D numpy array with shape (n**2)
+        The position of the arrays.
+    """
+    mask = np.zeros(room_positions.shape, dtype=bool)
+
+    if decimation == 1:
+        mask[:, :] = True
+    elif decimation == 2:
+        mask[1::2, ::2] = True
+        mask[::2, 1::2] = True
+    elif decimation == 4:
+        mask[1::2, 1::2] = True
+    elif decimation == 9:
+        mask[1::3, 1::3] = True
+    else:
+        raise ValueError('Invalid decimation value: {0}'.format(decimation))
+
+    ap_positions = room_positions[mask]
+    return ap_positions.flatten()
+
+
 if __name__ == '__main__':
     # xxxxxxxxxx Simulation Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     side_length = 10  # 10 meters side length
@@ -141,6 +184,10 @@ if __name__ == '__main__':
     # Square of 12 x 12 square rooms
     num_rooms_per_side = 12
     num_rooms = num_rooms_per_side ** 2
+
+    # 1 means 1 ap every room. 2 means 1 ap every 2 rooms and so on. Valid
+    # values are: 1, 2, 4 and 9.
+    ap_decimation = 1
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Discretization of ther possible positions xxxxxxxxxxxxxxxx
@@ -219,8 +266,8 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx AP Allocation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # 1 AP in each room
-    ap_positions = room_positions.flatten()
-    num_aps = num_rooms
+    ap_positions = get_ap_positions(room_positions, ap_decimation)
+    num_aps = ap_positions.size
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
