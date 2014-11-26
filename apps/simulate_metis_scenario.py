@@ -195,18 +195,26 @@ def get_ap_positions(room_positions, decimation=1):
     return ap_positions.flatten()
 
 
-if __name__ == '__main__':
-    # xxxxxxxxxx Simulation Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    side_length = 10  # 10 meters side length
-    single_wall_loss_dB = 5
+def perform_simulation(scenario_params, power_params):
+    # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
+    side_length = scenario_params['side_length']
+    single_wall_loss_dB = scenario_params['single_wall_loss_dB']
 
     # Square of 12 x 12 square rooms
-    num_rooms_per_side = 12
+    num_rooms_per_side = scenario_params['num_rooms_per_side']
     num_rooms = num_rooms_per_side ** 2
 
     # 1 means 1 ap every room. 2 means 1 ap every 2 rooms and so on. Valid
     # values are: 1, 2, 4 and 9.
-    ap_decimation = 1
+    ap_decimation = scenario_params['ap_decimation']
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Simulation Power Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    Pt_dBm = power_params['Pt_dBm']
+    noise_power_dBm = power_params['noise_power_dBm']
+
+    Pt = dBm2Linear(Pt_dBm)  # 20 dBm transmit power
+    noise_var = dBm2Linear(noise_power_dBm)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Discretization of ther possible positions xxxxxxxxxxxxxxxx
@@ -221,11 +229,6 @@ if __name__ == '__main__':
     num_discrete_positions_per_dim = (num_discrete_positions_per_room
                                       *
                                       num_rooms_per_side)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Transmit Power and noise xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    Pt = dBm2Linear(30)  # 20 dBm transmit power
-    noise_var = 0.0  # dBm2Linear(-116)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the rooms xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -401,27 +404,6 @@ if __name__ == '__main__':
     sinr_array_pl_metis_ps7_dB = linear2dB(sinr_array_pl_metis_ps7)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print ("Min/Mean/Max SINR value (no PL):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_nothing_dB.min(),
-               sinr_array_pl_nothing_dB.mean(),
-               sinr_array_pl_nothing_dB.max())
-    print ("Min/Mean/Max SINR value (3GPP):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_3gpp_dB.min(),
-               sinr_array_pl_3gpp_dB.mean(),
-               sinr_array_pl_3gpp_dB.max())
-    print ("Min/Mean/Max SINR value (Free Space):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_free_space_dB.min(),
-               sinr_array_pl_free_space_dB.mean(),
-               sinr_array_pl_free_space_dB.max())
-    print ("Min/Mean/Max SINR value (METIS PS7):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_metis_ps7_dB.min(),
-               sinr_array_pl_metis_ps7_dB.mean(),
-               sinr_array_pl_metis_ps7_dB.max())
-
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
         sinr_array_pl_nothing_dB,
@@ -440,6 +422,53 @@ if __name__ == '__main__':
         num_rooms_per_side,
         num_discrete_positions_per_room)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    out = (sinr_array_pl_nothing_dB2,
+           sinr_array_pl_3gpp_dB2,
+           sinr_array_pl_free_space_dB2,
+           sinr_array_pl_metis_ps7_dB2)
+    return out
+
+
+if __name__ == '__main__':
+    scenario_params = {
+        'side_length': 10,  # 10 meters side length
+        'single_wall_loss_dB': 5,
+        'num_rooms_per_side': 12,
+        'ap_decimation': 1}
+
+    power_params = {
+        'Pt_dBm': 20,  # 20 dBm transmit power
+        'noise_power_dBm': -300  # Very low noise power
+    }
+
+    out = perform_simulation(scenario_params, power_params)
+
+    (sinr_array_pl_nothing_dB2,
+     sinr_array_pl_3gpp_dB2,
+     sinr_array_pl_free_space_dB2,
+     sinr_array_pl_metis_ps7_dB2) = out
+
+    print ("Min/Mean/Max SINR value (no PL):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_nothing_dB2.min(),
+               sinr_array_pl_nothing_dB2.mean(),
+               sinr_array_pl_nothing_dB2.max())
+    print ("Min/Mean/Max SINR value (3GPP):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_3gpp_dB2.min(),
+               sinr_array_pl_3gpp_dB2.mean(),
+               sinr_array_pl_3gpp_dB2.max())
+    print ("Min/Mean/Max SINR value (Free Space):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_free_space_dB2.min(),
+               sinr_array_pl_free_space_dB2.mean(),
+               sinr_array_pl_free_space_dB2.max())
+    print ("Min/Mean/Max SINR value (METIS PS7):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_metis_ps7_dB2.min(),
+               sinr_array_pl_metis_ps7_dB2.mean(),
+               sinr_array_pl_metis_ps7_dB2.max())
 
     # xxxxxxxxxx Plot each case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # No path loss
