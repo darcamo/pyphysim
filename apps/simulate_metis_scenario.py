@@ -334,7 +334,6 @@ if __name__ == '__main__':
         num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # MUDAR O FOR PARA QUE O LOOP SEJA EM APs
     for ap_idx in range(num_aps):
         # Mask of the users associated with the current access point
         mask = (ap_assoc == ap_idx)
@@ -448,14 +447,18 @@ if __name__ == '__main__':
     im1 = ax1.imshow(sinr_array_pl_nothing_dB2,
                      interpolation='nearest', vmax=-1.5, vmin=-5)
     ax1.set_title('No Path Loss')
+    ax1.get_xaxis().set_visible(False)
+    ax1.get_yaxis().set_visible(False)
     fig1.colorbar(im1)
-    plot_all_rooms(all_rooms, ax1)
+    # plot_all_rooms(all_rooms, ax1)
 
     # 3GPP path loss
     fig2, ax2 = plt.subplots(figsize=(8, 6))
     im2 = ax2.imshow(sinr_array_pl_3gpp_dB2,
                      interpolation='nearest', vmax=30, vmin=-2.5)
     ax2.set_title('3GPP Path Loss')
+    ax2.get_xaxis().set_visible(False)
+    ax2.get_yaxis().set_visible(False)
     fig2.colorbar(im2)
 
     # Free Space path loss
@@ -463,6 +466,8 @@ if __name__ == '__main__':
     im3 = ax3.imshow(sinr_array_pl_free_space_dB2,
                      interpolation='nearest', vmax=30, vmin=-2.5)
     ax3.set_title('Free Space Path Loss')
+    ax3.get_xaxis().set_visible(False)
+    ax3.get_yaxis().set_visible(False)
     fig3.colorbar(im3)
 
     # METIS PS7 path loss
@@ -470,6 +475,8 @@ if __name__ == '__main__':
     im4 = ax4.imshow(sinr_array_pl_metis_ps7_dB2,
                      interpolation='nearest', vmax=30, vmin=-2.5)
     ax4.set_title('METIS PS7 Path Loss')
+    ax4.get_xaxis().set_visible(False)
+    ax4.get_yaxis().set_visible(False)
     fig4.colorbar(im4)
 
     plt.show()
