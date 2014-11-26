@@ -53,7 +53,7 @@ def calc_room_positions_square(side_length, num_rooms):
     return room_positions
 
 
-def plot_all_rooms(ax, all_rooms):
+def plot_all_rooms(all_rooms, ax=None):
     """
     Plot all Rectangle shapes in `all_rooms` using the `ax` axis.
 
@@ -61,16 +61,35 @@ def plot_all_rooms(ax, all_rooms):
     ----------
     ax  : matplotlib axis.
         The axis where the rooms will be plotted.
-    all_rooms : shape.Rectangle object
-        The room to be plotted.
+    all_rooms : iterable of shape.Rectangle objects
+        The rooms to be plotted.
     """
+    standalone = False
+    if ax is None:
+        _, ax = plt.subplots(figsize=(8, 6))
+        standalone = True
+
     for room in all_rooms:
         room.plot(ax)
 
+    if standalone is True:
+        # Do some extra stuff like setting the plot axis limits.
+        # First we get all vertices of all rectangles.
+        all_vertices = np.vstack([r.vertices for r in all_rooms])
+        xmin = all_vertices.real.min()
+        xmax = all_vertices.real.max()
+        ymin = all_vertices.real.min()
+        ymax = all_vertices.real.max()
+        ax.set_ylim([ymin, ymax])
+        ax.set_xlim([xmin, xmax])
+        ax.set_xlabel("Position X coordinate")
+        ax.set_ylabel("Position Y coordinate")
+        ax.set_title("Plot of all Rooms")
 
-def calc_num_walls(side_length, room_positions):
+
+def calc_num_walls(side_length, room_positions, ap_positions):
     """
-    Calculate the number of walls between each room to each other room.
+    Calculate the number of walls between each room to each AP.
 
     This is used to calculated the wall losses as well as the indoor
     pathloss.
@@ -79,23 +98,23 @@ def calc_num_walls(side_length, room_positions):
     ----------
     side_length : float
         The side length of the square room.
-    room_positions : 1D complex numpy array
-        The positions of all rooms in grid.
+    room_positions : 2D complex numpy array
+        The positions of all rooms in the grid.
+    ap_positions : 1D complex numpy array
+        The positions of access points in the grid.
 
     Returns
     -------
     num_walls : 2D numpy array of ints
-        The number of walls from each room to each room.
+        The number of walls from each room to access point.
     """
-    num_rooms = room_positions.size
-
-    all_room_positions_diffs = (room_positions.reshape(num_rooms, 1)
-                                - 1.0001*room_positions.reshape(1, num_rooms))
+    all_positions_diffs = (room_positions.reshape(-1, 1)
+                           - 1.0001*ap_positions.reshape(1, -1))
 
     num_walls \
         = np.round(
-            np.absolute(np.real(all_room_positions_diffs / side_length)) +
-            np.absolute(np.imag(all_room_positions_diffs / side_length))
+            np.absolute(np.real(all_positions_diffs / side_length)) +
+            np.absolute(np.imag(all_positions_diffs / side_length))
         ).astype(int)
 
     return num_walls
@@ -213,13 +232,7 @@ if __name__ == '__main__':
     room_positions = calc_room_positions_square(side_length, num_rooms)
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
                                   pos + side_length/2. + side_length*1j/2.)
-                 for pos in room_positions]
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    num_walls = calc_num_walls(side_length, room_positions)
-    wall_losses_dB = num_walls * single_wall_loss_dB
-    wall_losses = dB2Linear(-wall_losses_dB)
+                 for pos in room_positions.flatten()]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the path loss object xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -270,12 +283,37 @@ if __name__ == '__main__':
     num_aps = ap_positions.size
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Calculate the distance and path losses xxxxxxxxxxxxxxx
+    # xxxxxxxxxx Calculate distances: each user to each AP xxxxxxxxxxxxxxxx
     # Dimension: (romm_row, room_c, user_row, user_col, num_APs)
     dists_m = np.abs(
         user_positions[:, :, :, :, np.newaxis]
         - ap_positions.reshape([1, 1, 1, 1, -1]))
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxx Calculate AP association xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Determine with which AP each user is associated with.
+    # Each user will associate with the CLOSEST access point.
+    ap_assoc = np.argmin(dists_m, axis=-1)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # We want to calculate the number walls from each room to the rooms
+    # which have an access point.
+    # Dimension is (num_rooms, num_aps)
+    num_walls = calc_num_walls(side_length, room_positions, ap_positions)
+    # Reshape it to (num_rooms_per_side, num_rooms_per_side, 1, 1, num_aps)
+    num_walls_extended = num_walls.reshape(
+        [num_rooms_per_side, num_rooms_per_side, 1, 1, num_aps])
+    # And finally broadcast the (1, 1) dimensions to the number of users
+    # per room. This will make num_walls_extended have the same dimension
+    # as dists_m.
+    num_walls_extended, _ = np.broadcast_arrays(num_walls_extended, dists_m)
+
+    wall_losses_dB = num_walls_extended * single_wall_loss_dB
+    wall_losses = dB2Linear(-wall_losses_dB)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Calculate the path losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # The METIS PS7 path loss model require distance values in meters,
     # while the others are in Kms. All distances were calculates in meters
     # and, therefore, we divide the distance in by 1000 for 3GPP and free
@@ -291,99 +329,70 @@ if __name__ == '__main__':
 
     # We need to know the number of walls the signal must pass to reach the
     # receiver to calculate the path loss for the METIS PS7 model.
-    num_walls_extended = num_walls.reshape(
-        [num_rooms_per_side, num_rooms_per_side, 1, 1, num_rooms_per_side**2])
     pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(
         dists_m,
         num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    for room_idx in range(num_rooms):
-        room_r, room_c = np.unravel_index(
-            room_idx, [num_rooms_per_side, num_rooms_per_side])
+    # MUDAR O FOR PARA QUE O LOOP SEJA EM APs
+    for ap_idx in range(num_aps):
+        # Mask of the users associated with the current access point
+        mask = (ap_assoc == ap_idx)
+        # Mask of the users NOT associated with the current access point
+        mask_n = np.logical_not(mask)
+        # Mask with all APs except the current one
+        mask_n2 = np.arange(num_aps) != ap_idx
 
-        # Index of the users in the current room
-        users_idx = get_room_users_indexes(room_idx, num_users_per_room)
-
-        # Mask to get path loss of all transmitters ...
-        mask = np.ones(num_rooms, dtype=bool)
-        # ... except the desired transmitter
-        mask[room_idx] = 0
-
-        # xxxxxxxxxx Case without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Case without path loss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_nothing
 
-        # Get the desired power of the users in the room
-        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
-
-        # Calculate the sum of all interference powers
+        # Each element in desired_power is the desired power of one user
+        # associated with the current access point
+        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
         undesired_power = np.sum(
-            Pt
-            * pl[room_r, room_c, :, :, mask]
-            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
-            axis=0)
-
-        # Calculate the SINR of the users in current room
-        sinrs_in_cur_room = (desired_power /
-                             (undesired_power + noise_var))
-        sinr_array_pl_nothing[room_r, room_c, :, :] = sinrs_in_cur_room
+            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
+            axis=-1)
+        sinr_array_pl_nothing[mask] = (desired_power /
+                                       (undesired_power + noise_var))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with 3GPP pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_3gpp
 
-        # Get the desired power of the users in the room
-        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
-
-        # Calculate the sum of all interference powers
+        # Each element in desired_power is the desired power of one user
+        # associated with the current access point
+        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
         undesired_power = np.sum(
-            Pt
-            * pl[room_r, room_c, :, :, mask]
-            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
-            axis=0)
-
-        # Calculate the SINR of the users in current room
-        sinrs_in_cur_room = (desired_power /
-                             (undesired_power + noise_var))
-        sinr_array_pl_3gpp[room_r, room_c, :, :] = sinrs_in_cur_room
+            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
+            axis=-1)
+        sinr_array_pl_3gpp[mask] = (desired_power /
+                                    (undesired_power + noise_var))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with Free Space path loss xxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_free_space
 
-        # Get the desired power of the users in the room
-        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
-
-        # Calculate the sum of all interference powers
+        # Each element in desired_power is the desired power of one user
+        # associated with the current access point
+        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
         undesired_power = np.sum(
-            Pt
-            * pl[room_r, room_c, :, :, mask]
-            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
-            axis=0)
-
-        # Calculate the SINR of the users in current room
-        sinrs_in_cur_room = (desired_power /
-                             (undesired_power + noise_var))
-        sinr_array_pl_free_space[room_r, room_c, :, :] = sinrs_in_cur_room
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
+            axis=-1)
+        sinr_array_pl_free_space[mask] = (desired_power /
+                                          (undesired_power + noise_var))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Case with METIS PS7 path loss xxxxxxxxxxxxxxxxxxxxxxxx
         pl = pl_metis_ps7
 
-        # Get the desired power of the users in the room
-        desired_power = Pt * pl[room_r, room_c, :, :, room_idx]
-
-        # Calculate the sum of all interference powers
+        # Each element in desired_power is the desired power of one user
+        # associated with the current access point
+        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
         undesired_power = np.sum(
-            Pt
-            * pl[room_r, room_c, :, :, mask]
-            * wall_losses[room_idx, mask][:, np.newaxis, np.newaxis],
-            axis=0)
-
-        # Calculate the SINR of the users in current room
-        sinrs_in_cur_room = (desired_power /
-                             (undesired_power + noise_var))
-        sinr_array_pl_metis_ps7[room_r, room_c, :, :] = sinrs_in_cur_room
+            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
+            axis=-1)
+        sinr_array_pl_metis_ps7[mask] = (desired_power /
+                                         (undesired_power + noise_var))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Convert values to dB xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -440,6 +449,7 @@ if __name__ == '__main__':
                      interpolation='nearest', vmax=-1.5, vmin=-5)
     ax1.set_title('No Path Loss')
     fig1.colorbar(im1)
+    plot_all_rooms(all_rooms, ax1)
 
     # 3GPP path loss
     fig2, ax2 = plt.subplots(figsize=(8, 6))
