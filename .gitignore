@@ -84,3 +84,6 @@ flycheck*
 # Ignore some non-interesting files in the apps folder
 apps/profile
 apps/texCode.pdf
+
+# Ignore folder created by pycharm
+.idea
