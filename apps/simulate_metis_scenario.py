@@ -412,26 +412,29 @@ if __name__ == '__main__':
      _,  # num_discrete_positions_per_room again
      num_discrete_positions_per_room) = sinr_array_pl_nothing_dB.shape
 
+    print ("\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print ("SINR statistics for the 64 central rooms")
+    print ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n")
     print ("Min/Mean/Max SINR value (no PL):"
            "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_nothing_dB.min(),
-               sinr_array_pl_nothing_dB.mean(),
-               sinr_array_pl_nothing_dB.max())
+               sinr_array_pl_nothing_dB[2:-2, 2:-2].min(),
+               sinr_array_pl_nothing_dB[2:-2, 2:-2].mean(),
+               sinr_array_pl_nothing_dB[2:-2, 2:-2].max())
     print ("Min/Mean/Max SINR value (3GPP):"
            "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_3gpp_dB.min(),
-               sinr_array_pl_3gpp_dB.mean(),
-               sinr_array_pl_3gpp_dB.max())
+               sinr_array_pl_3gpp_dB[2:-2, 2:-2].min(),
+               sinr_array_pl_3gpp_dB[2:-2, 2:-2].mean(),
+               sinr_array_pl_3gpp_dB[2:-2, 2:-2].max())
     print ("Min/Mean/Max SINR value (Free Space):"
            "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_free_space_dB.min(),
-               sinr_array_pl_free_space_dB.mean(),
-               sinr_array_pl_free_space_dB.max())
+               sinr_array_pl_free_space_dB[2:-2, 2:-2].min(),
+               sinr_array_pl_free_space_dB[2:-2, 2:-2].mean(),
+               sinr_array_pl_free_space_dB[2:-2, 2:-2].max())
     print ("Min/Mean/Max SINR value (METIS PS7):"
            "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_metis_ps7_dB.min(),
-               sinr_array_pl_metis_ps7_dB.mean(),
-               sinr_array_pl_metis_ps7_dB.max())
+               sinr_array_pl_metis_ps7_dB[2:-2, 2:-2].min(),
+               sinr_array_pl_metis_ps7_dB[2:-2, 2:-2].mean(),
+               sinr_array_pl_metis_ps7_dB[2:-2, 2:-2].max())
 
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
