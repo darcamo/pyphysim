@@ -23,8 +23,9 @@ from matplotlib import pyplot as plt
 # import matplotlib as mpl
 
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
-from pyphysim.cell import shapes
+# from pyphysim.cell import shapes
 from pyphysim.comm import pathloss
+from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -120,22 +121,8 @@ def calc_num_walls(side_length, room_positions, ap_positions):
     return num_walls
 
 
-def get_room_users_indexes(room_index, num_users_per_room):
-    """
-
-    Parameters
-    ----------
-    room_index : int
-        Index of the desired room.
-    num_users_per_room : int
-        Number of users in each room.
-    """
-    return np.arange(0, num_users_per_room) + room_index * num_users_per_room
-
-
-def prepare_sinr_array_for_color_plot(sinr_array,
-                                      num_rooms_per_side,
-                                      num_discrete_positions_per_room):
+def prepare_sinr_array_for_color_plot(
+        sinr_array, num_rooms_per_side, num_discrete_positions_per_room):
     """
 
     Parameters
@@ -195,13 +182,85 @@ def get_ap_positions(room_positions, decimation=1):
     return ap_positions.flatten()
 
 
-def perform_simulation(scenario_params, power_params):
+def _simulate_for_a_given_ap_assoc(
+        pl, ap_assoc, wall_losses_dB, Pt, noise_var):
+    """
+    Simulate and return the SINR for a given path moss and AP associations.
+
+    This is an internal function called inside
+    `perform_simulation_SINR_heatmap`
+
+    Parameters
+    ----------
+    pl : 5D numpy float array
+        The path loss (in LINEAR SCALE) from each discrete position in each
+        room to each access point. Dimension: (n, n, d, d, a) where 'n' is
+        the number of rooms per dimension, 'd' is the number of discrete
+        positons in one room (per dimension) and 'a' is the number of
+        access points.
+    ap_assoc : 4D numpy int array
+        The index of the access point that each discrete point in each room
+        is associated with. Dimension: (n, n, d, d)
+    wall_losses_dB : 5D numpy int array
+        The wall losses (in dB) from each discrete user in each room to
+        each access point. Dimension: (n, n, d, d, a)
+    Pt : float
+        Transmit power.
+    noise_var : float
+        Noise variance (power)
+
+    Returns
+    -------
+    sinr_array_dB : 4D numpy array
+        The SINR (in dB) of each discrete point of each room.
+    """
+    wall_losses = dB2Linear(-wall_losses_dB)
+
+    (_,  # num_rooms_per_side
+     _,  # num_rooms_per_side
+     _,  # num_discrete_positions_per_room
+     _,  # num_discrete_positions_per_room again
+     num_aps) = pl.shape
+
+    # Output variable
+    sinr_array = np.empty(ap_assoc.shape, dtype=float)
+
+    for ap_idx in range(num_aps):
+        # Mask of the users associated with the current access point
+        mask = (ap_assoc == ap_idx)
+
+        # # Mask of the users NOT associated with the current access point
+        # mask_n = np.logical_not(mask)
+
+        # Mask with all APs except the current one (that is, the
+        # interfering APs)
+        mask_i_aps = np.arange(num_aps) != ap_idx
+
+        # Each element in desired_power is the desired power of one user
+        # associated with the current access point
+        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
+        undesired_power = np.sum(
+            Pt * wall_losses[mask][:, mask_i_aps] * pl[mask][:, mask_i_aps],
+            axis=-1)
+
+        sinr_array[mask] = (desired_power / (undesired_power + noise_var))
+
+    return linear2dB(sinr_array)
+
+
+def perform_simulation_SINR_heatmap(scenario_params, power_params):
+    """
+    Perform the simulation.
+    """
     # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
+    # The size of the side of each square room
     side_length = scenario_params['side_length']
+    # How much (in dB) is lost for each wall teh signal has to pass
     single_wall_loss_dB = scenario_params['single_wall_loss_dB']
 
     # Square of 12 x 12 square rooms
     num_rooms_per_side = scenario_params['num_rooms_per_side']
+    # Total number of rooms in the grid
     num_rooms = num_rooms_per_side ** 2
 
     # 1 means 1 ap every room. 2 means 1 ap every 2 rooms and so on. Valid
@@ -210,6 +269,7 @@ def perform_simulation(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Simulation Power Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Transmit power of each access point
     Pt_dBm = power_params['Pt_dBm']
     noise_power_dBm = power_params['noise_power_dBm']
 
@@ -217,25 +277,20 @@ def perform_simulation(scenario_params, power_params):
     noise_var = dBm2Linear(noise_power_dBm)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Discretization of ther possible positions xxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Discretization of the possible positions xxxxxxxxxxxxxxxxx
     num_discrete_positions_per_room = 15  # Number of discrete positions
     step = 1. / (num_discrete_positions_per_room + 1)
     aux = np.linspace(
         -(1. - step), (1. - step), num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
     user_relative_positions = aux[1] + 1j * aux[0][::-1]
-
-    num_users_per_room = user_relative_positions.size
-    num_discrete_positions_per_dim = (num_discrete_positions_per_room
-                                      *
-                                      num_rooms_per_side)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Create the rooms xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Calculate the positions of all rooms xxxxxxxxxxxxxxxxxxxxx
     room_positions = calc_room_positions_square(side_length, num_rooms)
-    all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
-                                  pos + side_length/2. + side_length*1j/2.)
-                 for pos in room_positions.flatten()]
+    # all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
+    #                               pos + side_length/2. + side_length*1j/2.)
+    #              for pos in room_positions.flatten()]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the path loss object xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -247,37 +302,12 @@ def perform_simulation(scenario_params, power_params):
     pl_metis_ps7_obj.handle_small_distances_bool = True
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Add one user in each position of each room xxxxxxxxxxxxxxx
+    # xxxxxx Add one user in each discrete position of each room xxxxxxxxxx
     user_relative_positions2 = user_relative_positions * side_length / 2.
     room_positions.shape = (num_rooms_per_side, num_rooms_per_side)
 
     user_positions = (room_positions[:, :, np.newaxis, np.newaxis] +
                       user_relative_positions2[np.newaxis, np.newaxis, :, :])
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Output SINR vector xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # One output for each case: no pathloss, 3GPP path loss and free space
-    # path loss
-    sinr_array_pl_nothing = np.zeros(
-        [num_rooms_per_side,
-         num_rooms_per_side,
-         num_discrete_positions_per_room,
-         num_discrete_positions_per_room], dtype=float)
-    sinr_array_pl_3gpp = np.zeros(
-        [num_rooms_per_side,
-         num_rooms_per_side,
-         num_discrete_positions_per_room,
-         num_discrete_positions_per_room], dtype=float)
-    sinr_array_pl_free_space = np.zeros(
-        [num_rooms_per_side,
-         num_rooms_per_side,
-         num_discrete_positions_per_room,
-         num_discrete_positions_per_room], dtype=float)
-    sinr_array_pl_metis_ps7 = np.zeros(
-        [num_rooms_per_side,
-         num_rooms_per_side,
-         num_discrete_positions_per_room,
-         num_discrete_positions_per_room], dtype=float)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx AP Allocation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -313,7 +343,6 @@ def perform_simulation(scenario_params, power_params):
     num_walls_extended, _ = np.broadcast_arrays(num_walls_extended, dists_m)
 
     wall_losses_dB = num_walls_extended * single_wall_loss_dB
-    wall_losses = dB2Linear(-wall_losses_dB)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the path losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -337,72 +366,72 @@ def perform_simulation(scenario_params, power_params):
         num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    for ap_idx in range(num_aps):
-        # Mask of the users associated with the current access point
-        mask = (ap_assoc == ap_idx)
-        # Mask of the users NOT associated with the current access point
-        mask_n = np.logical_not(mask)
-        # Mask with all APs except the current one
-        mask_n2 = np.arange(num_aps) != ap_idx
+    # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
+    sinr_array_pl_nothing_dB = _simulate_for_a_given_ap_assoc(
+        pl_nothing, ap_assoc, wall_losses_dB, Pt, noise_var)
 
-        # xxxxxxxxxx Case without path loss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        pl = pl_nothing
+    sinr_array_pl_3gpp_dB = _simulate_for_a_given_ap_assoc(
+        pl_3gpp, ap_assoc, wall_losses_dB, Pt, noise_var)
 
-        # Each element in desired_power is the desired power of one user
-        # associated with the current access point
-        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
-        undesired_power = np.sum(
-            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
-            axis=-1)
-        sinr_array_pl_nothing[mask] = (desired_power /
-                                       (undesired_power + noise_var))
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    sinr_array_pl_free_space_dB = _simulate_for_a_given_ap_assoc(
+        pl_free_space, ap_assoc, wall_losses_dB, Pt, noise_var)
 
-        # xxxxxxxxxx Case with 3GPP pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        pl = pl_3gpp
-
-        # Each element in desired_power is the desired power of one user
-        # associated with the current access point
-        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
-        undesired_power = np.sum(
-            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
-            axis=-1)
-        sinr_array_pl_3gpp[mask] = (desired_power /
-                                    (undesired_power + noise_var))
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Case with Free Space path loss xxxxxxxxxxxxxxxxxxxxxxx
-        pl = pl_free_space
-
-        # Each element in desired_power is the desired power of one user
-        # associated with the current access point
-        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
-        undesired_power = np.sum(
-            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
-            axis=-1)
-        sinr_array_pl_free_space[mask] = (desired_power /
-                                          (undesired_power + noise_var))
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Case with METIS PS7 path loss xxxxxxxxxxxxxxxxxxxxxxxx
-        pl = pl_metis_ps7
-
-        # Each element in desired_power is the desired power of one user
-        # associated with the current access point
-        desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
-        undesired_power = np.sum(
-            Pt * wall_losses[mask][:, mask_n2] * pl[mask][:, mask_n2],
-            axis=-1)
-        sinr_array_pl_metis_ps7[mask] = (desired_power /
-                                         (undesired_power + noise_var))
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Convert values to dB xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    sinr_array_pl_nothing_dB = linear2dB(sinr_array_pl_nothing)
-    sinr_array_pl_3gpp_dB = linear2dB(sinr_array_pl_3gpp)
-    sinr_array_pl_free_space_dB = linear2dB(sinr_array_pl_free_space)
-    sinr_array_pl_metis_ps7_dB = linear2dB(sinr_array_pl_metis_ps7)
+    sinr_array_pl_metis_ps7_dB = _simulate_for_a_given_ap_assoc(
+        pl_metis_ps7, ap_assoc, wall_losses_dB, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    out = (sinr_array_pl_nothing_dB,
+           sinr_array_pl_3gpp_dB,
+           sinr_array_pl_free_space_dB,
+           sinr_array_pl_metis_ps7_dB)
+    return out
+
+
+if __name__ == '__main__':
+    scenario_params = {
+        'side_length': 10,  # 10 meters side length
+        'single_wall_loss_dB': 5,
+        'num_rooms_per_side': 12,
+        'ap_decimation': 1}
+
+    power_params = {
+        'Pt_dBm': 20,  # 20 dBm transmit power
+        # Noise power for 25°C for a bandwidth of 5 MHz ->  -106.87 dBm
+        'noise_power_dBm': calc_thermal_noise_power_dBm(25, 5e6)
+    }
+
+    out = perform_simulation_SINR_heatmap(scenario_params, power_params)
+
+    (sinr_array_pl_nothing_dB,
+     sinr_array_pl_3gpp_dB,
+     sinr_array_pl_free_space_dB,
+     sinr_array_pl_metis_ps7_dB) = out
+
+    (num_rooms_per_side,
+     _,  # num_rooms_per_side
+     _,  # num_discrete_positions_per_room again
+     num_discrete_positions_per_room) = sinr_array_pl_nothing_dB.shape
+
+    print ("Min/Mean/Max SINR value (no PL):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_nothing_dB.min(),
+               sinr_array_pl_nothing_dB.mean(),
+               sinr_array_pl_nothing_dB.max())
+    print ("Min/Mean/Max SINR value (3GPP):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_3gpp_dB.min(),
+               sinr_array_pl_3gpp_dB.mean(),
+               sinr_array_pl_3gpp_dB.max())
+    print ("Min/Mean/Max SINR value (Free Space):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_free_space_dB.min(),
+               sinr_array_pl_free_space_dB.mean(),
+               sinr_array_pl_free_space_dB.max())
+    print ("Min/Mean/Max SINR value (METIS PS7):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_metis_ps7_dB.min(),
+               sinr_array_pl_metis_ps7_dB.mean(),
+               sinr_array_pl_metis_ps7_dB.max())
 
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
@@ -422,53 +451,6 @@ def perform_simulation(scenario_params, power_params):
         num_rooms_per_side,
         num_discrete_positions_per_room)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    out = (sinr_array_pl_nothing_dB2,
-           sinr_array_pl_3gpp_dB2,
-           sinr_array_pl_free_space_dB2,
-           sinr_array_pl_metis_ps7_dB2)
-    return out
-
-
-if __name__ == '__main__':
-    scenario_params = {
-        'side_length': 10,  # 10 meters side length
-        'single_wall_loss_dB': 5,
-        'num_rooms_per_side': 12,
-        'ap_decimation': 1}
-
-    power_params = {
-        'Pt_dBm': 20,  # 20 dBm transmit power
-        'noise_power_dBm': -300  # Very low noise power
-    }
-
-    out = perform_simulation(scenario_params, power_params)
-
-    (sinr_array_pl_nothing_dB2,
-     sinr_array_pl_3gpp_dB2,
-     sinr_array_pl_free_space_dB2,
-     sinr_array_pl_metis_ps7_dB2) = out
-
-    print ("Min/Mean/Max SINR value (no PL):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_nothing_dB2.min(),
-               sinr_array_pl_nothing_dB2.mean(),
-               sinr_array_pl_nothing_dB2.max())
-    print ("Min/Mean/Max SINR value (3GPP):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_3gpp_dB2.min(),
-               sinr_array_pl_3gpp_dB2.mean(),
-               sinr_array_pl_3gpp_dB2.max())
-    print ("Min/Mean/Max SINR value (Free Space):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_free_space_dB2.min(),
-               sinr_array_pl_free_space_dB2.mean(),
-               sinr_array_pl_free_space_dB2.max())
-    print ("Min/Mean/Max SINR value (METIS PS7):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_metis_ps7_dB2.min(),
-               sinr_array_pl_metis_ps7_dB2.mean(),
-               sinr_array_pl_metis_ps7_dB2.max())
 
     # xxxxxxxxxx Plot each case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # No path loss
