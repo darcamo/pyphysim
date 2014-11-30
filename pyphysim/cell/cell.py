@@ -236,7 +236,7 @@ class AccessPoint(Node):
         self._plot_common_part(ax)
         # ax.set_ylim([-1, 1])
         # ax.set_xlim([-1, 1])
-        plt.show()
+        plt.draw()
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
