@@ -67,6 +67,11 @@ def plot_all_rooms(all_rooms, ax=None):
         The axis where the rooms will be plotted.
     all_rooms : iterable of shape.Rectangle objects
         The rooms to be plotted.
+
+    Returns
+    -------
+    ax : Matplotlib axes
+        The axes used to plot.
     """
     standalone = False
     if ax is None:
@@ -89,6 +94,8 @@ def plot_all_rooms(all_rooms, ax=None):
         ax.set_xlabel("Position X coordinate")
         ax.set_ylabel("Position Y coordinate")
         ax.set_title("Plot of all Rooms")
+
+    return ax
 
 
 def calc_num_walls(side_length, room_positions, ap_positions):
