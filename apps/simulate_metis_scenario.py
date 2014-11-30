@@ -192,7 +192,7 @@ def get_ap_positions(room_positions, decimation=1):
     return ap_positions.flatten()
 
 
-def _simulate_for_a_given_ap_assoc(
+def simulate_for_a_given_ap_assoc(
         pl, ap_assoc, wall_losses_dB, Pt, noise_var):
     """
     Simulate and return the SINR for a given path moss and AP associations.
@@ -226,11 +226,8 @@ def _simulate_for_a_given_ap_assoc(
     """
     wall_losses = dB2Linear(-wall_losses_dB)
 
-    (_,  # num_rooms_per_side
-     _,  # num_rooms_per_side
-     _,  # num_discrete_positions_per_room
-     _,  # num_discrete_positions_per_room again
-     num_aps) = pl.shape
+    # Number of APs is the last dimension in the path loss array
+    num_aps = pl.shape[-1]
 
     # Output variable
     sinr_array = np.empty(ap_assoc.shape, dtype=float)
@@ -298,6 +295,7 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
 
     # xxxxxxxxxx Calculate the positions of all rooms xxxxxxxxxxxxxxxxxxxxx
     room_positions = calc_room_positions_square(side_length, num_rooms)
+    room_positions.shape = (num_rooms_per_side, num_rooms_per_side)
     # all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
     #                               pos + side_length/2. + side_length*1j/2.)
     #              for pos in room_positions.flatten()]
@@ -314,8 +312,6 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
 
     # xxxxxx Add one user in each discrete position of each room xxxxxxxxxx
     user_relative_positions2 = user_relative_positions * side_length / 2.
-    room_positions.shape = (num_rooms_per_side, num_rooms_per_side)
-
     user_positions = (room_positions[:, :, np.newaxis, np.newaxis] +
                       user_relative_positions2[np.newaxis, np.newaxis, :, :])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -377,16 +373,16 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
-    sinr_array_pl_nothing_dB = _simulate_for_a_given_ap_assoc(
+    sinr_array_pl_nothing_dB = simulate_for_a_given_ap_assoc(
         pl_nothing, ap_assoc, wall_losses_dB, Pt, noise_var)
 
-    sinr_array_pl_3gpp_dB = _simulate_for_a_given_ap_assoc(
+    sinr_array_pl_3gpp_dB = simulate_for_a_given_ap_assoc(
         pl_3gpp, ap_assoc, wall_losses_dB, Pt, noise_var)
 
-    sinr_array_pl_free_space_dB = _simulate_for_a_given_ap_assoc(
+    sinr_array_pl_free_space_dB = simulate_for_a_given_ap_assoc(
         pl_free_space, ap_assoc, wall_losses_dB, Pt, noise_var)
 
-    sinr_array_pl_metis_ps7_dB = _simulate_for_a_given_ap_assoc(
+    sinr_array_pl_metis_ps7_dB = simulate_for_a_given_ap_assoc(
         pl_metis_ps7, ap_assoc, wall_losses_dB, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
