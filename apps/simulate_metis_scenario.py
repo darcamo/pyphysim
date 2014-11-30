@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Module containing simulation runners for the several Interference
-Alignment algorithms in the algorithms.ia module.
+Simulator for the SINRs of a dense indoor scenario.
+
+The scenario is a very simplified version of the Test Case 2 from the METIS
+project. Only one floor of one building is simulated and only the indoor
+access points are considered.
 """
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
