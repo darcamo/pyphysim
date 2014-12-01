@@ -195,7 +195,7 @@ def get_ap_positions(room_positions, decimation=1):
 def simulate_for_a_given_ap_assoc(
         pl, ap_assoc, wall_losses_dB, Pt, noise_var):
     """
-    Simulate and return the SINR for a given path moss and AP associations.
+    Simulate and return the SINR for a given path loss and AP associations.
 
     This is an internal function called inside
     `perform_simulation_SINR_heatmap`
@@ -395,13 +395,13 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
 
 if __name__ == '__main__':
     scenario_params = {
-        'side_length': 10,  # 10 meters side length
-        'single_wall_loss_dB': 5,
+        'side_length': 10.,  # 10 meters side length
+        'single_wall_loss_dB': 5.,
         'num_rooms_per_side': 12,
         'ap_decimation': 1}
 
     power_params = {
-        'Pt_dBm': 20,  # 20 dBm transmit power
+        'Pt_dBm': 20.,  # 20 dBm transmit power
         # Noise power for 25°C for a bandwidth of 5 MHz ->  -106.87 dBm
         'noise_power_dBm': calc_thermal_noise_power_dBm(25, 5e6)
     }
