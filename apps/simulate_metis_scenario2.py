@@ -79,7 +79,7 @@ def simulate_for_a_given_ap_assoc(
     return (linear2dB(sinr_array), capacity)
 
 
-def perform_simulation_SINR_heatmap(scenario_params, power_params):
+def perform_simulation(scenario_params, power_params):
     # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
     # The size of the side of each square room
     side_length = scenario_params['side_length']
@@ -245,7 +245,7 @@ if __name__ == '__main__':
         'side_length': 10.,  # 10 meters side length
         'single_wall_loss_dB': 5.,
         'num_rooms_per_side': 12,
-        'ap_decimation': 1}
+        'ap_decimation': 2}
 
     power_params = {
         'Pt_dBm': 20.,  # 20 dBm transmit power
@@ -253,4 +253,5 @@ if __name__ == '__main__':
         'noise_power_dBm': calc_thermal_noise_power_dBm(25, 5e6)
     }
 
-    out = perform_simulation_SINR_heatmap(scenario_params, power_params)
+    out = perform_simulation(scenario_params, power_params)
+    sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 = out
