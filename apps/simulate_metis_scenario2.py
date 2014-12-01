@@ -73,7 +73,6 @@ def simulate_for_a_given_ap_assoc(
             np.log2(1 + sinr_array[current_ap_users_idx])
             / len(current_ap_users_idx))
 
-        capacity = np.log2(1 + sinr_array)
     return (linear2dB(sinr_array), capacity)
 
 
