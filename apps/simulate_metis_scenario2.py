@@ -17,7 +17,6 @@ except NameError:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-import math
 import numpy as np
 from matplotlib import pyplot as plt
 # import matplotlib as mpl
@@ -33,6 +32,7 @@ from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 def simulate_for_a_given_ap_assoc(
         pl, ap_assoc, wall_losses_dB, transmitting_aps, Pt, noise_var):
     sinr_array = np.empty(ap_assoc.shape, dtype=float)
+    capacity = np.empty(ap_assoc.shape, dtype=float)
 
     wall_losses = dB2Linear(-wall_losses_dB)
 
@@ -65,7 +65,16 @@ def simulate_for_a_given_ap_assoc(
         sinr_array[current_ap_users_idx] = (desired_power
                                             / (undesired_power + noise_var))
 
-    return linear2dB(sinr_array)
+        # The capacity (actually, the spectral efficiency since we didn't
+        # multiply by the bandwidth) is calculated from the SINR. However,
+        # if there is more then one user associated with the current AP we
+        # assume bandwidth will be equally divided among all of them.
+        capacity[current_ap_users_idx] = (
+            np.log2(1 + sinr_array[current_ap_users_idx])
+            / len(current_ap_users_idx))
+
+        capacity = np.log2(1 + sinr_array)
+    return (linear2dB(sinr_array), capacity)
 
 
 def perform_simulation_SINR_heatmap(scenario_params, power_params):
@@ -109,7 +118,7 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Add users in random positions in the 2D grid xxxxxxxxxxxxx
-    num_users = 13  # We will create this many users in the 2D grid
+    num_users = 30  # We will create this many users in the 2D grid
     users_positions = (
         num_rooms_per_side * side_length * (
             np.random.rand(num_users) + 1j * np.random.rand(num_users)
@@ -155,7 +164,8 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
                                    ap_positions[transmitting_aps])
     # Find in which room each user is
     users_rooms = np.argmin(
-        np.abs(room_positions.reshape([-1, 1]) - users_positions[np.newaxis, :]),
+        np.abs(room_positions.reshape([-1, 1])
+               - users_positions[np.newaxis, :]),
         axis=0
         )
 
@@ -174,19 +184,14 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
                                                    num_walls=num_walls)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Calculate the SINRs xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Output variable
-    sinr_array_pl_metis_ps7_dB = simulate_for_a_given_ap_assoc(
-        pl_metis_ps7, ap_assoc, wall_losses_dB, transmitting_aps, Pt, noise_var)
-
-
-    # sinr_array_pl_metis_ps7_dB = simulate_for_a_given_ap_assoc(
-    #     pl_metis_ps7, ap_assoc, wall_losses_dB, Pt, noise_var)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx
+    sinr_array_pl_metis_ps7_dB, capacity = simulate_for_a_given_ap_assoc(
+        pl_metis_ps7, ap_assoc, wall_losses_dB,
+        transmitting_aps, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print sinr_array_pl_metis_ps7_dB
+    print capacity
 
     # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
@@ -211,7 +216,6 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
     # Show the users
     for u in all_users:
         u.plot_node(ax)
-        #plt.draw()
 
     plt.draw()
     plt.show()
