@@ -193,20 +193,20 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
             transmitting_aps, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print sinr_array_pl_metis_ps7_dB
-    print capacity_metis_ps7
+    print(sinr_array_pl_metis_ps7_dB)
+    print(capacity_metis_ps7)
 
-    print ("\nMin/Mean/Max SINR value (METIS PS7):"
+    print(("\nMin/Mean/Max SINR value (METIS PS7):"
            "\n    {0}\n    {1}\n    {2}").format(
                sinr_array_pl_metis_ps7_dB.min(),
                sinr_array_pl_metis_ps7_dB.mean(),
-               sinr_array_pl_metis_ps7_dB.max())
+               sinr_array_pl_metis_ps7_dB.max()))
 
-    print ("\nMin/Mean/Max Capacity value (METIS PS7):"
+    print(("\nMin/Mean/Max Capacity value (METIS PS7):"
            "\n    {0}\n    {1}\n    {2}").format(
                capacity_metis_ps7.min(),
                capacity_metis_ps7.mean(),
-               capacity_metis_ps7.max())
+               capacity_metis_ps7.max()))
 
     # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
