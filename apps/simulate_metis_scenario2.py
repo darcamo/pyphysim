@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Module containing simulation runners for the several Interference
-Alignment algorithms in the algorithms.ia module.
+Simulator for the SINRs and capacity of a dense indoor scenario.
+
+The scenario is a very simplified version of the Test Case 2 from the METIS
+project. Only one floor of one building is simulated and only the indoor
+access points are considered.
 """
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -184,20 +187,33 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx
-    sinr_array_pl_metis_ps7_dB, capacity = simulate_for_a_given_ap_assoc(
-        pl_metis_ps7, ap_assoc, wall_losses_dB,
-        transmitting_aps, Pt, noise_var)
+    sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 \
+        = simulate_for_a_given_ap_assoc(
+            pl_metis_ps7, ap_assoc, wall_losses_dB,
+            transmitting_aps, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print sinr_array_pl_metis_ps7_dB
-    print capacity
+    print capacity_metis_ps7
+
+    print ("\nMin/Mean/Max SINR value (METIS PS7):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               sinr_array_pl_metis_ps7_dB.min(),
+               sinr_array_pl_metis_ps7_dB.mean(),
+               sinr_array_pl_metis_ps7_dB.max())
+
+    print ("\nMin/Mean/Max Capacity value (METIS PS7):"
+           "\n    {0}\n    {1}\n    {2}").format(
+               capacity_metis_ps7.min(),
+               capacity_metis_ps7.mean(),
+               capacity_metis_ps7.max())
 
     # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
                                   pos + side_length/2. + side_length*1j/2.)
                  for pos in room_positions.flatten()]
-    all_aps = np.array([cell.AccessPoint(r.pos)
-                        for r in all_rooms])
+    all_aps = np.array([cell.AccessPoint(pos)
+                        for pos in ap_positions])
     all_users = np.array([cell.Node(r)
                           for r in users_positions])
 
@@ -221,7 +237,7 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    return sinr_array_pl_metis_ps7_dB
+    return sinr_array_pl_metis_ps7_dB, capacity_metis_ps7
 
 
 if __name__ == '__main__':
