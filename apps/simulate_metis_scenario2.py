@@ -27,7 +27,7 @@ from matplotlib import gridspec
 
 from apps.simulate_metis_scenario import *
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
-from pyphysim.cell import shapes, cell
+from pyphysim.cell import shapes
 from pyphysim.comm import pathloss
 from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -215,7 +215,7 @@ def perform_simulation(scenario_params, power_params):
                  for pos in room_positions.flatten()]
 
     # Plot all Rooms and save the axis where they were plotted
-    fig = plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
     # ax1 is where we will plot everything
     ax1 = plt.subplot(gs[0])
@@ -235,11 +235,12 @@ def perform_simulation(scenario_params, power_params):
     ax2.set_xlim([0, 10])
     details = ax2.text(
         5, 5, 'Details',
-        verticalalignment='center', horizontalalignment='center')
+        verticalalignment='center', horizontalalignment='center',
+        family='monospace')
 
     # Set the an array with colors for the access points. Transmitting APs
     # will be blue, while inactive APs will be gray
-    ap_colors = np.empty(ap_positions.shape, dtype='S4')
+    ap_colors = np.empty(ap_positions.shape, dtype='U4')
     ap_colors[transmitting_aps_mask] = 'b'
     ap_colors[np.logical_not(transmitting_aps_mask)] = 'gray'
 
@@ -248,12 +249,14 @@ def perform_simulation(scenario_params, power_params):
     # colors are set according to the ap_colors array.
     # Note that we set a 5 points tolerance for the pick event.
     aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
-                         marker='^', c=ap_colors, linewidths=0.1, s=50, picker=3)
+                          marker='^', c=ap_colors, linewidths=0.1, s=50,
+                          picker=3)
 
     # Plot the users
     # Note that we set a 5 points tolerance for the pick event.
     users_plt = ax1.scatter(users_positions.real, users_positions.imag,
-                           marker='*', c='r', linewidth=0.1, s=50, picker=3)
+                            marker='*', c='r', linewidth=0.1, s=50,
+                            picker=3)
 
     # xxxxxxxxxx Define a function to call for the pick_event
     def on_pick(event):
@@ -264,9 +267,14 @@ def perform_simulation(scenario_params, power_params):
             if ind not in ap_assoc:
                 text = "AP {0} (Disabled)".format(ind)
             else:
-                text = "AP {0} with {1} user(s)".format(ind, users_per_ap[ind])
+                text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
+                text = text.format(
+                    ind,
+                    users_per_ap[ind],
+                    np.sum(capacity_metis_ps7[ap_assoc == ind]))
+
         elif event.artist == users_plt:
-            text = "User {0}\nSINR: {1}\nCapacity: {2}".format(
+            text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
                 ind,
                 sinr_array_pl_metis_ps7_dB[ind],
                 capacity_metis_ps7[ind])
