@@ -22,6 +22,7 @@ except NameError:
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 # import matplotlib as mpl
 
 from apps.simulate_metis_scenario import *
@@ -212,27 +213,72 @@ def perform_simulation(scenario_params, power_params):
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
                                   pos + side_length/2. + side_length*1j/2.)
                  for pos in room_positions.flatten()]
-    all_aps = np.array([cell.AccessPoint(pos)
-                        for pos in ap_positions])
-    all_users = np.array([cell.Node(r)
-                          for r in users_positions])
 
-    ax = plot_all_rooms(all_rooms)
-    ax.hold(True)
+    # Plot all Rooms and save the axis where they were plotted
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+    # ax1 is where we will plot everything
+    ax1 = plt.subplot(gs[0])
+    ax1.set_xlabel("Position X coordinate")
+    ax1.set_ylabel("Position Y coordinate")
+    ax1.set_title("Plot of all Rooms")
+    ax1.set_ylim([-60, 60])
+    ax1.set_xlim([-60, 60])
+    ax1 = plot_all_rooms(all_rooms, ax1)
+    ax1.hold(True)
 
-    # Show the AccessPoints
-    for ap in all_aps[transmitting_aps_mask]:
-        ap.plot(ax)
+    # ax2 will be used for annotations
+    ax2 = plt.subplot(gs[1])
+    plt.setp(ax2.get_xticklabels(), visible=False)
+    plt.setp(ax2.get_yticklabels(), visible=False)
+    ax2.set_ylim([0, 10])
+    ax2.set_xlim([0, 10])
+    details = ax2.text(
+        5, 5, 'Details',
+        verticalalignment='center', horizontalalignment='center')
 
-    for ap in all_aps[np.logical_not(transmitting_aps_mask)]:
-        ap.marker_color = 'gray'
-        ap.plot(ax)
+    # Set the an array with colors for the access points. Transmitting APs
+    # will be blue, while inactive APs will be gray
+    ap_colors = np.empty(ap_positions.shape, dtype='S4')
+    ap_colors[transmitting_aps_mask] = 'b'
+    ap_colors[np.logical_not(transmitting_aps_mask)] = 'gray'
 
-    # Show the users
-    for u in all_users:
-        u.plot_node(ax)
+    # Plot the access points. We set linewidth to 0.0 so that there is no
+    # border. We set the size ('s' keyword) to 50 to make it larger. The
+    # colors are set according to the ap_colors array.
+    # Note that we set a 5 points tolerance for the pick event.
+    aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
+                         marker='^', c=ap_colors, linewidths=0.1, s=50, picker=3)
 
-    plt.draw()
+    # Plot the users
+    # Note that we set a 5 points tolerance for the pick event.
+    users_plt = ax1.scatter(users_positions.real, users_positions.imag,
+                           marker='*', c='r', linewidth=0.1, s=50, picker=3)
+
+    # xxxxxxxxxx Define a function to call for the pick_event
+    def on_pick(event):
+        # Index of the point clicked
+        ind = event.ind[0]
+
+        if event.artist == aps_plt:
+            if ind not in ap_assoc:
+                text = "AP {0} (Disabled)".format(ind)
+            else:
+                text = "AP {0} with {1} user(s)".format(ind, users_per_ap[ind])
+        elif event.artist == users_plt:
+            text = "User {0}\nSINR: {1}\nCapacity: {2}".format(
+                ind,
+                sinr_array_pl_metis_ps7_dB[ind],
+                capacity_metis_ps7[ind])
+
+        # Set the details text
+        details.set_text(text)
+        ax1.figure.canvas.draw()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # Connect the on_pick function with the pick event
+    ax1.figure.canvas.mpl_connect('pick_event', on_pick)
+
     plt.show()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
