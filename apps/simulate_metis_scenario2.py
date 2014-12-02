@@ -121,7 +121,7 @@ def perform_simulation(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Add users in random positions in the 2D grid xxxxxxxxxxxxx
-    num_users = 30  # We will create this many users in the 2D grid
+    num_users = 100  # We will create this many users in the 2D grid
     users_positions = (
         num_rooms_per_side * side_length * (
             np.random.rand(num_users) + 1j * np.random.rand(num_users)
@@ -258,26 +258,55 @@ def perform_simulation(scenario_params, power_params):
                             marker='*', c='r', linewidth=0.1, s=50,
                             picker=3)
 
-    # xxxxxxxxxx Define a function to call for the pick_event
+    # xxxxxxxxxx Define a function to call for the pick_event Circle used
+    # to select an AP. We will set its visibility to False here. When an AP
+    # is selected, we move this circle to its position and set its
+    # visibility to True.
+    selected_ap_circle = ax1.plot([0], [0], 'o', ms=12, alpha=0.4,
+                                  color='yellow', visible=False)[0]
+
+    # Define the callback function for the pick event
     def on_pick(event):
+        # We will reset users colors on each pick
+        users_colors = np.empty(ap_assoc.size, dtype='U1')
+        users_colors[:] = 'r'
+
         # Index of the point clicked
         ind = event.ind[0]
 
         if event.artist == aps_plt:
+            # Disable the circle in the AP
+            selected_ap_circle.set_visible(False)
+
             if ind not in ap_assoc:
+                # Text information for the disabled AP
                 text = "AP {0} (Disabled)".format(ind)
             else:
+                # Text information for the selected AP
                 text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
                 text = text.format(
                     ind,
                     users_per_ap[ind],
                     np.sum(capacity_metis_ps7[ap_assoc == ind]))
 
+                # Change the colors of the users associated with the
+                # current AP to green
+                users_colors[ap_assoc==ind] = 'g'
+
         elif event.artist == users_plt:
+            # Text information for the selected user
             text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
                 ind,
                 sinr_array_pl_metis_ps7_dB[ind],
                 capacity_metis_ps7[ind])
+
+            # Plot a yellow circle in the user's AP
+            ap_pos = ap_positions[ap_assoc[ind]]
+            selected_ap_circle.set_visible(True)
+            selected_ap_circle.set_data([ap_pos.real], [ap_pos.imag])
+
+        # Set users colors
+        users_plt.set_color(users_colors)
 
         # Set the details text
         details.set_text(text)
