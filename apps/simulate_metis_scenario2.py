@@ -291,14 +291,23 @@ def perform_simulation(scenario_params, power_params):
 
                 # Change the colors of the users associated with the
                 # current AP to green
-                users_colors[ap_assoc==ind] = 'g'
+                users_colors[ap_assoc == ind] = 'g'
 
         elif event.artist == users_plt:
+            # Change the color of the selected user
+            users_colors[ind] = 'c'
+
             # Text information for the selected user
             text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
                 ind,
                 sinr_array_pl_metis_ps7_dB[ind],
                 capacity_metis_ps7[ind])
+
+            # If there other users are associated with the same AP of the
+            # current user
+            if users_per_ap[ap_assoc[ind]] > 1:
+                text = "{0}\nShares AP with {1} other user(s)".format(
+                    text, users_per_ap[ap_assoc[ind]] - 1)
 
             # Plot a yellow circle in the user's AP
             ap_pos = ap_positions[ap_assoc[ind]]
