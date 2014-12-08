@@ -992,7 +992,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         self._C = np.empty(self.K, dtype=np.ndarray)
 
         for k in np.arange(self.K):
-            ### TODO: Implement and test with external interference
+            # TODO: Implement and test with external interference
             # # We are inside only of the first for loop
             # # Add the external interference contribution
             # self._C[k] = self.calc_Q(k) + self.Rk[k]
@@ -1671,7 +1671,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # xxxxx Define the function that will be optimized xxxxxxxxxxxx
             def func(local_mu, local_sum_term, local_Hii_herm_U, local_P):
                 """
-                Function that will be optimized to find the best value of local_mu.
+                Function that will be optimized to find the best value of
+                local_mu.
                 """
                 Vi = self._calc_Vi_for_a_given_mu(
                     local_sum_term, local_mu, local_Hii_herm_U)
@@ -1728,8 +1729,12 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # mu_i. In that case we will do some scaling and try again.
                 if abs(mu_i) > 1e20:
                     mu_i = optimize.newton(
-                        func, min_mu_i,
-                        args=(sum_term * 10, Hii_herm_U * 10, self.P[i]), maxiter=200)
+                        func,
+                        min_mu_i,
+                        args=(sum_term * 10,
+                              Hii_herm_U * 10,
+                              self.P[i]),
+                        maxiter=200)
                     mu_i = mu_i / 10.
                     cost = func(mu_i, sum_term, Hii_herm_U, self.P[i])
                     # If our new solution is still bad then we raise a
@@ -1741,7 +1746,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                         # not be valid. Note that we allow a positive cost
                         # lower then self.P[i]/1e6 since this will be
                         # relatively close to zero.
-                        raise RuntimeError("Could not find a good Lagrange multiplier")
+                        msg = "Could not find a good Lagrange multiplier"
+                        raise RuntimeError(msg)
                 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
                 # Now that we have the best value for mu_i, lets calculate Vi

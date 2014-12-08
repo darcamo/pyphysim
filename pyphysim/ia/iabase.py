@@ -476,12 +476,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         self._F = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
             self._F[k] = normalized(randn_c_RS(self._rs, self.Nt[k], Ns[k]))
-        #self._F = [normalized(randn_c(Nt[k], Ns[k])) for k in np.arange(0, K)]
 
-        self._Ns = np.array(Ns)  # This will create a new array so that we
-                                 # can modify self._Ns internally without
-                                 # changing the original Ns variable passed
-                                 # to the randomizeF method.
+        # This will create a new array so that we can modify self._Ns
+        # internally without changing the original Ns variable passed to
+        # the randomizeF method.
+        self._Ns = np.array(Ns)
 
     # This method is just an alias for the get_channel method of the
     # multiuserchannel object associated with the IA Solver.xs
@@ -505,7 +504,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
     def _get_channel_rev(self, k, l):
         """
-        Get the channel from transmitter l to receiver k in the reverse network.
+        Get the channel from transmitter l to receiver k in the reverse
+        network.
 
         Let the matrix :math:`\\mtH_{kl}` be the channel matrix between the
         transmitter :math:`l` to receiver :math:`k` in the direct
@@ -542,7 +542,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         The interference covariance matrix at the :math:`k`-th receiver,
         :math:`\\mtQ k`, is given by
 
-            :math:`\\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H`
+            .. math::
+
+               \\mtQ k = \\sum_{j=1, j \\neq k}^{K} \\frac{P_j}{Ns_j} \\mtH_{kj} \\mtF_j \\mtF_j^H \\mtH_{kj}^H
 
         where :math:`P_j` is the transmit power of transmitter :math:`j`,
         and :math:`Ns_j` is the number of streams for user :math:`j`.
@@ -610,7 +612,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         The percentage :math:`p_k` of the interference in the desired
         signal space is given by
 
-            :math:`p_k = \\frac{\\sum_{j=1}^{Ns[k]} \\lambda_j [\\mtQ k]}{Tr[\\mtQ k]}`
+            .. math::
+
+               p_k = \\frac{\\sum_{j=1}^{Ns[k]} \\lambda_j [\\mtQ k]}{Tr[\\mtQ k]}
 
         where :math:`\\lambda_j[\\mtA]` denotes the :math:`j`-th smallest
         eigenvalue of :math:`\\mtA`.
@@ -746,7 +750,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The first part is given by
 
-            :math:`\\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}`
+            .. math::
+
+               \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star d}^{[j]} \\mtV_{\\star d}^{[j]\\dagger} \\mtH^{[kj]\\dagger}
 
         Note that it only depends on the value of :math:`k`.
 
@@ -780,7 +786,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The second part is given by
 
-            :math:`\\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger}`
+            .. math::
+
+               \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger}
 
         Parameters
         ----------
@@ -804,14 +812,17 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
     def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=None):
         """
-        Calculates the interference-plus-noise covariance matrix for all streams
-        at receiver :math:`k` according to equation (28) in [Cadambe2008]_.
+        Calculates the interference-plus-noise covariance matrix for all
+        streams at receiver :math:`k` according to equation (28) in
+        [Cadambe2008]_.
 
         The interference-plus-noise covariance matrix for stream :math:`l`
         of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
         which is reproduced below
 
-            :math:`\\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}`
+            .. math::
+
+               \\mtB^{[kl]} = \\sum_{j=1}^{K} \\frac{P^{[j]}}{d^{[j]}} \\sum_{d=1}^{d^{[j]}} \\mtH^{[kj]}\\mtV_{\\star l}^{[j]} \\mtV_{\\star l}^{[j]\\dagger} \\mtH^{[kj]\\dagger} - \\frac{P^{[k]}}{d^{[k]}} \\mtH^{[kk]} \\mtV_{\\star l}^{[k]} \\mtV_{\\star l}^{[k]\\dagger} \\mtH^{[kk]\\dagger} + \\mtI_{N^{[k]}}
 
         where :math:`P^{[k]}` is the transmit power of transmitter
         :math:`k`, :math:`d^{[k]}` is the number of degrees of freedom of
@@ -893,8 +904,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             denominator = np.dot(Ukl_H,
                                  np.dot(Bkl_all_l[l], Ukl))
             SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
-            SINR_k[l] = np.abs(SINR_kl)  # The imaginary part should be
-                                         # negligible
+            # The imaginary part should be negligible
+            SINR_k[l] = np.abs(SINR_kl)
 
         return SINR_k
 

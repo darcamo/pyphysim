@@ -47,7 +47,9 @@ def calc_post_processing_SINRs(channel, W, G_H, noise_var=None):
     sinrs : 1D numpy array
         The SINR of all streams (in linear scale).
     """
-    return linear2dB(calc_post_processing_linear_SINRs(channel, W, G_H, noise_var))
+    return linear2dB(
+        calc_post_processing_linear_SINRs(channel, W, G_H, noise_var))
+
 
 def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
     """
@@ -189,7 +191,8 @@ class MimoBase(object):
         W : 2D numpy array
             The precoder that can be aplied to the input data.
         """
-        raise NotImplementedError('_calc_precoder still needs to be implemented')
+        raise NotImplementedError(
+            '_calc_precoder still needs to be implemented')
 
     @staticmethod
     def _calc_receive_filter(channel, noise_var=None):
@@ -208,7 +211,8 @@ class MimoBase(object):
         G_H : 2D numpy array
             The receive_filter that can be aplied to the input data.
         """
-        raise NotImplementedError('_calc_receive_filter still needs to be implemented')
+        raise NotImplementedError(
+            '_calc_receive_filter still needs to be implemented')
 
     @abstractmethod
     def getNumberOfLayers(self):  # pragma: no cover
@@ -285,7 +289,7 @@ class MimoBase(object):
         """
         W = self._calc_precoder(self._channel)
         G_H = self._calc_receive_filter(self._channel, noise_var)
-        sinrs = sinrs = calc_post_processing_SINRs(self._channel, W, G_H, noise_var)
+        sinrs = calc_post_processing_SINRs(self._channel, W, G_H, noise_var)
         return sinrs
 
     def calc_SINRs(self, noise_var):
@@ -390,6 +394,7 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
         of layers is always equal to 1.
         """
         return 1
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Blast Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -752,6 +757,7 @@ class MRC(Blast):
             super(MRC, self).set_channel_matrix(channel[:, np.newaxis])
         else:
             super(MRC, self).set_channel_matrix(channel)
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SVD MIMO xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

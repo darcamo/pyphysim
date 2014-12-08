@@ -34,7 +34,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         A tuple with vtOptP and mu, where vtOptP are the optimum powers,
         while mu is the water level.
     """
-    ## Sort Channels (descending order)
+    # Sort Channels (descending order)
     vtChannelsSortIndexes = np.argsort(vtChannels)[::-1]
     vtChannelsSorted = vtChannels[vtChannelsSortIndexes]
 

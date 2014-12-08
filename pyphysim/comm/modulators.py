@@ -69,8 +69,8 @@ class Modulator(object):
         # This should be set in a subclass of the Modulator Class by
         # calling the setConstellation method..
         self._M = 0  # Constellation size (modulation cardinality)
-        self._K = 0  # Number of bits represented by each symbol in the
-                     # constellation
+        # Number of bits represented by each symbol in the constellation
+        self._K = 0
         self.symbols = np.array([])
 
     @property
@@ -194,7 +194,7 @@ class Modulator(object):
         demodulated_data : numpy array
             The demodulated data.
         """
-        ### First Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx First Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # def getClosestSymbol(symb):
         #     closestSymbolIndex = np.abs(self.symbols - symb).argmin()
         #     return closestSymbolIndex
@@ -218,7 +218,7 @@ class Modulator(object):
         # return output
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        ### Third Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Third Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # This version uses more memory because of the numpy broadcasting,
         # but it is much faster.
         shape = receivedData.shape
@@ -650,7 +650,6 @@ class QAM(Modulator):
         for jj in range(0, L):
             for ii in range(0, L):
                 symbol = complex(-(L - 1) + jj * 2, (L - 1) - ii * 2)
-                #print symbol
                 symbols[ii * L + jj] = symbol
 
         average_energy = (M - 1) * 2.0 / 3.0
@@ -702,10 +701,12 @@ class QAM(Modulator):
         # Row vector with the column variation (second half of the index in
         # binary form)
         column = binary2gray(np.arange(0, L, dtype=int))
+
         # Column vector with the row variation
-        row = column.reshape(L, 1)  # Column vector with the row variation
-                                    # (first half of the index in binary
-                                    # form)
+        #
+        # Column vector with the row variation (first half of the index in
+        # binary form)
+        row = column.reshape(L, 1)
         columns = np.tile(column, (L, 1))
         rows = np.tile(row, (1, L))
         # Shift the first part by half the number of bits and sum with the

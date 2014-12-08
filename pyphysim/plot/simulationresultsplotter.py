@@ -16,7 +16,7 @@ plot library.
 # import sip
 # sip.setapi('QString', 2)
 # sip.setapi('QVariant', 2)
-#from PyQt4 import QtGui, QtCore
+# from PyQt4 import QtGui, QtCore
 
 from traits.etsconfig.etsconfig import ETSConfig
 ETSConfig.toolkit = "qt4"
@@ -25,7 +25,8 @@ ETSConfig.toolkit = "qt4"
 import numpy as np
 
 # Traits and traitsui imports
-from traits.api import HasTraits, Instance, Int, Range, Str, Array, Enum, Dict, on_trait_change, List, Set
+from traits.api import HasTraits, Instance, Range, Str, Array, Enum, \
+    Dict, on_trait_change, List
 from traitsui.api import View, Item, Group, VGroup, HGroup
 
 # Chaco imports
@@ -75,9 +76,9 @@ class ScatterLinePlot(LinePlot):
 
     def _render_markers(self, gc, points):
         render_markers(gc, points, self.marker,
-                self.marker_size, self.color_, self.line_width,
-                self.outline_color_,
-                self.custom_symbol)
+                       self.marker_size, self.color_, self.line_width,
+                       self.outline_color_,
+                       self.custom_symbol)
 
     def _render(self, gc, points, selected_points=None):
         super(ScatterLinePlot, self)._render(gc, points, selected_points)
@@ -91,7 +92,8 @@ class ScatterLinePlot(LinePlot):
 
     def _render_icon(self, gc, x, y, width, height):
         super(ScatterLinePlot, self)._render_icon(gc, x, y, width, height)
-        point = np.array([x + width / 2. - self.marker_size / 2., y + height / 2.])
+        point = np.array(
+            [x + width / 2. - self.marker_size / 2., y + height / 2.])
         self._render_markers(gc, [point])
 
     def _marker_size_changed(self):
@@ -142,15 +144,17 @@ class PlotView(HasTraits):
 
     # List of colors to cycle through
     auto_colors = List(["green", "blue", "red",
-                        "pink", "darkgray", "silver", "lightgreen", "lightblue"])
+                        "pink", "darkgray", "silver",
+                        "lightgreen", "lightblue"])
 
     # Group for the curves_data traits
     curves_group = Instance(Group)
     traits_view = View(
-        Group(Item('plot_container', editor=ComponentEditor(), show_label=False),
-              Group(Item('curves_data', editor=InstanceEditor()),
-                    Item('indexes_data', editor=InstanceEditor()),
-                    Item('chosen_index', style='readonly'))),
+        Group(
+            Item('plot_container', editor=ComponentEditor(), show_label=False),
+            Group(Item('curves_data', editor=InstanceEditor()),
+                  Item('indexes_data', editor=InstanceEditor()),
+                  Item('chosen_index', style='readonly'))),
         width=800, height=600,
         buttons=['OK', 'Cancel'],
         resizable=True)
@@ -161,7 +165,8 @@ class PlotView(HasTraits):
     def create_the_plot(self):
         # Create the datasources
         index = ArrayDataSource(self.indexes_data[self.chosen_index].data)
-        values = [ArrayDataSource(self.curves_data[key].data) for key in self.curves_data.keys()]
+        values = [ArrayDataSource(
+            self.curves_data[key].data) for key in self.curves_data.keys()]
 
         # Create the data range objects
         index_range = DataRange1D()
@@ -182,7 +187,8 @@ class PlotView(HasTraits):
                                               bgcolor="lightgray",
                                               use_backbuffer=True)
         plots_dict = {}  # Used for the legend
-        for v, curve_name, color in zip(values, self.curves_data.keys(), self.auto_colors):
+        for v, curve_name, color in zip(
+                values, self.curves_data.keys(), self.auto_colors):
             plot = ScatterLinePlot(index=index, value=v,
                                    index_mapper=index_mapper,
                                    value_mapper=value_mapper,
@@ -194,7 +200,8 @@ class PlotView(HasTraits):
                                    border_visible=False)
             plots_dict[curve_name] = plot
 
-            y_axis, x_axis = add_default_axes(plot, vtitle='Y Axis Title', htitle='X Axis Title')
+            y_axis, x_axis = add_default_axes(
+                plot, vtitle='Y Axis Title', htitle='X Axis Title')
             add_default_grids(plot)
             plot_container.add(plot)
 
@@ -217,11 +224,14 @@ class PlotView(HasTraits):
 
         # xxxxx Add the Save tool xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Press Ctrl+S to save the plot
-        plot_container.tools.append(SaveTool(component=plot_container, always_on=True, filename="test_save_tool.pdf"))
+        plot_container.tools.append(SaveTool(
+            component=plot_container,
+            always_on=True,
+            filename="test_save_tool.pdf"))
 
         # xxxxx Add the TraitsTool xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        #plot_container.tools.append(TraitsTool(y_axis))
-        #plot_container.tools.append(TraitsTool(x_axis))
+        # plot_container.tools.append(TraitsTool(y_axis))
+        # plot_container.tools.append(TraitsTool(x_axis))
 
         traits_tool = TraitsTool(plot_container)
         plot_container.tools.append(traits_tool)
@@ -266,7 +276,8 @@ class SimulationResultsPlotter(HasTraits):
     plot = Instance(Plot)
     # Traits can have a description, the 'desc' argument
     marker = marker_trait(desc='the marker type of all curves')
-    marker_size = Range(low=1, high=6, value=4, desc='the marker size of all curves')
+    marker_size = Range(
+        low=1, high=6, value=4, desc='the marker size of all curves')
 
     reset_plot = Event("Reset Plot")
 
@@ -281,13 +292,14 @@ class SimulationResultsPlotter(HasTraits):
 
     # View used to display a single curve renderer
     _plot_curve_view = View(Item('marker_size',
-                                      style='custom',
-                                      editor=RangeEditor(mode='spinner', low=1, high=15)),
-                                 Item('marker'),
-                                 Item('color'),
-                                 Item('line_style'),
-                                 Item('line_width'),
-                                 Item('visible'))
+                                 style='custom',
+                                 editor=RangeEditor(mode='spinner',
+                                                    low=1, high=15)),
+                            Item('marker'),
+                            Item('color'),
+                            Item('line_style'),
+                            Item('line_width'),
+                            Item('visible'))
 
     # xxxxx Default Viewfor the SimulationResultsPlotter class xxxxxxxxxxxx
     # If no view is specified when configure_traits() is called on
@@ -295,19 +307,27 @@ class SimulationResultsPlotter(HasTraits):
     # preference
     traits_view = View(
         Group(
-            Item('plot', editor=ComponentEditor(), show_label=False, width=800, height=600, resizable=True),
+            Item('plot',
+                 editor=ComponentEditor(),
+                 show_label=False,
+                 width=800, height=600,
+                 resizable=True),
             Item('_'),
             Group(
                 Item('curves_renderers', style='custom', editor=ListEditor(
-                        use_notebook=True,
-                        view=_plot_curve_view), show_label=False),
+                    use_notebook=True,
+                    view=_plot_curve_view), show_label=False),
                 Group(
                     Item('marker', label='All Markers Type'),
                     Item('marker_size', label='All Markers Size'),
                     # Change the chosen_index value according to one of the
                     # values in index_data_labels
-                    Item('chosen_index', style='simple', editor=EnumEditor(name='index_data_labels')),
-                    Group(Item("reset_plot", editor=ButtonEditor(), show_label=False)),
+                    Item('chosen_index',
+                         style='simple',
+                         editor=EnumEditor(name='index_data_labels')),
+                    Group(Item("reset_plot",
+                               editor=ButtonEditor(),
+                               show_label=False)),
                     orientation='vertical'),
                 orientation='horizontal'),
             orientation='vertical'
@@ -343,12 +363,13 @@ class SimulationResultsPlotter(HasTraits):
             self.index_data_labels.append(index_label)
 
     def __init__(self, simulation_runner):
-        #super(SimulationResultsPlotter, self).__init__()
+        # super(SimulationResultsPlotter, self).__init__()
         HasTraits.__init__(self)
         self.simulation_runner = simulation_runner
 
         # Get the data to be plotted from the simulation runner object
-        SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser = simulation_runner.get_data_to_be_plotted()
+        SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser \
+            = simulation_runner.get_data_to_be_plotted()
 
         plotdata = ArrayPlotData(SNR=SNR,
                                  Eb_over_N0=Eb_over_N0,
@@ -365,9 +386,8 @@ class SimulationResultsPlotter(HasTraits):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Labels for the possible index values
         self.index_data_labels.append('SNR')
-        self.index_data_labels.append('Eb_over_N0')  # Must be the same
-                                                     # attibute name used
-                                                     # in the ArrayPlotData
+        # Must be the same attibute name used in the ArrayPlotData
+        self.index_data_labels.append('Eb_over_N0')
         self.chosen_index = self.index_data_labels[0]
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -446,13 +466,23 @@ class SimulationResultsPlotter(HasTraits):
         # Because the zoom tool draws a visible "zoom box", we need to add
         # it to the list of overlays instead of the list of tools. (It will
         # still get events.)
-        self.plot.overlays.append(BetterSelectingZoom(self.plot, tool_mode="box", always_on=True, drag_button='right'))
-        # self.plot.overlays.append(ZoomTool(self.plot, tool_mode="box", always_on=True, drag_button='right'))
-        #self.plot.tools.append(BetterZoom(self.plot, tool_mode="box", always_on=True, drag_button='right'))
-        self.plot.tools.append(PanTool(self.plot, tool_mode="box", always_on=True))
+        self.plot.overlays.append(BetterSelectingZoom(self.plot,
+                                                      tool_mode="box",
+                                                      always_on=True,
+                                                      drag_button='right'))
+        # self.plot.overlays.append(
+        #     ZoomTool(self.plot, tool_mode="box",
+        #              always_on=True, drag_button='right'))
+
+        # self.plot.tools.append(
+        #     BetterZoom(self.plot, tool_mode="box",
+        #                always_on=True, drag_button='right'))
+        self.plot.tools.append(PanTool(self.plot, tool_mode="box",
+                                       always_on=True))
 
         # Change the Y Axis labels
-        self.plot.y_axis.tick_label_formatter = SimulationResultsPlotter._get_logscale_tick_string
+        self.plot.y_axis.tick_label_formatter \
+            = SimulationResultsPlotter._get_logscale_tick_string
 
     def _chosen_index_changed(self):
         """Change the index datasource of all renderers, as well as the x
@@ -518,7 +548,6 @@ if __name__ == '__main__1':
     plot_view.plot_container = plot_view.create_the_plot()
     plot_view.configure_traits()
 
-
     # RESET PAN
     # plotter.plot.range2d.x_range.reset()
     # plotter.plot.range2d.y_range.reset()
@@ -526,7 +555,7 @@ if __name__ == '__main__1':
 
 
 if __name__ == '__main__':
-    #SimulationResultsPlotter().configure_traits()
+    # SimulationResultsPlotter().configure_traits()
 
     # from comm.modulators import PSK
     # SNR = np.arange(0, 20, 3)

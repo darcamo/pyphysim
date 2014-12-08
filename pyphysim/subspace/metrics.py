@@ -139,7 +139,7 @@ def calc_chordal_distance(matrix1, matrix2):
     Q1 = np.linalg.qr(matrix1)[0]
     Q2 = np.linalg.qr(matrix2)[0]
 
-    #ncols = matrix1.shape[1]  # Deve ser igual a matrix2.shape[1].
+    # ncols = matrix1.shape[1]  # Deve ser igual a matrix2.shape[1].
 
     # As primeiras ncols colunas de Q1 e Q2 formam a base ortonormal de
     # ran(matrix1) e ran(matrix2), respectivamente

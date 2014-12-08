@@ -849,7 +849,8 @@ class SimulationRunner(object):
             current_sim_results = self.__run_simulation_and_track_elapsed_time(
                 current_params)
             # Add the extra 'num_skipped_reps' Result.
-            current_sim_results.add_new_result('num_skipped_reps', Result.SUMTYPE, 0)
+            current_sim_results.add_new_result('num_skipped_reps',
+                                               Result.SUMTYPE, 0)
             current_rep = 1
 
         last_tic = time()
@@ -869,7 +870,8 @@ class SimulationRunner(object):
                 # exception, then we do not increase current_rep or the
                 # current progress, since there is no new result to merge.
                 current_sim_results.merge_all_results(
-                    self.__run_simulation_and_track_elapsed_time(current_params))
+                    self.__run_simulation_and_track_elapsed_time(
+                        current_params))
 
                 current_rep += 1
                 update_progress_func(current_rep)
@@ -886,7 +888,8 @@ class SimulationRunner(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             toc = time()
-            # Save partial results each 500 iterations as well as each 5 minutes
+            # Save partial results each 500 iterations as well as each 5
+            # minutes
             if ((toc - last_tic > 300 or current_rep % 500 == 0)
                and self._results_base_filename is not None):
                 self.__save_partial_results(current_rep,

@@ -10,7 +10,7 @@ import math
 import numpy as np
 from scipy.special import erfc
 
-#import math.erf
+# import math.erf
 # erf can also be found in the scipy.special library
 # erf can also be found in the math library -> python 2.7 ou above
 # erf can also be found in the mpmath library
@@ -55,7 +55,7 @@ def gmd(U, S, V_H, tol=0.0):
     # 'd' is a vector with the singular values
     d = np.copy(S)  # We copy here to avoid changing 'S'
 
-    l = min(m, n)
+    # l = min(m, n)
     p = np.sum(S >= tol)    # Number of singular values >= tol
 
     # If there is no singular value greater then the tolerance, then we

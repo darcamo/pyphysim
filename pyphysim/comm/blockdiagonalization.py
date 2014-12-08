@@ -26,7 +26,7 @@ __all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-## xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def block_diagonalize(mtChannel, num_users, iPu, noise_var):
     """Performs the block diagonalization of :attr:`mtChannel`.
@@ -87,7 +87,7 @@ def calc_receive_filter(newH):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-## xxxxxxxxxx Helper Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Helper Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def _calc_stream_reduction_matrix(Re_k, kept_streams):
     """Calculates the `P` matrix that performs the stream reduction such that
@@ -147,7 +147,7 @@ def _calc_effective_throughput(sinrs, modulator, packet_length):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-## xxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BlockDiaginalizer(object):
     """
@@ -254,8 +254,8 @@ class BlockDiaginalizer(object):
         """
         self.num_users = num_users
         self.iPu = iPu
-        self.noise_var = noise_var  # Noise power is used in the
-                                    # waterfilling calculations
+        # Noise power is used in the waterfilling calculations
+        self.noise_var = noise_var
 
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
         """Calculates the modulation matrix "M" that block diagonalizes the
@@ -1037,7 +1037,7 @@ class EnhancedBD(BDWithExtIntBase):
 
             # Calculate the equivalent channel including the stream
             # reduction
-            #Heq_k_red = np.dot(Heq_k, P)
+            # Heq_k_red = np.dot(Heq_k, P)
             W = np.dot(
                 np.linalg.pinv(np.dot(overbar_P, Heq_k_P)),
                 overbar_P)
@@ -1066,7 +1066,6 @@ class EnhancedBD(BDWithExtIntBase):
             SINR (in linear scale) of all the parallel channels of all users.
 
         """
-        #K = Re_k.size  # Number of users
         mtP = np.dot(Wk, Heq_k_red)
         desired_power = np.abs(np.diagonal(mtP)) ** 2
         internalInterference = np.sum(

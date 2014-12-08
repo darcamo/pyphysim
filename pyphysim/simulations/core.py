@@ -25,28 +25,26 @@ from .runner import *
 from .results import *
 
 
-## HDF5
-## http://scipy-user.10969.n7.nabble.com/Should-I-use-pickle-for-numpy-array-td144.html
+# xxxxxxxxxx HDF5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# http://scipy-user.10969.n7.nabble.com/Should-I-use-pickle-for-numpy-array-td144.html
 # >>> import h5py
 # >>> f = h5py.File('example.hdf5', 'w')
 # >>> import numpy
 # >>> f['my_array'] = numpy.arange(10)
 # >>> f.close()
 
-## PyTables
-## http://stackoverflow.com/questions/8447926/loading-matlab-sparse-matrix-using-python-pytables
+# xxxxxxxxxx PyTables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# http://stackoverflow.com/questions/8447926/loading-matlab-sparse-matrix-using-python-pytables
 
-## Conclusions
+# xxxxxxxxxx Conclusions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Its better to use h5py instead of PyTables. The h5py library provides an
 # interface similar to numpy arrays and I don't need the extra abstraction
 # layer from PyTables and its complex database like operations.
 
-
-## Boa resposta
+# xxxxxxxxxx Good answer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # http://stackoverflow.com/questions/10075661/how-to-save-dictionaries-and-arrays-in-the-same-archive-with-numpy-savez
 
-
-## Quick Start Guide do h5py
+# xxxxxxxxxx Quick Start Guide do h5py xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # http://www.h5py.org/docs/intro/quick.html
 
 

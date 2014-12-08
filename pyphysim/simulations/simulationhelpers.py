@@ -44,7 +44,7 @@ def get_common_parser():
                            '--config',  # Long version to specify the option
                            help=help_msg,
                            metavar='CONFIG FILENAME',
-                           #default=default_config_file,
+                           # default=default_config_file,
                            type=str,
                            nargs='?')
 
@@ -122,8 +122,9 @@ def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
 
     # We create a direct view to run coe in all engines
     dview = client.direct_view()
-    dview.execute('%reset')  # Reset the engines so that we don't have
-                             # variables there from last computations
+    # Reset the engines so that we don't have variables there from last
+    # computations
+    dview.execute('%reset')
     dview.execute('import sys')
     # Add the folder to the python path of each engine. We use
     # block=True to ensure that all engines have modified their
