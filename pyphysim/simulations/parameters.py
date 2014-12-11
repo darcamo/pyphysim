@@ -8,6 +8,9 @@ import itertools
 import copy
 import numpy as np
 
+# Module with utilities for writing code that runs on Python 2 and 3
+import six
+
 try:
     from configobj import ConfigObj, flatten_errors
     from validate import Validator
@@ -790,7 +793,7 @@ class SimulationParameters(object):
                        "'{2}' is invalid. {3}")
                 raise Exception(
                     msg.format(filename, first_error[1], first_error[0][0],
-                               first_error[2].message.capitalize()))
+                               str(first_error[2]).capitalize()))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Finally add the parsed parameters to the params object xxxx
@@ -847,7 +850,7 @@ class SimulationParameters(object):
         load_from_hdf5_group
         """
         # Store each parameter in self.parameter in a different dataset
-        for name, value in self.parameters.iteritems():
+        for name, value in six.iteritems(self.parameters):
             ds = group.create_dataset(name, data=value)
             # Save the TITTLE attribute to be more consistent with what
             # Pytables would do.
@@ -880,7 +883,7 @@ class SimulationParameters(object):
 
         # Save the TITTLE attribute to be more consistent with what
         # Pytables would do.
-        fid.attrs.create("TITLE", "Simulation Parameters file")
+        fid.attrs.create("TITLE", "Simulation Parameters file", dtype="S20")
 
         # Add the attributes, if any
         if isinstance(attrs, dict):  # pragma: no cover

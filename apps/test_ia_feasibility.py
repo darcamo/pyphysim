@@ -32,8 +32,8 @@ if __name__ == '__main__':
 
     SNR = 40
     noise_var = 1 / dB2Linear(SNR)
-    print "SNR: {0}".format(SNR)
-    print "noise_var: {0}".format(noise_var)
+    print("SNR: {0}".format(SNR))
+    print("noise_var: {0}".format(noise_var))
 
     multiuserchannel.randomize(Nr, Nt, K)
     multiuserchannel.noise_var = noise_var
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     ia_solver4.max_iterations = 100
     ia_solver4.solve(Ns)
 
-    print "Final_Cost: {0}\n".format(ia_solver.get_cost())
+    print("Final_Cost: {0}\n".format(ia_solver.get_cost()))
 
     # all_possibilities = itertools.product(range(K), range(K))
     # for ij in all_possibilities:
@@ -78,14 +78,14 @@ if __name__ == '__main__':
     #         np.linalg.svd(Hij_eff)[0].round(6)[0][0])
     #     print
 
-    print "Sum Capacity (Alt Min): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver.calc_SINR()))))
-    print "Sum Capacity (Alt Min): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver4.calc_SINR()))))
-    print "Sum Capacity (MMSE): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver2.calc_SINR()))))
-    print "Sum Capacity (Max SINR): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver3.calc_SINR()))))
+    print("Sum Capacity (Alt Min): {0}".format(
+        np.sum(np.log2(np.hstack(1.0+ia_solver.calc_SINR())))))
+    print("Sum Capacity (Alt Min): {0}".format(
+        np.sum(np.log2(np.hstack(1.0+ia_solver4.calc_SINR())))))
+    print("Sum Capacity (MMSE): {0}".format(
+        np.sum(np.log2(np.hstack(1.0+ia_solver2.calc_SINR())))))
+    print("Sum Capacity (Max SINR): {0}".format(
+        np.sum(np.log2(np.hstack(1.0+ia_solver3.calc_SINR())))))
 
     # print linear2dB(np.hstack(ia_solver.calc_SINR()))
     # print linear2dB(np.hstack(ia_solver2.calc_SINR()))
