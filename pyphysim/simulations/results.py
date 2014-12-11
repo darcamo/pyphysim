@@ -5,7 +5,6 @@
 
 import numpy as np
 import os.path
-import warnings
 
 from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, \
@@ -705,14 +704,15 @@ class SimulationResults(object):
             #     # interpreted as "there is no partial file". This will then
             #     # overwrite the old partial result file in the first time
             #     # partial results are saved.
-            #     raise IOError("Could not unpickle file '{0}'".format(filename))
+            #     raise IOError("Could not unpickle file '{0}'".format(
+            #         filename))
 
         return obj
 
     # def save_to_hdf5_file(self, filename, attrs=None):
     #     """
-    #     Save the SimulationResults to the file `filename` using the HDF5 format
-    #     standard.
+    #     Save the SimulationResults to the file `filename` using the HDF5
+    #     format standard.
 
     #     The string in `filename` can have placeholders for string
     #     replacements with any parameter value.
@@ -814,7 +814,8 @@ class SimulationResults(object):
     #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
-    #     pg = fid.createGroup(fid.root, 'parameters', title="Simulation Parameters")
+    #     pg = fid.createGroup(fid.root, 'parameters',
+    #                          title="Simulation Parameters")
     #     self.params.save_to_pytables_group(pg)
     #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -828,7 +829,8 @@ class SimulationResults(object):
     #     Parameters
     #     ----------
     #     filename : src
-    #         Name of the file from which the SimulationResults should be loaded.
+    #         Name of the file from which the SimulationResults should be
+    #         loaded.
 
     #     Returns
     #     -------
@@ -876,8 +878,8 @@ class SimulationResults(object):
         """
         Convert the SimulationResults object to a pandas DataFrame.
         """
-        data = {}  # The data dictionary that we will use to create the
-                   # DataFrame
+        # The data dictionary that we will use to create the DataFrame
+        data = {}
         all_params_list = self.params.get_unpacked_params_list()
         for name in self.params:
             data[name] = [a[name] for a in all_params_list]
@@ -986,7 +988,8 @@ class Result(object):
         CHOICETYPE: "CHOICETYPE",
     }
 
-    def __init__(self, name, update_type_code, accumulate_values=False, choice_num=None):
+    def __init__(self, name, update_type_code, accumulate_values=False,
+                 choice_num=None):
         """
         Constructor for the result object.
 
@@ -1012,13 +1015,13 @@ class Result(object):
         self._update_type_code = update_type_code
         self._value = 0
         self._total = 0
-        self._result_sum = 0.0  # At each update the current result will be
-                                # added to this variable
-        self._result_squared_sum = 0.0  # At each update the square of the
-                                        # current result will be added to
-                                        # this variable.
-        self.num_updates = 0  # Number of times the Result object was
-                              # updated
+        # At each update the current result will be added to this variable
+        self._result_sum = 0.0
+        # At each update the square of the current result will be added to
+        # this variable.
+        self._result_squared_sum = 0.0
+        # Number of times the Result object was updated
+        self.num_updates = 0
 
         if update_type_code == Result.CHOICETYPE:
             if not isinstance(choice_num, int):
@@ -1066,7 +1069,7 @@ class Result(object):
         if self._update_type_code == Result.CHOICETYPE:
             # For the CHOICETYPE _value is a numpy array and thus we need
             # to use 'all_true'
-            if np.alltrue(self._value == other._value) == False:
+            if np.array_equal(self._value, other._value) is False:
                 result = False
         else:
             if self._value != other._value:
@@ -1145,7 +1148,8 @@ class Result(object):
         update
         """
         if update_type == Result.CHOICETYPE:
-            result = Result(name, update_type, accumulate_values, choice_num=total)
+            result = Result(name, update_type, accumulate_values,
+                            choice_num=total)
             result.update(value)
         else:
             result = Result(name, update_type, accumulate_values)
@@ -1416,7 +1420,8 @@ class Result(object):
     # @staticmethod
     # def save_to_hdf5_dataset(parent, results_list):
     #     """
-    #     Create an HDF5 dataset in `parent` and fill it with the Result objects
+    #     Create an HDF5 dataset in `parent` and fill it with the Result
+    #     objects
     #     in `results_list`.
 
     #     Parameters
@@ -1439,7 +1444,7 @@ class Result(object):
     #     """
     #     # When using the hdf5 format to save the Result object it is not
     #     # possible to save the accumulated values (if there is any)
-    #     if results_list[0]._accumulate_values_bool is True:  # pylint: disable=W0212
+    #     if results_list[0]._accumulate_values_bool is True:
     #         warnings.warn(
     #             'Cannot save the accumulated values in a Result to an hdf5 file.')
 
