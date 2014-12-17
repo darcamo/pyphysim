@@ -286,7 +286,7 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
 
     # xxxxxxxxxx Discretization of the possible positions xxxxxxxxxxxxxxxxx
     num_discrete_positions_per_room = 15  # Number of discrete positions
-    step = 1. / (num_discrete_positions_per_room + 1)
+    step = 1. / (num_discrete_positions_per_room)
     aux = np.linspace(
         -(1. - step), (1. - step), num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
