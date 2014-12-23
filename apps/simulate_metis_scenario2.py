@@ -35,9 +35,14 @@ from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 
 def simulate_for_a_given_ap_assoc(
         pl, ap_assoc, wall_losses_dB, transmitting_aps, Pt, noise_var):
+    """
+    Perform the simulation for a given AP association.
+    """
+    # Output variables
     sinr_array = np.empty(ap_assoc.shape, dtype=float)
     capacity = np.empty(ap_assoc.shape, dtype=float)
 
+    # Wall losses: Dimension: num_users x number of transmitting APs
     wall_losses = dB2Linear(-wall_losses_dB)
 
     num_users, = ap_assoc.shape
@@ -112,10 +117,6 @@ def perform_simulation(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the path loss object xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # pl_3gpp_obj = pathloss.PathLoss3GPP1()
-    # pl_free_space_obj = pathloss.PathLossFreeSpace()
-    # pl_3gpp_obj.handle_small_distances_bool = True
-    # pl_free_space_obj.handle_small_distances_bool = True
     pl_metis_ps7_obj = pathloss.PathLossMetisPS7()
     pl_metis_ps7_obj.handle_small_distances_bool = True
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -142,29 +143,10 @@ def perform_simulation(scenario_params, power_params):
         - ap_positions[np.newaxis, :])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxx Calculate AP association xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Determine with which AP each user is associated with.
-    # Each user will associate with the CLOSEST access point.
-    ap_assoc = np.argmin(dists_m, axis=-1)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
-    # Indexes of the active APs
-    transmitting_aps, users_count = np.unique(ap_assoc, return_counts=True)
-
-    # Create a mask for the active APs
-    transmitting_aps_mask = np.zeros(num_aps, dtype=bool)
-    transmitting_aps_mask[transmitting_aps] = True
-
-    # Save how many users are associated with each AP
-    users_per_ap = np.zeros(num_aps, dtype=int)
-    users_per_ap[transmitting_aps_mask] = users_count
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Number of walls from each room to each other room
-    num_walls_all = calc_num_walls(side_length, room_positions,
-                                   ap_positions[transmitting_aps])
+    # INPUTS
     # Find in which room each user is
     users_rooms = np.argmin(
         np.abs(room_positions.reshape([-1, 1])
@@ -172,19 +154,51 @@ def perform_simulation(scenario_params, power_params):
         axis=0
         )
 
-    # Number of walls from each user and each room
-    num_walls = num_walls_all.take(users_rooms, axis=0)
+    # Number of walls from each room to each other room
+    num_walls_all_rooms = calc_num_walls(side_length,
+                                         room_positions,
+                                         ap_positions)
+    # Number of walls from each room that has at least one user to each
+    # room with an AP
+    num_walls_rooms_with_users = num_walls_all_rooms[users_rooms]
+
+    # Path loss from each user to each AP (no matter if it will be a
+    # transmitting AP or not, since we still have to perform the AP
+    # association
+    pl_all = pl_metis_ps7_obj.calc_path_loss(
+        dists_m,
+        num_walls=num_walls_rooms_with_users)
+
+    # OUTPUTS
+    # Determine with which AP each user is associated with.
+    # Each user will associate with the CLOSEST access point.
+    ap_assoc = np.argmax(pl_all, axis=-1)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
+    # Indexes of the active APs
+    transmitting_aps, users_count = np.unique(ap_assoc, return_counts=True)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Number of walls from each user and each room with a transmitting AP
+    num_walls = num_walls_rooms_with_users.take(
+        transmitting_aps, axis=1)
 
     wall_losses_dB = num_walls * single_wall_loss_dB
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Distance from each user to each transmitting AP xxxxxxxxxx
-    dists_m2 = dists_m.take(transmitting_aps, axis=1)
+    # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
+    pl_metis_ps7 = pl_all.take(transmitting_aps, axis=1)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
-    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(dists_m2,
-                                                   num_walls=num_walls)
+    # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # import pudb; pudb.set_trace()  ## DEBUG ##
+    # haha = calc_num_walls(side_length, room_positions, ap_positions)
+    # pl_all = pl_metis_ps7_obj.calc_path_loss(dists_m,
+    #                                          num_walls=haha)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx
@@ -208,6 +222,17 @@ def perform_simulation(scenario_params, power_params):
                capacity_metis_ps7.min(),
                capacity_metis_ps7.mean(),
                capacity_metis_ps7.max()))
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # Create a mask for the active APs
+    transmitting_aps_mask = np.zeros(num_aps, dtype=bool)
+    transmitting_aps_mask[transmitting_aps] = True
+
+    # Save how many users are associated with each AP
+    users_per_ap = np.zeros(num_aps, dtype=int)
+    users_per_ap[transmitting_aps_mask] = users_count
 
     # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
