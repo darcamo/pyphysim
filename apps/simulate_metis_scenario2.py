@@ -33,17 +33,14 @@ from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def simulate_for_a_given_ap_assoc(
-        pl, ap_assoc, wall_losses_dB, transmitting_aps, Pt, noise_var):
+def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
+        ap_assoc, transmitting_aps, Pt, noise_var):
     """
     Perform the simulation for a given AP association.
     """
     # Output variables
     sinr_array = np.empty(ap_assoc.shape, dtype=float)
     capacity = np.empty(ap_assoc.shape, dtype=float)
-
-    # Wall losses: Dimension: num_users x number of transmitting APs
-    wall_losses = dB2Linear(-wall_losses_dB)
 
     num_users, = ap_assoc.shape
 
@@ -61,14 +58,10 @@ def simulate_for_a_given_ap_assoc(
         mask_i_aps[index] = False
 
         # Desired power of these users
-        desired_power = (Pt
-                         * wall_losses[current_ap_users_idx, index]
-                         * pl[current_ap_users_idx, index])
+        desired_power = (Pt * pl_plus_wl_tx_aps[current_ap_users_idx, index])
 
         undesired_power = np.sum(
-            Pt
-            * wall_losses[current_ap_users_idx][:, mask_i_aps]
-            * pl[current_ap_users_idx][:, mask_i_aps],
+            Pt * pl_plus_wl_tx_aps[current_ap_users_idx][:,mask_i_aps],
             axis=-1)
 
         sinr_array[current_ap_users_idx] = (desired_power
@@ -164,15 +157,25 @@ def perform_simulation(scenario_params, power_params):
 
     # Path loss from each user to each AP (no matter if it will be a
     # transmitting AP or not, since we still have to perform the AP
-    # association
+    # association)
     pl_all = pl_metis_ps7_obj.calc_path_loss(
         dists_m,
         num_walls=num_walls_rooms_with_users)
 
+    # Calculate wall losses from each user to each AP (no matter if it will
+    # be a transmitting AP or not, since we still have to perform the AP
+    # association)
+    wall_losses_dB_all = num_walls_rooms_with_users * single_wall_loss_dB
+
+    # Calculate path loss plus wall losses (we multiply the linear values)
+    # from each user to each AP (no matter if it will be a transmitting AP
+    # or not, since we still have to perform the AP association)
+    pl_all_plus_wl = pl_all * dB2Linear(-wall_losses_dB_all)
+
     # OUTPUTS
     # Determine with which AP each user is associated with.
     # Each user will associate with the CLOSEST access point.
-    ap_assoc = np.argmax(pl_all, axis=-1)
+    ap_assoc = np.argmax(pl_all_plus_wl, axis=-1)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
@@ -182,34 +185,21 @@ def perform_simulation(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Number of walls from each user and each room with a transmitting AP
-    num_walls = num_walls_rooms_with_users.take(
-        transmitting_aps, axis=1)
-
-    wall_losses_dB = num_walls * single_wall_loss_dB
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
     # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
-    pl_metis_ps7 = pl_all.take(transmitting_aps, axis=1)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # import pudb; pudb.set_trace()  ## DEBUG ##
-    # haha = calc_num_walls(side_length, room_positions, ap_positions)
-    # pl_all = pl_metis_ps7_obj.calc_path_loss(dists_m,
-    #                                          num_walls=haha)
+    # Take the path loss plus wall losses only for the transmitting aps
+    pl_all_plus_wall_losses_tx_aps = pl_all_plus_wl.take(
+        transmitting_aps, axis=1)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 \
         = simulate_for_a_given_ap_assoc(
-            pl_metis_ps7, ap_assoc, wall_losses_dB,
+            pl_all_plus_wall_losses_tx_aps, ap_assoc,
             transmitting_aps, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print(sinr_array_pl_metis_ps7_dB)
-    print(capacity_metis_ps7)
+    # print(sinr_array_pl_metis_ps7_dB)
+    # print(capacity_metis_ps7)
 
     print(("\nMin/Mean/Max SINR value (METIS PS7):"
            "\n    {0}\n    {1}\n    {2}").format(
