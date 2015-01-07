@@ -86,7 +86,7 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
         desired_power = (Pt * pl_plus_wl_tx_aps[current_ap_users_idx, index])
 
         undesired_power = np.sum(
-            Pt * pl_plus_wl_tx_aps[current_ap_users_idx][:,mask_i_aps],
+            Pt * pl_plus_wl_tx_aps[current_ap_users_idx][:, mask_i_aps],
             axis=-1)
 
         sinr_array[current_ap_users_idx] = (desired_power
@@ -103,7 +103,9 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
     return (linear2dB(sinr_array), capacity)
 
 
-def perform_simulation(scenario_params, power_params):  # pylint: disable=R0914
+def perform_simulation(scenario_params,  # pylint: disable=R0914
+                       power_params,
+                       plot_results_bool=True):
     """
     Run the simulation.
     """
@@ -226,155 +228,158 @@ def perform_simulation(scenario_params, power_params):  # pylint: disable=R0914
             transmitting_aps, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # print(sinr_array_pl_metis_ps7_dB)
-    # print(capacity_metis_ps7)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    if plot_results_bool is True:
+        print(("\nMin/Mean/Max SINR value (METIS PS7):"
+               "\n    {0}\n    {1}\n    {2}").format(
+                   sinr_array_pl_metis_ps7_dB.min(),
+                   sinr_array_pl_metis_ps7_dB.mean(),
+                   sinr_array_pl_metis_ps7_dB.max()))
 
-    print(("\nMin/Mean/Max SINR value (METIS PS7):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_metis_ps7_dB.min(),
-               sinr_array_pl_metis_ps7_dB.mean(),
-               sinr_array_pl_metis_ps7_dB.max()))
+        print(("\nMin/Mean/Max Capacity value (METIS PS7):"
+               "\n    {0}\n    {1}\n    {2}").format(
+                   capacity_metis_ps7.min(),
+                   capacity_metis_ps7.mean(),
+                   capacity_metis_ps7.max()))
 
-    print(("\nMin/Mean/Max Capacity value (METIS PS7):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               capacity_metis_ps7.min(),
-               capacity_metis_ps7.mean(),
-               capacity_metis_ps7.max()))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a mask for the active APs
+        transmitting_aps_mask = np.zeros(num_aps, dtype=bool)
+        transmitting_aps_mask[transmitting_aps] = True
 
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # xxxxxxxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Create a mask for the active APs
-    transmitting_aps_mask = np.zeros(num_aps, dtype=bool)
-    transmitting_aps_mask[transmitting_aps] = True
+        # Save how many users are associated with each AP
+        users_per_ap = np.zeros(num_aps, dtype=int)
+        users_per_ap[transmitting_aps_mask] = users_count
 
-    # Save how many users are associated with each AP
-    users_per_ap = np.zeros(num_aps, dtype=int)
-    users_per_ap[transmitting_aps_mask] = users_count
+        # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
+                                      pos + side_length/2. + side_length*1j/2.)
+                     for pos in room_positions.flatten()]
 
-    # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
-                                  pos + side_length/2. + side_length*1j/2.)
-                 for pos in room_positions.flatten()]
+        # Plot all Rooms and save the axis where they were plotted
+        plt.figure(figsize=(10, 10))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+        # ax1 is where we will plot everything
+        ax1 = plt.subplot(gs[0])
+        ax1.set_xlabel("Position X coordinate")
+        ax1.set_ylabel("Position Y coordinate")
+        ax1.set_title("Plot of all Rooms")
+        ax1.set_ylim([-60, 60])
+        ax1.set_xlim([-60, 60])
+        ax1 = plot_all_rooms(all_rooms, ax1)
+        ax1.hold(True)
 
-    # Plot all Rooms and save the axis where they were plotted
-    plt.figure(figsize=(10, 10))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
-    # ax1 is where we will plot everything
-    ax1 = plt.subplot(gs[0])
-    ax1.set_xlabel("Position X coordinate")
-    ax1.set_ylabel("Position Y coordinate")
-    ax1.set_title("Plot of all Rooms")
-    ax1.set_ylim([-60, 60])
-    ax1.set_xlim([-60, 60])
-    ax1 = plot_all_rooms(all_rooms, ax1)
-    ax1.hold(True)
+        # ax2 will be used for annotations
+        ax2 = plt.subplot(gs[1])
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        plt.setp(ax2.get_yticklabels(), visible=False)
+        ax2.set_ylim([0, 10])
+        ax2.set_xlim([0, 10])
+        details = ax2.text(
+            5, 5, 'Details',
+            verticalalignment='center', horizontalalignment='center',
+            family='monospace')
 
-    # ax2 will be used for annotations
-    ax2 = plt.subplot(gs[1])
-    plt.setp(ax2.get_xticklabels(), visible=False)
-    plt.setp(ax2.get_yticklabels(), visible=False)
-    ax2.set_ylim([0, 10])
-    ax2.set_xlim([0, 10])
-    details = ax2.text(
-        5, 5, 'Details',
-        verticalalignment='center', horizontalalignment='center',
-        family='monospace')
+        # Set the an array with colors for the access points. Transmitting APs
+        # will be blue, while inactive APs will be gray
+        ap_colors = np.empty(ap_positions.shape, dtype='U4')
+        ap_colors[transmitting_aps_mask] = 'b'
+        ap_colors[np.logical_not(transmitting_aps_mask)] = 'gray'
 
-    # Set the an array with colors for the access points. Transmitting APs
-    # will be blue, while inactive APs will be gray
-    ap_colors = np.empty(ap_positions.shape, dtype='U4')
-    ap_colors[transmitting_aps_mask] = 'b'
-    ap_colors[np.logical_not(transmitting_aps_mask)] = 'gray'
+        # Plot the access points. We set linewidth to 0.0 so that there is no
+        # border. We set the size ('s' keyword) to 50 to make it larger. The
+        # colors are set according to the ap_colors array.
+        # Note that we set a 5 points tolerance for the pick event.
+        aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
+                              marker='^', c=ap_colors, linewidths=0.1, s=50,
+                              picker=3)
 
-    # Plot the access points. We set linewidth to 0.0 so that there is no
-    # border. We set the size ('s' keyword) to 50 to make it larger. The
-    # colors are set according to the ap_colors array.
-    # Note that we set a 5 points tolerance for the pick event.
-    aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
-                          marker='^', c=ap_colors, linewidths=0.1, s=50,
-                          picker=3)
+        # Plot the users
+        # Note that we set a 5 points tolerance for the pick event.
+        users_plt = ax1.scatter(users_positions.real, users_positions.imag,
+                                marker='*', c='r', linewidth=0.1, s=50,
+                                picker=3)
 
-    # Plot the users
-    # Note that we set a 5 points tolerance for the pick event.
-    users_plt = ax1.scatter(users_positions.real, users_positions.imag,
-                            marker='*', c='r', linewidth=0.1, s=50,
-                            picker=3)
+        # xxxxxxxxxx Define a function to call for the pick_event Circle used
+        # to select an AP. We will set its visibility to False here. When an AP
+        # is selected, we move this circle to its position and set its
+        # visibility to True.
+        selected_ap_circle = ax1.plot([0], [0], 'o', ms=12, alpha=0.4,
+                                      color='yellow', visible=False)[0]
 
-    # xxxxxxxxxx Define a function to call for the pick_event Circle used
-    # to select an AP. We will set its visibility to False here. When an AP
-    # is selected, we move this circle to its position and set its
-    # visibility to True.
-    selected_ap_circle = ax1.plot([0], [0], 'o', ms=12, alpha=0.4,
-                                  color='yellow', visible=False)[0]
+        # Define the callback function for the pick event
+        def on_pick(event):
+            """Callback for the pick event in the matplotlib plot."""
+            # We will reset users colors on each pick
+            users_colors = np.empty(ap_assoc.size, dtype='U1')
+            users_colors[:] = 'r'
 
-    # Define the callback function for the pick event
-    def on_pick(event):
-        """Callback for the pick event in the matplotlib plot."""
-        # We will reset users colors on each pick
-        users_colors = np.empty(ap_assoc.size, dtype='U1')
-        users_colors[:] = 'r'
+            # Index of the point clicked
+            ind = event.ind[0]
 
-        # Index of the point clicked
-        ind = event.ind[0]
+            if event.artist == aps_plt:
+                # Disable the circle in the AP
+                selected_ap_circle.set_visible(False)
 
-        if event.artist == aps_plt:
-            # Disable the circle in the AP
-            selected_ap_circle.set_visible(False)
+                if ind not in ap_assoc:
+                    # Text information for the disabled AP
+                    text = "AP {0} (Disabled)".format(ind)
+                else:
+                    # Text information for the selected AP
+                    text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
+                    text = text.format(
+                        ind,
+                        users_per_ap[ind],
+                        np.sum(capacity_metis_ps7[ap_assoc == ind]))
 
-            if ind not in ap_assoc:
-                # Text information for the disabled AP
-                text = "AP {0} (Disabled)".format(ind)
-            else:
-                # Text information for the selected AP
-                text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
-                text = text.format(
+                    # Change the colors of the users associated with the
+                    # current AP to green
+                    users_colors[ap_assoc == ind] = 'g'
+
+            elif event.artist == users_plt:
+                # Text information for the selected user
+                text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
                     ind,
-                    users_per_ap[ind],
-                    np.sum(capacity_metis_ps7[ap_assoc == ind]))
+                    sinr_array_pl_metis_ps7_dB[ind],
+                    capacity_metis_ps7[ind])
 
-                # Change the colors of the users associated with the
-                # current AP to green
-                users_colors[ap_assoc == ind] = 'g'
+                # If there other users are associated with the same AP of the
+                # current user
+                if users_per_ap[ap_assoc[ind]] > 1:
+                    text = "{0}\nShares AP with {1} other user(s)".format(
+                        text, users_per_ap[ap_assoc[ind]] - 1)
 
-        elif event.artist == users_plt:
-            # Text information for the selected user
-            text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
-                ind,
-                sinr_array_pl_metis_ps7_dB[ind],
-                capacity_metis_ps7[ind])
+                users_AP = ap_assoc[ind]
+                # Plot a yellow circle in the user's AP
+                ap_pos = ap_positions[users_AP]
+                # CHange the collor of other users in the same AP to green and
+                # the current user to cyan
+                users_colors[ap_assoc == users_AP] = 'g'
+                users_colors[ind] = 'c'
 
-            # If there other users are associated with the same AP of the
-            # current user
-            if users_per_ap[ap_assoc[ind]] > 1:
-                text = "{0}\nShares AP with {1} other user(s)".format(
-                    text, users_per_ap[ap_assoc[ind]] - 1)
+                selected_ap_circle.set_visible(True)
+                selected_ap_circle.set_data([ap_pos.real], [ap_pos.imag])
 
-            users_AP = ap_assoc[ind]
-            # Plot a yellow circle in the user's AP
-            ap_pos = ap_positions[users_AP]
-            # CHange the collor of other users in the same AP to green and
-            # the current user to cyan
-            users_colors[ap_assoc == users_AP] = 'g'
-            users_colors[ind] = 'c'
+            # Set users colors
+            users_plt.set_color(users_colors)
 
-            selected_ap_circle.set_visible(True)
-            selected_ap_circle.set_data([ap_pos.real], [ap_pos.imag])
+            # Set the details text
+            details.set_text(text)
+            ax1.figure.canvas.draw()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Set users colors
-        users_plt.set_color(users_colors)
+        # Connect the on_pick function with the pick event
+        ax1.figure.canvas.mpl_connect('pick_event', on_pick)
 
-        # Set the details text
-        details.set_text(text)
-        ax1.figure.canvas.draw()
+        plt.show()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # Connect the on_pick function with the pick event
-    ax1.figure.canvas.mpl_connect('pick_event', on_pick)
-
-    plt.show()
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    # xxxxxxxxxx Return the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     return sinr_array_pl_metis_ps7_dB, capacity_metis_ps7
 
@@ -392,5 +397,5 @@ if __name__ == '__main__':
         'noise_power_dBm': calc_thermal_noise_power_dBm(25, 5e6)
     }
 
-    out = perform_simulation(scenario_params, power_params)
+    out = perform_simulation(scenario_params, power_params, plot_results_bool=True)
     sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 = out
