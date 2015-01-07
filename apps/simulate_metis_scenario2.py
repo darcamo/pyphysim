@@ -25,7 +25,8 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 # import matplotlib as mpl
 
-from apps.simulate_metis_scenario import *
+from apps.simulate_metis_scenario import calc_room_positions_square, \
+    get_ap_positions, calc_num_walls, plot_all_rooms
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.cell import shapes
 from pyphysim.comm import pathloss
@@ -33,12 +34,38 @@ from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def simulate_for_a_given_ap_assoc(
-        pl, ap_assoc, wall_losses_dB, transmitting_aps, Pt, noise_var):
+def find_ap_assoc_best_channel(pl_all_plus_wl):
+    """
+    Find with which AP each user should associate with using the best
+    channel criterion.
+
+    Basically the  user will associate with the AP with the lowest path loss
+
+    Parameters
+    ----------
+    pl_all_plus_wl : 2D numpy array (Dim: num users x num APs)
+        The path loss in linear scale including also any wall losses.
+
+    Return
+    ------
+    ap_assoc : 1D int numpy array
+        The int vector indicating with which AP each user is
+        associated. The number of elements in this vector is equal to the
+        number of users and each element is the index of the AP that the
+        user will associate with.
+    """
+    ap_assoc = np.argmax(pl_all_plus_wl, axis=-1)
+    return ap_assoc
+
+
+def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
+        ap_assoc, transmitting_aps, Pt, noise_var):
+    """
+    Perform the simulation for a given AP association.
+    """
+    # Output variables
     sinr_array = np.empty(ap_assoc.shape, dtype=float)
     capacity = np.empty(ap_assoc.shape, dtype=float)
-
-    wall_losses = dB2Linear(-wall_losses_dB)
 
     num_users, = ap_assoc.shape
 
@@ -56,14 +83,10 @@ def simulate_for_a_given_ap_assoc(
         mask_i_aps[index] = False
 
         # Desired power of these users
-        desired_power = (Pt
-                         * wall_losses[current_ap_users_idx, index]
-                         * pl[current_ap_users_idx, index])
+        desired_power = (Pt * pl_plus_wl_tx_aps[current_ap_users_idx, index])
 
         undesired_power = np.sum(
-            Pt
-            * wall_losses[current_ap_users_idx][:, mask_i_aps]
-            * pl[current_ap_users_idx][:, mask_i_aps],
+            Pt * pl_plus_wl_tx_aps[current_ap_users_idx][:, mask_i_aps],
             axis=-1)
 
         sinr_array[current_ap_users_idx] = (desired_power
@@ -80,7 +103,12 @@ def simulate_for_a_given_ap_assoc(
     return (linear2dB(sinr_array), capacity)
 
 
-def perform_simulation(scenario_params, power_params):
+def perform_simulation(scenario_params,  # pylint: disable=R0914
+                       power_params,
+                       plot_results_bool=True):
+    """
+    Run the simulation.
+    """
     # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
     # The size of the side of each square room
     side_length = scenario_params['side_length']
@@ -112,10 +140,6 @@ def perform_simulation(scenario_params, power_params):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the path loss object xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # pl_3gpp_obj = pathloss.PathLoss3GPP1()
-    # pl_free_space_obj = pathloss.PathLossFreeSpace()
-    # pl_3gpp_obj.handle_small_distances_bool = True
-    # pl_free_space_obj.handle_small_distances_bool = True
     pl_metis_ps7_obj = pathloss.PathLossMetisPS7()
     pl_metis_ps7_obj.handle_small_distances_bool = True
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -142,29 +166,10 @@ def perform_simulation(scenario_params, power_params):
         - ap_positions[np.newaxis, :])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxx Calculate AP association xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Determine with which AP each user is associated with.
-    # Each user will associate with the CLOSEST access point.
-    ap_assoc = np.argmin(dists_m, axis=-1)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
-    # Indexes of the active APs
-    transmitting_aps, users_count = np.unique(ap_assoc, return_counts=True)
-
-    # Create a mask for the active APs
-    transmitting_aps_mask = np.zeros(num_aps, dtype=bool)
-    transmitting_aps_mask[transmitting_aps] = True
-
-    # Save how many users are associated with each AP
-    users_per_ap = np.zeros(num_aps, dtype=int)
-    users_per_ap[transmitting_aps_mask] = users_count
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # xxxxxxxxxx Calculate wall losses xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Number of walls from each room to each other room
-    num_walls_all = calc_num_walls(side_length, room_positions,
-                                   ap_positions[transmitting_aps])
+    # INPUTS
     # Find in which room each user is
     users_rooms = np.argmin(
         np.abs(room_positions.reshape([-1, 1])
@@ -172,165 +177,209 @@ def perform_simulation(scenario_params, power_params):
         axis=0
         )
 
-    # Number of walls from each user and each room
-    num_walls = num_walls_all.take(users_rooms, axis=0)
+    # Number of walls from each room to each other room
+    num_walls_all_rooms = calc_num_walls(side_length,
+                                         room_positions,
+                                         ap_positions)
+    # Number of walls from each room that has at least one user to each
+    # room with an AP
+    num_walls_rooms_with_users = num_walls_all_rooms[users_rooms]
 
-    wall_losses_dB = num_walls * single_wall_loss_dB
+    # Path loss from each user to each AP (no matter if it will be a
+    # transmitting AP or not, since we still have to perform the AP
+    # association)
+    pl_all = pl_metis_ps7_obj.calc_path_loss(
+        dists_m,
+        num_walls=num_walls_rooms_with_users)
+
+    # Calculate wall losses from each user to each AP (no matter if it will
+    # be a transmitting AP or not, since we still have to perform the AP
+    # association)
+    wall_losses_dB_all = num_walls_rooms_with_users * single_wall_loss_dB
+
+    # Calculate path loss plus wall losses (we multiply the linear values)
+    # from each user to each AP (no matter if it will be a transmitting AP
+    # or not, since we still have to perform the AP association)
+    pl_all_plus_wl = pl_all * dB2Linear(-wall_losses_dB_all)
+
+    # OUTPUTS
+    # Determine with which AP each user is associated with.
+    # Each user will associate with the CLOSEST access point.
+    ap_assoc = find_ap_assoc_best_channel(pl_all_plus_wl)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    # xxxxxxxxxx Distance from each user to each transmitting AP xxxxxxxxxx
-    dists_m2 = dists_m.take(transmitting_aps, axis=1)
+    # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
+    # Indexes of the active APs
+    transmitting_aps, users_count = np.unique(ap_assoc, return_counts=True)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
-    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(dists_m2,
-                                                   num_walls=num_walls)
+    # Take the path loss plus wall losses only for the transmitting aps
+    pl_all_plus_wall_losses_tx_aps = pl_all_plus_wl.take(
+        transmitting_aps, axis=1)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 \
         = simulate_for_a_given_ap_assoc(
-            pl_metis_ps7, ap_assoc, wall_losses_dB,
+            pl_all_plus_wall_losses_tx_aps, ap_assoc,
             transmitting_aps, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print(sinr_array_pl_metis_ps7_dB)
-    print(capacity_metis_ps7)
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    if plot_results_bool is True:
+        print(("\nMin/Mean/Max SINR value (METIS PS7):"
+               "\n    {0}\n    {1}\n    {2}").format(
+                   sinr_array_pl_metis_ps7_dB.min(),
+                   sinr_array_pl_metis_ps7_dB.mean(),
+                   sinr_array_pl_metis_ps7_dB.max()))
 
-    print(("\nMin/Mean/Max SINR value (METIS PS7):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               sinr_array_pl_metis_ps7_dB.min(),
-               sinr_array_pl_metis_ps7_dB.mean(),
-               sinr_array_pl_metis_ps7_dB.max()))
+        print(("\nMin/Mean/Max Capacity value (METIS PS7):"
+               "\n    {0}\n    {1}\n    {2}").format(
+                   capacity_metis_ps7.min(),
+                   capacity_metis_ps7.mean(),
+                   capacity_metis_ps7.max()))
 
-    print(("\nMin/Mean/Max Capacity value (METIS PS7):"
-           "\n    {0}\n    {1}\n    {2}").format(
-               capacity_metis_ps7.min(),
-               capacity_metis_ps7.mean(),
-               capacity_metis_ps7.max()))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a mask for the active APs
+        transmitting_aps_mask = np.zeros(num_aps, dtype=bool)
+        transmitting_aps_mask[transmitting_aps] = True
 
-    # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
-                                  pos + side_length/2. + side_length*1j/2.)
-                 for pos in room_positions.flatten()]
+        # Save how many users are associated with each AP
+        users_per_ap = np.zeros(num_aps, dtype=int)
+        users_per_ap[transmitting_aps_mask] = users_count
 
-    # Plot all Rooms and save the axis where they were plotted
-    plt.figure(figsize=(10, 10))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
-    # ax1 is where we will plot everything
-    ax1 = plt.subplot(gs[0])
-    ax1.set_xlabel("Position X coordinate")
-    ax1.set_ylabel("Position Y coordinate")
-    ax1.set_title("Plot of all Rooms")
-    ax1.set_ylim([-60, 60])
-    ax1.set_xlim([-60, 60])
-    ax1 = plot_all_rooms(all_rooms, ax1)
-    ax1.hold(True)
+        # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
+                                      pos + side_length/2. + side_length*1j/2.)
+                     for pos in room_positions.flatten()]
 
-    # ax2 will be used for annotations
-    ax2 = plt.subplot(gs[1])
-    plt.setp(ax2.get_xticklabels(), visible=False)
-    plt.setp(ax2.get_yticklabels(), visible=False)
-    ax2.set_ylim([0, 10])
-    ax2.set_xlim([0, 10])
-    details = ax2.text(
-        5, 5, 'Details',
-        verticalalignment='center', horizontalalignment='center',
-        family='monospace')
+        # Plot all Rooms and save the axis where they were plotted
+        plt.figure(figsize=(10, 10))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
+        # ax1 is where we will plot everything
+        ax1 = plt.subplot(gs[0])
+        ax1.set_xlabel("Position X coordinate")
+        ax1.set_ylabel("Position Y coordinate")
+        ax1.set_title("Plot of all Rooms")
+        ax1.set_ylim([-60, 60])
+        ax1.set_xlim([-60, 60])
+        ax1 = plot_all_rooms(all_rooms, ax1)
+        ax1.hold(True)
 
-    # Set the an array with colors for the access points. Transmitting APs
-    # will be blue, while inactive APs will be gray
-    ap_colors = np.empty(ap_positions.shape, dtype='U4')
-    ap_colors[transmitting_aps_mask] = 'b'
-    ap_colors[np.logical_not(transmitting_aps_mask)] = 'gray'
+        # ax2 will be used for annotations
+        ax2 = plt.subplot(gs[1])
+        plt.setp(ax2.get_xticklabels(), visible=False)
+        plt.setp(ax2.get_yticklabels(), visible=False)
+        ax2.set_ylim([0, 10])
+        ax2.set_xlim([0, 10])
+        details = ax2.text(
+            5, 5, 'Details',
+            verticalalignment='center', horizontalalignment='center',
+            family='monospace')
 
-    # Plot the access points. We set linewidth to 0.0 so that there is no
-    # border. We set the size ('s' keyword) to 50 to make it larger. The
-    # colors are set according to the ap_colors array.
-    # Note that we set a 5 points tolerance for the pick event.
-    aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
-                          marker='^', c=ap_colors, linewidths=0.1, s=50,
-                          picker=3)
+        # Set the an array with colors for the access points. Transmitting APs
+        # will be blue, while inactive APs will be gray
+        ap_colors = np.empty(ap_positions.shape, dtype='U4')
+        ap_colors[transmitting_aps_mask] = 'b'
+        ap_colors[np.logical_not(transmitting_aps_mask)] = 'gray'
 
-    # Plot the users
-    # Note that we set a 5 points tolerance for the pick event.
-    users_plt = ax1.scatter(users_positions.real, users_positions.imag,
-                            marker='*', c='r', linewidth=0.1, s=50,
-                            picker=3)
+        # Plot the access points. We set linewidth to 0.0 so that there is no
+        # border. We set the size ('s' keyword) to 50 to make it larger. The
+        # colors are set according to the ap_colors array.
+        # Note that we set a 5 points tolerance for the pick event.
+        aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
+                              marker='^', c=ap_colors, linewidths=0.1, s=50,
+                              picker=3)
 
-    # xxxxxxxxxx Define a function to call for the pick_event Circle used
-    # to select an AP. We will set its visibility to False here. When an AP
-    # is selected, we move this circle to its position and set its
-    # visibility to True.
-    selected_ap_circle = ax1.plot([0], [0], 'o', ms=12, alpha=0.4,
-                                  color='yellow', visible=False)[0]
+        # Plot the users
+        # Note that we set a 5 points tolerance for the pick event.
+        users_plt = ax1.scatter(users_positions.real, users_positions.imag,
+                                marker='*', c='r', linewidth=0.1, s=50,
+                                picker=3)
 
-    # Define the callback function for the pick event
-    def on_pick(event):
-        # We will reset users colors on each pick
-        users_colors = np.empty(ap_assoc.size, dtype='U1')
-        users_colors[:] = 'r'
+        # xxxxxxxxxx Define a function to call for the pick_event Circle used
+        # to select an AP. We will set its visibility to False here. When an AP
+        # is selected, we move this circle to its position and set its
+        # visibility to True.
+        selected_ap_circle = ax1.plot([0], [0], 'o', ms=12, alpha=0.4,
+                                      color='yellow', visible=False)[0]
 
-        # Index of the point clicked
-        ind = event.ind[0]
+        # Define the callback function for the pick event
+        def on_pick(event):
+            """Callback for the pick event in the matplotlib plot."""
+            # We will reset users colors on each pick
+            users_colors = np.empty(ap_assoc.size, dtype='U1')
+            users_colors[:] = 'r'
 
-        if event.artist == aps_plt:
-            # Disable the circle in the AP
-            selected_ap_circle.set_visible(False)
+            # Index of the point clicked
+            ind = event.ind[0]
 
-            if ind not in ap_assoc:
-                # Text information for the disabled AP
-                text = "AP {0} (Disabled)".format(ind)
-            else:
-                # Text information for the selected AP
-                text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
-                text = text.format(
+            if event.artist == aps_plt:
+                # Disable the circle in the AP
+                selected_ap_circle.set_visible(False)
+
+                if ind not in ap_assoc:
+                    # Text information for the disabled AP
+                    text = "AP {0} (Disabled)".format(ind)
+                else:
+                    # Text information for the selected AP
+                    text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
+                    text = text.format(
+                        ind,
+                        users_per_ap[ind],
+                        np.sum(capacity_metis_ps7[ap_assoc == ind]))
+
+                    # Change the colors of the users associated with the
+                    # current AP to green
+                    users_colors[ap_assoc == ind] = 'g'
+
+            elif event.artist == users_plt:
+                # Text information for the selected user
+                text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
                     ind,
-                    users_per_ap[ind],
-                    np.sum(capacity_metis_ps7[ap_assoc == ind]))
+                    sinr_array_pl_metis_ps7_dB[ind],
+                    capacity_metis_ps7[ind])
 
-                # Change the colors of the users associated with the
-                # current AP to green
-                users_colors[ap_assoc == ind] = 'g'
+                # If there other users are associated with the same AP of the
+                # current user
+                if users_per_ap[ap_assoc[ind]] > 1:
+                    text = "{0}\nShares AP with {1} other user(s)".format(
+                        text, users_per_ap[ap_assoc[ind]] - 1)
 
-        elif event.artist == users_plt:
-            # Text information for the selected user
-            text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
-                ind,
-                sinr_array_pl_metis_ps7_dB[ind],
-                capacity_metis_ps7[ind])
+                users_AP = ap_assoc[ind]
+                # Plot a yellow circle in the user's AP
+                ap_pos = ap_positions[users_AP]
+                # CHange the collor of other users in the same AP to green and
+                # the current user to cyan
+                users_colors[ap_assoc == users_AP] = 'g'
+                users_colors[ind] = 'c'
 
-            # If there other users are associated with the same AP of the
-            # current user
-            if users_per_ap[ap_assoc[ind]] > 1:
-                text = "{0}\nShares AP with {1} other user(s)".format(
-                    text, users_per_ap[ap_assoc[ind]] - 1)
+                selected_ap_circle.set_visible(True)
+                selected_ap_circle.set_data([ap_pos.real], [ap_pos.imag])
 
-            users_AP = ap_assoc[ind]
-            # Plot a yellow circle in the user's AP
-            ap_pos = ap_positions[users_AP]
-            # CHange the collor of other users in the same AP to green and
-            # the current user to cyan
-            users_colors[ap_assoc == users_AP] = 'g'
-            users_colors[ind] = 'c'
+            # Set users colors
+            users_plt.set_color(users_colors)
 
-            selected_ap_circle.set_visible(True)
-            selected_ap_circle.set_data([ap_pos.real], [ap_pos.imag])
+            # Set the details text
+            details.set_text(text)
+            ax1.figure.canvas.draw()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Set users colors
-        users_plt.set_color(users_colors)
+        # Connect the on_pick function with the pick event
+        ax1.figure.canvas.mpl_connect('pick_event', on_pick)
 
-        # Set the details text
-        details.set_text(text)
-        ax1.figure.canvas.draw()
+        plt.show()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # Connect the on_pick function with the pick event
-    ax1.figure.canvas.mpl_connect('pick_event', on_pick)
-
-    plt.show()
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    # xxxxxxxxxx Return the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     return sinr_array_pl_metis_ps7_dB, capacity_metis_ps7
 
@@ -348,5 +397,5 @@ if __name__ == '__main__':
         'noise_power_dBm': calc_thermal_noise_power_dBm(25, 5e6)
     }
 
-    out = perform_simulation(scenario_params, power_params)
+    out = perform_simulation(scenario_params, power_params, plot_results_bool=True)
     sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 = out
