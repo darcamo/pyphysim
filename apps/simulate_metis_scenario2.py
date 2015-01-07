@@ -58,6 +58,75 @@ def find_ap_assoc_best_channel(pl_all_plus_wl):
     return ap_assoc
 
 
+def find_ap_assoc_best_channel2(pl_all_plus_wl):
+    """
+    Find with which AP each user should associate with using the best
+    channel criterion.
+
+    Basically the  user will associate with the AP with the lowest path loss
+
+    Parameters
+    ----------
+    pl_all_plus_wl : 2D numpy array (Dim: num users x num APs)
+        The path loss in linear scale including also any wall losses.
+
+    Return
+    ------
+    ap_assoc : 1D int numpy array
+        The int vector indicating with which AP each user is
+        associated. The number of elements in this vector is equal to the
+        number of users and each element is the index of the AP that the
+        user will associate with.
+    """
+    from gurobipy import *
+
+    num_users, num_aps = pl_all_plus_wl.shape
+
+    # Create a new model
+    m = Model("ap_assoc")
+
+    rho = np.empty([num_users, num_aps], dtype=object)
+
+    # Create variables
+    for u in range(num_users):
+        for a in range(num_aps):
+            rho[u, a] = m.addVar(vtype=GRB.BINARY, name="p_{0}_{1}".format(u, a))
+
+    # Integrate new variables
+    m.update()
+
+    # Set objective: maximize h*rho
+    obj = LinExpr();
+    for u in range(num_users):
+        for a in range(num_aps):
+            obj += pl_all_plus_wl[u, a] * rho[u, a]
+    m.setObjective(obj, GRB.MAXIMIZE);
+
+    # Add constraint: Each user may associate with only one AP
+    for u in range(num_users):
+        m.addConstr(sum(rho[u]) <= 1, "c{0}".format(u))
+
+    # Optimize model
+    m.optimize()
+
+    # Organize the results
+    all_vars = m.getVars()
+    final_rho = np.empty([num_users, num_aps], dtype=int)
+
+    idx = 0
+    for u in range(num_users):
+        for a in range(num_aps):
+            final_rho[u, a] = all_vars[idx].x
+            idx += 1
+
+    # Convert to an index array
+    gurobi_ap_assoc = np.nonzero(final_rho)[1]
+
+    return gurobi_ap_assoc
+
+    # ap_assoc = np.argmax(pl_all_plus_wl, axis=-1)
+    # return ap_assoc
+
 def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
         ap_assoc, transmitting_aps, Pt, noise_var):
     """
@@ -205,7 +274,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     # OUTPUTS
     # Determine with which AP each user is associated with.
     # Each user will associate with the CLOSEST access point.
-    ap_assoc = find_ap_assoc_best_channel(pl_all_plus_wl)
+    ap_assoc = find_ap_assoc_best_channel2(pl_all_plus_wl)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
