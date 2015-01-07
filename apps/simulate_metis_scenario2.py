@@ -34,6 +34,30 @@ from pyphysim.comm.channels import calc_thermal_noise_power_dBm
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+def find_ap_assoc_best_channel(pl_all_plus_wl):
+    """
+    Find with which AP each user should associate with using the best
+    channel criterion.
+
+    Basically the  user will associate with the AP with the lowest path loss
+
+    Parameters
+    ----------
+    pl_all_plus_wl : 2D numpy array (Dim: num users x num APs)
+        The path loss in linear scale including also any wall losses.
+
+    Return
+    ------
+    ap_assoc : 1D int numpy array
+        The int vector indicating with which AP each user is
+        associated. The number of elements in this vector is equal to the
+        number of users and each element is the index of the AP that the
+        user will associate with.
+    """
+    ap_assoc = np.argmax(pl_all_plus_wl, axis=-1)
+    return ap_assoc
+
+
 def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
         ap_assoc, transmitting_aps, Pt, noise_var):
     """
@@ -179,7 +203,7 @@ def perform_simulation(scenario_params, power_params):  # pylint: disable=R0914
     # OUTPUTS
     # Determine with which AP each user is associated with.
     # Each user will associate with the CLOSEST access point.
-    ap_assoc = np.argmax(pl_all_plus_wl, axis=-1)
+    ap_assoc = find_ap_assoc_best_channel(pl_all_plus_wl)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
