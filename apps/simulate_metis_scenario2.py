@@ -25,7 +25,8 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 # import matplotlib as mpl
 
-from apps.simulate_metis_scenario import *
+from apps.simulate_metis_scenario import calc_room_positions_square, \
+    get_ap_positions, calc_num_walls, plot_all_rooms
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.cell import shapes
 from pyphysim.comm import pathloss
@@ -78,7 +79,10 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
     return (linear2dB(sinr_array), capacity)
 
 
-def perform_simulation(scenario_params, power_params):
+def perform_simulation(scenario_params, power_params):  # pylint: disable=R0914
+    """
+    Run the simulation.
+    """
     # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
     # The size of the side of each square room
     side_length = scenario_params['side_length']
@@ -282,6 +286,7 @@ def perform_simulation(scenario_params, power_params):
 
     # Define the callback function for the pick event
     def on_pick(event):
+        """Callback for the pick event in the matplotlib plot."""
         # We will reset users colors on each pick
         users_colors = np.empty(ap_assoc.size, dtype='U1')
         users_colors[:] = 'r'

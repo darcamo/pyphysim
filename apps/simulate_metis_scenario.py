@@ -255,7 +255,8 @@ def simulate_for_a_given_ap_assoc(
     return linear2dB(sinr_array)
 
 
-def perform_simulation_SINR_heatmap(scenario_params, power_params):
+def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
+                                    power_params):
     """
     Perform the simulation.
     """
@@ -296,9 +297,6 @@ def perform_simulation_SINR_heatmap(scenario_params, power_params):
     # xxxxxxxxxx Calculate the positions of all rooms xxxxxxxxxxxxxxxxxxxxx
     room_positions = calc_room_positions_square(side_length, num_rooms)
     room_positions.shape = (num_rooms_per_side, num_rooms_per_side)
-    # all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
-    #                               pos + side_length/2. + side_length*1j/2.)
-    #              for pos in room_positions.flatten()]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Create the path loss object xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
