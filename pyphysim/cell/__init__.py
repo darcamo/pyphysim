@@ -5,3 +5,5 @@
 
 # import shapes
 # import cell
+
+from . import shapes, cell
