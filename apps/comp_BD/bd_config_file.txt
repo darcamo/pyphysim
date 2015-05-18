@@ -1,0 +1,25 @@
+[Grid]
+        cell_radius = 1.0
+        num_cells = 3
+        num_clusters = 1
+
+[Scenario]
+        NSymbs = 500
+        SNR = [  0.   3.   6.   9.  12.  15.  18.  21.  24.  27.  30.]
+        Pe_dBm = [-10.   0.  10.]
+        Nr = 2
+        Nt = 2
+        N0 = -116.4
+        ext_int_rank = 1
+        user_positioning_method = Symmetric Far Away
+
+[Modulation]
+        M = 4
+        modulator = PSK
+        packet_length = 60
+
+[General]
+        rep_max = 5000
+        unpacked_parameters = SNR, Pe_dBm
+
+        

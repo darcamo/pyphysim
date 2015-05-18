@@ -19,8 +19,9 @@ _prepare_external_interference method.
 import sys
 import os
 try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    pyphysim_dir = os.path.split(
+        os.path.abspath(os.path.join(os.path.dirname(__file__),'../')))[0]
+    sys.path.append(pyphysim_dir)
 except NameError:
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -876,7 +877,7 @@ if __name__ == '__main__':
     runner.set_results_filename(results_filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    simulate_do_what_i_mean(runner, parent_dir)
+    simulate_do_what_i_mean(runner, pyphysim_dir)
 
     if runner.command_line_args.index is None:
         print ("Runned iterations: {0}".format(runner.runned_reps))

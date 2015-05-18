@@ -10,10 +10,11 @@ simple block diagonalization of the channel.
 import sys
 import os
 try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    pyphysim_dir = os.path.split(
+        os.path.abspath(os.path.join(os.path.dirname(__file__),'../')))[0]
+    sys.path.append(pyphysim_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
@@ -106,6 +107,7 @@ for rep in range(rep_max):
     # Randomize users channels
     multiuser_channel.randomize(Nr, Nt, num_cells, ext_int_rank)
     multiuser_channel.set_pathloss(pathloss, pathlossInt)
+    multiuser_channel.noise_var = noise_var
 
     # Generate input data and modulate it
     input_data = np.random.randint(0, M, [np.sum(Ns_BD), NSymbs])
@@ -130,10 +132,7 @@ for rep in range(rep_max):
     all_data = np.vstack([precoded_data, external_int_data])
 
     # Pass the precoded data through the channel
-    received_signal = multiuser_channel.corrupt_concatenated_data(
-        all_data,
-        noise_var
-    )
+    received_signal = multiuser_channel.corrupt_concatenated_data(all_data)
 
     # Filter the received data
     receive_filter = np.linalg.pinv(newH)
