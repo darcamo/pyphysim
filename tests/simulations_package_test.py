@@ -32,8 +32,15 @@ from copy import copy
 
 try:
     from IPython.parallel import CompositeError
+    _IPYTHON_AVAILABLE = True
 except ImportError:  # pragma: no cover
-    pass
+    _IPYTHON_AVAILABLE = False
+
+try:
+    from pandas import DataFrame
+    _PANDAS_AVAILABLE = True
+except ImportError:
+    _PANDAS_AVAILABLE = False
 
 from pyphysim.simulations import configobjvalidation, parameters, progressbar, \
     results, runner, simulationhelpers
@@ -1936,6 +1943,11 @@ class SimulationResultsTestCase(unittest.TestCase):
     #                      simresults2.params.unpacked_parameters[0])
 
     def test_to_dataframe(self):
+        # If the pandas package is not installed, we will skip testing this
+        # method
+        if not _PANDAS_AVAILABLE:
+            self.skipTest("Pandas is not installed")
+
         # Create some dummy parameters (including two parameters set to be
         # unpacked)
         params = SimulationParameters()
@@ -2305,6 +2317,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
     def test_simulate_in_parallel(self):  # pragma: no cover
+        if not _IPYTHON_AVAILABLE:
+            self.skipTest("IPython is not installed")
+
         try:
             from IPython.parallel import Client
             cl = Client(profile="tests")
@@ -2402,6 +2417,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
     def test_simulate_in_parallel_with_random_values(self):  # pragma: no cover
+        if not _IPYTHON_AVAILABLE:
+            self.skipTest("IPython is not installed")
+
         try:
             from IPython.parallel import Client
             cl = Client(profile="tests")
