@@ -8,9 +8,6 @@ import itertools
 import copy
 import numpy as np
 
-# Module with utilities for writing code that runs on Python 2 and 3
-import six
-
 try:
     from configobj import ConfigObj, flatten_errors
     from validate import Validator
@@ -849,6 +846,12 @@ class SimulationParameters(object):
         --------
         load_from_hdf5_group
         """
+        # Module with utilities for writing code that runs on Python 2 and
+        # 3. We import it here inside save_to_hdf5_group to avoid import
+        # errors when it is not installed and save_to_hdf5_group is not
+        # called.
+        import six
+
         # Store each parameter in self.parameter in a different dataset
         for name, value in six.iteritems(self.parameters):
             ds = group.create_dataset(name, data=value)
