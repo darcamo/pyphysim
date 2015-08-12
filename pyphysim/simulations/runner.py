@@ -267,7 +267,7 @@ class SimulationRunner(object):
 
         # This variable will be used to store the AsyncMapResult object
         # that will be created in the simulate_in_parallel method. This
-        # object is part of IPython parallel framework and is used to get
+        # object is part of ipyparallel framework and is used to get
         # the actual results of performing an asynchronous task in IPython.
         self._async_results = None
 

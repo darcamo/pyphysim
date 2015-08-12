@@ -405,7 +405,7 @@ def simulate_general(runner, results_filename):
         # If we can get an IPython view that means that the IPython engines
         # are running. In that case we will perform the simulation in
         # parallel
-        from IPython.parallel import Client
+        from ipyparallel import Client
         cl = Client()
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()

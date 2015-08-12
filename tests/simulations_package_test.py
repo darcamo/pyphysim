@@ -31,7 +31,7 @@ from itertools import repeat
 from copy import copy
 
 try:
-    from IPython.parallel import CompositeError
+    from ipyparallel import CompositeError
     _IPYTHON_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _IPYTHON_AVAILABLE = False
@@ -2321,7 +2321,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
             self.skipTest("IPython is not installed")
 
         try:
-            from IPython.parallel import Client
+            from ipyparallel import Client
             cl = Client(profile="tests")
 
             dview = cl.direct_view()
@@ -2421,7 +2421,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
             self.skipTest("IPython is not installed")
 
         try:
-            from IPython.parallel import Client
+            from ipyparallel import Client
             cl = Client(profile="tests")
 
             dview = cl.direct_view()

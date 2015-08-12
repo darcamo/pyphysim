@@ -172,7 +172,7 @@ def _simulate_do_what_i_mean_single_runner(runner,
             # If we can get an IPython view that means that the IPython engines
             # are running. In that case we will perform the simulation in
             # parallel
-            from IPython.parallel import Client
+            from ipyparallel import Client
             # cl = Client(profile="ssh")
             cl = Client(profile="default")
 

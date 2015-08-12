@@ -191,7 +191,7 @@ if __name__ == '__main__':
     # Since we are using the parallel capabilities provided by IPython, we
     # need to create a client and then a view of the IPython engines that
     # will be used.
-    from IPython.parallel import Client
+    from ipyparallel import Client
     cl = Client()
     dview = cl.direct_view()
 
