@@ -173,6 +173,24 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.obj = channels.JakesSampleGenerator(Fd, Ts, NRays)
         self.obj2 = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=(3, 2))
 
+    def test_set_shape(self):
+        NRays = 8
+        self.assertIsNone(self.obj.shape)
+        self.obj.shape = [3,2]
+        np.testing.assert_array_equal(self.obj.shape, [3, 2])
+
+        # The first dimension is equal to the number of rays of the Jakes
+        # generator. The last dimension is set to 1 to allow broadcast with
+        # the time dimension later.
+        np.testing.assert_array_equal(self.obj._phi_l.shape, [NRays, 3, 2, 1])
+        np.testing.assert_array_equal(self.obj._psi_l.shape, [NRays, 3, 2, 1])
+
+        # Now set the shape to None (SISO case)
+        self.obj.shape = None
+        self.assertIsNone(self.obj.shape)
+        np.testing.assert_array_equal(self.obj._phi_l.shape, [NRays, 1])
+        np.testing.assert_array_equal(self.obj._psi_l.shape, [NRays, 1])
+
     def test_generate_channel_samples(self):
         self.assertAlmostEqual(self.obj._current_time, 0.0)
 
