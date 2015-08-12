@@ -534,11 +534,18 @@ class SimulationResults(object):
         --------
         util.misc.calc_confidence_interval
         """
+        from collections import Iterable
+
         if fixed_params is None:
             fixed_params = {}
 
         if fixed_params:
             indexes = self.params.get_pack_indexes(fixed_params)
+
+            # If indexes is just an integer, make it an iterable
+            if not isinstance(indexes, Iterable):
+                indexes = [indexes]
+
             out = [v.get_confidence_interval(P) for i, v
                    in enumerate(self[result_name]) if i in indexes]
         else:

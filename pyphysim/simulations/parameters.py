@@ -531,7 +531,7 @@ class SimulationParameters(object):
 
         # xxxxx Get the indexes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # For this we create a auxiliary numpy array going from 0 to the
-        # number of unpack variations. The we use param_indexes to build a
+        # number of unpack variations. Then we use param_indexes to build a
         # string that we can evaluate using the auxiliary numpy array in
         # order to get the linear indexes.
 
@@ -543,6 +543,8 @@ class SimulationParameters(object):
         indexes = eval(
             "aux" + "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        if indexes.size == 1:
+            indexes = indexes[0]
 
         return indexes
 

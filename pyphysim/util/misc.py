@@ -657,7 +657,7 @@ def calc_unorm_autocorr(x):
     R = np.correlate(x, x, 'full')
 
     # Return the autocorrelation for indexes greater then or equal to 0
-    return R[R.size / 2:]
+    return R[R.size // 2:]
 
 
 def calc_autocorr(x):
