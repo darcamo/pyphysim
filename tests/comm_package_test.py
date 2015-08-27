@@ -223,6 +223,291 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+class TdlChannelProfileTestCase(unittest.TestCase):
+
+    def test_properties(self):
+        tu = channels.COST259_TUx
+        ra = channels.COST259_RAx
+        ht = channels.COST259_HTx
+
+        # CHeck the number of taps in the profiles
+        self.assertEqual(tu.num_taps, 20)
+        self.assertEqual(ra.num_taps, 10)
+        self.assertEqual(ht.num_taps, 20)
+
+        # Check the names of the profiles
+        self.assertAlmostEqual(tu.name, 'COST259_TU')
+        self.assertAlmostEqual(ra.name, 'COST259_RA')
+        self.assertAlmostEqual(ht.name, 'COST259_HT')
+
+        # Check if the mean excess delays of the profiles are correct
+        self.assertAlmostEqual(tu.mean_excess_delay, 5.00428208169e-07)
+        self.assertAlmostEqual(ra.mean_excess_delay, 8.85375638731e-08)
+        self.assertAlmostEqual(ht.mean_excess_delay, 8.93899719191e-07)
+
+        # Check if the rms delay spreads of the profiles are correct
+        self.assertAlmostEqual(tu.rms_delay_spread, 5.000561653134637e-07)
+        self.assertAlmostEqual(ra.rms_delay_spread, 1.0000823342626581e-07)
+        self.assertAlmostEqual(ht.rms_delay_spread, 3.039829880190327e-06)
+
+        # Check if an exception is raised if we try to change the delays or
+        # the powers of the taps.
+        with self.assertRaises(ValueError):
+            tu.tap_powers[0] = 30
+        with self.assertRaises(ValueError):
+            tu.tap_delays[0] = 30
+        with self.assertRaises(ValueError):
+            tu.tap_powers_linear[0] = 30
+
+        # Check the tap power and delay values
+        np.testing.assert_array_almost_equal(
+            tu.tap_powers,
+            np.array([-5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3,
+                      -16.9, -17.1, -17.4, -19, -19, -19.8, -21.5, -21.6,
+                      -22.1, -22.6, -23.5, -24.3]))
+        np.testing.assert_array_almost_equal(
+            tu.tap_delays,
+            np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349,
+                      1533, 1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9)
+
+
+        np.testing.assert_array_almost_equal(
+            ra.tap_powers,
+            np.array([-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]))
+        np.testing.assert_array_almost_equal(
+            ra.tap_delays,
+            np.array([0., 42., 101., 129., 149., 245., 312., 410., 469., 528]) * 1e-9)
+
+
+        np.testing.assert_array_almost_equal(
+            ht.tap_powers,
+            np.array([-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2,
+                      -17.3, -17.7, -17.6, -22.7, -24.1, -25.8, -25.8, -26.2,
+                      -29.0, -29.9, -30.0, -30.7]))
+        np.testing.assert_array_almost_equal(
+            ht.tap_delays,
+            np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941.,
+                      15000., 16172., 16492., 16876., 16882., 16978., 17615.,
+                      17827., 17849., 18016.]) * 1e-9)
+
+
+# TODO: finish implementation
+class TdlChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_calc_discretized_tap_powers_and_delays(self):
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+
+        NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        jakes = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
+
+        tdlchannel = channels.TdlChannel.create_from_channel_profile(
+            jakes, channels.COST259_TUx)
+
+        tdlchannel._calc_discretized_tap_powers_and_delays(Ts)
+
+        # xxxxx Calculate the expected discretized tap powers and delays xx
+        # The COST259_TUx 20 taps. For the Ts calculated here the indexes
+        # of the discretized taps (from the original ones) are
+        # [ 0  7 16 16 16 21 27 38 40 40 41 47 47 50 56 56 58 60 63 66]
+        # Note that some taps have the same indexes and this will be summed
+        # toguether.
+        tap_powers_linear = channels.COST259_TUx.tap_powers_linear
+        # The TDL class will normalized the tap powers so that the channel
+        # has unit power.
+        tap_powers_linear = tap_powers_linear/np.sum(tap_powers_linear)
+
+        expected_discretized_tap_powers_linear = np.zeros(15)
+
+        expected_discretized_tap_powers_linear[0] += tap_powers_linear[0]
+        expected_discretized_tap_powers_linear[1] += tap_powers_linear[1]
+        expected_discretized_tap_powers_linear[2] += tap_powers_linear[2]
+        expected_discretized_tap_powers_linear[2] += tap_powers_linear[3]
+        expected_discretized_tap_powers_linear[2] += tap_powers_linear[4]
+        expected_discretized_tap_powers_linear[3] += tap_powers_linear[5]
+        expected_discretized_tap_powers_linear[4] += tap_powers_linear[6]
+        expected_discretized_tap_powers_linear[5] += tap_powers_linear[7]
+        expected_discretized_tap_powers_linear[6] += tap_powers_linear[8]
+        expected_discretized_tap_powers_linear[6] += tap_powers_linear[9]
+        expected_discretized_tap_powers_linear[7] += tap_powers_linear[10]
+        expected_discretized_tap_powers_linear[8] += tap_powers_linear[11]
+        expected_discretized_tap_powers_linear[8] += tap_powers_linear[12]
+        expected_discretized_tap_powers_linear[9] += tap_powers_linear[13]
+        expected_discretized_tap_powers_linear[10] += tap_powers_linear[14]
+        expected_discretized_tap_powers_linear[10] += tap_powers_linear[15]
+        expected_discretized_tap_powers_linear[11] += tap_powers_linear[16]
+        expected_discretized_tap_powers_linear[12] += tap_powers_linear[17]
+        expected_discretized_tap_powers_linear[13] += tap_powers_linear[18]
+        expected_discretized_tap_powers_linear[14] += tap_powers_linear[19]
+
+        np.testing.assert_array_almost_equal(expected_discretized_tap_powers_linear,
+                                             tdlchannel._tap_linear_powers_discretized)
+        np.testing.assert_array_equal(
+            np.array([0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]),
+            tdlchannel._tap_delays_discretized)
+
+    def test_get_fading_map(self):
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        jakes = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
+        tdlchannel = channels.TdlChannel.create_from_channel_profile(
+            jakes, channels.COST259_TUx)
+
+        # COST259_TUx profile has 20 taps. The TdlChannel class should have
+        # changed the shape of the jakes object to [20]
+        self.assertEqual(jakes.shape, (15,))
+
+        # Let's generate 10 samples
+        NSamples = 10
+        fading_map = tdlchannel.get_fading_map(NSamples)
+
+        # With the provided Ts the COST259 TU channel will have 67
+        # discretized taps if we include the zeros. Only 15 of those taps
+        # are different from zero and those are the ones stored in the
+        # fading map.
+        self.assertEqual(fading_map.shape, (15, 10))
+
+        # test the non-zero taps
+        for line in fading_map:
+            self.assertTrue(np.all(np.abs(line) > 0))
+
+        # xxxxxxxxxx Now let's test include_the_zeros_in_fading_map xxxxxxx
+        full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
+        self.assertEqual(full_fading_map.shape, (67, 10))
+
+
+    def test_get_channel_freq_response(self):
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        jakes = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
+        tdlchannel = channels.TdlChannel.create_from_channel_profile(
+            jakes, channels.COST259_TUx)
+
+        fading_map = tdlchannel.get_fading_map(10)
+        full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
+        freq_response = tdlchannel.get_channel_freq_response(full_fading_map, 2048)
+
+        self.assertEqual(freq_response.shape, (2048, 10))
+
+        # plt.plot(np.abs(freq_response[:,0]))
+        # plt.show()
+
+        # TODO: Implement-me
+        pass
+
+
+    def test_transmit_signal_with_fading_map(self):
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        jakes = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
+        tdlchannel = channels.TdlChannel.create_from_channel_profile(
+            jakes, channels.COST259_TUx)
+
+        # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
+        signal = np.array([1.])
+
+        num_samples = 1
+        fading_map = tdlchannel.get_fading_map(num_samples)
+        received_signal = tdlchannel.transmit_signal_with_fading_map(
+            signal, fading_map)
+
+        # Since only one sample was sent and it is equal to 1, then the
+        # received signal will be equal to the full_fading_map
+        full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
+
+        np.testing.assert_almost_equal(full_fading_map.flatten(),
+                                       received_signal)
+
+        # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
+        num_samples = 10
+        fading_map = tdlchannel.get_fading_map(num_samples)
+
+        signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
+        received_signal = tdlchannel.transmit_signal_with_fading_map(
+            signal, fading_map)
+
+        # Compute the expected received signal
+        # For this Ts we have 15 discretized taps. The indexes of the 15
+        # taps are:
+        # [ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]
+        expected_received_signal = np.zeros(66 + num_samples, dtype=complex)
+        expected_received_signal[0:0+num_samples] += signal * fading_map[0]
+        expected_received_signal[7:7+num_samples] += signal * fading_map[1]
+        expected_received_signal[16:16+num_samples] += signal * fading_map[2]
+        expected_received_signal[21:21+num_samples] += signal * fading_map[3]
+        expected_received_signal[27:27+num_samples] += signal * fading_map[4]
+        expected_received_signal[38:38+num_samples] += signal * fading_map[5]
+        expected_received_signal[40:40+num_samples] += signal * fading_map[6]
+        expected_received_signal[41:41+num_samples] += signal * fading_map[7]
+        expected_received_signal[47:47+num_samples] += signal * fading_map[8]
+        expected_received_signal[50:50+num_samples] += signal * fading_map[9]
+        expected_received_signal[56:56+num_samples] += signal * fading_map[10]
+        expected_received_signal[58:58+num_samples] += signal * fading_map[11]
+        expected_received_signal[60:60+num_samples] += signal * fading_map[12]
+        expected_received_signal[63:63+num_samples] += signal * fading_map[13]
+        expected_received_signal[66:66+num_samples] += signal * fading_map[14]
+
+        np.testing.assert_array_almost_equal(expected_received_signal,
+                                             received_signal)
+
+
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
