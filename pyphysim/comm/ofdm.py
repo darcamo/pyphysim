@@ -250,7 +250,7 @@ class OFDM(object):
         # one OFDM symbol.
         input_signal.shape = (num_ofdm_symbols, self.num_used_subcarriers)
 
-        input_ifft = np.zeros([num_ofdm_symbols, self.fft_size])
+        input_ifft = np.zeros([num_ofdm_symbols, self.fft_size], dtype=complex)
         input_ifft[:, self._get_used_subcarrier_indexes_proper()] \
             = input_signal[:, :]
 
