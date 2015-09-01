@@ -3289,6 +3289,21 @@ class OfdmTestCase(unittest.TestCase):
         output = self.ofdm_object._prepare_decoded_signal(input2)
         np.testing.assert_array_equal(output, input1)
 
+    def test_calculate_power_scale(self):
+        expected_power_scale = float(self.ofdm_object.fft_size) \
+                               * (float(self.ofdm_object.fft_size)
+                                  / (self.ofdm_object.num_used_subcarriers
+                                     + self.ofdm_object.cp_size))
+
+        self.assertAlmostEqual(expected_power_scale,
+                               self.ofdm_object._calculate_power_scale())
+
+        self.ofdm_object.fft_size = 1024.
+        self.ofdm_object.cp_size = 100.
+        self.ofdm_object.num_used_subcarriers = 900.
+        self.assertAlmostEqual(1024. * (1024. / (900. + 100.)),
+                               self.ofdm_object._calculate_power_scale())
+
     def test_modulate(self):
         # Exactly two OFDM symbols (with 52 used subcarriers)
         input_signal = np.r_[1:105]
@@ -3304,15 +3319,17 @@ class OfdmTestCase(unittest.TestCase):
         self.assertEqual(num_ofdm_symbols, 2)
 
         input_ifft = self.ofdm_object._prepare_input_signal(input_signal)
-        expected_data = np.hstack([
+        power_scale = self.ofdm_object._calculate_power_scale()
+        expected_data_no_power_scale = np.hstack([
             np.fft.ifft(input_ifft[0, :]),
             np.fft.ifft(input_ifft[1, :]),
         ])
+        expected_data = math.sqrt(power_scale) * expected_data_no_power_scale
 
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal), expected_data)
 
-        # Lets test each OFDM symbol individually
+        # Let's test each OFDM symbol individually
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal[0:52]),
             expected_data[0:64])
@@ -3323,9 +3340,16 @@ class OfdmTestCase(unittest.TestCase):
 
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 4, 52)
-        expected_data2 = expected_data[0:64]
+
+        input_ifft2 = self.ofdm_object._prepare_input_signal(input_signal[0:52])
+        power_scale2 = self.ofdm_object._calculate_power_scale()
+        expected_data_no_power_scale2 = np.hstack([
+            np.fft.ifft(input_ifft[0, :]),
+        ])
+        expected_data2 = math.sqrt(power_scale2) * expected_data_no_power_scale2
         expected_data2 = np.hstack(
-            [expected_data2[-self.ofdm_object.cp_size:], expected_data[0:64]])
+            [expected_data2[-self.ofdm_object.cp_size:], expected_data2[0:64]])
+
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal[0:52]), expected_data2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3333,7 +3357,7 @@ class OfdmTestCase(unittest.TestCase):
     def test_demodulate(self):
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
-        input_signal = np.r_[1:105]
+        input_signal = np.r_[1:105] + 1j * np.r_[1:105]
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
@@ -3343,14 +3367,14 @@ class OfdmTestCase(unittest.TestCase):
             modulated_ofdm_symbols)
 
         np.testing.assert_array_equal(
-            np.real(demodulated_symbols.round()).astype(int),
+            demodulated_symbols.round(),
             input_signal
         )
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
-        input_signal2 = np.r_[1:105]
+        input_signal2 = np.r_[1:105] + 1j * np.r_[1:105]
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols2 = self.ofdm_object.modulate(input_signal2)
 
@@ -3358,14 +3382,14 @@ class OfdmTestCase(unittest.TestCase):
             modulated_ofdm_symbols2)
 
         np.testing.assert_array_equal(
-            np.real(demodulated_symbols2.round()).astype(int),
+            demodulated_symbols2.round(),
             input_signal2
         )
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
-        input_signal3 = np.r_[1:110]
+        input_signal3 = np.r_[1:110]+1j * np.r_[1:110]
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols3 = self.ofdm_object.modulate(input_signal3)
 
@@ -3375,7 +3399,7 @@ class OfdmTestCase(unittest.TestCase):
         # manually
         demodulated_symbols3 = demodulated_symbols3[0:109]
         np.testing.assert_array_equal(
-            np.real(demodulated_symbols3.round()).astype(int),
+            demodulated_symbols3.round(),
             input_signal3
         )
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

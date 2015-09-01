@@ -4,6 +4,7 @@
 """Module implementing OFDM modulation and demodulation."""
 
 import numpy as np
+import math
 
 __all__ = ['OFDM']
 
@@ -363,6 +364,29 @@ class OFDM(object):
 
         return received_data_no_CP
 
+    def _calculate_power_scale(self):
+        """
+        Calculate the power scale that needs to be applied in the modulator and
+        removed in the demodulate methods.
+
+        The power is applied in the modulator method so that the total
+        power of the OFDM samples is similar to the total power of the
+        symbols modulated by OFDM.
+
+        Note that this total power is shared among useful samples and the
+        cyclic prefix in one OFDM symbol. Therefore, the larger the cyclic
+        prefix size the lower is this power scale to account energy loss
+        due to sending the cyclic prefix.
+
+        Returns
+        -------
+        power_scale : float
+            The calculated power scale. You should take the square root of
+            this before multiplying by the samples.
+        """
+        power_scale = (float(self.fft_size) ** 2) / (float(self.num_used_subcarriers) + self.cp_size)
+        return power_scale
+
     def modulate(self, input_signal):
         """Perform the OFDM modulation of the input_signal.
 
@@ -392,7 +416,8 @@ class OFDM(object):
         # Now we calculate the ifft for the second axis. That is equivalent
         # to calculate the ifft separatelly for each row in the input_ifft
         # variable.
-        output_ifft = np.fft.ifft(input_ifft, self.fft_size, 1)
+        output_ifft = math.sqrt(self._calculate_power_scale()) \
+                      * np.fft.ifft(input_ifft, self.fft_size, 1)
 
         # Add the Cyclic prefix
         modulated_ofdm = self._add_CP(output_ifft)
@@ -429,7 +454,8 @@ class OFDM(object):
         # Now we calculate the FFT for the second axis. That is equivalent
         # to calculate the fft separatelly for each row in the
         # received_signal variable.
-        output_fft = np.fft.fft(received_signal_no_CP, self.fft_size, 1)
+        output_fft = np.fft.fft(received_signal_no_CP, self.fft_size, 1) \
+                     / math.sqrt(self._calculate_power_scale())
 
         # - CALL THE _prepare_decoded_signal METHOD TO GET THE DATA ONLY
         # FROM THE USEFUL SUBCARRIERS
