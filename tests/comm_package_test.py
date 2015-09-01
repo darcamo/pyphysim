@@ -440,7 +440,7 @@ class TdlChannelTestCase(unittest.TestCase):
         pass
 
 
-    def test_transmit_signal_with_fading_map(self):
+    def test_transmit_signal_with_known_fading_map(self):
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
         max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
@@ -465,7 +465,7 @@ class TdlChannelTestCase(unittest.TestCase):
 
         num_samples = 1
         fading_map = tdlchannel.get_fading_map(num_samples)
-        received_signal = tdlchannel.transmit_signal_with_fading_map(
+        received_signal = tdlchannel.transmit_signal_with_known_fading_map(
             signal, fading_map)
 
         # Since only one sample was sent and it is equal to 1, then the
@@ -480,7 +480,7 @@ class TdlChannelTestCase(unittest.TestCase):
         fading_map = tdlchannel.get_fading_map(num_samples)
 
         signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
-        received_signal = tdlchannel.transmit_signal_with_fading_map(
+        received_signal = tdlchannel.transmit_signal_with_known_fading_map(
             signal, fading_map)
 
         # Compute the expected received signal

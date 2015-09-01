@@ -637,7 +637,7 @@ class TdlChannel(object):
         freqResponse = np.fft.fft(full_fading_map, fftSize, axis=0)
         return freqResponse
 
-    def transmit_signal_with_fading_map(self, signal, fading_map):
+    def transmit_signal_with_known_fading_map(self, signal, fading_map):
         """Transmit the signal trhough the TDL channel.
 
         Parameters
