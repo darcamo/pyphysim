@@ -11,7 +11,7 @@ __all__ = ['OFDM']
 class OFDM(object):
     """OFDM class.
     """
-    def __init__(self, fft_size, cp_size, num_used_subcarriers=0):
+    def __init__(self, fft_size, cp_size, num_used_subcarriers=None):
         """Initializates the OFDM object.
 
         Parameters
