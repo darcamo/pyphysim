@@ -57,6 +57,48 @@ def getShiftedZF(root_seq, n_cs):
     return shifted_seq
 
 
+def get_extended_ZF(root_seq, size):
+    """
+    Cyclic Extend the Zadoff-Chu root sequence to have size equal to `size`.
+
+    Parameters
+    ----------
+    root_seq : complex numpy array
+        The root Zadoff-Chu sequence.
+    size : int
+        The size that the sequence should be extended to.
+
+    Returns
+    -------
+    output : numpy complex array
+        The extended root sequence.
+
+    Example
+    -------
+    >>> root_seq = np.array([1,2,3,4,5])
+    >>> get_extended_ZF(root_seq, 8)
+    [1,2,3,4,5,1,2,3]
+    """
+    root_seq_size = root_seq.size
+    if size - root_seq_size > root_seq_size:
+        stack_list = [root_seq]
+        num_full_repeats = (size // root_seq_size)
+        # Repeat the full sequence by this amount
+        stack_list = stack_list * num_full_repeats
+
+        current_size = root_seq_size * num_full_repeats
+
+
+        # Append remaining element to achieve the required size
+        stack_list.append(root_seq[0:size-current_size])
+
+        output = np.hstack(stack_list)
+    else:
+        output = np.hstack([root_seq, root_seq[0:size-root_seq_size]])
+
+    return output
+
+
 # if __name__ == '__main__':
 #     np.set_printoptions(precision=4)
 #     a_u = calcBaseZC(23, 4)
