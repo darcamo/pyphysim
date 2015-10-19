@@ -176,7 +176,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
     def test_set_shape(self):
         NRays = 8
         self.assertIsNone(self.obj.shape)
-        self.obj.shape = [3,2]
+        self.obj.shape = [3, 2]
         np.testing.assert_array_equal(self.obj.shape, [3, 2])
 
         # The first dimension is equal to the number of rays of the Jakes
@@ -405,6 +405,28 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Now let's test include_the_zeros_in_fading_map xxxxxxx
         full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
         self.assertEqual(full_fading_map.shape, (67, 10))
+
+
+        # xxxxxxxxxx Now test with shape different from None xxxxxxxxxxxxxx
+        # Create the jakes object that will be passed to TdlChannel
+        jakes2 = channels.JakesSampleGenerator(Fd, Ts, NRays, shape=(2,4))
+        tdlchannel2 = channels.TdlChannel.create_from_channel_profile(
+            jakes2, channels.COST259_TUx)
+        # COST259_TUx profile has 20 taps. The TdlChannel class should have
+        # changed the shape of the jakes object to [20]
+        self.assertEqual(jakes2.shape, (15,2,4))
+
+        # Let's generate 10 samples
+        NSamples = 10
+        fading_map2 = tdlchannel2.get_fading_map(NSamples)
+
+        # With the provided Ts the COST259 TU channel will have 67
+        # discretized taps if we include the zeros. Only 15 of those taps
+        # are different from zero and those are the ones stored in the
+        # fading map. Also, the Jakes object was created with a shape equal
+        # to (2,4). Therefore, the shape of the fading map must be
+        # (15, 2, 4, NSamples)
+        self.assertEqual(fading_map2.shape, (15, 2, 4, 10))
 
 
     def test_get_channel_freq_response(self):
@@ -2957,7 +2979,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         Ns = Nt
         iPu = 1.2
         noise_power = 0.1
-        Pe = 1.2
+        # Pe = 1.2
 
         self.multiH.randomize(Nr, Nt, K, NtE)
 
@@ -3464,7 +3486,7 @@ def calc_Bl(channel, W, l, noise_var=0.0):
     Calculate the Bl matrix corresponding to the interference plus noise
     covariance matrix for the l-th stream.
 
-    \[B_l = \sum_{d=1, d\neq l}^{d_i} (\mtH \mtV^{[\star d]} \mtV^{[\star d] \mtH} \mtH^H - \mtH \mtV^{[\star l]} \mtV^{[\star l] \mtH} \mtH^H + \sigma_n^2 \mtI_{N_r} )\]
+    \\[B_l = \\sum_{d=1, d\\neq l}^{d_i} (\\mtH \\mtV^{[\\star d]} \\mtV^{[\\star d] \\mtH} \\mtH^H - \\mtH \\mtV^{[\\star l]} \\mtV^{[\\star l] \\mtH} \\mtH^H + \\sigma_n^2 \\mtI_{N_r} )\\]
 
     Parameters
     channel : 2D numpy array
