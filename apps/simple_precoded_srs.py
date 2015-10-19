@@ -152,11 +152,13 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Estimate the equivalent channel xxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    tilde_y1 = Y1 * r1[:,np.newaxis].conj()
-    plt.plot(np.abs(tilde_y1[:,0]))
-    plt.show()
+    tilde_y1 = np.fft.ifft(Y1 * r1[:,np.newaxis].conj(), n=Nsc/2, axis=0)
+    tilde_y1[15:, 0] = 0  # Only keep the first 15 time samples for each antenna
 
-    plt.stem(np.abs(np.fft.ifft(tilde_y1[:,0])))
-    plt.show()
+    plt.figure(figsize=(12, 20))
+    plt.subplot(2,1,1)
+    plt.stem(np.abs(tilde_y1[:,0]))
 
-    import pudb; pudb.set_trace()  ## DEBUG ##
+    plt.subplot(2,1,2)
+    plt.plot(np.abs(np.fft.fft(tilde_y1[:,0], n=Nsc, axis=0)))
+    plt.show()

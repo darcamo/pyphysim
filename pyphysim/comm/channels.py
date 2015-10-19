@@ -576,15 +576,25 @@ class TdlChannel(object):
         Returns
         -------
         samples : numpy complex array
-            The generated samples. Dimension: `num discretized taps x NSamples`
+            The generated samples. Dimension: `Shape of the Jakes obj x NSamples`
         """
         jakes_samples = self._jakesObj.generate_channel_samples(NSamples)
 
         # xxxxxxxxxx Apply the power to each tap xxxxxxxxxxxxxxxxxxxxxxxxxx
         # Note that here we only apply the power to the taps. The delays
         # will be applyed when the fading is actually used.
+
+        # Note that self._tap_linear_powers_discretized has a single
+        # dimension. We need to add singleton dimensions as necessary
+        # before we multiply it by jakes_samples so that broadcasting
+        # works.
+        new_shape = [self._tap_linear_powers_discretized.shape[0]]
+        new_shape.extend([1] * (jakes_samples.ndim-1))
+
         samples = jakes_samples * np.sqrt(
-            self._tap_linear_powers_discretized[:, np.newaxis])
+            np.reshape(self._tap_linear_powers_discretized[:, np.newaxis],
+                       new_shape)
+        )
 
         return samples
 

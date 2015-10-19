@@ -144,7 +144,7 @@ def gmd(U, S, V_H, tol=0.0):
     R[p-1, p-1] = sigma_bar
     R[0:p-1, p-1] = z
 
-    return (Q, R, P)
+    return Q, R, P
 
 
 def peig(A, n):

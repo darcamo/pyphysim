@@ -781,13 +781,10 @@ class SVDMimo(Blast):
     @staticmethod
     def _calc_precoder(channel):
         """
-        Calculate the linear precoder for the MRT scheme.
+        Calculate the linear precoder for the SVD MIMO scheme.
 
-        The MRT scheme corresponds to multiplying the symbol from each
-        transmit antenna with a complex number corresponding to the inverse
-        of the phase of the channel so as to ensure that the signals add
-        constructively at the receiver. This also means that the MRT echeme
-        only be applied to senarios with a single receive antenna.
+        The SVD MIMO scheme employs as precoder the right singular matrix
+        from SVD (Singular Value Decomposition) of the channel.
 
         Parameters
         ----------
@@ -810,7 +807,7 @@ class SVDMimo(Blast):
     @staticmethod
     def _calc_receive_filter(channel, noise_var=None):
         """
-        Calculate the receive filter for the MRT scheme.
+        Calculate the receive filter for the SVD MIMO scheme.
 
         Parameters
         ----------
