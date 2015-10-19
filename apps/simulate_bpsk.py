@@ -64,4 +64,4 @@ if __name__ == '__main__':
         grid(True, which='both', axis='both')
         show()
 
-    print sim.elapsed_time
+    print(sim.elapsed_time)

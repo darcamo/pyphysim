@@ -198,6 +198,6 @@ if __name__ == '__main__':
         grid(True, which='both', axis='both')
         show()
 
-    print "SER: {0}".format(ser)
-    print "BER: {0}".format(ber)
-    print sim.elapsed_time
+    print("SER: {0}".format(ser))
+    print("BER: {0}".format(ber))
+    print(sim.elapsed_time)
