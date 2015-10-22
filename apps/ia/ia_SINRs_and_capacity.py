@@ -8,9 +8,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 try:
@@ -46,7 +47,7 @@ def calc_SINRs_and_capacity(solver):
 
     calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
 
-    capacity = map(calc_capacity, sinrs)
+    capacity = np.array(list(map(calc_capacity, sinrs)))
     sum_capacity = np.sum(capacity)
 
     return (SINRs, capacity, sum_capacity)
@@ -72,18 +73,17 @@ if __name__ == '__main__':
 
     alt_min_solver = AlternatingMinIASolver(multiuserchannel)
     alt_min_solver.max_iterations = max_iterations
-    alt_min_solver.noise_var = noise_var
+    # alt_min_solver.noise_var = noise_var
 
     max_sinr_solver = MaxSinrIASolver(multiuserchannel)
     max_sinr_solver.max_iterations = max_iterations
-    max_sinr_solver.noise_var = noise_var
+    # max_sinr_solver.noise_var = noise_var
     max_sinr_solver.initialize_with = 'alt_min'
 
     mmse_solver = MMSEIASolver(multiuserchannel)
     mmse_solver.max_iterations = max_iterations
-    mmse_solver.noise_var = noise_var
+    # mmse_solver.noise_var = noise_var
     mmse_solver.initialize_with = 'alt_min'
-
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))

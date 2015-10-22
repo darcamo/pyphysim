@@ -11,9 +11,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -188,7 +189,7 @@ class IASimulationRunner(SimulationRunner):
         sirn_all_k = self.ia_solver.calc_SINR()
         calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
         # Array with the sum capacity of each user
-        sum_capacity = map(calc_capacity, sirn_all_k)
+        sum_capacity = np.array(list(map(calc_capacity, sirn_all_k)))
         # Total sum capacity
         total_sum_capacity = np.sum(sum_capacity)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -526,7 +527,7 @@ def main_simulate(algorithms_to_simulate):
 
     # xxxxxxxxxx Closed Form Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if "Closed Form" in algorithms_to_simulate:
-        print "Simulating Closed Form algorithm"
+        print("Simulating Closed Form algorithm")
         closed_form_runner = ClosedFormSimulationRunner('ia_config_file.txt')
 
         try:
@@ -549,7 +550,7 @@ def main_simulate(algorithms_to_simulate):
 
     # xxxxxxxxxx Alt. Min. Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if "Alt Min" in algorithms_to_simulate:
-        print "Simulating Alternating Minimizations algorithm"
+        print("Simulating Alternating Minimizations algorithm")
         alt_min_runner = AlternatingSimulationRunner('ia_config_file.txt')
 
         try:
@@ -567,7 +568,7 @@ def main_simulate(algorithms_to_simulate):
 
     # xxxxxxxxxx Max SINR Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if "Max SINR" in algorithms_to_simulate:
-        print "Simulating Max SINR algorithm"
+        print("Simulating Max SINR algorithm")
         max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
         pprint(max_sinrn_runner.params.parameters)
         # print("IA Solver: {0}\n".format(
@@ -580,7 +581,7 @@ def main_simulate(algorithms_to_simulate):
 
     # xxxxxxxxxx MMSE Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if "MMSE" in algorithms_to_simulate:
-        print "Simulating MMSE algorithm"
+        print("Simulating MMSE algorithm")
         mmse_runner = MMSESimulationRunner('ia_config_file.txt')
         pprint(mmse_runner.params.parameters)
         # print("IA Solver: {0}\n".format(mmse_runner.ia_solver.__class__))
@@ -594,7 +595,7 @@ def main_simulate(algorithms_to_simulate):
 
     # xxxxxxxxxx Some finalization message xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     toc = time()
-    print "Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic))
+    print("Total Elapsed Time: {0}".format(misc.pretty_time(toc - tic)))
 
 
 # This function is only used in the implementation of the main_plot
@@ -776,7 +777,7 @@ if __name__ == '__main__':
     # This include statement may seem unnecessary, since these classes are
     # defined in this file, but they are important when the simulation is
     # performed in parallel in IPython engines.
-    from apps.simulate_ia import ClosedFormSimulationRunner, \
+    from apps.ia.simulate_ia import ClosedFormSimulationRunner, \
     AlternatingSimulationRunner, MMSESimulationRunner, \
     MaxSINRSimulationRunner  #, MinLeakageSimulationRunner
 
@@ -848,4 +849,4 @@ if __name__ == '__main__':
         else:
             main_plot(algorithms_to_simulate, args.index)
     else:
-        print "Should not be here!!!"
+        print("Should not be here!!!")

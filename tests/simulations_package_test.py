@@ -2439,7 +2439,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
             if len(lview) == 0:  # pragma: no cover
                 self.skipTest("At least one IPython engine must be running.")
         except IOError:  # pragma: no cover
-            self.skipTest("The IPython engines were not found.")
+            self.skipTest("The IPython engines were not found. ('tests' profile)")
         #
         #
         # This test is intended to clarify some special care that must be

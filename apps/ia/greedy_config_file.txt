@@ -1,0 +1,23 @@
+[Grid]
+        cell_radius = 1.0
+        num_cells = 3
+        num_clusters = 1
+[Scenario]
+        NSymbs = 200
+        SNR = [  0.   5.  10.  15.  20.  25.  30.]
+        M = 4
+        modulator = PSK
+        Nr = 3
+        Nt = 3
+        Ns = 3
+        N0 = -116.4
+        scenario = Random, NoPathLoss
+[IA Algorithm]
+        max_iterations = 120
+        initialize_with = random,
+        stream_sel_method = greedy, brute
+[General]
+        rep_max = 20
+        max_bit_errors = 3000
+        unpacked_parameters = SNR, stream_sel_method, scenario, initialize_with
+        

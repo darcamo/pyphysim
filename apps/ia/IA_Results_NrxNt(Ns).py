@@ -8,20 +8,23 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from pyphysim.util.simulations import SimulationRunner, SimulationParameters, SimulationResults, Result
+from pyphysim.simulations.runner import SimulationRunner
+from pyphysim.simulations.parameters import SimulationParameters
+from pyphysim.simulations.results import SimulationResults, Result
 from pyphysim.comm import modulators, channels
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
 from pyphysim.ia import algorithms
 import numpy as np
 from pprint import pprint
-from plot.pgfplotshelper import *
+from pyphysim.plot.pgfplotshelper import *
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # In Ipython run this script with
@@ -29,7 +32,7 @@ from plot.pgfplotshelper import *
 try:
     initialized
 except Exception as e:
-    print "nao deveria estar aqui"
+    print("This line should not be executed")
     initialized = False
     max_iterations = "{0}".format(5)
 
@@ -77,7 +80,7 @@ def get_num_mean_ia_iterations(sim_results_object, fixed_params=None):
 ## xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 if initialized is False:
-    print "Lendo arquivos de resultados"
+    print("Reading result files")
     # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #params = SimulationParameters.load_from_config_file('ia_config_file.txt')
     K = 3

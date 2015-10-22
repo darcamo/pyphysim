@@ -11,9 +11,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from traits.etsconfig.etsconfig import ETSConfig
@@ -349,21 +350,7 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         plt.show()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def plot_results_with_chaco_shell(self):
-        SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser = self.get_data_to_be_plotted()
 
-        from chaco.shell import hold, semilogy, legend, tool, show
-        semilogy(SNR, ber, '-r', name='BER')
-        hold(True)
-        semilogy(SNR, ser, name='SER')
-        legend(True)
-        tool()
-        show()
-
-    def plot_results_with_chaco(self):
-        from plot.simulationresultsplotter import SimulationResultsPlotter
-        results_plotter = SimulationResultsPlotter(self)
-        results_plotter.configure_traits()
 # xxxxxxxxxx PskSimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -388,8 +375,8 @@ def get_configobj_template(config_file_name="psk_simulation_config.txt"):
     # xxxxx Simulation parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     configobj['Simulation']['SNR'] = range(0, 19, 3)
     configobj['Simulation']['M'] = 4
-    configobj['Simulation']['NSymbs'] = 5000
-    configobj['Simulation']['rep_max'] = 20000
+    configobj['Simulation']['NSymbs'] = 500
+    configobj['Simulation']['rep_max'] = 1000
     configobj['Simulation']['max_bit_errors'] = 200
 
     # xxxxx Comments for each simulation parameters xxxxxxxxxxxxxxxxxxxxxxx
@@ -423,14 +410,10 @@ if __name__ == '__main__':
     psk_runner = PskSimulationRunner()
     psk_runner.simulate()
 
-    print "Elapsed Time: {0}".format(psk_runner.elapsed_time)
-    print "Iterations Executed: {0}".format(psk_runner.runned_reps)
+    print("Elapsed Time: {0}".format(psk_runner.elapsed_time))
+    print("Iterations Executed: {0}".format(psk_runner.runned_reps))
 
-    # psk_runner.plot_results()
-    psk_runner.plot_results_with_chaco()
-    #psk_runner.plot_results_with_chaco_shell()
-
-    #results_plotter = psk_runner.results_plotter
+    psk_runner.plot_results()
 
 
 if __name__ == '__main__1':

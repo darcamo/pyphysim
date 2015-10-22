@@ -8,9 +8,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -58,13 +59,13 @@ def main():
     Nr = 4
     Nt = 4
     Ns = 2
-    SNR = -30.0
+    SNR = 30.0
     P = 1.0
 
     # Dependent parameters
     noise_var = 1 / dB2Linear(SNR)
 
-    RepMax = 100
+    RepMax = 1
     mmse_sinrs = np.empty([RepMax, K, Ns], dtype=float)
     max_sinr_sinrs = np.empty([RepMax, K, Ns], dtype=float)
     mmse_capacity = np.empty(RepMax, dtype=float)
@@ -93,18 +94,17 @@ def main():
         # We wouldn't need to explicitly set ia_solver.noise_var
         # variable if the multiUserChannel object had the correct value at
         # this point.
-        mmse_ia_solver.noise_var = noise_var
+        # mmse_ia_solver.noise_var = noise_var
         mmse_ia_solver.max_iterations = 200
         mmse_ia_solver.solve(Ns)
 
-        max_sinr_ia_solver.noise_var = noise_var
+        # max_sinr_ia_solver.noise_var = noise_var
         max_sinr_ia_solver.max_iterations = 200
 
         max_sinr_ia_solver.solve(Ns)
 
-        import pudb; pudb.set_trace()  ## DEBUG ##
-        mmse_sinrs[rep] = map(linear2dB, mmse_ia_solver.calc_SINR())
-        max_sinr_sinrs[rep] = map(linear2dB, max_sinr_ia_solver.calc_SINR())
+        mmse_sinrs[rep] = list(map(linear2dB, mmse_ia_solver.calc_SINR()))
+        max_sinr_sinrs[rep] = list(map(linear2dB, max_sinr_ia_solver.calc_SINR()))
 
         mmse_capacity[rep] = np.sum(calc_capacity(mmse_ia_solver.calc_SINR()))
         max_sinr_capacity[rep] = np.sum(calc_capacity(max_sinr_ia_solver.calc_SINR()))
@@ -118,14 +118,12 @@ def main():
 
         pbar.progress(rep)
 
-    print "MMSE Average SINRs:\n{0}".format(mmse_sinrs.mean(0))
-    print "Max SINR Average SINRs:\n{0}".format(max_sinr_sinrs.mean(0))
-    print "MMSE Average Capacity: {0}".format(mmse_capacity.mean())
-    print "Max SINR Average Capacity: {0}".format(max_sinr_capacity.mean())
+    print("MMSE Average SINRs:\n{0}".format(mmse_sinrs.mean(0)))
+    print("Max SINR Average SINRs:\n{0}".format(max_sinr_sinrs.mean(0)))
+    print("MMSE Average Capacity: {0}".format(mmse_capacity.mean()))
+    print("Max SINR Average Capacity: {0}".format(max_sinr_capacity.mean()))
 
-    print "\nEnd!"
-
-    import pudb; pudb.set_trace()  ## DEBUG ##
+    print("\nEnd!")
 
 
 if __name__ == '__main__':

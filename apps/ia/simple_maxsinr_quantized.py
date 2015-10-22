@@ -10,9 +10,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
@@ -272,25 +273,25 @@ if __name__ == '__main__':
         #ia_cost = ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print
-    print bitErrors
-    print numBits
+    print()
+    print(bitErrors)
+    print(numBits)
     BER = bitErrors / numBits
-    print "BER: {0}".format(BER)
+    print("BER: {0}".format(BER))
 
     SINRs = multi_user_channel.calc_SINR(ia_solver.F, ia_solver.W)
     sum_capacity = np.sum(np.log2(1+np.hstack(SINRs)))
 
-    print "Sum Capacity: {0}".format(sum_capacity)
+    print("Sum Capacity: {0}".format(sum_capacity))
 
 
     # # SINR_0 = ia_solver._calc_SINR_k(0)
     # # SINR_1 = ia_solver._calc_SINR_k(1)
     # # SINR_2 = ia_solver._calc_SINR_k(2)
 
-    # # print "SINR_0: {0}".format(SINR_0)
-    # # print "SINR_1: {0}".format(SINR_1)
-    # # print "SINR_2: {0}".format(SINR_2)
+    # # print("SINR_0: {0}".format(SINR_0))
+    # # print("SINR_1: {0}".format(SINR_1))
+    # # print("SINR_2: {0}".format(SINR_2))
 
     # # xxxxxxxxxx Debug info xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # H00 = multi_user_channel.get_Hkl(0, 0)

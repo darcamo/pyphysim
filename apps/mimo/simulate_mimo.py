@@ -11,9 +11,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -444,7 +445,7 @@ def simulate_general(runner, results_filename):
 
 
 def simulate_alamouti(config_file_name='mimo_alamouti_config_file.txt'):
-    from apps.simulate_mimo import AlamoutiSimulationRunner
+    from apps.mimo.simulate_mimo import AlamoutiSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = AlamoutiSimulationRunner(config_file_name)
@@ -460,7 +461,7 @@ def simulate_alamouti(config_file_name='mimo_alamouti_config_file.txt'):
 
 
 def simulate_blast(config_file_name='mimo_blast_config_file.txt'):
-    from apps.simulate_mimo import BlastSimulationRunner
+    from apps.mimo.simulate_mimo import BlastSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = BlastSimulationRunner(config_file_name)
@@ -476,7 +477,7 @@ def simulate_blast(config_file_name='mimo_blast_config_file.txt'):
 
 
 def simulate_mrc(config_file_name='mimo_mrc_config_file.txt'):
-    from apps.simulate_mimo import MRCSimulationRunner
+    from apps.mimo.simulate_mimo import MRCSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = MRCSimulationRunner(config_file_name)
@@ -492,7 +493,7 @@ def simulate_mrc(config_file_name='mimo_mrc_config_file.txt'):
 
 
 def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
-    from apps.simulate_mimo import MRTSimulationRunner
+    from apps.mimo.simulate_mimo import MRTSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = MRTSimulationRunner(config_file_name)
@@ -508,7 +509,7 @@ def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
 
 
 def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
-    from apps.simulate_mimo import SVDMimoSimulationRunner
+    from apps.mimo.simulate_mimo import SVDMimoSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = SVDMimoSimulationRunner(config_file_name)
@@ -524,7 +525,7 @@ def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
 
 
 def simulate_gmdmimo(config_file_name='mimo_gmdmimo_config_file.txt'):
-    from apps.simulate_mimo import GMDMimoSimulationRunner
+    from apps.mimo.simulate_mimo import GMDMimoSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
     runner = GMDMimoSimulationRunner(config_file_name)

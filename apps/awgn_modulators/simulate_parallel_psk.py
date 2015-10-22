@@ -15,9 +15,10 @@ import sys
 import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
@@ -207,7 +208,7 @@ if __name__ == '__main__':
     dview.execute('sys.path.append("{0}")'.format(parent_dir))
 
     from matplotlib import pyplot as plt
-    from apps.simulate_parallel_psk import VerySimplePskSimulationRunner
+    from apps.awgn_modulators.simulate_parallel_psk import VerySimplePskSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxx Parallel Simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -226,15 +227,15 @@ if __name__ == '__main__':
     # xxxxxxxxxx Print the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     SNR_p, ber_p, ser_p, theoretical_ber_p, theoretical_ser_p \
         = sim_p.get_data_to_be_plotted()
-    print "SER_P: {0}".format(ser_p)
-    print "BER_P: {0}".format(ber_p)
-    print sim_p.elapsed_time
+    print("SER_P: {0}".format(ser_p))
+    print("BER_P: {0}".format(ber_p))
+    print(sim_p.elapsed_time)
 
     SNR_s, ber_s, ser_s, theoretical_ber_s, theoretical_ser_s \
         = sim_s.get_data_to_be_plotted()
-    print "SER_s: {0}".format(ser_s)
-    print "BER_s: {0}".format(ber_s)
-    print sim_s.elapsed_time
+    print("SER_s: {0}".format(ser_s))
+    print("BER_s: {0}".format(ber_s))
+    print(sim_s.elapsed_time)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

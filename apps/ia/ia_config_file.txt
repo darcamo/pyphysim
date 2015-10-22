@@ -4,16 +4,16 @@
         modulator = PSK
         NSymbs = 100
         K = 3
-        Nr = 4
-        Nt = 4
-        Ns = 2
+        Nr = 2
+        Nt = 2
+        Ns = 1
 [IA Algorithm]
-        max_iterations = [120]
-        initialize_with = random, 
+        max_iterations = 1:5,5:5:121,200
+        initialize_with = random,alt_min
 [General]
         max_bit_errors = 3000
         unpacked_parameters = SNR, max_iterations, initialize_with
-        rep_max = 104
+        rep_max = 100
 [Plot]
         max_iterations_plot = 120
         initialize_with_plot = random
