@@ -1133,7 +1133,14 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C2._cells[1].num_users, 12)
         self.assertEqual(self.C2._cells[5].num_users, 3)
 
-        # self.C2.plot()
+        # If cell id is not provided, then it is assumed we will add to all
+        # cells. Here we add one user in each of the 19 cells in self.C3.
+        self.C3.add_random_users(num_users=1)
+        self.assertEqual(self.C3.num_users, 19)
+        for c in self.C3:
+            self.assertEqual(c.num_users, 1)
+
+        # self.C3.plot()
 
     def test_add_border_users(self):
         self.C1.delete_all_users()

@@ -1869,7 +1869,7 @@ class Cluster(shapes.Shape):
             else:
                 ax.autoscale_view(False, True, True)
 
-    def add_random_users(self, cell_ids, num_users=1, user_color=None,
+    def add_random_users(self, cell_ids=None, num_users=1, user_color=None,
                          min_dist_ratio=0):
         """
         Adds one or more users to the Cells with the specified cell IDs (the
@@ -1880,7 +1880,8 @@ class Cluster(shapes.Shape):
         cell_ids : int or iterable
             IDs of the cells in the Cluster for which users will be
             added. The first cell has an ID equal to 1 and `cell_ids` may
-            be an iterable with the IDs of several cells.
+            be an iterable with the IDs of several cells. If not provided,
+            all cells will be assumed.
         num_users : int
             Number of users to be added to each cell.
         user_color : str
@@ -1897,6 +1898,9 @@ class Cluster(shapes.Shape):
         length of cell_ids in order to specifying individual values for
         each cell ID.
         """
+        if cell_ids is None:
+            cell_ids = range(1, self.num_cells + 1)
+
         if isinstance(cell_ids, Iterable):
             if not isinstance(num_users, Iterable):
                 num_users = itertools.repeat(num_users)
