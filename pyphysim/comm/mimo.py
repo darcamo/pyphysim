@@ -13,10 +13,10 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import math
 import warnings
-from pyphysim.util.misc import gmd
-from pyphysim.util.conversion import linear2dB
+from ..util.misc import gmd
+from ..util.conversion import linear2dB
 
-__all__ = ['MimoBase', 'Blast', 'Alamouti', 'MRT', 'MRC', 'SVDMimo']
+__all__ = ['MimoBase', 'Blast', 'Alamouti', 'MRT', 'MRC', 'SVDMimo', 'GMDMimo']
 
 # TODO: maybe you can use the weave module (inline or blitz methods) from
 # scipy to speed up things here.

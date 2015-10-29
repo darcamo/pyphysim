@@ -30,7 +30,8 @@ from ..util.conversion import single_matrix_to_matrix_of_matrices, linear2dBm, d
 from ..util.misc import randn_c_RS
 
 __all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt',
-           'JakesSampleGenerator', 'generate_jakes_samples']
+           'JakesSampleGenerator', 'generate_jakes_samples',
+           'TdlChannelProfile', 'TdlChannel', 'calc_thermal_noise_power_dBm']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

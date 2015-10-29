@@ -3,7 +3,10 @@
 "Module with Sounding Reference Signal (SRS) related functions"
 
 import numpy as np
-from pyphysim.util.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+from ..util.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+
+
+__all__ = ['SrsRootSequence', 'SrsUeSequence', 'SrsChannelEstimator']
 
 
 class SrsRootSequence(object):

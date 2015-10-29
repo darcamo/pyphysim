@@ -25,7 +25,7 @@ from ..util.misc import peig, leig, update_inv_sum_diag, \
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver',
-           'GreedStreamIASolver']
+           'GreedStreamIASolver', 'BruteForceStreamIASolver']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

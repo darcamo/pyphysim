@@ -22,7 +22,8 @@ from ..util.misc import least_right_singular_vectors, \
 from ..util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
 from ..subspace.projections import calcProjectionMatrix
 
-__all__ = ['BlockDiaginalizer', 'block_diagonalize', 'calc_receive_filter']
+__all__ = ['block_diagonalize', 'calc_receive_filter', 'BlockDiaginalizer',
+           'BDWithExtIntBase', 'WhiteningBD', 'EnhancedBD']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
