@@ -2187,7 +2187,7 @@ class Cluster(shapes.Shape):
 
         Notes
         -----
-        There is no explicit indication from which cell each user ccame
+        There is no explicit indication from which cell each user came
         from. However, in a case, for instance, where there are 3 cells in
         the cluster with 2, 2 and 3 users in each of them, respectively,
         then the first 2 rows correspond to the users in the first cell,
