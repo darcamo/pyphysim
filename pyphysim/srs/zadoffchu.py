@@ -30,7 +30,7 @@ def calcBaseZC(Nzc, u, q=0):
     """
     # In fact, 'u' must be lower than the largest prime number below or
     # equal to Nzc
-    assert(u < Nzc)
+    assert (u < Nzc)
 
     n = np.arange(Nzc)
     a_u = np.exp((-1j * np.pi * u * n * (n + 1 + 2 * q)) / Nzc)
@@ -50,8 +50,8 @@ def getShiftedZF(root_seq, n_cs):
         to 7, where 0 will just return the base sequence, 1 gives the first
         shift, and so on.
     """
-    assert(abs(n_cs) >= 0)
-    assert(abs(n_cs) < 8)
+    assert (abs(n_cs) >= 0)
+    assert (abs(n_cs) < 8)
 
     Nzc = root_seq.size
     alpha_m = 2 * np.pi * n_cs / 8
@@ -77,7 +77,7 @@ def get_extended_ZF(root_seq, size):
 
     Example
     -------
-    >>> root_seq = np.array([1,2,3,4,5])
+    >>> root_seq = np.array([1, 2, 3, 4, 5])
     >>> get_extended_ZF(root_seq, 8)
     [1,2,3,4,5,1,2,3]
     """
@@ -86,20 +86,18 @@ def get_extended_ZF(root_seq, size):
         stack_list = [root_seq]
         num_full_repeats = (size // root_seq_size)
         # Repeat the full sequence by this amount
-        stack_list = stack_list * num_full_repeats
+        stack_list *= num_full_repeats
 
         current_size = root_seq_size * num_full_repeats
 
-
         # Append remaining element to achieve the required size
-        stack_list.append(root_seq[0:size-current_size])
+        stack_list.append(root_seq[0:size - current_size])
 
         output = np.hstack(stack_list)
     else:
-        output = np.hstack([root_seq, root_seq[0:size-root_seq_size]])
+        output = np.hstack([root_seq, root_seq[0:size - root_seq_size]])
 
     return output
-
 
 # if __name__ == '__main__':
 #     np.set_printoptions(precision=4)

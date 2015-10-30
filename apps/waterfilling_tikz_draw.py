@@ -169,7 +169,7 @@ def drawWF(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
 def _test_drawwf():
     import os
 
-    print "Inicio"
+    print("Inicio")
 
     vtChannels = np.array([9.32904521e-13, 2.63321084e-13, 5.06505202e-14])
     noiseVar = 2.5119e-14
@@ -196,11 +196,11 @@ if __name__ == '__main__1':  # pragma: no cover
 
     (vtOptP, mu) = waterfilling.doWF(vtChannels, Power, noise_var)
 
-    print "vtOptP"
-    print vtOptP
-    print "mu"
-    print mu
+    print("vtOptP")
+    print(vtOptP)
+    print("mu")
+    print(mu)
 
-    print sum(vtOptP)
+    print(sum(vtOptP))
 
     # drawWF(vtChannels, mu, noise_var)

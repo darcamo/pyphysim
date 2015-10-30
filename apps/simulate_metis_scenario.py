@@ -27,8 +27,10 @@ from matplotlib import pyplot as plt
 
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 # from pyphysim.cell import shapes
-from pyphysim.comm import pathloss
-from pyphysim.comm.channels import calc_thermal_noise_power_dBm
+from pyphysim.channels import pathloss
+from pyphysim.channels.noise import calc_thermal_noise_power_dBm
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -287,7 +289,7 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
 
     # xxxxxxxxxx Discretization of the possible positions xxxxxxxxxxxxxxxxx
     num_discrete_positions_per_room = 15  # Number of discrete positions
-    step = 1. / (num_discrete_positions_per_room)
+    step = 1. / num_discrete_positions_per_room
     aux = np.linspace(
         -(1. - step), (1. - step), num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')

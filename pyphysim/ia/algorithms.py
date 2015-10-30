@@ -65,6 +65,7 @@ class ClosedFormIASolver(IASolverBaseClass):
         IASolverBaseClass.__init__(self, multiUserChannel)
         self._use_best_init = use_best_init
 
+    # noinspection PyPep8
     def _calc_E(self):
         """
         Calculates the "E" matrix, given by
@@ -159,6 +160,7 @@ class ClosedFormIASolver(IASolverBaseClass):
         self._F[1] /= np.linalg.norm(self._F[1], 'fro')
         self._F[2] /= np.linalg.norm(self._F[2], 'fro')
 
+    # noinspection PyUnresolvedReferences
     def _updateW(self):
         """Find the receive filters
         """
@@ -182,6 +184,7 @@ class ClosedFormIASolver(IASolverBaseClass):
             np.dot(A2, A2.transpose().conjugate()),
             self.Ns[2])[0]
 
+    # noinspection PyUnboundLocalVariable
     def solve(self, Ns, P=None):
         """
         Find the IA solution.
@@ -218,7 +221,8 @@ class ClosedFormIASolver(IASolverBaseClass):
 
             # Lambda function to calculate the sum capacity from the SINR
             # values (in linear scale)
-            calc_capacity = lambda sinr: np.sum(np.log2(1 + sinr))
+            def calc_capacity(sinr):
+                return np.sum(np.log2(1 + sinr))
 
             for F0 in all_initializations:
                 self._updateF(F0)
@@ -475,6 +479,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # Calculate the receive filters
         self._updateW()
 
+    # noinspection PyUnusedLocal
     def _initialize_F_with_svd_and_find_W(self, Ns, P):
         """
         Initialize the IA Solution from the most significant singular vectors
@@ -514,7 +519,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # Calculate the receive filters
         self._updateW()
 
-    def _dont_initialize_F_and_only_and_find_W(self, dummy1=None, dummy2=None):
+    def _dont_initialize_F_and_only_and_find_W(self, *_):
         """
         Initialize the IA Solution from a random matrix.
 
@@ -670,7 +675,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     new_F = get_principal_component_matrix(self._F[k], n)
 
                     # Normalize new_F
-                    new_F = new_F / np.linalg.norm(new_F, 'fro')
+                    new_F /= np.linalg.norm(new_F, 'fro')
 
                     self._F[k] = new_F
 
@@ -810,7 +815,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # TODO: Should I use full_F instead of F???
         old_F = self._F
         for _ in range(self.max_iterations):
-            self._runned_iterations = self._runned_iterations + 1
+            self._runned_iterations += 1
             self._step()
 
             # Stop the iteration earlier if the precoder does not change
@@ -881,6 +886,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
     # Overwrite the set property for 'initialize_with' to remove the
     # 'alt_min' initialization type, since it does not make sense.
+    # noinspection PyMethodOverriding,PyIncorrectDocstring
     @IterativeIASolverBaseClass.initialize_with.setter
     def initialize_with(self, value):
         """Set method for the initialize_with property."""
@@ -912,7 +918,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
             Hkl_Fl = np.dot(
                 self._get_channel(k, l),
                 self.full_F[l])
-            Cost = Cost + np.linalg.norm(
+            Cost += np.linalg.norm(
                 Hkl_Fl -
                 np.dot(
                     np.dot(
@@ -968,6 +974,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         self._updateW()  # Depend on the value of C
         IterativeIASolverBaseClass._solve_finalize(self)
 
+    # noinspection PyPep8
     def _updateC(self):
         """Update the value of Ck for all K users.
 
@@ -1028,8 +1035,9 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # The number of users is always 3 for the ClosedFormIASolver class
         self._F = np.zeros(self.K, dtype=np.ndarray)
 
-        calc_Y = lambda Nr, C: np.eye(Nr, dtype=complex) - \
-            np.dot(C, C.conjugate().transpose())
+        def calc_Y(Nr, C):
+            return (np.eye(Nr, dtype=complex) -
+                    np.dot(C, C.conjugate().transpose()))
         Y = list(map(calc_Y, self.Nr, self._C))
 
         newF = np.zeros(self.K, dtype=np.ndarray)
@@ -1052,7 +1060,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         # element by the least dominant eigenvectors of that element.
         for k in range(self.K):
             self._F[k] = leig(newF[k], self.Ns[k])[0]
-            self._F[k] = self._F[k] / np.linalg.norm(self._F[k], 'fro')
+            self._F[k] /= np.linalg.norm(self._F[k], 'fro')
 
     def _updateW(self):
         """
@@ -1233,6 +1241,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_first_part_rev(self, k):
         """Calculates the first part in the equation of the Blk covariance
         matrix of the reverse channel.
@@ -1267,7 +1276,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             assert np.linalg.norm(Vj, 'fro') - 1.0 < 1e-6
 
             Vj_H = Vj.conjugate().transpose()
-            first_part = first_part + (float(P[j]) / self._Ns[j]) * np.dot(
+            first_part += (float(P[j]) / self._Ns[j]) * np.dot(
                 Hkj,
                 np.dot(
                     np.dot(Vj,
@@ -1276,6 +1285,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return first_part
 
+    # noinspection PyPep8,PyPep8
     def _calc_Bkl_cov_matrix_second_part_rev(self, k, l):
         """Calculates the second part in the equation of the Blk covariance
         matrix of the reverse channel..
@@ -1314,6 +1324,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         return second_part * (float(P[k]) / self._Ns[k])
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_all_l_rev(self, k):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at "receiver" :math:`k` for the reverse channel.
@@ -1372,7 +1383,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Ukl = np.linalg.solve(Bkl, np.dot(Hkk, Vkl))
 
-        Ukl = Ukl / np.linalg.norm(Ukl, 'fro')
+        Ukl /= np.linalg.norm(Ukl, 'fro')
         return Ukl
 
     @classmethod
@@ -1518,6 +1529,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         IterativeIASolverBaseClass._solve_init(self, Ns, P)
         self._mu = np.zeros(self.K, dtype=float)
 
+    # noinspection PyPep8
     def _calc_Uk(self, k):
         """
         Calculates the receive filter of the k-th user.
@@ -1606,6 +1618,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         Vi = np.dot(new_inv, H_herm_U)
         return Vi
 
+    # noinspection PyPep8
     def _calc_Vi(self, i, mu_i=None):
         """
         Calculates the precoder of the i-th user.
@@ -1661,7 +1674,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # mean of the current singular values of sum_term).
             load_factor = S.mean() / 100.0
             # pylint: disable= E1103
-            sum_term = sum_term + np.eye(sum_term.shape[0]) * load_factor
+            sum_term += np.eye(sum_term.shape[0]) * load_factor
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1669,6 +1682,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if mu_i is None:
             # xxxxx Define the function that will be optimized xxxxxxxxxxxx
+            # noinspection PyShadowingNames,PyIncorrectDocstring
             def func(local_mu, local_sum_term, local_Hii_herm_U, local_P):
                 """
                 Function that will be optimized to find the best value of
@@ -1692,8 +1706,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # Note that THIS WILL NOT CHANGE the final value of Vi,
             # although the Lagrange multiplier will be different.
             scale_factor = np.linalg.norm(Hii_herm_U)
-            Hii_herm_U = Hii_herm_U / scale_factor
-            sum_term = sum_term / scale_factor
+            Hii_herm_U /= scale_factor
+            sum_term /= scale_factor
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             min_mu_i = 0
@@ -1735,12 +1749,12 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                               Hii_herm_U * 10,
                               self.P[i]),
                         maxiter=200)
-                    mu_i = mu_i / 10.
+                    mu_i /= 10.
                     cost = func(mu_i, sum_term, Hii_herm_U, self.P[i])
                     # If our new solution is still bad then we raise a
                     # RuntimeError exception to indicate that a good
                     # solution was not found
-                    if cost > self.P[i]/1e6:
+                    if cost > self.P[i] / 1e6:
                         # Cost is still positive. The current value for mu
                         # can't be used, since the power restriction will
                         # not be valid. Note that we allow a positive cost
@@ -2095,7 +2109,7 @@ class BruteForceStreamIASolver(object):
         # possible number of streams of one user.
         # Ex: If Ns is [2, 2, 3] then the list of lists will be
         # [[1, 2], [1, 2], [1, 2, 3]]
-        each_user_variation = [range(1, Ns[i]+1) for i in range(K)]
+        each_user_variation = [range(1, Ns[i] + 1) for i in range(K)]
 
         # Calculate all possible combinations of the inner lists.
         self._stream_combinations = tuple(product(*each_user_variation))

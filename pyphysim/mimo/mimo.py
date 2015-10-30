@@ -13,10 +13,11 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import math
 import warnings
-from ..util.misc import gmd
-from ..util.conversion import linear2dB
+from pyphysim.util.misc import gmd
+from pyphysim.util.conversion import linear2dB
 
 __all__ = ['MimoBase', 'Blast', 'Alamouti', 'MRT', 'MRC', 'SVDMimo', 'GMDMimo']
+
 
 # TODO: maybe you can use the weave module (inline or blitz methods) from
 # scipy to speed up things here.
@@ -72,7 +73,7 @@ def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
     sinrs : 1D numpy array.
         The SINR of all streams (in linear scale).
     """
-    if noise_var is None:
+    if noise_var is None:  # pragma: nocover
         noise_var = 0.0
 
     # This matrix will always be square
@@ -81,21 +82,21 @@ def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
     s = np.diag(channel_eq)
     i = sum_all_antennas - s
 
-    S = np.abs(s)**2
-    I = np.abs(i)**2
+    S = np.abs(s) ** 2
+    I = np.abs(i) ** 2
 
     if isinstance(G_H, np.ndarray):
         # G_H is a numpy array. Lets calculate the norm considering the
         # second axis (axis 1). That is, calculate the norm of each row in
         # G_H. The square of this norm will gives us the amount of noise
         # amplification in each stream.
-        N = noise_var * np.linalg.norm(G_H, axis=1)**2
+        N = noise_var * np.linalg.norm(G_H, axis=1) ** 2
     else:
         # G_H is a single number. The square of its absolute value will
         # gives us the noise amplification of the single stream.
-        N = noise_var * abs(G_H)**2
+        N = noise_var * abs(G_H) ** 2
 
-    sinrs = S/(I + N)
+    sinrs = S / (I + N)
 
     return sinrs
 
@@ -177,7 +178,7 @@ class MimoBase(object):
         return self._channel.shape[0]
 
     @staticmethod
-    def _calc_precoder(channel):
+    def _calc_precoder(channel):  # pragma: nocover
         """
         Calculate the linear precoder for the MIMO scheme, if there is any.
 
@@ -195,7 +196,7 @@ class MimoBase(object):
             '_calc_precoder still needs to be implemented')
 
     @staticmethod
-    def _calc_receive_filter(channel, noise_var=None):
+    def _calc_receive_filter(channel, noise_var=None):  # pragma: nocover
         """
         Calculate the receive filter for the MIMO scheme, if there is any.
 
@@ -313,6 +314,11 @@ class MimoBase(object):
         """
         Method to encode the transmit data array to be transmitted using some
         MIMO shceme. This method must be implemented in a subclass.
+
+        Parameters
+        ----------
+        transmit_data : numpy array
+            The data to be transmitted.
         """
         msg = 'encode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
@@ -322,6 +328,11 @@ class MimoBase(object):
         """
         Method to decode the transmit data array to be transmitted using some
         MIMO shceme. This method must be implemented in a subclass.
+
+        Parameters
+        ----------
+        received_data : numpy array
+            The received data.
         """
         msg = 'decode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
@@ -443,7 +454,7 @@ class Blast(MimoBase):
             # streams in the decode method.
             msg = ("The number of transmit antennas for {0} should not be "
                    "greater than the number of receive antennas.").format(
-                       self.__class__.__name__)
+                self.__class__.__name__)
             warnings.warn(msg)
 
         super(Blast, self).set_channel_matrix(channel)
@@ -562,8 +573,8 @@ class Blast(MimoBase):
                    " number of transmit antennas")
             raise ValueError(msg)
 
-        encoded_data = (transmit_data.reshape(nStreams, -1, order='F')
-                        / math.sqrt(self.Nt))
+        encoded_data = (transmit_data.reshape(nStreams, -1, order='F') /
+                        math.sqrt(self.Nt))
         return encoded_data
 
     def decode(self, received_data):
@@ -575,8 +586,6 @@ class Blast(MimoBase):
         received_data : 2D received data
             Received data, which was encoded with the Blast scheme and
             corrupted by the channel `channel`.
-        channel : 2D numpy array
-            MIMO channel matrix.
 
         Returns
         -------
@@ -614,6 +623,7 @@ class MRT(MisoBase):
         """
         MisoBase.__init__(self, channel)
 
+    # noinspection PyUnresolvedReferences
     @staticmethod
     def _calc_precoder(channel):
         """
@@ -706,7 +716,7 @@ class MRT(MisoBase):
         """
         G_H = self._calc_receive_filter(self._channel)
         decoded_data = G_H * received_data
-        decoded_data.shape = (decoded_data.size)
+        decoded_data.shape = decoded_data.size
 
         return decoded_data
 
@@ -823,7 +833,7 @@ class SVDMimo(Blast):
         """
         Nt = channel.shape[1]
         U, S, _ = np.linalg.svd(channel)
-        G_H = np.diag(1./S).dot(U.conj().T) * math.sqrt(Nt)
+        G_H = np.diag(1. / S).dot(U.conj().T) * math.sqrt(Nt)
         return G_H
 
     def encode(self, transmit_data):
@@ -865,7 +875,7 @@ class SVDMimo(Blast):
 
         Parameters
         ----------
-        received_data`: 2D numpy array
+        received_data : 2D numpy array
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
 
@@ -878,7 +888,7 @@ class SVDMimo(Blast):
         decoded_data = G_H.dot(received_data)
 
         # Return the decoded data as a 1D numpy array
-        return decoded_data.reshape(decoded_data.size,)
+        return decoded_data.reshape(decoded_data.size, )
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -997,7 +1007,7 @@ class GMDMimo(Blast):
 
         Parameters
         ----------
-        received_data`: 2D numpy array
+        received_data : 2D numpy array
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
 
@@ -1101,7 +1111,7 @@ class Alamouti(MimoBase):
         """
         # The linear post-processing SINR for the Alamouti scheme is given by
         # \[\frac{\Vert \mtH \Vert_F^2}{2 \sigma_N} \]
-        sinr = np.linalg.norm(self._channel, 'fro')**2 / noise_var
+        sinr = np.linalg.norm(self._channel, 'fro') ** 2 / noise_var
         return sinr
 
     @staticmethod
@@ -1207,7 +1217,7 @@ class Alamouti(MimoBase):
 
         # The Alamouti code gives a gain of the square of the frobenius
         # norm of the channel. We need to compensate that gain.
-        decoded_data = decoded_data / (np.linalg.norm(channel, 'fro') ** 2)
+        decoded_data /= np.linalg.norm(channel, 'fro') ** 2
         return decoded_data
 
     def decode(self, received_data):
@@ -1217,11 +1227,9 @@ class Alamouti(MimoBase):
 
         Parameters
         ----------
-        received_data`: 2D numpy array
+        received_data : 2D numpy array
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
-        channel : 2D numpy array
-            MIMO channel matrix.
 
         Returns
         -------
@@ -1229,4 +1237,5 @@ class Alamouti(MimoBase):
             The decoded data.
         """
         return self._decode(received_data, self._channel) * math.sqrt(2)
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

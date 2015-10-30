@@ -5,7 +5,9 @@
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -21,22 +23,15 @@ except ImportError as e:  # pragma: no cover
 
 from matplotlib import pyplot as plt
 
-import unittest
-import doctest
 import numpy as np
-from numpy.linalg import norm
-import copy
 
 from pandas import DataFrame
 
-from pyphysim.comm import channels
-import pyphysim.ia  # Import the package ia
-from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, MaxSinrIASolver, \
-    MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
-    IterativeIASolverBaseClass
-from pyphysim.util.misc import peig, leig, randn_c
-from pyphysim.util.conversion import linear2dB, dB2Linear
+from pyphysim.ia.algorithms import AlternatingMinIASolver, MaxSinrIASolver, \
+    MMSEIASolver
+from pyphysim.util.conversion import dB2Linear
 from pyphysim.simulations.progressbar import ProgressbarText
+import pyphysim.channels.multiuser
 
 
 def calc_SINRs_and_capacity(solver):
@@ -50,7 +45,7 @@ def calc_SINRs_and_capacity(solver):
     capacity = np.array(list(map(calc_capacity, sinrs)))
     sum_capacity = np.sum(capacity)
 
-    return (SINRs, capacity, sum_capacity)
+    return SINRs, capacity, sum_capacity
 
 
 if __name__ == '__main__':
@@ -67,7 +62,7 @@ if __name__ == '__main__':
     noise_var = 1./dB2Linear(SNR)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    multiuserchannel = channels.MultiUserChannelMatrix()
+    multiuserchannel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
     multiuserchannel.randomize(Nr, Nt, K)
     multiuserchannel.noise_var = noise_var
 

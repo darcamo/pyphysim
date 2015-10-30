@@ -17,7 +17,9 @@ _prepare_external_interference method.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     pyphysim_dir = os.path.split(
         os.path.abspath(os.path.join(os.path.dirname(__file__),'../')))[0]
@@ -29,13 +31,14 @@ except NameError:
 import numpy as np
 from scipy.linalg import block_diag
 
-from pyphysim.simulations.core import SimulationRunner, \
+from pyphysim.simulations import SimulationRunner, \
     SimulationResults, Result, SimulationParameters
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
 from pyphysim.util.conversion import dB2Linear, dBm2Linear
 from pyphysim.util import misc
 from pyphysim.cell import cell
-from pyphysim.comm import pathloss, channels, modulators
+from pyphysim.modulators import fundamental
+from pyphysim.channels import pathloss, multiuser
 from pyphysim.comm.blockdiagonalization import EnhancedBD, WhiteningBD
 
 
@@ -88,7 +91,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.path_loss_obj = pathloss.PathLoss3GPP1()
-        self.multiuser_channel = channels.MultiUserChannelMatrixExtInt()
+        self.multiuser_channel = multiuser.MultiUserChannelMatrixExtInt()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx RandomState objects seeds xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -107,10 +110,10 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         # xxxxxxxxxx Creates the modulator object xxxxxxxxxxxxxxxxxxxxxxxxx
         M = self.params['M']
-        modulator_options = {'PSK': modulators.PSK,
-                             'QPSK': modulators.QPSK,
-                             'QAM': modulators.QAM,
-                             'BPSK': modulators.BPSK}
+        modulator_options = {'PSK': fundamental.PSK,
+                             'QPSK': fundamental.QPSK,
+                             'QAM': fundamental.QAM,
+                             'BPSK': fundamental.BPSK}
         self.modulator = modulator_options[self.params['modulator']](M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -601,6 +604,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         )
 
         # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # noinspection PyArgumentList
         Wk = block_diag(*Wk_all_users)
         received_symbols = np.dot(Wk, received_signal)
 

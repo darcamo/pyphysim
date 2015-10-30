@@ -10,6 +10,7 @@ import math
 import numpy as np
 from scipy.special import erfc
 
+
 # import math.erf
 # erf can also be found in the scipy.special library
 # erf can also be found in the math library -> python 2.7 ou above
@@ -30,6 +31,8 @@ def gmd(U, S, V_H, tol=0.0):
     U, S, V_H : 2D numpy arrays
        The three matrices obtained from the SVD of the original matrix you
        want to decompose.
+    tol : float
+        The tolerance.
 
     Returns
     -------
@@ -56,7 +59,7 @@ def gmd(U, S, V_H, tol=0.0):
     d = np.copy(S)  # We copy here to avoid changing 'S'
 
     # l = min(m, n)
-    p = np.sum(S >= tol)    # Number of singular values >= tol
+    p = np.sum(S >= tol)  # Number of singular values >= tol
 
     # If there is no singular value greater then the tolerance, then we
     # return nothing
@@ -66,40 +69,40 @@ def gmd(U, S, V_H, tol=0.0):
     # If we only have one singular value, that will be our diagonal
     # element
     if p < 2:
-        R[0,0] = d[0]
+        R[0, 0] = d[0]
 
-    z = np.zeros([p-1])     # Vector
-    large = 1               # index of the largest diagonal element
-    small = p-1             # index of the smallest diagonal element
-    perm = np.r_[0 : p]     # perm (i) = location in d of i-th largest entry
-    invperm = np.r_[0 : p]  # maps diagonal entries to perm
+    z = np.zeros([p - 1])  # Vector
+    large = 1              # index of the largest diagonal element
+    small = p - 1          # index of the smallest diagonal element
+    perm = np.r_[0:p]      # perm (i) = location in d of i-th largest entry
+    invperm = np.r_[0:p]   # maps diagonal entries to perm
 
     # Geometric Mean of the 'p' largest singular values
-    sigma_bar = np.prod(S[0:p])**(1./p)
+    sigma_bar = np.prod(S[0:p]) ** (1. / p)
 
-    for k in range(p-1):
+    for k in range(p - 1):
         flag = 0
 
         # xxxxx If flag is changed to 1 here we will not rotate xxxxxxx
         if d[k] >= sigma_bar:
             i = perm[small]
-            small = small - 1
-            if d [i] >= sigma_bar:
+            small -= 1
+            if d[i] >= sigma_bar:
                 flag = 1
         else:
             i = perm[large]
-            large = large + 1
+            large += 1
             if d[i] <= sigma_bar:
                 flag = 1
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         k1 = k + 1
-        if i != k1:         # Apply permutation Pi of paper
-            t = d[k1]       # Interchange d[i] and d[k1]
+        if i != k1:  # Apply permutation Pi of paper
+            t = d[k1]  # Interchange d[i] and d[k1]
             d[k1] = d[i]
             d[i] = t
 
-            j = invperm[k1] # Update perm arrays
+            j = invperm[k1]  # Update perm arrays
             perm[j] = i
             invperm[i] = j
 
@@ -112,37 +115,38 @@ def gmd(U, S, V_H, tol=0.0):
         # Deltas
         delta1 = d[k]
         delta2 = d[k1]
-        sq_delta1 = delta1**2
-        sq_delta2 = delta2**2
+        sq_delta1 = delta1 ** 2
+        sq_delta2 = delta2 ** 2
         if flag:
             c = 1
             s = 0
         else:
-            c = math.sqrt((sigma_bar**2 - sq_delta2)/(sq_delta1 - sq_delta2))
-            s = math.sqrt(1 - c**2)
+            c = math.sqrt(
+                (sigma_bar ** 2 - sq_delta2) / (sq_delta1 - sq_delta2))
+            s = math.sqrt(1 - c ** 2)
 
-        d[k1] = delta1 * delta2 / sigma_bar # = y in paper
-        z[k] = s * c * (sq_delta2 - sq_delta1) / sigma_bar # = x in paper
+        d[k1] = delta1 * delta2 / sigma_bar  # = y in paper
+        z[k] = s * c * (sq_delta2 - sq_delta1) / sigma_bar  # = x in paper
         R[k, k] = sigma_bar
 
         if k > 0:
-            R[0:k, k] = z[0:k] * c # new column of R
-            z[0:k] = -z[0:k] * s   # new column of Z
+            R[0:k, k] = z[0:k] * c  # new column of R
+            z[0:k] = -z[0:k] * s  # new column of Z
 
         # First Givens Rotation matrix
         G1 = np.array([[c, -s], [s, c]])
 
         J = np.array([k, k1])
-        P[:, J] = P[:, J].dot(G1) # apply G1 to P
+        P[:, J] = P[:, J].dot(G1)  # apply G1 to P
 
         # Second Givens Rotation Matrix
-        G2 = (1/sigma_bar) * np.array([[c*delta1, -s*delta2],
-                                       [s*delta2, c*delta1]])
+        G2 = (1. / sigma_bar) * np.array([[c * delta1, -s * delta2],
+                                          [s * delta2, c * delta1]])
 
-        Q[:, J] = Q[:, J].dot(G2) # apply G2 to Q
+        Q[:, J] = Q[:, J].dot(G2)  # apply G2 to Q
 
-    R[p-1, p-1] = sigma_bar
-    R[0:p-1, p-1] = z
+    R[p - 1, p - 1] = sigma_bar
+    R[0:p - 1, p - 1] = z
 
     return Q, R, P
 
@@ -267,7 +271,7 @@ def pretty_time(time_in_seconds):
     seconds = int(round(seconds % 60))
 
     hours = minutes // 60
-    minutes = minutes % 60
+    minutes %= 60
 
     if hours > 0:
         return "%sh:%02dm:%02ds" % (hours, minutes, seconds)
@@ -303,7 +307,7 @@ def xor(a, b):
     >>> xor(15,6)
     9
     """
-    return (a).__xor__(b)
+    return a.__xor__(b)
 
 
 def randn_c(*args):
@@ -452,8 +456,11 @@ def _count_bits_single_element(n):  # pragma: no cover
         n >>= 1
     return count
 
+
 # Make count_bits an ufunc
 count_bits = np.vectorize(_count_bits_single_element)
+
+
 # count_bits = np.frompyfunc(_count_bits_single_element, 1, 1,
 #                            doc=_count_bits_single_element.__doc__)
 
@@ -585,19 +592,17 @@ def least_right_singular_vectors(A, n):
 
     # Index in crescent order of the singular values
 
-    # Since the SVD gives the values in decrescent order, we just need to
+    # Since the SVD gives the values in descending order, we just need to
     # reverse the order instead of performing a full sort
     sort_indexes = [i for i in reversed(range(0, V.shape[0]))]
-    #sort_indexes = S.argsort()
+    # sort_indexes = S.argsort()
 
-    # The `n` columns corresponding to the least significtive singular
+    # The `n` columns corresponding to the least significative singular
     # values
     V0 = V[:, sort_indexes[0:n]]
-
-    #(nrows, ncols) = V.shape
     V1 = V[:, sort_indexes[n:]]
 
-    return (V0, V1, S[sort_indexes[n:]])
+    return V0, V1, S[sort_indexes[n:]]
 
 
 # New versions of numpy already have this method
@@ -653,7 +658,7 @@ def calc_unorm_autocorr(x):
     array([152,  79,  82,  53,  42,  28,  32])
 
     """
-    #R = np.convolve(x, x[::-1], 'full')
+    # R = np.convolve(x, x[::-1], 'full')
     R = np.correlate(x, x, 'full')
 
     # Return the autocorrelation for indexes greater then or equal to 0
@@ -689,6 +694,7 @@ def calc_autocorr(x):
     return calc_unorm_autocorr(x2) / (x2.size * variance)
 
 
+# noinspection PyPep8
 def update_inv_sum_diag(invA, diagonal):
     """
     Calculates the inverse of a matrix `(A + D)`, where `D` is a diagonal
@@ -719,16 +725,17 @@ def update_inv_sum_diag(invA, diagonal):
     # identity matrix multiplied by a constant (only one element is
     # different of zero).
     # pylint: disable=C0111
-    def calc_update_term(inv_matrix, index, indexed_element, diagonal_element):
-        return (
-            diagonal_element * np.outer(inv_matrix[:, index],
-                                        inv_matrix[index, :])) / (
-                                            1 + diagonal_element * indexed_element)
+    def calc_update_term(inv_matrix, p_index, p_indexed_element,
+                         p_diagonal_element):
+        term1 = (p_diagonal_element * np.outer(inv_matrix[:, p_index],
+                                               inv_matrix[p_index, :]))
+        return term1 / (1 + p_diagonal_element * p_indexed_element)
 
     new_inv = invA.copy()
     for index, diagonal_element in zip(range(diagonal.size), diagonal):
         indexed_element = new_inv[index, index]
-        new_inv -= calc_update_term(new_inv, index, indexed_element, diagonal_element)
+        new_inv -= calc_update_term(new_inv, index, indexed_element,
+                                    diagonal_element)
 
     return new_inv
 
@@ -765,18 +772,19 @@ def calc_confidence_interval(mean, std, n, P=95):
     variable.
     """
     # Dictionary that maps a desired "confidence" to the corresponding
-    # critical value. See https://en.wikipedia.org/wiki/Student%27s_t-distribution
-    table_of_values = {50:0.674,
-                       60:0.842,
-                       70:1.036,
-                       80:1.282,
-                       90:1.645,
-                       95:1.960,
-                       98:2.326,
-                       99:2.576,
-                       99.5:2.807,
-                       99.8:3.090,
-                       99.9:3.291}
+    # critical value. See https://en.wikipedia.org/wiki/Student%27s_
+    # t-distribution
+    table_of_values = {50: 0.674,
+                       60: 0.842,
+                       70: 1.036,
+                       80: 1.282,
+                       90: 1.645,
+                       95: 1.960,
+                       98: 2.326,
+                       99: 2.576,
+                       99.5: 2.807,
+                       99.8: 3.090,
+                       99.9: 3.291}
 
     # Critical value used in the calculation of the confidence interval
     C = table_of_values[P]
@@ -855,7 +863,7 @@ def get_range_representation(array, filename_mode=False):
         A string expression representing `array`.
     """
     # Special case-> If len(array) < 4 we simply return the array
-    if len(array) < 4:
+    if array.size < 4:
         return ','.join(array.astype(str))
 
     step = array[1] - array[0]
@@ -920,16 +928,17 @@ def get_mixed_range_representation(array, filename_mode=False):
     output_expressions = []
 
     while start < len(diff):
+        i = -1  # Just a start value in case the range below is empty
         for i in range(start, len(diff)):
-            #if diff[i] != current_value:
+            # if diff[i] != current_value:
             if not np.allclose(diff[i], current_value):
                 end = i
-                # intervalo incluindo o inicio, mas sem incluir o fim
+                # Interval including the start, but not including the end
                 output_expressions.append([start, end])
                 start = end
                 current_value = diff[end]
-                break  # Break the for loop. The else statements will not
-                       # run in this case.
+                # Break the for loop. The else statements will not run.
+                break
         else:
             # If the for loop terminated normally, this code will run
             end = i
@@ -943,14 +952,14 @@ def get_mixed_range_representation(array, filename_mode=False):
             # This is a range expression
 
             # Get the step of this range expression
-            step = array[pair[0]+1] - array[pair[0]]
+            step = array[pair[0] + 1] - array[pair[0]]
 
             # Get the first element in the range
             first_element = array[pair[0]]
 
             # Get the previous element (the element in array before this
             # range)
-            previous_element = array[output_expressions[i][1]-1]
+            previous_element = array[output_expressions[i][1] - 1]
 
             # If the difference of the first element in the range to the
             # previous element in the range is equal to the step of the
@@ -958,7 +967,7 @@ def get_mixed_range_representation(array, filename_mode=False):
             # this pair, and not in the previous one.
             if np.allclose(first_element - previous_element, step):
                 output_expressions[i][1] -= 1
-                output_expressions[i+1][0] -= 1
+                output_expressions[i + 1][0] -= 1
 
     out = []
     for pair in output_expressions:
@@ -1004,15 +1013,15 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     Examples
     --------
     >>> name = "something {value1} - {value2} something else {value3}"
-    >>> dictionary = {'value1':'bla bla', 'value2':np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
+    >>> dictionary = {'value1':'bla bla', 'value2':np.array(
+    >>> [5, 10, 15, 20, 25, 30]), 'value3': 76}
     >>> replace_dict_values(name, dictionary, True)
     'something bla bla - [5_(5)_30] something else 76'
     """
     new_dict = {}
     for n, v in dictionary.items():
         if isinstance(v, np.ndarray):
-            v = "[{0}]".format(get_mixed_range_representation(v,
-                                                              filename_mode))
+            v = "[{0}]".format(get_mixed_range_representation(v, filename_mode))
         new_dict[n] = v
 
     return name.format(**new_dict)
@@ -1074,6 +1083,7 @@ def calc_decorrelation_matrix(cov_matrix):
     return V
 
 
+# noinspection PyPep8
 def calc_whitening_matrix(cov_matrix):
     """
     Calculates the whitening matrix that can be applied to a data vector
@@ -1108,8 +1118,8 @@ def calc_whitening_matrix(cov_matrix):
     L, V = np.linalg.eig(cov_matrix)
     W = np.dot(
         V,
-        np.diag(1. / (L**0.5))
-        )
+        np.diag(1. / (L ** 0.5))
+    )
     return W
 
 
@@ -1136,6 +1146,7 @@ def calc_shannon_sum_capacity(sinrs):
 
     return sum_capacity
 
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1156,4 +1167,5 @@ except ImportError:  # pragma: no cover
 
 if __name__ == '__main__':  # pragma: nocover
     import doctest
+
     doctest.testmod()

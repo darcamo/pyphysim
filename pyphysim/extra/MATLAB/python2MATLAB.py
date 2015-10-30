@@ -47,9 +47,19 @@ def to_mat_str(x, format_string='+.12e'):
 +7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
 
     """
+    # noinspection PyShadowingNames
     def convert_row_or_col(numpy_array, format_string, separator=', '):
         """Convert a one-dimensional numpy array to its MATLAB
         representation
+
+        Parameters
+        ----------
+        numpy_array : numpy array
+            The array to be converted.
+        format_string : str
+            The format string for the conversion.
+        separator : str
+            The separator for 2 elements.
 
         """
         # {0:+.12e}

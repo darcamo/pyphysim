@@ -15,19 +15,13 @@ except NameError:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from time import time
 import numpy as np
-from pprint import pprint
 
-from pyphysim.simulations.runner import SimulationRunner
-from pyphysim.simulations.parameters import SimulationParameters
-from pyphysim.simulations.results import SimulationResults, Result
-from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean, get_common_parser
-from pyphysim.comm import modulators, channels
+from pyphysim import channels
 from pyphysim.util.conversion import dB2Linear, linear2dB
-from pyphysim.util import misc
 from pyphysim.ia import algorithms
 from pyphysim.simulations.progressbar import ProgressbarText
+import pyphysim.channels.multiuser
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 #calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
@@ -75,7 +69,7 @@ def main():
 
     for rep in range(RepMax):
         # Creat the channel
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
         multiUserChannel.noise_var = noise_var
 
@@ -87,6 +81,7 @@ def main():
 
         mmse_ia_solver.initialize_with = 'fix'
         max_sinr_ia_solver.initialize_with = 'fix'
+        # noinspection PyProtectedMember
         max_sinr_ia_solver._F = mmse_ia_solver._F
 
         #mmse_ia_solver.initialize_with = 'fix'

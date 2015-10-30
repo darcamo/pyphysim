@@ -5,7 +5,9 @@
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
@@ -17,8 +19,7 @@ import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
 
-from pyphysim.comm import ofdm
-
+from pyphysim.modulators import ofdm
 
 if __name__ == '__main__':
     # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx

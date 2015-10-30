@@ -61,7 +61,7 @@ setup(
     url="http://code.google.com/p/py-physim/",
     download_url='fillmein',
     keywords='phy QAM PSK QPSK BPSK Modulation Monte Carlo',
-    description=("Implementation of a digital communication (physical layer) in python."),
+    description="Implementation of a digital communication (physical layer) in python.",
     long_description=read("README.md"),
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

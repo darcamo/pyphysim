@@ -12,7 +12,7 @@ the 'ia' package that implement the IA algorithms.
 import numpy as np
 from abc import ABCMeta, abstractmethod
 
-from ..comm import channels
+import pyphysim.channels.multiuser as muchannels
 from ..util.misc import randn_c_RS, leig
 from ..util.conversion import linear2dB
 
@@ -67,7 +67,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             The multiuser channel.
         """
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
-        if not isinstance(multiUserChannel, channels.MultiUserChannelMatrix):
+        if not isinstance(multiUserChannel, muchannels.MultiUserChannelMatrix):
             raise ValueError("multiUserChannel must be an object of the"
                              " comm.channels.MultiUserChannelMatrix class"
                              " (or a subclass).")
@@ -185,6 +185,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             self._full_F = self._F * np.sqrt(self.P)
         return self._full_F
 
+    # noinspection PyUnresolvedReferences
     def set_precoders(self, F=None, full_F=None, P=None):
         """
         Set the precoders of each user.
@@ -469,9 +470,10 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         self.P = P
 
-        # Lambda function that returns a normalized version of the input
+        # Local function that returns a normalized version of the input
         # numpy array
-        normalized = lambda A: A / np.linalg.norm(A, 'fro')
+        def normalized(A):
+            return A / np.linalg.norm(A, 'fro')
 
         self._F = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
@@ -534,6 +536,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         """
         return self._get_channel(l, k).transpose().conjugate()
 
+    # noinspection PyPep8
     def calc_Q(self, k):
         """
         Calculates the interference covariance matrix at the :math:`k`-th
@@ -604,6 +607,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         return Qk
 
+    # noinspection PyPep8
     def calc_remaining_interference_percentage(self, k, Qk=None):
         """
         Calculates the percentage of the interference in the desired signal
@@ -680,11 +684,12 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
                     denominator = denominator + aux
 
             # pylint: disable=E1103
+            # noinspection PyUnresolvedReferences
             denominator = np.dot(denominator,
                                  denominator.transpose().conjugate())
             noise_power = self.noise_var * np.dot(
                 Wj_H, Wj_H.transpose().conjugate())
-            denominator = denominator + noise_power
+            denominator += noise_power
             denominator = np.diag(np.abs(denominator))
 
             SINRs[j] = numerator / denominator
@@ -741,8 +746,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The SINRs are estimated and appyied to the Shannon capacity formula
         """
-        return np.sum(np.log2(1+np.hstack(self.calc_SINR())))
+        return np.sum(np.log2(1 + np.hstack(self.calc_SINR())))
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_first_part(self, k):
         """
         Calculates the first part in the equation of the Blk covariance matrix
@@ -778,6 +784,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         return first_part
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_second_part(self, k, l):
         """
         Calculates the second part in the equation of the Blk covariance matrix
@@ -810,6 +817,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         return second_part
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_all_l(self, k, noise_power=None):
         """
         Calculates the interference-plus-noise covariance matrix for all

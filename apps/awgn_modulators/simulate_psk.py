@@ -8,7 +8,9 @@ awgn channel.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -17,13 +19,13 @@ except NameError:
     sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from pyphysim.simulations.core import *
-from pyphysim.comm import modulators
+from pyphysim.simulations import *
+from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
-import numpy as np
 
 
+# noinspection PyShadowingNames
 class VerySimplePskSimulationRunner(SimulationRunner):
     """This is a complete example with the minimum code to actually perform
     a simulation.
@@ -47,7 +49,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
         SNR = np.array([0, 3, 6, 9, 12])
         M = 4
-        self.modulator = modulators.PSK(M)
+        self.modulator = fundamental.PSK(M)
         self.NSymbs = 500
 
         self.rep_max = 1000
@@ -96,7 +98,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         symbolErrors = sum(inputData != demodulatedData)
         bitErrors = misc.count_bit_errors(inputData, demodulatedData)
         numSymbols = inputData.size
-        numBits = inputData.size * modulators.level2bits(M)
+        numBits = inputData.size * fundamental.level2bits(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -173,7 +175,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # Calculates the Theoretical SER and BER
         theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
         theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
-        return (SNR, ber, ser, theoretical_ber, theoretical_ser)
+        return SNR, ber, ser, theoretical_ber, theoretical_ser
 
 
 if __name__ == '__main__':

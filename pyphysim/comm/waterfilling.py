@@ -11,6 +11,7 @@ import numpy as np
 __all__ = ['doWF']
 
 
+# noinspection PyUnresolvedReferences
 def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     """
     Performs the Waterfilling algorithm and returns the optimum power and
@@ -59,7 +60,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     while (sum(Ps) > dPt) and (dRemoveChannels < dNChannels):
-        dRemoveChannels = dRemoveChannels + 1
+        dRemoveChannels += 1
         minMu = float(noiseVar) / (
             Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
         Ps = (minMu - float(noiseVar) / (
@@ -75,4 +76,4 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         np.arange(0, dNChannels - dRemoveChannels)]] = vtOptPaux
     mu = vtOptPaux[0] + float(noiseVar) / vtChannelsSorted[0]
 
-    return (vtOptP, mu)
+    return vtOptP, mu

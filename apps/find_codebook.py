@@ -28,6 +28,7 @@ from pyphysim.simulations import progressbar
 from pyphysim.util.misc import pretty_time
 
 
+# noinspection PyShadowingNames
 class CodebookFinder(object):
     """Class to find good codebooks using random search.
     """
@@ -165,7 +166,7 @@ class CodebookFinder(object):
         min_dist = dists.flatten()[min_index]  # Same as dists.min()
         principal_angles = np.array(principal_angles[min_index])
 
-        return (min_dist, principal_angles)
+        return min_dist, principal_angles
 
     def find_codebook(self, rep_max=100):
         """
@@ -301,8 +302,8 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
 
     # get number of cpus -> multiprocessing.cpu_count()
     num_process = multiprocessing.cpu_count()
-    print "Processes: {0}".format(num_process)
-    print "Repmax: {0}".format(rep_max)
+    print("Processes: {0}".format(num_process))
+    print("Repmax: {0}".format(rep_max))
 
     # xxxxx Simulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Nt = 3                      # Number of tx antennas
@@ -371,31 +372,29 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     (best_dist, best_principal_angles) = CodebookFinder.calc_min_chordal_dist(best_codebook)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print "Maximum minimum distance found: {0}".format(best_dist)
-    print "Principal angles found: {0}".format(best_principal_angles)
+    print("Maximum minimum distance found: {0}".format(best_dist))
+    print("Principal angles found: {0}".format(best_principal_angles))
 
     # xxxxx Open previously stored results (if there is any) xxxxxxxxxxxxxx
     try:
         previous_results = np.load(filename + ".npz")
         previous_best_dist = previous_results['best_dist']
-        print "Previous minimum distance: {0}".format(previous_best_dist)
+        print("Previous minimum distance: {0}".format(previous_best_dist))
     except IOError:
-        print "Could not open file `{0}`".format(filename + ".npz")
+        print("Could not open file `{0}`".format(filename + ".npz"))
         previous_best_dist = 0
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Save results to a file in the disk xxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Only save if it is better then the previous results
     if previous_best_dist < best_dist:
-        print "Saving new results"
+        print("Saving new results")
         save_results(best_dist, best_codebook, best_principal_angles, filename)
     else:
-        print "Keeping previous results"
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        print("Keeping previous results")
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -435,7 +434,7 @@ if __name__ == '__main__':
     config_file_name = command_line_options.config_file
     # if config_file_name is None:
     #     config_file_name = "config.txt"
-    print 'Using Config file: "{0}"'.format(config_file_name)
+    print('Using Config file: "{0}"'.format(config_file_name))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Read configuration from config file xxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -451,5 +450,5 @@ if __name__ == '__main__':
     find_codebook_multiple_processes(Nt, Ns, K, rep_max)
 
     toc = time()
-    print "Elapsed Time: {0}".format(pretty_time(toc - tic))
-    print "---------- End -------------------------------------------\n\n"
+    print("Elapsed Time: {0}".format(pretty_time(toc - tic)))
+    print("---------- End -------------------------------------------\n\n")

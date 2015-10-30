@@ -29,8 +29,10 @@ from apps.simulate_metis_scenario import calc_room_positions_square, \
     get_ap_positions, calc_num_walls, plot_all_rooms
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.cell import shapes
-from pyphysim.comm import pathloss
-from pyphysim.comm.channels import calc_thermal_noise_power_dBm
+from pyphysim.channels import pathloss
+from pyphysim.channels.noise import calc_thermal_noise_power_dBm
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -100,7 +102,7 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
             np.log2(1 + sinr_array[current_ap_users_idx])
             / len(current_ap_users_idx))
 
-    return (linear2dB(sinr_array), capacity)
+    return linear2dB(sinr_array), capacity
 
 
 def perform_simulation(scenario_params,  # pylint: disable=R0914
@@ -148,8 +150,9 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     num_users = 100  # We will create this many users in the 2D grid
     users_positions = (
         num_rooms_per_side * side_length * (
-            np.random.rand(num_users) + 1j * np.random.rand(num_users)
-            - 0.5 - 0.5j)
+            np.random.random_sample(num_users) +
+            1j * np.random.random_sample(num_users) -
+            0.5 - 0.5j)
     )
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

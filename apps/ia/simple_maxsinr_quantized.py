@@ -19,12 +19,14 @@ except NameError:
 import numpy as np
 
 from pyphysim.ia import algorithms
-from pyphysim.comm import modulators, channels
+from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
 from pyphysim.simulations.progressbar import ProgressbarText2
+import pyphysim.channels.multiuser
 
 
+# noinspection PyShadowingNames
 def gen_codebook(codebook_size, dimension):
     """
     Generate a new codebook.
@@ -188,13 +190,13 @@ if __name__ == '__main__':
     M = 2
     NSymbs = 50
     rep_max = 300
-    modulator = modulators.BPSK()
+    modulator = fundamental.BPSK()
     K = 3
     Nr = np.ones(K, dtype=int) * 2
     Nt = np.ones(K, dtype=int) * 2
     Ns = np.ones(K, dtype=int) * 1
-    multi_user_channel = channels.MultiUserChannelMatrix()
-    multi_user_channel_quant = channels.MultiUserChannelMatrix()
+    multi_user_channel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
+    multi_user_channel_quant = pyphysim.channels.multiuser.MultiUserChannelMatrix()
     multi_user_channel.noise_var = noise_var
     multi_user_channel_quant.noise_var = noise_var
 
@@ -269,7 +271,7 @@ if __name__ == '__main__':
         symbolErrors = symbolErrors + np.sum(inputData != demodulated_data)
         bitErrors = bitErrors + misc.count_bit_errors(inputData, demodulated_data)
         numSymbols = numSymbols + inputData.size
-        numBits = numBits + inputData.size * modulators.level2bits(M)
+        numBits = numBits + inputData.size * fundamental.level2bits(M)
         #ia_cost = ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

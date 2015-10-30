@@ -31,20 +31,22 @@ from itertools import repeat
 from copy import copy
 
 try:
+    # noinspection PyUnresolvedReferences
     from ipyparallel import CompositeError
     _IPYTHON_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _IPYTHON_AVAILABLE = False
 
-try:
+try:  # pragma: nocover
     from pandas import DataFrame
     _PANDAS_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: nocover
     _PANDAS_AVAILABLE = False
 
 from pyphysim.simulations import configobjvalidation, parameters, progressbar, \
     results, runner, simulationhelpers
 from pyphysim.simulations.results import combine_simulation_results
+# noinspection PyProtectedMember
 from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, \
     real_scalar_or_real_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check
@@ -114,6 +116,7 @@ class SimulationHelpersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx configobjvalidation Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyUnboundLocalVariable
 class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     """
     Unit-tests for the module functions in the in the configobjvalidation
@@ -125,6 +128,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
 
     def test_parse_range_expr(self):
         try:
+            # noinspection PyUnresolvedReferences
             import validate
         except ImportError:  # pragma: no cover
             self.skipTest("The validate module is not installed")
@@ -169,6 +173,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     # for the "real_scalar_or_real_numpy_array_check" function.
     def test_real_scalar_or_real_numpy_array_check(self):
         try:
+            # noinspection PyUnresolvedReferences
             import validate
         except ImportError:  # pragma: no cover
             self.skipTest("The validate module is not installed")
@@ -414,7 +419,7 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
             np.array(['A', 'B', 'C']))
 
         self.assertEqual(set(union.unpacked_parameters),
-                         set(['third', 'fourth']))
+                         {'third', 'fourth'})
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -451,7 +456,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # now)
         self.assertEqual(
             set(self.sim_params.fixed_parameters),
-            set(['first', 'second', 'third', 'fourth']))
+            {'first', 'second', 'third', 'fourth'})
 
         # Let's unpack the parameters 'third' and 'fourth'
         self.sim_params.set_unpack_parameter('third')
@@ -465,7 +470,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # because the order does not matter
         self.assertEqual(
             set(self.sim_params.unpacked_parameters),
-            set(['third', 'fourth']))
+            {'third', 'fourth'})
 
         # We may have 8 variations, but there are still only 4 parameters
         self.assertEqual(len(self.sim_params), 4)
@@ -473,7 +478,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Test the correct static parameters
         self.assertEqual(
             set(self.sim_params.fixed_parameters),
-            set(['first', 'second']))
+            {'first', 'second'})
 
         # Test if an exception is raised if we try to set a non iterable
         # parameter to be unpacked.
@@ -503,7 +508,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.set_unpack_parameter('fourth', False)
         self.assertEqual(
             set(self.sim_params.unpacked_parameters),
-            set(['third']))
+            {'third'})
 
     def test_remove(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -521,7 +526,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         expected_parameters = {'first': 10,
                                'fourth': ['A', 'B'],
                                'fifth': ['Z', 'W', 'Y']}
-        expected_unpacked_parameters = set(['fourth'])
+        expected_unpacked_parameters = {'fourth'}
         self.assertEqual(self.sim_params.parameters, expected_parameters)
         self.assertEqual(set(self.sim_params.unpacked_parameters),
                          expected_unpacked_parameters)
@@ -556,6 +561,24 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.add('rep_max', 40)
         self.assertTrue(self.sim_params == other)
 
+        # Test comparison with something of a different class
+        self.assertFalse(self.sim_params == 10.4)
+
+        # Test if two objects are different if the _unpack_index value is
+        # different
+        a = SimulationParameters()
+        a.add('first', [10, 20, 30])
+        a.add('second', [60, 20, 0])
+        a.set_unpack_parameter('first')
+        b = SimulationParameters()
+        b.add('first', [10, 20, 30])
+        b.add('second', [60, 20, 0])
+        b.set_unpack_parameter('first')
+        self.assertTrue(a == b)
+        a._unpack_index = 1
+        b._unpack_index = 3
+        self.assertFalse(a == b)
+
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
@@ -578,9 +601,9 @@ class SimulationParametersTestCase(unittest.TestCase):
         # We change all values to sets to remove repeated values for
         # testing purposes.
         self.assertEqual(set(params_dict['first']),
-                         set([self.sim_params['first']]))
+                         {self.sim_params['first']})
         self.assertEqual(set(params_dict['second']),
-                         set([self.sim_params['second']]))
+                         {self.sim_params['second']})
         self.assertEqual(set(params_dict['third']),
                          set(self.sim_params['third']))
         self.assertEqual(set(params_dict['fourth']),
@@ -1029,7 +1052,7 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
         # Note that the 'elapsed_time' and 'num_skipped_reps' results are
         # always added by the SimulationRunner class.
         self.assertEqual(set(union.get_result_names()),
-                         set(['elapsed_time', 'lala', 'num_skipped_reps']))
+                         {'elapsed_time', 'lala', 'num_skipped_reps'})
 
         # The unpacked param list of union is (the order might be different)
         # [{'bias': 1.3, 'SNR': 0.0, 'extra': 2.2},
@@ -1112,6 +1135,12 @@ class ResultTestCase(unittest.TestCase):
         self.result3 = Result("name3", Result.MISCTYPE)
         self.result4 = Result("name4", Result.CHOICETYPE, choice_num=6)
 
+    def test_init(self):
+        # Test if an exception is raised if we try to create a result type
+        # with choice_num not being an integer
+        with self.assertRaises(RuntimeError):
+            Result("name4", Result.CHOICETYPE, choice_num=6.6)
+
     def test_get_update_type(self):
         """
         Test the two properties, one to get the update type code and other to
@@ -1130,8 +1159,9 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result4.type_code, Result.CHOICETYPE)
         self.assertEqual(self.result4.type_name, "CHOICETYPE")
 
-        self.assertEqual(4, len(set([Result.SUMTYPE, Result.RATIOTYPE,
-                                     Result.MISCTYPE, Result.CHOICETYPE])))
+        # Test that the possible type codes are different
+        self.assertEqual(4, len({Result.SUMTYPE, Result.RATIOTYPE,
+                                 Result.MISCTYPE, Result.CHOICETYPE}))
 
     def test_update(self):
         # Test the update function of the SUMTYPE
@@ -1466,6 +1496,9 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(1)
         self.assertFalse(self.result4 == result4_other)
 
+        # Test comparison with something of a different class
+        self.assertFalse(self.result4 == 10.4)
+
     def test_calc_confidence_interval(self):
         # Test if an exceptions is raised for a Result object of the
         # MISCTYPE update type.
@@ -1552,7 +1585,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # The output of the get_result_names is a list of names. We
         # transform it into a set in this test only to make the order of
         # the names uninportant.
-        expected_output = set(['lala', 'lele', 'lulu'])
+        expected_output = {'lala', 'lele', 'lulu'}
         self.assertEqual(set(self.simresults.get_result_names()),
                          expected_output)
         # Test also the representation of the SimulationResults object
@@ -1571,7 +1604,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         result3 = Result.create('lili', Result.MISCTYPE, "a string")
         self.simresults.add_result(result3)
         self.assertEqual(set(self.simresults.get_result_names()),
-                         set(["lala", "lele", "lili", "lulu"]))
+                         {"lala", "lele", "lili", "lulu"})
         self.assertEqual(self.simresults['lili'][0].get_result(), "a string")
 
     def test_append_result(self):
@@ -1599,7 +1632,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # a single result for 'lili' and two results for both 'lala' and
         # 'lele'..
         self.assertEqual(set(self.simresults.get_result_names()),
-                         set(["lulu", "lala", "lele", "lili"]))
+                         {"lulu", "lala", "lele", "lili"})
         self.assertEqual(len(self.simresults['lala']), 2)
         self.assertEqual(len(self.simresults['lele']), 2)
         self.assertEqual(len(self.simresults['lili']), 1)
@@ -1630,7 +1663,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         emptyresults.merge_all_results(self.simresults)
         self.assertEqual(
             set(emptyresults.get_result_names()),
-            set(['lala', 'lele', 'lulu']))
+            {'lala', 'lele', 'lulu'})
 
         # xxxxx Test the merge with the num_skipped_reps result xxxxxxxxxxx
         simresults1 = SimulationResults()
@@ -1641,17 +1674,17 @@ class SimulationResultsTestCase(unittest.TestCase):
         simresults1.merge_all_results(simresults2)
         self.assertEqual(
             set(simresults1.get_result_names()),
-            set(['name1', 'num_skipped_reps']))
+            {'name1', 'num_skipped_reps'})
         self.assertEqual(
             set(simresults2.get_result_names()),
-            set(['name1']))
+            {'name1'})
 
         simresults3 = SimulationResults()
         simresults3.add_new_result('name1', Result.SUMTYPE, 4)
         simresults3.merge_all_results(simresults1)
         self.assertEqual(
             set(simresults3.get_result_names()),
-            set(['name1', 'num_skipped_reps']))
+            {'name1', 'num_skipped_reps'})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_equal_and_not_equal_operators(self):
@@ -1702,6 +1735,9 @@ class SimulationResultsTestCase(unittest.TestCase):
         simresults.add_result(lili_result)
         self.assertFalse(self.simresults == simresults)
         self.assertTrue(self.simresults != simresults)
+
+        # Let's test with something of a different class
+        self.assertFalse(self.simresults == 20)
 
     def test_get_result_values_list(self):
         self.simresults.append_all_results(self.other_simresults)
@@ -1945,7 +1981,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     def test_to_dataframe(self):
         # If the pandas package is not installed, we will skip testing this
         # method
-        if not _PANDAS_AVAILABLE:
+        if not _PANDAS_AVAILABLE:  # pragma: nocover
             self.skipTest("Pandas is not installed")
 
         # Create some dummy parameters (including two parameters set to be
@@ -2146,7 +2182,7 @@ class _DummyRunnerWithSkip(SimulationRunner):
             if self._num_skipped > 0:
                 raise SkipThisOne('Skipping this one')
             else:
-                pass
+                pass  # pragma: nocover
 
         SNR = current_params['SNR']
         bias = current_params['bias']
@@ -2160,6 +2196,7 @@ class _DummyRunnerWithSkip(SimulationRunner):
         return sim_results
 
 
+# noinspection PyUnboundLocalVariable
 class SimulationRunnerTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationRunner class in the runner module.
@@ -2580,6 +2617,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # This function is used in test methods of progressbars. It simply opens a
 # file and return its content as a string.
+# noinspection PyUnboundLocalVariable
 def _get_progress_string_from_file(filename):
     try:
         # fid = open(filename, 'r', newlines='\n')

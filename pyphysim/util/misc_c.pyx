@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import numpy as np
+
 cimport numpy as np
 
 """This module reimplements functions in the util.misc module, but using

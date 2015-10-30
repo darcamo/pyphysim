@@ -276,6 +276,7 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 # Added by darlan
+# noinspection PyStatementEffect
 [extensions]
 # Used by the 'sphinx.ext.todo' extension
 todo_include_todos = True

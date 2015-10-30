@@ -22,4 +22,4 @@ etc.
 # import pathloss
 # import waterfilling
 
-from . import blockdiagonalization, channels, mimo, modulators, ofdm, pathloss, waterfilling
+from . import blockdiagonalization, waterfilling

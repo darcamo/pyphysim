@@ -8,7 +8,9 @@ Alignment algorithms in the algorithms.ia module.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -27,10 +29,11 @@ from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import SimulationResults, Result
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean, \
     get_common_parser
-from pyphysim.comm import modulators, channels
+from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
 from pyphysim.ia import algorithms
+import pyphysim.channels.multiuser
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -71,14 +74,14 @@ class IASimulationRunner(SimulationRunner):
 
         # Create the modulator object
         M = self.params['M']
-        modulator_options = {'PSK': modulators.PSK,
-                             'QPSK': modulators.QPSK,
-                             'QAM': modulators.QAM,
-                             'BPSK': modulators.BPSK}
+        modulator_options = {'PSK': fundamental.PSK,
+                             'QPSK': fundamental.QPSK,
+                             'QAM': fundamental.QAM,
+                             'BPSK': fundamental.BPSK}
         self.modulator = modulator_options[self.params['modulator']](M)
 
         # Create the channel object
-        self.multiUserChannel = channels.MultiUserChannelMatrix()
+        self.multiUserChannel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
 
         # Create the IA Solver object
         self.ia_solver = IaSolverClass(self.multiUserChannel)
@@ -159,6 +162,7 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # noinspection PyProtectedMember
         multi_user_channel = self.ia_solver._multiUserChannel
         # received_data is an array of matrices, one matrix for each receiver.
         received_data = multi_user_channel.corrupt_data(
@@ -181,7 +185,7 @@ class IASimulationRunner(SimulationRunner):
         symbolErrors = np.sum(inputData != demodulated_data)
         bitErrors = misc.count_bit_errors(inputData, demodulated_data)
         numSymbols = inputData.size
-        numBits = inputData.size * modulators.level2bits(M)
+        numBits = inputData.size * fundamental.level2bits(M)
         ia_cost = self.ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

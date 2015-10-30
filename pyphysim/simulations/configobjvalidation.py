@@ -28,9 +28,9 @@ def _parse_range_expr(value, converter=float):
         The string to be parsed.
     converter : function that converts a string representation to a number.
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
     """
     try:
@@ -56,9 +56,9 @@ def _parse_float_range_expr(value):
     value : str
         The string to be parsed.
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
     """
     return _parse_range_expr(value, float)
@@ -74,9 +74,9 @@ def _parse_int_range_expr(value):
     value : str
         The string to be parsed.
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
     """
     return _parse_range_expr(value, int)
@@ -106,9 +106,9 @@ def real_numpy_array_check(value, min=None, max=None):
         greater than `man` then the VdtValueTooSmallError exception will be
         raised.
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
 
     Notes
@@ -194,9 +194,9 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
         greater than `man` then the VdtValueTooSmallError exception will be
         raised.
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
 
     Notes
@@ -241,9 +241,9 @@ def integer_numpy_array_check(value, min=None, max=None):
         raised.
 
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
 
     Notes
@@ -329,9 +329,9 @@ def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
         raised.
 
 
-    Results
+    Returns
     -------
-    out : numpy array
+    numpy array
         The parsed numpy array.
 
     Notes

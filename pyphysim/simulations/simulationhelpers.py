@@ -186,6 +186,7 @@ def _simulate_do_what_i_mean_single_runner(runner,
             # If we can't get an IPython view then we will perform the
             # simulation serially
             run_in_parallel = False
+            lview = None
 
         if run_in_parallel is True:
             print("Simulation will be run in Parallel")
@@ -220,12 +221,7 @@ def _simulate_do_what_i_mean_multiple_runners(
         each object in the list.
     folder : string
         Foder to be added to the python path. This should be the main
-        pyphysim folder
-    block : bool
-        Passed to the simulate_in_parallel method when the simulation is
-        performed in parallel. If this is false, you need to call the
-        method 'wait_parallel_simulation' of the runner object at some
-        point.
+        pyphysim folder.
     """
     # If we have a list of SimulationRunner objects, we want two
     # things. First, we want to use the same progressbar for all of

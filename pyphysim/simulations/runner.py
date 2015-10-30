@@ -89,7 +89,7 @@ class SkipThisOne(Exception):
         """
         self.msg = msg
 
-    def __str__(self):
+    def __str__(self):  # pragma: nocover
         """
         Convert the exception object to a suitable string representation.
         """
@@ -616,9 +616,12 @@ class SimulationRunner(object):
         # current_params then it will be replaced by the current value of
         # 'some_param'.
         message = self.progressbar_message.format(**current_params.parameters)
+
         # By default, the returned function is a dummy function that does
         # nothing
-        update_progress_func = lambda value: None
+        def update_progress_func(_):
+            pass
+
         if self.update_progress_function_style is None:
             return update_progress_func
 
@@ -634,6 +637,7 @@ class SimulationRunner(object):
         # appropriately set.
         if self.update_progress_function_style == 'text1':  # pragma: no cover
             # We will use the ProgressbarText class
+            # noinspection PyArgumentList
             self._pbar = ProgressbarText(self.rep_max, '*', message,
                                          output=output_progress_sinc,
                                          **self.progressbar_extra_args)
@@ -641,6 +645,7 @@ class SimulationRunner(object):
             self._pbar.delete_progress_file_after_completion = True
         elif self.update_progress_function_style == 'text2':
             # We will use the ProgressbarText2 class
+            # noinspection PyArgumentList
             self._pbar = ProgressbarText2(self.rep_max, '*', message,
                                           output=output_progress_sinc,
                                           **self.progressbar_extra_args)
@@ -659,6 +664,7 @@ class SimulationRunner(object):
             # _get_update_progress_function is supposed to do.
 
             # pylint: disable=E1102
+            # noinspection PyCallingNonCallable
             update_progress_func = self.update_progress_function_style(
                 self.rep_max, self.progressbar_message)  # pragma: no cover
 
@@ -678,18 +684,10 @@ class SimulationRunner(object):
         # The progressbar used to get the returned function depend on the
         # value of the self.update_progress_function_style attribute.
 
-        Parameters
-        ----------
-        full_params : SimulationParameters object
-            The simulation parameters. This should be used to perform any
-            replacement in the self.progressbar_message string that will be
-            written in the progressbar.
-
         Returns
         -------
-        func : function that accepts a single integer argument
-            Function that accepts a single integer argument and can be
-            called to update the progressbar.
+        list
+            List with the proxybar client_id, ip and port.
 
         Notes
         -----
@@ -730,6 +728,8 @@ class SimulationRunner(object):
             proxybar = self._pbar.register_client_and_get_proxy_progressbar(
                 self.rep_max)
             proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
+        else:
+            return None
 
         return proxybar_data
 
@@ -779,6 +779,7 @@ class SimulationRunner(object):
     #     runned_reps_subset = np.array(self.runned_reps)[indexes]
     #     return runned_reps_subset
 
+    # noinspection PyUnboundLocalVariable
     def _simulate_for_current_params_common(
             self,
             current_params,
@@ -858,11 +859,9 @@ class SimulationRunner(object):
         # reached. Note that if partial results were loaded successfully
         # from file and they already achieve the stop criteria then the
         # while loop below will not run.
-        while (self._keep_going(current_params,
-                                current_sim_results,
-                                current_rep)
-               and
-               current_rep < self.rep_max):
+        while (self._keep_going(current_params, current_sim_results,
+                                current_rep) and
+                current_rep < self.rep_max):
             # xxxxxxxxxx Run one repetition of the simulation xxxxxxxxxxxxx
             try:
                 # Run one repetition of the `_run_simulation` and merge the
@@ -890,8 +889,8 @@ class SimulationRunner(object):
             toc = time()
             # Save partial results each 500 iterations as well as each 5
             # minutes
-            if ((toc - last_tic > 300 or current_rep % 500 == 0)
-               and self._results_base_filename is not None):
+            if ((toc - last_tic > 300 or current_rep % 500 == 0) and
+                    self._results_base_filename is not None):
                 self.__save_partial_results(current_rep,
                                             current_params,
                                             current_sim_results,
@@ -922,7 +921,7 @@ class SimulationRunner(object):
 
         # This function returns a tuple containing the number of
         # iterations run as well as the SimulationResults object.
-        return (current_rep, current_sim_results, partial_results_filename)
+        return current_rep, current_sim_results, partial_results_filename
 
     def _simulate_for_current_params_serial(self,
                                             current_params,
@@ -973,7 +972,8 @@ class SimulationRunner(object):
 
         # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
         if proxybar_data is None:
-            update_progress_func = lambda value: None
+            def update_progress_func(_):
+                pass
         else:
             client_id, ip, port = proxybar_data  # pylint: disable=W0633
             proxybar = ProgressbarZMQClient(client_id, ip, port)
@@ -981,6 +981,7 @@ class SimulationRunner(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # pylint: disable= W0212
+        # noinspection PyProtectedMember
         return obj._simulate_for_current_params_common(current_params,
                                                        update_progress_func)
 
@@ -1003,10 +1004,10 @@ class SimulationRunner(object):
         start : int (default is 1)
             The index of the first variation.
         """
-        if (self.update_progress_function_style is None
-           or self.progress_output_type != 'screen'
-           or self.update_progress_function_style == 'ipython'):
-            for i in itertools.repeat(''):
+        if (self.update_progress_function_style is None or
+                self.progress_output_type != 'screen' or
+                self.update_progress_function_style == 'ipython'):
+            for _ in itertools.repeat(''):
                 yield 0
         else:  # pragma: no cover
             variation_pbar = ProgressbarText3(
@@ -1016,7 +1017,7 @@ class SimulationRunner(object):
 
             for i in range(start, num_variations):
                 variation_pbar.progress(i + 1)
-                print  # print a new line
+                print()  # print a new line
                 yield i
 
     def simulate(self, param_variation_index=None):
@@ -1303,6 +1304,7 @@ class SimulationRunner(object):
             # information we needed from it
             self._async_results = None
 
+    # noinspection PyMethodMayBeStatic
     def _on_simulate_start(self):
         """This method is called only once, in the beginning of the the
         simulate method.
@@ -1310,6 +1312,7 @@ class SimulationRunner(object):
         """
         pass
 
+    # noinspection PyMethodMayBeStatic
     def _on_simulate_finish(self):
         """This method is called only once at the end of the simulate method.
 
@@ -1338,6 +1341,7 @@ class SimulationRunner(object):
         """
         pass
 
+    # noinspection PyMethodMayBeStatic
     def _on_simulate_current_params_finish(self, current_params,
                                            current_params_sim_results):
         """This method is called once for each simulation parameters

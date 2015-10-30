@@ -8,7 +8,9 @@ awgn channel.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -18,7 +20,7 @@ except NameError:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from apps.awgn_modulators.simulate_psk import VerySimplePskSimulationRunner
-from pyphysim.comm import modulators
+from pyphysim.modulators import fundamental
 
 
 class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
@@ -35,7 +37,7 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
         SNR = np.array([0, 3, 6, 9, 12, 15, 18])
         self.params.add('SNR', SNR)
 
-        self.modulator = modulators.QAM(M)
+        self.modulator = fundamental.QAM(M)
         self.progressbar_message = "{0}-QAM".format(M) + \
                                    " Simulation - SNR: {SNR}"
 

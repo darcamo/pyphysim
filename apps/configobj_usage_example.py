@@ -85,8 +85,8 @@ if __name__ == '__main__':
             raise Exception("Parameter '{0}' in section '{1}' is invalid. {2}".format(first_error[1], first_error[0][0], first_error[2].message.capitalize()))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print 'Filename: {0}'.format(config_file_name)
-    print "Valid_config_file: {0}".format(result)
+    print('Filename: {0}'.format(config_file_name))
+    print("Valid_config_file: {0}".format(result))
 
     # Simulation Section
     SimulationSection = conf_file_parser['Scenario']
@@ -105,13 +105,13 @@ if __name__ == '__main__':
     max_bit_errors = GeneralSection['max_bit_errors']
     unpacked_parameters = GeneralSection['unpacked_parameters']
 
-    print "Parameters: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    print "SNR: {0}".format(SNR)
-    print "M: {0}".format(M)
-    print "Modulator: {0}".format(modulator_name)
-    print "NSymbs: {0}".format(NSymbs)
-    print "rep_max: {0}".format(rep_max)
-    print "max_bit_errors: {0}".format(max_bit_errors)
-    print "unpacked_parameters: {0}".format(unpacked_parameters)
+    print("Parameters: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print("SNR: {0}".format(SNR))
+    print("M: {0}".format(M))
+    print("Modulator: {0}".format(modulator_name))
+    print("NSymbs: {0}".format(NSymbs))
+    print("rep_max: {0}".format(rep_max))
+    print("max_bit_errors: {0}".format(max_bit_errors))
+    print("unpacked_parameters: {0}".format(unpacked_parameters))
 
     conf_file_parser.write()

@@ -7,7 +7,9 @@ awgn channel.
 """
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -16,10 +18,8 @@ except NameError:
     sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-import numpy as np
-
 from simulate_psk import VerySimplePskSimulationRunner
-from pyphysim.comm import modulators
+from pyphysim.modulators import fundamental
 
 
 class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
@@ -29,16 +29,17 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
 
     """
 
-    def __init__(self, ):
+    def __init__(self):
         VerySimplePskSimulationRunner.__init__(self)
 
-        SNR = np.array([0, 2, 4, 6, 8, 10])
-        self.params.add('SNR', SNR)
+        snr = np.array([0, 2, 4, 6, 8, 10])
+        self.params.add('SNR', snr)
 
         self.rep_max = 5000
 
-        self.modulator = modulators.BPSK()
+        self.modulator = fundamental.BPSK()
         self.progressbar_message = "BPSK Simulation - SNR: {SNR}"
+
 
 if __name__ == '__main__':
     from pylab import *

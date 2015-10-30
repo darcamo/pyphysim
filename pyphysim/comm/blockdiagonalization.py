@@ -258,6 +258,7 @@ class BlockDiaginalizer(object):
         # Noise power is used in the waterfilling calculations
         self.noise_var = noise_var
 
+    # noinspection PyPep8
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
         """Calculates the modulation matrix "M" that block diagonalizes the
         channel `mtChannel`, but without any king of power scaling.
@@ -347,7 +348,7 @@ class BlockDiaginalizer(object):
         # This is equivalent to "concatenate(Ms_bad, axis=1)"
         Ms_bad = np.hstack(Ms_bad)
         Sigma = np.array(Sigma)
-        return (Ms_bad, Sigma)
+        return Ms_bad, Sigma
 
     def _perform_global_waterfilling_power_scaling(self, Ms_bad, Sigma):
         """Perform the power scaling based on the waterfilling algorithm for
@@ -490,7 +491,7 @@ class BlockDiaginalizer(object):
         newH = np.dot(mtChannel, Ms_good)
 
         # Return block diagonalized channel and the used precoding matrix
-        return (newH, Ms_good)
+        return newH, Ms_good
 
     def block_diagonalize_no_waterfilling(self, mtChannel):
         """Performs the block diagonalization, but without applying the
@@ -545,7 +546,7 @@ class BlockDiaginalizer(object):
         newH = np.dot(mtChannel, Ms_good)
 
         # Return block diagonalized channel and the used precoding matrix
-        return (newH, Ms_good)
+        return newH, Ms_good
 
     @staticmethod
     def calc_receive_filter(newH):
@@ -564,6 +565,7 @@ class BlockDiaginalizer(object):
         W_bd = np.linalg.pinv(newH)
         return W_bd
 
+    # noinspection PyPep8
     def _get_tilde_channel(self, mtChannel, user):
         """
         Return the combined channel of all users except `user` .
@@ -574,7 +576,7 @@ class BlockDiaginalizer(object):
 
         Parameters
         ----------
-        mt_channel : 2D numpy array
+        mtChannel : 2D numpy array
             Channel of all users
 
         user : int
@@ -795,7 +797,7 @@ class WhiteningBD(BDWithExtIntBase):
             newH, big_whitening_filter, Nr, Nt)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        return (Ms_all_users, Wk_all_users, Nt.copy())
+        return Ms_all_users, Wk_all_users, Nt.copy()
 
 
 class EnhancedBD(BDWithExtIntBase):
@@ -1069,7 +1071,7 @@ class EnhancedBD(BDWithExtIntBase):
         """
         mtP = np.dot(Wk, Heq_k_red)
         desired_power = np.abs(np.diagonal(mtP)) ** 2
-        internalInterference = np.sum(
+        internal_interference = np.sum(
             np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
 
         Wk_H = Wk.transpose().conjugate()
@@ -1080,7 +1082,7 @@ class EnhancedBD(BDWithExtIntBase):
             np.dot(Wk, np.dot(Re_k, Wk_H))
         ).real
 
-        sinr = desired_power / (internalInterference +
+        sinr = desired_power / (internal_interference +
                                 np.abs(external_interference_plus_noise))
         return sinr
 
@@ -1116,9 +1118,9 @@ class EnhancedBD(BDWithExtIntBase):
         # xxxxx Output variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # No matter which metric is used, these variables should be set and
         # returned
-        MsPk_all_users = np.empty(K, dtype=np.ndarray)
         Wk_all_users = np.empty(K, dtype=np.ndarray)
-        Ns_all_users = np.empty(K, dtype=int)
+        # MsPk_all_users = np.empty(K, dtype=np.ndarray)
+        # Ns_all_users = np.empty(K, dtype=int)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Since we are not handling external interference, we simple call
@@ -1137,7 +1139,7 @@ class EnhancedBD(BDWithExtIntBase):
             Wk_all_users[userindex] = self.calc_receive_filter_user_k(
                 newH_all_k[userindex, userindex], None)
 
-        return (MsPk_all_users, Wk_all_users, Ns_all_users)
+        return MsPk_all_users, Wk_all_users, Ns_all_users
 
     def _perform_BD_no_waterfilling_fixed_or_naive_reduction(self, mu_channel):
         """Function called inside perform_BD_no_waterfilling when the naive or
@@ -1214,8 +1216,8 @@ class EnhancedBD(BDWithExtIntBase):
             if self.metric_name == 'fixed':
                 Pk = _calc_stream_reduction_matrix(Re_k, num_streams)
 
-            norm_term = (np.linalg.norm(np.dot(Msk, Pk), 'fro')
-                         / np.sqrt(self.iPu))
+            norm_term = (np.linalg.norm(np.dot(Msk, Pk), 'fro') /
+                         np.sqrt(self.iPu))
             # Equivalent channel with stream reduction
             Heq_k_red = np.dot(Heq_k, Pk / norm_term)
 
@@ -1226,7 +1228,7 @@ class EnhancedBD(BDWithExtIntBase):
             Wk_all_users[userindex] = W_k
             Ns_all_users[userindex] = num_streams
 
-        return (MsPk_all_users, Wk_all_users, Ns_all_users)
+        return MsPk_all_users, Wk_all_users, Ns_all_users
 
     def _perform_BD_no_waterfilling_decide_number_streams(self, mu_channel):
         """Function called inside perform_BD_no_waterfilling when the stream
@@ -1315,8 +1317,8 @@ class EnhancedBD(BDWithExtIntBase):
 
                 # Normalization term for the combined BD matrix Msk and stream
                 # reduction matrix Pk
-                norm_term = (np.linalg.norm(np.dot(Msk, Pk), 'fro')
-                             / np.sqrt(self.iPu))
+                norm_term = (np.linalg.norm(np.dot(Msk, Pk), 'fro') /
+                             np.sqrt(self.iPu))
                 norm_term_all[index] = norm_term  # Save for later
 
                 # Equivalent channel with stream reduction
@@ -1332,6 +1334,7 @@ class EnhancedBD(BDWithExtIntBase):
                 # SINR (in linear scale) of all streams of user k.
                 sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
 
+                # noinspection PyCallingNonCallable
                 metric_value_for_user_k[index] = self._metric_func(
                     sinrs_k,
                     # Use use the '**' magic to pass the values in the
@@ -1343,12 +1346,12 @@ class EnhancedBD(BDWithExtIntBase):
             # to the number of transmit streams which yields the highest
             # value of the metric.
             best_index = np.argmax(metric_value_for_user_k)
-            MsPk_all_users[userindex] = (np.dot(Msk, Pk_all[best_index])
-                                         / norm_term_all[best_index])
+            MsPk_all_users[userindex] = (np.dot(Msk, Pk_all[best_index]) /
+                                         norm_term_all[best_index])
             Wk_all_users[userindex] = Wk_all[best_index]
             Ns_all_users[userindex] = Pk_all[best_index].shape[1]
 
-        return (MsPk_all_users, Wk_all_users, Ns_all_users)
+        return MsPk_all_users, Wk_all_users, Ns_all_users
 
     def block_diagonalize_no_waterfilling(self, mu_channel):
         """Perform the block diagonalization of `mu_channel` taking the

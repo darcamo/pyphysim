@@ -63,7 +63,6 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     >>> print(multi_M[1])
     [[2 2 2]
      [3 3 3]]
-    >>>
     >>> # Case where we have a matrix to break in packs of columns
     >>> rows = None
     >>> cols = np.array([1, 2])
@@ -76,7 +75,6 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     [[1 1]
      [2 2]
      [3 3]]
-    >>>
     >>> # Case where we break into multiple matrices
     >>> rows = np.array([2, 1])
     >>> cols = np.array([1, 2])
@@ -124,16 +122,17 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
 
 
 def dB2Linear(valueIndB):
-    """Convert input from dB to linear scale.
+    """
+    Convert input from dB to linear scale.
 
     Parameters
     ----------
-    valueIndB : float
+    valueIndB : float or numpy array
         Value in dB
 
     Returns
     -------
-    valueInLinear : float
+    valueInLinear : float or numpy array
         Value in Linear scale.
 
     Examples

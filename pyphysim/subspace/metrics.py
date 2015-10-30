@@ -180,6 +180,6 @@ def calc_chordal_distance_2(matrix1, matrix2):
     >>> print(calc_chordal_distance_2(A, B))
     0.473867859572
     """
-    return (np.linalg.norm(calcProjectionMatrix(matrix1)
-                           - calcProjectionMatrix(matrix2), 'fro')
-            / math.sqrt(2))
+    return (np.linalg.norm(calcProjectionMatrix(matrix1) -
+                           calcProjectionMatrix(matrix2), 'fro') /
+            math.sqrt(2))

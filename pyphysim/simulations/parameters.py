@@ -9,7 +9,9 @@ import copy
 import numpy as np
 
 try:
+    # noinspection PyUnresolvedReferences
     from configobj import ConfigObj, flatten_errors
+    # noinspection PyUnresolvedReferences
     from validate import Validator
 except ImportError:  # pragma: no cover
     pass
@@ -322,11 +324,17 @@ class SimulationParameters(object):
         return self.parameters[name]
 
     def __repr__(self):
-        def modify_name(name):
-            """Add an * in name if it is set to be unpacked"""
-            if name in self._unpacked_parameters_set:
-                name += '*'
-            return name
+        def modify_name(p_name):
+            """Add an * in p_name if it is set to be unpacked
+
+            Parameters
+            ----------
+            p_name : str
+                The original name.
+            """
+            if p_name in self._unpacked_parameters_set:
+                p_name += '*'
+            return p_name
         repr_list = []
         for name, value in self.parameters.items():
             repr_list.append("'{0}': {1}".format(modify_name(name), value))
@@ -387,6 +395,9 @@ class SimulationParameters(object):
         """
         if self is other:  # pragma: no cover
             return True
+
+        if not isinstance(other, self.__class__):
+            return False
 
         # pylint: disable=W0212
         if self._unpacked_parameters_set != other._unpacked_parameters_set:
@@ -596,7 +607,8 @@ class SimulationParameters(object):
         # Lambda function to get an iterator to a (iterable) parameter
         # given its name. This only works if self.parameters[name] is an
         # iterable.
-        get_iter_from_name = lambda name: iter(self.parameters[name])
+        def get_iter_from_name(name):
+            return iter(self.parameters[name])
 
         # Dictionary that stores the name and an iterator of a parameter
         # marked to be unpacked
@@ -616,8 +628,8 @@ class SimulationParameters(object):
             *(unpacked_params_iter_dict.values()))
 
         # Names of the parameters that don't need to be unpacked
-        regular_params = (set(self.parameters.keys())
-                          - self._unpacked_parameters_set)
+        regular_params = (set(self.parameters.keys()) -
+                          self._unpacked_parameters_set)
 
         # Constructs a list with dictionaries, where each dictionary
         # corresponds to a possible parameters combination
@@ -883,6 +895,7 @@ class SimulationParameters(object):
         if attrs is None:
             attrs = {}
 
+        # noinspection PyUnresolvedReferences
         import h5py
         fid = h5py.File(filename, 'w')
 
@@ -995,6 +1008,7 @@ class SimulationParameters(object):
         params : SimulationParameters object.
             The loaded SimulationParameters object.
         """
+        # noinspection PyUnresolvedReferences
         import h5py
         fid = h5py.File(filename, 'r')
 

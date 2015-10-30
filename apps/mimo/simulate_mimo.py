@@ -8,7 +8,9 @@ algorithms in the comm.mimo module.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -23,9 +25,10 @@ import numpy as np
 from pprint import pprint
 from copy import copy
 
-from pyphysim.simulations.core import SimulationRunner, SimulationParameters, \
+from pyphysim.simulations import SimulationRunner, SimulationParameters, \
     SimulationResults, Result
-from pyphysim.comm import modulators, mimo
+from pyphysim.mimo import mimo
+from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.util import misc
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -64,10 +67,10 @@ class MIMOSimulationRunner(SimulationRunner):
 
         # Create the modulator object
         M = self.params['M']
-        modulator_options = {'PSK': modulators.PSK,
-                             'QPSK': modulators.QPSK,
-                             'QAM': modulators.QAM,
-                             'BPSK': modulators.BPSK}
+        modulator_options = {'PSK': fundamental.PSK,
+                             'QPSK': fundamental.QPSK,
+                             'QAM': fundamental.QAM,
+                             'BPSK': fundamental.BPSK}
 
         modulator_string = self.params['modulator']
         if modulator_string == 'BPSK' or modulator_string == 'QPSK':
@@ -123,7 +126,7 @@ class MIMOSimulationRunner(SimulationRunner):
         symbolErrors = sum(inputData != demodulatedData)
         bitErrors = misc.count_bit_errors(inputData, demodulatedData)
         numSymbols = inputData.size
-        numBits = inputData.size * modulators.level2bits(M)
+        numBits = inputData.size * fundamental.level2bits(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -402,6 +405,7 @@ def simulate_general(runner, results_filename):
     # The simulation will be run either in parallel or serially depending
     # if the IPython engines are running or not.
     run_in_parallel = True
+    # noinspection PyBroadException,PyBroadException
     try:
         # If we can get an IPython view that means that the IPython engines
         # are running. In that case we will perform the simulation in
@@ -437,9 +441,9 @@ def simulate_general(runner, results_filename):
         runner.simulate()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    print "Runned iterations: {0}".format(runner.runned_reps)
-    print "Elapsed Time: {0}".format(runner.elapsed_time)
-    print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+    print("Runned iterations: {0}".format(runner.runned_reps))
+    print("Elapsed Time: {0}".format(runner.elapsed_time))
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n")
 
     return runner.results, runner.results_filename
 

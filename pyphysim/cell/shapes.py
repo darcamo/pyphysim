@@ -8,7 +8,9 @@ Each shape knows how to plot itself.
 """
 
 try:
+    # noinspection PyUnresolvedReferences
     from matplotlib import pyplot as plt
+    # noinspection PyUnresolvedReferences
     from matplotlib import patches, path
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
@@ -24,7 +26,7 @@ __all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
 
 class Coordinate(object):
     """
-    Base class for a coordinate in a grid.
+    Base class for a coordinate in a 2D grid.
 
     A Coordinate object knows its location in the grid (represented as a
     complex number) and how to calculate the distance from it to another
@@ -43,15 +45,15 @@ class Coordinate(object):
         self._pos = pos
 
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def _get_pos(self):
+    @property
+    def pos(self):
         """Get method for the pos property."""
         return self._pos
 
-    def _set_pos(self, value):
+    @pos.setter
+    def pos(self, value):
         """Set method for the pos property."""
         self._pos = value
-
-    pos = property(_get_pos, _set_pos)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def calc_dist(self, other):
@@ -83,7 +85,7 @@ class Coordinate(object):
         rel_pos : complex
             Relative coordinate
         """
-        self.pos = self.pos + rel_pos
+        self.pos += rel_pos
 
     def move_by_relative_polar_coordinate(self, radius, angle):
         """
@@ -158,17 +160,15 @@ class Shape(Coordinate):
             self.rotation)
 
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Property to get the shape radius.
-    def _set_radius(self, value):
-        """Set method for the radius property"""
-        self._radius = value
-
-    # Property to set the shape radius
-    def _get_radius(self):
-        """Set method for the radius property"""
+    @property
+    def radius(self):
+        """Get method for the radius property"""
         return self._radius
 
-    radius = property(_get_radius, _set_radius)
+    @radius.setter
+    def radius(self, value):
+        """Set method for the radius property"""
+        self._radius = value
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -252,6 +252,7 @@ class Shape(Coordinate):
         #                   from_complex_array_to_real_matrix(
         #                       self.vertices)) == 1
 
+    # noinspection PyUnresolvedReferences
     def get_border_point(self, angle, ratio):  # pylint: disable=R0914
         """
         Calculates the coordinate of the point that intercepts the border of
@@ -342,6 +343,7 @@ class Shape(Coordinate):
         # shape's central position and the point at the border of the shape
         return (1 - ratio) * self.pos + ratio * point
 
+    # noinspection PyShadowingNames,PyShadowingNames
     def plot(self, ax=None):  # pragma: no cover
         """
         Plot the shape using the matplotlib library.
@@ -389,6 +391,7 @@ class Shape(Coordinate):
             ax.plot()
             plt.show()
 
+    # noinspection PyShadowingNames
     def _repr_some_format_(self, extension='png',
                            axis_option='equal'):  # pragma: nocover
         """
@@ -497,6 +500,7 @@ class Hexagon(Shape):
         angles = np.linspace(0, 240, 5) * np.pi / 180.
 
         for k in range(5):
+            # noinspection PyUnresolvedReferences
             vertex_positions[k + 1] = (vertex_positions[k] +
                                        self._radius * np.exp(angles[k] * 1j))
         return vertex_positions
@@ -559,7 +563,8 @@ class Rectangle(Shape):
         vertex_positions[3] = complex(A.real, B.imag)
         return vertex_positions
 
-    def _repr_some_format_(self, extension='png'):  # pragma: no cover
+    def _repr_some_format_(self, extension='png',
+                           axis_option='tight'):  # pragma: no cover
         """
         Return the representation of the shape in the desired format.
 
@@ -578,7 +583,7 @@ class Rectangle(Shape):
         """
         return Shape._repr_some_format_(self,
                                         extension=extension,
-                                        axis_option='tight')
+                                        axis_option=axis_option)
 
     def is_point_inside_shape(self, point):
         """
@@ -698,6 +703,7 @@ class Circle(Shape):
         """
         return np.abs(self.pos - point) < self.radius
 
+    # noinspection PyShadowingNames,PyShadowingNames
     def plot(self, ax=None):  # pragma: no cover
         """
         Plot the circle using the Matplotlib library.

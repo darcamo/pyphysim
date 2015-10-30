@@ -18,7 +18,7 @@ class Projection(object):
     Examples
     --------
     >>> A = np.array([[1+1j, 2-2j], [3-2j, 0], [-1-1j, 2-3j]])
-    >>> v = np.array([1,2,3])
+    >>> v = np.array([1, 2, 3])
     >>> P = Projection(A)
     >>> P.project(v)
     array([ 1.69577465+0.87887324j,  1.33802817+0.41408451j,

@@ -12,19 +12,22 @@ subclass.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
     sys.path.append(grandparent_dir)
 except NameError:
     sys.path.append('../../')
+    parent_dir = './'
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
 
-from pyphysim.simulations.core import *
-from pyphysim.comm import modulators
+from pyphysim.simulations import *
+from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
 
@@ -56,7 +59,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
         SNR = np.array([0, 3, 6, 9, 12])
         M = 4
-        modulator = modulators.PSK(M)
+        modulator = fundamental.PSK(M)
         NSymbs = 500
 
         self.params.add('modulator', modulator)
@@ -111,7 +114,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         symbolErrors = sum(inputData != demodulatedData)
         bitErrors = misc.count_bit_errors(inputData, demodulatedData)
         numSymbols = inputData.size
-        numBits = inputData.size * modulators.level2bits(M)
+        numBits = inputData.size * fundamental.level2bits(M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -185,7 +188,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # Calculates the Theoretical SER and BER
         theoretical_ser = modulator.calcTheoreticalSER(SNR)
         theoretical_ber = modulator.calcTheoreticalBER(SNR)
-        return (SNR, ber, ser, theoretical_ber, theoretical_ser)
+        return SNR, ber, ser, theoretical_ber, theoretical_ser
 
 
 if __name__ == '__main__':
@@ -208,7 +211,8 @@ if __name__ == '__main__':
     dview.execute('sys.path.append("{0}")'.format(parent_dir))
 
     from matplotlib import pyplot as plt
-    from apps.awgn_modulators.simulate_parallel_psk import VerySimplePskSimulationRunner
+    from apps.awgn_modulators.simulate_parallel_psk import \
+        VerySimplePskSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxx Parallel Simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

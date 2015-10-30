@@ -8,7 +8,9 @@ awgn channel.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -27,14 +29,14 @@ from configobj import ConfigObj
 from matplotlib import pyplot as plt
 
 import numpy as np
-from traits.api import HasTraits, Int, Float, Array, Instance, ListFloat, Property
+from traits.api import HasTraits, Int, Array, Instance
 from traits.api import on_trait_change
-from traitsui.api import View, Item, Group, ArrayEditor, ListEditor, TabularEditor, CustomEditor, Action, Handler, Controller, ModelView
+from traitsui.api import View, Item, Group, ArrayEditor
 
-from pyphysim.simulations.core import SimulationResults, Result, SimulationRunner, SimulationParameters
+from pyphysim.simulations import SimulationResults, Result, SimulationRunner, SimulationParameters
 from pyphysim.util import misc
 from pyphysim.util.conversion import dB2Linear
-import pyphysim.comm.modulators as mod
+import pyphysim.modulators.fundamental as mod
 
 
 # class SimplePskSimulationRunnerHandler(Controller):
@@ -174,7 +176,8 @@ class SimplePskSimulationRunner(SimulationRunner, HasTraits):
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         noiseVar = 1 / dB2Linear(SNR)
-        noise = ((np.random.randn(NSymbs) + 1j * np.random.randn(NSymbs)) *
+        noise = ((np.random.standard_normal(NSymbs) +
+                  1j * np.random.standard_normal(NSymbs)) *
                  np.sqrt(noiseVar / 2))
         receivedData = modulatedData + noise
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -290,7 +293,7 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         # Calculates the Theoretical SER and BER
         theoretical_ser = self.modulator.calcTheoreticalSER(SNR)
         theoretical_ber = self.modulator.calcTheoreticalBER(SNR)
-        return (SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser)
+        return SNR, Eb_over_N0, ber, ser, theoretical_ber, theoretical_ser
 
     def plot_results(self):
         """Plot the results from the simulation, as well as the
@@ -308,17 +311,15 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         ax = f.add_subplot(211)
         ax2 = f.add_subplot(212)
 
-        line1 = ax.plot(SNR, ber, '--o', color='green', label='Simulated BER')
-        line2 = ax.plot(SNR, ser, '--^', color='blue', label='Simulated SER')
+        ax.plot(SNR, ber, '--o', color='green', label='Simulated BER')
+        ax.plot(SNR, ser, '--^', color='blue', label='Simulated SER')
         ax2.plot(Eb_over_N0, ber, '--o', color='green', label='Simulated BER')
         ax2.plot(Eb_over_N0, ser, '--^', color='blue', label='Simulated SER')
 
-        line3 = ax.plot(SNR, theoretical_ber, color='green', label='Theoretical BER')
-        line4 = ax.plot(SNR, theoretical_ser, color='blue', label='Theoretical SER')
+        ax.plot(SNR, theoretical_ber, color='green', label='Theoretical BER')
+        ax.plot(SNR, theoretical_ser, color='blue', label='Theoretical SER')
         ax2.plot(Eb_over_N0, theoretical_ber, color='green', label='Theoretical BER')
         ax2.plot(Eb_over_N0, theoretical_ser, color='blue', label='Theoretical SER')
-        # Not really necessary. Just to make flymake happy in emacs
-        line1 + line2 + line3 + line4
 
         # xxxxx Set the properties of the ax axes xxxxxxxxxxxxxxxxxxxxxxxxx
         # Uses the label property of each line as the legend, since I'm not
@@ -346,7 +347,7 @@ class PskSimulationRunner(SimplePskSimulationRunner):
         ax2.axis('tight')
         ax2.grid(True, which='both')
 
-        #f.show()
+        # f.show()
         plt.show()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

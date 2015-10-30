@@ -34,6 +34,7 @@ import multiprocessing
 import time
 
 try:
+    # noinspection PyUnresolvedReferences
     import zmq
 except ImportError:  # pragma: no cover
     # We don't have a fallback for zmq, but only the ProgressbarZMQServer and
@@ -97,6 +98,7 @@ def center_message(message, length=50, fill_char=' ', left='', right=''):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx DummyProgressbar - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyMethodMayBeStatic
 class DummyProgressbar(object):  # pragma: no cover
     """Dummy progress bar that don't really do anything.
 
@@ -578,7 +580,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
             # We simple change the cursor to the beginning of the line and
             # write the string representation of the prog_bar variable.
             self._output.write(u'\r')
-            self._output.write(u'{0}'.format((self.prog_bar)))
+            self._output.write(u'{0}'.format(self.prog_bar))
 
             # Flush everything to guarantee that at this point
             # everything is written to the output.
@@ -728,7 +730,7 @@ class ProgressbarText(ProgressbarTextBase):
         line2sep = '-' * (steps - 1)
         line2 = u'{0}{1}\n'.format(line2sep, line2sep.join(values2))
 
-        return (line1, line2)
+        return line1, line2
 
     def _perform_initialization(self):
         bartitle = self.__get_initialization_bartitle()
@@ -997,18 +999,16 @@ class ProgressBarIPython(ProgressBarBase):
             A message to display on the right side of the progressbar. This
             is rendered as Latex and thus can contain math.
         """
-        from IPython.html.widgets import FloatProgressWidget, \
-            ContainerWidget, LatexWidget
+        from ipywidgets import FloatProgress, HBox, Latex
         super(ProgressBarIPython, self).__init__(finalcount)
 
         # IPython already provide us a nice widget to represent
         # progressbars.
-        self.prog_bar = FloatProgressWidget()
+        self.prog_bar = FloatProgress()
 
         # If `side_message` is provided then we will add the message as a
         # LatexWidget with the message as the value.
-        self.side_message = LatexWidget()
-        self.side_message.set_css({'font-size': '14pt', 'margin-left': '10pt'})
+        self.side_message = Latex()
         if side_message is None:
             self.side_message.visible = False
         else:
@@ -1017,7 +1017,7 @@ class ProgressBarIPython(ProgressBarBase):
 
         # In order to put the float progressbar and the message side by
         # side we use a container.
-        self.container_widget = ContainerWidget()
+        self.container_widget = HBox()
         self.container_widget.children = [self.prog_bar, self.side_message]
 
     def _update_iteration(self, count):
@@ -1041,7 +1041,7 @@ class ProgressBarIPython(ProgressBarBase):
         """
         Refresh the progress representation.
         """
-        # This method is called averytime the `progress` method is
+        # This method is called everytime the `progress` method is
         # called. However, for progressbar using IPython widgets we only
         # need to display the widget once and IPython will take care of
         # redisplaying it whenever the widget changes. Therefore, we don't
@@ -1062,10 +1062,6 @@ class ProgressBarIPython(ProgressBarBase):
         # If no message was provided the the text widget inside the
         # container will be invisible
         display(self.container_widget)
-
-        # Make the container pack its children horizontally
-        self.container_widget.remove_class('vbox')
-        self.container_widget.add_class('hbox')
 # xxxxxxxxxx ProgressBarIPython - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -1703,6 +1699,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         proxybar = ProgressbarZMQClient(client_id, self.ip, self.port)
         return proxybar
 
+    # noinspection PyUnresolvedReferences
     def _update_progress(self,
                          filename=None, start_delay=0.0):  # pragma: no cover
         """
@@ -1831,6 +1828,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
             The new amount of progress.
 
         """
+        # noinspection PyArgumentList
         self._progress_func(self, count)
 
     def __call__(self, count):
@@ -1840,6 +1838,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         This method is the same as the :meth:`progress`. It is define so
         that a ProgressbarZMQClient object can behave like a function.
         """
+        # noinspection PyArgumentList
         self._progress_func(self, count)
 
     def _progress(self, count):
@@ -1882,5 +1881,6 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
 
         self._progress_func = ProgressbarZMQClient._progress
+        # noinspection PyArgumentList
         self._progress_func(self, count)
 # xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

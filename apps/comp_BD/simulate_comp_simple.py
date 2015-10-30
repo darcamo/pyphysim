@@ -8,7 +8,9 @@ simple block diagonalization of the channel.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     pyphysim_dir = os.path.split(
         os.path.abspath(os.path.join(os.path.dirname(__file__),'../')))[0]
@@ -23,7 +25,10 @@ from time import time
 from pyphysim.util import conversion, misc
 from pyphysim.simulations import progressbar
 from pyphysim.cell import cell
-from pyphysim.comm import pathloss, channels, modulators, blockdiagonalization
+from pyphysim.comm import blockdiagonalization
+from pyphysim.modulators import fundamental
+from pyphysim.channels import pathloss
+import pyphysim.channels.multiuser
 
 
 tic = time()
@@ -40,11 +45,11 @@ Nr = np.ones(num_cells) * 2  # Number of receive antennas
 Nt = np.ones(num_cells) * 2  # Number of transmit antennas
 Ns_BD = Nt  # Number of streams (per user) in the BD algorithm
 path_loss_obj = pathloss.PathLoss3GPP1()
-multiuser_channel = channels.MultiUserChannelMatrixExtInt()
+multiuser_channel = pyphysim.channels.multiuser.MultiUserChannelMatrixExtInt()
 
 # Modulation Parameters
 M = 4
-modulator = modulators.PSK(M)
+modulator = fundamental.PSK(M)
 
 # Transmission Parameters
 NSymbs = 500  # Number of symbols (/stream /user simulated at each iteration
@@ -75,6 +80,7 @@ pe = conversion.dBm2Linear(Pe_dBm)
 # Cell Grid
 cell_grid = cell.Grid()
 cell_grid.create_clusters(num_clusters, num_cells, cell_radius)
+# noinspection PyProtectedMember
 cluster0 = cell_grid._clusters[0]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -147,20 +153,20 @@ for rep in range(rep_max):
 
     # Calculates the number of bit errors
     num_bit_errors += misc.count_bit_errors(input_data, decoded_symbols)
-    num_bits += input_data.size * modulators.level2bits(M)
+    num_bits += input_data.size * fundamental.level2bits(M)
 
     pbar.progress(rep + 1)
 
 # Calculate the Symbol Error Rate
-print
-print num_symbol_errors
-print num_symbols
-print "SER: {0}".format(float(num_symbol_errors) / float(num_symbols))
-print "BER: {0}".format(float(num_bit_errors) / float(num_bits))
+print()
+print(num_symbol_errors)
+print(num_symbols)
+print("SER: {0}".format(float(num_symbol_errors) / float(num_symbols)))
+print("BER: {0}".format(float(num_bit_errors) / float(num_bits)))
 
 # xxxxxxxxxx Finished xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 toc = time()
-print misc.pretty_time(toc - tic)
+print(misc.pretty_time(toc - tic))
 
 # Resultados
 #   272356.0

@@ -18,6 +18,7 @@ the desired path loss model and then call the **calc_path_loss_dB** or the
 """
 
 try:
+    # noinspection PyUnresolvedReferences
     from matplotlib import pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
@@ -29,7 +30,7 @@ import numpy as np
 import math
 from collections import Iterable
 
-from ..util import conversion
+from pyphysim.util import conversion
 
 __all__ = ['PathLossBase', 'PathLossIndoorBase', 'PathLossOutdoorBase',
            'PathLossGeneral', 'PathLossFreeSpace', 'PathLoss3GPP1',
@@ -117,6 +118,8 @@ class PathLossBase(object):
         ----------
         d : float or numpy array
             Distance (in Km)
+        kargs : dict
+            Optional parameters for use in subclasses if required.
 
         Other Parameters
         ----------------
@@ -207,6 +210,7 @@ class PathLossBase(object):
             ax.grid(True)
             plt.show()
 
+    # noinspection PyUnresolvedReferences
     def calc_path_loss_dB(self, d, **kargs):
         """
         Calculates the Path Loss (in dB) for a given distance (in Km).
@@ -218,6 +222,8 @@ class PathLossBase(object):
         ----------
         d : float or numpy array
             Distance (in Km)
+        kargs : dict
+            Optional parameters for use in subclasses if required.
 
         Other Parameters
         ----------------
@@ -235,13 +241,13 @@ class PathLossBase(object):
                 # If 'd' is a numpy array (or something similar such as a
                 # list), shadow must be a numpy array with the same shape
                 shadow = conversion.dB2Linear(
-                    np.random.randn(np.size(d)) * self.sigma_shadow)
+                    np.random.standard_normal(np.size(d)) * self.sigma_shadow)
                 shadow.shape = np.shape(d)
             else:
                 # If 'd' is not an array but add a scalar shadowing
                 shadow = conversion.dB2Linear(
-                    np.random.randn() * self.sigma_shadow)
-            PL = PL + shadow
+                    np.random.standard_normal() * self.sigma_shadow)
+            PL += shadow
 
         # The calculated path loss (in dB) must be positive. If it is not
         # positive that means that the distance 'd' is too small.
@@ -271,6 +277,9 @@ class PathLossBase(object):
         ----------
         d : float or numpy array
             Distance (in Km)
+        kargs : dict
+            Extra named parameters. This is used in subclasses for extra
+            parameters for the path loss calculation.
 
         Other Parameters
         ----------------
@@ -420,10 +429,7 @@ class PathLossIndoorBase(PathLossBase):
         ----------
         d : float or numpy array
             Distance (in meters)
-
-        Other Parameters
-        ----------------
-        kwargs : dict
+        kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
@@ -442,10 +448,7 @@ class PathLossIndoorBase(PathLossBase):
         ----------
         d : float or numpy array
             Distance (in meters)
-
-        Other Parameters
-        ----------------
-        kwargs : dict
+        kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
@@ -529,7 +532,7 @@ class PathLossOutdoorBase(PathLossBase):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.
@@ -580,7 +583,7 @@ class PathLossOutdoorBase(PathLossBase):
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args,
                                                       'Km')
 
-    def calc_path_loss_dB(self, d):
+    def calc_path_loss_dB(self, d, **kargs):
         """
         Calculates the Path Loss (in dB) for a given distance (in Km).
 
@@ -591,10 +594,7 @@ class PathLossOutdoorBase(PathLossBase):
         ----------
         d : float or numpy array
             Distance (in Km)
-
-        Other Parameters
-        ----------------
-        kwargs : dict
+        kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
@@ -604,7 +604,7 @@ class PathLossOutdoorBase(PathLossBase):
         """
         return super(PathLossOutdoorBase, self).calc_path_loss_dB(d)
 
-    def calc_path_loss(self, d):
+    def calc_path_loss(self, d, **kargs):
         """
         Calculates the path loss (linear scale) for a given distance (in Km).
 
@@ -612,10 +612,7 @@ class PathLossOutdoorBase(PathLossBase):
         ----------
         d : float or numpy array
             Distance (in Km)
-
-        Other Parameters
-        ----------------
-        kwargs : dict
+        kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
@@ -749,7 +746,7 @@ class PathLossGeneral(PathLossOutdoorBase):
         d = 10. ** ((PL - self._C) / (10. * self._n))
         return d
 
-    def _calc_deterministic_path_loss_dB(self, d):
+    def _calc_deterministic_path_loss_dB(self, d, **kargs):
         """
         Calculates the Path Loss (in dB) for a given distance (in Km).
 
@@ -900,7 +897,7 @@ class PathLossFreeSpace(PathLossGeneral):
             Constant `C` for the Free Space path loss model for the given
             frequency and path loss exponent.
         """
-        #$PL = 10 n (\log_{10}(d)+\log_{10}(f * 1e6) - 4.3779113907)$
+        # $PL = 10 n (\log_{10}(d)+\log_{10}(f * 1e6) - 4.3779113907)$
         C = 10 * n * (math.log10(fc * 1e6) - 4.377911390697565)
         return C
 
@@ -987,6 +984,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         return "PathLossMetisPS7 (fc={0}):\n{1}".format(
             self.fc, self.get_latex_repr())
 
+    # noinspection PyMethodMayBeStatic
     def get_latex_repr(self, num_walls=None):
         """
         Get the Latex representation (equation) for the PathLossGeneral class.
@@ -1016,7 +1014,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
             else:
                 raise ValueError("num_walls cannot be negative")
 
-        return "${A} \\log_{{10}}(d) + {B} + {C} \\log_{{10}}(f_c/5) + {X}$".format(**values)
+        return ("${A} \\log_{{10}}(d) + {B} + {C} \\log_{{10}}(f_c/5)"
+                " + {X}$").format(**values)
 
     def _calc_PS7_path_loss_dB_same_floor(self, d, num_walls=0):
         """
@@ -1093,6 +1092,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
                 # Calculate the path loss for PS7 without LOS
                 pl_dB = self._calc_PS7_path_loss_dB_NLOS_same_floor(d,
                                                                     num_walls)
+            else:
+                raise ValueError("num_walls cannot be negative")
 
         return pl_dB
 
@@ -1205,6 +1206,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
 # TODO: Test this class
 # See http://w3.antd.nist.gov/wctg/manet/calcmodels_r1.pdf
+# noinspection PyPep8
 class PathLossOkomuraHata(PathLossOutdoorBase):
     """
     Class to calculate the Path Loss according to the Okomura Hata model.
@@ -1403,7 +1405,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
             K = 0
         return K
 
-    def _calc_deterministic_path_loss_dB(self, d):
+    def _calc_deterministic_path_loss_dB(self, d, **kargs):
         """
         Calculates the Path Loss (in dB) for a given distance (in Km).
 

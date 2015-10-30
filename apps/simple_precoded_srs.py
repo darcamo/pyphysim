@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import sys
+
 sys.path.append('../')
-#from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
 import numpy as np
 from matplotlib import pyplot as plt
-from pyphysim.util.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
-from pyphysim.comm.channels import TdlChannel, TdlChannelProfile, COST259_TUx, JakesSampleGenerator
-from pyphysim.util.conversion import linear2dB
-
+from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+from pyphysim.channels.fading import COST259_TUx, TdlChannel
+from pyphysim.channels.fading_generators import JakesSampleGenerator
 
 if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -22,37 +22,37 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    num_prbs = 25        # Number of PRBs to simulate
+    num_prbs = 25  # Number of PRBs to simulate
     Nsc = 12 * num_prbs  # Number of subcarriers
-    Nzc = 149            # Size of the sequence
-    u1 = 1              # Root sequence index of the first user
-    u2 = 2              # Root sequence index of the first user
-    u3 = 3              # Root sequence index of the first user
-    numAnAnt = 4         # Number of Base station antennas
-    numUeAnt = 2         # Number of UE antennas
+    Nzc = 149  # Size of the sequence
+    u1 = 1  # Root sequence index of the first user
+    u2 = 2  # Root sequence index of the first user
+    u3 = 3  # Root sequence index of the first user
+    numAnAnt = 4  # Number of Base station antennas
+    numUeAnt = 2  # Number of UE antennas
 
-    num_samples = 1             # Number of simulated channel samples (from
-                                # Jakes process)
+    num_samples = 1  # Number of simulated channel samples (from
+    # Jakes process)
 
     # Channel configuration
-    speedTerminal = 3/3.6        # Speed in m/s
-    fcDbl = 2.6e9                # Central carrier frequency (in Hz)
-    timeTTIDbl = 1e-3            # Time of a single TTI
-    subcarrierBandDbl = 15e3     # Subcarrier bandwidth (in Hz)
+    speedTerminal = 3 / 3.6  # Speed in m/s
+    fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+    timeTTIDbl = 1e-3  # Time of a single TTI
+    subcarrierBandDbl = 15e3  # Subcarrier bandwidth (in Hz)
     numOfSubcarriersPRBInt = 12  # Number of subcarriers in each PRB
-    L = 16                       # The number of rays for the Jakes model.
+    L = 16  # The number of rays for the Jakes model.
 
     # Dependent parameters
-    lambdaDbl = 3e8/fcDbl              # Carrier wave length
-    Fd = speedTerminal / lambdaDbl     # Doppler Frequency
-    Ts = 1./(Nsc * subcarrierBandDbl)  # Sampling time
+    lambdaDbl = 3e8 / fcDbl  # Carrier wave length
+    Fd = speedTerminal / lambdaDbl  # Doppler Frequency
+    Ts = 1. / (Nsc * subcarrierBandDbl)  # Sampling time
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Generate the root sequence xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    a_u1 = get_extended_ZF(calcBaseZC(Nzc, u1), Nsc/2)
-    a_u2 = get_extended_ZF(calcBaseZC(Nzc, u2), Nsc/2)
-    a_u3 = get_extended_ZF(calcBaseZC(Nzc, u3), Nsc/2)
+    a_u1 = get_extended_ZF(calcBaseZC(Nzc, u1), Nsc / 2)
+    a_u2 = get_extended_ZF(calcBaseZC(Nzc, u2), Nsc / 2)
+    a_u3 = get_extended_ZF(calcBaseZC(Nzc, u3), Nsc / 2)
 
     print("Nsc: {0}".format(Nsc))
     print("a_u.shape: {0}".format(a_u1.shape))
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     for ueIdx in range(3):
         for anIdx in range(3):
-            jakes_all_links[ueIdx, anIdx]= JakesSampleGenerator(
+            jakes_all_links[ueIdx, anIdx] = JakesSampleGenerator(
                 Fd, Ts, L, shape=(numUeAnt, numAnAnt))
 
             tdlchannels_all_links[ueIdx, anIdx] = TdlChannel(
@@ -87,21 +87,24 @@ if __name__ == '__main__':
                 COST259_TUx.tap_delays)
 
             fading_maps[ueIdx, anIdx] \
-                = tdlchannels_all_links[ueIdx, anIdx].get_fading_map(num_samples)
+                = tdlchannels_all_links[ueIdx, anIdx].get_fading_map(
+                num_samples)
 
-            freq_responses[ueIdx, anIdx] = tdlchannels_all_links[ueIdx, anIdx].get_channel_freq_response(fading_maps[ueIdx, anIdx], Nsc)[:,:,:,0]
+            freq_responses[ueIdx, anIdx] = tdlchannels_all_links[
+                                               ueIdx, anIdx].get_channel_freq_response(
+                fading_maps[ueIdx, anIdx], Nsc)[:, :, :, 0]
 
     # xxxxxxxxxx Channels in downlink direction xxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Dimension: `Nsc x numUeAnt x numAnAnt`
-    dH11 = freq_responses[0,0]
-    dH12 = freq_responses[0,1]
-    dH13 = freq_responses[0,2]
-    dH21 = freq_responses[1,0]
-    dH22 = freq_responses[1,1]
-    dH23 = freq_responses[1,2]
-    dH31 = freq_responses[2,0]
-    dH32 = freq_responses[2,1]
-    dH33 = freq_responses[2,2]
+    dH11 = freq_responses[0, 0]
+    dH12 = freq_responses[0, 1]
+    dH13 = freq_responses[0, 2]
+    dH21 = freq_responses[1, 0]
+    dH22 = freq_responses[1, 1]
+    dH23 = freq_responses[1, 2]
+    dH31 = freq_responses[2, 0]
+    dH32 = freq_responses[2, 1]
+    dH33 = freq_responses[2, 2]
 
     # xxxxxxxxxx Principal dimension in downlink direction xxxxxxxxxxxxxxxx
     sc_idx = 124  # Index of the subcarrier we are interested in
@@ -111,21 +114,21 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Users precoders xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Users' precoders are the main column of the U matrix
-    F11 = dU11[:,0].conj()
-    F22 = dU22[:,0].conj()
-    F33 = dU33[:,0].conj()
+    F11 = dU11[:, 0].conj()
+    F22 = dU22[:, 0].conj()
+    F33 = dU33[:, 0].conj()
 
     # xxxxxxxxxx Channels in uplink direction xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Dimension: `Nsc x numAnAnt x numUeAnt`
-    uH11 = np.transpose(dH11, axes=[0,2,1])
-    uH12 = np.transpose(dH12, axes=[0,2,1])
-    uH13 = np.transpose(dH13, axes=[0,2,1])
-    uH21 = np.transpose(dH21, axes=[0,2,1])
-    uH22 = np.transpose(dH22, axes=[0,2,1])
-    uH23 = np.transpose(dH23, axes=[0,2,1])
-    uH31 = np.transpose(dH31, axes=[0,2,1])
-    uH32 = np.transpose(dH32, axes=[0,2,1])
-    uH33 = np.transpose(dH33, axes=[0,2,1])
+    uH11 = np.transpose(dH11, axes=[0, 2, 1])
+    uH12 = np.transpose(dH12, axes=[0, 2, 1])
+    uH13 = np.transpose(dH13, axes=[0, 2, 1])
+    uH21 = np.transpose(dH21, axes=[0, 2, 1])
+    uH22 = np.transpose(dH22, axes=[0, 2, 1])
+    uH23 = np.transpose(dH23, axes=[0, 2, 1])
+    uH31 = np.transpose(dH31, axes=[0, 2, 1])
+    uH32 = np.transpose(dH32, axes=[0, 2, 1])
+    uH33 = np.transpose(dH33, axes=[0, 2, 1])
 
     # Compute the equivalent uplink channels
     uH11_eq = uH11.dot(F11)
@@ -144,21 +147,30 @@ if __name__ == '__main__':
 
     # Calculate the received signals
     comb_indexes = np.r_[0:Nsc:2]
-    Y1 = uH11_eq[comb_indexes] * r1[:,np.newaxis] + uH12_eq[comb_indexes] * r2[:,np.newaxis] + uH13_eq[comb_indexes] * r3[:,np.newaxis]
-    Y2 = uH21_eq[comb_indexes] * r1[:,np.newaxis] + uH22_eq[comb_indexes] * r2[:,np.newaxis] + uH23_eq[comb_indexes] * r3[:,np.newaxis]
-    Y3 = uH31_eq[comb_indexes] * r1[:,np.newaxis] + uH32_eq[comb_indexes] * r2[:,np.newaxis] + uH33_eq[comb_indexes] * r3[:,np.newaxis]
+    Y1 = uH11_eq[comb_indexes] * r1[:, np.newaxis] + uH12_eq[comb_indexes] * r2[
+                                                                             :,
+                                                                             np.newaxis] + \
+         uH13_eq[comb_indexes] * r3[:, np.newaxis]
+    Y2 = uH21_eq[comb_indexes] * r1[:, np.newaxis] + uH22_eq[comb_indexes] * r2[
+                                                                             :,
+                                                                             np.newaxis] + \
+         uH23_eq[comb_indexes] * r3[:, np.newaxis]
+    Y3 = uH31_eq[comb_indexes] * r1[:, np.newaxis] + uH32_eq[comb_indexes] * r2[
+                                                                             :,
+                                                                             np.newaxis] + \
+         uH33_eq[comb_indexes] * r3[:, np.newaxis]
 
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Estimate the equivalent channel xxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    tilde_y1 = np.fft.ifft(Y1 * r1[:,np.newaxis].conj(), n=Nsc/2, axis=0)
+    tilde_y1 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc / 2, axis=0)
     tilde_y1[15:, 0] = 0  # Only keep the first 15 time samples for each antenna
 
-    plt.figure(figsize=(12, 20))
-    plt.subplot(2,1,1)
-    plt.stem(np.abs(tilde_y1[:,0]))
+    plt.figure(figsize=(12, 14))
+    plt.subplot(2, 1, 1)
+    plt.stem(np.abs(tilde_y1[:, 0]))
 
-    plt.subplot(2,1,2)
-    plt.plot(np.abs(np.fft.fft(tilde_y1[:,0], n=Nsc, axis=0)))
+    plt.subplot(2, 1, 2)
+    plt.plot(np.abs(np.fft.fft(tilde_y1[:, 0], n=Nsc, axis=0)))
     plt.show()

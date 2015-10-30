@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"Module with Sounding Reference Signal (SRS) related functions"
+"""Module with Sounding Reference Signal (SRS) related functions"""
 
 import numpy as np
-from ..util.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
 
+from .zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
 
 __all__ = ['SrsRootSequence', 'SrsUeSequence', 'SrsChannelEstimator']
 
@@ -188,10 +188,10 @@ class SrsChannelEstimator(object):
         # `num_taps_to_keep` elements in `y`.
         tilde_h = y[0:num_taps_to_keep]
 
-        # Now we can apply the FFT to get the frequency response
-        Nsc = r.size  # Number of subcarriers is twice the number of
-                      # elements in the SRS sequence due to the comb
-                      # pattern
+        # Now we can apply the FFT to get the frequency response.
+        # The number of subcarriers is twice the number of elements in the
+        # SRS sequence due to the comb pattern
+        Nsc = r.size
         tilde_H = np.fft.fft(tilde_h, 2 * Nsc)
 
         return tilde_H

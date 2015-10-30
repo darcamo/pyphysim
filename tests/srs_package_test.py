@@ -12,7 +12,9 @@ defined here.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
@@ -25,8 +27,10 @@ import doctest
 import numpy as np
 
 from pyphysim.srs import srs
-from pyphysim.util.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
-from pyphysim.comm.channels import TdlChannel, COST259_TUx, JakesSampleGenerator
+from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+from pyphysim.channels.fading import TdlChannel
+from pyphysim.channels.fading import COST259_TUx
+from pyphysim.channels.fading_generators import JakesSampleGenerator
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

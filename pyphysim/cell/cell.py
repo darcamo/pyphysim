@@ -4,8 +4,11 @@
 """Module that implements Cell and Cluster related classes."""
 
 try:
+    # noinspection PyUnresolvedReferences
     from matplotlib import patches
+    # noinspection PyUnresolvedReferences
     from matplotlib import pyplot as plt
+
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
@@ -29,6 +32,7 @@ class Node(shapes.Coordinate):
     """
     Class representing a node in the network.
     """
+
     def __init__(self,
                  pos, plot_marker='*', marker_color='r',
                  cell_id=None, parent_pos=None):
@@ -99,6 +103,7 @@ class Node(shapes.Coordinate):
             ax.plot()
             plt.show()
 
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -141,7 +146,7 @@ class AccessPoint(Node):
         self.id_fontsize = None
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: nocover
         """
         Representation of a AccessPoint object.
         """
@@ -153,7 +158,11 @@ class AccessPoint(Node):
     # position is changed we update the positions of any associated
     # user. Notice how we are only changing the 'set' part of the property
     # defined in the Coordinate base class.
-    @shapes.Coordinate.pos.setter
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
     def pos(self, value):
         """Set method for the pos property."""
         diff = value - self._pos
@@ -184,10 +193,13 @@ class AccessPoint(Node):
         ----------
         new_user : An object of the Node class
             The new user to be associated with the access point.
+        relative_pos_bool : bool
+            Indicates it the position of the `new_user` is relative.
         """
         new_user.cell_id = self.id
         self._users.append(new_user)
 
+    # noinspection PyUnresolvedReferences
     def _plot_common_part(self, ax):  # pragma: no cover
         """
         Common code for plotting the classes. Each subclass must implement a
@@ -206,6 +218,7 @@ class AccessPoint(Node):
         else:
             # If self.id is not None, plot the cell ID at the center of the
             # cell
+            # noinspection PyUnresolvedReferences
             plt.text(self.pos.real,
                      self.pos.imag,
                      '{0}'.format(self.id),
@@ -218,7 +231,7 @@ class AccessPoint(Node):
         for user in self.users:
             user.plot_node(ax)
 
-    def plot(self, ax=None):
+    def plot(self, ax=None):  # pragma: no cover
         """
         Plot the AccessPoint using the matplotlib library.
 
@@ -242,6 +255,8 @@ class AccessPoint(Node):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Cell classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: maybe refactor this class so that we don't inherit from any shape and
+# use composition instead
 class CellBase(AccessPoint, shapes.Shape):  # pylint: disable=W0223
     """
     Base class for all cell types.
@@ -382,17 +397,17 @@ class CellBase(AccessPoint, shapes.Shape):  # pylint: disable=W0223
         """
         # Creates a new user. Note that this user can be invalid (outside
         # the cell) or not.
-        pos = (self.pos + complex(2 * (np.random.rand() - 0.5) * self.radius,
-                                  2 * (np.random.rand() - 0.5) * self.radius))
+        pos = (self.pos +
+               complex(2 * (np.random.random_sample() - 0.5) * self.radius,
+                       2 * (np.random.random_sample() - 0.5) * self.radius))
         new_user = Node(pos, cell_id=self.id, parent_pos=self.pos)
 
-        while (not self.is_point_inside_shape(new_user.pos)
-               or
-               (self.calc_dist(new_user) < (min_dist_ratio * self.radius))):
+        while (not self.is_point_inside_shape(new_user.pos) or
+                (self.calc_dist(new_user) < (min_dist_ratio * self.radius))):
             # Create another, since the previous one is not valid
             pos = (self.pos +
-                   complex(2 * (np.random.rand() - 0.5) * self.radius,
-                           2 * (np.random.rand() - 0.5) * self.radius))
+                   complex(2 * (np.random.random_sample() - 0.5) * self.radius,
+                           2 * (np.random.random_sample() - 0.5) * self.radius))
             new_user = Node(pos, cell_id=self.id, parent_pos=self.pos)
 
         if user_color is not None:
@@ -490,6 +505,7 @@ class Cell(shapes.Hexagon, CellBase):
     """Class representing an hexagon cell.
     """
 
+    # noinspection PyCallByClass
     def __init__(self, pos, radius, cell_id=None, rotation=0):
         """Initializes the Cell object.
 
@@ -531,6 +547,7 @@ class Cell(shapes.Hexagon, CellBase):
             stand_alone_plot = True
 
         # Plot the shape part
+        # noinspection PyCallByClass
         shapes.Hexagon.plot(self, ax)
         # Plot the node part as well as the users in the cell
         self._plot_common_part(ax)
@@ -548,6 +565,7 @@ class Cell3Sec(CellBase):
 
     Each sector corresponds to an hexagon.
     """
+
     def __init__(self, pos, radius, cell_id=None, rotation=0):
         """
         Initializes the Cell3Sec object.
@@ -573,11 +591,11 @@ class Cell3Sec(CellBase):
         sec_positions = self._calc_sectors_positions()
 
         self._sec1 = Cell(sec_positions[0], self.secradius, cell_id='',
-                          rotation=self.rotation-30)
+                          rotation=self.rotation - 30)
         self._sec2 = Cell(sec_positions[1], self.secradius, cell_id='',
-                          rotation=self.rotation-30)
+                          rotation=self.rotation - 30)
         self._sec3 = Cell(sec_positions[2], self.secradius, cell_id='',
-                          rotation=self.rotation-30)
+                          rotation=self.rotation - 30)
 
     def _calc_sectors_positions(self):
         """
@@ -597,10 +615,11 @@ class Cell3Sec(CellBase):
         sec_positions += self.pos
         return sec_positions
 
-    # Since we want to override the setter for the radius property defined
-    # in the Shape class while keeping the same getter method, we need to
-    # specify the full name of the property.
-    @shapes.Shape.radius.setter
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
     def radius(self, value):
         """Set method for the radius property"""
         # Overwrite the set property for radius in the Shape parent class
@@ -623,9 +642,16 @@ class Cell3Sec(CellBase):
     # Since we want to override the setter for the rotation property defined
     # in the Shape class while keeping the same getter method, we need to
     # specify the full name of the property.
+    # noinspection PyMethodOverriding
     @shapes.Shape.rotation.setter
     def rotation(self, value):
-        """Set method for the rotation property."""
+        """Set method for the rotation property.
+
+        Parameters
+        ----------
+        value : float
+            The rotation angle (in degrees).
+        """
         # Overwrite the set property for rotation in the Shape parent class
         # so that if rotation is changed we update the rotation of each
         # sector.
@@ -640,10 +666,11 @@ class Cell3Sec(CellBase):
         self._sec2.pos = sec_positions[1]
         self._sec3.pos = sec_positions[2]
 
-    # Since we want to override the setter for the pos property defined
-    # in the Shape class while keeping the same getter method, we need to
-    # specify the full name of the property.
-    @CellBase.pos.setter
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
     def pos(self, value):
         """Set method for the pos property."""
 
@@ -750,6 +777,7 @@ class Cell3Sec(CellBase):
         for _ in range(num_users):
             self.add_random_user_in_sector(sector, user_color, min_dist_ratio)
 
+    # noinspection PyUnresolvedReferences
     def plot(self, ax=None):  # pragma: no cover
         """
         Plot the cell using the matplotlib library.
@@ -778,9 +806,9 @@ class Cell3Sec(CellBase):
         rotation = self.rotation * np.pi / 180
         angle = (np.pi / 6.) + rotation
         p1 = self.pos + (np.cos(angle) + (np.sin(angle) * 1j)) * self.secradius
-        angle = angle + 2 * np.pi / 3.
+        angle += 2 * np.pi / 3.
         p2 = self.pos + (np.cos(angle) + (np.sin(angle) * 1j)) * self.secradius
-        angle = angle + 2 * np.pi / 3.
+        angle += 2 * np.pi / 3.
         # p3 = self.pos - 1j * self.secradius
         p3 = self.pos + (np.cos(angle) + (np.sin(angle) * 1j)) * self.secradius
 
@@ -811,6 +839,7 @@ class CellSquare(shapes.Rectangle, CellBase):
     Class representing a 'square' cell.
     """
 
+    # noinspection PyCallByClass
     def __init__(self, pos, side_length, cell_id=None, rotation=0):
         """
         Initializes the CellSquare object.
@@ -831,7 +860,7 @@ class CellSquare(shapes.Rectangle, CellBase):
         shapes.Rectangle.__init__(self, pos - half_side - 1j * half_side,
                                   pos + half_side + 1j * half_side, rotation)
         CellBase.__init__(self, pos,
-                          math.sqrt(2.0) * side_length/2.,
+                          math.sqrt(2.0) * side_length / 2.,
                           cell_id, rotation)
 
     def plot(self, ax=None):  # pragma: no cover
@@ -857,6 +886,7 @@ class CellSquare(shapes.Rectangle, CellBase):
             stand_alone_plot = True
 
         # Plot the shape part
+        # noinspection PyCallByClass
         shapes.Rectangle.plot(self, ax)
         # Plot the node part as well as the users in the cell
         self._plot_common_part(ax)
@@ -912,6 +942,7 @@ class CellWrap(CellBase):
     """
     Class that wraps another cell.
     """
+
     def __init__(self, pos, wrapped_cell, include_users_bool=False):
         """
         Initializes the CellWrap object.
@@ -1019,6 +1050,8 @@ class CellWrap(CellBase):
             plt.show()
         else:
             ax.autoscale_view(False, True, True)
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1161,16 +1194,25 @@ class Cluster(shapes.Shape):
     # xxxxxxxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We reimplement the pos setter property here so that we can disable
     # setting the radius of the cluster.
-    @shapes.Shape.radius.setter
+    @property
+    def radius(self):  # pragma: no cover
+        return self._radius
+
+    @radius.setter
     def radius(self, _):  # pylint: disable=R0201
         """Disabled setter for the radius property defined in base class."""
         raise AttributeError("can't set attribute")
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We reimplement the pos setter property here so that we can disable
     # setting the position of the cluster.
-    @shapes.Coordinate.pos.setter
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
     def pos(self, _):  # pylint: disable=R0201
         """Disabled setter for the pos property defined in base class."""
         raise AttributeError("can't set attribute")
@@ -1179,10 +1221,12 @@ class Cluster(shapes.Shape):
     # # xxxxxxxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We reimplement the rotation property here so that we can disable setting
     # the rotation
+    # noinspection PyMethodOverriding,PyIncorrectDocstring
     @shapes.Shape.rotation.setter
     def rotation(self, _):  # pylint: disable=R0201
         """Disabled setter for the rotation property defined in base class."""
         raise AttributeError("can't set attribute")
+
     # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def __repr__(self):
@@ -1491,7 +1535,7 @@ class Cluster(shapes.Shape):
             # distance is 4*cell_height, for angle 60 the distance is
             # 3*norm_radius, for angle 90 the distance is 4*cell_height and
             # the pattern continues.
-            dists = itertools.cycle([3*norm_radius, 4*cell_height])
+            dists = itertools.cycle([3 * norm_radius, 4 * cell_height])
 
             # The distance alternates between 3*norm_radius and 4*cell_height.
             for index, a, d in zip(range(7, num_cells), angles, dists):
@@ -1509,8 +1553,8 @@ class Cluster(shapes.Shape):
         # the cells in a cluster with radius equal to 1.0 and with
         # 'num_cells' cells. All we need to do is multiply that our desired
         # cell_radius and then apply the 'rotation' (if there is any).
-        cell_positions = (Cluster._normalized_cell_positions[num_cells]
-                          * cell_radius)
+        cell_positions = (Cluster._normalized_cell_positions[num_cells] *
+                          cell_radius)
 
         if rotation is not None:
             # The cell positions calculated up to now do not consider
@@ -1522,6 +1566,7 @@ class Cluster(shapes.Shape):
 
         return cell_positions
 
+    # noinspection PyUnresolvedReferences
     @staticmethod
     def _calc_cell_positions_square(side_length, num_cells,
                                     rotation=None):
@@ -1558,9 +1603,16 @@ class Cluster(shapes.Shape):
                                          (sqrt_num_cells, sqrt_num_cells))
 
         cell_positions[:, 0] = (
-            side_length
-            *
-            (int_positions[1] + 1j * int_positions[0][::-1] - 0.5-0.5j))
+            side_length *
+            (int_positions[1] + 1j * int_positions[0][::-1] - 0.5 - 0.5j))
+
+        if rotation is not None:
+            # The cell positions calculated up to now do not consider
+            # rotation. Lets use the rotate function of the Shape class to
+            # rotate the coordinates.
+            cell_positions[:, 0] = shapes.Shape.calc_rotated_pos(
+                cell_positions[:, 0], rotation)
+            cell_positions[:, 1] = rotation
 
         return cell_positions
 
@@ -1718,7 +1770,9 @@ class Cluster(shapes.Shape):
         """
         # Filter function. Returns True for vertexes which are closer to
         # the shape center then distance.
-        f = lambda x: np.abs(x - central_pos) > distance
+        def f(x):
+            return np.abs(x - central_pos) > distance
+
         vertexes = vertexes[f(vertexes)]
 
         # Remove duplicates
@@ -1780,6 +1834,7 @@ class Cluster(shapes.Shape):
         all_vertexes = np.array([cell.vertices for cell in
                                  self._cells[start_index:]]).flatten()
         return self._get_outer_vertexes(all_vertexes, self.pos, distance)
+
     # Note: The _get_vertex_positions method which should return the shape
     # vertexes without translation and rotation and the vertexes property
     # from the Shape class would add the translation and rotation. However,
@@ -2040,6 +2095,7 @@ class Cluster(shapes.Shape):
             self.cell_radius, self.num_cells, self._cell_type, self.rotation)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # noinspection PyUnresolvedReferences
         def get_pos_from_relative(rel_center_idx, rel_cell_idx):
             """
 
@@ -2052,9 +2108,10 @@ class Cluster(shapes.Shape):
                 Index (starting from 1) of the desired cell in the 7-Cell
                 cluster.
             """
-            return (positions[rel_center_idx - 1, 0]
-                    + positions[rel_cell_idx - 1, 0]
-                    + self.pos)
+            return (positions[rel_center_idx - 1, 0] +
+                    positions[rel_cell_idx - 1, 0] +
+                    self.pos)
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # TODO: Maybe implement for other cluster sizes
@@ -2089,7 +2146,7 @@ class Cluster(shapes.Shape):
                 self._wrapped_cells['wrap{0}_{1}:{2}'.format(
                     wrapped_id, rel_center, rel_cell)] \
                     = w
-                self._cell_pos[wrapped_id-1].append(w.pos)
+                self._cell_pos[wrapped_id - 1].append(w.pos)
         else:
             msg = "Wrap around not implemented for a cluster with {0} cells."
             raise RuntimeError(msg.format(self.num_cells))
@@ -2207,6 +2264,8 @@ class Cluster(shapes.Shape):
         all_dists = np.abs(all_users_pos[:, np.newaxis] - all_cells_pos)
 
         return all_dists
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2390,7 +2449,7 @@ class Grid(object):
             return 0 + 0j
         else:
             angle = np.arctan(np.sqrt(3.) / 5.)
-            angle = angle + (np.pi / 3) * (cluster_index - 2)
+            angle += (np.pi / 3) * (cluster_index - 2)
             length = np.sqrt(21) * self._cell_radius
             return length * np.exp(1j * angle)
 
@@ -2407,6 +2466,7 @@ class Grid(object):
         stand_alone_plot = False
         if ax is None:
             # This is a stand alone plot. Lets create a new axes.
+            # noinspection PyUnresolvedReferences
             _, ax = plt.subplots(figsize=self.figsize)
             stand_alone_plot = True
 

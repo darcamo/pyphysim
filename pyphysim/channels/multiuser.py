@@ -1,678 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# pylint: disable=E1103
+"""Module containing multiuser channels."""
 
-"""Module with implementation of channel related classes.
 
-The :class:`MultiUserChannelMatrix` and
-:class:`MultiUserChannelMatrixExtInt` classes implement the MIMO
-Interference Channel (MIMO-IC) model, where the first one does not include
-an external interference source while the last one includes it. The MIMO-IC
-model is shown in the Figure below.
-
-.. figure:: /_images/mimo_ic.svg
-   :align: center
-
-   MIMO Interference Channel
-
-"""
-
-from collections import Iterable
-# The "Number" class is a base class that we can use to check with
-# isinstance to see if something is a number
-from numbers import Number
 import math
+from numbers import Number
+from collections import Iterable
 import numpy as np
 from scipy.linalg import block_diag
-import scipy.constants
-from ..util.conversion import single_matrix_to_matrix_of_matrices, linear2dBm, dB2Linear
+from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
 
-__all__ = ['MultiUserChannelMatrix', 'MultiUserChannelMatrixExtInt',
-           'JakesSampleGenerator', 'generate_jakes_samples',
-           'TdlChannelProfile', 'TdlChannel', 'calc_thermal_noise_power_dBm']
 
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def calc_thermal_noise_power_dBm(T, delta_f):
-    """
-    Calculate the termal noise power for the given room temperature
-    `T` (in Cº) and bandwidth `delta_f` (in Hz).
-
-    Parameters
-    ----------
-    T : float
-        Room temperature in Cesium degrees.
-    delta_f : float
-        Bandwidth in Hz.
-
-    Returns
-    -------
-    noise_var : float
-        Noise power.
-    """
-    # Boltzmann constant
-    B = scipy.constants.Boltzmann
-    K = T + 273.0
-    noise_power = B * K * delta_f
-    noise_power_dBm = linear2dBm(noise_power)
-    return noise_power_dBm
-
-
-def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
-                           RS=None):
-    """
-    Generates channel samples according to the Jakes model.
-
-    This functions generates channel samples for a single tap according to
-    the Jakes model given by
-
-    .. math::
-       :label: jakes_model
-
-       h(t) = \\frac{1}{\\sqrt{L}}\\sum_{l=0}^{L-1}\\exp\\{j[2\\pi f_D \\cos(\\phi_l)t+\\psi_l]\\}
-
-
-    Parameters
-    ----------
-    Fd : double
-        The Doppler frequency (in Hetz).
-    Ts : double
-        The sample interval (in seconds).
-    NSamples : int
-        The number of samples to generate.
-    L : int
-        The number of rays for the Jakes model.
-    shape : tuple (of integers)
-        The shape of the generated channel. This is used to generate MIMO
-        channels. For instance, in order to generate channels samples for a
-        MIMO scenario with 3 receive antennas and 2 transmit antennas use a
-        shape of (3, 2).
-    RS : A numpy.random.RandomState object.
-        The RandomState object used to generate the random values. If not
-        provided, the global RandomState in numpy will be used.
-
-    Returns
-    -------
-    h : Numpy array
-        The generated channel. If `shape` is None the the shape of the
-        returned h is equal to (NSamples,). That is, h is a 1-dimensional
-        numpy array. If `shape` was provided then the shape of h is the
-        provided shape with an additional dimension for the time (the last
-        dimension). For instance, if a `shape` of (3, 2) was provided then
-        the shape of the returned h will be (3, 2, NSamples).
-    """
-    # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
-
-    obj = JakesSampleGenerator(Fd, Ts, L, shape, RS)
-    return obj.generate_channel_samples(NSamples)
-
-
-class JakesSampleGenerator(object):
-    """
-    The purpose of this class is to generate channel samples according to
-    the Jakes model given by
-
-    .. math:: h(t) = \\frac{1}{\\sqrt{L}}\\sum_{l=0}^{L-1}\\exp\\{j[2\\pi f_D \\cos(\\phi_l)t+\\psi_l]\\}
-
-    This class is actually a wrapper to the :meth:`generate_jakes_samples`
-    function in this module. Its main purpose is to allow easier usage of
-    generate_jakes_samples as well as generating "more samples" continuing
-    a previous call to generate_jakes_samples.
-
-    Parameters
-    ----------
-    Fd : double
-        The Doppler frequency (in Hetz).
-    Ts : double
-        The sample interval (in seconds).
-    L : int
-        The number of rays for the Jakes model.
-    shape : tuple (of integers)
-        The shape of the generated channel. This is used to generate MIMO
-        channels. For instance, in order to generate channels samples for a
-        MIMO scenario with 3 receive antennas and 2 transmit antennas use a
-        shape of (3, 2).
-    RS : A numpy.random.RandomState object.
-        The RandomState object used to generate the random values. If not
-        provided, the global RandomState in numpy will be used.
-
-    See also
-    --------
-    generate_jakes_samples
-    """
-    # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
-
-    def __init__(self, Fd=100, Ts=1e-3, L=8,
-                 shape=None, RS=None):
-        self.Fd = Fd
-        self.Ts = Ts
-        self.L = L
-        self._shape = shape
-        self._phi_l = None  # This will be set in the set_shape method
-        self._psi_l = None  # This will be set in the set_shape method
-        self._shape = None  # This will be set in the set_shape method
-
-        if RS is None:
-            # If RS was not provided, we set it to the numpy.random
-            # module. That way, when the rand "method" in RS is called it
-            # will actually call the global rand function in numpy.random.
-            # RandomState object in numpy.
-            RS = np.random
-        self.RS = RS
-
-        # self._current_time will be update after each call to the
-        # generate_channel_samples method.
-        self._current_time = 0.0
-
-        self.shape = shape
-
-    @property
-    def shape(self):
-        """Get the shape of the JakesSampleGenerator"""
-        return self._shape
-
-    @shape.setter
-    def shape(self, shape):
-        """
-        Set the shape of the channel that will be generated by
-        `generate_channel_samples`.
-
-        This will also generate `phi_l` and `psi_l` for the new shape.
-
-        Parameters
-        ----------
-        shape : tuple (of integers)
-            The shape of the generated channel. This is used to generate
-            MIMO channels. For instance, in order to generate channels
-            samples for a MIMO scenario with 3 receive antennas and 2
-            transmit antennas use a shape of (3, 2).
-        """
-        # xxxxx Generate phi_l and psi_l xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self._shape = shape
-        if shape is None:
-            # The dimension of phi_l and psi_l will be L x 1. We set the last
-            # dimensions as 1, instead of setting the dimension of phi_l and
-            # psi_l simply as (L,), because it will be broadcasted later by
-            # numpy when we multiply with the time.
-            self._phi_l = 2 * np.pi * self.RS.rand(self.L, 1)
-            self._psi_l = 2 * np.pi * self.RS.rand(self.L, 1)
-        else:
-            # The dimension of phi_l and psi_l will be L x Shape x 1. We set
-            # the last dimensions as 1, instead of setting the dimension of
-            # phi_l and psi_l simply as (L,), because it will be broadcasted
-            # later by numpy when we multiply with the time.
-            new_shape = [self.L]
-            new_shape.extend(shape)
-            new_shape.append(1)
-            self._phi_l = 2 * np.pi * self.RS.rand(*new_shape)
-            self._psi_l = 2 * np.pi * self.RS.rand(*new_shape)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-    def _generate_time_samples(self, NSamples):
-        """
-        Generate the time samples that will be used internally in
-        generate_channel_samples method.
-
-        Parameters
-        ----------
-        NSamples : int
-            Number of samples to be generated.
-
-        Returns
-        -------
-        t : Numpy Array
-            The numpy array with the time samples. The shape of the
-            generated time variable is "(1, A, NSamples)", where 'A' is has
-            as many '1's as the length of self._shape.
-            Ex: If self._shape is None then the shape of the returned 't'
-            variable is (1, NSamples). If self._shape is (2,3) then the
-            shape of the returned 't' variable is (1, 1, 1, NSamples)
-
-        Notes
-        -----
-        Each time _generate_time_samples is called it will update
-        self._current_time to reflect the advance of the time after
-        generating the new samples.
-        """
-        # Generate a 1D numpy with the time samples
-        t = np.arange(
-            self._current_time,  # Start time
-            NSamples * self.Ts + self._current_time,
-            self.Ts * 1.0000000001)
-
-        # Update the self._current_time variable with the value of the next
-        # time sample that should be generated when _generate_time_samples
-        # is called again.
-        self._current_time = t[-1] + self.Ts
-
-        # Now we will change the shape of the 't' variable to an
-        # appropriated shape for later use.
-        if self._shape is not None:
-            # Ex: If self._shape is (2,3) then the shape of the generated
-            # 't' variable should be (1,1,1,NSNSamples). The first
-            # dimension correspond to the number of taps (that is, self.L),
-            # the following two dimensions correspond to the dimensions in
-            # self._shape, and the last dimension corresponds to the number
-            # of time samples.
-            #
-            # Note that we use '1' for all dimensions except the last one
-            # and numpy will replicate to the correct value later thanks to
-            # broadcast.
-            t.shape = [1] * (len(self._shape) + 1) + [int(NSamples)]
-        else:
-            # Since self._shape is None, we only need one dimension for the
-            # taps (that is, self.L) and another dimension for the actual
-            # time samples.
-            #
-            # Note that we use '1' for all dimensions except the last one
-            # and numpy will replicate to the correct value later thanks to
-            # broadcast.
-            t.shape = (1, NSamples)
-
-        return t
-
-    def generate_channel_samples(self, NSamples):
-        """
-        Generate more samples for the Jakes model.
-
-        Note that any subsequent call to this method continues from the
-        point where the last call stopped. That is, if you generate 10
-        samples and then 15 more samples, you will get the same samples you
-        would have got if you had generated 25 samples.
-
-        Parameters
-        ----------
-        NSamples : int
-            Number of samples to be generated.
-
-        Returns
-        -------
-        h : Numpy array
-            The generated channel samples. The shape is in the form SHAPE x
-            NSamples, where SHAPE is a tuple with the shape provided in the
-            constructor of the JakesSampleGenerator class.
-
-        Notes
-        -----
-        This method will update the self._current_time variable.
-        """
-        # This method will also update the _current_time member variable
-        t = self._generate_time_samples(NSamples)
-
-        # Finally calculate the channel samples
-        h = (math.sqrt(1.0 / self.L) *
-             np.sum(np.exp(1j * (2 * np.pi * self.Fd
-                                 * np.cos(self._phi_l) * t + self._psi_l)),
-                    axis=0))
-
-        return h
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Channel Profiel Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Channel profiles define the power and delays (according to the norm) for
-# use with when creating TdlChannel objects
-class TdlChannelProfile(object):
-    """
-    Channel Profile class.
-
-    This class is just a nice way to present known profiles from the norm
-    or the literature, which are represented as instances of this class.
-
-    A TDL channel profile store information about the TDL taps. That is, it
-    stores the power and delay of each tap. The power and delay of each tap
-    can be accessed through the `tap_powers` and `tap_delays` properties.
-
-    Some profiles are defined as objects of this class, such as
-    COST259_TUx, COST259_RAx and COST259_HTx. These can be used when
-    instantiating a `TdlChannel` obejct.
-
-    Ex:
-        tdlchannel = TdlChannel(jakesObj,
-                                COST259_TUx.tap_powers,
-                                COST259_TUx.tap_delays)
-    """
-    def __init__(self, name, tap_powers, tap_delays):
-        """
-        """
-        self._name = name
-        self._tap_powers = tap_powers.copy()
-        self._tap_powers.flags['WRITEABLE'] = False
-        self._tap_powers_linear = dB2Linear(tap_powers)
-        self._tap_powers_linear.flags['WRITEABLE'] = False
-        self._tap_delays = tap_delays.copy()
-        self._tap_delays.flags['WRITEABLE'] = False
-        self._num_taps = tap_delays.size
-
-        self._mean_excess_delay \
-            = np.sum(self._tap_powers_linear * self._tap_delays)\
-            / np.sum(self._tap_powers_linear)
-
-        aux = np.sum(self._tap_powers_linear * (self._tap_delays)**2)\
-              / np.sum(self._tap_powers_linear)
-        self._rms_delay_spread = math.sqrt(aux - self._mean_excess_delay**2)
-
-
-    # TODO: Validate this function
-    @property
-    def mean_excess_delay(self):
-        """
-        The mean excess delay is the first moment of the power delay profile
-        and is defined to be
-            math:`\\overline{\\tau} = \\frac{\\sum_k P(\\tau_k)\\tau_k}{\\sum_k P(\\tau_k)}`
-        """
-        #$$\overline{\tau} = \frac{\sum_k P(\tau_k)\tau_k}{\sum_k P(\tau_k)}$$
-        return self._mean_excess_delay
-
-    # TODO: Validate this function
-    @property
-    def rms_delay_spread(self):
-        """
-        The RMS delay spread is the square root of the second central moment of
-        the power delay profile. It is defined to be
-            math:`\\sigma_t = \\sqrt{\\overline{t^2} - \\overline{\\tau}^2}`
-        where
-            math:`\overline{\tau^2}=\frac{\sum_k P(\tau_k)\tau_k^2}{\sum_k P(\tau_k)}`
-
-         Typically, when the symbol time period is greater than 10 times
-        the RMS delay spread, no ISI equalizer is needed in the receiver.
-        """
-        #$\sigma_t = \sqrt{\overline{t^2} - \overline{\tau}^2}$
-        # where
-        #$$\overline{\tau^2}=\frac{\sum_k P(\tau_k)\tau_k^2}{\sum_k P(\tau_k)}$$
-        return self._rms_delay_spread
-
-    @property
-    def name(self):
-        """Get the profile name"""
-        return self._name
-
-    @property
-    def tap_powers(self):
-        """Get the tap powers (in dB)"""
-        return self._tap_powers
-
-    @property
-    def tap_powers_linear(self):
-        """Get the tap powers (in linear scale)"""
-        return self._tap_powers_linear
-
-    @property
-    def tap_delays(self):
-        """Get the tap delays"""
-        return self._tap_delays
-
-    @property
-    def num_taps(self):
-        """Get the number of taps in the profile."""
-        return self._num_taps
-
-    def __repr__(self):
-        return "<TdlChannelProfile: '{0}' ({1} taps)>".format(self.name, self.num_taps)
-
-
-# xxxxxxxxxx Define some known profiles xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Reference: 3GPP TR 25.943 version 9.0.0 Release 9
-
-# COST 259 Typical Urban
-COST259_TUx = TdlChannelProfile(
-    'COST259_TU',
-    np.array([-5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3, -16.9, -17.1,
-              -17.4, -19, -19, -19.8, -21.5, -21.6, -22.1, -22.6, -23.5, -24.3]),
-    np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349, 1533,
-              1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9)
-
-# COST 259 Rural Area
-COST259_RAx = TdlChannelProfile(
-    'COST259_RA',
-    np.array([-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]),
-    np.array([0., 42.,  101.,  129.,  149.,  245.,  312.,  410.,  469.,  528]) * 1e-9)
-
-# COST 259 Hilly Terrain
-COST259_HTx = TdlChannelProfile(
-    'COST259_HT',
-    np.array([-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3, -17.7, -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0, -29.9, -30.0, -30.7]),
-    np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941., 15000., 16172., 16492., 16876., 16882., 16978., 17615., 17827., 17849., 18016.]) * 1e-9)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx TDL Channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class TdlChannel(object):
-    """
-    Tapped Delay Line channel model, which corresponds to a multipath
-    channel.
-
-    Parameters
-    ----------
-    jakesObj : JakesSampleGenerator object
-        The instance of JakesSampleGenerator that will be used to generate
-    tap_powers : numpy real array
-        The powers of each tap (in dB). Dimension: `L x 1`
-        Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
-        The delay of each tap (in seconds). Dimension: `L x 1`
-    """
-
-    def __init__(self, jakesObj, tap_powers, tap_delays):
-        """
-        Init method.
-        """
-        self._tap_powers = tap_powers  # Tap powers before the discretization
-        self._tap_delays = tap_delays  # Tap delays before the discretization
-        self._num_taps = tap_delays.size  # Number of taps
-
-        # These will be set in _calc_discretized_tap_powers_and_delays
-        self._tap_linear_powers_discretized = None  # Discretized tap powers
-        self._tap_delays_discretized = None  # Discretized tap delays
-        self._num_discretized_taps = None  # Number of discretized taps
-        self._num_discretized_taps_with_padding = None  # Size of the impulse response after discretization.
-
-        Ts = jakesObj.Ts
-        self._calc_discretized_tap_powers_and_delays(Ts)
-
-        if jakesObj.shape is None:
-            jakesObj.shape = (self._num_discretized_taps, )
-        else:
-            # Note that jakesObj.shape must be a tuple
-            jakesObj.shape = (self._num_discretized_taps, ) + jakesObj.shape
-        self._jakesObj = jakesObj
-
-
-        # paramSt.speedTerminal = 3/3.6;
-        # paramSt.fcDbl = 2.6e9;
-        # paramSt.bandSystemInt = 5e6;
-        # paramSt.timeTTIDbl = 1e-3;
-        # paramSt.subcarrierBandDbl = 15e3;
-        # paramSt.numOfSubcarriersPRBInt = 12;
-        # paramSt.fadingModel = enums.MimoChannelModel.TU;
-
-    @staticmethod
-    def create_from_channel_profile(jakesObj, channel_profile):
-        """
-        Create a new TdlChannel object from the channel_profile (an object of
-        the TdlChannelProfile class).
-
-        Parameters
-        ----------
-        jakesObj : JakesSampleGenerator object
-            The instance of JakesSampleGenerator that will be used to generate
-        channel_profile : An object of TdlChannelProfile class.
-            The channel profile knows the number of taps, the tap powers
-            and the tap delays.
-        """
-        tap_powers = channel_profile.tap_powers
-        tap_delays = channel_profile.tap_delays
-
-        return TdlChannel(jakesObj, tap_powers, tap_delays)
-
-    def _calc_discretized_tap_powers_and_delays(self, Ts):
-        """
-        Discretize the taps according to the sampling time.
-
-        The discretized taps will be equally spaced and the delta time from
-        two taps corresponds to the sampling time.
-
-        This method will set the `_tap_linear_powers_discretized` and
-        `_tap_delays_discretized` attributes from the values in the
-        `_tap_delays` and `_tap_powers` atributes.
-
-        Parameters
-        ----------
-        Ts : float
-            The sampling time (used in the Jakes object)
-        """
-
-        # Compute delay indices
-        delay_indexes, idx_inverse = np.unique(
-            np.round(self._tap_delays/Ts).astype(int).flatten(),
-            return_inverse=True)
-
-        # tap powers in linear scale
-        tap_powers_lin = dB2Linear(self._tap_powers)
-        # Force mean to 1
-        tap_powers_lin = tap_powers_lin/np.sum(tap_powers_lin)
-
-        self._tap_linear_powers_discretized = np.zeros(delay_indexes.size)
-        for i, v in enumerate(tap_powers_lin):
-            discretized_idx = idx_inverse[i]
-            self._tap_linear_powers_discretized[discretized_idx] += v
-
-        self._tap_delays_discretized = delay_indexes
-
-        self._num_discretized_taps = delay_indexes.size
-        self._num_discretized_taps_with_padding = delay_indexes[-1] + 1
-
-
-    def get_fading_map(self, NSamples):
-        """
-        Generate `NSamples` of all (discretized) taps and return the generated
-        map.
-
-        The number of discretized taps will depend on the channel delay
-        profile (the tap_delays passed during creation of the TdlChannel
-        object) as well as on the sampling interval (configured in the
-        jakesObj passed to the TdlChannel object).
-
-        As an example, the COST259 TU channel profile has 20 different taps
-        where the last one has a delay equal to 2.14 microseconds. If the
-        jakesObj is configured with a sampling time equal to 3.25e-08 then
-        the discretized channel will have more than 60 taps (most of them
-        will be zeros, though). Alternatively, with a sampling time of
-        1e-6 you will end up with only 3 discretized taps.
-
-        Parameters
-        ----------
-        NSamples : int
-            The number of samples to generate (for each tap).
-
-        Returns
-        -------
-        samples : numpy complex array
-            The generated samples. Dimension: `Shape of the Jakes obj x NSamples`
-        """
-        jakes_samples = self._jakesObj.generate_channel_samples(NSamples)
-
-        # xxxxxxxxxx Apply the power to each tap xxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Note that here we only apply the power to the taps. The delays
-        # will be applyed when the fading is actually used.
-
-        # Note that self._tap_linear_powers_discretized has a single
-        # dimension. We need to add singleton dimensions as necessary
-        # before we multiply it by jakes_samples so that broadcasting
-        # works.
-        new_shape = [self._tap_linear_powers_discretized.shape[0]]
-        new_shape.extend([1] * (jakes_samples.ndim-1))
-
-        samples = jakes_samples * np.sqrt(
-            np.reshape(self._tap_linear_powers_discretized[:, np.newaxis],
-                       new_shape)
-        )
-
-        return samples
-
-    def include_the_zeros_in_fading_map(self, fading_map):
-        """
-        Return the fading_map including the zeros.
-
-        Parameters
-        ----------
-        fading_map : numpy complex array
-            The fading map including any required delays with zeros.
-
-        Returns
-        -------
-        full_fading_map : numpy complex array
-            The fading map including the extra delays containing zeros.
-        """
-        num_samples = fading_map.shape[1]
-        full_fading_map = np.zeros(
-            [self._num_discretized_taps_with_padding, num_samples],
-            dtype=complex)
-
-        full_fading_map[self._tap_delays_discretized] = fading_map
-        return full_fading_map
-
-    def get_channel_freq_response(self, full_fading_map, fftSize):
-        """
-        Get the frequency response for the given fadding map, computed with
-        `np.fft.fft`.
-
-        Parameters
-        ----------
-        full_fading_map : Numpy complex array
-            The fading map (including any extra zeros) calculated by
-            `get_fading_map`. The first dimension corresponds to the delay
-            dimension (taps).
-        fftSize : int
-            The size of the FFT to be applied.
-
-        Returns
-        -------
-        freqResponse : numpy array
-            The frequency response. Dimension: `fftSize x num_samples`
-        """
-        # Compute the FFT in the "delay" dimension, which captures the
-        # multipath characteristics of the channel. The FFT is calculated
-        # independently for each column (second dimension), which
-        # corresponds to the second dimension is the time dimension (as the
-        # channel response changes in time)
-        freqResponse = np.fft.fft(full_fading_map, fftSize, axis=0)
-        return freqResponse
-
-    def transmit_signal_with_known_fading_map(self, signal, fading_map):
-        """Transmit the signal trhough the TDL channel.
-
-        Parameters
-        ----------
-        signal : numpy array
-            The signal to be transmitted.
-        fading_map : numpy array
-            The fading map to use.
-        """
-        # Number of symbols to be transmitted
-        num_symbols = signal.size
-        # Maximum (discretized) delay of the channel. The output size will
-        # be equal to the number of symbols to transit plus the max_delay.
-        max_delay = self._num_discretized_taps_with_padding - 1
-        output = np.zeros(num_symbols + max_delay, dtype=complex)
-
-        for i, d in enumerate(self._tap_delays_discretized):
-            output[d:d+num_symbols] += fading_map[i] * signal
-
-        return output
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxx MultiUserChannelMatrix Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: Maybe remove the N0_or_Rek argument of the "*calc_Bkl*" methods and
 # use the value of self.noise_var whenever possible.
 class MultiUserChannelMatrix(object):  # pylint: disable=R0902
@@ -761,7 +101,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         # Same as _W, but as a single block diagonal matrix.
         self._big_W = None
 
-    def set_channel_seed(self, seed=None):
+    def set_channel_seed(self, seed=None):  # pragma: no cover
         """
         Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
@@ -774,7 +114,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         """
         self._RS_channel.seed(seed=seed)
 
-    def set_noise_seed(self, seed=None):
+    def set_noise_seed(self, seed=None):  # pragma: no cover
         """
         Set the seed of the RandomState object used to generate the random
         noise elements (when the corrupt data function is called).
@@ -818,7 +158,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
     # Property to get the matrix of channel matrices (with pass loss
     # applied if any)
-    def _get_H(self):
+    @property
+    def H(self):
         """Get method for the H property."""
         if self._pathloss_matrix is None:
             # No path loss
@@ -832,7 +173,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
                 self._H_with_pathloss = self._H_no_pathloss * np.sqrt(
                     self._pathloss_matrix)
             return self._H_with_pathloss
-    H = property(_get_H)
 
     # Property to get the big channel matrix (with pass loss applied if any)
     @property
@@ -966,9 +306,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         """
         # If Nt or Nr (or both) is (are) int assume the same value should
         # be used for all users.
-        if isinstance(Nr, int):
+        if isinstance(Nr, int):  # pragma: no cover
             Nr = np.ones(K, dtype=int) * Nr
-        if isinstance(Nt, int):
+        if isinstance(Nt, int):  # pragma: no cover
             Nt = np.ones(K, dtype=int) * Nt
 
         if channel_matrix.shape != (np.sum(Nr), np.sum(Nt)):
@@ -1131,7 +471,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         """
         Set the post-processing filters.
 
-        The post-processing filters will be applyied to the data after if
+        The post-processing filters will be applied to the data after if
         has been currupted by the channel in either the `corrupt_data` or
         the `corrupt_concatenated_data` methods.
 
@@ -1152,9 +492,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     @property
     def big_W(self):
         """Get method for the big_W property."""
-        if self._big_W is None:
-            if self.W is not None:
-                self._big_W = block_diag(*self.W)
+        if self._big_W is None and self.W is not None:
+            # noinspection PyArgumentList
+            self._big_W = block_diag(*self.W)
         return self._big_W
 
     def corrupt_concatenated_data(self, data):
@@ -1189,9 +529,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         # Add the noise, if self.noise_var is not None
         if self.noise_var is not None:
             awgn_noise = (
-                randn_c_RS(self._RS_noise, *output.shape)
-                * math.sqrt(self.noise_var))
-            output = output + awgn_noise
+                randn_c_RS(self._RS_noise, *output.shape) *
+                math.sqrt(self.noise_var))
+            output += awgn_noise
             self._last_noise = awgn_noise
         else:
             self._last_noise = None
@@ -1292,6 +632,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
+    # noinspection PyPep8
     def _calc_Q_impl(self, k, F_all_users):
         """
         Calculates the interference covariance matrix (without any noise) at
@@ -1311,6 +652,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return Qk
 
+    # noinspection PyPep8
     def calc_Q(self, k, F_all_users):
         """
         Calculates the interference plus noise covariance matrix at the
@@ -1348,6 +690,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return Qk
 
+    # noinspection PyPep8
     def _calc_JP_Q_impl(self, k, F_all_users):
         """
         Calculates the interference covariance matrix (without any noise) at
@@ -1367,6 +710,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return Qk
 
+    # noinspection PyPep8,PyPep8
     def calc_JP_Q(self, k, F_all_users):
         """
         Calculates the interference plus noise covariance matrix at the
@@ -1399,9 +743,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         if self.noise_var is not None:
             Rnk = np.eye(self.Nr[k]) * self.noise_var
             return Qk + Rnk
-        else:
+        else:  # pragma: no cover
             return Qk
 
+    # noinspection PyPep8,PyPep8
     def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, N0_or_Rek=0.0):
         """
         Calculates the first part in the equation of the Blk covariance matrix
@@ -1437,6 +782,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         if isinstance(N0_or_Rek, Number):
             noise_power = N0_or_Rek
+            # noinspection PyUnresolvedReferences
             Rek = (noise_power * np.eye(self.Nr[k]))
         else:
             Rek = N0_or_Rek
@@ -1458,6 +804,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return first_part
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_second_part(self, Fk, k, l):
         """Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
@@ -1494,6 +841,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return second_part
 
+    # noinspection PyPep8
     def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
@@ -1559,7 +907,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         return Bkl_all_l
 
-    def _calc_JP_Bkl_cov_matrix_first_part_impl(self, HK, F_all_users, Rek):
+    # noinspection PyPep8
+    def _calc_JP_Bkl_cov_matrix_first_part_impl(self, Hk, F_all_users, Rek):
         """
         Common implementation of the _calc_JP_Bkl_cov_matrix_first_part.
 
@@ -1571,30 +920,34 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         F_all_users : 1D numpy array of 2D numpy array
             The precoder of all users (already taking into account the
             transmit power).
-        k : int
-            Index of the desired user.
         Rek : 2D numpy array
             Covariance matrix of the external interference (if there is
             any) plus noise.
+
+        Returns
+        -------
+        numpy array
+            The `first_part` for the Bkl matrix computation.
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[k]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[k]\dagger} + \mtR e_k$$
         first_part = 0.0
 
-        HK_H = HK.conjugate().transpose()
+        HK_H = Hk.conjugate().transpose()
         for j in range(self.K):
             Vj = F_all_users[j]
             Vj_H = Vj.conjugate().transpose()
 
             first_part = first_part + np.dot(
-                HK,
+                Hk,
                 np.dot(
                     np.dot(Vj,
                            Vj_H),
                     HK_H))
-        first_part = first_part + Rek
+        first_part += Rek
 
         return first_part
 
+    # noinspection PyPep8,PyPep8
     def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users, k,
                                            noise_power=0.0):
         """
@@ -1628,6 +981,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         return self._calc_JP_Bkl_cov_matrix_first_part_impl(
             Hk, F_all_users, Rek)
 
+    # noinspection PyPep8
     @staticmethod
     def _calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l):
         """
@@ -1639,12 +993,11 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Vkl = Fk[:, l:l + 1]
         Vkl_H = Vkl.transpose().conjugate()
-        second_part = np.dot(Hk,
-                             np.dot(np.dot(Vkl, Vkl_H),
-                                    Hk_H))
+        second_part = np.dot(Hk, np.dot(np.dot(Vkl, Vkl_H), Hk_H))
 
         return second_part
 
+    # noinspection PyPep8
     def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
         """Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
@@ -1673,6 +1026,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Hk = self.get_Hk(k)
         return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
+    # noinspection PyPep8
     def _calc_JP_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
         """Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in
@@ -2018,7 +1372,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     @property
     def H_no_ext_int(self):
         """Get method for the H_no_ext_int property."""
-        H = MultiUserChannelMatrix._get_H(self)
+        # Call H property get method of the base class
+        H = MultiUserChannelMatrix.H.fget(self)
         return H[:self.K, :self.K]
 
     def corrupt_data(self, data, ext_int_data):
@@ -2221,7 +1576,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         # Total number of users including the interference users.
         full_K = K + extIntK
 
-        return (full_Nr, full_Nt, full_K, extIntK, extIntNt)
+        return full_Nr, full_Nt, full_K, extIntK, extIntNt
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K, NtE):
         """
@@ -2325,6 +1680,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             each receiver. The number of rows of ext_int_pathloss must be
             equal to the number of receives, while the number of columns
             must be equal to the number of external interference sources.
+        ext_int_pathloss : numpy array
+            The external interference path loss.
         """
         # A matrix with the path loss from each transmitter to each
         # receiver.
@@ -2375,6 +1732,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             R_all_k[ii] = pe * np.dot(extH, extH.transpose().conjugate())
         return R_all_k
 
+    # noinspection PyPep8
     def calc_cov_matrix_extint_plus_noise(self, pe=1):
         """
         Calculates the covariance matrix of the external interference plus
@@ -2408,6 +1766,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return R_all_k
 
+    # noinspection PyPep8,PyPep8
     def calc_Q(self, k, F_all_users, pe=1.0):
         """
         Calculates the interference covariance matrix at the
@@ -2442,6 +1801,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return Qk
 
+    # noinspection PyPep8
     def _calc_JP_Q(self, k, F_all_users):
         """
         Calculates the interference covariance matrix at the :math:`k`-th
@@ -2472,6 +1832,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return Qk
 
+    # noinspection PyPep8,PyPep8
     def calc_JP_Q(self, k, F_all_users, pe=1.0):
         """
         Calculates the interference covariance matrix at the
@@ -2506,6 +1867,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return Qk
 
+    # noinspection PyUnresolvedReferences
     def calc_SINR(self, F, U, pe=1.0):
         """
         Calculates the SINR values (in linear scale) of all streams of all
@@ -2539,6 +1901,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return SINRs
 
     # pylint: disable=W0222
+    # noinspection PyPep8
     def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users, k, Rek):
         """
         Calculates the first part in the equation of the Blk covariance matrix
@@ -2568,6 +1931,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return self._calc_JP_Bkl_cov_matrix_first_part_impl(
             Hk, F_all_users, Rek)
 
+    # noinspection PyPep8,PyPep8
     def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
         """
         Calculates the second part in the equation of the Blk covariance
@@ -2637,6 +2001,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             The precoders of all users.
         U : 1D numpy array of 2D numpy arrays
             The receive filters of all users.
+        pe : float
+            The external interference power.
 
         Returns
         -------

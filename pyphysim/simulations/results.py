@@ -16,6 +16,7 @@ except ImportError:  # pragma: no cover
     import pickle
 
 try:
+    # noinspection PyUnresolvedReferences
     from pandas import DataFrame
 except ImportError:  # pragma: no cover
     pass
@@ -213,6 +214,9 @@ class SimulationResults(object):
         """
         if self is other:  # pragma: no cover
             return True
+
+        if not isinstance(other, self.__class__):
+            return False
 
         aux = equal_dicts(self.__dict__,
                           other.__dict__,
@@ -593,6 +597,7 @@ class SimulationResults(object):
         """
         try:
             # This is for python 2
+            # noinspection PyUnresolvedReferences
             iterator = self._results.itervalues()
         except AttributeError:
             # This is for python 3
@@ -695,7 +700,7 @@ class SimulationResults(object):
         with open(filename, 'rb') as inputfile:
             try:
                 obj = pickle.load(inputfile)
-            except UnicodeDecodeError:
+            except UnicodeDecodeError:  # pragma: nocover
                 # If we pickle with python 2 and try to unpickle with
                 # python 3 we might get a UnicodeDecodeError exception. In
                 # that case, let's try to unpickle specifying the
@@ -1004,7 +1009,7 @@ class Result(object):
         ----------
         name : str
             Name of the Result.
-        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE}
+        update_type_code : {SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE}
             Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
         accumulate_values : bool
             If True, then the values `value` and `total` will be
@@ -1066,6 +1071,9 @@ class Result(object):
                       '_total_list', '_result_squared_sum', '_result_sum']
         if self is other:  # pragma: no cover
             return True
+
+        if not isinstance(other, self.__class__):
+            return False
 
         result = True
         for att in attributes:
@@ -1135,10 +1143,6 @@ class Result(object):
             values are accumulated, but having all values sometimes is
             useful to perform statistical calculations. This is useful for
             debugging/testing.
-        choice_num : int
-            Number of different choices for the CHOICETYPE type. This is a
-            required parameter for the CHOICETYPE type, but it is ignored
-            for the other types
 
         Returns
         -------
@@ -1232,7 +1236,7 @@ class Result(object):
         # Python does not have a switch statement. We use dictionaries as
         # the equivalent of a switch statement.
         # First we define a function for each possibility.
-        def __default_update(dummy1, dummy2):
+        def __default_update(*_):  # "*_" denotes the two unused args here
             """Default update method.
 
             This will only be called when the update type is not one of the
@@ -1242,54 +1246,54 @@ class Result(object):
             msg = "Can't update a Result object of type '{0}'"
             raise ValueError(msg.format(self._update_type_code))
 
-        def __update_SUMTYPE_value(value, dummy):
+        def __update_SUMTYPE_value(p_value, _):
             """Update the Result object when its type is SUMTYPE."""
-            self._value += value
-            self._result_sum += value
-            self._result_squared_sum += value**2
+            self._value += p_value
+            self._result_sum += p_value
+            self._result_squared_sum += p_value**2
             if self._accumulate_values_bool is True:
-                self._value_list.append(value)
+                self._value_list.append(p_value)
 
-        def __update_RATIOTYPE_value(value, total):
+        def __update_RATIOTYPE_value(p_value, p_total):
             """Update the Result object when its type is RATIOTYPE.
 
             Raises
             ------
             ValueError
-                If the `total` parameter is None (not provided).
+                If the `p_total` parameter is None (not provided).
             """
-            if total is None:
-                msg = ("A 'value' and a 'total' are required when updating "
+            if p_total is None:
+                msg = ("A 'p_value' and a 'p_total' are required when updating "
                        "a Result object of the RATIOTYPE type.")
                 raise ValueError(msg)
 
-            self._value += value
-            self._total += total
+            self._value += p_value
+            self._total += p_total
 
-            result = float(value) / float(total)
+            result = float(p_value) / float(p_total)
             self._result_sum += result
             self._result_squared_sum += result**2
 
             if self._accumulate_values_bool is True:
-                self._value_list.append(value)
-                self._total_list.append(total)
+                self._value_list.append(p_value)
+                self._total_list.append(p_total)
 
-        def __update_by_replacing_current_value(value, dummy):
+        def __update_by_replacing_current_value(p_value, _):
             """Update the Result object when its type is MISCTYPE."""
-            self._value = value
+            self._value = p_value
             if self._accumulate_values_bool is True:
-                self._value_list.append(value)
+                self._value_list.append(p_value)
 
-        def __update_CHOICETYPE_value(value, dummy):
+        def __update_CHOICETYPE_value(p_value, _):
             """Update the Result object when its type is CHOICETYPE."""
-            # The provided 'value' is used as an index to increase the
+            # The provided 'p_value' is used as an index to increase the
             # choice in self._value, which is stored as a numpy array.
-            assert type(value) == int, (
+            assert type(p_value) == int, (
                 "Value for the CHOICETYPE must be an integer.")
-            self._value[value] += 1
+            self._value[p_value] += 1
             self._total += 1
             if self._accumulate_values_bool is True:
-                self._value_list.append(value)
+                self._value_list.append(p_value)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Now we fill the dictionary with the functions
@@ -1313,6 +1317,7 @@ class Result(object):
         other : Result object
             Another Result object.
         """
+        assert(isinstance(other, self.__class__))
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
@@ -1388,8 +1393,8 @@ class Result(object):
         """
         # self._fix_old_version()  # Remove this line in the future
 
-        return ((float(self._result_squared_sum) / self.num_updates)
-                - (self.get_result_mean())**2)
+        return ((float(self._result_squared_sum) / self.num_updates) -
+                (self.get_result_mean())**2)
 
     def get_confidence_interval(self, P=95):
         """
@@ -1453,7 +1458,7 @@ class Result(object):
     #     # possible to save the accumulated values (if there is any)
     #     if results_list[0]._accumulate_values_bool is True:
     #         warnings.warn(
-    #             'Cannot save the accumulated values in a Result to an hdf5 file.')
+    #        'Cannot save the accumulated values in a Result to an hdf5 file.')
 
     #     dtype = [('_value', float), ('_total', float), ('num_updates', int),
     #              ('_result_sum', float), ('_result_squared_sum', float)]

@@ -5,7 +5,9 @@
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
@@ -17,7 +19,10 @@ import numpy as np
 from time import time
 
 from pyphysim.util import conversion
-from pyphysim.comm import channels, modulators, blockdiagonalization
+from pyphysim.comm import blockdiagonalization
+from pyphysim.modulators import fundamental
+import pyphysim.channels.multiuser
+
 
 tic = time()
 
@@ -30,7 +35,7 @@ Ns_BD = Nt
 
 # Modulator Parameters
 M = 4
-modulator = modulators.PSK(M)
+modulator = fundamental.PSK(M)
 
 # Transmission Parameters
 NSymbs = 500  # Number of symbols (per stream per user simulated at each
@@ -53,7 +58,7 @@ pe = conversion.dBm2Linear(Pe_dBm)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Generate the channel
-multiuser_channel = channels.MultiUserChannelMatrixExtInt()
+multiuser_channel = pyphysim.channels.multiuser.MultiUserChannelMatrixExtInt()
 multiuser_channel.randomize(Nr, Nt, K, ext_int_rank)
 
 # Generate input data and modulate it

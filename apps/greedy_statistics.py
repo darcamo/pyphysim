@@ -114,7 +114,7 @@ def print_statistics_table(statistic_table):
     # Remoce rows in statistic_table which have a zero percentage
     filtered_table = [(a, b) for (a, b) in statistic_table if b != 0]
     for line in filtered_table:
-        print '{0}: {1}%'.format(line[0], line[1])
+        print('{0}: {1}%'.format(line[0], line[1]))
 
 
 if __name__ == '__main__':
@@ -151,8 +151,7 @@ if __name__ == '__main__':
         statistic_table = get_pretty_statistic_table(
             greedy_withpl_stream_statistics[idx])
         print_statistics_table(statistic_table)
-        print
-
+        print()
     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     print("xxxxxxxxxxxxxxx Brute Force Results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")

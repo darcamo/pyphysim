@@ -12,7 +12,9 @@ of them.
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
@@ -24,7 +26,7 @@ import unittest
 import doctest
 import numpy as np
 
-from pyphysim.MATLAB import python2MATLAB
+from pyphysim.extra.MATLAB import python2MATLAB
 
 
 class MATLABDoctestsTestCase(unittest.TestCase):

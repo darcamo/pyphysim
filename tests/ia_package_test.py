@@ -30,7 +30,7 @@ import doctest
 import numpy as np
 from numpy.linalg import norm
 
-from pyphysim.comm import channels
+from pyphysim import channels
 import pyphysim.ia  # Import the package ia
 from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, \
     MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
@@ -120,7 +120,7 @@ class CustomTestCase(unittest.TestCase):
         multiUserChannel = iasolver._multiUserChannel
         self._new_test = None
 
-        try:
+        try:  # pragma: nocover
             # If the file pointed by `filename` exists, that means that a
             # previous run of the test method failed and the random states
             # were saved. In that case we will load those random states and
@@ -175,7 +175,7 @@ class IASolverBaseClassConcret(IASolverBaseClass):
     Concrete class derived from IASolverBaseClass for testing purposes.
     """
     def solve(self, Ns, P=None):
-        pass
+        pass  # pragma: nocover
 
 
 # Since IterativeIASolverBaseClass is an abstract class, lets define a
@@ -189,13 +189,13 @@ class IterativeIASolverBaseClassConcrete(IterativeIASolverBaseClass):
         pass
 
     def _updateF(self):
-        pass
+        pass  # pragma: nocover
 
 
 class IASolverBaseClassTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = IASolverBaseClassConcret(multiUserChannel)
 
     def test_init(self):
@@ -345,7 +345,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
             self.iasolver.F[2], self.iasolver.full_F[2])
 
     def test_set_precoders(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
         iasolver1 = IASolverBaseClassConcret(multiUserChannel)
@@ -365,7 +365,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         F[2] = np.random.randn(3, 2)
 
         for k in range(3):
-            F[k] = F[k] / np.linalg.norm(F[k], 'fro')
+            F[k] /= np.linalg.norm(F[k], 'fro')
             full_F[k] = np.sqrt(P[k]) * F[k]
 
             # factor can be any value from 0.75 to 1.0
@@ -406,7 +406,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_equal(iasolver3.Ns, np.array([2, 1, 2]))
 
     def test_set_receive_filters(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
         iasolver1 = IASolverBaseClassConcret(multiUserChannel)
@@ -620,7 +620,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                     Vjd_H = Vjd.conjugate().transpose()
                     aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
-                expected_first_part = expected_first_part + aux
+                expected_first_part += aux
 
             np.testing.assert_array_almost_equal(
                 expected_first_part,
@@ -813,7 +813,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
 class ClosedFormIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = ClosedFormIASolver(multiUserChannel)
         self.K = 3
         self.Nr = np.array([2, 2, 2])
@@ -826,7 +826,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         # np.testing.assert_array_equal(np.ones(3), self.iasolver.Ns)
 
     def test_invalid_solve(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         Ns = 1
         # ClosedFormIASolver only works with 3 users ...
         iasolver2 = ClosedFormIASolver(multiUserChannel)
@@ -865,7 +865,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
         # xxxxx Test the case with Nt = Ns = 4 and Ns = 2 xxxxxxxxxxxxxxxxx
         Ns2 = 2
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = ClosedFormIASolver(multiUserChannel)
         K = 3
         Nr = np.array([4, 4, 4])
@@ -905,9 +905,9 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         V3 = H23.I * H21 * V1
 
         # Normalize the precoders
-        V1 = V1 / norm(V1, 'fro')
-        V2 = V2 / norm(V2, 'fro')
-        V3 = V3 / norm(V3, 'fro')
+        V1 /= norm(V1, 'fro')
+        V2 /= norm(V2, 'fro')
+        V3 /= norm(V3, 'fro')
 
         # The number of streams _Ns is set in the solve method, before
         # _updateF is called. However, since we are testing the _updateF
@@ -1045,7 +1045,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test if an exception is raised if we try to use the
         # ClosedFormIASolver class with a number of users different from 3.
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         Nr = 2
         Nt = 2
         multiUserChannel.randomize(Nr, Nt, 2)
@@ -1060,7 +1060,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_solve_best_solution(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = ClosedFormIASolver(multiUserChannel, use_best_init=True)
         iasolver2 = ClosedFormIASolver(multiUserChannel, use_best_init=False)
         K = 3
@@ -1143,7 +1143,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
             F_old, F_new, 1e-3))
 
     def test_initialize_with_property(self):
-        channel = channels.MultiUserChannelMatrix()
+        channel = channels.multiuser.MultiUserChannelMatrix()
         solver = IterativeIASolverBaseClassConcrete(channel)
 
         self.assertEqual(solver.initialize_with, 'random')
@@ -1172,7 +1172,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
             solver._dont_initialize_F_and_only_and_find_W()
 
     def test_solve_init(self):
-        channel = channels.MultiUserChannelMatrix()
+        channel = channels.multiuser.MultiUserChannelMatrix()
         channel.randomize(4, 4, 3)
         solver = IterativeIASolverBaseClassConcrete(channel)
         # Not really necessary, since we just created the solver object
@@ -1305,7 +1305,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = AlternatingMinIASolver(multiUserChannel)
 
         self.K = 3
@@ -1419,7 +1419,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         expected_F0 = np.dot(np.dot(H10.conjugate().transpose(), Y1), H10) + \
             np.dot(np.dot(H20.conjugate().transpose(), Y2), H20)
         expected_F0 = leig(expected_F0, self.Ns[0])[0]
-        expected_F0 = expected_F0 / np.linalg.norm(expected_F0, 'fro')
+        expected_F0 /= np.linalg.norm(expected_F0, 'fro')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[1] after one step xxxxxxxxxxxxxxxx
@@ -1427,7 +1427,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         expected_F1 = np.dot(np.dot(H01.conjugate().transpose(), Y0), H01) + \
             np.dot(np.dot(H21.conjugate().transpose(), Y2), H21)
         expected_F1 = leig(expected_F1, self.Ns[1])[0]
-        expected_F1 = expected_F1 / np.linalg.norm(expected_F1, 'fro')
+        expected_F1 /= np.linalg.norm(expected_F1, 'fro')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculate the expected F[1] after one step xxxxxxxxxxxxxxxx
@@ -1435,7 +1435,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         expected_F2 = np.dot(np.dot(H02.conjugate().transpose(), Y0), H02) + \
             np.dot(np.dot(H12.conjugate().transpose(), Y1), H12)
         expected_F2 = leig(expected_F2, self.Ns[2])[0]
-        expected_F2 = expected_F2 / np.linalg.norm(expected_F2, 'fro')
+        expected_F2 /= np.linalg.norm(expected_F2, 'fro')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Get the precoders xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1558,7 +1558,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         H01_F1 = np.dot(
             self.iasolver._get_channel(k, l),
             self.iasolver.full_F[l])
-        Cost = Cost + norm(
+        Cost += norm(
             H01_F1 -
             np.dot(
                 np.dot(self.iasolver._C[k],
@@ -1570,7 +1570,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         H10_F0 = np.dot(
             self.iasolver._get_channel(k, l),
             self.iasolver.full_F[l])
-        Cost = Cost + norm(
+        Cost += norm(
             H10_F0 -
             np.dot(
                 np.dot(self.iasolver._C[k],
@@ -1587,7 +1587,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         K = 3
         P = np.array([0.97, 1.125, 1.342])
 
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = AlternatingMinIASolver(multiUserChannel)
 
         # If a previous run of this test failed, this will load the state
@@ -1684,7 +1684,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         # print np.linalg.norm(full_W_H2 * H21 * full_F1)**2
 
     def test_calc_SINR_old(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = AlternatingMinIASolver(multiUserChannel)
         K = 3
         Nr = 4
@@ -1796,7 +1796,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 class MaxSinrIASolerTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = MaxSinrIASolver(multiUserChannel)
 
         self.K = 3
@@ -1826,8 +1826,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                     Vjd_H = Vjd.conjugate().transpose()
                     aux = aux + np.dot(np.dot(Hkj, np.dot(Vjd, Vjd_H)), Hkj_H)
 
-                expected_first_part_rev \
-                    = expected_first_part_rev + (self.P[j] / self.Ns[j]) * aux
+                expected_first_part_rev += (self.P[j] / self.Ns[j]) * aux
 
             np.testing.assert_array_almost_equal(
                 expected_first_part_rev,
@@ -1945,7 +1944,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                 expected_Ukl = np.dot(
                     np.linalg.inv(Bkl_all_l[l]),
                     np.dot(Hkk, F[:, l:l + 1]))
-                expected_Ukl = expected_Ukl / norm(expected_Ukl, 'fro')
+                expected_Ukl /= norm(expected_Ukl, 'fro')
                 Ukl = self.iasolver._calc_Ukl(Hkk, F, Bkl_all_l[l], l)
                 np.testing.assert_array_almost_equal(expected_Ukl, Ukl)
 
@@ -1968,7 +1967,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
     def test_underline_calc_SINR_k(self):
         self.iasolver.randomizeF(self.Ns, self.P)
 
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
@@ -2004,7 +2003,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                                                      SINR_k_all_l[l])
 
     def test_calc_SINR(self):
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
         Nt = np.ones(K, dtype=int) * 4
@@ -2231,7 +2230,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         # Transmit power of all users
         P = np.array([2.0, 1.5, 0.9])
 
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = MaxSinrIASolver(multiUserChannel)
 
         # If a previous run of this test failed, this will load the state
@@ -2345,7 +2344,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         # streams of the first user, which we will test here.
         P = np.array([0.0001, 100.8, 230.0])
 
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
         multiUserChannel.noise_var = 1e-8
 
@@ -2379,7 +2378,7 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 class MinLeakageIASolverTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = MinLeakageIASolver(multiUserChannel)
         self.K = 3
         self.Nt = np.ones(self.K, dtype=int) * 2
@@ -2539,7 +2538,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 class MMSEIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = MMSEIASolver(multiUserChannel)
 
         self.K = 3
@@ -3103,7 +3102,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         # streams of the first user, which we will test here.
         P = np.array([0.0001, 100.8, 230.0])
 
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
 
         iasolver = MMSEIASolver(multiUserChannel)
@@ -3140,7 +3139,7 @@ class GreedStreamIASolverTestCase(CustomTestCase):
 
     def test_solve(self):
         # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
 
         iasolver = GreedStreamIASolver(alt_min_iasolver)
@@ -3254,7 +3253,7 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
 
     def test_solve(self):
         # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        multiUserChannel = channels.MultiUserChannelMatrix()
+        multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
 
         iasolver = BruteForceStreamIASolver(alt_min_iasolver)

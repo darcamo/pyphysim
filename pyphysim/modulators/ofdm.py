@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Module implementing OFDM modulation and demodulation."""
+"""
+Module implementing OFDM modulation and demodulation.
+"""
 
 import numpy as np
 import math
@@ -100,11 +102,11 @@ class OFDM(object):
             required to transmit `input_data_size` symbols.
 
         """
-        num_ofdm_symbols = (int(np.ceil(float(input_data_size)
-                                        / self.num_used_subcarriers)))
-        zeropad = (self.num_used_subcarriers * num_ofdm_symbols
-                   - input_data_size)
-        return (zeropad, num_ofdm_symbols)
+        num_ofdm_symbols = (int(np.ceil(float(input_data_size) /
+                                        self.num_used_subcarriers)))
+        zeropad = (self.num_used_subcarriers * num_ofdm_symbols -
+                   input_data_size)
+        return zeropad, num_ofdm_symbols
 
     def get_subcarrier_indexes(self):
         """Get the indexes of all subcarriers, including the negative, the
@@ -125,7 +127,7 @@ class OFDM(object):
 
         Examples
         --------
-        >>> ofdm = OFDM(16,4,16)
+        >>> ofdm = OFDM(16, 4, 16)
         >>> ofdm.get_subcarrier_indexes()
         array([ 0,  1,  2,  3,  4,  5,  6,  7, -8, -7, -6, -5, -4, -3, -2, -1])
         """
@@ -151,10 +153,10 @@ class OFDM(object):
 
         Examples
         --------
-        >>> ofdm = OFDM(16,4,10)
+        >>> ofdm = OFDM(16, 4, 10)
         >>> ofdm._get_used_subcarrier_indexes()
         array([ 1,  2,  3,  4,  5, -5, -4, -3, -2, -1])
-        >>> ofdm = OFDM(16,4,14)
+        >>> ofdm = OFDM(16, 4, 14)
         >>> ofdm._get_used_subcarrier_indexes()
         array([ 1,  2,  3,  4,  5,  6,  7, -7, -6, -5, -4, -3, -2, -1])
         """
@@ -222,7 +224,7 @@ class OFDM(object):
 
         Parameters
         ----------
-        input_data : 1D numpy array
+        input_signal : 1D numpy array
             Input signal that must be modulated by the OFDM modulate
             function.
 
@@ -384,7 +386,8 @@ class OFDM(object):
             The calculated power scale. You should take the square root of
             this before multiplying by the samples.
         """
-        power_scale = (float(self.fft_size) ** 2) / (float(self.num_used_subcarriers) + self.cp_size)
+        power_scale = (float(self.fft_size) ** 2) / \
+                      (float(self.num_used_subcarriers) + self.cp_size)
         return power_scale
 
     def modulate(self, input_signal):
@@ -416,8 +419,8 @@ class OFDM(object):
         # Now we calculate the ifft for the second axis. That is equivalent
         # to calculate the ifft separatelly for each row in the input_ifft
         # variable.
-        output_ifft = math.sqrt(self._calculate_power_scale()) \
-                      * np.fft.ifft(input_ifft, self.fft_size, 1)
+        output_ifft = (math.sqrt(self._calculate_power_scale()) *
+                       np.fft.ifft(input_ifft, self.fft_size, 1))
 
         # Add the Cyclic prefix
         modulated_ofdm = self._add_CP(output_ifft)
@@ -454,8 +457,8 @@ class OFDM(object):
         # Now we calculate the FFT for the second axis. That is equivalent
         # to calculate the fft separatelly for each row in the
         # received_signal variable.
-        output_fft = np.fft.fft(received_signal_no_CP, self.fft_size, 1) \
-                     / math.sqrt(self._calculate_power_scale())
+        output_fft = (np.fft.fft(received_signal_no_CP, self.fft_size, 1) /
+                      math.sqrt(self._calculate_power_scale()))
 
         # - CALL THE _prepare_decoded_signal METHOD TO GET THE DATA ONLY
         # FROM THE USEFUL SUBCARRIERS

@@ -5,7 +5,9 @@
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
+
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     grandparent_dir = os.path.split(parent_dir)[0]
@@ -18,8 +20,8 @@ import numpy as np
 
 from pyphysim.ia import algorithms
 from pyphysim.util.conversion import dB2Linear
-from pyphysim.comm.channels import MultiUserChannelMatrix
-from pyphysim.comm.modulators import PSK
+from pyphysim.channels.multiuser import MultiUserChannelMatrix
+from pyphysim.modulators.fundamental import PSK
 
 
 if __name__ == '__main__':

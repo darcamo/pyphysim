@@ -44,7 +44,7 @@ class ConcreteShape(shapes.Shape):
     def _get_vertex_positions(self):
         """This method will not be called in our tests.
         """
-        pass
+        pass  # pragma: nocover
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -756,6 +756,7 @@ class CellWrapTestCase(unittest.TestCase):
 
         # The radius property in a CellWrap object should not be changed
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.W.radius = 2.0
 
     def test_rotation(self):
@@ -764,6 +765,7 @@ class CellWrapTestCase(unittest.TestCase):
 
         # The rotation property in a CellWrap object should not be changed
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.W.rotation = 30
         self.assertAlmostEqual(self.W.rotation, 10.0)
 
@@ -947,6 +949,7 @@ class ClusterTestCase(unittest.TestCase):
         self.C1.delete_all_users()
         self.assertEqual(len(self.C1.get_all_users()), 0)
 
+    # TODO: implement or remove
     def test_calc_cluster_radius(self):
         pass
 
@@ -1067,7 +1070,16 @@ class ClusterTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(positions, expected_positions * 1.5)
 
         # xxxxxxxxxx Test with rotation of 30 degrees xxxxxxxxxxxxxxxxxxxxx
-        # TODO: implement-me
+        positions2 = cell.Cluster._calc_cell_positions_square(
+            side_length=1.0, num_cells=9, rotation=30)
+
+        expected_positions2 = shapes.Shape.calc_rotated_pos(
+            expected_positions, 30)
+        expected_positions2[:, 1] = 30
+        np.testing.assert_array_almost_equal(positions2,
+                                             expected_positions2)
+        np.testing.assert_array_almost_equal(positions2[:, 1], 30.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_get_vertex_positions(self):
         # For a cluster of a single cell, the cluster vertexes are the same
@@ -1235,9 +1247,11 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C3.cell_height, math.sqrt(3) / 2.0)
 
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.C1.cell_radius = 3.0
 
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.C1.cell_height = 3.0
 
         with self.assertRaises(AttributeError):

@@ -5,14 +5,16 @@
 # import struct
 # import binascii
 
-"""Implement class for several modulators, such as PSK and M-QAM.
+"""
+Module with class for some fundamental modulators, such as PSK and M-QAM.
 
-All modulators inherit from the `Modulator` class and should call the
-self.setConstellation method in their __init__ method, as well as implement
-the calcTheoreticalSER and calcTheoreticalBER methods.
+All fundamental modulators inherit from the `Modulator` class and should call
+the self.setConstellation method in their __init__ method, as well as
+implement the calcTheoreticalSER and calcTheoreticalBER methods.
 """
 
 try:
+    # noinspection PyUnresolvedReferences
     import matplotlib.pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
@@ -21,8 +23,8 @@ except ImportError:  # pragma: no cover
 import numpy as np
 import math
 
-from ..util.misc import level2bits, qfunc
-from ..util.conversion import gray2binary, binary2gray, dB2Linear
+from pyphysim.util.misc import level2bits, qfunc
+from pyphysim.util.conversion import gray2binary, binary2gray, dB2Linear
 
 PI = np.pi
 
@@ -222,8 +224,6 @@ class Modulator(object):
         # This version uses more memory because of the numpy broadcasting,
         # but it is much faster.
         shape = receivedData.shape
-        num_symbols = receivedData.size
-        output = np.empty(num_symbols, dtype=int)
         reshaped_received_data = receivedData.flatten()
 
         constellation = np.reshape(self.symbols, [self.symbols.size, 1])
@@ -391,10 +391,12 @@ class PSK(Modulator):
         symbols = self._createConstellation(M, phaseOffset)
 
         # Change to Gray mapping
+        # noinspection PyUnresolvedReferences
         symbols = symbols[gray2binary(np.arange(0, M))]
 
         self.setConstellation(symbols)
 
+    # noinspection PyUnresolvedReferences
     @staticmethod
     def _createConstellation(M, phaseOffset):
         """Generates the Constellation for the PSK modulation scheme.
@@ -588,6 +590,7 @@ class BPSK(Modulator):
         demodulated_data : numpy array
             The demodulated data.
         """
+        # noinspection PyUnresolvedReferences
         return (receivedData < 0).astype(int)
 
 # xxxxx End of BPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -624,6 +627,7 @@ class QAM(Modulator):
 
         L = int(round(math.sqrt(M)))
         grayMappingIndexes = self._calculateGrayMappingIndexQAM(L)
+        # noinspection PyUnresolvedReferences
         symbols = symbols[grayMappingIndexes]
 
         # Set the constellation
@@ -717,6 +721,7 @@ class QAM(Modulator):
         # in numpy)
         return np.reshape(index_matrix, L ** 2)
 
+    # noinspection PyPep8
     def _calcTheoreticalSingleCarrierErrorRate(self, SNR):
         """Calculates the theoretical (approximation) error rate of a
         single carrier in the QAM system (QAM has two carriers).
@@ -745,8 +750,8 @@ class QAM(Modulator):
         # Probability of error of each carrier in a square QAM
         # $P_{sc} = 2\left(1 - \frac{1}{\sqrt M}\right)Q\left(\sqrt{\frac{3}{M-1}\frac{E_s}{N_0}}\right)$
         sqrtM = np.sqrt(self._M)
-        Psc = (2. * (1. - (1. / sqrtM))
-               * qfunc(np.sqrt(snr * 3. / (self._M - 1.))))
+        Psc = (2. * (1. - (1. / sqrtM)) *
+               qfunc(np.sqrt(snr * 3. / (self._M - 1.))))
         return Psc
 
     def calcTheoreticalSER(self, SNR):
