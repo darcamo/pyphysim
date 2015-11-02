@@ -28,8 +28,6 @@ class TdlChannelProfile(object):
     """
 
     def __init__(self, name, tap_powers, tap_delays):
-        """
-        """
         self._name = name
         self._tap_powers = tap_powers.copy()
         self._tap_powers.flags['WRITEABLE'] = False

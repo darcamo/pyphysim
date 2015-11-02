@@ -123,7 +123,7 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         # Test with a given RandomState object.
         RS = np.random.RandomState()
         h3 = fading_generators.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2),
-                                             RS=RS)
+                                                      RS=RS)
         self.assertEqual(h3.shape, (3, 2, N))
 
     def test_calc_stream_reduction_matrix(self):
@@ -532,6 +532,84 @@ class TdlChannelTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Multiuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class MuSisoChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.musisochannel = multiuser.MuSisoChannel(N=2)
+        self.musisochannel2 = multiuser.MuSisoChannel(N=3)
+
+    def test_corrupt_data(self):
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        data1 = np.random.randint(0, 10, (2, 5))
+        output1 = self.musisochannel.corrupt_data(data1)
+
+        fading_samples_1 = self.musisochannel._get_channel_samples()
+        expected_output1 = np.zeros((2, 5), dtype=complex)
+        expected_output1[0] = (fading_samples_1[0, 0] * data1[0] +
+                               fading_samples_1[0, 1] * data1[1])
+        expected_output1[1] = (fading_samples_1[1, 0] * data1[0] +
+                               fading_samples_1[1, 1] * data1[1])
+
+        np.testing.assert_array_almost_equal(output1, expected_output1)
+
+        data2 = np.random.randint(0, 10, (3, 5))
+        output2 = self.musisochannel2.corrupt_data(data2)
+        fading_samples_2 = self.musisochannel2._get_channel_samples()
+        expected_output2 = np.zeros((3, 5), dtype=complex)
+        expected_output2[0] = (fading_samples_2[0, 0] * data2[0] +
+                               fading_samples_2[0, 1] * data2[1] +
+                               fading_samples_2[0, 2] * data2[2])
+        expected_output2[1] = (fading_samples_2[1, 0] * data2[0] +
+                               fading_samples_2[1, 1] * data2[1] +
+                               fading_samples_2[1, 2] * data2[2])
+        expected_output2[2] = (fading_samples_2[2, 0] * data2[0] +
+                               fading_samples_2[2, 1] * data2[1] +
+                               fading_samples_2[2, 2] * data2[2])
+        np.testing.assert_array_almost_equal(output2, expected_output2)
+
+        # xxxxxxxxxx Now test with path loss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        pathloss_matrix1 = np.eye(2)
+        self.musisochannel.set_pathloss(pathloss_matrix1)
+        fading_samples_1_with_pl = self.musisochannel._get_channel_samples()
+
+        output1_with_pl = self.musisochannel.corrupt_data(data1)
+        expected_output1_with_pl = np.zeros((2, 5), dtype=complex)
+        expected_output1_with_pl[0] = fading_samples_1_with_pl[0, 0] * data1[0]
+        expected_output1_with_pl[1] = fading_samples_1_with_pl[1, 1] * data1[1]
+        np.testing.assert_array_almost_equal(
+            output1_with_pl, expected_output1_with_pl)
+
+        pathloss_matrix1 = np.random.randn(3)
+        self.musisochannel2.set_pathloss(pathloss_matrix1)
+        fading_samples_2_with_pl = self.musisochannel2._get_channel_samples()
+
+        output2_with_pl = self.musisochannel2.corrupt_data(data2)
+        expected_output2_with_pl = np.zeros((3, 5), dtype=complex)
+        expected_output2_with_pl[0] = (
+            fading_samples_2_with_pl[0, 0] * data2[0] +
+            fading_samples_2_with_pl[0, 1] * data2[1] +
+            fading_samples_2_with_pl[0, 2] * data2[2])
+        expected_output2_with_pl[1] = (
+            fading_samples_2_with_pl[1, 0] * data2[0] +
+            fading_samples_2_with_pl[1, 1] * data2[1] +
+            fading_samples_2_with_pl[1, 2] * data2[2])
+        expected_output2_with_pl[2] = (
+            fading_samples_2_with_pl[2, 0] * data2[0] +
+            fading_samples_2_with_pl[2, 1] * data2[1] +
+            fading_samples_2_with_pl[2, 2] * data2[2])
+        np.testing.assert_array_almost_equal(
+            output2_with_pl, expected_output2_with_pl)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # TODO: Test if the fading samples are updated the next type we call the
+        # corrupt_data
+
+        # fading_map = self.musisochannel._get_channel_samples()
+        # self.musisochannel.corrupt_data(data1)
+        # fading_map_new = self.musisochannel._get_channel_samples()
+        # np.testing.assert_array_not_almost_equal(fading_map, fading_map_new)
+
+
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

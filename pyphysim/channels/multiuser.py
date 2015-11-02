@@ -13,6 +13,106 @@ from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
 
 
+class MuSisoChannel(object):
+    """
+    SISO multiuser channel.
+
+    This corresponds to an interference channel model, where each
+    transmitter sends data to its own receiver while interfering to other
+    receivers.
+
+    Note that noise is NOT added.
+
+    Parameters
+    ----------
+    N : int
+        The number of transmit/receive pairs.
+    fading_generator : Object of some class derived from FadingSampleGenerator
+        The fading generator. If not provided, then an object of the
+        RayleighSampleGenerator class will be created.
+    """
+    def __init__(self, N, fading_generator=None):
+        self._H = None
+        if fading_generator is None:
+            from .fading_generators import RayleighSampleGenerator
+            fading_generator = RayleighSampleGenerator(N)
+
+        self._fading_generator = fading_generator
+        self._pathloss_matrix = None
+
+    def _get_channel_samples(self):
+        """
+        Get the fading generated channel samples while also applying the path
+        loss, if it was set with the `set_pathloss` method
+
+        Returns
+        -------
+        numpy array
+            The channel samples also including any path loss effect.
+        """
+        if self._pathloss_matrix is None:
+            samples = self._fading_generator.get_samples()
+        else:
+            samples = (self._fading_generator.get_samples() *
+                       self._pathloss_matrix)
+        return samples
+
+    # TODO: update fading samples after this method is called. After you do
+    # this, add a test for it in MuSisoChannelTestCase.test_corrupt_data
+    def corrupt_data(self, data):
+        """
+        Corrupt data passed through the channel.
+
+        Note that noise is NOT added in `corrupt_data`.
+
+        Parameters
+        ----------
+        data : 1D numpy array or 2D numpy array
+            If `data` is a 1D numpy array, the k-th element corresponds to
+            the symbol transmitted to the k-th user. If `data` is a 2D
+            numpy array then the k-th row corresponds to the symbols
+            transmitted to the k-th user.
+
+        Returns
+        -------
+        1D numpy array of 2D numpy arrays
+            A numpy array where each element (or row) contais the received
+            data of a user.
+        """
+        return np.dot(self._get_channel_samples(), data)
+
+    def set_pathloss(self, pathloss_matrix=None):
+        """
+        Set the path loss (IN LINEAR SCALE) from each transmitter to each
+        receiver.
+
+        The path loss will be accounted when calling the corrupt_data
+        method.
+
+        If you want to disable the path loss, set `pathloss_matrix` to None.
+
+        Parameters
+        ----------
+        pathloss_matrix : 2D numpy array
+            A matrix with dimension "K x K", where K is the number of
+            users, with the path loss (IN LINEAR SCALE) from each
+            transmitter (columns) to each receiver (rows). If you want to
+            disable the path loss then set it to None.
+
+        Notes
+        -----
+        Note that path loss is a power relation, which means that the
+        channel coefficients will be multiplied by the square root of
+        elements in `pathloss_matrix`.
+        """
+        # A matrix with the path loss from each transmitter to each
+        # receiver.
+        self._pathloss_matrix = pathloss_matrix
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Old Classes for backward compatibility xxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # TODO: Maybe remove the N0_or_Rek argument of the "*calc_Bkl*" methods and
 # use the value of self.noise_var whenever possible.
 class MultiUserChannelMatrix(object):  # pylint: disable=R0902
@@ -551,7 +651,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        data : 2D numpy array
+        data : 1D numpy array of 2D numpy arrays
             An array of numpy matrices with the data of the multiple
             users. The k-th element in `data` is a numpy array with
             dimension Nt_k x NSymbs, where Nt_k is the number of transmit

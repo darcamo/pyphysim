@@ -85,7 +85,8 @@ class RayleighSampleGenerator(FadingSampleGenerator):
     num_rows : int
         Number of rows to create.
     num_cols : int (optional)
-        Number of columns. If not provided, then it will be equal to the number of
+        Number of columns. If not provided, then it will be equal to the number
+        of rows.
     """
 
     def __init__(self, num_rows, num_cols=None, ):
