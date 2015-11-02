@@ -4,6 +4,7 @@
 # pylint: disable=E1103
 import math
 import numpy as np
+from ..util.misc import randn_c
 
 
 # noinspection PyPep8,PyPep8
@@ -56,6 +57,57 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
     return obj.generate_channel_samples(NSamples)
 
 
+class FadingSampleGenerator(object):
+    """Base class for fading generators.
+    """
+
+    def __init__(self):
+        # Set this variable in a derived class with the next samples
+        # everytime the generate_next_samples method is called.
+        self._samples = None
+
+    def get_samples(self):
+        """Get the last generated sample.
+        """
+        return self._samples
+
+    def generate_next_samples(self):
+        """Generate next samples."""
+        raise NotImplementedError("Implement in a subclass")
+
+
+class RayleighSampleGenerator(FadingSampleGenerator):
+    """
+    Class that generates a Raleigh fading matrix.
+
+    Parameters
+    ----------
+    num_rows : int
+        Number of rows to create.
+    num_cols : int (optional)
+        Number of columns. If not provided, then it will be equal to the number of
+    """
+
+    def __init__(self, num_rows, num_cols=None, ):
+        super(RayleighSampleGenerator, self).__init__()
+        self._num_rows = num_rows
+        self._num_cols = num_cols
+
+        # Generate first sample and set self._H
+        self.generate_next_samples()
+
+    def generate_next_samples(self):
+        """Generate next samples.
+        """
+        if self._num_cols is None:
+            num_cols = self._num_rows
+        else:
+            num_cols = self._num_cols
+        self._samples = randn_c(self._num_rows, num_cols)
+
+
+# TODO: Make this class inherit from FadingSampleGenerator and implement
+# required interface
 # noinspection PyPep8
 class JakesSampleGenerator(object):
     """

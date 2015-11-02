@@ -147,6 +147,19 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Fading_generators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class RayleighSampleGeneratorTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.obj = fading_generators.RayleighSampleGenerator(num_rows=3)
+        self.obj2 = fading_generators.RayleighSampleGenerator(num_rows=4, num_cols=3)
+
+    # Here we only test if the shape of the generated matrix is correct
+    # TODO: check statistics of the generated matrix
+    def test_generate_next_samples(self):
+        self.assertEqual(self.obj.get_samples().shape, (3, 3))
+        self.assertEqual(self.obj2.get_samples().shape, (4, 3))
+
+
 class JakesSampleGeneratorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

@@ -3,7 +3,7 @@
 
 import math
 import numpy as np
-from pyphysim.util.conversion import dB2Linear
+from ..util.conversion import dB2Linear
 
 
 class TdlChannelProfile(object):
