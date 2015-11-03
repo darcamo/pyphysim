@@ -71,7 +71,7 @@ class FadingSampleGenerator(object):
         """
         return self._samples
 
-    def generate_next_samples(self):
+    def generate_next_samples(self):  # pragma: nocover
         """Generate next samples."""
         raise NotImplementedError("Implement in a subclass")
 

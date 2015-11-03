@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
             tdlchannels_all_links[ueIdx, anIdx] = TdlChannel(
                 jakes_all_links[ueIdx, anIdx],
-                COST259_TUx.tap_powers,
+                COST259_TUx.tap_powers_dB,
                 COST259_TUx.tap_delays)
 
             fading_maps[ueIdx, anIdx] \

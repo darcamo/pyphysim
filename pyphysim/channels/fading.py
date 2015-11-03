@@ -3,7 +3,7 @@
 
 import math
 import numpy as np
-from ..util.conversion import dB2Linear
+from ..util.conversion import dB2Linear, linear2dB
 
 
 class TdlChannelProfile(object):
@@ -15,11 +15,14 @@ class TdlChannelProfile(object):
 
     A TDL channel profile store information about the TDL taps. That is, it
     stores the power and delay of each tap. The power and delay of each tap
-    can be accessed through the `tap_powers` and `tap_delays` properties.
+    can be accessed through the `tap_powers_*` and `tap_delays` properties.
 
     Some profiles are defined as objects of this class, such as
     COST259_TUx, COST259_RAx and COST259_HTx. These can be used when
     instantiating a `TdlChannel` obejct.
+
+    Note that the tap powers and delays are not necessarily `discretized`
+    to some sampling interval.
 
     Ex:
         tdlchannel = TdlChannel(jakes_obj,
@@ -44,6 +47,10 @@ class TdlChannelProfile(object):
         aux = (np.sum(self._tap_powers_linear * self._tap_delays ** 2) /
                np.sum(self._tap_powers_linear))
         self._rms_delay_spread = math.sqrt(aux - self._mean_excess_delay ** 2)
+
+        # Sampling interval when the channel profile is discretized. You
+        # can call the
+        self._Ts = None
 
     # noinspection PyPep8
     @property
@@ -80,7 +87,7 @@ class TdlChannelProfile(object):
         return self._name
 
     @property
-    def tap_powers(self):
+    def tap_powers_dB(self):
         """Get the tap powers (in dB)"""
         return self._tap_powers
 
@@ -98,6 +105,82 @@ class TdlChannelProfile(object):
     def num_taps(self):
         """Get the number of taps in the profile."""
         return self._num_taps
+
+    @property
+    def Ts(self, ):
+        """
+        Get the sampling interval used for discretizing this channel profile
+        object.
+
+        If it is not discretized then this returns None.
+        """
+        return self._Ts
+
+    def get_discretize_profile(self, Ts):
+        """
+        Compute the discretized taps (power and delay) and return a new
+        discretized TdlChannelProfile object.
+
+        The tap powers and delays of the returned TdlChannelProfile object
+        correspond to the taps and delays of the TdlChannelProfile object
+        used to call `get_discretize_profile` after discretizing with the
+        sampling interval `Ts`.
+
+        Parameters
+        ----------
+        Ts : float
+            The sampling time for the discretization of the tap powers and
+            delays.
+
+        Returns
+        -------
+        TdlChannelProfile
+            The discretized channel profile
+        """
+        if self._Ts is not None:
+            raise RuntimeError("Trying to discretize a TdlChannelProfile "
+                               "object that is already discretized.")
+
+        name = "{0} (discretized)".format(self.name)
+        powers, delays = self._calc_discretized_tap_powers_and_delays(Ts)
+
+        discretized_channel_profile = TdlChannelProfile(name, powers, delays)
+        discretized_channel_profile._Ts = Ts
+
+        return discretized_channel_profile
+
+    def _calc_discretized_tap_powers_and_delays(self, Ts):
+        """
+        Discretize the taps according to the sampling time.
+
+        The discretized taps will be equally spaced and the delta time from
+        two taps corresponds to the sampling time.
+
+        Parameters
+        ----------
+        Ts : float
+            The sampling time (used in the Jakes object)
+
+        Returns
+        -------
+        (discretized_powers_dB, discretized_delays)
+            A tuple with the discretized powers and delays.
+        """
+        # Compute delay indices
+        delay_indexes, idx_inverse = np.unique(
+            np.round(self._tap_delays / Ts).astype(int).flatten(),
+            return_inverse=True)
+
+        discretized_powers_linear = np.zeros(delay_indexes.size)
+        for i, v in enumerate(self.tap_powers_linear):
+            discretized_idx = idx_inverse[i]
+            discretized_powers_linear[discretized_idx] += v
+        discretized_powers_linear /= np.sum(discretized_powers_linear)
+
+        # Compute the discretized powers in dB
+        discretized_powers_dB = linear2dB(discretized_powers_linear)
+
+        return discretized_powers_dB, delay_indexes
 
     def __repr__(self):  # pragma: no cover
         return "<TdlChannelProfile: '{0}' ({1} taps)>".format(
@@ -151,18 +234,18 @@ class TdlChannel(object):
     ----------
     jakes_obj : JakesSampleGenerator object
         The instance of JakesSampleGenerator that will be used to generate
-    tap_powers : numpy real array
+    tap_powers_dB : numpy real array
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
     tap_delays : numpy real array
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
 
-    def __init__(self, jakes_obj, tap_powers, tap_delays):
+    def __init__(self, jakes_obj, tap_powers_dB, tap_delays):
         """
         Init method.
         """
-        self._tap_powers = tap_powers  # Tap powers before the discretization
+        self._tap_powers = tap_powers_dB  # Tap powers before the discretization
         self._tap_delays = tap_delays  # Tap delays before the discretization
         self._num_taps = tap_delays.size  # Number of taps
 
@@ -205,7 +288,7 @@ class TdlChannel(object):
             The channel profile knows the number of taps, the tap powers
             and the tap delays.
         """
-        tap_powers = channel_profile.tap_powers
+        tap_powers = channel_profile.tap_powers_dB
         tap_delays = channel_profile.tap_delays
 
         return TdlChannel(jakes_obj, tap_powers, tap_delays)

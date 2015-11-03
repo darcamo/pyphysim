@@ -253,7 +253,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         # Check if an exception is raised if we try to change the delays or
         # the powers of the taps.
         with self.assertRaises(ValueError):
-            tu.tap_powers[0] = 30
+            tu.tap_powers_dB[0] = 30
         with self.assertRaises(ValueError):
             tu.tap_delays[0] = 30
         with self.assertRaises(ValueError):
@@ -261,7 +261,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
 
         # Check the tap power and delay values
         np.testing.assert_array_almost_equal(
-            tu.tap_powers,
+            tu.tap_powers_dB,
             np.array([-5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3,
                       -16.9, -17.1, -17.4, -19, -19, -19.8, -21.5, -21.6,
                       -22.1, -22.6, -23.5, -24.3]))
@@ -272,7 +272,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
 
 
         np.testing.assert_array_almost_equal(
-            ra.tap_powers,
+            ra.tap_powers_dB,
             np.array([-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]))
         np.testing.assert_array_almost_equal(
             ra.tap_delays,
@@ -280,7 +280,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
 
 
         np.testing.assert_array_almost_equal(
-            ht.tap_powers,
+            ht.tap_powers_dB,
             np.array([-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2,
                       -17.3, -17.7, -17.6, -22.7, -24.1, -25.8, -25.8, -26.2,
                       -29.0, -29.9, -30.0, -30.7]))
@@ -289,7 +289,77 @@ class TdlChannelProfileTestCase(unittest.TestCase):
             np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941.,
                       15000., 16172., 16492., 16876., 16882., 16978., 17615.,
                       17827., 17849., 18016.]) * 1e-9)
+    def test_discretize(self):
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
 
+        Ts = 1. / bandwidth  # Sampling interval (in seconds)
+
+        tu = fading.COST259_TUx
+        tu_discretized = tu.get_discretize_profile(Ts)
+
+        # xxxxx Calculate the expected discretized tap powers and delays xx
+        # The COST259_TUx 20 taps. For the Ts calculated here the indexes
+        # of the discretized taps (from the original ones) are
+        # [ 0  7 16 16 16 21 27 38 40 40 41 47 47 50 56 56 58 60 63 66]
+        # Note that some taps have the same indexes and this will be summed
+        # toguether.
+        tap_powers_linear = tu.tap_powers_linear
+        # The TDL class will normalized the tap powers so that the channel
+        # has unit power.
+        tap_powers_linear = tap_powers_linear/np.sum(tap_powers_linear)
+
+        expected_discretized_tap_powers_linear = np.zeros(15)
+
+        expected_discretized_tap_powers_linear[0] += tap_powers_linear[0]
+        expected_discretized_tap_powers_linear[1] += tap_powers_linear[1]
+        expected_discretized_tap_powers_linear[2] += tap_powers_linear[2]
+        expected_discretized_tap_powers_linear[2] += tap_powers_linear[3]
+        expected_discretized_tap_powers_linear[2] += tap_powers_linear[4]
+        expected_discretized_tap_powers_linear[3] += tap_powers_linear[5]
+        expected_discretized_tap_powers_linear[4] += tap_powers_linear[6]
+        expected_discretized_tap_powers_linear[5] += tap_powers_linear[7]
+        expected_discretized_tap_powers_linear[6] += tap_powers_linear[8]
+        expected_discretized_tap_powers_linear[6] += tap_powers_linear[9]
+        expected_discretized_tap_powers_linear[7] += tap_powers_linear[10]
+        expected_discretized_tap_powers_linear[8] += tap_powers_linear[11]
+        expected_discretized_tap_powers_linear[8] += tap_powers_linear[12]
+        expected_discretized_tap_powers_linear[9] += tap_powers_linear[13]
+        expected_discretized_tap_powers_linear[10] += tap_powers_linear[14]
+        expected_discretized_tap_powers_linear[10] += tap_powers_linear[15]
+        expected_discretized_tap_powers_linear[11] += tap_powers_linear[16]
+        expected_discretized_tap_powers_linear[12] += tap_powers_linear[17]
+        expected_discretized_tap_powers_linear[13] += tap_powers_linear[18]
+        expected_discretized_tap_powers_linear[14] += tap_powers_linear[19]
+
+        # Check if the discretized tap powers are correct
+        np.testing.assert_array_almost_equal(expected_discretized_tap_powers_linear,
+                                             tu_discretized.tap_powers_linear)
+        # Check if the discretized tap delays are correct. Note that they
+        # are integers.
+        np.testing.assert_array_equal(
+            np.array([0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]),
+            tu_discretized.tap_delays)
+
+        # Check if the Ts property is properly set
+        self.assertAlmostEqual(tu_discretized.Ts, Ts)
+
+        # Test the name of the discretized channel profile. It must be
+        # equal to the original name appended with ' (discretized)'.
+        self.assertEqual(tu_discretized.name, tu.name + ' (discretized)')
+
+        # xxxxxxxxxx Test discretizing twice xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # If we try to discretize a TdlChannelProfile object that is
+        # already discretized an exception should be raised
+        with self.assertRaises(RuntimeError):
+            tu_discretized.get_discretize_profile(Ts)
 
 class TdlChannelTestCase(unittest.TestCase):
     def setUp(self):
