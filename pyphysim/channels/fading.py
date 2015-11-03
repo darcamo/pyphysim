@@ -30,7 +30,7 @@ class TdlChannelProfile(object):
                                 COST259_TUx.tap_delays)
     """
 
-    def __init__(self, name, tap_powers, tap_delays):
+    def __init__(self, tap_powers, tap_delays, name='custom'):
         self._name = name
         self._tap_powers = tap_powers.copy()
         self._tap_powers.flags['WRITEABLE'] = False
@@ -144,7 +144,7 @@ class TdlChannelProfile(object):
         name = "{0} (discretized)".format(self.name)
         powers, delays = self._calc_discretized_tap_powers_and_delays(Ts)
 
-        discretized_channel_profile = TdlChannelProfile(name, powers, delays)
+        discretized_channel_profile = TdlChannelProfile(powers, delays, name)
         discretized_channel_profile._Ts = Ts
 
         return discretized_channel_profile
@@ -196,33 +196,29 @@ class TdlChannelProfile(object):
 # Reference: 3GPP TR 25.943 version 9.0.0 Release 9
 
 # COST 259 Typical Urban
-COST259_TUx = TdlChannelProfile(
-    'COST259_TU',
-    np.array([
-        -5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3, -16.9, -17.1,
-        -17.4, -19, -19, -19.8, -21.5, -21.6, -22.1, -22.6, -23.5, -24.3]),
+COST259_TUx = TdlChannelProfile(np.array([
+    -5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3, -16.9, -17.1,
+    -17.4, -19, -19, -19.8, -21.5, -21.6, -22.1, -22.6, -23.5, -24.3]),
     np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349, 1533,
-              1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9)
+              1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9,
+    'COST259_TU')
 
 
 # COST 259 Rural Area
-COST259_RAx = TdlChannelProfile(
-    'COST259_RA',
+COST259_RAx = TdlChannelProfile(np.array(
+    [-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]),
     np.array(
-        [-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]),
-    np.array(
-        [0., 42., 101., 129., 149., 245., 312., 410., 469., 528]) * 1e-9)
+        [0., 42., 101., 129., 149., 245., 312., 410., 469., 528]) * 1e-9,
+    'COST259_RA')
 
 
 # COST 259 Hilly Terrain
-COST259_HTx = TdlChannelProfile(
-    'COST259_HT',
-    np.array(
-        [-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3, -17.7,
-         -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0, -29.9, -30.0, -30.7]),
+COST259_HTx = TdlChannelProfile(np.array(
+    [-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3, -17.7,
+     -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0, -29.9, -30.0, -30.7]),
     np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941., 15000.,
               16172., 16492., 16876., 16882., 16978., 17615., 17827., 17849.,
-              18016.]) * 1e-9)
+              18016.]) * 1e-9, 'COST259_HT')
 
 
 class TdlChannel(object):
@@ -230,10 +226,15 @@ class TdlChannel(object):
     Tapped Delay Line channel model, which corresponds to a multipath
     channel.
 
+    You can create a new TdlChannel object either specifying the channel
+    profile or specifying both the channel tap powers and delays.
+
     Parameters
     ----------
     jakes_obj : JakesSampleGenerator object
         The instance of JakesSampleGenerator that will be used to generate
+    channel_profile : TdlChannelProfile
+        The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : numpy real array
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
@@ -241,7 +242,10 @@ class TdlChannel(object):
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
 
-    def __init__(self, jakes_obj, tap_powers_dB, tap_delays):
+    # TODO: change jakes_obj to a generic fading generator
+    def __init__(self, jakes_obj,
+                 channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None):
         """
         Init method.
         """
@@ -257,6 +261,14 @@ class TdlChannel(object):
         self._num_discretized_taps_with_padding = None
 
         Ts = jakes_obj.Ts
+
+        # # If the fading object has a Ts (sampling time interval) attribute,
+        # # make sure it is the same value as the one in the channel profile
+        # # object.
+        # if abs(channel_profile.Ts - jakes_obj.Ts) / jakes_obj.Ts > 1e-5:
+        #     raise RuntimeError('TdlChannel: sampling time of the channel profile'
+        #                        ' and the fading generator must be the same')
+
         self._calc_discretized_tap_powers_and_delays(Ts)
 
         if jakes_obj.shape is None:
@@ -291,7 +303,9 @@ class TdlChannel(object):
         tap_powers = channel_profile.tap_powers_dB
         tap_delays = channel_profile.tap_delays
 
-        return TdlChannel(jakes_obj, tap_powers, tap_delays)
+        return TdlChannel(jakes_obj,
+                          tap_powers_dB=tap_powers,
+                          tap_delays=tap_delays)
 
     def _calc_discretized_tap_powers_and_delays(self, Ts):
         """

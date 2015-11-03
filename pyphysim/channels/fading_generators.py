@@ -4,6 +4,7 @@
 # pylint: disable=E1103
 import math
 import numpy as np
+from collections import Iterable
 from ..util.misc import randn_c
 
 
@@ -59,12 +60,35 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
 
 class FadingSampleGenerator(object):
     """Base class for fading generators.
+
+    Parameters
+    ----------
+    shape : tuple or an int
+        The shape of the sample generator. Each time the
+        `generate_jakes_samples` method is called it will generate samples
+        with this shape. If not provided, then (1,) will be assumed.
     """
 
-    def __init__(self):
+    def __init__(self, shape=None):
+        if shape is None:
+            shape = (1,)
+        if not isinstance(shape, Iterable):
+            shape = (shape, )
+        self._shape = shape
+
         # Set this variable in a derived class with the next samples
-        # everytime the generate_next_samples method is called.
+        # everytime the generate_next_samples method is called. Note that
+        # generate_next_samples should take the value of self._shape into
+        # account.
         self._samples = None
+
+    @property
+    def shape(self):
+        """Get the shape of the sampling generator
+
+        This is the shape of the samples that will be generated.
+        """
+        return self._shape
 
     def get_samples(self):
         """Get the last generated sample.
@@ -72,7 +96,12 @@ class FadingSampleGenerator(object):
         return self._samples
 
     def generate_next_samples(self):  # pragma: nocover
-        """Generate next samples."""
+        """
+        Generate next samples.
+
+        When implementing this method in a subclass you must take the value
+        of the self._shape attribute into account.
+        """
         raise NotImplementedError("Implement in a subclass")
 
 
@@ -82,17 +111,14 @@ class RayleighSampleGenerator(FadingSampleGenerator):
 
     Parameters
     ----------
-    num_rows : int
-        Number of rows to create.
-    num_cols : int (optional)
-        Number of columns. If not provided, then it will be equal to the number
-        of rows.
+    shape : tuple or an int
+        The shape of the sample generator. Each time the
+        `generate_jakes_samples` method is called it will generate samples
+        with this shape. If not provided, then (1,) will be assumed.
     """
 
-    def __init__(self, num_rows, num_cols=None, ):
-        super(RayleighSampleGenerator, self).__init__()
-        self._num_rows = num_rows
-        self._num_cols = num_cols
+    def __init__(self, shape=None):
+        super(RayleighSampleGenerator, self).__init__(shape)
 
         # Generate first sample and set self._H
         self.generate_next_samples()
@@ -100,11 +126,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
     def generate_next_samples(self):
         """Generate next samples.
         """
-        if self._num_cols is None:
-            num_cols = self._num_rows
-        else:
-            num_cols = self._num_cols
-        self._samples = randn_c(self._num_rows, num_cols)
+        self._samples = randn_c(*self._shape)
 
 
 # TODO: Make this class inherit from FadingSampleGenerator and implement
@@ -131,7 +153,7 @@ class JakesSampleGenerator(object):
     L : int
         The number of rays for the Jakes model.
     shape : tuple (of integers)
-        The shape of the generated channel. This is used to generate MIMO
+        The shape of the generated samples. This is used to generate MIMO
         channels. For instance, in order to generate channels samples for a
         MIMO scenario with 3 receive antennas and 2 transmit antennas use a
         shape of (3, 2).
@@ -166,6 +188,7 @@ class JakesSampleGenerator(object):
         # generate_channel_samples method.
         self._current_time = 0.0
 
+        # This will call the shape property setter
         self.shape = shape
 
     @property

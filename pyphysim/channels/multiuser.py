@@ -35,7 +35,7 @@ class MuSisoChannel(object):
         self._H = None
         if fading_generator is None:
             from .fading_generators import RayleighSampleGenerator
-            fading_generator = RayleighSampleGenerator(N)
+            fading_generator = RayleighSampleGenerator(shape=(N, N))
 
         self._fading_generator = fading_generator
         self._pathloss_matrix = None

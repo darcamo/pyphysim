@@ -150,14 +150,16 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 class RayleighSampleGeneratorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.obj = fading_generators.RayleighSampleGenerator(num_rows=3)
-        self.obj2 = fading_generators.RayleighSampleGenerator(num_rows=4, num_cols=3)
+        self.obj1 = fading_generators.RayleighSampleGenerator()
+        self.obj2 = fading_generators.RayleighSampleGenerator(shape=3)
+        self.obj3 = fading_generators.RayleighSampleGenerator(shape=(4, 3))
 
     # Here we only test if the shape of the generated matrix is correct
     # TODO: check statistics of the generated matrix
     def test_generate_next_samples(self):
-        self.assertEqual(self.obj.get_samples().shape, (3, 3))
-        self.assertEqual(self.obj2.get_samples().shape, (4, 3))
+        self.assertEqual(self.obj1.get_samples().shape, (1,))
+        self.assertEqual(self.obj2.get_samples().shape, (3,))
+        self.assertEqual(self.obj3.get_samples().shape, (4, 3))
 
 
 class JakesSampleGeneratorTestCase(unittest.TestCase):
@@ -224,6 +226,14 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Fading Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class TdlChannelProfileTestCase(unittest.TestCase):
+    def test_constructor(self):
+        prof1 = fading.TdlChannelProfile(np.array([0, -3, -10]),
+                                         np.array([0, 1e-3, 5e-4]))
+        prof2 = fading.TdlChannelProfile(np.array([0, -3, -10, -30]),
+                                         np.array([0, 1e-3, 5e-4, 1e-5]),
+                                         name='some name')
+        self.assertEqual(prof1.name, 'custom')
+        self.assertEqual(prof2.name, 'some name')
 
     def test_properties(self):
         tu = fading.COST259_TUx
@@ -366,69 +376,9 @@ class TdlChannelTestCase(unittest.TestCase):
         """Called before each test."""
         pass
 
-    def test_calc_discretized_tap_powers_and_delays(self):
-        maxSystemBand = 40e6  # 40 MHz bandwidth
-        # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
-        # Find the maximum FFT size we can use which is below than or equal
-        # to maxNumOfSubcarriersInt
-        max_num_of_subcarriers = int(
-            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
-        # Calculate the actual bandwidth that we will use
-        bandwidth = 15e3 * max_num_of_subcarriers
-
-        Fd = 5     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
-
-        NRays = 16  # Number of rays for the Jakes model
-
-        # Create the jakes object that will be passed to TdlChannel
-        jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-
-        tdlchannel = fading.TdlChannel.create_from_channel_profile(
-            jakes, fading.COST259_TUx)
-
-        tdlchannel._calc_discretized_tap_powers_and_delays(Ts)
-
-        # xxxxx Calculate the expected discretized tap powers and delays xx
-        # The COST259_TUx 20 taps. For the Ts calculated here the indexes
-        # of the discretized taps (from the original ones) are
-        # [ 0  7 16 16 16 21 27 38 40 40 41 47 47 50 56 56 58 60 63 66]
-        # Note that some taps have the same indexes and this will be summed
-        # toguether.
-        tap_powers_linear = fading.COST259_TUx.tap_powers_linear
-        # The TDL class will normalized the tap powers so that the channel
-        # has unit power.
-        tap_powers_linear = tap_powers_linear/np.sum(tap_powers_linear)
-
-        expected_discretized_tap_powers_linear = np.zeros(15)
-
-        expected_discretized_tap_powers_linear[0] += tap_powers_linear[0]
-        expected_discretized_tap_powers_linear[1] += tap_powers_linear[1]
-        expected_discretized_tap_powers_linear[2] += tap_powers_linear[2]
-        expected_discretized_tap_powers_linear[2] += tap_powers_linear[3]
-        expected_discretized_tap_powers_linear[2] += tap_powers_linear[4]
-        expected_discretized_tap_powers_linear[3] += tap_powers_linear[5]
-        expected_discretized_tap_powers_linear[4] += tap_powers_linear[6]
-        expected_discretized_tap_powers_linear[5] += tap_powers_linear[7]
-        expected_discretized_tap_powers_linear[6] += tap_powers_linear[8]
-        expected_discretized_tap_powers_linear[6] += tap_powers_linear[9]
-        expected_discretized_tap_powers_linear[7] += tap_powers_linear[10]
-        expected_discretized_tap_powers_linear[8] += tap_powers_linear[11]
-        expected_discretized_tap_powers_linear[8] += tap_powers_linear[12]
-        expected_discretized_tap_powers_linear[9] += tap_powers_linear[13]
-        expected_discretized_tap_powers_linear[10] += tap_powers_linear[14]
-        expected_discretized_tap_powers_linear[10] += tap_powers_linear[15]
-        expected_discretized_tap_powers_linear[11] += tap_powers_linear[16]
-        expected_discretized_tap_powers_linear[12] += tap_powers_linear[17]
-        expected_discretized_tap_powers_linear[13] += tap_powers_linear[18]
-        expected_discretized_tap_powers_linear[14] += tap_powers_linear[19]
-
-        np.testing.assert_array_almost_equal(expected_discretized_tap_powers_linear,
-                                             tdlchannel._tap_linear_powers_discretized)
-        np.testing.assert_array_equal(
-            np.array([0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]),
-            tdlchannel._tap_delays_discretized)
+    def test_constructor(self):
+        # TODO: implement-me
+        pass
 
     def test_get_fading_map(self):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
