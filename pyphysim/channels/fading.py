@@ -9,6 +9,7 @@ from ..util.conversion import dB2Linear, linear2dB
 
 # TODO: change this module name to "singleuser.py"
 
+
 class TdlChannelProfile(object):
     """
     Channel Profile class.
@@ -237,8 +238,6 @@ COST259_HTx = TdlChannelProfile(np.array(
               18016.]) * 1e-9, 'COST259_HT')
 
 
-# TODO: make TdlChannel class work with a JakesSampleGenerator class, instead
-#  of JakesSampleGeneratorOLD
 class TdlChannel(object):
     """
     Tapped Delay Line channel model, which corresponds to a multipath
@@ -262,12 +261,8 @@ class TdlChannel(object):
     """
 
     # TODO: change jakes_obj to a generic fading generator
-    def __init__(self, jakes_obj,
-                 channel_profile=None,
+    def __init__(self, jakes_obj, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
-        """
-        Init method.
-        """
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if isinstance(jakes_obj, fading_generators.JakesSampleGenerator):
             if Ts is None:
@@ -294,7 +289,6 @@ class TdlChannel(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        #assert(isinstance(channel_profile, TdlChannelProfile))
         # The channel profile is not discretized yet. We need to discretize it.
         if channel_profile.Ts is None:
             if Ts is None:
@@ -313,21 +307,6 @@ class TdlChannel(object):
 
         # Finally save the channel profile to a member attribute
         self._channel_profile = channel_profile
-        Ts = channel_profile.Ts
-
-        # self._tap_powers_dB = tap_powers_dB  # Tap powers before the discretization
-        # self._tap_delays = tap_delays  # Tap delays before the discretization
-        # self._num_taps = tap_delays.size  # Number of taps
-
-        # # These will be set in _calc_discretized_tap_powers_and_delays
-        # self._tap_linear_powers_discretized = None  # Discretized tap powers
-        # self._tap_delays_discretized = None  # Discretized tap delays
-        # self._num_discretized_taps = None  # Number of discretized taps
-        # Size of the impulse response after discretization.
-        # self._num_discretized_taps_with_padding = None
-
-
-        # self._calc_discretized_tap_powers_and_delays(Ts)
 
         if jakes_obj.shape is None:
             jakes_obj.shape = (self.num_taps,)
@@ -335,14 +314,6 @@ class TdlChannel(object):
             # Note that jakes_obj.shape must be a tuple
             jakes_obj.shape = (self.num_taps,) + jakes_obj.shape
         self._jakes_obj = jakes_obj
-
-        # paramSt.speedTerminal = 3/3.6;
-        # paramSt.fcDbl = 2.6e9;
-        # paramSt.bandSystemInt = 5e6;
-        # paramSt.timeTTIDbl = 1e-3;
-        # paramSt.subcarrierBandDbl = 15e3;
-        # paramSt.numOfSubcarriersPRBInt = 12;
-        # paramSt.fadingModel = enums.MimoChannelModel.TU;
 
     @property
     def num_taps(self):
@@ -359,64 +330,6 @@ class TdlChannel(object):
         # This is only valid if _channel_profile is discretized and the
         # tap_delays correspond to integers
         return self._channel_profile.num_taps_with_padding
-
-    # @staticmethod
-    # def create_from_channel_profile(jakes_obj, channel_profile):
-    #     """
-    #     Create a new TdlChannel object from the channel_profile (an object of
-    #     the TdlChannelProfile class).
-
-    #     Parameters
-    #     ----------
-    #     jakes_obj : JakesSampleGenerator object
-    #         The instance of JakesSampleGenerator that will be used to generate
-    #     channel_profile : An object of TdlChannelProfile class.
-    #         The channel profile knows the number of taps, the tap powers
-    #         and the tap delays.
-    #     """
-    #     tap_powers = channel_profile.tap_powers_dB
-    #     tap_delays = channel_profile.tap_delays
-
-    #     return TdlChannel(jakes_obj,
-    #                       tap_powers_dB=tap_powers,
-    #                       tap_delays=tap_delays)
-
-    # def _calc_discretized_tap_powers_and_delays(self, Ts):
-    #     """
-    #     Discretize the taps according to the sampling time.
-
-    #     The discretized taps will be equally spaced and the delta time from
-    #     two taps corresponds to the sampling time.
-
-    #     This method will set the `_tap_linear_powers_discretized` and
-    #     `_tap_delays_discretized` attributes from the values in the
-    #     `_tap_delays` and `_tap_powers_dB` atributes.
-
-    #     Parameters
-    #     ----------
-    #     Ts : float
-    #         The sampling time (used in the Jakes object)
-    #     """
-
-    #     # Compute delay indices
-    #     delay_indexes, idx_inverse = np.unique(
-    #         np.round(self._tap_delays / Ts).astype(int).flatten(),
-    #         return_inverse=True)
-
-    #     # tap powers in linear scale
-    #     tap_powers_lin = dB2Linear(self._tap_powers_dB)
-    #     # Force mean to 1
-    #     tap_powers_lin = tap_powers_lin / np.sum(tap_powers_lin)
-
-    #     self._tap_linear_powers_discretized = np.zeros(delay_indexes.size)
-    #     for i, v in enumerate(tap_powers_lin):
-    #         discretized_idx = idx_inverse[i]
-    #         self._tap_linear_powers_discretized[discretized_idx] += v
-
-    #     self._tap_delays_discretized = delay_indexes
-
-    #     self._num_discretized_taps = delay_indexes.size
-    #     self._num_discretized_taps_with_padding = delay_indexes[-1] + 1
 
     def generate_and_get_samples(self, num_samples):
         """
@@ -446,11 +359,11 @@ class TdlChannel(object):
         Returns
         -------
         numpy complex array
-            The generated samples. Dimens.: `Shape of the Jakes obj x num_samples`
+            The generated samples. Dimension: `Shape of the Jakes obj x
+            num_samples`.
         """
         self._jakes_obj.generate_more_samples(num_samples)
         jakes_samples = self._jakes_obj.get_samples()
-        #jakes_samples = self._jakes_obj.generate_channel_samples(num_samples)
 
         # xxxxxxxxxx Apply the power to each tap xxxxxxxxxxxxxxxxxxxxxxxxxx
         # Note that here we only apply the power to the taps. The delays
@@ -461,14 +374,12 @@ class TdlChannel(object):
         # before we multiply it by jakes_samples so that broadcasting
         # works.
         new_shape = [self.num_taps]
-        #new_shape = [self._tap_linear_powers_discretized.shape[0]]
         new_shape.extend([1] * (jakes_samples.ndim - 1))
 
         samples = (jakes_samples *
                    np.sqrt(np.reshape(
                        self._channel_profile.tap_powers_linear[:, np.newaxis],
-                       new_shape))
-        )
+                       new_shape)))
 
         return samples
 
@@ -504,8 +415,8 @@ class TdlChannel(object):
         ----------
         full_fading_map : Numpy complex array
             The fading map (including any extra zeros) calculated by
-            `generate_and_get_samples`. The first dimension corresponds to the delay
-            dimension (taps).
+            `generate_and_get_samples`. The first dimension corresponds to
+            the delay dimension (taps).
         fft_size : int
             The size of the FFT to be applied.
 
