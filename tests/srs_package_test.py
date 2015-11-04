@@ -30,7 +30,7 @@ from pyphysim.srs import srs
 from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
 from pyphysim.channels.fading import TdlChannel
 from pyphysim.channels.fading import COST259_TUx
-from pyphysim.channels.fading_generators import JakesSampleGeneratorOLD
+from pyphysim.channels.fading_generators import JakesSampleGenerator
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -221,8 +221,8 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
         L = 16                            # Number of jakes taps
 
-        jakes1 = JakesSampleGeneratorOLD(Fd, Ts, L)
-        jakes2 = JakesSampleGeneratorOLD(Fd, Ts, L)
+        jakes1 = JakesSampleGenerator(Fd, Ts, L)
+        jakes2 = JakesSampleGenerator(Fd, Ts, L)
 
         # Create a TDL channel object for each user
         tdlchannel1 = TdlChannel(jakes1,

@@ -254,67 +254,6 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.obj2._current_time, 101*self.Ts)
 
 
-# TODO: remove after you remove the JakesSampleGeneratorOld class
-class JakesSampleGeneratorOldTestCase(unittest.TestCase):
-    def setUp(self):
-        """Called before each test."""
-        Fd = 5     # Doppler frequency (in Hz)
-        Ts = 1e-3  # Sampling interval (in seconds)
-        NRays = 8  # Number of rays for the Jakes model
-
-        self.obj = fading_generators.JakesSampleGeneratorOLD(Fd, Ts, NRays)
-        self.obj2 = fading_generators.JakesSampleGeneratorOLD(Fd, Ts, NRays, shape=(3, 2))
-
-    def test_set_shape(self):
-        NRays = 8
-        self.assertIsNone(self.obj.shape)
-        self.obj.shape = [3, 2]
-        np.testing.assert_array_equal(self.obj.shape, [3, 2])
-
-        # The first dimension is equal to the number of rays of the Jakes
-        # generator. The last dimension is set to 1 to allow broadcast with
-        # the time dimension later.
-        np.testing.assert_array_equal(self.obj._phi_l.shape, [NRays, 3, 2, 1])
-        np.testing.assert_array_equal(self.obj._psi_l.shape, [NRays, 3, 2, 1])
-
-        # Now set the shape to None (SISO case)
-        self.obj.shape = None
-        self.assertIsNone(self.obj.shape)
-        np.testing.assert_array_equal(self.obj._phi_l.shape, [NRays, 1])
-        np.testing.assert_array_equal(self.obj._psi_l.shape, [NRays, 1])
-
-    def test_generate_channel_samples(self):
-        self.assertAlmostEqual(self.obj._current_time, 0.0)
-
-        # xxxxxxxxxx First object -> shape is None xxxxxxxxxxxxxxxxxxxxxxxx
-        # Generate 100 samples
-        h1_part1 = self.obj.generate_channel_samples(100)
-        self.assertEqual(h1_part1.shape, (100,))
-        # For a sample interval of 1e-3 the last time sample generated was
-        # 0.099. Therefore, the next time sample should be 0.099+1e-3 = 0.1
-        self.assertAlmostEqual(self.obj._current_time, 0.1)
-
-        # Generate 50 more samples
-        h1_part2 = self.obj.generate_channel_samples(50)
-        self.assertEqual(h1_part2.shape, (50,))
-        self.assertAlmostEqual(self.obj._current_time, 0.15)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Second object -> shape is (3, 2) xxxxxxxxxxxxxxxxxxxxx
-        # Generate 100 samples
-        h2_part1 = self.obj2.generate_channel_samples(120)
-        self.assertEqual(h2_part1.shape, (3, 2, 120,))
-        # For a sample interval of 1e-3 the last time sample generated was
-        # 0.099. Therefore, the next time sample should be 0.099+1e-3 = 0.1
-        self.assertAlmostEqual(self.obj2._current_time, 0.12)
-
-        # Generate 50 more samples
-        h2_part2 = self.obj2.generate_channel_samples(60)
-        self.assertEqual(h2_part2.shape, (3, 2, 60))
-        self.assertAlmostEqual(self.obj2._current_time, 0.18)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Fading Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

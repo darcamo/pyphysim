@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     for ueIdx in range(3):
         for anIdx in range(3):
-            jakes_all_links[ueIdx, anIdx] = JakesSampleGeneratorOLD(
+            jakes_all_links[ueIdx, anIdx] = JakesSampleGenerator(
                 Fd, Ts, L, shape=(numUeAnt, numAnAnt))
 
             tdlchannels_all_links[ueIdx, anIdx] = TdlChannel(
