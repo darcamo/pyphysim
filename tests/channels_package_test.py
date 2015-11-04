@@ -147,19 +147,49 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Fading_generators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class FadingSampleGeneratorTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_shape_property(self):
+        obj1 = fading_generators.FadingSampleGenerator(shape=None)
+        obj2 = fading_generators.FadingSampleGenerator(shape=4)
+        obj3 = fading_generators.FadingSampleGenerator(shape=(2, 3))
+        self.assertEqual(obj1.shape, None)
+        self.assertEqual(obj2.shape, (4,))
+        self.assertEqual(obj3.shape, (2, 3))
+
+        obj1.shape = (2, 5)
+        self.assertEqual(obj1.shape, (2, 5))
+
+
 class RayleighSampleGeneratorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.obj1 = fading_generators.RayleighSampleGenerator()
+        self.obj0 = fading_generators.RayleighSampleGenerator(shape=None)
+        self.obj1 = fading_generators.RayleighSampleGenerator(shape=1)
         self.obj2 = fading_generators.RayleighSampleGenerator(shape=3)
         self.obj3 = fading_generators.RayleighSampleGenerator(shape=(4, 3))
 
     # Here we only test if the shape of the generated matrix is correct
     # TODO: check statistics of the generated matrix
-    def test_generate_next_samples(self):
+    def test_generate_more_samples(self):
+        # num_samples is None
+        self.assertTrue(isinstance(self.obj0.get_samples(), complex))
         self.assertEqual(self.obj1.get_samples().shape, (1,))
         self.assertEqual(self.obj2.get_samples().shape, (3,))
         self.assertEqual(self.obj3.get_samples().shape, (4, 3))
+
+        # num_samples is not None
+        self.obj0.generate_more_samples(num_samples=5)
+        self.obj1.generate_more_samples(num_samples=5)
+        self.obj2.generate_more_samples(num_samples=5)
+        self.obj3.generate_more_samples(num_samples=5)
+        self.assertEqual(self.obj0.get_samples().shape, (5,))
+        self.assertEqual(self.obj1.get_samples().shape, (1, 5))
+        self.assertEqual(self.obj2.get_samples().shape, (3, 5))
+        self.assertEqual(self.obj3.get_samples().shape, (4, 3, 5))
 
 
 class JakesSampleGeneratorTestCase(unittest.TestCase):
@@ -169,8 +199,71 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         Ts = 1e-3  # Sampling interval (in seconds)
         NRays = 8  # Number of rays for the Jakes model
 
-        self.obj = fading_generators.JakesSampleGenerator(Fd, Ts, NRays)
+        self.obj1 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays)
         self.obj2 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=(3, 2))
+        self.Ts = Ts
+        self.NRays = NRays
+        self.Fd = Fd
+
+    def test_phi_and_psi(self):
+        # Note that phi and psi are computed during the object
+        # creation. They would only need to change if the number of rays of
+        # the Jakes model or the shape were changed.
+
+        # The first dimension is equal to the number of rays of the Jakes
+        # generator. The last dimension is set to 1 to allow broadcast with
+        # the time dimension later.
+        np.testing.assert_array_equal(self.obj1._phi_l.shape, [self.NRays, 1])
+        np.testing.assert_array_equal(self.obj2._psi_l.shape, [self.NRays, 3, 2, 1])
+
+    def test_properties(self):
+        # Try to change Jakes parameters that phi and psi depend on
+        self.assertIsNone(self.obj1.shape)
+        self.assertEqual(self.obj2.shape, (3, 2))
+
+        # Set the shape
+        self.obj1.shape = 3;
+        self.obj2.shape = (4, 3);
+
+        np.testing.assert_array_equal(self.obj1._phi_l.shape, [self.NRays, 3, 1])
+        np.testing.assert_array_equal(self.obj2._psi_l.shape, [self.NRays, 4, 3, 1])
+
+        # Try to set some attributes that are not allowed
+        with self.assertRaises(AttributeError):
+            self.obj1.L = 16
+        with self.assertRaises(AttributeError):
+            self.obj1.Ts = 5e-4
+        with self.assertRaises(AttributeError):
+            self.obj1.Fd = 50
+
+    def test_generate_more_samples(self):
+        sample1_obj1 = self.obj1.get_samples()
+        sample1_obj2 = self.obj2.get_samples()
+        self.assertEqual(sample1_obj1.shape, (1, ))
+        self.assertEqual(sample1_obj2.shape, (3, 2, 1))
+
+        # When we create the object it will generate one sample. Therefore,
+        # the current_value time corresponds to the sampling interval
+        self.assertAlmostEqual(self.obj1._current_time, self.Ts)
+        self.assertAlmostEqual(self.obj2._current_time, self.Ts)
+
+        # Generate 100 samples
+        self.obj1.generate_more_samples(100)
+        self.obj2.generate_more_samples(100)
+        self.assertAlmostEqual(self.obj1._current_time, 101*self.Ts)
+        self.assertAlmostEqual(self.obj2._current_time, 101*self.Ts)
+
+
+# TODO: remove after you remove the JakesSampleGeneratorOld class
+class JakesSampleGeneratorOldTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        Fd = 5     # Doppler frequency (in Hz)
+        Ts = 1e-3  # Sampling interval (in seconds)
+        NRays = 8  # Number of rays for the Jakes model
+
+        self.obj = fading_generators.JakesSampleGeneratorOLD(Fd, Ts, NRays)
+        self.obj2 = fading_generators.JakesSampleGeneratorOLD(Fd, Ts, NRays, shape=(3, 2))
 
     def test_set_shape(self):
         NRays = 8
@@ -428,7 +521,7 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Now test with shape different from None xxxxxxxxxxxxxx
         # Create the jakes object that will be passed to TdlChannel
-        jakes2 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=(2,4))
+        jakes2 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=(2, 4))
         tdlchannel2 = fading.TdlChannel.create_from_channel_profile(
             jakes2, fading.COST259_TUx)
         # COST259_TUx profile has 20 taps. The TdlChannel class should have

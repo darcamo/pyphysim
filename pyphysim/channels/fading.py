@@ -5,6 +5,7 @@ import math
 import numpy as np
 from ..util.conversion import dB2Linear, linear2dB
 
+# TODO: change this module name to "singleuser.py"
 
 class TdlChannelProfile(object):
     """
@@ -221,6 +222,8 @@ COST259_HTx = TdlChannelProfile(np.array(
               18016.]) * 1e-9, 'COST259_HT')
 
 
+# TODO: make TdlChannel class work with a JakesSampleGenerator class, instead
+#  of JakesSampleGeneratorOLD
 class TdlChannel(object):
     """
     Tapped Delay Line channel model, which corresponds to a multipath

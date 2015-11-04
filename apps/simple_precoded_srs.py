@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
 from pyphysim.channels.fading import COST259_TUx, TdlChannel
-from pyphysim.channels.fading_generators import JakesSampleGenerator
+from pyphysim.channels.fading_generators import JakesSampleGeneratorOLD, JakesSampleGenerator
 
 if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     for ueIdx in range(3):
         for anIdx in range(3):
-            jakes_all_links[ueIdx, anIdx] = JakesSampleGenerator(
+            jakes_all_links[ueIdx, anIdx] = JakesSampleGeneratorOLD(
                 Fd, Ts, L, shape=(numUeAnt, numAnAnt))
 
             tdlchannels_all_links[ueIdx, anIdx] = TdlChannel(
