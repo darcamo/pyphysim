@@ -333,7 +333,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         ra = fading.COST259_RAx
         ht = fading.COST259_HTx
 
-        # CHeck the number of taps in the profiles
+        # Check the number of taps in the profiles
         self.assertEqual(tu.num_taps, 20)
         self.assertEqual(ra.num_taps, 10)
         self.assertEqual(ht.num_taps, 20)
@@ -464,19 +464,37 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             tu_discretized.get_discretize_profile(Ts)
 
+    def test_num_taps_with_padding(self):
+        tu = fading.COST259_TUx
+        ra = fading.COST259_RAx
+        ht = fading.COST259_HTx
+
+        Ts = 3.255e-08
+
+        # For non-discretized profiles an exception should be raised if we
+        # try to get num_taps_with_padding
+        with self.assertRaises(RuntimeError):
+            tu.num_taps_with_padding
+        with self.assertRaises(RuntimeError):
+            ra.num_taps_with_padding
+        with self.assertRaises(RuntimeError):
+            ht.num_taps_with_padding
+
+        tu_d = tu.get_discretize_profile(Ts)
+        ra_d = ra.get_discretize_profile(Ts)
+        ht_d = ht.get_discretize_profile(Ts)
+
+        self.assertEqual(tu_d.num_taps, 15)
+        self.assertEqual(tu_d.num_taps_with_padding, 67)
+        self.assertEqual(ra_d.num_taps, 10)
+        self.assertEqual(ra_d.num_taps_with_padding, 17)
+        self.assertEqual(ht_d.num_taps, 18)
+        self.assertEqual(ht_d.num_taps_with_padding, 554)
+
+
 class TdlChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        pass
-
-    def test_constructor(self):
-        # TODO: implement-me
-        pass
-
-    def test_get_fading_map(self):
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
         max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
@@ -487,22 +505,49 @@ class TdlChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        Fd = 5     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
-        NRays = 16  # Number of rays for the Jakes model
+        self.Fd = 5     # Doppler frequency (in Hz)
+        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.NRays = 16  # Number of rays for the Jakes model
 
         # Create the jakes object that will be passed to TdlChannel
-        jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-        tdlchannel = fading.TdlChannel.create_from_channel_profile(
-            jakes, fading.COST259_TUx)
+        self.jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
 
+        self.tdlchannel = fading.TdlChannel(
+            self.jakes, tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+            tap_delays=fading.COST259_TUx.tap_delays)
+
+    def test_constructor_and_num_taps(self):
+        # The constructor provided the tap powers ande delays. The
+        # TdlChannel constructor used that, as well as the sampling time Ts
+        # from the jakes object and created a custom channel profile
+        self.assertAlmostEqual(self.tdlchannel._channel_profile.Ts, self.Ts)
+
+        tdlchannel2 = fading.TdlChannel(self.jakes, fading.COST259_TUx)
+        self.assertAlmostEqual(tdlchannel2._channel_profile.Ts, self.Ts)
+
+        self.assertEqual(self.tdlchannel.num_taps, 15)
+        self.assertEqual(tdlchannel2.num_taps, 15)
+
+        # This one has delays 10 times greatter then the delays in the TU
+        # channel profile. This means that it will have more discretized
+        # taps
+        tdlchannel3 = fading.TdlChannel(
+            self.jakes,
+            tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+            tap_delays=10*fading.COST259_TUx.tap_delays)
+
+        self.assertEqual(tdlchannel3.num_taps, 20)
+        self.assertEqual(tdlchannel3.num_taps_with_padding, 658)
+
+    def test_get_fading_map(self):
         # COST259_TUx profile has 20 taps. The TdlChannel class should have
         # changed the shape of the jakes object to [20]
-        self.assertEqual(jakes.shape, (15,))
+        self.assertEqual(self.jakes.shape, (15,))
 
         # Let's generate 10 samples
-        NSamples = 10
-        fading_map = tdlchannel.get_fading_map(NSamples)
+        num_samples = 10
+        fading_map = self.tdlchannel.generate_and_get_samples(num_samples)
 
         # With the provided Ts the COST259 TU channel will have 67
         # discretized taps if we include the zeros. Only 15 of those taps
@@ -515,31 +560,30 @@ class TdlChannelTestCase(unittest.TestCase):
             self.assertTrue(np.all(np.abs(line) > 0))
 
         # xxxxxxxxxx Now let's test include_the_zeros_in_fading_map xxxxxxx
-        full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
+        full_fading_map = self.tdlchannel.include_the_zeros_in_fading_map(fading_map)
         self.assertEqual(full_fading_map.shape, (67, 10))
 
 
         # xxxxxxxxxx Now test with shape different from None xxxxxxxxxxxxxx
         # Create the jakes object that will be passed to TdlChannel
-        jakes2 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=(2, 4))
-        tdlchannel2 = fading.TdlChannel.create_from_channel_profile(
-            jakes2, fading.COST259_TUx)
+        jakes2 = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=(2, 4))
+        tdlchannel2 = fading.TdlChannel(jakes2, fading.COST259_TUx)
         # COST259_TUx profile has 20 taps. The TdlChannel class should have
         # changed the shape of the jakes object to [20]
         self.assertEqual(jakes2.shape, (15,2,4))
 
         # Let's generate 10 samples
-        NSamples = 10
-        fading_map2 = tdlchannel2.get_fading_map(NSamples)
+        num_samples = 10
+        fading_map2 = tdlchannel2.generate_and_get_samples(num_samples)
 
         # With the provided Ts the COST259 TU channel will have 67
         # discretized taps if we include the zeros. Only 15 of those taps
         # are different from zero and those are the ones stored in the
         # fading map. Also, the Jakes object was created with a shape equal
         # to (2,4). Therefore, the shape of the fading map must be
-        # (15, 2, 4, NSamples)
+        # (15, 2, 4, num_samples)
         self.assertEqual(fading_map2.shape, (15, 2, 4, 10))
-
 
     def test_get_channel_freq_response(self):
         maxSystemBand = 40e6  # 40 MHz bandwidth
@@ -558,10 +602,10 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # Create the jakes object that will be passed to TdlChannel
         jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-        tdlchannel = fading.TdlChannel.create_from_channel_profile(
-            jakes, fading.COST259_TUx)
 
-        fading_map = tdlchannel.get_fading_map(10)
+        tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
+
+        fading_map = tdlchannel.generate_and_get_samples(10)
         full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
         freq_response = tdlchannel.get_channel_freq_response(full_fading_map, 2048)
 
@@ -591,14 +635,13 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # Create the jakes object that will be passed to TdlChannel
         jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-        tdlchannel = fading.TdlChannel.create_from_channel_profile(
-            jakes, fading.COST259_TUx)
+        tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
 
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])
 
         num_samples = 1
-        fading_map = tdlchannel.get_fading_map(num_samples)
+        fading_map = tdlchannel.generate_and_get_samples(num_samples)
         received_signal = tdlchannel.transmit_signal_with_known_fading_map(
             signal, fading_map)
 
@@ -611,7 +654,7 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        fading_map = tdlchannel.get_fading_map(num_samples)
+        fading_map = tdlchannel.generate_and_get_samples(num_samples)
 
         signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
         received_signal = tdlchannel.transmit_signal_with_known_fading_map(

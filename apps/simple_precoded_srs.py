@@ -87,7 +87,7 @@ if __name__ == '__main__':
                 COST259_TUx.tap_delays)
 
             fading_maps[ueIdx, anIdx] \
-                = tdlchannels_all_links[ueIdx, anIdx].get_fading_map(
+                = tdlchannels_all_links[ueIdx, anIdx].generate_and_get_samples(
                 num_samples)
 
             freq_responses[ueIdx, anIdx] = tdlchannels_all_links[
