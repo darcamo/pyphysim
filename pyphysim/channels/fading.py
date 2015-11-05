@@ -133,6 +133,13 @@ class TdlChannelProfile(object):
         """
         return self._Ts
 
+    @property
+    def is_discretized(self):
+        if self._Ts is None:
+            return False
+        else:
+            return True
+
     def get_discretize_profile(self, Ts):
         """
         Compute the discretized taps (power and delay) and return a new
@@ -154,7 +161,7 @@ class TdlChannelProfile(object):
         TdlChannelProfile
             The discretized channel profile
         """
-        if self._Ts is not None:
+        if self.is_discretized:
             raise RuntimeError("Trying to discretize a TdlChannelProfile "
                                "object that is already discretized.")
 
@@ -238,6 +245,147 @@ COST259_HTx = TdlChannelProfile(np.array(
               18016.]) * 1e-9, 'COST259_HT')
 
 
+class TdlImpulseResponse(object):
+    """
+    Class that represents impulse response for a TdlChannel object.
+
+    This impulse response corresponds to the generated samples for one or
+    more channel realization of the TdlChannel with the configured fading
+    generator.
+
+    Parameters
+    ----------
+    tap_values : numpy array
+        The tap_values (not including zero padded taps) of a TDL channel
+        generated for the non-zero taps. Dimension: `Num sparse taps x
+        SHAPE x num_samples`. The value SHAPE here is the shape of the
+        fading generator and corresponds to independent impulse
+        responses. Often the shape of the used fading generator is None and
+        thus the dimension of `tap_values` is just `Num sparse taps x
+        num_samples`
+
+    channel_profile : TdlChannelProfile
+        The channel profile that was considering to generate this impulse
+        response.
+    """
+    def __init__(self, tap_values, channel_profile):
+        assert(isinstance(channel_profile, TdlChannelProfile))
+        if channel_profile.Ts is None:
+            raise RuntimeError('Channel profile must be discretized')
+
+        self._channel_profile = channel_profile
+
+        self._tap_values_sparse = tap_values
+        self._tap_values_dense = None  # This will be set when needed
+
+    @property
+    def tap_values_sparse(self):
+        """
+        Return the tap values (not including zero padding) as a numpy array.
+        """
+        return self._tap_values_sparse
+
+    @property
+    def tap_indexes_sparse(self):
+        """
+        Return the (sparse) tap indexes.
+        """
+        return self._channel_profile.tap_delays
+
+    @property
+    def Ts(self):
+        """
+        Return the sampling interval of this impulse response.
+        """
+        return self._channel_profile.Ts
+
+    @property
+    def tap_delays_sparse(self):
+        """
+        Return the tap delays (which are multiples of the sampling interval).
+        """
+        return self.tap_indexes_sparse * self.Ts
+
+    @property
+    def tap_values(self):
+        """
+        Return the tap values (including zero padding) as a numpy array.
+        """
+        if self._tap_values_dense is None:
+            self._tap_values_dense = \
+                self._get_samples_including_the_extra_zeros()
+        return self._tap_values_dense
+
+    @property
+    def num_samples(self):
+        """
+        Get the number of samples (different, "neighbor" impulse responses)
+        stored here.
+        """
+        return self._tap_values_sparse.shape[-1]
+
+    def _get_samples_including_the_extra_zeros(self):
+        """
+        Return the `samples` including the zeros for the zero taps.
+
+        Returns
+        -------
+        samples_with_zeros : numpy complex array
+            The samples including the extra delays containing zeros.
+        """
+        num_taps_with_padding = self.tap_indexes_sparse[-1] + 1
+        num_samples = self._tap_values_sparse.shape[1]
+
+        # Shape of sparse tap values
+        orig_shape = self._tap_values_sparse.shape
+        # The first dimension has the sparse taps. This dimension will
+        # change to num_taps_with_padding. Note that the last dimension in
+        # this shape corresponds to the number of samples.
+        new_shape = (num_taps_with_padding, ) + orig_shape[1:]
+
+        samples_with_zeros = np.zeros(new_shape, dtype=complex)
+
+        # Fill the non-zero taps in samples_with_zeros in the correct
+        # indexes
+        samples_with_zeros[self.tap_indexes_sparse] = self._tap_values_sparse
+        return samples_with_zeros
+
+    def get_freq_response(self, fft_size):
+        """
+        Get the frequency response for this impulse response.
+
+        Parameters
+        ----------
+        fft_size : int
+            The size of the FFT to be applied.
+
+        Returns
+        -------
+        numpy array
+            The frequency response. Dimension: `fft_size x num_samples`
+        """
+        # Compute the FFT in the "delay" dimension, which captures the
+        # multipath characteristics of the channel. The FFT is calculated
+        # independently for each column (second dimension), which
+        # corresponds to the second dimension is the time dimension (as the
+        # channel response changes in time)
+        freq_response = np.fft.fft(
+            self._get_samples_including_the_extra_zeros(), fft_size, axis=0)
+        return freq_response
+
+    def plot_impulse_response(self):  # pragma: no cover
+        """
+        Visualize the impulse response in a 3D plot.
+        """
+        raise NotImplementedError("Implement-me")
+
+    def plot_frequency_response(self):  # pragma: no cover
+        """
+        Visualize the frequency response in a 3D plot.
+        """
+        raise NotImplementedError("Implement-me")
+
+
 class TdlChannel(object):
     """
     Tapped Delay Line channel model, which corresponds to a multipath
@@ -260,7 +408,8 @@ class TdlChannel(object):
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
 
-    # TODO: change jakes_obj to a generic fading generator
+    # TODO: Check if jakes_obj can be another fading generator. Change the
+    # name if yes.
 
     # Note: It would be better to have only the first argument as
     # positional argument and all the others as keyword only arguments. We
@@ -324,6 +473,10 @@ class TdlChannel(object):
             jakes_obj.shape = (self.num_taps,) + jakes_obj.shape
         self._jakes_obj = jakes_obj
 
+        # Last generated impulse response. This will be set when the
+        # _generate_impulse_response method is called
+        self._last_impulse_response = None
+
     @property
     def num_taps(self):
         """
@@ -340,15 +493,19 @@ class TdlChannel(object):
         # tap_delays correspond to integers
         return self._channel_profile.num_taps_with_padding
 
-    def generate_and_get_samples(self, num_samples):
+    def _generate_impulse_response(self, num_samples):
         """
-        Generate `num_samples` of all discretized taps (not including possible
-        zero padding) and return the generated samples.
+        Generate a new impulse response of all discretized taps (not
+        including possible zero padding) for `num_samples` channel
+        realizations.
 
-        The number of discretized taps will depend on the channel delay
-        profile (the tap_delays passed during creation of the TdlChannel
-        object) as well as on the sampling interval (configured in the
-        jakes_obj passed to the TdlChannel object).
+        The generated impulse response is saved in the
+        `_last_impulse_response` attribute.
+
+        The number of discretized taps of the generated impulse response will
+        depend on the channel delay profile (the tap_delays passed during
+        creation of the TdlChannel object) as well as on the sampling
+        interval (configured in the jakes_obj passed to the TdlChannel object).
 
         As an example, the COST259 TU channel profile has 20 different taps
         where the last one has a delay equal to 2.14 microseconds. If the
@@ -364,12 +521,6 @@ class TdlChannel(object):
         ----------
         num_samples : int
             The number of samples to generate (for each tap).
-
-        Returns
-        -------
-        numpy complex array
-            The generated samples. Dimension: `Shape of the Jakes obj x
-            num_samples`.
         """
         self._jakes_obj.generate_more_samples(num_samples)
         jakes_samples = self._jakes_obj.get_samples()
@@ -390,59 +541,20 @@ class TdlChannel(object):
                        self._channel_profile.tap_powers_linear[:, np.newaxis],
                        new_shape)))
 
-        return samples
+        impulse_response = TdlImpulseResponse(samples, self._channel_profile)
+        self._last_impulse_response = impulse_response
 
-    def include_the_zeros_in_fading_map(self, fading_map):
+    def get_last_impulse_response(self):
         """
-        Return the `fading_map` including the zeros.
+        Get the last generated impulse response.
 
-        Parameters
-        ----------
-        fading_map : numpy complex array
-            The fading map including any required delays with zeros.
-
-        Returns
-        -------
-        full_fading_map : numpy complex array
-            The fading map including the extra delays containing zeros.
+        A new impulse response is generated when the method `corrupt_data`
+        is called. You can use the `get_last_impulse_response` method to
+        get the impulse response used to corrupt the last data.
         """
-        num_samples = fading_map.shape[1]
-        full_fading_map = np.zeros(
-            [self.num_taps_with_padding, num_samples],
-            dtype=complex)
+        return self._last_impulse_response
 
-        full_fading_map[self._channel_profile.tap_delays] = fading_map
-        return full_fading_map
-
-    @staticmethod
-    def get_channel_freq_response(full_fading_map, fft_size):
-        """
-        Get the frequency response for the given fadding map, computed with
-        `np.fft.fft`.
-
-        Parameters
-        ----------
-        full_fading_map : Numpy complex array
-            The fading map (including any extra zeros) calculated by
-            `generate_and_get_samples`. The first dimension corresponds to
-            the delay dimension (taps).
-        fft_size : int
-            The size of the FFT to be applied.
-
-        Returns
-        -------
-        freq_response : numpy array
-            The frequency response. Dimension: `fft_size x num_samples`
-        """
-        # Compute the FFT in the "delay" dimension, which captures the
-        # multipath characteristics of the channel. The FFT is calculated
-        # independently for each column (second dimension), which
-        # corresponds to the second dimension is the time dimension (as the
-        # channel response changes in time)
-        freq_response = np.fft.fft(full_fading_map, fft_size, axis=0)
-        return freq_response
-
-    def transmit_signal_with_known_fading_map(self, signal, fading_map):
+    def corrupt_data(self, signal):
         """
         Transmit the signal trhough the TDL channel.
 
@@ -450,17 +562,26 @@ class TdlChannel(object):
         ----------
         signal : numpy array
             The signal to be transmitted.
-        fading_map : numpy array
-            The fading map to use.
         """
         # Number of symbols to be transmitted
         num_symbols = signal.size
-        # Maximum (discretized) delay of the channel. The output size will
-        # be equal to the number of symbols to transit plus the max_delay.
-        max_delay = self.num_taps_with_padding - 1
-        output = np.zeros(num_symbols + max_delay, dtype=complex)
 
-        for i, d in enumerate(self._channel_profile.tap_delays):
-            output[d:d + num_symbols] += fading_map[i] * signal
+        # Generate an impulse response with `num_symbols` samples that we
+        # will use to corrupt the data.
+        self._generate_impulse_response(num_symbols)
+
+        # Get the channel memory (number of extra received symbols).
+        channel_memory = self.num_taps_with_padding - 1
+        # The output size will be equal to the number of symbols to transit
+        # plus the channel_memory.
+        output = np.zeros(num_symbols + channel_memory, dtype=complex)
+
+        # The indexes of the non-zero taps from our impulse response
+        tap_indexes_sparse = self._last_impulse_response.tap_indexes_sparse
+        # The values of the (sparse) tap
+        tap_values_sparse = self._last_impulse_response.tap_values_sparse
+
+        for i, d in enumerate(tap_indexes_sparse):
+            output[d:d + num_symbols] += tap_values_sparse[i] * signal
 
         return output

@@ -225,33 +225,31 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         jakes2 = JakesSampleGenerator(Fd, Ts, L)
 
         # Create a TDL channel object for each user
-        tdlchannel1 = TdlChannel(jakes1,
-                                 tap_powers_dB=COST259_TUx.tap_powers_dB,
-                                 tap_delays=COST259_TUx.tap_delays)
-        tdlchannel2 = TdlChannel(jakes2,
-                                 tap_powers_dB=COST259_TUx.tap_powers_dB,
-                                 tap_delays=COST259_TUx.tap_delays)
+        tdlchannel1 = TdlChannel(jakes1, channel_profile=COST259_TUx)
+        tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
-        # Compute the fading map for each user
-        fadingmap1 = tdlchannel1.generate_and_get_samples(1)
-        fadingmap2 = tdlchannel2.generate_and_get_samples(1)
+        # Generate channel that would corrupt the transmit signal.
+        tdlchannel1._generate_impulse_response(1)
+        tdlchannel2._generate_impulse_response(1)
 
-        freq_resp_1 = tdlchannel1.get_channel_freq_response(fadingmap1, Nsc)
+        # Get the generated impulse response
+        impulse_response1 = tdlchannel1.get_last_impulse_response()
+        impulse_response2 = tdlchannel2.get_last_impulse_response()
+
+        # Get the corresponding frequency response
+        freq_resp_1 = impulse_response1.get_freq_response(Nsc)
         H1 = freq_resp_1[:, 0]
-
-        freq_resp_2 = tdlchannel2.get_channel_freq_response(fadingmap2, Nsc)
+        freq_resp_2 = impulse_response2.get_freq_response(Nsc)
         H2 = freq_resp_2[:, 0]
 
-        # Sequence of user 1
+        # Sequence of the users
         r1 = user1_seq.seq_array()
-        # Sequence of user 2
         r2 = user2_seq.seq_array()
 
         # Received signal (in frequency domain) of user 1
         comb_indexes = np.arange(0, Nsc, 2)
         Y1 = H1[comb_indexes] * r1
         Y2 = H2[comb_indexes] * r2
-
         Y = Y1 + Y2
 
         # Calculate expected estimated channel for user 1

@@ -431,6 +431,83 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         self.assertEqual(ht_d.num_taps_with_padding, 554)
 
 
+class TdlImpulseResponseTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.Ts = 3.255e-08
+        tu = fading.COST259_TUx
+        tu_discretized = tu.get_discretize_profile(self.Ts)
+
+        num_samples = 5
+        self.tap_values = (np.random.randn(15, num_samples) +
+                           1j * np.random.randn(15, num_samples))
+
+        self.impulse_response = fading.TdlImpulseResponse(self.tap_values,
+                                                          tu_discretized)
+
+    def test_constructor(self):
+        num_samples = 5
+        tap_values = (np.random.randn(15, num_samples) +
+                      1j * np.random.randn(15, num_samples))
+        tu = fading.COST259_TUx
+
+        # If we try to create an impulse response object using a
+        # non-discretized channel profile an exception is raised
+        with self.assertRaises(RuntimeError):
+            fading.TdlImpulseResponse(tap_values, tu)
+
+    def test_properties(self):
+        # With Ts = 3.255e-8, the discretized TU channel profile has 15 non
+        # zero taps. Including the zero taps we have 67 taps. Here we will
+        # test these dimensions
+
+        num_taps = 15
+        num_taps_with_padding = 67
+        num_samples = 5
+        Ts = self.Ts
+
+        self.assertAlmostEqual(self.impulse_response.Ts, self.Ts)
+        self.assertEqual(self.impulse_response.num_samples, num_samples),
+
+        self.assertEqual(self.impulse_response.tap_values.shape,
+                         (num_taps_with_padding, num_samples))
+        self.assertEqual(self.impulse_response.tap_values_sparse.shape,
+                         (num_taps, num_samples))
+
+
+        np.testing.assert_array_equal(
+            self.impulse_response.tap_indexes_sparse,
+            np.array([ 0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+
+        np.testing.assert_array_almost_equal(
+            self.impulse_response.tap_delays_sparse,
+            Ts * np.array([ 0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+
+    def test_get_freq_response(self):
+        fft_size = 1024
+
+        freq_response = self.impulse_response.get_freq_response(fft_size)
+        self.assertEqual(freq_response.shape, (fft_size, 5))
+
+        tap_values = self.impulse_response.tap_values
+
+        expected_frequency_response = np.zeros(shape=(fft_size, 5),
+                                               dtype=complex)
+        expected_frequency_response[:, 0] = np.fft.fft(tap_values[:, 0],
+                                                       fft_size)
+        expected_frequency_response[:, 1] = np.fft.fft(tap_values[:, 1],
+                                                       fft_size)
+        expected_frequency_response[:, 2] = np.fft.fft(tap_values[:, 2],
+                                                       fft_size)
+        expected_frequency_response[:, 3] = np.fft.fft(tap_values[:, 3],
+                                                       fft_size)
+        expected_frequency_response[:, 4] = np.fft.fft(tap_values[:, 4],
+                                                       fft_size)
+        np.testing.assert_array_almost_equal(freq_response,
+                                             expected_frequency_response)
+
+
+
 class TdlChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -513,155 +590,93 @@ class TdlChannelTestCase(unittest.TestCase):
         rayleigh_generator = fading_generators.RayleighSampleGenerator()
         with self.assertRaises(RuntimeError):
             fading.TdlChannel(
-                    rayleigh_generator,
-                    tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
-                    tap_delays=10*fading.COST259_TUx.tap_delays)
+                rayleigh_generator,
+                tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+                tap_delays=10*fading.COST259_TUx.tap_delays)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_get_fading_map(self):
-        # COST259_TUx profile has 20 taps. The TdlChannel class should have
-        # changed the shape of the jakes object to [20]
-        self.assertEqual(self.jakes.shape, (15,))
+    def test_num_taps_with_and_without_padding(self):
+        self.assertEqual(self.tdlchannel.num_taps_with_padding, 67)
+        self.assertEqual(self.tdlchannel.num_taps, 15)
 
-        # Let's generate 10 samples
-        num_samples = 10
-        fading_map = self.tdlchannel.generate_and_get_samples(num_samples)
+    def test_generate_and_get_last_impulse_response(self):
+        self.assertIsNone(self.tdlchannel.get_last_impulse_response())
+        self.tdlchannel._generate_impulse_response(num_samples=20)
+        last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
-        # With the provided Ts the COST259 TU channel will have 67
-        # discretized taps if we include the zeros. Only 15 of those taps
-        # are different from zero and those are the ones stored in the
-        # fading map.
-        self.assertEqual(fading_map.shape, (15, 10))
+        self.assertEqual(last_impulse_response.num_samples, 20)
+        self.assertEqual(last_impulse_response.tap_values_sparse.shape, (15, 20))
 
-        # test the non-zero taps
-        for line in fading_map:
-            self.assertTrue(np.all(np.abs(line) > 0))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now test with a different shape
+        #
+        # For this Ts there are 15 non zero taps and 67 taps in total
+        # including zero padding
+        Ts = 3.255e-08
+        jakes = fading_generators.JakesSampleGenerator(shape=(4, 3), Ts=Ts)
+        tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
+        tdlchannel._generate_impulse_response(10)
+        last_impulse_response = tdlchannel.get_last_impulse_response()
+        self.assertEqual(last_impulse_response.num_samples, 10)
+        self.assertEqual(last_impulse_response.tap_values_sparse.shape,
+                         (15, 4, 3, 10))
+        self.assertEqual(last_impulse_response.tap_values.shape,
+                         (67, 4, 3, 10))
 
-        # xxxxxxxxxx Now let's test include_the_zeros_in_fading_map xxxxxxx
-        full_fading_map = self.tdlchannel.include_the_zeros_in_fading_map(fading_map)
-        self.assertEqual(full_fading_map.shape, (67, 10))
-
-
-        # xxxxxxxxxx Now test with shape different from None xxxxxxxxxxxxxx
-        # Create the jakes object that will be passed to TdlChannel
-        jakes2 = fading_generators.JakesSampleGenerator(
-            self.Fd, self.Ts, self.NRays, shape=(2, 4))
-        tdlchannel2 = fading.TdlChannel(jakes2,
-                                        channel_profile=fading.COST259_TUx)
-        # COST259_TUx profile has 20 taps. The TdlChannel class should have
-        # changed the shape of the jakes object to [20]
-        self.assertEqual(jakes2.shape, (15,2,4))
-
-        # Let's generate 10 samples
-        num_samples = 10
-        fading_map2 = tdlchannel2.generate_and_get_samples(num_samples)
-
-        # With the provided Ts the COST259 TU channel will have 67
-        # discretized taps if we include the zeros. Only 15 of those taps
-        # are different from zero and those are the ones stored in the
-        # fading map. Also, the Jakes object was created with a shape equal
-        # to (2,4). Therefore, the shape of the fading map must be
-        # (15, 2, 4, num_samples)
-        self.assertEqual(fading_map2.shape, (15, 2, 4, 10))
-
-    def test_get_channel_freq_response(self):
-        maxSystemBand = 40e6  # 40 MHz bandwidth
-        # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
-        # Find the maximum FFT size we can use which is below than or equal
-        # to maxNumOfSubcarriersInt
-        max_num_of_subcarriers = int(
-            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
-        # Calculate the actual bandwidth that we will use
-        bandwidth = 15e3 * max_num_of_subcarriers
-
-        Fd = 5     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
-        NRays = 16  # Number of rays for the Jakes model
-
-        # Create the jakes object that will be passed to TdlChannel
-        jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-
-        tdlchannel = fading.TdlChannel(jakes,
-                                       channel_profile=fading.COST259_TUx)
-
-        fading_map = tdlchannel.generate_and_get_samples(10)
-        full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
-        freq_response = tdlchannel.get_channel_freq_response(full_fading_map, 2048)
-
-        self.assertEqual(freq_response.shape, (2048, 10))
-
-        # plt.plot(np.abs(freq_response[:,0]))
-        # plt.show()
-
-        # TODO: Implement-me
-        pass
-
-
-    def test_transmit_signal_with_known_fading_map(self):
-        maxSystemBand = 40e6  # 40 MHz bandwidth
-        # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
-        # Find the maximum FFT size we can use which is below than or equal
-        # to maxNumOfSubcarriersInt
-        max_num_of_subcarriers = int(
-            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
-        # Calculate the actual bandwidth that we will use
-        bandwidth = 15e3 * max_num_of_subcarriers
-
-        Fd = 5     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
-        NRays = 16  # Number of rays for the Jakes model
-
-        # Create the jakes object that will be passed to TdlChannel
-        jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-        tdlchannel = fading.TdlChannel(jakes,
-                                       channel_profile=fading.COST259_TUx)
-
+    def test_corrupt_data(self):
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])
 
         num_samples = 1
-        fading_map = tdlchannel.generate_and_get_samples(num_samples)
-        received_signal = tdlchannel.transmit_signal_with_known_fading_map(
-            signal, fading_map)
+        received_signal = self.tdlchannel.corrupt_data(signal)
+
+        # Impulse response used to transmit the signal
+        last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
         # Since only one sample was sent and it is equal to 1, then the
         # received signal will be equal to the full_fading_map
-        full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
-
-        np.testing.assert_almost_equal(full_fading_map.flatten(),
-                                       received_signal)
+        np.testing.assert_almost_equal(
+            last_impulse_response.tap_values.flatten(),
+            received_signal)
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        fading_map = tdlchannel.generate_and_get_samples(num_samples)
-
         signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
-        received_signal = tdlchannel.transmit_signal_with_known_fading_map(
-            signal, fading_map)
+        received_signal = self.tdlchannel.corrupt_data(signal)
+        last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
         # Compute the expected received signal
         # For this Ts we have 15 discretized taps. The indexes of the 15
         # taps are:
         # [ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]
-        expected_received_signal = np.zeros(66 + num_samples, dtype=complex)
-        expected_received_signal[0:0+num_samples] += signal * fading_map[0]
-        expected_received_signal[7:7+num_samples] += signal * fading_map[1]
-        expected_received_signal[16:16+num_samples] += signal * fading_map[2]
-        expected_received_signal[21:21+num_samples] += signal * fading_map[3]
-        expected_received_signal[27:27+num_samples] += signal * fading_map[4]
-        expected_received_signal[38:38+num_samples] += signal * fading_map[5]
-        expected_received_signal[40:40+num_samples] += signal * fading_map[6]
-        expected_received_signal[41:41+num_samples] += signal * fading_map[7]
-        expected_received_signal[47:47+num_samples] += signal * fading_map[8]
-        expected_received_signal[50:50+num_samples] += signal * fading_map[9]
-        expected_received_signal[56:56+num_samples] += signal * fading_map[10]
-        expected_received_signal[58:58+num_samples] += signal * fading_map[11]
-        expected_received_signal[60:60+num_samples] += signal * fading_map[12]
-        expected_received_signal[63:63+num_samples] += signal * fading_map[13]
-        expected_received_signal[66:66+num_samples] += signal * fading_map[14]
+        np.testing.assert_array_equal(
+            last_impulse_response.tap_indexes_sparse,
+            np.array([ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
 
+        # Including zero pading, the impulse response has 67 taps. That
+        # means the channel memory is equal to 66
+        channel_memory = 66
+        expected_received_signal = np.zeros(channel_memory + num_samples, dtype=complex)
+
+        # Let's compute the expected received signal
+        tap_values_sparse = last_impulse_response.tap_values_sparse
+        expected_received_signal[0:0+num_samples] += signal * tap_values_sparse[0]
+        expected_received_signal[7:7+num_samples] += signal * tap_values_sparse[1]
+        expected_received_signal[16:16+num_samples] += signal * tap_values_sparse[2]
+        expected_received_signal[21:21+num_samples] += signal * tap_values_sparse[3]
+        expected_received_signal[27:27+num_samples] += signal * tap_values_sparse[4]
+        expected_received_signal[38:38+num_samples] += signal * tap_values_sparse[5]
+        expected_received_signal[40:40+num_samples] += signal * tap_values_sparse[6]
+        expected_received_signal[41:41+num_samples] += signal * tap_values_sparse[7]
+        expected_received_signal[47:47+num_samples] += signal * tap_values_sparse[8]
+        expected_received_signal[50:50+num_samples] += signal * tap_values_sparse[9]
+        expected_received_signal[56:56+num_samples] += signal * tap_values_sparse[10]
+        expected_received_signal[58:58+num_samples] += signal * tap_values_sparse[11]
+        expected_received_signal[60:60+num_samples] += signal * tap_values_sparse[12]
+        expected_received_signal[63:63+num_samples] += signal * tap_values_sparse[13]
+        expected_received_signal[66:66+num_samples] += signal * tap_values_sparse[14]
+
+        # Check if the received singal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
 

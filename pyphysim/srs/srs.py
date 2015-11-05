@@ -143,13 +143,21 @@ class SrsChannelEstimator(object):
     Estimated the (uplink) channel based on the SRS sequence sent by one
     user.
 
-    The estimation is performed according to the paper REFERENCE, where the
-    received signal in the FREQUENCY DOMAIN is used by the estimator.
+    The estimation is performed according to the paper [Bertrand2011]_,
+    where the received signal in the FREQUENCY DOMAIN is used by the
+    estimator.
 
     Parameters
     ----------
     srs_ue : SrsUeSequence object
         The user's SRS sequence.
+
+    Notes
+    -----
+
+    .. [Bertrand2011] Bertrand, Pierre, "Channel Gain Estimation from
+       Sounding Reference Signal in LTE," Conference: Proceedings of the
+       73rd IEEE Vehicular Technology Conference.
     """
 
     def __init__(self, srs_ue):
