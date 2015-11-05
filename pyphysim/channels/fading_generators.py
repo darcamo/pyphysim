@@ -4,10 +4,11 @@
 # pylint: disable=E1103
 import math
 import numpy as np
+from collections import Iterable
 from ..util.misc import randn_c
 
 
-# noinspection PyPep8,PyPep8
+# noinspection PyPep8
 def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
                            RS=None):
     """
@@ -54,73 +55,134 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
     # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
 
     obj = JakesSampleGenerator(Fd, Ts, L, shape, RS)
-    return obj.generate_channel_samples(NSamples)
+    obj.generate_more_samples(NSamples)
+    return obj.get_samples()
 
 
 class FadingSampleGenerator(object):
-    """Base class for fading generators.
+    """
+    Base class for fading generators.
+
+    Parameters
+    ----------
+    shape : tuple (of integers) or an int
+
+        The shape of the sample generator. Each time
+        `generate_more_samples(num_samples)` method is called it will
+        generate samples with this shape as the first dimensions.
     """
 
-    def __init__(self):
+    def __init__(self, shape=None):
+        self._shape = shape
+
         # Set this variable in a derived class with the next samples
-        # everytime the generate_next_samples method is called.
+        # everytime the generate_more_samples method is called. Note that
+        # generate_more_samples should take the value of self._shape into
+        # account.
         self._samples = None
+
+    @property
+    def shape(self):
+        """
+        Get the shape of the sampling generator
+
+        This is the shape of the samples that will be generated (not
+        including num_samples).
+        """
+        if self._shape is not None and not isinstance(self._shape, Iterable):
+            shape = (self._shape, )
+        else:
+            shape = self._shape
+
+        return shape
+
+    @shape.setter
+    def shape(self, value):
+        """
+        Set the shape of the sampling generator.
+
+        This is the shape of the samples that will be generated (not
+        including num_samples).
+
+        Parameters
+        ----------
+        shape : tuple of integers, an int, or None
+            The shape of the generated channel.
+        """
+        self._shape = value
 
     def get_samples(self):
         """Get the last generated sample.
         """
         return self._samples
 
-    def generate_next_samples(self):
-        """Generate next samples."""
+    def generate_more_samples(self, num_samples=None):  # pragma: nocover
+        """
+        Generate next samples.
+
+        When implementing this method in a subclass you must take the value
+        of the self._shape attribute into account.
+
+        Parameters
+        ----------
+        num_samples : int (optional)
+            Number of samples (with the provided shape) to generate. If not
+            provided it will be assumed to be 1.
+        """
         raise NotImplementedError("Implement in a subclass")
 
 
 class RayleighSampleGenerator(FadingSampleGenerator):
     """
-    Class that generates a Raleigh fading matrix.
+    Class that generates fading samples from a Raleigh distribution.
 
     Parameters
     ----------
-    num_rows : int
-        Number of rows to create.
-    num_cols : int (optional)
-        Number of columns. If not provided, then it will be equal to the number
-        of rows.
+    shape : tuple (of integers) or an int
+        The shape of the sample generator. Each time the
+        `generate_jakes_samples` method is called it will generate samples
+        with this shape. If not provided, then 1 will be assumed.
     """
 
-    def __init__(self, num_rows, num_cols=None, ):
-        super(RayleighSampleGenerator, self).__init__()
-        self._num_rows = num_rows
-        self._num_cols = num_cols
+    def __init__(self, shape=None):
+        super(RayleighSampleGenerator, self).__init__(shape)
 
-        # Generate first sample and set self._H
-        self.generate_next_samples()
+        # Generate first sample
+        self.generate_more_samples()
 
-    def generate_next_samples(self):
-        """Generate next samples.
+    def generate_more_samples(self, num_samples=None):
         """
-        if self._num_cols is None:
-            num_cols = self._num_rows
+        Generate next samples.
+
+        Parameters
+        ----------
+        num_samples : int (optional)
+            Number of samples (with the provided shape) to generate. If not
+            provided it will be assumed to be 1.
+        """
+        shape = self.shape
+
+        if num_samples is None:
+            if shape is None:
+                self._samples = randn_c()
+            else:
+                self._samples = randn_c(*shape)
+        elif self.shape is None:
+            self._samples = randn_c(num_samples)
         else:
-            num_cols = self._num_cols
-        self._samples = randn_c(self._num_rows, num_cols)
+            shape = list(shape)
+            shape.append(num_samples)
+            self._samples = randn_c(*shape)
 
 
-# TODO: Make this class inherit from FadingSampleGenerator and implement
-# required interface
-# noinspection PyPep8
-class JakesSampleGenerator(object):
+# TODO: Move the RS parameter to the base class and add it as an argument to
+# RayleighSampleGenerator
+class JakesSampleGenerator(FadingSampleGenerator):
     """
-    The purpose of this class is to generate channel samples according to
-    the Jakes model given by
+    Class that generated fading samples according to the Jakes model given
+    by
 
     .. math:: h(t) = \\frac{1}{\\sqrt{L}}\\sum_{l=0}^{L-1}\\exp\\{j[2\\pi f_D \\cos(\\phi_l)t+\\psi_l]\\}
-
-    This class is actually a wrapper to the :meth:`generate_jakes_samples`
-    function in this module. Its main purpose is to allow easier usage of
-    generate_jakes_samples as well as generating "more samples" continuing
-    a previous call to generate_jakes_samples.
 
     Parameters
     ----------
@@ -130,11 +192,13 @@ class JakesSampleGenerator(object):
         The sample interval (in seconds).
     L : int
         The number of rays for the Jakes model.
-    shape : tuple (of integers)
-        The shape of the generated channel. This is used to generate MIMO
-        channels. For instance, in order to generate channels samples for a
-        MIMO scenario with 3 receive antennas and 2 transmit antennas use a
-        shape of (3, 2).
+    shape : tuple (of integers) or an int
+        The shape of the sample generator. Each time the
+        `generate_jakes_samples` method is called it will generate samples
+        with this shape. If not provided, then 1 will be assumed. This
+        could be used to generate MIMO channels. For instance, in order to
+        generate channels samples for a MIMO scenario with 3 receive
+        antennas and 2 transmit antennas use a shape of (3, 2).
     RS : A numpy.random.RandomState object.
         The RandomState object used to generate the random values. If not
         provided, the global RandomState in numpy will be used.
@@ -143,14 +207,14 @@ class JakesSampleGenerator(object):
     --------
     generate_jakes_samples
     """
-    # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
 
-    def __init__(self, Fd=100, Ts=1e-3, L=8,
-                 shape=None, RS=None):
-        self.Fd = Fd
-        self.Ts = Ts
-        self.L = L
-        self._shape = shape
+    def __init__(self, Fd=100, Ts=1e-3, L=8, shape=None, RS=None):
+        super(JakesSampleGenerator, self).__init__(shape)
+
+        self._Fd = Fd
+        self._Ts = Ts
+        self._L = L
+
         self._phi_l = None  # This will be set in the set_shape method
         self._psi_l = None  # This will be set in the set_shape method
 
@@ -163,35 +227,62 @@ class JakesSampleGenerator(object):
         self.RS = RS
 
         # self._current_time will be update after each call to the
-        # generate_channel_samples method.
+        # `generate_more_samples` method.
         self._current_time = 0.0
 
-        self.shape = shape
+        # Updateself._phi_l and self._psi_l according to self._shape
+        self._set_phi_and_psi_according_to_shape()
+
+        # Generate first sample
+        self.generate_more_samples()
 
     @property
     def shape(self):
-        """Get the shape of the JakesSampleGenerator"""
-        return self._shape
+        """
+        Get the shape of the sampling generator
+
+        This is the shape of the samples that will be generated (not
+        including num_samples).
+        """
+        return super(JakesSampleGenerator, self).shape
 
     @shape.setter
-    def shape(self, shape):
+    def shape(self, value):
         """
-        Set the shape of the channel that will be generated by
-        `generate_channel_samples`.
+        Set the shape of the sampling generator.
 
-        This will also generate `phi_l` and `psi_l` for the new shape.
+        This is the shape of the samples that will be generated (not
+        including num_samples).
 
         Parameters
         ----------
-        shape : tuple (of integers)
-            The shape of the generated channel. This is used to generate
-            MIMO channels. For instance, in order to generate channels
-            samples for a MIMO scenario with 3 receive antennas and 2
-            transmit antennas use a shape of (3, 2).
+        shape : tuple of integers, an int, or None
+            The shape of the generated channel.
         """
-        # xxxxx Generate phi_l and psi_l xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self._shape = shape
-        if shape is None:
+        self._shape = value
+        # Since phi and psi depend on the shape we need to update
+        # them. Note that `_set_phi_and_psi_according_to_shape` will use
+        # the value of self._shape
+        self._set_phi_and_psi_according_to_shape()
+
+    @property
+    def L(self):
+        return self._L
+
+    @property
+    def Ts(self):
+        return self._Ts
+
+    @property
+    def Fd(self):
+        return self._Fd
+
+    def _set_phi_and_psi_according_to_shape(self):
+        """
+        This will update the phi and psi attributes used to generate the jakes
+        samples to reflect the current value of self._shape.
+        """
+        if self.shape is None:
             # The dimension of phi_l and psi_l will be L x 1. We set the last
             # dimensions as 1, instead of setting the dimension of phi_l and
             # psi_l simply as (L,), because it will be broadcasted later by
@@ -204,42 +295,44 @@ class JakesSampleGenerator(object):
             # phi_l and psi_l simply as (L,), because it will be broadcasted
             # later by numpy when we multiply with the time.
             new_shape = [self.L]
-            new_shape.extend(shape)
+            new_shape.extend(self.shape)
             new_shape.append(1)
             self._phi_l = 2 * np.pi * self.RS.rand(*new_shape)
             self._psi_l = 2 * np.pi * self.RS.rand(*new_shape)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _generate_time_samples(self, NSamples):
+    def _generate_time_samples(self, num_samples=None):
         """
         Generate the time samples that will be used internally in
-        generate_channel_samples method.
+        `generate_more_samples` method.
 
         Parameters
         ----------
-        NSamples : int
+        num_samples : int
             Number of samples to be generated.
 
         Returns
         -------
-        t : Numpy Array
+        Numpy Array
             The numpy array with the time samples. The shape of the
-            generated time variable is "(1, A, NSamples)", where 'A' is has
+            generated time variable is "(1, A, num_samples)", where 'A' has
             as many '1's as the length of self._shape.
             Ex: If self._shape is None then the shape of the returned 't'
-            variable is (1, NSamples). If self._shape is (2,3) then the
-            shape of the returned 't' variable is (1, 1, 1, NSamples)
+            variable is (1, num_samples). If self._shape is (2,3) then the
+            shape of the returned 't' variable is (1, 1, 1, num_samples)
 
         Notes
         -----
-        Each time _generate_time_samples is called it will update
-        self._current_time to reflect the advance of the time after
+        Each time `_generate_time_samples` is called it will update
+        `_current_time` to reflect the advance of the time after
         generating the new samples.
         """
+        if num_samples is None:
+            num_samples = 1
+
         # Generate a 1D numpy with the time samples
         t = np.arange(
             self._current_time,  # Start time
-            NSamples * self.Ts + self._current_time,
+            num_samples * self.Ts + self._current_time,
             self.Ts * 1.0000000001)
 
         # Update the self._current_time variable with the value of the next
@@ -251,7 +344,7 @@ class JakesSampleGenerator(object):
         # appropriated shape for later use.
         if self._shape is not None:
             # Ex: If self._shape is (2,3) then the shape of the generated
-            # 't' variable should be (1,1,1,NSNSamples). The first
+            # 't' variable should be (1,1,1,NSnum_samples). The first
             # dimension correspond to the number of taps (that is, self.L),
             # the following two dimensions correspond to the dimensions in
             # self._shape, and the last dimension corresponds to the number
@@ -260,7 +353,7 @@ class JakesSampleGenerator(object):
             # Note that we use '1' for all dimensions except the last one
             # and numpy will replicate to the correct value later thanks to
             # broadcast.
-            t.shape = [1] * (len(self._shape) + 1) + [int(NSamples)]
+            t.shape = [1] * (len(self._shape) + 1) + [int(num_samples)]
         else:
             # Since self._shape is None, we only need one dimension for the
             # taps (that is, self.L) and another dimension for the actual
@@ -269,13 +362,13 @@ class JakesSampleGenerator(object):
             # Note that we use '1' for all dimensions except the last one
             # and numpy will replicate to the correct value later thanks to
             # broadcast.
-            t.shape = (1, NSamples)
+            t.shape = (1, num_samples)
 
         return t
 
-    def generate_channel_samples(self, num_samples):
+    def generate_more_samples(self, num_samples=None):
         """
-        Generate more samples for the Jakes model.
+        Generate next samples.
 
         Note that any subsequent call to this method continues from the
         point where the last call stopped. That is, if you generate 10
@@ -284,15 +377,9 @@ class JakesSampleGenerator(object):
 
         Parameters
         ----------
-        num_samples : int
-            Number of samples to be generated.
-
-        Returns
-        -------
-        h : Numpy array
-            The generated channel samples. The shape is in the form SHAPE x
-            num_samples, where SHAPE is a tuple with the shape provided in the
-            constructor of the JakesSampleGenerator class.
+        num_samples : int (optional)
+            Number of samples (with the provided shape) to generate. If not
+            provided it will be assumed to be 1.
 
         Notes
         -----
@@ -306,4 +393,4 @@ class JakesSampleGenerator(object):
              np.sum(np.exp(1j * (2 * np.pi * self.Fd
                                  * np.cos(self._phi_l) * t + self._psi_l)),
                     axis=0))
-        return h
+        self._samples = h

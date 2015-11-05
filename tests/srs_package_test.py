@@ -226,15 +226,15 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
         # Create a TDL channel object for each user
         tdlchannel1 = TdlChannel(jakes1,
-                                 COST259_TUx.tap_powers,
-                                 COST259_TUx.tap_delays)
+                                 tap_powers_dB=COST259_TUx.tap_powers_dB,
+                                 tap_delays=COST259_TUx.tap_delays)
         tdlchannel2 = TdlChannel(jakes2,
-                                 COST259_TUx.tap_powers,
-                                 COST259_TUx.tap_delays)
+                                 tap_powers_dB=COST259_TUx.tap_powers_dB,
+                                 tap_delays=COST259_TUx.tap_delays)
 
         # Compute the fading map for each user
-        fadingmap1 = tdlchannel1.get_fading_map(1)
-        fadingmap2 = tdlchannel2.get_fading_map(1)
+        fadingmap1 = tdlchannel1.generate_and_get_samples(1)
+        fadingmap2 = tdlchannel2.generate_and_get_samples(1)
 
         freq_resp_1 = tdlchannel1.get_channel_freq_response(fadingmap1, Nsc)
         H1 = freq_resp_1[:, 0]

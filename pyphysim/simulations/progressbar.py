@@ -224,7 +224,7 @@ class ProgressBarBase(object):
         """
         pass
 
-    def _perform_finalizations(self):
+    def _perform_finalizations(self):  # pragma: nocover
         """
         Perform any finalization (cleanings) after the progressbar stops.
 
@@ -278,7 +278,7 @@ class ProgressBarBase(object):
         """
         raise NotImplementedError("Implement this method in a subclass")
 
-    def _display_current_progress(self, ):
+    def _display_current_progress(self, ):  # pragma: nocover
         """
         Refresh the progress representation.
 
