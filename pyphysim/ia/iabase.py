@@ -918,7 +918,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         return SINR_k
 
     @abstractmethod
-    def solve(self, Ns, P=None):
+    def solve(self, Ns, P=None):  # pragma: no cover
         """
         Find the IA solution.
 

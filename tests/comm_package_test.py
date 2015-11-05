@@ -799,6 +799,13 @@ class EnhancedBDTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now with the Fixed Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
+        # The 'fixed' metric requires that metric_func_extra_args_dict is
+        # provided and has the 'num_streams' key. If this is not the case
+        # an exception is raised
+        with self.assertRaises(AttributeError):
+            enhancedBD_obj.set_ext_int_handling_metric('fixed')
+
+        # Now let's test the fixed metric
         num_streams = 1
         enhancedBD_obj.set_ext_int_handling_metric(
             'fixed',

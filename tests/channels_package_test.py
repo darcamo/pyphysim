@@ -457,6 +457,7 @@ class TdlChannelTestCase(unittest.TestCase):
             tap_delays=fading.COST259_TUx.tap_delays)
 
     def test_constructor_and_num_taps(self):
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The constructor provided the tap powers ande delays. The
         # TdlChannel constructor used that, as well as the sampling time Ts
         # from the jakes object and created a custom channel profile
@@ -468,7 +469,9 @@ class TdlChannelTestCase(unittest.TestCase):
 
         self.assertEqual(self.tdlchannel.num_taps, 15)
         self.assertEqual(tdlchannel2.num_taps, 15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # This one has delays 10 times greatter then the delays in the TU
         # channel profile. This means that it will have more discretized
         # taps
@@ -479,6 +482,41 @@ class TdlChannelTestCase(unittest.TestCase):
 
         self.assertEqual(tdlchannel3.num_taps, 20)
         self.assertEqual(tdlchannel3.num_taps_with_padding, 658)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if an exception is raised if we provide Ts and it is
+        # different from the one in the jakes object
+        with self.assertRaises(RuntimeError):
+            fading.TdlChannel(
+                self.jakes,
+                tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+                tap_delays=10*fading.COST259_TUx.tap_delays,
+                Ts=0.002)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if an exception is raised if we provide an already
+        # discretized channel profile, but its sample time is different
+        # from the one in the jakes sample generator.
+        tu_discretized = fading.COST259_TUx.get_discretize_profile(0.002)
+        with self.assertRaises(RuntimeError):
+            fading.TdlChannel(
+                self.jakes,
+                channel_profile=tu_discretized)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if an exception is raised if we try to create a TdlChannel
+        # object passing the tap powers and delays but not the Ts and the
+        # sample generator does not have the Ts attribute.
+        rayleigh_generator = fading_generators.RayleighSampleGenerator()
+        with self.assertRaises(RuntimeError):
+            fading.TdlChannel(
+                    rayleigh_generator,
+                    tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+                    tap_delays=10*fading.COST259_TUx.tap_delays)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_get_fading_map(self):
         # COST259_TUx profile has 20 taps. The TdlChannel class should have
@@ -3466,6 +3504,14 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
                                   93.1102472958)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # test calc_path_loss (linear scale)
+        expected_pl_linear = dB2Linear(-expected_pl_in_dB)
+        np.testing.assert_array_almost_equal(
+            self.pl.calc_path_loss([1.2, 1.4, 1.6]),
+            expected_pl_linear)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_calc_which_distance(self):
         # Test which_distance and which_distance_dB for a single value.
         self.assertAlmostEqual(self.pl.which_distance(4.88624535312e-10),
@@ -3562,6 +3608,12 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
 
         fc_GHz = 0.9
         d = 10.0
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if an exception is raised if num_walls is negative
+        with self.assertRaises(ValueError):
+            self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=-5)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test NLOS case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Simple test

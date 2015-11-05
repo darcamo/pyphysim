@@ -323,7 +323,7 @@ class SimulationParameters(object):
         """
         return self.parameters[name]
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         def modify_name(p_name):
             """Add an * in p_name if it is set to be unpacked
 
@@ -837,7 +837,8 @@ class SimulationParameters(object):
 
         return params
 
-    def save_to_hdf5_group(self, group):
+    # TODO: finish implementing this (and remove the "pragma no cover")
+    def save_to_hdf5_group(self, group):  # pragma: no cover
         """
         Save the contents of the SimulationParameters object into an HDF5
         group.
@@ -882,7 +883,8 @@ class SimulationParameters(object):
         # Save the _unpack_index member variable as an attribute of the group.
         group.attrs.create('_unpack_index', data=self._unpack_index)
 
-    def save_to_hdf5_file(self, filename, attrs=None):
+    # TODO: finish implementing this (and remove the "pragma no cover")
+    def save_to_hdf5_file(self, filename, attrs=None):  # pragma: no cover
         """
         Save the SimulationParameters object to an hdf5 file.
 
@@ -952,8 +954,9 @@ class SimulationParameters(object):
     #     pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(
     #         self._unpacked_parameters_set))
 
+    # TODO: finish implementing this (and remove the "pragma no cover")
     @staticmethod
-    def load_from_hdf5_group(group):
+    def load_from_hdf5_group(group):  # pragma: no cover
         """
         Load the simulation parameters from an HDF5 group.
 
@@ -992,8 +995,9 @@ class SimulationParameters(object):
         params._unpack_index = group.attrs['_unpack_index']
         return params
 
+    # TODO: finish implementing this (and remove the "pragma no cover")
     @staticmethod
-    def load_from_hdf5_file(filename):
+    def load_from_hdf5_file(filename):  # pragma: no cover
         """
         Load the simulation parameters from an HDF5 file.
 

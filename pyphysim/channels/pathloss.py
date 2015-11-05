@@ -269,7 +269,7 @@ class PathLossBase(object):
                 raise RuntimeError(msg.format(d))
         return PL
 
-    def calc_path_loss(self, d, **kargs):
+    def calc_path_loss(self, d, **kargs):  # pragma: no cover
         """
         Calculates the path loss (linear scale) for a given distance (in Km).
 
@@ -418,7 +418,7 @@ class PathLossIndoorBase(PathLossBase):
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args,
                                                       'meters')
 
-    def calc_path_loss_dB(self, d, **kargs):
+    def calc_path_loss_dB(self, d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in meters).
 
@@ -439,7 +439,7 @@ class PathLossIndoorBase(PathLossBase):
         """
         return super(PathLossIndoorBase, self).calc_path_loss_dB(d, **kargs)
 
-    def calc_path_loss(self, d, **kargs):
+    def calc_path_loss(self, d, **kargs):  # pragma: no cover
         """
         Calculates the path loss (linear scale) for a given distance (in
         meters).
@@ -459,7 +459,7 @@ class PathLossIndoorBase(PathLossBase):
         pl = conversion.dB2Linear(-self.calc_path_loss_dB(d, **kargs))
         return pl
 
-    def which_distance(self, pl):
+    def which_distance(self, pl):  # pragma: no cover
         """
         Calculates the required distance (in meters) to achieve the given path
         loss. It is the inverse of the calc_path_loss function.
@@ -623,24 +623,6 @@ class PathLossOutdoorBase(PathLossBase):
         pl = conversion.dB2Linear(-self.calc_path_loss_dB(d))
         return pl
 
-    def which_distance(self, pl):
-        """
-        Calculates the required distance (in Km) to achieve the given path
-        loss. It is the inverse of the calc_path_loss function.
-
-        Parameters
-        ----------
-        pl : float or numpy array
-            Path loss (in linear scale).
-
-        Returns
-        -------
-        d : float or numpy array
-            Distance(s) that will yield the path loss `pl`.
-        """
-        d = self.which_distance_dB(-conversion.linear2dB(pl))
-        return d
-
 
 class PathLossGeneral(PathLossOutdoorBase):
     """
@@ -675,11 +657,12 @@ class PathLossGeneral(PathLossOutdoorBase):
         C : float
             The constant `C` in the path loss formula.
         """
-        PathLossBase.__init__(self)
+        super(PathLossGeneral, self).__init__()
+
         self._n = n
         self._C = C
 
-    def _get_latex_repr(self):
+    def _get_latex_repr(self):  # pragma: no cover
         """
         Get the Latex representation (equation) for the PathLossGeneral class.
 
@@ -691,7 +674,7 @@ class PathLossGeneral(PathLossOutdoorBase):
         return '$PL = {0} \\log_{{10}} (d) + {1}$'.format(
             10 * self.n, self.C)
 
-    def _repr_latex_(self):
+    def _repr_latex_(self):  # pragma: no cover
         """
         Get a Latex representation of the PathLossGeneral class.
 
@@ -701,25 +684,25 @@ class PathLossGeneral(PathLossOutdoorBase):
         return "PathLossGeneral (n={0}, C={1}): {2}".format(
             self.n, self.C, self._get_latex_repr())
 
-    @property
-    def n(self):
-        """Get method for the n property."""
-        return self._n
+    # @property
+    # def n(self):
+    #     """Get method for the n property."""
+    #     return self._n
 
-    @n.setter
-    def n(self, value):
-        """Set method for the n property."""
-        self._n = value
+    # @n.setter
+    # def n(self, value):
+    #     """Set method for the n property."""
+    #     self._n = value
 
-    @property
-    def C(self):
-        """Get method for the C property."""
-        return self._C
+    # @property
+    # def C(self):
+    #     """Get method for the C property."""
+    #     return self._C
 
-    @C.setter
-    def C(self, value):
-        """Set method for the C property."""
-        self._C = value
+    # @C.setter
+    # def C(self, value):
+    #     """Set method for the C property."""
+    #     self._C = value
 
     def which_distance_dB(self, PL):
         """
@@ -844,7 +827,7 @@ class PathLossFreeSpace(PathLossGeneral):
         self._fc = fc  # Frequency of the central carrier (in MHz)
         self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
 
-    def _repr_latex_(self):
+    def _repr_latex_(self):  # pragma: no cover
         """
         Get a Latex representation of the PathLossFreeSpace class.
 
@@ -867,7 +850,7 @@ class PathLossFreeSpace(PathLossGeneral):
         self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
 
     @property
-    def fc(self):
+    def fc(self):  # pragma: no cover
         """Get method for the fc property."""
         return self._fc
 
@@ -934,7 +917,7 @@ class PathLoss3GPP1(PathLossGeneral):
         # super(PathLossFreeSpace, self).__init__()
         PathLossGeneral.__init__(self, n=3.76, C=128.1)
 
-    def _repr_latex_(self):
+    def _repr_latex_(self):  # pragma: no cover
         """
         Get a Latex representation of the PathLossFreeSpace class.
 
@@ -974,7 +957,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         """Set method for the fc property."""
         self._fc = value
 
-    def _repr_latex_(self):
+    def _repr_latex_(self):  # pragma: no cover
         """
         Get a Latex representation of the PathLossMetisPS7 class.
 
@@ -984,8 +967,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         return "PathLossMetisPS7 (fc={0}):\n{1}".format(
             self.fc, self.get_latex_repr())
 
-    # noinspection PyMethodMayBeStatic
-    def get_latex_repr(self, num_walls=None):
+    def get_latex_repr(self, num_walls=None):  # pragma: no cover
         """
         Get the Latex representation (equation) for the PathLossGeneral class.
 
@@ -1200,7 +1182,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
     def which_distance_dB(self, PL):
         pass
 
-    def _calc_deterministic_path_loss_dB(self, d, num_walls=0):
+    def _calc_deterministic_path_loss_dB(self, d, num_walls=0):  # pragma: no cover
         return self._calc_PS7_path_loss_dB_same_floor(d, num_walls)
 
 
