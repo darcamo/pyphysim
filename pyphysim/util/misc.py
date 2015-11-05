@@ -1013,8 +1013,7 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     Examples
     --------
     >>> name = "something {value1} - {value2} something else {value3}"
-    >>> dictionary = {'value1':'bla bla', 'value2':np.array(
-    >>> [5, 10, 15, 20, 25, 30]), 'value3': 76}
+    >>> dictionary = {'value1':'bla bla', 'value2':np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
     >>> replace_dict_values(name, dictionary, True)
     'something bla bla - [5_(5)_30] something else 76'
     """

@@ -462,7 +462,8 @@ class TdlChannelTestCase(unittest.TestCase):
         # from the jakes object and created a custom channel profile
         self.assertAlmostEqual(self.tdlchannel._channel_profile.Ts, self.Ts)
 
-        tdlchannel2 = fading.TdlChannel(self.jakes, fading.COST259_TUx)
+        tdlchannel2 = fading.TdlChannel(self.jakes,
+                                        channel_profile=fading.COST259_TUx)
         self.assertAlmostEqual(tdlchannel2._channel_profile.Ts, self.Ts)
 
         self.assertEqual(self.tdlchannel.num_taps, 15)
@@ -507,7 +508,8 @@ class TdlChannelTestCase(unittest.TestCase):
         # Create the jakes object that will be passed to TdlChannel
         jakes2 = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=(2, 4))
-        tdlchannel2 = fading.TdlChannel(jakes2, fading.COST259_TUx)
+        tdlchannel2 = fading.TdlChannel(jakes2,
+                                        channel_profile=fading.COST259_TUx)
         # COST259_TUx profile has 20 taps. The TdlChannel class should have
         # changed the shape of the jakes object to [20]
         self.assertEqual(jakes2.shape, (15,2,4))
@@ -542,7 +544,8 @@ class TdlChannelTestCase(unittest.TestCase):
         # Create the jakes object that will be passed to TdlChannel
         jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
 
-        tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
+        tdlchannel = fading.TdlChannel(jakes,
+                                       channel_profile=fading.COST259_TUx)
 
         fading_map = tdlchannel.generate_and_get_samples(10)
         full_fading_map = tdlchannel.include_the_zeros_in_fading_map(fading_map)
@@ -574,7 +577,8 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # Create the jakes object that will be passed to TdlChannel
         jakes = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=None)
-        tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
+        tdlchannel = fading.TdlChannel(jakes,
+                                       channel_profile=fading.COST259_TUx)
 
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])

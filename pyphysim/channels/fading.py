@@ -261,6 +261,12 @@ class TdlChannel(object):
     """
 
     # TODO: change jakes_obj to a generic fading generator
+
+    # Note: It would be better to have only the first argument as
+    # positional argument and all the others as keyword only arguments. We
+    # can do this in Python3 by adding ",*," after the first positional
+    # argument thus making all the other arguments keyword only. However,
+    # this is not valid in Python2.
     def __init__(self, jakes_obj, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -286,7 +292,10 @@ class TdlChannel(object):
             # tap_powers_dB must be provided and we will use them to create
             # the channel profile object
             channel_profile = TdlChannelProfile(tap_powers_dB, tap_delays)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        else:
+            assert(isinstance(channel_profile, TdlChannelProfile)),\
+                'channel_profile must be an obj of the TdlChannelProfile class'
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The channel profile is not discretized yet. We need to discretize it.

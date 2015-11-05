@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
 from pyphysim.channels.fading import COST259_TUx, TdlChannel
-from pyphysim.channels.fading_generators import JakesSampleGeneratorOLD, JakesSampleGenerator
+from pyphysim.channels.fading_generators import JakesSampleGenerator
 
 if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -83,16 +83,16 @@ if __name__ == '__main__':
 
             tdlchannels_all_links[ueIdx, anIdx] = TdlChannel(
                 jakes_all_links[ueIdx, anIdx],
-                COST259_TUx.tap_powers_dB,
-                COST259_TUx.tap_delays)
+                tap_powers_dB=COST259_TUx.tap_powers_dB,
+                tap_delays=COST259_TUx.tap_delays)
 
             fading_maps[ueIdx, anIdx] \
                 = tdlchannels_all_links[ueIdx, anIdx].generate_and_get_samples(
                 num_samples)
 
-            freq_responses[ueIdx, anIdx] = tdlchannels_all_links[
-                                               ueIdx, anIdx].get_channel_freq_response(
-                fading_maps[ueIdx, anIdx], Nsc)[:, :, :, 0]
+            freq_responses[ueIdx, anIdx] = \
+                tdlchannels_all_links[ueIdx, anIdx].get_channel_freq_response(
+                    fading_maps[ueIdx, anIdx], Nsc)[:, :, :, 0]
 
     # xxxxxxxxxx Channels in downlink direction xxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Dimension: `Nsc x numUeAnt x numAnAnt`
