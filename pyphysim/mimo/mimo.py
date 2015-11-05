@@ -533,7 +533,7 @@ class Blast(MimoBase):
         """
         Nt = channel.shape[1]
 
-        if noise_var is None:
+        if noise_var is None:  # pragma: nocover
             noise_var = 0.0
 
         if noise_var > 0:
@@ -1041,7 +1041,7 @@ class Alamouti(MimoBase):
         MimoBase.__init__(self, channel)
 
     @staticmethod
-    def _calc_precoder(channel):
+    def _calc_precoder(channel):  # pragma: nocover
         """
         Not defined.
 
@@ -1051,13 +1051,13 @@ class Alamouti(MimoBase):
         raise RuntimeError("Alamouti scheme has no linear precoder")
 
     @staticmethod
-    def _calc_receive_filter(channel, noise_var=None):
+    def _calc_receive_filter(channel, noise_var=None):  # pragma: nocover
         """
         Not defined.
 
-        There is no linear receive filter for the Almost scheme that can be
-        directly applied to the received data. Thus, an exception is called
-        if this method is ever called.
+        There is no linear receive filter for the Alamouti scheme that can
+        be directly applied to the received data. Thus, an exception is
+        called if this method is ever called.
         """
         raise RuntimeError("Alamouti scheme has no linear receive filter that"
                            " can be directly applied to the received data")

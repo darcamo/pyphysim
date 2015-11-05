@@ -22,6 +22,7 @@ except NameError:               # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+import warnings
 import unittest
 import doctest
 import numpy as np
@@ -124,6 +125,17 @@ class BlastTestCase(unittest.TestCase):
         """Called before each test."""
         self.blast_object = Blast()
 
+    def test_set_channel_matrix(self):
+        # Test if a warning is raised when the number of transmit antennas
+        # is greater then the number of receive antennas
+        #
+        # For that we capture the warnings ...
+        with warnings.catch_warnings(record=True) as w:
+            # then we call the set_channel_matrix method
+            self.blast_object.set_channel_matrix(np.random.randn(3, 4))
+            # and we test if captured 1 warning.
+            self.assertEqual(len(w), 1, msg='Warning was not raised')
+
     def test_getNumberOfLayers(self):
         channel = np.eye(3)
         self.blast_object.set_channel_matrix(channel)
@@ -151,6 +163,16 @@ class BlastTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             self.blast_object.encode(data),
             expected_encoded_data)
+
+    def test_set_noise_var(self):
+        self.blast_object.set_noise_var(0.001)
+        self.assertAlmostEqual(self.blast_object._noise_var, 0.001)
+
+        self.blast_object.set_noise_var(None)
+        self.assertAlmostEqual(self.blast_object._noise_var, 0.0)
+
+        with self.assertRaises(ValueError):
+            self.blast_object.set_noise_var(-0.001)
 
     def test_decode(self):
         data = np.r_[0:15]
@@ -372,6 +394,16 @@ class MRCTestCase(unittest.TestCase):
         decoded_data3 = self.mrc_object.decode(received_data3)
         np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # test with a single stream
+        self.mrc_object.set_noise_var(None)  # This should use the ZF filter
+        channel = randn_c(4)  # 4 receive antennas
+        self.mrc_object.set_channel_matrix(channel)
+        encoded_data2 = self.mrc_object.encode(data)
+        received_data4 = np.dot(channel[:,np.newaxis], encoded_data2)
+        decoded_data4 = self.mrc_object.decode(received_data4)
+        np.testing.assert_array_almost_equal(decoded_data4, data)
+
     def test_calc_post_processing_SINRs(self):
         Nr = 3
         Nt = 1
@@ -436,6 +468,14 @@ class SVDMimoTestCase(unittest.TestCase):
             expected_encoded_data, encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxx Test if an exception is raised for wrong size xxxxxxxxxxxxx
+        # The exception is raised if the input array size is not a multiple
+        # of the number of transmit antennas
+        data2 = np.r_[0:15*Nt+1]
+        with self.assertRaises(ValueError):
+            self.svdmimo_object.encode(data2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_decode(self):
         # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
@@ -498,6 +538,14 @@ class GMDMimoTestCase(unittest.TestCase):
         expected_encoded_data = W.dot(data.reshape(Nr, -1))
         np.testing.assert_array_almost_equal(
             expected_encoded_data, encoded_data)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test if an exception is raised for wrong size xxxxxxxxxxxxx
+        # The exception is raised if the input array size is not a multiple
+        # of the number of transmit antennas
+        data2 = np.r_[0:15*Nt+1]
+        with self.assertRaises(ValueError):
+            self.gmdmimo_object.encode(data2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
