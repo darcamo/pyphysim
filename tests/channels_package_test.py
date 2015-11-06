@@ -27,7 +27,8 @@ from pyphysim import channels
 import math
 import numpy as np
 from scipy.linalg import block_diag
-from pyphysim.channels import noise, fading_generators, fading, multiuser, pathloss
+from pyphysim.channels import noise, fading_generators, fading, singleuser, \
+    multiuser, pathloss
 from pyphysim.comm import blockdiagonalization
 from pyphysim.ia.algorithms import ClosedFormIASolver
 from pyphysim.util.conversion import single_matrix_to_matrix_of_matrices, dB2Linear
@@ -651,6 +652,147 @@ class TdlChannelTestCase(unittest.TestCase):
         signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
         received_signal = self.tdlchannel.corrupt_data(signal)
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
+
+        # Compute the expected received signal
+        # For this Ts we have 15 discretized taps. The indexes of the 15
+        # taps are:
+        # [ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]
+        np.testing.assert_array_equal(
+            last_impulse_response.tap_indexes_sparse,
+            np.array([ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+
+        # Including zero pading, the impulse response has 67 taps. That
+        # means the channel memory is equal to 66
+        channel_memory = 66
+        expected_received_signal = np.zeros(channel_memory + num_samples, dtype=complex)
+
+        # Let's compute the expected received signal
+        tap_values_sparse = last_impulse_response.tap_values_sparse
+        expected_received_signal[0:0+num_samples] += signal * tap_values_sparse[0]
+        expected_received_signal[7:7+num_samples] += signal * tap_values_sparse[1]
+        expected_received_signal[16:16+num_samples] += signal * tap_values_sparse[2]
+        expected_received_signal[21:21+num_samples] += signal * tap_values_sparse[3]
+        expected_received_signal[27:27+num_samples] += signal * tap_values_sparse[4]
+        expected_received_signal[38:38+num_samples] += signal * tap_values_sparse[5]
+        expected_received_signal[40:40+num_samples] += signal * tap_values_sparse[6]
+        expected_received_signal[41:41+num_samples] += signal * tap_values_sparse[7]
+        expected_received_signal[47:47+num_samples] += signal * tap_values_sparse[8]
+        expected_received_signal[50:50+num_samples] += signal * tap_values_sparse[9]
+        expected_received_signal[56:56+num_samples] += signal * tap_values_sparse[10]
+        expected_received_signal[58:58+num_samples] += signal * tap_values_sparse[11]
+        expected_received_signal[60:60+num_samples] += signal * tap_values_sparse[12]
+        expected_received_signal[63:63+num_samples] += signal * tap_values_sparse[13]
+        expected_received_signal[66:66+num_samples] += signal * tap_values_sparse[14]
+
+        # Check if the received singal is correct
+        np.testing.assert_array_almost_equal(expected_received_signal,
+                                             received_signal)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Singleuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SuSisoChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        self.Fd = 5     # Doppler frequency (in Hz)
+        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        self.jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+
+        self.susisochannel = singleuser.SuSisoChannel(
+            self.jakes, channel_profile=fading.COST259_TUx)
+
+
+    def test_constructor(self):
+        # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a SuSisoChannel channel only passing the fading
+        # generator. Note that in this case the channel will be flat,
+        # containing only one tap with power 0dB and delay 0.
+        jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+        suchannel = singleuser.SuSisoChannel(jakes)
+        self.assertEqual(suchannel.num_taps, 1)
+        np.testing.assert_array_almost_equal(
+            suchannel._channel_profile.tap_powers_linear,
+            1.0)
+        np.testing.assert_array_almost_equal(
+            suchannel._channel_profile.tap_delays,
+            0.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Frequency Selective channel xxxxxxxxxxxxxxxxxxxxxxxxxx
+        jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+        suchannel = singleuser.SuSisoChannel(jakes,
+                                             channel_profile=fading.COST259_TUx)
+        self.assertEqual(suchannel.num_taps, 15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_set_pathloss(self):
+        # Test if an exception is raised if we set a negative pathloss
+        with self.assertRaises(ValueError):
+            self.susisochannel.set_pathloss(-0.003)
+
+        # Test if an exception is raised if we set a value greater than 1
+        with self.assertRaises(ValueError):
+            self.susisochannel.set_pathloss(1.03)
+
+        # Now set to some positive value between 0 and 1
+        self.susisochannel.set_pathloss(0.003)
+        self.assertAlmostEqual(self.susisochannel._pathloss_value, 0.003, delta=1e-20)
+
+        self.susisochannel.set_pathloss(1e-12)
+        self.assertAlmostEqual(self.susisochannel._pathloss_value, 1e-12, delta=1e-20)
+
+    def test_corrupt_data(self):
+        # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
+        signal = np.array([1.])
+
+        num_samples = 1
+        received_signal = self.susisochannel.corrupt_data(signal)
+
+        # Impulse response used to transmit the signal
+        last_impulse_response = self.susisochannel.get_last_impulse_response()
+
+        # Since only one sample was sent and it is equal to 1, then the
+        # received signal will be equal to the full_fading_map
+        np.testing.assert_almost_equal(
+            last_impulse_response.tap_values.flatten(),
+            received_signal)
+
+        # xxxxxxxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        pathloss = 0.0025
+        self.susisochannel.set_pathloss(pathloss)
+
+        received_signal = self.susisochannel.corrupt_data(signal)
+        # get_last_impulse_response does not include pathloss effect
+        last_impulse_response = self.susisochannel.get_last_impulse_response()
+        np.testing.assert_almost_equal(
+            math.sqrt(pathloss) * last_impulse_response.tap_values.flatten(),
+            received_signal)
+
+        # Disable pathloss for the next tests
+        self.susisochannel.set_pathloss(None)
+
+        # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
+        num_samples = 10
+        signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
+        received_signal = self.susisochannel.corrupt_data(signal)
+        last_impulse_response = self.susisochannel.get_last_impulse_response()
 
         # Compute the expected received signal
         # For this Ts we have 15 discretized taps. The indexes of the 15
