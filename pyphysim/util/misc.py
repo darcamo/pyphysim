@@ -979,6 +979,7 @@ def get_mixed_range_representation(array, filename_mode=False):
     return ','.join(out)
 
 
+# noinspection PyPep8
 def replace_dict_values(name, dictionary, filename_mode=False):
     """
     Perform the replacements in `name` with the value of dictionary[name].

@@ -672,7 +672,7 @@ class PathLossGeneral(PathLossOutdoorBase):
            PL = 10 n \\log_{10} (d) + C
         """
         return '$PL = {0} \\log_{{10}} (d) + {1}$'.format(
-            10 * self.n, self.C)
+            10 * self._n, self._C)
 
     def _repr_latex_(self):  # pragma: no cover
         """
@@ -682,7 +682,7 @@ class PathLossGeneral(PathLossOutdoorBase):
         notebook.
         """
         return "PathLossGeneral (n={0}, C={1}): {2}".format(
-            self.n, self.C, self._get_latex_repr())
+            self._n, self._C, self._get_latex_repr())
 
     # @property
     # def n(self):
@@ -967,7 +967,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
         return "PathLossMetisPS7 (fc={0}):\n{1}".format(
             self.fc, self.get_latex_repr())
 
-    def get_latex_repr(self, num_walls=None):  # pragma: no cover
+    @staticmethod
+    def get_latex_repr(num_walls=None):  # pragma: no cover
         """
         Get the Latex representation (equation) for the PathLossGeneral class.
 
@@ -1182,7 +1183,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
     def which_distance_dB(self, PL):
         pass
 
-    def _calc_deterministic_path_loss_dB(self, d, num_walls=0):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d,
+                                         num_walls=0):  # pragma: no cover
         return self._calc_PS7_path_loss_dB_same_floor(d, num_walls)
 
 
