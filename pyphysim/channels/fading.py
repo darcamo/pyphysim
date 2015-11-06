@@ -372,17 +372,75 @@ class TdlImpulseResponse(object):
             self._get_samples_including_the_extra_zeros(), fft_size, axis=0)
         return freq_response
 
+    # noinspection PyUnresolvedReferences
     def plot_impulse_response(self):  # pragma: no cover
         """
-        Visualize the impulse response in a 3D plot.
+        Plot the impulse response.
         """
-        raise NotImplementedError("Implement-me")
+        import matplotlib.pyplot as plt
+        import mpl_toolkits.mplot3d.art3d as art3d
 
-    def plot_frequency_response(self):  # pragma: no cover
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        num_taps_with_padding = self._channel_profile.num_taps_with_padding
+        x = np.arange(num_taps_with_padding)  # 0 -> 66
+
+        for i in range(self.num_samples):
+            z = np.abs(self.tap_values[:, i])
+            ax.plot(x, [i] * num_taps_with_padding, z)
+
+        # for y_ in y:
+        #     z = np.abs(self.tap_values[:, y_])
+        #     for x_, z_ in zip(x, z):
+        #         line = Line3D(*zip((x_, y_, 0), (x_, y_, z_)),
+        #                       marker='o', markevery=(1, 1))
+        #         ax.add_line(line)
+
+        ax.set_xlabel('Taps (delay domain)')
+        ax.set_ylabel('Time Domain')
+        ax.set_zlabel('Channel Amplitude')
+
+        ax.set_xlim3d(0, num_taps_with_padding)
+        ax.set_ylim3d(0, self.num_samples)
+        ax.set_zlim3d(np.abs(self.tap_values).min(),
+                      np.abs(self.tap_values).max())
+
+        plt.show()
+
+    # noinspection PyUnresolvedReferences
+    def plot_frequency_response(self, fft_size):  # pragma: no cover
         """
-        Visualize the frequency response in a 3D plot.
+        Plot the frequency response.
+
+        Parameters
+        ----------
+        fft_size : int
+            The size of the FFT to be applied.
         """
-        raise NotImplementedError("Implement-me")
+        import matplotlib.pyplot as plt
+        import mpl_toolkits.mplot3d.art3d as art3d
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        x = np.arange(fft_size)
+        freq_response = self.get_freq_response(fft_size)
+
+        for i in range(self.num_samples):
+            z = np.abs(freq_response[:, i])
+            ax.plot(x, [i] * fft_size, z)
+
+        ax.set_xlabel('Taps (delay domain)')
+        ax.set_ylabel('Time Domain')
+        ax.set_zlabel('Channel Amplitude')
+
+        ax.set_xlim3d(0, fft_size)
+        ax.set_ylim3d(0, self.num_samples)
+        ax.set_zlim3d(np.abs(freq_response).min(),
+                      np.abs(freq_response).max())
+
+        plt.show()
 
 
 class TdlChannel(object):

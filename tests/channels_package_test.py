@@ -506,6 +506,13 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(freq_response,
                                              expected_frequency_response)
 
+    def test_plot_impulse_response(self):
+        # self.impulse_response.plot_impulse_response()
+        pass
+
+    def test_plot_frequency_response(self):
+        # self.impulse_response.plot_frequency_response(300)
+        pass
 
 
 class TdlChannelTestCase(unittest.TestCase):
