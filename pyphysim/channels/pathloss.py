@@ -1344,8 +1344,8 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
             # Suburban and ruran areas (f in MHz
             # $a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$
-            a = ((1.1 * math.log10(self.fc) - 0.7)
-                 * self.hms - 1.56 * math.log10(self.fc) + 0.8)
+            a = ((1.1 * math.log10(self.fc) - 0.7) *
+                 self.hms - 1.56 * math.log10(self.fc) + 0.8)
         elif self.area_type == 'large city':
             # Note: The category of "large city" used by Hata implies
             # building heights greater than 15m.
@@ -1379,8 +1379,8 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         elif self.area_type == 'open':
             # Value for 'open' areas
             # $K = 4.78 (\log(f))^2 - 18.33 \log(f) + 40.94$
-            K = (4.78 * (math.log10(self.fc)**2) - 18.33 * math.log10(self.fc)
-                 + 40.94)
+            K = (4.78 * (math.log10(self.fc)**2) - 18.33 * math.log10(self.fc) +
+                 40.94)
         elif self.area_type == 'suburban':
             # Value for 'suburban' areas
             # $K = 2 [\log(f/28)^2] + 5.4$

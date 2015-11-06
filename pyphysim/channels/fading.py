@@ -4,10 +4,8 @@
 import math
 import numpy as np
 
-from pyphysim.channels import fading_generators
+from . import fading_generators
 from ..util.conversion import dB2Linear, linear2dB
-
-# TODO: change this module name to "singleuser.py"
 
 
 class TdlChannelProfile(object):
@@ -28,10 +26,10 @@ class TdlChannelProfile(object):
     Note that the tap powers and delays are not necessarily `discretized`
     to some sampling interval.
 
-    Ex:
-        tdlchannel = TdlChannel(jakes_obj,
-                                COST259_TUx.tap_powers,
-                                COST259_TUx.tap_delays)
+    Examples
+    --------
+    >>> jakes_generator = fading_generators.JakesSampleGenerator(Ts=3.25e-8)
+    >>> tdlchannel = TdlChannel(jakes_generator, channel_profile=COST259_TUx)
     """
 
     def __init__(self, tap_powers_dB, tap_delays, name='custom'):
@@ -183,7 +181,7 @@ class TdlChannelProfile(object):
         Parameters
         ----------
         Ts : float
-            The sampling time (used in the Jakes object)
+            The sampling time.
 
         Returns
         -------
@@ -453,9 +451,10 @@ class TdlChannel(object):
 
     Parameters
     ----------
-    jakes_obj : JakesSampleGenerator object
-        The instance of JakesSampleGenerator that will be used to generate
-        the samples.
+    fading_generator : Subclass of FadingSampleGenerator
+        The instance of a fading generator in the `fading_generators` module.
+        It should be a subclass of FadingSampleGenerator. The fading
+        generator will be used to generate the channel samples.
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : numpy real array
@@ -464,24 +463,20 @@ class TdlChannel(object):
     tap_delays : numpy real array
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-
-    # TODO: Check if jakes_obj can be another fading generator. Change the
-    # name if yes.
-
     # Note: It would be better to have only the first argument as
     # positional argument and all the others as keyword only arguments. We
     # can do this in Python3 by adding ",*," after the first positional
     # argument thus making all the other arguments keyword only. However,
     # this is not valid in Python2.
-    def __init__(self, jakes_obj, channel_profile=None,
+    def __init__(self, fading_generator, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if isinstance(jakes_obj, fading_generators.JakesSampleGenerator):
+        if isinstance(fading_generator, fading_generators.JakesSampleGenerator):
             if Ts is None:
                 # Ts was not provided, but the fading generator has
                 # it. Let's use it then.
-                Ts = jakes_obj.Ts
-            elif Ts != jakes_obj.Ts:
+                Ts = fading_generator.Ts
+            elif Ts != fading_generator.Ts:
                 # Ts was provided and the fading generator also has it, but
                 # they are not the same value. Let's raise an exception
                 raise RuntimeError(
@@ -523,12 +518,12 @@ class TdlChannel(object):
         # Finally save the channel profile to a member attribute
         self._channel_profile = channel_profile
 
-        if jakes_obj.shape is None:
-            jakes_obj.shape = (self.num_taps,)
+        if fading_generator.shape is None:
+            fading_generator.shape = (self.num_taps,)
         else:
-            # Note that jakes_obj.shape must be a tuple
-            jakes_obj.shape = (self.num_taps,) + jakes_obj.shape
-        self._jakes_obj = jakes_obj
+            # Note that fading_generator.shape must be a tuple
+            fading_generator.shape = (self.num_taps,) + fading_generator.shape
+        self._fading_generator = fading_generator
 
         # Last generated impulse response. This will be set when the
         # _generate_impulse_response method is called
@@ -562,14 +557,14 @@ class TdlChannel(object):
         The number of discretized taps of the generated impulse response will
         depend on the channel delay profile (the tap_delays passed during
         creation of the TdlChannel object) as well as on the sampling
-        interval (configured in the jakes_obj passed to the TdlChannel object).
+        interval.
 
         As an example, the COST259 TU channel profile has 20 different taps
         where the last one has a delay equal to 2.14 microseconds. If the
-        jakes_obj is configured with a sampling time equal to 3.25e-08 then
-        the discretized channel will have more than 60 taps (including the
-        zeros padding), where only 15 taps are different from zero. These
-        15 taps are what is returned by this method.
+        sampling interval is configured as 3.25e-08 then the discretized
+        channel will have more than 60 taps ( including the zeros padding),
+        where only 15 taps are different from zero. These 15 taps are what is
+        returned by this method.
 
         Alternatively, with a sampling time of 1e-6 you will end up with
         only 3 discretized taps.
@@ -579,8 +574,8 @@ class TdlChannel(object):
         num_samples : int
             The number of samples to generate (for each tap).
         """
-        self._jakes_obj.generate_more_samples(num_samples)
-        jakes_samples = self._jakes_obj.get_samples()
+        self._fading_generator.generate_more_samples(num_samples)
+        channel_samples = self._fading_generator.get_samples()
 
         # xxxxxxxxxx Apply the power to each tap xxxxxxxxxxxxxxxxxxxxxxxxxx
         # Note that here we only apply the power to the taps. The delays
@@ -588,12 +583,12 @@ class TdlChannel(object):
 
         # Note that self._tap_linear_powers_discretized has a single
         # dimension. We need to add singleton dimensions as necessary
-        # before we multiply it by jakes_samples so that broadcasting
+        # before we multiply it by channel_samples so that broadcasting
         # works.
         new_shape = [self.num_taps]
-        new_shape.extend([1] * (jakes_samples.ndim - 1))
+        new_shape.extend([1] * (channel_samples.ndim - 1))
 
-        samples = (jakes_samples *
+        samples = (channel_samples *
                    np.sqrt(np.reshape(
                        self._channel_profile.tap_powers_linear[:, np.newaxis],
                        new_shape)))

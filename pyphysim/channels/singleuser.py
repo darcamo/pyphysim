@@ -4,14 +4,9 @@
 """Module containing single user channels. """
 
 import math
-from numbers import Number
-from collections import Iterable
 import numpy as np
-from scipy.linalg import block_diag
 
 from pyphysim.channels import fading
-from ..util.conversion import single_matrix_to_matrix_of_matrices
-from ..util.misc import randn_c_RS
 
 
 class SuSisoChannel(fading.TdlChannel):
@@ -20,17 +15,18 @@ class SuSisoChannel(fading.TdlChannel):
     which corresponds to a multipath channel. You can use a single tap in
     order to get a flat fading channel.
 
-    You can create a new SuSisoChannel object either specifying the
-    channel profile or specifying both the channel tap powers and delays. If
-    only the jakes_obj is specified then a single tap with unitary power and
+    You can create a new SuSisoChannel object either specifying the channel
+    profile or specifying both the channel tap powers and delays. If only the
+    fading_generator is specified then a single tap with unitary power and
     delay zero will be assumed, which corresponds to a flat fading channel
     model.
 
     Parameters
     ----------
-    jakes_obj : JakesSampleGenerator object
-        The instance of JakesSampleGenerator that will be used to generate
-        the samples.
+    fading_generator : Subclass of FadingSampleGenerator
+        The instance of a fading generator in the `fading_generators` module.
+        It should be a subclass of FadingSampleGenerator. The fading
+        generator will be used to generate the channel samples.
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : numpy real array
@@ -39,19 +35,25 @@ class SuSisoChannel(fading.TdlChannel):
     tap_delays : numpy real array
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, jakes_obj, channel_profile=None,
+    def __init__(self, fading_generator, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
-        if channel_profile is None and tap_powers_dB is None and tap_delays is None and Ts is None:
+        if (channel_profile is None and
+                tap_powers_dB is None and
+                tap_delays is None and
+                Ts is None):
             # Only the fading generator was provided. Let's assume a flat
             # fading channel
-            super().__init__(jakes_obj,
-                             tap_powers_dB=np.zeros(1),
-                             tap_delays=np.zeros(1))
+            super(SuSisoChannel, self).__init__(fading_generator,
+                                                tap_powers_dB=np.zeros(1),
+                                                tap_delays=np.zeros(1))
+
         else:
             # More parameters were provided. We will have then a TDL channel
-            # model. Let's just pass these parameters to the base class.
-            super().__init__(jakes_obj, channel_profile, tap_powers_dB,
-                             tap_delays, Ts)
+            # model. Let's iust pass these parameters to the base class.
+            super(SuSisoChannel, self).__init__(
+                fading_generator,
+                channel_profile, tap_powers_dB, tap_delays,
+                Ts)
 
         # Path loss which will be multiplied by the impulse response when
         # corrupt_data is called
@@ -102,7 +104,3 @@ class SuSisoChannel(fading.TdlChannel):
             output *= math.sqrt(self._pathloss_value)
 
         return output
-
-
-if __name__ == '__main__':
-    suchannel = SuSisoChannel()

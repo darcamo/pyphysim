@@ -136,8 +136,8 @@ class IASimulationRunner(SimulationRunner):
         # If any of the Nr, Nt or Ns variables were integers (meaning all
         # users have the same value) we will convert them by numpy arrays
         # with correct size (K).
-        Nr = self.ia_solver.Nr
-        Nt = self.ia_solver.Nt
+        # Nr = self.ia_solver.Nr
+        # Nt = self.ia_solver.Nt
         Ns = self.ia_solver.Ns
 
         cumNs = np.cumsum(self.ia_solver.Ns)

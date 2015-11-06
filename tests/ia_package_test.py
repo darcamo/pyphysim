@@ -2896,7 +2896,8 @@ class MMSEIASolverTestCase(CustomTestCase):
         except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
-            self._save_state(filename='MMSE_test_updateF_with_very_small_power.pickle')
+            self._save_state(
+                filename='MMSE_test_updateF_with_very_small_power.pickle')
             raise  # re-raises the last exception
 
     def test_solve(self):
