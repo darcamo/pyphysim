@@ -159,7 +159,7 @@ def drawWF(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
         Length (in cm) of the representation of each channel in the X axis.
     """
     texCode = genLatexCode(vtChannels, waterLevel, noiseVar, channelLength)
-    fId = file("texCode.tex", 'w')
+    fId = open("texCode.tex", 'w')
     fId.write(texCode)
     fId.close()
 

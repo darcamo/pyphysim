@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     jakes_all_links = np.empty([3, 3], dtype=object)
     tdlchannels_all_links = np.empty([3, 3], dtype=object)
-    fading_maps = np.empty([3, 3], dtype=object)
+    impulse_responses = np.empty([3, 3], dtype=object)
     # Dimension: `UEs x ANs x num_subcarriers x numUeAnt x numAnAnt`
     freq_responses = np.empty([3, 3, Nsc, numUeAnt, numAnAnt], dtype=complex)
 
@@ -86,13 +86,14 @@ if __name__ == '__main__':
                 tap_powers_dB=COST259_TUx.tap_powers_dB,
                 tap_delays=COST259_TUx.tap_delays)
 
-            fading_maps[ueIdx, anIdx] \
-                = tdlchannels_all_links[ueIdx, anIdx]._generate_impulse_response(
+            tdlchannels_all_links[ueIdx, anIdx]._generate_impulse_response(
                 num_samples)
 
+            impulse_responses[ueIdx, anIdx] \
+                = tdlchannels_all_links[ueIdx, anIdx].get_last_impulse_response()
+
             freq_responses[ueIdx, anIdx] = \
-                tdlchannels_all_links[ueIdx, anIdx].get_channel_freq_response(
-                    fading_maps[ueIdx, anIdx], Nsc)[:, :, :, 0]
+                impulse_responses[ueIdx, anIdx].get_freq_response(Nsc)[:, :, :, 0]
 
     # xxxxxxxxxx Channels in downlink direction xxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Dimension: `Nsc x numUeAnt x numAnAnt`
@@ -147,24 +148,21 @@ if __name__ == '__main__':
 
     # Calculate the received signals
     comb_indexes = np.r_[0:Nsc:2]
-    Y1 = uH11_eq[comb_indexes] * r1[:, np.newaxis] + uH12_eq[comb_indexes] * r2[
-                                                                             :,
-                                                                             np.newaxis] + \
+    Y1 = uH11_eq[comb_indexes] * r1[:, np.newaxis] + \
+         uH12_eq[comb_indexes] * r2[:, np.newaxis] + \
          uH13_eq[comb_indexes] * r3[:, np.newaxis]
-    Y2 = uH21_eq[comb_indexes] * r1[:, np.newaxis] + uH22_eq[comb_indexes] * r2[
-                                                                             :,
-                                                                             np.newaxis] + \
+    Y2 = uH21_eq[comb_indexes] * r1[:, np.newaxis] + \
+         uH22_eq[comb_indexes] * r2[:,np.newaxis] + \
          uH23_eq[comb_indexes] * r3[:, np.newaxis]
-    Y3 = uH31_eq[comb_indexes] * r1[:, np.newaxis] + uH32_eq[comb_indexes] * r2[
-                                                                             :,
-                                                                             np.newaxis] + \
+    Y3 = uH31_eq[comb_indexes] * r1[:, np.newaxis] + \
+         uH32_eq[comb_indexes] * r2[:,np.newaxis] + \
          uH33_eq[comb_indexes] * r3[:, np.newaxis]
 
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Estimate the equivalent channel xxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    tilde_y1 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc / 2, axis=0)
+    tilde_y1 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
     tilde_y1[15:, 0] = 0  # Only keep the first 15 time samples for each antenna
 
     plt.figure(figsize=(12, 14))

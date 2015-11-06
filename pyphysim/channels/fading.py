@@ -334,7 +334,6 @@ class TdlImpulseResponse(object):
             The samples including the extra delays containing zeros.
         """
         num_taps_with_padding = self.tap_indexes_sparse[-1] + 1
-        num_samples = self._tap_values_sparse.shape[1]
 
         # Shape of sparse tap values
         orig_shape = self._tap_values_sparse.shape

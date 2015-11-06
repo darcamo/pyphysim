@@ -30,7 +30,7 @@ from pyphysim.simulations.runner import SimulationRunner, SkipThisOne
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import SimulationResults, Result
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
-from pyphysim.comm import channels
+from pyphysim.channels import multiuser
 from pyphysim.modulators import fundamental
 from pyphysim.channels import pathloss
 from pyphysim.util.conversion import dB2Linear, dBm2Linear
@@ -104,7 +104,7 @@ class IASimulationRunner(SimulationRunner):
 
         # xxxxxxxxxx Channel and Path Loss Parameters xxxxxxxxxxxxxxxxxxxxx
         # Create the channel object
-        self.multiUserChannel = channels.MultiUserChannelMatrix()
+        self.multiUserChannel = multiuser.MultiUserChannelMatrix()
 
         # Create the Path loss object
         self.path_loss_obj = pathloss.PathLoss3GPP1()

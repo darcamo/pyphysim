@@ -2623,6 +2623,13 @@ def _get_progress_string_from_file(filename):
         # fid = open(filename, 'r', newlines='\n')
         # except Exception as _:
         fid = open(filename, 'r')
+    except FileNotFoundError:
+        # Sometimes the file is not found because the progressbar did not
+        # created it yet. Let's wait a little if that happen and try one
+        # more time.
+        import time
+        time.speep(3)
+        fid = open(filename, 'r')
     finally:
         content_string = fid.read()
         fid.close()
