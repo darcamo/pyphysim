@@ -13,9 +13,9 @@ from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
 
 
-class MuSisoChannel(object):
+class MuSisoFlatFadingChannel(object):
     """
-    SISO multiuser channel.
+    SISO multiuser flat-fading channel.
 
     This corresponds to an interference channel model, where each
     transmitter sends data to its own receiver while interfering to other

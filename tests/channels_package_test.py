@@ -694,8 +694,8 @@ class TdlChannelTestCase(unittest.TestCase):
 class MuSisoChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.musisochannel = multiuser.MuSisoChannel(N=2)
-        self.musisochannel2 = multiuser.MuSisoChannel(N=3)
+        self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
+        self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
 
     def test_corrupt_data(self):
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
