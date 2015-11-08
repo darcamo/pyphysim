@@ -131,6 +131,15 @@ class FadingSampleGenerator(object):
         """
         raise NotImplementedError("Implement in a subclass")
 
+    def get_similar_fading_generator(self):
+        """
+        Get a similar fading generator with the same configuration, but that
+        generates independent samples.
+        """
+        # Note: Don't forget to copy self._shape in sublcasses, besides any
+        # member attribute in the subclass
+        raise NotImplementedError("Implement in a subclass")
+
 
 class RayleighSampleGenerator(FadingSampleGenerator):
     """
@@ -174,9 +183,17 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             shape.append(num_samples)
             self._samples = randn_c(*shape)
 
+    def get_similar_fading_generator(self):
+        """
+        Get a similar fading generator with the same configuration, but that
+        generates independent samples.
+        """
+        return RayleighSampleGenerator(self._shape)
 
-# TODO: Move the RS parameter to the base class and add it as an argument to
-# RayleighSampleGenerator
+
+# TODO: Remove the RS parameter or make it work with the
+# get_similar_fading_generator method.  You could also move it to the base
+# class and add it as an argument to RayleighSampleGenerator
 class JakesSampleGenerator(FadingSampleGenerator):
     """
     Class that generated fading samples according to the Jakes model given
@@ -394,3 +411,10 @@ class JakesSampleGenerator(FadingSampleGenerator):
                                  * np.cos(self._phi_l) * t + self._psi_l)),
                     axis=0))
         self._samples = h
+
+    def get_similar_fading_generator(self):
+        """
+        Get a similar fading generator with the same configuration, but that
+        generates independent samples.
+        """
+        return JakesSampleGenerator(self._Fd, self._Ts, self._L, self._shape)

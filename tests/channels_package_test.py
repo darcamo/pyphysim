@@ -173,8 +173,6 @@ class RayleighSampleGeneratorTestCase(unittest.TestCase):
         self.obj2 = fading_generators.RayleighSampleGenerator(shape=3)
         self.obj3 = fading_generators.RayleighSampleGenerator(shape=(4, 3))
 
-    # Here we only test if the shape of the generated matrix is correct
-    # TODO: check statistics of the generated matrix
     def test_generate_more_samples(self):
         # num_samples is None
         self.assertTrue(isinstance(self.obj0.get_samples(), complex))
@@ -191,6 +189,18 @@ class RayleighSampleGeneratorTestCase(unittest.TestCase):
         self.assertEqual(self.obj1.get_samples().shape, (1, 5))
         self.assertEqual(self.obj2.get_samples().shape, (3, 5))
         self.assertEqual(self.obj3.get_samples().shape, (4, 3, 5))
+
+    def test_get_similar_fading_generator(self):
+        # RayleighSampleGenerator only has the _shape attribute
+        obj0 = self.obj0.get_similar_fading_generator()
+        obj1 = self.obj1.get_similar_fading_generator()
+        obj2 = self.obj2.get_similar_fading_generator()
+        obj3 = self.obj3.get_similar_fading_generator()
+
+        self.assertEqual(obj0.shape, self.obj0.shape)
+        self.assertEqual(obj1.shape, self.obj1.shape)
+        self.assertEqual(obj2.shape, self.obj2.shape)
+        self.assertEqual(obj3.shape, self.obj3.shape)
 
 
 class JakesSampleGeneratorTestCase(unittest.TestCase):
@@ -253,6 +263,24 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.obj2.generate_more_samples(100)
         self.assertAlmostEqual(self.obj1._current_time, 101*self.Ts)
         self.assertAlmostEqual(self.obj2._current_time, 101*self.Ts)
+
+    def test_get_similar_fading_generator(self):
+        obj1 = self.obj1.get_similar_fading_generator()
+        obj2 = self.obj2.get_similar_fading_generator()
+        # Modify the new objects. Since we will only compare the parameters
+        # (the same ones used in the constructor) then generating more
+        # samples here should not be a problem.
+        obj1.generate_more_samples()
+        obj2.generate_more_samples()
+
+        self.assertEqual(obj1.shape, self.obj1.shape)
+        self.assertEqual(obj2.shape, self.obj2.shape)
+        self.assertEqual(obj1._Fd, self.obj1._Fd)
+        self.assertEqual(obj2._Fd, self.obj2._Fd)
+        self.assertEqual(obj1._Ts, self.obj1._Ts)
+        self.assertEqual(obj2._Ts, self.obj2._Ts)
+        self.assertEqual(obj1._L, self.obj1._L)
+        self.assertEqual(obj2._L, self.obj2._L)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
