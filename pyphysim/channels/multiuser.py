@@ -11,15 +11,15 @@ import numpy as np
 from scipy.linalg import block_diag
 from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
+from . import singleuser
 
 
-class MuSisoFlatFadingChannel(object):
+class MuSisoChannel(object):
     """
-    SISO multiuser flat-fading channel.
+    SISO multiuser channel.
 
-    This corresponds to an interference channel model, where each
-    transmitter sends data to its own receiver while interfering to other
-    receivers.
+    Each transmitter sends data to its own receiver while interfering to
+    other receivers.
 
     Note that noise is NOT added.
 
@@ -27,59 +27,71 @@ class MuSisoFlatFadingChannel(object):
     ----------
     N : int
         The number of transmit/receive pairs.
-    fading_generator : Object of some class derived from FadingSampleGenerator
-        The fading generator. If not provided, then an object of the
-        RayleighSampleGenerator class will be created.
+    fading_generator : Subclass of FadingSampleGenerator (optional)
+        The instance of a fading generator in the `fading_generators`
+        module. It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel
+        samples. However, since we have multiple links, the provided fading
+        genrator will actually be used to create similar (but independent)
+        fading generators. If not provided then RayleighSampleGenerator
+        will be ised
+    channel_profile : TdlChannelProfile
+        The channel profile, which specifies the tap powers and delays.
+    tap_powers_dB : numpy real array
+        The powers of each tap (in dB). Dimension: `L x 1`
+        Note: The power of each tap will be a negative number (in dB).
+    tap_delays : numpy real array
+        The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, N, fading_generator=None):
-        self._H = None
+    def __init__(self, N, fading_generator=None, channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None, Ts=None):
+
         if fading_generator is None:
             from .fading_generators import RayleighSampleGenerator
-            fading_generator = RayleighSampleGenerator(shape=(N, N))
+            fading_generator = RayleighSampleGenerator()
 
-        self._fading_generator = fading_generator
+        # Variable to store the single user channels corresponding to each
+        # link.
+        self._su_siso_channels = np.empty((N, N), dtype=object)
+
+        # Create each link's channel
+        for rx in range(N):
+            for tx in range(N):
+                new_fading_generator = \
+                    fading_generator.get_similar_fading_generator()
+                self._su_siso_channels[rx, tx] = singleuser.SuSisoChannel(
+                    new_fading_generator,
+                    channel_profile=channel_profile,
+                    tap_powers_dB=tap_powers_dB, tap_delays=tap_delays,
+                    Ts=Ts)
+
+                # # Let's save the channel profile so that we use the same
+                # # object for the other link channels
+                # channel_profile = self._su_siso_channels[rx, tx].\
+                #     _channel_profile
+
         self._pathloss_matrix = None
 
-    def _get_channel_samples(self):
+    @property
+    def num_taps(self):
         """
-        Get the fading generated channel samples while also applying the path
-        loss, if it was set with the `set_pathloss` method
+        Get the number of taps in the profile.
 
-        Returns
-        -------
-        numpy array
-            The channel samples also including any path loss effect.
+        Note that all links have the same channel profile.
         """
-        if self._pathloss_matrix is None:
-            samples = self._fading_generator.get_samples()
-        else:
-            samples = (self._fading_generator.get_samples() *
-                       self._pathloss_matrix)
-        return samples
+        return self._su_siso_channels[0, 0].num_taps
 
-    # TODO: update fading samples after this method is called. After you do
-    # this, add a test for it in MuSisoChannelTestCase.test_corrupt_data
-    def corrupt_data(self, data):
+    @property
+    def num_taps_with_padding(self):
         """
-        Corrupt data passed through the channel.
+        Get the number of taps in the profile including zero-padding when the
+        profile is discretized.
 
-        Note that noise is NOT added in `corrupt_data`.
+        If the profile is not discretized an exception is raised.
 
-        Parameters
-        ----------
-        data : 1D numpy array or 2D numpy array
-            If `data` is a 1D numpy array, the k-th element corresponds to
-            the symbol transmitted to the k-th user. If `data` is a 2D
-            numpy array then the k-th row corresponds to the symbols
-            transmitted to the k-th user.
-
-        Returns
-        -------
-        1D numpy array of 2D numpy arrays
-            A numpy array where each element (or row) contais the received
-            data of a user.
+        Note that all links have the same channel profile.
         """
-        return np.dot(self._get_channel_samples(), data)
+        return self._su_siso_channels[0, 0].num_taps_with_padding
 
     def set_pathloss(self, pathloss_matrix=None):
         """
@@ -105,9 +117,164 @@ class MuSisoFlatFadingChannel(object):
         channel coefficients will be multiplied by the square root of
         elements in `pathloss_matrix`.
         """
-        # A matrix with the path loss from each transmitter to each
-        # receiver.
-        self._pathloss_matrix = pathloss_matrix
+        num_rx, num_tx = self._su_siso_channels.shape
+
+        for rx in range(num_rx):
+            for tx in range(num_tx):
+                self._su_siso_channels[rx, tx].set_pathloss(
+                    pathloss_matrix[rx, tx])
+
+    def corrupt_data(self, signal):
+        """
+        Corrupt data passed through the channel.
+
+        Note that noise is NOT added in `corrupt_data`.
+
+        Parameters
+        ----------
+        signal : 2D numpy array
+            Signal to be transmitted through the channel. Each row
+            corresponds to the transmit data of one transmitter.
+
+        Returns
+        -------
+        2D numpy array
+            Received signal at each receiver. Each row corresponds to one
+            receiver.
+        """
+        num_rx, num_tx = self._su_siso_channels.shape
+        outputs = np.empty(num_rx, dtype=object)
+
+        for rx in range(num_rx):
+            suchannel = self._su_siso_channels[rx, 0]
+            outputs[rx] = suchannel.corrupt_data(signal[0])
+            for tx in range(1, num_tx):
+                suchannel = self._su_siso_channels[rx, tx]
+                outputs[rx] += suchannel.corrupt_data(signal[tx])
+
+        return outputs
+
+    def get_last_impulse_response(self, rx_idx, tx_idx):
+        """
+        Get the last generated impulse response.
+
+        A new impulse response is generated when the method `corrupt_data`
+        is called. You can use the `get_last_impulse_response` method to
+        get the impulse response used to corrupt the last data.
+
+        Parameters
+        ----------
+        rx_idx : int
+            The index of the receiver.
+        tx_idx : int
+            The index of the transmitter
+
+        Returns
+        -------
+        TdlImpulseResponse
+            The impulse response of the channel that was used to corrupt
+            the last data for the link from transmitter `tx_idx` to
+            receiver `rx_idx`.
+        """
+        return self._su_siso_channels[rx_idx, tx_idx].\
+            get_last_impulse_response()
+
+
+# class MuSisoFlatFadingChannel(object):
+#     """
+#     SISO multiuser flat-fading channel.
+
+#     This corresponds to an interference channel model, where each
+#     transmitter sends data to its own receiver while interfering to other
+#     receivers.
+
+#     Note that noise is NOT added.
+
+#     Parameters
+#     ----------
+#     N : int
+#         The number of transmit/receive pairs.
+#     fading_generator : Object of some class derived from FadingSampleGenerator
+#         The fading generator. If not provided, then an object of the
+#         RayleighSampleGenerator class will be created.
+#     """
+#     def __init__(self, N, fading_generator=None):
+#         self._H = None
+#         if fading_generator is None:
+#             from .fading_generators import RayleighSampleGenerator
+#             fading_generator = RayleighSampleGenerator(shape=(N, N))
+
+#         self._fading_generator = fading_generator
+#         self._pathloss_matrix = None
+
+#     def _get_channel_samples(self):
+#         """
+#         Get the fading generated channel samples while also applying the path
+#         loss, if it was set with the `set_pathloss` method
+
+#         Returns
+#         -------
+#         numpy array
+#             The channel samples also including any path loss effect.
+#         """
+#         if self._pathloss_matrix is None:
+#             samples = self._fading_generator.get_samples()
+#         else:
+#             samples = (self._fading_generator.get_samples() *
+#                        self._pathloss_matrix)
+#         return samples
+
+#     # TODO: update fading samples after this method is called. After you do
+#     # this, add a test for it in MuSisoChannelTestCase.test_corrupt_data
+#     def corrupt_data(self, data):
+#         """
+#         Corrupt data passed through the channel.
+
+#         Note that noise is NOT added in `corrupt_data`.
+
+#         Parameters
+#         ----------
+#         data : 1D numpy array or 2D numpy array
+#             If `data` is a 1D numpy array, the k-th element corresponds to
+#             the symbol transmitted to the k-th user. If `data` is a 2D
+#             numpy array then the k-th row corresponds to the symbols
+#             transmitted to the k-th user.
+
+#         Returns
+#         -------
+#         1D numpy array of 2D numpy arrays
+#             A numpy array where each element (or row) contais the received
+#             data of a user.
+#         """
+#         return np.dot(self._get_channel_samples(), data)
+
+#     def set_pathloss(self, pathloss_matrix=None):
+#         """
+#         Set the path loss (IN LINEAR SCALE) from each transmitter to each
+#         receiver.
+
+#         The path loss will be accounted when calling the corrupt_data
+#         method.
+
+#         If you want to disable the path loss, set `pathloss_matrix` to None.
+
+#         Parameters
+#         ----------
+#         pathloss_matrix : 2D numpy array
+#             A matrix with dimension "K x K", where K is the number of
+#             users, with the path loss (IN LINEAR SCALE) from each
+#             transmitter (columns) to each receiver (rows). If you want to
+#             disable the path loss then set it to None.
+
+#         Notes
+#         -----
+#         Note that path loss is a power relation, which means that the
+#         channel coefficients will be multiplied by the square root of
+#         elements in `pathloss_matrix`.
+#         """
+#         # A matrix with the path loss from each transmitter to each
+#         # receiver.
+#         self._pathloss_matrix = pathloss_matrix
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

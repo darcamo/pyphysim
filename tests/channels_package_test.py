@@ -893,79 +893,251 @@ class SuSisoChannelTestCase(unittest.TestCase):
 class MuSisoChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
-        self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
+        self.musisochannel = multiuser.MuSisoChannel(N=2)
+        self.musisochannel2 = multiuser.MuSisoChannel(N=3)
 
-    def test_corrupt_data(self):
-        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        data1 = np.random.randint(0, 10, (2, 5))
-        output1 = self.musisochannel.corrupt_data(data1)
+        # self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
+        # self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
 
-        fading_samples_1 = self.musisochannel._get_channel_samples()
-        expected_output1 = np.zeros((2, 5), dtype=complex)
-        expected_output1[0] = (fading_samples_1[0, 0] * data1[0] +
-                               fading_samples_1[0, 1] * data1[1])
-        expected_output1[1] = (fading_samples_1[1, 0] * data1[0] +
-                               fading_samples_1[1, 1] * data1[1])
+    def test_constructor(self):
+        N = 4
+        # We are only providing the N parameters. That means each link will
+        # take only one path with power 0dB and delay 0. Ts will be 1 for
+        # the RayleighSampleGenerator. For the JakesSampleGenerator Ts will
+        # assume the value from the JakesSampleGenerator.
+        musisochannel = multiuser.MuSisoChannel(N=N)
+        musisochannel2 = multiuser.MuSisoChannel(
+            N=N, fading_generator=fading_generators.JakesSampleGenerator())
 
-        np.testing.assert_array_almost_equal(output1, expected_output1)
+        self.assertEqual(musisochannel._su_siso_channels.shape, (N, N))
+        self.assertEqual(musisochannel2._su_siso_channels.shape, (N, N))
 
-        data2 = np.random.randint(0, 10, (3, 5))
-        output2 = self.musisochannel2.corrupt_data(data2)
-        fading_samples_2 = self.musisochannel2._get_channel_samples()
-        expected_output2 = np.zeros((3, 5), dtype=complex)
-        expected_output2[0] = (fading_samples_2[0, 0] * data2[0] +
-                               fading_samples_2[0, 1] * data2[1] +
-                               fading_samples_2[0, 2] * data2[2])
-        expected_output2[1] = (fading_samples_2[1, 0] * data2[0] +
-                               fading_samples_2[1, 1] * data2[1] +
-                               fading_samples_2[1, 2] * data2[2])
-        expected_output2[2] = (fading_samples_2[2, 0] * data2[0] +
-                               fading_samples_2[2, 1] * data2[1] +
-                               fading_samples_2[2, 2] * data2[2])
-        np.testing.assert_array_almost_equal(output2, expected_output2)
+        for tx in range(N):
+            for rx in range(N):
+                suchannel = musisochannel._su_siso_channels[rx, tx]
+                suchannel2 = musisochannel2._su_siso_channels[rx, tx]
+                np.testing.assert_array_almost_equal(
+                    suchannel._channel_profile.tap_delays, 0)
+                np.testing.assert_array_almost_equal(
+                    suchannel._channel_profile.tap_powers_dB, 0)
+                self.assertEqual(suchannel._channel_profile.Ts, 1)
 
-        # xxxxxxxxxx Now test with path loss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        pathloss_matrix1 = np.eye(2)
-        self.musisochannel.set_pathloss(pathloss_matrix1)
-        fading_samples_1_with_pl = self.musisochannel._get_channel_samples()
-
-        output1_with_pl = self.musisochannel.corrupt_data(data1)
-        expected_output1_with_pl = np.zeros((2, 5), dtype=complex)
-        expected_output1_with_pl[0] = fading_samples_1_with_pl[0, 0] * data1[0]
-        expected_output1_with_pl[1] = fading_samples_1_with_pl[1, 1] * data1[1]
-        np.testing.assert_array_almost_equal(
-            output1_with_pl, expected_output1_with_pl)
-
-        pathloss_matrix1 = np.random.randn(3)
-        self.musisochannel2.set_pathloss(pathloss_matrix1)
-        fading_samples_2_with_pl = self.musisochannel2._get_channel_samples()
-
-        output2_with_pl = self.musisochannel2.corrupt_data(data2)
-        expected_output2_with_pl = np.zeros((3, 5), dtype=complex)
-        expected_output2_with_pl[0] = (
-            fading_samples_2_with_pl[0, 0] * data2[0] +
-            fading_samples_2_with_pl[0, 1] * data2[1] +
-            fading_samples_2_with_pl[0, 2] * data2[2])
-        expected_output2_with_pl[1] = (
-            fading_samples_2_with_pl[1, 0] * data2[0] +
-            fading_samples_2_with_pl[1, 1] * data2[1] +
-            fading_samples_2_with_pl[1, 2] * data2[2])
-        expected_output2_with_pl[2] = (
-            fading_samples_2_with_pl[2, 0] * data2[0] +
-            fading_samples_2_with_pl[2, 1] * data2[1] +
-            fading_samples_2_with_pl[2, 2] * data2[2])
-        np.testing.assert_array_almost_equal(
-            output2_with_pl, expected_output2_with_pl)
+                np.testing.assert_array_almost_equal(
+                    suchannel2._channel_profile.tap_delays, 0)
+                np.testing.assert_array_almost_equal(
+                    suchannel2._channel_profile.tap_powers_dB, 0)
+                self.assertEqual(suchannel2._channel_profile.Ts, 0.001)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # TODO: Test if the fading samples are updated the next type we call the
-        # corrupt_data
+        # Now lets test specifying more parameters
+        N = 2
+        Ts = 3.25e-8
+        channel_profile = fading.COST259_TUx
+        jakes = fading_generators.JakesSampleGenerator(Ts=Ts)
 
-        # fading_map = self.musisochannel._get_channel_samples()
-        # self.musisochannel.corrupt_data(data1)
-        # fading_map_new = self.musisochannel._get_channel_samples()
-        # np.testing.assert_array_not_almost_equal(fading_map, fading_map_new)
+        musisochannel = multiuser.MuSisoChannel(
+            N=N, channel_profile=channel_profile, Ts=Ts)
+        musisochannel2 = multiuser.MuSisoChannel(
+            N=N, channel_profile=channel_profile, fading_generator=jakes)
+
+        self.assertEqual(musisochannel._su_siso_channels.shape, (N, N))
+        self.assertEqual(musisochannel2._su_siso_channels.shape, (N, N))
+
+        for tx in range(N):
+            for rx in range(N):
+                suchannel = musisochannel._su_siso_channels[rx, tx]
+                suchannel2 = musisochannel2._su_siso_channels[rx, tx]
+                np.testing.assert_array_almost_equal(
+                    suchannel._channel_profile.tap_delays,
+                    np.array([ 0, 7, 16, 21, 27, 38, 40, 42,
+                               47, 50, 56, 58, 60, 63, 66]))
+                np.testing.assert_array_almost_equal(
+                    suchannel._channel_profile.tap_powers_dB,
+                    np.array([ -5.696548,  -7.596548,  -5.391745, -11.496548,
+                               -13.396548, -16.296548, -13.985097, -17.396548,
+                               -15.986248, -19.796548, -18.53596 , -22.096548,
+                               -22.596548, -23.496548, -24.296548]))
+                self.assertEqual(suchannel._channel_profile.Ts, Ts)
+
+                np.testing.assert_array_almost_equal(
+                    suchannel2._channel_profile.tap_delays,
+                    np.array([ 0, 7, 16, 21, 27, 38, 40, 42,
+                               47, 50, 56, 58, 60, 63, 66]))
+                np.testing.assert_array_almost_equal(
+                    suchannel2._channel_profile.tap_powers_dB,
+                    np.array([ -5.696548,  -7.596548,  -5.391745, -11.496548,
+                               -13.396548, -16.296548, -13.985097, -17.396548,
+                               -15.986248, -19.796548, -18.53596 , -22.096548,
+                               -22.596548, -23.496548, -24.296548]))
+                self.assertEqual(suchannel2._channel_profile.Ts, Ts)
+
+    def test_corrupt_data(self):
+        num_samples = 5
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate data for 2 transmitters
+        data1 = np.random.randint(0, 10, (2, num_samples))
+
+        # Pass data throught he channel
+        output1 = self.musisochannel.corrupt_data(data1)
+
+        # Get the impulse response from two transmitters to the first
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response00 = self.musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = self.musisochannel.get_last_impulse_response(0, 1)
+        h00 = impulse_response00.tap_values[0]  # We only have the first tap
+        h01 = impulse_response01.tap_values[0]
+
+        expected_received_data0 = data1[0] * h00 + data1[1] * h01
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output1[0])
+
+        # Get the impulse response from two transmitters to the first
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response10 = self.musisochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = self.musisochannel.get_last_impulse_response(1, 1)
+        h10 = impulse_response10.tap_values[0]  # We only have the first tap
+        h11 = impulse_response11.tap_values[0]
+
+        expected_received_data1 = data1[0] * h10 + data1[1] * h11
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output1[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # First we set the pathloss. We will use the same channel object as
+        # before
+        pathloss_matrix = np.array([[0.8, 0.4],[0.3, 0.95]])
+        self.musisochannel.set_pathloss(pathloss_matrix)
+
+        # Pass data throught he channel
+        output1 = self.musisochannel.corrupt_data(data1)
+
+        # Get the impulse response from two transmitters to the first
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response00 = self.musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = self.musisochannel.get_last_impulse_response(0, 1)
+        h00 = impulse_response00.tap_values[0]  # We only have the first tap
+        h01 = impulse_response01.tap_values[0]
+
+        expected_received_data0 = (
+            math.sqrt(pathloss_matrix[0,0]) * data1[0] * h00 +
+            math.sqrt(pathloss_matrix[0,1]) * data1[1] * h01)
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output1[0])
+
+        # Get the impulse response from two transmitters to the first
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response10 = self.musisochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = self.musisochannel.get_last_impulse_response(1, 1)
+        h10 = impulse_response10.tap_values[0]  # We only have the first tap
+        h11 = impulse_response11.tap_values[0]
+
+        expected_received_data1 = (
+            math.sqrt(pathloss_matrix[1,0]) * data1[0] * h10 +
+            math.sqrt(pathloss_matrix[1,1]) * data1[1] * h11)
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output1[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test with a channel with memory xxxxxxxxxxxxxxxxxxxxxx
+        Ts = 3.25e-8
+        # Create a jakes fading generator
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L =16)
+        # Create a channel profile with 2 (sparse) taps. Including zero
+        # padding, this channel as 4 taps with the non zeros taps at delays 0
+        # and 3.
+        channel_profile = fading.TdlChannelProfile(
+            tap_powers_dB=np.array([0, -5]),
+            tap_delays=np.array([0, 3 * Ts]))
+        musisochannel = multiuser.MuSisoChannel(
+            N=2, fading_generator=jakes, channel_profile=channel_profile)
+        self.assertEqual(musisochannel.num_taps, 2)
+        self.assertEqual(musisochannel.num_taps_with_padding, 4)
+        channel_memory = musisochannel.num_taps_with_padding - 1
+
+        # Pass data throught he channel
+        output1 = musisochannel.corrupt_data(data1)
+
+        # Due to channel memory the received signal has more samples
+        self.assertEqual(output1[0].shape, num_samples + channel_memory)
+        self.assertEqual(output1[1].shape, num_samples + channel_memory)
+
+        # Get the impulse response from two transmitters to the first
+        # receiver.
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = musisochannel.get_last_impulse_response(0, 1)
+        h00 = impulse_response00.tap_values  # Dim: `num_taps x num samples`
+        h01 = impulse_response01.tap_values  # Dim: `num_taps x num samples`
+
+        # Get the impulse response from two transmitters to the second
+        # receiver.
+        impulse_response10 = musisochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = musisochannel.get_last_impulse_response(1, 1)
+        h10 = impulse_response10.tap_values  # Dim: `num_taps x num samples`
+        h11 = impulse_response11.tap_values  # Dim: `num_taps x num samples`
+
+        expected_received_data0 = np.zeros(
+            num_samples + channel_memory, dtype=complex)
+        expected_received_data1 = np.zeros(
+            num_samples + channel_memory, dtype=complex)
+        for i in range(musisochannel.num_taps_with_padding):
+            expected_received_data0[i:i+num_samples] += (
+                data1[0] * h00[i] + data1[1] * h01[i])
+            expected_received_data1[i:i+num_samples] += (
+                data1[0] * h10[i] + data1[1] * h11[i])
+
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output1[0])
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output1[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Now test with path loss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        pathloss_matrix = np.array([[0.8, 0.4],[0.3, 0.95]])
+        musisochannel.set_pathloss(pathloss_matrix)
+
+        # Pass data throught he channel
+        output1 = musisochannel.corrupt_data(data1)
+
+        # Due to channel memory the received signal has more samples
+        self.assertEqual(output1[0].shape, num_samples + channel_memory)
+        self.assertEqual(output1[1].shape, num_samples + channel_memory)
+
+        # Get the impulse response from two transmitters to the first
+        # receiver.
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = musisochannel.get_last_impulse_response(0, 1)
+        h00 = impulse_response00.tap_values  # Dim: `num_taps x num samples`
+        h01 = impulse_response01.tap_values  # Dim: `num_taps x num samples`
+
+        # Get the impulse response from two transmitters to the second
+        # receiver.
+        impulse_response10 = musisochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = musisochannel.get_last_impulse_response(1, 1)
+        h10 = impulse_response10.tap_values  # Dim: `num_taps x num samples`
+        h11 = impulse_response11.tap_values  # Dim: `num_taps x num samples`
+
+        expected_received_data0 = np.zeros(
+            num_samples + channel_memory, dtype=complex)
+        expected_received_data1 = np.zeros(
+            num_samples + channel_memory, dtype=complex)
+        for i in range(musisochannel.num_taps_with_padding):
+            expected_received_data0[i:i+num_samples] += (
+                math.sqrt(pathloss_matrix[0, 0]) * data1[0] * h00[i] +
+                math.sqrt(pathloss_matrix[0, 1]) * data1[1] * h01[i])
+            expected_received_data1[i:i+num_samples] += (
+                math.sqrt(pathloss_matrix[1, 0]) * data1[0] * h10[i] +
+                math.sqrt(pathloss_matrix[1, 1]) * data1[1] * h11[i])
+
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output1[0])
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output1[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
