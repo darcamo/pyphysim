@@ -522,12 +522,13 @@ class TdlChannel(object):
                            fading_generators.RayleighSampleGenerator) and
                     Ts is None):
                 Ts = 1
-            if Ts is None:
-                raise RuntimeError(
-                    "You must either provide the Ts argument or provide an "
-                    "already discretized TdlChannelProfile object")
-            else:
-                channel_profile = channel_profile.get_discretize_profile(Ts)
+            # if Ts is None:
+            #     raise RuntimeError(
+            #         "You must either provide the Ts argument or provide an "
+            #         "already discretized TdlChannelProfile object")
+            # else:
+            #     channel_profile = channel_profile.get_discretize_profile(Ts)
+            channel_profile = channel_profile.get_discretize_profile(Ts)
         elif channel_profile.Ts != Ts:
             # Channel profile is already discretized but it does not agree
             # with the Ts value provided or the one in the fading generator

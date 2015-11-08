@@ -131,7 +131,7 @@ class FadingSampleGenerator(object):
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def get_similar_fading_generator(self):
+    def get_similar_fading_generator(self):  # pragma: no cover
         """
         Get a similar fading generator with the same configuration, but that
         generates independent samples.
