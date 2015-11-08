@@ -26,14 +26,29 @@ class TdlChannelProfile(object):
     Note that the tap powers and delays are not necessarily `discretized`
     to some sampling interval.
 
+    Parameters
+    ----------
+    tap_powers_dB : real numpy array
+        The tap powers (in dB). If both `tap_powers_dB` and `tap_delays`
+        are None then a single tap with 0dB power will be assummed at delay
+        0.
+    tap_delays : real numpy array
+        The tap delays.
+    name : str
+        A name for the channel profile
+
     Examples
     --------
     >>> jakes_generator = fading_generators.JakesSampleGenerator(Ts=3.25e-8)
     >>> tdlchannel = TdlChannel(jakes_generator, channel_profile=COST259_TUx)
     """
 
-    def __init__(self, tap_powers_dB, tap_delays, name='custom'):
+    def __init__(self, tap_powers_dB=None, tap_delays=None, name='custom'):
         self._name = name
+        if tap_powers_dB is None and tap_delays is None:
+            tap_powers_dB = np.zeros(1)
+            tap_delays = np.zeros(1)
+
         self._tap_powers_dB = tap_powers_dB.copy()
         self._tap_powers_dB.flags['WRITEABLE'] = False
         self._tap_powers_linear = dB2Linear(tap_powers_dB)
@@ -471,7 +486,8 @@ class TdlChannel(object):
     def __init__(self, fading_generator, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if isinstance(fading_generator, fading_generators.JakesSampleGenerator):
+        if isinstance(fading_generator,
+                      fading_generators.JakesSampleGenerator):
             if Ts is None:
                 # Ts was not provided, but the fading generator has
                 # it. Let's use it then.
@@ -492,15 +508,20 @@ class TdlChannel(object):
             # If channel_profile is not provided, then tap_powers_dB and
             # tap_powers_dB must be provided and we will use them to create
             # the channel profile object
+
             channel_profile = TdlChannelProfile(tap_powers_dB, tap_delays)
         else:
             assert(isinstance(channel_profile, TdlChannelProfile)),\
                 'channel_profile must be an obj of the TdlChannelProfile class'
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The channel profile is not discretized yet. We need to discretize it.
-        if channel_profile.Ts is None:
+        if not channel_profile.is_discretized:
+            if (isinstance(fading_generator,
+                           fading_generators.RayleighSampleGenerator) and
+                    Ts is None):
+                Ts = 1
             if Ts is None:
                 raise RuntimeError(
                     "You must either provide the Ts argument or provide an "
@@ -603,6 +624,12 @@ class TdlChannel(object):
         A new impulse response is generated when the method `corrupt_data`
         is called. You can use the `get_last_impulse_response` method to
         get the impulse response used to corrupt the last data.
+
+        Returns
+        -------
+        TdlImpulseResponse
+            The impulse response of the channel that was used to corrupt
+            the last data.
         """
         return self._last_impulse_response
 

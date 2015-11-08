@@ -571,6 +571,32 @@ class TdlChannelTestCase(unittest.TestCase):
 
     def test_constructor_and_num_taps(self):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # test constructor if we only provide the fading generator
+
+        # For the RayleighSampleGenerator generator Ts will be 1
+        tdlchannel_ray = fading.TdlChannel(
+            fading_generators.RayleighSampleGenerator())
+        self.assertEqual(tdlchannel_ray._channel_profile.Ts, 1)
+
+        # For the JakesSampleGenerator Ts will be the same value from Jakes
+        # generator
+        tdlchannel_jakes = fading.TdlChannel(
+            fading_generators.JakesSampleGenerator())
+        self.assertEqual(tdlchannel_jakes._channel_profile.Ts, 0.001)
+
+        # In both cases the channel profiel has only one tap with unitary
+        # power end delay 0
+        np.testing.assert_array_almost_equal(
+            tdlchannel_ray._channel_profile.tap_powers_dB, 0)
+        np.testing.assert_array_almost_equal(
+            tdlchannel_jakes._channel_profile.tap_powers_dB, 0)
+        np.testing.assert_array_almost_equal(
+            tdlchannel_ray._channel_profile.tap_delays, 0)
+        np.testing.assert_array_almost_equal(
+            tdlchannel_jakes._channel_profile.tap_delays, 0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The constructor provided the tap powers ande delays. The
         # TdlChannel constructor used that, as well as the sampling time Ts
         # from the jakes object and created a custom channel profile
@@ -585,7 +611,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # This one has delays 10 times greatter then the delays in the TU
+        # This one has delays 10 times greater then the delays in the TU
         # channel profile. This means that it will have more discretized
         # taps
         tdlchannel3 = fading.TdlChannel(
@@ -617,18 +643,6 @@ class TdlChannelTestCase(unittest.TestCase):
             fading.TdlChannel(
                 self.jakes,
                 channel_profile=tu_discretized)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Test if an exception is raised if we try to create a TdlChannel
-        # object passing the tap powers and delays but not the Ts and the
-        # sample generator does not have the Ts attribute.
-        rayleigh_generator = fading_generators.RayleighSampleGenerator()
-        with self.assertRaises(RuntimeError):
-            fading.TdlChannel(
-                rayleigh_generator,
-                tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
-                tap_delays=10*fading.COST259_TUx.tap_delays)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_num_taps_with_and_without_padding(self):
@@ -746,6 +760,21 @@ class SuSisoChannelTestCase(unittest.TestCase):
 
 
     def test_constructor(self):
+        # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a SuSisoChannel without specifying any parameter. In this
+        # case a Rayleigh generator will be assumed and channel will be
+        # also flat.
+        flat_rayleight_suchannel = singleuser.SuSisoChannel()
+        self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
+        np.testing.assert_array_almost_equal(
+            flat_rayleight_suchannel._channel_profile.tap_powers_linear,
+            1.0)
+        np.testing.assert_array_almost_equal(
+            flat_rayleight_suchannel._channel_profile.tap_delays,
+            0.0)
+        self.assertAlmostEqual(flat_rayleight_suchannel._channel_profile.Ts, 1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create a SuSisoChannel channel only passing the fading
         # generator. Note that in this case the channel will be flat,

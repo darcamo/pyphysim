@@ -6,7 +6,7 @@
 import math
 import numpy as np
 
-from pyphysim.channels import fading
+from pyphysim.channels import fading, fading_generators
 
 
 class SuSisoChannel(fading.TdlChannel):
@@ -23,10 +23,11 @@ class SuSisoChannel(fading.TdlChannel):
 
     Parameters
     ----------
-    fading_generator : Subclass of FadingSampleGenerator
-        The instance of a fading generator in the `fading_generators` module.
-        It should be a subclass of FadingSampleGenerator. The fading
-        generator will be used to generate the channel samples.
+    fading_generator : Subclass of FadingSampleGenerator (optional)
+        The instance of a fading generator in the `fading_generators`
+        module.  It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel samples. If
+        not provided then RayleighSampleGenerator will be ised
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : numpy real array
@@ -35,17 +36,22 @@ class SuSisoChannel(fading.TdlChannel):
     tap_delays : numpy real array
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, fading_generator, channel_profile=None,
+    def __init__(self, fading_generator=None, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
+        if fading_generator is None:
+            fading_generator = fading_generators.RayleighSampleGenerator()
+            if channel_profile is None and Ts is None:
+                Ts = 1
+
         if (channel_profile is None and
                 tap_powers_dB is None and
-                tap_delays is None and
-                Ts is None):
+                tap_delays is None):
             # Only the fading generator was provided. Let's assume a flat
             # fading channel
             super(SuSisoChannel, self).__init__(fading_generator,
                                                 tap_powers_dB=np.zeros(1),
-                                                tap_delays=np.zeros(1))
+                                                tap_delays=np.zeros(1),
+                                                Ts=Ts)
 
         else:
             # More parameters were provided. We will have then a TDL channel
