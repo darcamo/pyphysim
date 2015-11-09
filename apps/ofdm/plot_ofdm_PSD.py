@@ -10,16 +10,17 @@ import os
 
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
+    grandparent_dir = os.path.split(parent_dir)[0]
+    sys.path.append(grandparent_dir)
 except NameError:
-    sys.path.append('../')
+    sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
+from pyphysim.modulators.ofdm import OFDM
 
-from pyphysim.modulators import ofdm
 
 if __name__ == '__main__':
     # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
@@ -35,19 +36,18 @@ if __name__ == '__main__':
     # bit1 --> +1
     ip_mod = 2 * ip_bits - 1
 
-    ofdm = ofdm.OFDM(64, 16, 52)
-    ofdm_symbols = ofdm.modulate(ip_mod)
+    ofdm_obj = OFDM(64, 16, 52)
+    ofdm_symbols = ofdm_obj.modulate(ip_mod)
 
-    # MATLAB code to plot the power spectral density
-    # close all
+    # Code to plot the power spectral density
     fsMHz = 20e6
-    Pxx, W = pylab.psd(ofdm_symbols, NFFT=ofdm.fft_size, Fs=fsMHz)
+    Pxx, W = pylab.psd(ofdm_symbols, NFFT=ofdm_obj.fft_size, Fs=fsMHz)
     # [Pxx,W] = pwelch(st,[],[],4096,20);
     plt.plot(
         W,
-        #10 * np.log10(np.fft.fftshift(Pxx))
+        # 10 * np.log10(np.fft.fftshift(Pxx))
         10 * np.log10(Pxx)
-        )
+    )
     plt.xlabel('frequency, MHz')
     plt.ylabel('power spectral density')
     plt.title('Transmit spectrum OFDM (based on 802.11a)')
