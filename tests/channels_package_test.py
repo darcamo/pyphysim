@@ -25,6 +25,7 @@ import doctest
 import warnings
 from pyphysim import channels
 import math
+from copy import copy
 import numpy as np
 from scipy.linalg import block_diag
 from pyphysim.channels import noise, fading_generators, fading, singleuser, \
@@ -263,6 +264,37 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.obj2.generate_more_samples(100)
         self.assertAlmostEqual(self.obj1._current_time, 101*self.Ts)
         self.assertAlmostEqual(self.obj2._current_time, 101*self.Ts)
+
+    def test_skip_samples_for_next_generation(self):
+        # Obj2 is a copy of self.obj1 and will generate the same samples
+        obj2 = copy(self.obj1)
+
+        # Generate one sample
+        self.obj1.generate_more_samples()
+        obj2.generate_more_samples()
+
+        # Notice how they are equal
+        np.testing.assert_array_almost_equal(self.obj1.get_samples(),
+                                             obj2.get_samples())
+
+        old_sample = obj2.get_samples()
+
+        # Now lets generate 5 samples for self.obj1
+        self.obj1.generate_more_samples(5)
+        # and let's skip 5 samples for obj2
+        obj2.skip_samples_for_next_generation(5)
+
+        # obj2 still has the old sample
+        np.testing.assert_array_almost_equal(obj2.get_samples(), old_sample)
+
+        # Now let's generate 3 samples for both objects
+        self.obj1.generate_more_samples(3)
+        obj2.generate_more_samples(3)
+
+        # Now let's test that they have the same samples thus confirming
+        # the effect of skip_samples_for_next_generation
+        np.testing.assert_array_almost_equal(self.obj1.get_samples(),
+                                             obj2.get_samples())
 
     def test_get_similar_fading_generator(self):
         obj1 = self.obj1.get_similar_fading_generator()
