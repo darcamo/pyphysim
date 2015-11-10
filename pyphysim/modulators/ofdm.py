@@ -12,26 +12,27 @@ __all__ = ['OFDM', 'OfdmOneTapEqualizer']
 
 
 class OFDM(object):
-    """OFDM class.
+    """
+    OFDM class.
+
+    Parameters
+    ----------
+    fft_size : int
+        Size of the FFT and IFFT used by the OFDM class.
+    cp_size : int
+        Size of the cyclic prefix (in samples).
+    num_used_subcarriers : int, optional (default to fft_size)
+        Number of used subcarriers. Must be greater than or equal to 2
+        and lower than or equal to fft_size. If not provided, fft_size
+        will be used
+
+    Raises
+    ------
+    ValueError
+        If the any of the parameters are invalid.
     """
     def __init__(self, fft_size, cp_size, num_used_subcarriers=None):
         """Initializates the OFDM object.
-
-        Parameters
-        ----------
-        fft_size : int
-            Size of the FFT and IFFT used by the OFDM class.
-        cp_size : int
-            Size of the cyclic prefix (in samples).
-        num_used_subcarriers : int, optional (default to fft_size)
-            Number of used subcarriers. Must be greater than or equal to 2
-            and lower than or equal to fft_size. If not provided, fft_size
-            will be used
-
-        Raises
-        ------
-        ValueError
-            If the any of the parameters are invalid.
         """
         self.fft_size = 0
         self.cp_size = 0
@@ -453,17 +454,17 @@ class OFDM(object):
 
 
 class OfdmOneTapEqualizer(object):
-    def __init__(self, ofdm_obj):
-        """
-        The OfdmOneTapEqualizer class performs the one-tap equalization often
-        required in OFDM transmissions to compensate the effect of the
-        channel at each subcarrier.
+    """
+    The OfdmOneTapEqualizer class performs the one-tap equalization often
+    required in OFDM transmissions to compensate the effect of the channel
+    at each subcarrier.
 
-        Parameters
-        ----------
-        ofdm_obj : OFDM
-            The OFDM object used to modulate/demodulate the data.
-        """
+    Parameters
+    ----------
+    ofdm_obj : OFDM
+        The OFDM object used to modulate/demodulate the data.
+    """
+    def __init__(self, ofdm_obj):
         self._ofdm_obj = ofdm_obj
 
     def _equalize_data(self, data_reshaped, mean_freq_response):
