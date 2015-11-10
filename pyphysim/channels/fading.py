@@ -467,6 +467,46 @@ class TdlImpulseResponse(object):
 
         plt.show()
 
+    @staticmethod
+    def concatenate_samples(list_of_impulse_responses):
+        """
+        Concatenate multiple TdlImpulseResponse objects and return the new
+        concatenated TdlImpulseResponse.
+
+        This contatenation is performed in the "samples" dimension.
+
+        Parameters
+        ----------
+        list_of_impulse_responses : list[TdlImpulseResponse]
+            A list of TdlImpulseResponse objects to be concatenated.
+
+        Returns
+        -------
+        TdlImpulseResponse
+            The new concatenated TdlImpulseResponse.
+        """
+        num_objs = len(list_of_impulse_responses)
+        if num_objs < 2:
+            raise ValueError("list_of_impulse_responses must contain at least "
+                             "two TdlImpulseResponse objects.")
+
+        # We should test if all elements in list_of_impulse_responses have
+        # the same profile, but in order to avoid too much overhead we only
+        # test the first two.
+        channel_profile1 = list_of_impulse_responses[0].channel_profile
+        channel_profile2 = list_of_impulse_responses[1].channel_profile
+        if channel_profile1 is not channel_profile2:
+            raise ValueError("TdlImpulseResponse objects must have the same "
+                             "channel profile object")
+
+        tap_values_sparse = np.hstack(
+            [a.tap_values_sparse for a in list_of_impulse_responses])
+
+        concatenated_impulse_response = TdlImpulseResponse(
+            tap_values_sparse, channel_profile1)
+
+        return concatenated_impulse_response
+
 
 class TdlChannel(object):
     """
@@ -661,6 +701,11 @@ class TdlChannel(object):
         ----------
         signal : numpy array
             The signal to be transmitted.
+
+        Returns
+        -------
+        numpy array
+            The received signal after transmission through the TDL channel
         """
         # Number of symbols to be transmitted
         num_symbols = signal.size

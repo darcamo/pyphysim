@@ -567,6 +567,56 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(freq_response,
                                              expected_frequency_response)
 
+    def test_concatenate_samples(self):
+        num_samples2 = 13
+        tap_values2 = (np.random.randn(15, num_samples2) +
+                       1j * np.random.randn(15, num_samples2))
+
+        impulse_response2 = fading.TdlImpulseResponse(
+            tap_values2, self.impulse_response.channel_profile)
+
+        num_samples3 = 9
+        tap_values3 = (np.random.randn(15, num_samples3) +
+                       1j * np.random.randn(15, num_samples3))
+
+        impulse_response3 = fading.TdlImpulseResponse(
+            tap_values3, self.impulse_response.channel_profile)
+
+        # Get the 3 TdlImpulseResponse objects in a list
+        impulse_responses = [
+            self.impulse_response, impulse_response2, impulse_response3]
+
+        # Concatenate the objects in the list and return a new
+        # TdlImpulseResponse object.
+        concatenated_impulse_response = \
+            fading.TdlImpulseResponse.concatenate_samples(impulse_responses)
+
+        self.assertEqual(concatenated_impulse_response.num_samples,
+                         5 + num_samples2 + num_samples3)
+
+        # xxxxxxxxxx test if the values of the concatenated taps xxxxxxxxxx
+        np.testing.assert_array_almost_equal(
+            concatenated_impulse_response.tap_values_sparse[:,0:5],
+            self.impulse_response.tap_values_sparse)
+
+        np.testing.assert_array_almost_equal(
+            concatenated_impulse_response.tap_values_sparse[:,5:18],
+            impulse_response2.tap_values_sparse)
+
+        np.testing.assert_array_almost_equal(
+            concatenated_impulse_response.tap_values_sparse[:,18:],
+            impulse_response3.tap_values_sparse)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test the delays xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        np.testing.assert_array_almost_equal(
+            concatenated_impulse_response.tap_delays_sparse,
+            self.impulse_response.tap_delays_sparse)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.assertAlmostEqual(concatenated_impulse_response.Ts,
+                               self.impulse_response.Ts)
+
     def test_plot_impulse_response(self):
         # self.impulse_response.plot_impulse_response()
         pass
