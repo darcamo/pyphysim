@@ -552,6 +552,13 @@ class TdlChannel(object):
         self._last_impulse_response = None
 
     @property
+    def channel_profile(self):
+        """
+        Return the channel profile.
+        """
+        return self._channel_profile
+
+    @property
     def num_taps(self):
         """
         Number of taps not including zero taps after discretization.

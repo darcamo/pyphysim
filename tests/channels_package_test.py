@@ -608,35 +608,35 @@ class TdlChannelTestCase(unittest.TestCase):
         # For the RayleighSampleGenerator generator Ts will be 1
         tdlchannel_ray = fading.TdlChannel(
             fading_generators.RayleighSampleGenerator())
-        self.assertEqual(tdlchannel_ray._channel_profile.Ts, 1)
+        self.assertEqual(tdlchannel_ray.channel_profile.Ts, 1)
 
         # For the JakesSampleGenerator Ts will be the same value from Jakes
         # generator
         tdlchannel_jakes = fading.TdlChannel(
             fading_generators.JakesSampleGenerator())
-        self.assertEqual(tdlchannel_jakes._channel_profile.Ts, 0.001)
+        self.assertEqual(tdlchannel_jakes.channel_profile.Ts, 0.001)
 
         # In both cases the channel profiel has only one tap with unitary
         # power end delay 0
         np.testing.assert_array_almost_equal(
-            tdlchannel_ray._channel_profile.tap_powers_dB, 0)
+            tdlchannel_ray.channel_profile.tap_powers_dB, 0)
         np.testing.assert_array_almost_equal(
-            tdlchannel_jakes._channel_profile.tap_powers_dB, 0)
+            tdlchannel_jakes.channel_profile.tap_powers_dB, 0)
         np.testing.assert_array_almost_equal(
-            tdlchannel_ray._channel_profile.tap_delays, 0)
+            tdlchannel_ray.channel_profile.tap_delays, 0)
         np.testing.assert_array_almost_equal(
-            tdlchannel_jakes._channel_profile.tap_delays, 0)
+            tdlchannel_jakes.channel_profile.tap_delays, 0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The constructor provided the tap powers ande delays. The
         # TdlChannel constructor used that, as well as the sampling time Ts
         # from the jakes object and created a custom channel profile
-        self.assertAlmostEqual(self.tdlchannel._channel_profile.Ts, self.Ts)
+        self.assertAlmostEqual(self.tdlchannel.channel_profile.Ts, self.Ts)
 
         tdlchannel2 = fading.TdlChannel(self.jakes,
                                         channel_profile=fading.COST259_TUx)
-        self.assertAlmostEqual(tdlchannel2._channel_profile.Ts, self.Ts)
+        self.assertAlmostEqual(tdlchannel2.channel_profile.Ts, self.Ts)
 
         self.assertEqual(self.tdlchannel.num_taps, 15)
         self.assertEqual(tdlchannel2.num_taps, 15)
@@ -790,7 +790,6 @@ class SuSisoChannelTestCase(unittest.TestCase):
         self.susisochannel = singleuser.SuSisoChannel(
             self.jakes, channel_profile=fading.COST259_TUx)
 
-
     def test_constructor(self):
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create a SuSisoChannel without specifying any parameter. In this
@@ -799,12 +798,12 @@ class SuSisoChannelTestCase(unittest.TestCase):
         flat_rayleight_suchannel = singleuser.SuSisoChannel()
         self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
-            flat_rayleight_suchannel._channel_profile.tap_powers_linear,
+            flat_rayleight_suchannel.channel_profile.tap_powers_linear,
             1.0)
         np.testing.assert_array_almost_equal(
-            flat_rayleight_suchannel._channel_profile.tap_delays,
+            flat_rayleight_suchannel.channel_profile.tap_delays,
             0.0)
-        self.assertAlmostEqual(flat_rayleight_suchannel._channel_profile.Ts, 1)
+        self.assertAlmostEqual(flat_rayleight_suchannel.channel_profile.Ts, 1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -816,10 +815,10 @@ class SuSisoChannelTestCase(unittest.TestCase):
         suchannel = singleuser.SuSisoChannel(jakes)
         self.assertEqual(suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
-            suchannel._channel_profile.tap_powers_linear,
+            suchannel.channel_profile.tap_powers_linear,
             1.0)
         np.testing.assert_array_almost_equal(
-            suchannel._channel_profile.tap_delays,
+            suchannel.channel_profile.tap_delays,
             0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -949,16 +948,16 @@ class MuSisoChannelTestCase(unittest.TestCase):
                 suchannel = musisochannel._su_siso_channels[rx, tx]
                 suchannel2 = musisochannel2._su_siso_channels[rx, tx]
                 np.testing.assert_array_almost_equal(
-                    suchannel._channel_profile.tap_delays, 0)
+                    suchannel.channel_profile.tap_delays, 0)
                 np.testing.assert_array_almost_equal(
-                    suchannel._channel_profile.tap_powers_dB, 0)
-                self.assertEqual(suchannel._channel_profile.Ts, 1)
+                    suchannel.channel_profile.tap_powers_dB, 0)
+                self.assertEqual(suchannel.channel_profile.Ts, 1)
 
                 np.testing.assert_array_almost_equal(
-                    suchannel2._channel_profile.tap_delays, 0)
+                    suchannel2.channel_profile.tap_delays, 0)
                 np.testing.assert_array_almost_equal(
-                    suchannel2._channel_profile.tap_powers_dB, 0)
-                self.assertEqual(suchannel2._channel_profile.Ts, 0.001)
+                    suchannel2.channel_profile.tap_powers_dB, 0)
+                self.assertEqual(suchannel2.channel_profile.Ts, 0.001)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now lets test specifying more parameters
@@ -980,28 +979,28 @@ class MuSisoChannelTestCase(unittest.TestCase):
                 suchannel = musisochannel._su_siso_channels[rx, tx]
                 suchannel2 = musisochannel2._su_siso_channels[rx, tx]
                 np.testing.assert_array_almost_equal(
-                    suchannel._channel_profile.tap_delays,
+                    suchannel.channel_profile.tap_delays,
                     np.array([ 0, 7, 16, 21, 27, 38, 40, 42,
                                47, 50, 56, 58, 60, 63, 66]))
                 np.testing.assert_array_almost_equal(
-                    suchannel._channel_profile.tap_powers_dB,
+                    suchannel.channel_profile.tap_powers_dB,
                     np.array([ -5.696548,  -7.596548,  -5.391745, -11.496548,
                                -13.396548, -16.296548, -13.985097, -17.396548,
                                -15.986248, -19.796548, -18.53596 , -22.096548,
                                -22.596548, -23.496548, -24.296548]))
-                self.assertEqual(suchannel._channel_profile.Ts, Ts)
+                self.assertEqual(suchannel.channel_profile.Ts, Ts)
 
                 np.testing.assert_array_almost_equal(
-                    suchannel2._channel_profile.tap_delays,
+                    suchannel2.channel_profile.tap_delays,
                     np.array([ 0, 7, 16, 21, 27, 38, 40, 42,
                                47, 50, 56, 58, 60, 63, 66]))
                 np.testing.assert_array_almost_equal(
-                    suchannel2._channel_profile.tap_powers_dB,
+                    suchannel2.channel_profile.tap_powers_dB,
                     np.array([ -5.696548,  -7.596548,  -5.391745, -11.496548,
                                -13.396548, -16.296548, -13.985097, -17.396548,
                                -15.986248, -19.796548, -18.53596 , -22.096548,
                                -22.596548, -23.496548, -24.296548]))
-                self.assertEqual(suchannel2._channel_profile.Ts, Ts)
+                self.assertEqual(suchannel2.channel_profile.Ts, Ts)
 
     def test_corrupt_data(self):
         num_samples = 5

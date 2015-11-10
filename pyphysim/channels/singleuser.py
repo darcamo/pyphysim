@@ -9,7 +9,7 @@ import numpy as np
 from pyphysim.channels import fading, fading_generators
 
 
-class SuSisoChannel(fading.TdlChannel):
+class SuSisoChannel(object):
     """
     Single User channel corresponding to a Tapped Delay Line channel model,
     which corresponds to a multipath channel. You can use a single tap in
@@ -48,18 +48,26 @@ class SuSisoChannel(fading.TdlChannel):
                 tap_delays is None):
             # Only the fading generator was provided. Let's assume a flat
             # fading channel
-            super(SuSisoChannel, self).__init__(fading_generator,
-                                                tap_powers_dB=np.zeros(1),
-                                                tap_delays=np.zeros(1),
-                                                Ts=Ts)
+            self._tdlchannel = fading.TdlChannel(fading_generator,
+                                                 tap_powers_dB=np.zeros(1),
+                                                 tap_delays=np.zeros(1),
+                                                 Ts=Ts)
+            # super(SuSisoChannel, self).__init__(fading_generator,
+            #                                     tap_powers_dB=np.zeros(1),
+            #                                     tap_delays=np.zeros(1),
+            #                                     Ts=Ts)
 
         else:
             # More parameters were provided. We will have then a TDL channel
             # model. Let's iust pass these parameters to the base class.
-            super(SuSisoChannel, self).__init__(
+            self._tdlchannel = fading.TdlChannel(
                 fading_generator,
                 channel_profile, tap_powers_dB, tap_delays,
                 Ts)
+            # super(SuSisoChannel, self).__init__(
+            #     fading_generator,
+            #     channel_profile, tap_powers_dB, tap_delays,
+            #     Ts)
 
         # Path loss which will be multiplied by the impulse response when
         # corrupt_data is called
@@ -104,9 +112,28 @@ class SuSisoChannel(fading.TdlChannel):
         signal : numpy array
             The signal to be transmitted.
         """
-        output = super(SuSisoChannel, self).corrupt_data(signal)
+        # output = super(SuSisoChannel, self).corrupt_data(signal)
+        output = self._tdlchannel.corrupt_data(signal)
 
         if self._pathloss_value is not None:
             output *= math.sqrt(self._pathloss_value)
 
         return output
+
+    def get_last_impulse_response(self):
+        return self._tdlchannel.get_last_impulse_response()
+
+    @property
+    def num_taps(self):
+        return self._tdlchannel.num_taps
+
+    @property
+    def num_taps_with_padding(self):
+        return self._tdlchannel.num_taps_with_padding
+
+    @property
+    def channel_profile(self):
+        """
+        Return the channel profile.
+        """
+        return self._tdlchannel.channel_profile
