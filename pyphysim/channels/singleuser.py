@@ -105,7 +105,7 @@ class SuSisoChannel(object):
 
     def corrupt_data(self, signal):
         """
-        Transmit the signal trhough the TDL channel.
+        Transmit the signal through the TDL channel.
 
         Parameters
         ----------

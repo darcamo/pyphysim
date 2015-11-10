@@ -632,7 +632,7 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     # MATLAB code to plot the power spectral density
     # close all
     fsMHz = 20e6
-    Pxx, W = pylab.psd(output, NFFT=fft_size, Fs=fsMHz)
+    Pxx, W = plt.psd(output, NFFT=fft_size, Fs=fsMHz)
     # [Pxx,W] = pwelch(output,[],[],4096,20);
     plt.plot(
         W,

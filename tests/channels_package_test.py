@@ -234,8 +234,8 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.assertEqual(self.obj2.shape, (3, 2))
 
         # Set the shape
-        self.obj1.shape = 3;
-        self.obj2.shape = (4, 3);
+        self.obj1.shape = 3
+        self.obj2.shape = (4, 3)
 
         np.testing.assert_array_equal(self.obj1._phi_l.shape, [self.NRays, 3, 1])
         np.testing.assert_array_equal(self.obj2._psi_l.shape, [self.NRays, 4, 3, 1])
@@ -474,11 +474,11 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         # For non-discretized profiles an exception should be raised if we
         # try to get num_taps_with_padding
         with self.assertRaises(RuntimeError):
-            tu.num_taps_with_padding
+            _ = tu.num_taps_with_padding
         with self.assertRaises(RuntimeError):
-            ra.num_taps_with_padding
+            _ = ra.num_taps_with_padding
         with self.assertRaises(RuntimeError):
-            ht.num_taps_with_padding
+            _ = ht.num_taps_with_padding
 
         tu_d = tu.get_discretize_profile(Ts)
         ra_d = ra.get_discretize_profile(Ts)
@@ -528,7 +528,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         Ts = self.Ts
 
         self.assertAlmostEqual(self.impulse_response.Ts, self.Ts)
-        self.assertEqual(self.impulse_response.num_samples, num_samples),
+        self.assertEqual(self.impulse_response.num_samples, num_samples)
 
         self.assertEqual(self.impulse_response.tap_values.shape,
                          (num_taps_with_padding, num_samples))
@@ -538,11 +538,13 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(
             self.impulse_response.tap_indexes_sparse,
-            np.array([ 0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+            np.array([0, 7, 16, 21, 27, 38, 40, 41,
+                      47, 50, 56, 58, 60, 63, 66]))
 
         np.testing.assert_array_almost_equal(
             self.impulse_response.tap_delays_sparse,
-            Ts * np.array([ 0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+            Ts * np.array([0, 7, 16, 21, 27, 38, 40, 41,
+                           47, 50, 56, 58, 60, 63, 66]))
 
     def test_get_freq_response(self):
         fft_size = 1024
@@ -596,15 +598,15 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
 
         # xxxxxxxxxx test if the values of the concatenated taps xxxxxxxxxx
         np.testing.assert_array_almost_equal(
-            concatenated_impulse_response.tap_values_sparse[:,0:5],
+            concatenated_impulse_response.tap_values_sparse[:, 0:5],
             self.impulse_response.tap_values_sparse)
 
         np.testing.assert_array_almost_equal(
-            concatenated_impulse_response.tap_values_sparse[:,5:18],
+            concatenated_impulse_response.tap_values_sparse[:, 5:18],
             impulse_response2.tap_values_sparse)
 
         np.testing.assert_array_almost_equal(
-            concatenated_impulse_response.tap_values_sparse[:,18:],
+            concatenated_impulse_response.tap_values_sparse[:, 18:],
             impulse_response3.tap_values_sparse)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -783,7 +785,8 @@ class TdlChannelTestCase(unittest.TestCase):
         # [ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]
         np.testing.assert_array_equal(
             last_impulse_response.tap_indexes_sparse,
-            np.array([ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+            np.array([0, 7, 16, 21, 27, 38, 40, 41,
+                      47, 50, 56, 58, 60, 63, 66]))
 
         # Including zero pading, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
@@ -855,30 +858,30 @@ class TdlChannelTestCase(unittest.TestCase):
         # Since we transmitted just 1's, then the received signal should be
         # equal to the frequency response af the start of the OFDM symbol
         np.testing.assert_array_almost_equal(received_signal[0:fft_size],
-                                             freq_response_all[:,0],
+                                             freq_response_all[:, 0],
                                              decimal=8)
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[fft_size:2*fft_size],
-            freq_response_all[:,fft_size],
+            freq_response_all[:, fft_size],
             decimal=8)
 
         # Third OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[2*fft_size:3*fft_size],
-            freq_response_all[:,2*fft_size],
+            freq_response_all[:, 2*fft_size],
             decimal=8)
 
         # Fourth OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[3*fft_size:4*fft_size],
-            freq_response_all[:,3*fft_size],
+            freq_response_all[:, 3*fft_size],
             decimal=8)
 
         # Fifth OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[4*fft_size:5*fft_size],
-            freq_response_all[:,4*fft_size],
+            freq_response_all[:, 4*fft_size],
             decimal=8)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1033,7 +1036,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # [ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]
         np.testing.assert_array_equal(
             last_impulse_response.tap_indexes_sparse,
-            np.array([ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
+            np.array([0, 7, 16, 21, 27, 38, 40, 41,
+                      47, 50, 56, 58, 60, 63, 66]))
 
         # Including zero pading, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
@@ -1125,26 +1129,26 @@ class MuSisoChannelTestCase(unittest.TestCase):
                 suchannel2 = musisochannel2._su_siso_channels[rx, tx]
                 np.testing.assert_array_almost_equal(
                     suchannel.channel_profile.tap_delays,
-                    np.array([ 0, 7, 16, 21, 27, 38, 40, 42,
-                               47, 50, 56, 58, 60, 63, 66]))
+                    np.array([0, 7, 16, 21, 27, 38, 40, 42,
+                              47, 50, 56, 58, 60, 63, 66]))
                 np.testing.assert_array_almost_equal(
                     suchannel.channel_profile.tap_powers_dB,
-                    np.array([ -5.696548,  -7.596548,  -5.391745, -11.496548,
-                               -13.396548, -16.296548, -13.985097, -17.396548,
-                               -15.986248, -19.796548, -18.53596 , -22.096548,
-                               -22.596548, -23.496548, -24.296548]))
+                    np.array([-05.696548, -07.596548, -05.391745, -11.496548,
+                              -13.396548, -16.296548, -13.985097, -17.396548,
+                              -15.986248, -19.796548, -18.535960, -22.096548,
+                              -22.596548, -23.496548, -24.296548]))
                 self.assertEqual(suchannel.channel_profile.Ts, Ts)
 
                 np.testing.assert_array_almost_equal(
                     suchannel2.channel_profile.tap_delays,
-                    np.array([ 0, 7, 16, 21, 27, 38, 40, 42,
-                               47, 50, 56, 58, 60, 63, 66]))
+                    np.array([0, 7, 16, 21, 27, 38, 40, 42,
+                              47, 50, 56, 58, 60, 63, 66]))
                 np.testing.assert_array_almost_equal(
                     suchannel2.channel_profile.tap_powers_dB,
-                    np.array([ -5.696548,  -7.596548,  -5.391745, -11.496548,
-                               -13.396548, -16.296548, -13.985097, -17.396548,
-                               -15.986248, -19.796548, -18.53596 , -22.096548,
-                               -22.596548, -23.496548, -24.296548]))
+                    np.array([-05.696548, -07.596548, -05.391745, -11.496548,
+                              -13.396548, -16.296548, -13.985097, -17.396548,
+                              -15.986248, -19.796548, -18.535960, -22.096548,
+                              -22.596548, -23.496548, -24.296548]))
                 self.assertEqual(suchannel2.channel_profile.Ts, Ts)
 
     def test_corrupt_data(self):
@@ -1184,7 +1188,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Test with pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # First we set the pathloss. We will use the same channel object as
         # before
-        pathloss_matrix = np.array([[0.8, 0.4],[0.3, 0.95]])
+        pathloss_matrix = np.array([[0.8, 0.4], [0.3, 0.95]])
         self.musisochannel.set_pathloss(pathloss_matrix)
 
         # Pass data throught he channel
@@ -1198,8 +1202,8 @@ class MuSisoChannelTestCase(unittest.TestCase):
         h01 = impulse_response01.tap_values[0]
 
         expected_received_data0 = (
-            math.sqrt(pathloss_matrix[0,0]) * data1[0] * h00 +
-            math.sqrt(pathloss_matrix[0,1]) * data1[1] * h01)
+            math.sqrt(pathloss_matrix[0, 0]) * data1[0] * h00 +
+            math.sqrt(pathloss_matrix[0, 1]) * data1[1] * h01)
         # Test if data received at the first receiver is correct
         np.testing.assert_array_almost_equal(expected_received_data0,
                                              output1[0])
@@ -1212,8 +1216,8 @@ class MuSisoChannelTestCase(unittest.TestCase):
         h11 = impulse_response11.tap_values[0]
 
         expected_received_data1 = (
-            math.sqrt(pathloss_matrix[1,0]) * data1[0] * h10 +
-            math.sqrt(pathloss_matrix[1,1]) * data1[1] * h11)
+            math.sqrt(pathloss_matrix[1, 0]) * data1[0] * h10 +
+            math.sqrt(pathloss_matrix[1, 1]) * data1[1] * h11)
         # Test if data received at the first receiver is correct
         np.testing.assert_array_almost_equal(expected_received_data1,
                                              output1[1])
@@ -1222,7 +1226,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Test with a channel with memory xxxxxxxxxxxxxxxxxxxxxx
         Ts = 3.25e-8
         # Create a jakes fading generator
-        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L =16)
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
         # Create a channel profile with 2 (sparse) taps. Including zero
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
@@ -1273,7 +1277,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Now test with path loss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        pathloss_matrix = np.array([[0.8, 0.4],[0.3, 0.95]])
+        pathloss_matrix = np.array([[0.8, 0.4], [0.3, 0.95]])
         musisochannel.set_pathloss(pathloss_matrix)
 
         # Pass data throught he channel
