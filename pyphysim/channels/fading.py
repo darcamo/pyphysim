@@ -337,6 +337,13 @@ class TdlImpulseResponse(object):
         """
         return self._tap_values_sparse.shape[-1]
 
+    @property
+    def channel_profile(self):
+        """
+        Return the channel profile.
+        """
+        return self._channel_profile
+
     def _get_samples_including_the_extra_zeros(self):
         """
         Return the `samples` including the zeros for the zero taps.
@@ -360,6 +367,11 @@ class TdlImpulseResponse(object):
         # Fill the non-zero taps in samples_with_zeros in the correct
         # indexes
         samples_with_zeros[self.tap_indexes_sparse] = self._tap_values_sparse
+
+        # Disable write on this array so that it has no risk of deviating
+        # from self._tap_values_sparse
+        samples_with_zeros.flags['WRITEABLE'] = False
+
         return samples_with_zeros
 
     def get_freq_response(self, fft_size):
