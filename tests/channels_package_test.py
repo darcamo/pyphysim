@@ -812,6 +812,101 @@ class TdlChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
 
+    def test_corrupt_data_in_freq_domain(self):
+        fft_size = 16
+        num_samples = 5 * fft_size
+        signal = np.ones(num_samples)
+        # num_full_blocks = num_samples // fft_size
+
+        jakes1 = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+
+        # Note that tdlchannel will modify the jakes1 object
+        tdlchannel1 = fading.TdlChannel(fading_generator=jakes1,
+                                        channel_profile=fading.COST259_TUx)
+
+
+        # we want tdlchannel2 to be a copy of tdlchannel1 and generate the
+        # same samples
+        tdlchannel2 = copy(tdlchannel1)
+        # After the copy it will use the same fading_generator
+        # object. Let's copy the fading_generator and replace the one in
+        # tdlchannel2 with the copy
+        jakes2 = copy(jakes1)
+        tdlchannel2._fading_generator = jakes2
+
+
+        # xxxxxxxxxx Perform the actual transmission xxxxxxxxxxxxxxxxxxxxxx
+        received_signal = tdlchannel1.corrupt_data_in_freq_domain(
+            signal, fft_size)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
+        tdlchannel2._generate_impulse_response(num_samples)
+        impulse_response_all = tdlchannel2.get_last_impulse_response()
+        # Note that here we have the frequency response for `num_samples`
+        # samples. But the `corrupt_data_in_freq_domain` method only use
+        # multiples of `fft_size` (0*fft_size, 1*fft_size, ...)
+        freq_response_all = impulse_response_all.get_freq_response(fft_size)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the received signal is correct xxxxxxxxxxxxxxx
+        # First OFDM symbol
+        # Since we transmitted just 1's, then the received signal should be
+        # equal to the frequency response af the start of the OFDM symbol
+        np.testing.assert_array_almost_equal(received_signal[0:fft_size],
+                                             freq_response_all[:,0],
+                                             decimal=8)
+        # Second OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[fft_size:2*fft_size],
+            freq_response_all[:,fft_size],
+            decimal=8)
+
+        # Third OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[2*fft_size:3*fft_size],
+            freq_response_all[:,2*fft_size],
+            decimal=8)
+
+        # Fourth OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[3*fft_size:4*fft_size],
+            freq_response_all[:,3*fft_size],
+            decimal=8)
+
+        # Fifth OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[4*fft_size:5*fft_size],
+            freq_response_all[:,4*fft_size],
+            decimal=8)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test impulse response after transmission xxxxxxxxxxxxx
+        # Since signal corresponds to 5 OFDM symbols, then we should have 5
+        # "samples" in the returned impulse response.
+        impulse_response = tdlchannel1.get_last_impulse_response()
+        self.assertEqual(impulse_response.num_samples,
+                         num_samples // fft_size)
+
+        freq_response = impulse_response.get_freq_response(fft_size)
+        np.testing.assert_array_almost_equal(
+            freq_response[:, 0],
+            freq_response_all[:, 0 * fft_size])
+        np.testing.assert_array_almost_equal(
+            freq_response[:, 1],
+            freq_response_all[:, 1*fft_size])
+        np.testing.assert_array_almost_equal(
+            freq_response[:, 2],
+            freq_response_all[:, 2*fft_size])
+        np.testing.assert_array_almost_equal(
+            freq_response[:, 3],
+            freq_response_all[:, 3*fft_size])
+        np.testing.assert_array_almost_equal(
+            freq_response[:, 4],
+            freq_response_all[:, 4*fft_size])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Singleuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

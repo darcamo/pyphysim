@@ -729,3 +729,65 @@ class TdlChannel(object):
             output[d:d + num_symbols] += tap_values_sparse[i] * signal
 
         return output
+
+    def corrupt_data_in_freq_domain(self, signal, fft_size):
+        """
+        Transmit the signal through the TDL channel, but in the frequency
+        domain.
+
+        This is ROUGHLY equivalent to modulating `signal` with OFDM using
+        `fft_size` subcarriers, transmitting through a regular TdlChannel,
+        and then demodulating with OFDM to recover the received signal.
+
+        One important difference is that here the channel is considered
+        constant during the transmission of `fft_size` elements in
+        `signal`, and then it is varied by the equivalent of the variation
+        for that number of elements. That is, the channel is block static.
+
+        Parameters
+        ----------
+        signal : numpy array
+            The signal to be transmitted.
+        fft_size : int
+            The size of the Fourier transform to get the frequency response.
+
+        Returns
+        -------
+        numpy array
+            The received signal after transmission through the TDL channel
+        """
+        if signal.size % fft_size != 0:
+            raise ValueError("The num of elements in `signal` must be a "
+                             "multiple of `fft_size`.")
+
+        impulse_responses = []
+        output = np.empty(signal.size, dtype=complex)
+
+        # Number of full `fft_size` blocks in `signal`
+        num_full_blocks = signal.size // fft_size
+        for i in range(num_full_blocks):
+            start_idx = fft_size * i
+            end_idx = fft_size * (i + 1)
+
+            # Generate next impulse response: the one we will use the
+            # transmit the current block
+            self._generate_impulse_response(1)
+            impulse_responses.append(self.get_last_impulse_response())
+
+            # Get the equivalent frequency response of the last generated
+            # impulse response. That is what we will use to corrupt the
+            # current block of signal
+            freq_response = self._last_impulse_response.get_freq_response(
+                fft_size)[:, 0]
+
+            output[start_idx:end_idx] = freq_response * signal[start_idx:end_idx]
+
+            # Advance the fading generator by "fft_size - 1" to account how
+            # much the channel has "changed" during the duration of the
+            # current block
+            self._fading_generator.skip_samples_for_next_generation(
+                fft_size - 1)
+
+        self._last_impulse_response = TdlImpulseResponse.concatenate_samples(
+            impulse_responses)
+        return output
