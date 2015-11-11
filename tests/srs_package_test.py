@@ -258,8 +258,8 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         tilde_H1 = np.fft.fft(tilde_h1, Nsc)
 
         # Test the SrsChannelEstimator estimation
-        np.testing.assert_array_almost_equal(ue1_channel_estimator.estimate_channel(Y),
-                                             tilde_H1)
+        np.testing.assert_array_almost_equal(
+            ue1_channel_estimator.estimate_channel_freq_domain(Y), tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
