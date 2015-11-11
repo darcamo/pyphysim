@@ -50,13 +50,20 @@ class MuSisoChannel(object):
             from .fading_generators import RayleighSampleGenerator
             fading_generator = RayleighSampleGenerator()
 
+        if isinstance(N, tuple) or isinstance(N, list):
+            num_rx = N[0]
+            num_tx = N[1]
+        else:
+            num_rx = N
+            num_tx = N
+
         # Variable to store the single user channels corresponding to each
         # link.
-        self._su_siso_channels = np.empty((N, N), dtype=object)
+        self._su_siso_channels = np.empty((num_rx, num_tx), dtype=object)
 
         # Create each link's channel
-        for rx in range(N):
-            for tx in range(N):
+        for rx in range(num_rx):
+            for tx in range(num_tx):
                 # Create a new fading generator for this link similar to
                 # the one provided
                 new_fading_generator = \
@@ -149,6 +156,9 @@ class MuSisoChannel(object):
         num_rx, num_tx = self._su_siso_channels.shape
         outputs = np.empty(num_rx, dtype=object)
 
+        if num_tx == 1 and signal.ndim == 1:
+            signal = np.reshape(signal, (1, -1))
+
         for rx in range(num_rx):
             suchannel = self._su_siso_channels[rx, 0]
             outputs[rx] = suchannel.corrupt_data(signal[0])
@@ -195,6 +205,9 @@ class MuSisoChannel(object):
         """
         num_rx, num_tx = self._su_siso_channels.shape
         outputs = np.empty(num_rx, dtype=object)
+
+        if num_tx == 1 and signal.ndim == 1:
+            signal = np.reshape(signal, (1, -1))
 
         for rx in range(num_rx):
             suchannel = self._su_siso_channels[rx, 0]

@@ -1345,6 +1345,10 @@ class MuSisoChannelTestCase(unittest.TestCase):
                               -22.596548, -23.496548, -24.296548]))
                 self.assertEqual(suchannel2.channel_profile.Ts, Ts)
 
+        # Test unequal number of transmitters and receivers
+        musisochannel = multiuser.MuSisoChannel(N=(1, 3))
+        self.assertEqual(musisochannel._su_siso_channels.shape, (1, 3))
+
     def test_corrupt_data(self):
         num_samples = 5
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1366,7 +1370,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_received_data0,
                                              output1[0])
 
-        # Get the impulse response from two transmitters to the first
+        # Get the impulse response from two transmitters to the second
         # receiver. The channel is flat, thus we only have one tap.
         impulse_response10 = self.musisochannel.get_last_impulse_response(1, 0)
         impulse_response11 = self.musisochannel.get_last_impulse_response(1, 1)
@@ -1513,6 +1517,100 @@ class MuSisoChannelTestCase(unittest.TestCase):
                                              output1[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_corrupt_data2(self):
+        # Test for an unequal number of transmitters and receivers
+
+        # xxxxxxxxxx Test for 1 receiver and 2 transmitters xxxxxxxxxxxxxxx
+        musisochannel = multiuser.MuSisoChannel(N=(1, 2))
+
+        num_samples = 5
+
+        # Generate data for 2 transmitters
+        data1 = np.random.randint(0, 10, (2, num_samples))
+
+        # Pass data throught he channel
+        output1 = musisochannel.corrupt_data(data1)
+
+        # Get the impulse response from two transmitters to the first
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response1 = musisochannel.get_last_impulse_response(0, 1)
+        h0 = impulse_response0.tap_values[0]  # We only have the first tap
+        h1 = impulse_response1.tap_values[0]
+
+        # For a flat channel the number of elements in the output should be
+        # equal to the number of elements in the input.
+        self.assertEqual(output1[0].size, num_samples)
+        expected_received_data0 = data1[0] * h0 + data1[1] * h1
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output1[0])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for 1 transmitter and 2 receivers xxxxxxxxxxxxxxx
+        musisochannel = multiuser.MuSisoChannel(N=(2, 1))
+
+        num_samples = 5
+
+        # Generate data for 1 transmitter
+        data1 = np.random.randint(0, 10, (1, num_samples))
+
+        # Pass data throught he channel
+        output1 = musisochannel.corrupt_data(data1)
+
+        # Get the impulse response from the single transmitter to each
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response1 = musisochannel.get_last_impulse_response(1, 0)
+        h0 = impulse_response0.tap_values[0]  # We only have the first tap
+        h1 = impulse_response1.tap_values[0]
+
+        expected_received_data0 = data1[0] * h0
+        expected_received_data1 = data1[0] * h1
+
+        # For a flat channel the number of elements in the output should be
+        # equal to the number of elements in the input.
+        self.assertEqual(output1[0].size, num_samples)
+        self.assertEqual(output1[1].size, num_samples)
+
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output1[0])
+        # Test if data received at the second receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output1[1])
+
+        # Repeat the test, but now data has a single dimension (since we
+        # only have one transmitter)
+        # Generate data for 1 transmitter
+        data2 = np.random.randint(0, 10, num_samples)
+
+        # Pass data throught he channel
+        output2 = musisochannel.corrupt_data(data2)
+
+        # Get the impulse response from the single transmitter to each
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response1 = musisochannel.get_last_impulse_response(1, 0)
+        h0 = impulse_response0.tap_values[0]  # We only have the first tap
+        h1 = impulse_response1.tap_values[0]
+
+        expected_received_data0 = data2 * h0
+        expected_received_data1 = data2 * h1
+
+        # For a flat channel the number of elements in the output should be
+        # equal to the number of elements in the input.
+        self.assertEqual(output2[0].size, num_samples)
+        self.assertEqual(output2[1].size, num_samples)
+
+        # Test if data received at the first receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output2[0])
+        # Test if data received at the second receiver is correct
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output2[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_corrupt_data_in_freq_domain(self):
         Ts = 3.25e-8
         # Create a jakes fading generator
@@ -1579,8 +1677,6 @@ class MuSisoChannelTestCase(unittest.TestCase):
         block_size = len(subcarrier_indexes)
 
         num_samples = 4 * block_size
-
-
 
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Generate data for 2 transmitters
@@ -1658,6 +1754,109 @@ class MuSisoChannelTestCase(unittest.TestCase):
             output[1],
             np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
                        expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_corrupt_data_in_freq_domain3(self):
+    # Test for an unequal number of transmitters and receivers
+        Ts = 3.25e-8
+        num_tx = 1
+        num_rx = 2
+        # Create a jakes fading generator
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
+        # Create a channel profile with 2 (sparse) taps. Including zero
+        # padding, this channel as 4 taps with the non zeros taps at delays 0
+        # and 3.
+        channel_profile = fading.COST259_TUx
+        musisochannel = multiuser.MuSisoChannel(
+            N=(num_rx, num_tx), fading_generator=jakes, channel_profile=channel_profile)
+
+        fft_size = 64
+        num_samples = 4 * fft_size
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate data for 2 transmitters
+        # data = np.ones((2, num_samples))
+        data = np.random.randint(0, 10, (1, num_samples))
+
+        # Pass data throught he channel
+        output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
+
+        self.assertEqual(data[0].shape, output[0].shape)
+        self.assertEqual(data[0].shape, output[1].shape)
+
+        # Impulse response tx 1 to rx 1
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        # Impulse response tx 1 to rx 2
+        impulse_response1 = musisochannel.get_last_impulse_response(1, 0)
+        # Frequency response tx 1 to rx 1
+        freq_response0 = impulse_response0.get_freq_response(fft_size)
+        # Frequency response tx 1 to rx 2
+        freq_response1 = impulse_response1.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+        expected_ofdm_symb1_rx1 = data[0, 0:fft_size] * freq_response0[:, 0]
+        expected_ofdm_symb1_rx2 = data[0, 0:fft_size] * freq_response1[:, 0]
+        expected_ofdm_symb2_rx1 = data[0, fft_size:2*fft_size] * freq_response0[:, 1]
+        expected_ofdm_symb2_rx2 = data[0, fft_size:2*fft_size] * freq_response1[:, 1]
+        expected_ofdm_symb3_rx1 = data[0, 2*fft_size:3*fft_size] * freq_response0[:, 2]
+        expected_ofdm_symb3_rx2 = data[0, 2*fft_size:3*fft_size] * freq_response1[:, 2]
+        expected_ofdm_symb4_rx1 = data[0, 3*fft_size:4*fft_size] * freq_response0[:, 3]
+        expected_ofdm_symb4_rx2 = data[0, 3*fft_size:4*fft_size] * freq_response1[:, 3]
+
+        # Test received signal at first receiver
+        np.testing.assert_array_almost_equal(
+            output[0],
+            np.hstack([expected_ofdm_symb1_rx1, expected_ofdm_symb2_rx1,
+                       expected_ofdm_symb3_rx1, expected_ofdm_symb4_rx1]))
+
+        # Test received signal at second receiver
+        np.testing.assert_array_almost_equal(
+            output[1],
+            np.hstack([expected_ofdm_symb1_rx2, expected_ofdm_symb2_rx2,
+                       expected_ofdm_symb3_rx2, expected_ofdm_symb4_rx2]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Repeat the test, but now data has a single dimension (since we
+        # only have one transmitter)
+        # Generate data for 1 transmitter
+        data2 = np.random.randint(0, 10, num_samples)
+
+        # Pass data throught he channel
+        output2 = musisochannel.corrupt_data_in_freq_domain(data2, fft_size)
+
+        self.assertEqual(data2.shape, output2[0].shape)
+        self.assertEqual(data2.shape, output2[1].shape)
+
+        # Impulse response tx 1 to rx 1
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        # Impulse response tx 1 to rx 2
+        impulse_response1 = musisochannel.get_last_impulse_response(1, 0)
+        # Frequency response tx 1 to rx 1
+        freq_response0 = impulse_response0.get_freq_response(fft_size)
+        # Frequency response tx 1 to rx 2
+        freq_response1 = impulse_response1.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+        expected_ofdm_symb1_rx1 = data2[0:fft_size] * freq_response0[:, 0]
+        expected_ofdm_symb1_rx2 = data2[0:fft_size] * freq_response1[:, 0]
+        expected_ofdm_symb2_rx1 = data2[fft_size:2*fft_size] * freq_response0[:, 1]
+        expected_ofdm_symb2_rx2 = data2[fft_size:2*fft_size] * freq_response1[:, 1]
+        expected_ofdm_symb3_rx1 = data2[2*fft_size:3*fft_size] * freq_response0[:, 2]
+        expected_ofdm_symb3_rx2 = data2[2*fft_size:3*fft_size] * freq_response1[:, 2]
+        expected_ofdm_symb4_rx1 = data2[3*fft_size:4*fft_size] * freq_response0[:, 3]
+        expected_ofdm_symb4_rx2 = data2[3*fft_size:4*fft_size] * freq_response1[:, 3]
+
+        # Test received signal at first receiver
+        np.testing.assert_array_almost_equal(
+            output2[0],
+            np.hstack([expected_ofdm_symb1_rx1, expected_ofdm_symb2_rx1,
+                       expected_ofdm_symb3_rx1, expected_ofdm_symb4_rx1]))
+
+        # Test received signal at second receiver
+        np.testing.assert_array_almost_equal(
+            output2[1],
+            np.hstack([expected_ofdm_symb1_rx2, expected_ofdm_symb2_rx2,
+                       expected_ofdm_symb3_rx2, expected_ofdm_symb4_rx2]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
