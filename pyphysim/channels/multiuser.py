@@ -143,7 +143,7 @@ class MuSisoChannel(object):
 
         Parameters
         ----------
-        signal : 2D numpy array
+        signal : 2D numpy array (1D array if there is only one transmitter)
             Signal to be transmitted through the channel. Each row
             corresponds to the transmit data of one transmitter.
 
@@ -187,7 +187,7 @@ class MuSisoChannel(object):
 
         Parameters
         ----------
-        signal : 2D numpy array
+        signal : 2D numpy array (1D array if there is only one transmitter)
             Signal to be transmitted through the channel. Each row
             corresponds to the transmit data of one transmitter.
         fft_size : int
