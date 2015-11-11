@@ -52,11 +52,6 @@ class SuSisoChannel(object):
                                                  tap_powers_dB=np.zeros(1),
                                                  tap_delays=np.zeros(1),
                                                  Ts=Ts)
-            # super(SuSisoChannel, self).__init__(fading_generator,
-            #                                     tap_powers_dB=np.zeros(1),
-            #                                     tap_delays=np.zeros(1),
-            #                                     Ts=Ts)
-
         else:
             # More parameters were provided. We will have then a TDL channel
             # model. Let's iust pass these parameters to the base class.
@@ -64,10 +59,6 @@ class SuSisoChannel(object):
                 fading_generator,
                 channel_profile, tap_powers_dB, tap_delays,
                 Ts)
-            # super(SuSisoChannel, self).__init__(
-            #     fading_generator,
-            #     channel_profile, tap_powers_dB, tap_delays,
-            #     Ts)
 
         # Path loss which will be multiplied by the impulse response when
         # corrupt_data is called
@@ -118,6 +109,38 @@ class SuSisoChannel(object):
         if self._pathloss_value is not None:
             output *= math.sqrt(self._pathloss_value)
 
+        return output
+
+    def corrupt_data_in_freq_domain(self, signal, fft_size):
+        """
+        Transmit the signal through the TDL channel, but in the frequency
+        domain.
+
+        This is ROUGHLY equivalent to modulating `signal` with OFDM using
+        `fft_size` subcarriers, transmitting through a regular TdlChannel,
+        and then demodulating with OFDM to recover the received signal.
+
+        One important difference is that here the channel is considered
+        constant during the transmission of `fft_size` elements in
+        `signal`, and then it is varied by the equivalent of the variation
+        for that number of elements. That is, the channel is block static.
+
+        Parameters
+        ----------
+        signal : numpy array
+            The signal to be transmitted.
+        fft_size : int
+            The size of the Fourier transform to get the frequency response.
+
+        Returns
+        -------
+        numpy array
+            The received signal after transmission through the TDL channel
+        """
+        output = self._tdlchannel.corrupt_data_in_freq_domain(signal, fft_size)
+
+        if self._pathloss_value is not None:
+            output *= math.sqrt(self._pathloss_value)
         return output
 
     def get_last_impulse_response(self):
