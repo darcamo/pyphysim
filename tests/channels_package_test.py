@@ -1127,7 +1127,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # get_last_impulse_response does not include pathloss effect
         last_impulse_response = self.susisochannel.get_last_impulse_response()
         np.testing.assert_almost_equal(
-            math.sqrt(pathloss) * last_impulse_response.tap_values.flatten(),
+            last_impulse_response.tap_values.flatten(),
             received_signal)
 
         # Disable pathloss for the next tests
@@ -1226,30 +1226,30 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # equal to the frequency response af the start of the OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[0:fft_size],
-            math.sqrt(pathloss) * freq_response_all[:, 0],
+            freq_response_all[:, 0],
             decimal=7)
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[fft_size:2*fft_size],
-            math.sqrt(pathloss) * freq_response_all[:, fft_size],
+            freq_response_all[:, fft_size],
             decimal=8)
 
         # Third OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[2*fft_size:3*fft_size],
-            math.sqrt(pathloss) * freq_response_all[:, 2*fft_size],
+            freq_response_all[:, 2*fft_size],
             decimal=8)
 
         # Fourth OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[3*fft_size:4*fft_size],
-            math.sqrt(pathloss) * freq_response_all[:, 3*fft_size],
+            freq_response_all[:, 3*fft_size],
             decimal=8)
 
         # Fifth OFDM symbol
         np.testing.assert_array_almost_equal(
             received_signal[4*fft_size:5*fft_size],
-            math.sqrt(pathloss) * freq_response_all[:, 4*fft_size],
+            freq_response_all[:, 4*fft_size],
             decimal=8)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1415,12 +1415,13 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # receiver. The channel is flat, thus we only have one tap.
         impulse_response00 = self.musisochannel.get_last_impulse_response(0, 0)
         impulse_response01 = self.musisochannel.get_last_impulse_response(0, 1)
+        # Note that path loss effect is already included in impulse_response
         h00 = impulse_response00.tap_values[0]  # We only have the first tap
         h01 = impulse_response01.tap_values[0]
 
         expected_received_data0 = (
-            math.sqrt(pathloss_matrix[0, 0]) * data1[0] * h00 +
-            math.sqrt(pathloss_matrix[0, 1]) * data1[1] * h01)
+            data1[0] * h00 +
+            data1[1] * h01)
         # Test if data received at the first receiver is correct
         np.testing.assert_array_almost_equal(expected_received_data0,
                                              output1[0])
@@ -1433,8 +1434,8 @@ class MuSisoChannelTestCase(unittest.TestCase):
         h11 = impulse_response11.tap_values[0]
 
         expected_received_data1 = (
-            math.sqrt(pathloss_matrix[1, 0]) * data1[0] * h10 +
-            math.sqrt(pathloss_matrix[1, 1]) * data1[1] * h11)
+            data1[0] * h10 +
+            data1[1] * h11)
         # Test if data received at the first receiver is correct
         np.testing.assert_array_almost_equal(expected_received_data1,
                                              output1[1])
@@ -1524,11 +1525,11 @@ class MuSisoChannelTestCase(unittest.TestCase):
             num_samples + channel_memory, dtype=complex)
         for i in range(musisochannel.num_taps_with_padding):
             expected_received_data0[i:i+num_samples] += (
-                math.sqrt(pathloss_matrix[0, 0]) * data1[0] * h00[i] +
-                math.sqrt(pathloss_matrix[0, 1]) * data1[1] * h01[i])
+                data1[0] * h00[i] +
+                data1[1] * h01[i])
             expected_received_data1[i:i+num_samples] += (
-                math.sqrt(pathloss_matrix[1, 0]) * data1[0] * h10[i] +
-                math.sqrt(pathloss_matrix[1, 1]) * data1[1] * h11[i])
+                data1[0] * h10[i] +
+                data1[1] * h11[i])
 
         np.testing.assert_array_almost_equal(expected_received_data0,
                                              output1[0])
