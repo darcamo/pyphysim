@@ -57,8 +57,12 @@ class MuSisoChannel(object):
         # Create each link's channel
         for rx in range(N):
             for tx in range(N):
+                # Create a new fading generator for this link similar to
+                # the one provided
                 new_fading_generator = \
                     fading_generator.get_similar_fading_generator()
+
+                # Create a new SuSisoChannel object for this link
                 self._su_siso_channels[rx, tx] = singleuser.SuSisoChannel(
                     new_fading_generator,
                     channel_profile=channel_profile,
@@ -126,7 +130,7 @@ class MuSisoChannel(object):
 
     def corrupt_data(self, signal):
         """
-        Corrupt data passed through the channel.
+        Corrupt data passed through the TDL channels of each link.
 
         Note that noise is NOT added in `corrupt_data`.
 

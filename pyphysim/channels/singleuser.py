@@ -102,6 +102,11 @@ class SuSisoChannel(object):
         ----------
         signal : numpy array
             The signal to be transmitted.
+
+        Returns
+        -------
+        numpy array
+            The received signal after transmission through the TDL channel.
         """
         # output = super(SuSisoChannel, self).corrupt_data(signal)
         output = self._tdlchannel.corrupt_data(signal)
@@ -144,14 +149,34 @@ class SuSisoChannel(object):
         return output
 
     def get_last_impulse_response(self):
+        """
+        Get the last generated impulse response.
+
+        A new impulse response is generated when the method `corrupt_data`
+        is called. You can use the `get_last_impulse_response` method to
+        get the impulse response used to corrupt the last data.
+
+        Returns
+        -------
+        TdlImpulseResponse
+            The impulse response of the channel that was used to corrupt
+            the last data.
+        """
         return self._tdlchannel.get_last_impulse_response()
 
     @property
     def num_taps(self):
+        """Get the number of taps in the profile."""
         return self._tdlchannel.num_taps
 
     @property
     def num_taps_with_padding(self):
+        """
+        Get the number of taps in the profile including zero-padding when the
+        profile is discretized.
+
+        If the profile is not discretized an exception is raised.
+        """
         return self._tdlchannel.num_taps_with_padding
 
     @property
