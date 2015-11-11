@@ -116,7 +116,8 @@ class SuSisoChannel(object):
 
         return output
 
-    def corrupt_data_in_freq_domain(self, signal, fft_size):
+    def corrupt_data_in_freq_domain(self, signal, fft_size,
+                                    carrier_indexes=None):
         """
         Transmit the signal through the TDL channel, but in the frequency
         domain.
@@ -136,13 +137,17 @@ class SuSisoChannel(object):
             The signal to be transmitted.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
+        carrier_indexes : slice of numpy array of integers
+            The indexes of the subcarriers where signal is to be
+            transmitted. If it is None assume all subcarriers will be used.
 
         Returns
         -------
         numpy array
             The received signal after transmission through the TDL channel
         """
-        output = self._tdlchannel.corrupt_data_in_freq_domain(signal, fft_size)
+        output = self._tdlchannel.corrupt_data_in_freq_domain(
+            signal, fft_size, carrier_indexes)
 
         if self._pathloss_value is not None:
             output *= math.sqrt(self._pathloss_value)
