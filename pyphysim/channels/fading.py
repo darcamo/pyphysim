@@ -487,8 +487,11 @@ class TdlImpulseResponse(object):
         """
         num_objs = len(list_of_impulse_responses)
         if num_objs < 2:
-            raise ValueError("list_of_impulse_responses must contain at least "
-                             "two TdlImpulseResponse objects.")
+            if num_objs == 1:
+                return list_of_impulse_responses[0]
+            else:
+                raise ValueError("list_of_impulse_responses must contain at "
+                                 "least two TdlImpulseResponse objects.")
 
         # We should test if all elements in list_of_impulse_responses have
         # the same profile, but in order to avoid too much overhead we only

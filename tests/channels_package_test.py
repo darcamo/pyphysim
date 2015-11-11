@@ -619,6 +619,13 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         self.assertAlmostEqual(concatenated_impulse_response.Ts,
                                self.impulse_response.Ts)
 
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Test if we call with a single TdlImpulseResponse object. The same
+        # object should be returned.
+        out = fading.TdlImpulseResponse.concatenate_samples(
+            [impulse_response2])
+        self.assertTrue(out is impulse_response2)
+
     def test_plot_impulse_response(self):
         # self.impulse_response.plot_impulse_response()
         pass
