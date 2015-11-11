@@ -835,7 +835,6 @@ class TdlChannelTestCase(unittest.TestCase):
         tdlchannel1 = fading.TdlChannel(fading_generator=jakes1,
                                         channel_profile=fading.COST259_TUx)
 
-
         # we want tdlchannel2 to be a copy of tdlchannel1 and generate the
         # same samples
         tdlchannel2 = copy(tdlchannel1)
@@ -844,7 +843,6 @@ class TdlChannelTestCase(unittest.TestCase):
         # tdlchannel2 with the copy
         jakes2 = copy(jakes1)
         tdlchannel2._fading_generator = jakes2
-
 
         # xxxxxxxxxx Perform the actual transmission xxxxxxxxxxxxxxxxxxxxxx
         received_signal = tdlchannel1.corrupt_data_in_freq_domain(
@@ -915,6 +913,91 @@ class TdlChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             freq_response[:, 4],
             freq_response_all[:, 4*fft_size])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_corrupt_data_in_freq_domain2(self):
+        # This method tests corrupt_data_in_freq_domain, but now specifying
+        # the indexes of the used subcarriers
+
+        fft_size = 16
+        num_samples = 5 * fft_size
+        signal = np.ones(num_samples)
+        # For these particular indexes we will use half of the subcarriers
+        subcarrier_indexes = np.r_[0:fft_size:2]
+
+        jakes1 = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+
+        # Note that tdlchannel will modify the jakes1 object
+        tdlchannel1 = fading.TdlChannel(fading_generator=jakes1,
+                                        channel_profile=fading.COST259_TUx)
+
+        # we want tdlchannel2 to be a copy of tdlchannel1 and generate the
+        # same samples
+        tdlchannel2 = copy(tdlchannel1)
+        # After the copy it will use the same fading_generator
+        # object. Let's copy the fading_generator and replace the one in
+        # tdlchannel2 with the copy
+        jakes2 = copy(jakes1)
+        tdlchannel2._fading_generator = jakes2
+
+        # xxxxxxxxxx Perform the actual transmission xxxxxxxxxxxxxxxxxxxxxx
+        received_signal = tdlchannel1.corrupt_data_in_freq_domain(
+            signal, fft_size, subcarrier_indexes)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
+        tdlchannel2._generate_impulse_response(2*num_samples)
+        impulse_response_all = tdlchannel2.get_last_impulse_response()
+        # Note that here we have the frequency response for `num_samples`
+        # samples. But the `corrupt_data_in_freq_domain` method only use
+        # multiples of `fft_size` (0*fft_size, 1*fft_size, ...)
+        freq_response_all = impulse_response_all.get_freq_response(fft_size)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the received signal is correct xxxxxxxxxxxxxxx
+        block_size = fft_size // 2
+        # First OFDM symbol
+        # Since we transmitted just 1's, then the received signal should be
+        # equal to the frequency response af the start of the OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[0:block_size],
+            freq_response_all[subcarrier_indexes, 0],
+            decimal=8)
+
+        # Second OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[block_size:2*block_size],
+            freq_response_all[subcarrier_indexes, fft_size],
+            decimal=8)
+
+        # Third OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[2*block_size:3*block_size],
+            freq_response_all[subcarrier_indexes, 2*fft_size],
+            decimal=8)
+
+        # Remaining OFDM symbols (from 4 to 10)
+        for i in range(3, 10):
+            np.testing.assert_array_almost_equal(
+                received_signal[i*block_size:(i+1)*block_size],
+                freq_response_all[subcarrier_indexes, i*fft_size],
+                decimal=8)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test impulse response after transmission xxxxxxxxxxxxx
+        # Since signal corresponds to 10 OFDM symbols (using only half of
+        # the subcarriers in each OFDM symbol), then we should have 10
+        # "samples" in the returned impulse response.
+        impulse_response = tdlchannel1.get_last_impulse_response()
+        self.assertEqual(impulse_response.num_samples,
+                         num_samples // block_size)
+
+        freq_response = impulse_response.get_freq_response(fft_size)
+        for i in range(10):
+            np.testing.assert_array_almost_equal(
+                freq_response[:, i],
+                freq_response_all[:, i * fft_size])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

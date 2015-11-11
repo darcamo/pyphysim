@@ -733,7 +733,8 @@ class TdlChannel(object):
 
         return output
 
-    def corrupt_data_in_freq_domain(self, signal, fft_size):
+    def corrupt_data_in_freq_domain(self, signal, fft_size,
+                                    carrier_indexes=None):
         """
         Transmit the signal through the TDL channel, but in the frequency
         domain.
@@ -753,35 +754,65 @@ class TdlChannel(object):
             The signal to be transmitted.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
+        carrier_indexes : slice of numpy array of integers
+            The indexes of the subcarriers where signal is to be
+            transmitted. If it is None assume all subcarriers will be used.
 
         Returns
         -------
         numpy array
             The received signal after transmission through the TDL channel
         """
-        if signal.size % fft_size != 0:
-            raise ValueError("The num of elements in `signal` must be a "
-                             "multiple of `fft_size`.")
+        # xxxxxxxxxx Get the block size xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        if carrier_indexes is None:
+            block_size = fft_size
+        else:
+            # carrier_indexes may be either a slice object of a numpy array
+            # of integers with indexes
+            if isinstance(carrier_indexes, slice):
+                # Get the indexes from the slice object. This is a tuple
+                # with (start, stop, step)
+                indexes = carrier_indexes.indices(fft_size)
+                block_size = (indexes[1] - indexes[0]) // indexes[2]
+            else:
+                block_size = len(carrier_indexes)
 
+        if signal.size % block_size != 0:
+            raise ValueError("The num of elements in `signal` must be a "
+                             "multiple of number of sent elements per "
+                             "`fft_size`.")
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Variable to stopre the impulse responses for each block. We will
+        # concatenate these impulse responses at the end so that we can set
+        # self._last_impulse_response to the impulse response of all blocks
         impulse_responses = []
+
+        # Output variable representing the received signal
         output = np.empty(signal.size, dtype=complex)
 
-        # Number of full `fft_size` blocks in `signal`
-        num_full_blocks = signal.size // fft_size
-        for i in range(num_full_blocks):
-            start_idx = fft_size * i
-            end_idx = fft_size * (i + 1)
+        # Number of full blocks in `signal`
+        num_full_blocks = signal.size // block_size
 
-            # Generate next impulse response: the one we will use the
-            # transmit the current block
+        for i in range(num_full_blocks):
+            start_idx = block_size * i
+            end_idx = block_size * (i + 1)
+
+            # Generate next impulse response: the one we will use to
+            # transmit the current block (the channel is static during
+            # transmission of a single block)
             self._generate_impulse_response(1)
             impulse_responses.append(self.get_last_impulse_response())
 
             # Get the equivalent frequency response of the last generated
             # impulse response. That is what we will use to corrupt the
             # current block of signal
-            freq_response = self._last_impulse_response.get_freq_response(
-                fft_size)[:, 0]
+            if carrier_indexes is None:
+                freq_response = self._last_impulse_response.get_freq_response(
+                    fft_size)[:, 0]
+            else:
+                freq_response = self._last_impulse_response.get_freq_response(
+                    fft_size)[carrier_indexes, 0]
 
             output[start_idx:end_idx] = freq_response * signal[start_idx:end_idx]
 
