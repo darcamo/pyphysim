@@ -546,6 +546,25 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
             Ts * np.array([0, 7, 16, 21, 27, 38, 40, 41,
                            47, 50, 56, 58, 60, 63, 66]))
 
+    def test_multiply(self):
+        impulse_response_scaled = self.impulse_response * 0.42
+        # Test that a new object is returned
+        self.assertTrue(impulse_response_scaled is not self.impulse_response)
+        # Test that it shares the same channel_profile object, the same Ts
+        self.assertTrue(impulse_response_scaled.channel_profile is
+                        self.impulse_response.channel_profile)
+        self.assertTrue(impulse_response_scaled.Ts is
+                        self.impulse_response.Ts)
+
+        self.assertTrue(self.impulse_response.tap_values_sparse is not
+                        impulse_response_scaled.tap_values_sparse)
+        np.testing.assert_array_almost_equal(
+            impulse_response_scaled.tap_values_sparse,
+            self.impulse_response.tap_values_sparse * 0.42)
+        np.testing.assert_array_almost_equal(
+            impulse_response_scaled.tap_values,
+            self.impulse_response.tap_values * 0.42)
+
     def test_get_freq_response(self):
         fft_size = 1024
 

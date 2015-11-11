@@ -167,7 +167,11 @@ class SuSisoChannel(object):
             The impulse response of the channel that was used to corrupt
             the last data.
         """
-        return self._tdlchannel.get_last_impulse_response()
+        if self._pathloss_value is None:
+            return self._tdlchannel.get_last_impulse_response()
+        else:
+            return math.sqrt(self._pathloss_value) * \
+                self._tdlchannel.get_last_impulse_response()
 
     @property
     def num_taps(self):

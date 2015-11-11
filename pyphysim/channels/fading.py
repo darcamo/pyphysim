@@ -397,6 +397,45 @@ class TdlImpulseResponse(object):
             self._get_samples_including_the_extra_zeros(), fft_size, axis=0)
         return freq_response
 
+    def __mul__(self, value):
+        """
+        Multiply the impulse response by a float returning a new (scaled)
+        impulse response.
+
+        Only the tap values are modified.
+
+        Parameters
+        ----------
+        value : float
+            The number to multiply the impulse response object.
+
+        Returns
+        -------
+        TdlImpulseResponse
+            A new (scaled by `value`) TdlImpulseResponse object.
+        """
+        return TdlImpulseResponse(value * self._tap_values_sparse,
+                                  self._channel_profile)
+
+    def __rmul__(self, value):
+        """
+        Multiply the impulse response by a float returning a new (scaled)
+        impulse response.
+
+        Only the tap values are modified.
+
+        Parameters
+        ----------
+        value : float
+            The number to multiply the impulse response object.
+
+        Returns
+        -------
+        TdlImpulseResponse
+            A new (scaled by `value`) TdlImpulseResponse object.
+        """
+        return self * value
+
     # noinspection PyUnresolvedReferences
     def plot_impulse_response(self):  # pragma: no cover
         """
