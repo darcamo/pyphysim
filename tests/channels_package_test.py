@@ -1513,6 +1513,153 @@ class MuSisoChannelTestCase(unittest.TestCase):
                                              output1[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_corrupt_data_in_freq_domain(self):
+        Ts = 3.25e-8
+        # Create a jakes fading generator
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
+        # Create a channel profile with 2 (sparse) taps. Including zero
+        # padding, this channel as 4 taps with the non zeros taps at delays 0
+        # and 3.
+        channel_profile = fading.COST259_TUx
+        musisochannel = multiuser.MuSisoChannel(
+            N=2, fading_generator=jakes, channel_profile=channel_profile)
+
+        fft_size = 64
+        num_samples = 4 * fft_size
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate data for 2 transmitters
+        # data = np.ones((2, num_samples))
+        data = np.random.randint(0, 10, (2, num_samples))
+
+        # Pass data throught he channel
+        output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
+
+        self.assertEqual(data[0].shape, output[0].shape)
+        self.assertEqual(data[1].shape, output[1].shape)
+
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = musisochannel.get_last_impulse_response(0, 1)
+
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response01 = impulse_response01.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+        expected_ofdm_symb1 = data[0, 0:fft_size] * freq_response00[:, 0] + \
+                              data[1, 0:fft_size] * freq_response01[:, 0]
+        expected_ofdm_symb2 = data[0, fft_size:2*fft_size] * freq_response00[:, 1] +\
+                              data[1, fft_size:2*fft_size] * freq_response01[:, 1]
+        expected_ofdm_symb3 = data[0, 2*fft_size:3*fft_size] * freq_response00[:, 2] +\
+                              data[1, 2*fft_size:3*fft_size] * freq_response01[:, 2]
+        expected_ofdm_symb4 = data[0, 3*fft_size:4*fft_size] * freq_response00[:, 3] +\
+                              data[1, 3*fft_size:4*fft_size] * freq_response01[:, 3]
+
+        np.testing.assert_array_almost_equal(
+            output[0],
+            np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
+                       expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_corrupt_data_in_freq_domain2(self):
+        # This method tests corrupt_data_in_freq_domain, but now specifying
+        # the indexes of the used subcarriers
+
+        Ts = 3.25e-8
+        # Create a jakes fading generator
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
+        # Create a channel profile with 2 (sparse) taps. Including zero
+        # padding, this channel as 4 taps with the non zeros taps at delays 0
+        # and 3.
+        channel_profile = fading.COST259_TUx
+        musisochannel = multiuser.MuSisoChannel(
+            N=2, fading_generator=jakes, channel_profile=channel_profile)
+
+        fft_size = 64
+        # For these particular indexes we will use half of the subcarriers
+        subcarrier_indexes = np.r_[0:fft_size:2]
+        block_size = len(subcarrier_indexes)
+
+        num_samples = 4 * block_size
+
+
+
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate data for 2 transmitters
+        # data = np.ones((2, num_samples))
+        data = np.random.randint(0, 10, (2, num_samples))
+
+        # Pass data throught he channel
+        output = musisochannel.corrupt_data_in_freq_domain(data, fft_size,
+                                                           subcarrier_indexes)
+
+        self.assertEqual(data[0].shape, output[0].shape)
+        self.assertEqual(data[1].shape, output[1].shape)
+
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = musisochannel.get_last_impulse_response(0, 1)
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response01 = impulse_response01.get_freq_response(fft_size)
+
+        impulse_response10 = musisochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = musisochannel.get_last_impulse_response(1, 1)
+        freq_response10 = impulse_response10.get_freq_response(fft_size)
+        freq_response11 = impulse_response11.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+        expected_ofdm_symb1 = (data[0, 0:block_size] *
+                               freq_response00[subcarrier_indexes, 0] +
+
+                               data[1, 0:block_size] *
+                               freq_response01[subcarrier_indexes, 0])
+        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+                               freq_response00[subcarrier_indexes, 1] +
+
+                               data[1, block_size:2*block_size] *
+                               freq_response01[subcarrier_indexes, 1])
+        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+                               freq_response00[subcarrier_indexes, 2] +
+
+                               data[1, 2*block_size:3*block_size] *
+                               freq_response01[subcarrier_indexes, 2])
+        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+                               freq_response00[subcarrier_indexes, 3] +
+
+                               data[1, 3*block_size:4*block_size] *
+                               freq_response01[subcarrier_indexes, 3])
+
+        np.testing.assert_array_almost_equal(
+            output[0],
+            np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
+                       expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Expected received signal at second receiver xxxxxxxxxx
+        expected_ofdm_symb1 = (data[0, 0:block_size] *
+                               freq_response10[subcarrier_indexes, 0] +
+
+                               data[1, 0:block_size] *
+                               freq_response11[subcarrier_indexes, 0])
+        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+                               freq_response10[subcarrier_indexes, 1] +
+
+                               data[1, block_size:2*block_size] *
+                               freq_response11[subcarrier_indexes, 1])
+        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+                               freq_response10[subcarrier_indexes, 2] +
+
+                               data[1, 2*block_size:3*block_size] *
+                               freq_response11[subcarrier_indexes, 2])
+        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+                               freq_response10[subcarrier_indexes, 3] +
+
+                               data[1, 3*block_size:4*block_size] *
+                               freq_response11[subcarrier_indexes, 3])
+
+        np.testing.assert_array_almost_equal(
+            output[1],
+            np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
+                       expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def setUp(self):

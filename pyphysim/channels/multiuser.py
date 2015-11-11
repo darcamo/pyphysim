@@ -158,6 +158,55 @@ class MuSisoChannel(object):
 
         return outputs
 
+    def corrupt_data_in_freq_domain(self, signal, fft_size, carrier_indexes=None):
+        """
+        Corrupt data passed through the TDL channels of each link, but in the
+        frequency domain..
+
+        For each link, this is ROUGHLY equivalent to modulating `signal`
+        with OFDM using `fft_size` subcarriers, transmitting through a
+        regular TdlChannel, and then demodulating with OFDM to recover the
+        received signal.
+
+        One important difference is that here the channel is considered
+        constant during the transmission of `fft_size` elements in
+        `signal`, and then it is varied by the equivalent of the variation
+        for that number of elements. That is, the channel is block static.
+
+        Note that noise is NOT added in `corrupt_data`.
+
+        Parameters
+        ----------
+        signal : 2D numpy array
+            Signal to be transmitted through the channel. Each row
+            corresponds to the transmit data of one transmitter.
+        fft_size : int
+            The size of the Fourier transform to get the frequency response.
+        carrier_indexes : slice of numpy array of integers
+            The indexes of the subcarriers where signal is to be
+            transmitted (all users will use the same indexes). If it is
+            None assume all subcarriers will be used.
+
+        Returns
+        -------
+        2D numpy array
+            Received signal at each receiver. Each row corresponds to one
+            receiver.
+        """
+        num_rx, num_tx = self._su_siso_channels.shape
+        outputs = np.empty(num_rx, dtype=object)
+
+        for rx in range(num_rx):
+            suchannel = self._su_siso_channels[rx, 0]
+            outputs[rx] = suchannel.corrupt_data_in_freq_domain(
+                signal[0], fft_size, carrier_indexes)
+            for tx in range(1, num_tx):
+                suchannel = self._su_siso_channels[rx, tx]
+                outputs[rx] += suchannel.corrupt_data_in_freq_domain(
+                    signal[tx], fft_size, carrier_indexes)
+
+        return outputs
+
     def get_last_impulse_response(self, rx_idx, tx_idx):
         """
         Get the last generated impulse response.
