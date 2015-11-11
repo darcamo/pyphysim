@@ -84,6 +84,33 @@ class SrsRootSequence(object):
         else:
             return self._extended_zf_seq_array
 
+    # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # We can always just get the equivalent numpy array and perform the
+    # operations on it, but having these operations defined here is
+    # convenient
+    def __add__(self, other):  # pragma: no cover
+        """Perform addition with `other`"""
+        return self.seq_array() + other
+
+    def __radd__(self, other):  # pragma: no cover
+        """Perform addition with `other`"""
+        return self.seq_array() + other
+
+    def __mul__(self, other):  # pragma: no cover
+        """Perform multiplication with `other`"""
+        return self.seq_array() * other
+
+    def __rmul__(self, other):  # pragma: no cover
+        """Perform multiplication with `other`"""
+        return self.seq_array() * other
+
+    def conjugate(self):  # pragma: no cover
+        return self.seq_array().conj()
+
+    def conj(self):  # pragma: no cover
+        return self.seq_array().conj()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 class SrsUeSequence(object):
     """
@@ -136,6 +163,33 @@ class SrsUeSequence(object):
             The user's SRS sequence.
         """
         return self._user_seq_array
+
+    # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # We can always just get the equivalent numpy array and perform the
+    # operations on it, but having these operations defined here is
+    # convenient
+    def __add__(self, other):  # pragma: no cover
+        """Perform addition with `other`"""
+        return self.seq_array() + other
+
+    def __radd__(self, other):  # pragma: no cover
+        """Perform addition with `other`"""
+        return self.seq_array() + other
+
+    def __mul__(self, other):  # pragma: no cover
+        """Perform multiplication with `other`"""
+        return self.seq_array() * other
+
+    def __rmul__(self, other):  # pragma: no cover
+        """Perform multiplication with `other`"""
+        return self.seq_array() * other
+
+    def conjugate(self):  # pragma: no cover
+        return self.seq_array().conj()
+
+    def conj(self):  # pragma: no cover
+        return self.seq_array().conj()
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class SrsChannelEstimator(object):
