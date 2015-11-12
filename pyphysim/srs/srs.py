@@ -70,6 +70,12 @@ class SrsRootSequence(object):
         else:
             return self._extended_zf_seq_array.size
 
+    @property
+    def index(self):
+        """Return the SRS root sequence index.
+        """
+        return self._root_index
+
     def seq_array(self):
         """
         Get the extended Zadoff-Chu root sequence as a numpy array.
@@ -109,6 +115,17 @@ class SrsRootSequence(object):
 
     def conj(self):  # pragma: no cover
         return self.seq_array().conj()
+
+    def __repr__(self):
+        if self._extended_zf_seq_array is None:
+            return ("<SrsRootSequence("
+                    "root_index={0},Nzc={1})>").format(self._root_index,
+                                                       self._zf_seq_array.size)
+        else:
+            return ("<SrsRootSequence("
+                    "root_index={0},Nzc={1},extend_to={2})>").format(
+                        self._root_index, self._zf_seq_array.size,
+                        self._extended_zf_seq_array.size)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -129,6 +146,8 @@ class SrsUeSequence(object):
     def __init__(self, n_cs, root_seq):
         root_seq_array = root_seq.seq_array()
         self._user_seq_array = getShiftedZF(root_seq_array, n_cs)
+        self._n_cs = n_cs
+        self._root_index = root_seq.index
 
     @property
     def size(self):
@@ -163,6 +182,10 @@ class SrsUeSequence(object):
             The user's SRS sequence.
         """
         return self._user_seq_array
+
+    def __repr__(self):
+        return "<SrsUeSequence(n_cs={0},root_index={1})>".format(
+            self._n_cs, self._root_index)
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the
@@ -217,7 +240,8 @@ class SrsChannelEstimator(object):
     def __init__(self, srs_ue):
         self._srs_ue = srs_ue
 
-    def estimate_channel_freq_domain(self, received_signal, num_taps_to_keep=16):
+    def estimate_channel_freq_domain(self, received_signal,
+                                     num_taps_to_keep=16):
         """
         Estimate the channel based on the received signal.
 
