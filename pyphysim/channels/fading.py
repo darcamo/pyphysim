@@ -853,7 +853,8 @@ class TdlChannel(object):
                 freq_response = self._last_impulse_response.get_freq_response(
                     fft_size)[carrier_indexes, 0]
 
-            output[start_idx:end_idx] = freq_response * signal[start_idx:end_idx]
+            output[start_idx:end_idx] = (freq_response *
+                                         signal[start_idx:end_idx])
 
             # Advance the fading generator by "fft_size - 1" to account how
             # much the channel has "changed" during the duration of the

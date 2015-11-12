@@ -168,7 +168,8 @@ class MuSisoChannel(object):
 
         return outputs
 
-    def corrupt_data_in_freq_domain(self, signal, fft_size, carrier_indexes=None):
+    def corrupt_data_in_freq_domain(self, signal, fft_size,
+                                    carrier_indexes=None):
         """
         Corrupt data passed through the TDL channels of each link, but in the
         frequency domain..
