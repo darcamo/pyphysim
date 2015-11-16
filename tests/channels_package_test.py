@@ -1697,6 +1697,84 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+class SuMimoChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        self.Fd = 5     # Doppler frequency (in Hz)
+        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        self.jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+
+        self.sumimochannel = singleuser.SuMimoChannel(num_antennas=3,
+            fading_generator=self.jakes, channel_profile=fading.COST259_TUx)
+
+    def test_constructor(self):
+        # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a SuMimoChannel without specifying any parameter. In this
+        # case a Rayleigh generator will be assumed and channel will be
+        # also flat.
+        flat_rayleight_suchannel = singleuser.SuMimoChannel(num_antennas=3)
+        self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
+        np.testing.assert_array_almost_equal(
+            flat_rayleight_suchannel.channel_profile.tap_powers_linear,
+            1.0)
+        np.testing.assert_array_almost_equal(
+            flat_rayleight_suchannel.channel_profile.tap_delays,
+            0.0)
+        self.assertAlmostEqual(flat_rayleight_suchannel.channel_profile.Ts, 1)
+
+        self.assertEqual(flat_rayleight_suchannel.num_tx_antennas, 3)
+        self.assertEqual(flat_rayleight_suchannel.num_rx_antennas, 3)
+        self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a SuMimoChannel channel only passing the fading
+        # generator. Note that in this case the channel will be flat,
+        # containing only one tap with power 0dB and delay 0.
+        jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+        suchannel = singleuser.SuMimoChannel(num_antennas=3,
+                                             fading_generator=jakes)
+        self.assertEqual(suchannel.num_taps, 1)
+        np.testing.assert_array_almost_equal(
+            suchannel.channel_profile.tap_powers_linear,
+            1.0)
+        np.testing.assert_array_almost_equal(
+            suchannel.channel_profile.tap_delays,
+            0.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Frequency Selective channel xxxxxxxxxxxxxxxxxxxxxxxxxx
+        jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+        suchannel = singleuser.SuMimoChannel(num_antennas=3,
+                                             fading_generator=jakes,
+                                             channel_profile=fading.COST259_TUx)
+        self.assertEqual(suchannel.num_taps, 15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # TODO: implement-me
+    def test_corrupt_data(self):
+        pass
+
+    # TODO: implement-me
+    def test_corrupt_data_in_freq_domain(self):
+        pass
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Multiuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

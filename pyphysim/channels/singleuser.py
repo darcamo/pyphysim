@@ -66,8 +66,7 @@ class SuSisoChannel(object):
 
     def set_pathloss(self, pathloss_value=None):
         """
-        Set the path loss (IN LINEAR SCALE) from each transmitter to each
-        receiver.
+        Set the path loss (IN LINEAR SCALE).
 
         The path loss will be accounted when calling the corrupt_data
         method.
@@ -194,3 +193,79 @@ class SuSisoChannel(object):
         Return the channel profile.
         """
         return self._tdlchannel.channel_profile
+
+
+class SuMimoChannel(SuSisoChannel):
+    """
+    Single User channel corresponding to a Tapped Delay Line channel model,
+    which corresponds to a multipath channel. You can use a single tap in
+    order to get a flat fading channel.
+
+    You can create a new SuMimoChannel object either specifying the channel
+    profile or specifying both the channel tap powers and delays. If only the
+    fading_generator is specified then a single tap with unitary power and
+    delay zero will be assumed, which corresponds to a flat fading channel
+    model.
+
+    Parameters
+    ----------
+    num_antennas : int
+        Number of transmit and receive antennas.
+    fading_generator : Subclass of FadingSampleGenerator (optional)
+        The instance of a fading generator in the `fading_generators`
+        module.  It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel samples. If
+        not provided then RayleighSampleGenerator will be ised
+    channel_profile : TdlChannelProfile
+        The channel profile, which specifies the tap powers and delays.
+    tap_powers_dB : numpy real array
+        The powers of each tap (in dB). Dimension: `L x 1`
+        Note: The power of each tap will be a negative number (in dB).
+    tap_delays : numpy real array
+        The delay of each tap (in seconds). Dimension: `L x 1`
+    """
+    def __init__(self, num_antennas, fading_generator=None, channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None, Ts=None):
+        if fading_generator is None:
+            fading_generator = fading_generators.RayleighSampleGenerator()
+            if channel_profile is None and Ts is None:
+                Ts = 1
+
+        fading_generator.shape = (num_antennas, num_antennas)
+
+        if (channel_profile is None and
+                tap_powers_dB is None and
+                tap_delays is None):
+            # Only the fading generator was provided. Let's assume a flat
+            # fading channel
+            self._tdlchannel = fading.TdlChannel(fading_generator,
+                                                 tap_powers_dB=np.zeros(1),
+                                                 tap_delays=np.zeros(1),
+                                                 Ts=Ts)
+        else:
+            # More parameters were provided. We will have then a TDL channel
+            # model. Let's iust pass these parameters to the base class.
+            self._tdlchannel = fading.TdlChannel(
+                fading_generator,
+                channel_profile, tap_powers_dB, tap_delays,
+                Ts)
+
+        # Path loss which will be multiplied by the impulse response when
+        # corrupt_data is called
+        self._pathloss_value = None
+
+        # Store number of transmit and receive antennas
+        self._num_tx_antennas = num_antennas
+        self._num_rx_antennas = num_antennas
+
+    @property
+    def num_tx_antennas(self):
+        """Get the number of transmit antennas.
+        """
+        return self._num_tx_antennas
+
+    @property
+    def num_rx_antennas(self):
+        """Get the number of receive antennas.
+        """
+        return self._num_rx_antennas
