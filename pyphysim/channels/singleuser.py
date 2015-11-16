@@ -224,35 +224,23 @@ class SuMimoChannel(SuSisoChannel):
     tap_delays : numpy real array
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, num_antennas, fading_generator=None, channel_profile=None,
-                 tap_powers_dB=None, tap_delays=None, Ts=None):
+    def __init__(self, num_antennas, fading_generator=None,
+                 channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None,
+                 Ts=None):
+        # Before calling supper to initialize the base class we will set
+        # the shape of the fading generator
         if fading_generator is None:
             fading_generator = fading_generators.RayleighSampleGenerator()
             if channel_profile is None and Ts is None:
                 Ts = 1
 
+        # Set the shape of the fading generator.
         fading_generator.shape = (num_antennas, num_antennas)
 
-        if (channel_profile is None and
-                tap_powers_dB is None and
-                tap_delays is None):
-            # Only the fading generator was provided. Let's assume a flat
-            # fading channel
-            self._tdlchannel = fading.TdlChannel(fading_generator,
-                                                 tap_powers_dB=np.zeros(1),
-                                                 tap_delays=np.zeros(1),
-                                                 Ts=Ts)
-        else:
-            # More parameters were provided. We will have then a TDL channel
-            # model. Let's iust pass these parameters to the base class.
-            self._tdlchannel = fading.TdlChannel(
-                fading_generator,
-                channel_profile, tap_powers_dB, tap_delays,
-                Ts)
-
-        # Path loss which will be multiplied by the impulse response when
-        # corrupt_data is called
-        self._pathloss_value = None
+        # Initialize attributes from base class
+        super(SuMimoChannel, self).__init__(fading_generator, channel_profile,
+                                            tap_powers_dB, tap_delays, Ts)
 
         # Store number of transmit and receive antennas
         self._num_tx_antennas = num_antennas

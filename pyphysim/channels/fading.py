@@ -859,6 +859,7 @@ class TdlChannel(object):
         # concatenate these impulse responses at the end so that we can set
         # self._last_impulse_response to the impulse response of all blocks
         impulse_responses = []
+        num_tx_ant = -1  # This will be set latter
 
         if len(self._fading_generator.shape) == 1:
             # Output variable representing the received signal
@@ -884,19 +885,19 @@ class TdlChannel(object):
             self._generate_impulse_response(1)
             impulse_responses.append(self.get_last_impulse_response())
 
-
-
             if len(self._fading_generator.shape) == 1:
                 # xxxxxxxxxx SISO case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                 # Get the equivalent frequency response of the last generated
                 # impulse response. That is what we will use to corrupt the
                 # current block of signal
                 if carrier_indexes is None:
-                    freq_response = self._last_impulse_response.get_freq_response(
-                        fft_size)[:, 0]
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[:, 0]
                 else:
-                    freq_response = self._last_impulse_response.get_freq_response(
-                        fft_size)[carrier_indexes, 0]
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[carrier_indexes, 0]
 
                 output[start_idx:end_idx] = (freq_response *
                                              signal[start_idx:end_idx])
@@ -908,11 +909,13 @@ class TdlChannel(object):
                 # impulse response. That is what we will use to corrupt the
                 # current block of signal
                 if carrier_indexes is None:
-                    freq_response = self._last_impulse_response.get_freq_response(
-                        fft_size)[:, :, :, 0]
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[:, :, :, 0]
                 else:
-                    freq_response = self._last_impulse_response.get_freq_response(
-                        fft_size)[carrier_indexes, :, :, 0]
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[carrier_indexes, :, :, 0]
 
                 for tx_idx in range(num_tx_ant):
                     output[start_idx:end_idx, :] += (
@@ -973,7 +976,7 @@ class TdlMimoChannel(TdlChannel):
                 " must have a shape with two values")
 
         super(TdlMimoChannel, self).__init__(fading_generator, channel_profile,
-                 tap_powers_dB, tap_delays, Ts)
+                                             tap_powers_dB, tap_delays, Ts)
 
     @property
     def num_tx_antennas(self):
