@@ -93,6 +93,22 @@ class SuChannel(object):
 
         self._pathloss_value = pathloss_value
 
+    def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
+        """
+        Set the number of transmit and receive antennas for MIMO transmission.
+
+        Set both `num_rx_antennas` and `num_tx_antennas` to None for SISO
+        transmission
+
+        Parameters
+        ----------
+        num_rx_antennas : int
+            The number of receive antennas.
+        num_tx_antennas : int
+            The number of transmit antennas.
+        """
+        self._tdlchannel.set_num_antennas(num_rx_antennas, num_tx_antennas)
+
     def corrupt_data(self, signal):
         """
         Transmit the signal through the TDL channel.
