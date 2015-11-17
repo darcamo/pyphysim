@@ -84,6 +84,13 @@ class MuSisoChannel(object):
         self._pathloss_matrix = None
 
     @property
+    def channel_profile(self):
+        """
+        Return the channel profile.
+        """
+        return self._su_siso_channels[0, 0].channel_profile
+
+    @property
     def num_taps(self):
         """
         Get the number of taps in the profile.
