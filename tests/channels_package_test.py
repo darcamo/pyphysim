@@ -1080,6 +1080,19 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         self.assertEqual(tdlmimochannel_jakes.num_rx_antennas, 3)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Test changing the shape after creation xxxxxxxxxxxxxxx
+        # Note that we are using a TdlChannel object instead of a
+        # TdlMimoChannel object.
+        tdlchannel_jakes = fading.TdlChannel(
+            fading_generators.JakesSampleGenerator())
+        tdlchannel_jakes._generate_impulse_response()
+        # Set the number of Tx and Rx antennas
+        tdlchannel_jakes.set_num_antennas(4, 3)
+        self.assertEqual(tdlchannel_jakes.num_rx_antennas, 4)
+        self.assertEqual(tdlchannel_jakes.num_tx_antennas, 3)
+        self.assertEqual(tdlchannel_jakes.num_taps, 1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_num_taps_with_and_without_padding(self):
         self.assertEqual(self.tdlmimochannel.num_taps_with_padding, 67)
         self.assertEqual(self.tdlmimochannel.num_taps, 15)

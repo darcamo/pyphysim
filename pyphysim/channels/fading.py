@@ -644,16 +644,45 @@ class TdlChannel(object):
         # Finally save the channel profile to a member attribute
         self._channel_profile = channel_profile
 
-        if fading_generator.shape is None:
-            fading_generator.shape = (self.num_taps,)
-        else:
-            # Note that fading_generator.shape must be a tuple
-            fading_generator.shape = (self.num_taps,) + fading_generator.shape
+        shape = fading_generator.shape
         self._fading_generator = fading_generator
+        self._set_fading_generator_shape(shape)
 
         # Last generated impulse response. This will be set when the
         # _generate_impulse_response method is called
         self._last_impulse_response = None
+
+    def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
+        """
+        Set the number of transmit and receive antennas for MIMO transmission.
+
+        Set both `num_rx_antennas` and `num_tx_antennas` to None for SISO
+        transmission
+
+        Parameters
+        ----------
+        num_rx_antennas : int
+            The number of receive antennas.
+        num_tx_antennas : int
+            The number of transmit antennas.
+        """
+        self._set_fading_generator_shape((num_rx_antennas, num_tx_antennas))
+
+    def _set_fading_generator_shape(self, new_shape):
+        """
+        Set the shape of the fading generator.
+
+        Parameters
+        ----------
+        new_shape : tuple of integers
+            The new shape of the fading generator. Note that the actual
+            shape will be set to (self.num_taps, new_shape)
+        """
+        if new_shape is None:
+            self._fading_generator.shape = (self.num_taps,)
+        else:
+            # Note that fading_generator.shape must be a tuple
+            self._fading_generator.shape = (self.num_taps,) + new_shape
 
     @property
     def channel_profile(self):
@@ -678,7 +707,7 @@ class TdlChannel(object):
         # tap_delays correspond to integers
         return self._channel_profile.num_taps_with_padding
 
-    def _generate_impulse_response(self, num_samples):
+    def _generate_impulse_response(self, num_samples=1):
         """
         Generate a new impulse response of all discretized taps (not
         including possible zero padding) for `num_samples` channel
