@@ -1473,15 +1473,15 @@ class SuSisoChannelTestCase(unittest.TestCase):
         self.jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
 
-        self.susisochannel = singleuser.SuSisoChannel(
+        self.susisochannel = singleuser.SuChannel(
             self.jakes, channel_profile=fading.COST259_TUx)
 
     def test_constructor(self):
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Create a SuSisoChannel without specifying any parameter. In this
+        # Create a SuChannel without specifying any parameter. In this
         # case a Rayleigh generator will be assumed and channel will be
         # also flat.
-        flat_rayleight_suchannel = singleuser.SuSisoChannel()
+        flat_rayleight_suchannel = singleuser.SuChannel()
         self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
             flat_rayleight_suchannel.channel_profile.tap_powers_linear,
@@ -1493,12 +1493,12 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Create a SuSisoChannel channel only passing the fading
+        # Create a SuChannel channel only passing the fading
         # generator. Note that in this case the channel will be flat,
         # containing only one tap with power 0dB and delay 0.
         jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
-        suchannel = singleuser.SuSisoChannel(jakes)
+        suchannel = singleuser.SuChannel(jakes)
         self.assertEqual(suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
             suchannel.channel_profile.tap_powers_linear,
@@ -1511,8 +1511,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Frequency Selective channel xxxxxxxxxxxxxxxxxxxxxxxxxx
         jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
-        suchannel = singleuser.SuSisoChannel(jakes,
-                                             channel_profile=fading.COST259_TUx)
+        suchannel = singleuser.SuChannel(jakes,
+                                         channel_profile=fading.COST259_TUx)
         self.assertEqual(suchannel.num_taps, 15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1614,7 +1614,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
             self.Fd, self.Ts, self.NRays, shape=None)
 
         # Note that tdlchannel will modify the jakes1 object
-        susisochannel1 = singleuser.SuSisoChannel(
+        susisochannel1 = singleuser.SuChannel(
             fading_generator=jakes1,
             channel_profile=fading.COST259_TUx)
 

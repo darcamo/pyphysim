@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pyphysim.modulators import QPSK, OFDM
 from pyphysim.modulators.ofdm import OfdmOneTapEqualizer
-from pyphysim.channels.singleuser import SuSisoChannel
+from pyphysim.channels.singleuser import SuChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.channels.fading import COST259_TUx
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Transmit data through the channel xxxxxxxxxxxxxxxxxxxxxxxx
     jakes = JakesSampleGenerator(Fd, Ts, L)
-    channel = SuSisoChannel(jakes, channel_profile)
+    channel = SuChannel(jakes, channel_profile)
     channel_memory = channel.num_taps_with_padding - 1
     received_data = channel.corrupt_data(transmit_data)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -9,13 +9,13 @@ import numpy as np
 from pyphysim.channels import fading, fading_generators
 
 
-class SuSisoChannel(object):
+class SuChannel(object):
     """
     Single User channel corresponding to a Tapped Delay Line channel model,
     which corresponds to a multipath channel. You can use a single tap in
     order to get a flat fading channel.
 
-    You can create a new SuSisoChannel object either specifying the channel
+    You can create a new SuChannel object either specifying the channel
     profile or specifying both the channel tap powers and delays. If only the
     fading_generator is specified then a single tap with unitary power and
     delay zero will be assumed, which corresponds to a flat fading channel
@@ -107,7 +107,7 @@ class SuSisoChannel(object):
         numpy array
             The received signal after transmission through the TDL channel.
         """
-        # output = super(SuSisoChannel, self).corrupt_data(signal)
+        # output = super(SuChannel, self).corrupt_data(signal)
         output = self._tdlchannel.corrupt_data(signal)
 
         if self._pathloss_value is not None:
@@ -207,7 +207,7 @@ class SuSisoChannel(object):
         return self._tdlchannel.num_rx_antennas
 
 
-class SuMimoChannel(SuSisoChannel):
+class SuMimoChannel(SuChannel):
     """
     Single User channel corresponding to a Tapped Delay Line channel model,
     which corresponds to a multipath channel. You can use a single tap in

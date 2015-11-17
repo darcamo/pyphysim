@@ -69,8 +69,8 @@ class MuSisoChannel(object):
                 new_fading_generator = \
                     fading_generator.get_similar_fading_generator()
 
-                # Create a new SuSisoChannel object for this link
-                self._su_siso_channels[rx, tx] = singleuser.SuSisoChannel(
+                # Create a new SuChannel object for this link
+                self._su_siso_channels[rx, tx] = singleuser.SuChannel(
                     new_fading_generator,
                     channel_profile=channel_profile,
                     tap_powers_dB=tap_powers_dB, tap_delays=tap_delays,
