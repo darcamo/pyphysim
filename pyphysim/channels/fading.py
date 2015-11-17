@@ -726,6 +726,22 @@ class TdlChannel(object):
         impulse_response = TdlImpulseResponse(samples, self._channel_profile)
         self._last_impulse_response = impulse_response
 
+    @property
+    def num_tx_antennas(self):
+        """Get the number of transmit antennas.
+        """
+        if len(self._fading_generator.shape) == 1:
+            return -1
+        return self._fading_generator.shape[2]
+
+    @property
+    def num_rx_antennas(self):
+        """Get the number of receive antennas.
+        """
+        if len(self._fading_generator.shape) == 1:
+            return -1
+        return self._fading_generator.shape[1]
+
     def get_last_impulse_response(self):
         """
         Get the last generated impulse response.
@@ -977,15 +993,3 @@ class TdlMimoChannel(TdlChannel):
 
         super(TdlMimoChannel, self).__init__(fading_generator, channel_profile,
                                              tap_powers_dB, tap_delays, Ts)
-
-    @property
-    def num_tx_antennas(self):
-        """Get the number of transmit antennas.
-        """
-        return self._fading_generator.shape[2]
-
-    @property
-    def num_rx_antennas(self):
-        """Get the number of receive antennas.
-        """
-        return self._fading_generator.shape[1]

@@ -194,6 +194,18 @@ class SuSisoChannel(object):
         """
         return self._tdlchannel.channel_profile
 
+    @property
+    def num_tx_antennas(self):
+        """Get the number of transmit antennas.
+        """
+        return self._tdlchannel.num_tx_antennas
+
+    @property
+    def num_rx_antennas(self):
+        """Get the number of receive antennas.
+        """
+        return self._tdlchannel.num_rx_antennas
+
 
 class SuMimoChannel(SuSisoChannel):
     """
@@ -241,19 +253,3 @@ class SuMimoChannel(SuSisoChannel):
         # Initialize attributes from base class
         super(SuMimoChannel, self).__init__(fading_generator, channel_profile,
                                             tap_powers_dB, tap_delays, Ts)
-
-        # Store number of transmit and receive antennas
-        self._num_tx_antennas = num_antennas
-        self._num_rx_antennas = num_antennas
-
-    @property
-    def num_tx_antennas(self):
-        """Get the number of transmit antennas.
-        """
-        return self._num_tx_antennas
-
-    @property
-    def num_rx_antennas(self):
-        """Get the number of receive antennas.
-        """
-        return self._num_rx_antennas

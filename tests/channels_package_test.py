@@ -766,6 +766,11 @@ class TdlChannelTestCase(unittest.TestCase):
         self.tdlchannel._generate_impulse_response(num_samples=20)
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
+        # This is a SISO channel and therefore number of transmit and
+        # receive antenas is returned as -1
+        self.assertEqual(self.tdlchannel.num_tx_antennas, -1)
+        self.assertEqual(self.tdlchannel.num_rx_antennas, -1)
+
         self.assertEqual(last_impulse_response.num_samples, 20)
         self.assertEqual(last_impulse_response.tap_values_sparse.shape, (15, 20))
 
@@ -779,6 +784,11 @@ class TdlChannelTestCase(unittest.TestCase):
         tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
         tdlchannel._generate_impulse_response(10)
         last_impulse_response = tdlchannel.get_last_impulse_response()
+
+        # This is a MIMO channel. Let's check the number of transmit and
+        # receive antennas
+        self.assertEqual(tdlchannel.num_tx_antennas, 3)
+        self.assertEqual(tdlchannel.num_rx_antennas, 4)
         self.assertEqual(last_impulse_response.num_samples, 10)
         self.assertEqual(last_impulse_response.tap_values_sparse.shape,
                          (15, 4, 3, 10))
@@ -1022,6 +1032,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# TODO: move tests (only MIMO specific) here to TdlChannelTestCase
 class TdlMIMOChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
