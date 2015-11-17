@@ -671,6 +671,7 @@ class TdlChannelTestCase(unittest.TestCase):
         self.Ts = 1./bandwidth  # Sampling interval (in seconds)
         self.NRays = 16  # Number of rays for the Jakes model
 
+        # xxxxxxxxxx Create the TDL SISO channel for testing xxxxxxxxxxxxxx
         # Create the jakes object that will be passed to TdlChannel
         self.jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
@@ -678,6 +679,7 @@ class TdlChannelTestCase(unittest.TestCase):
         self.tdlchannel = fading.TdlChannel(
             self.jakes, tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
             tap_delays=fading.COST259_TUx.tap_delays)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_constructor_and_num_taps(self):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -707,7 +709,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # The constructor provided the tap powers ande delays. The
+        # The constructor provided the tap powers and delays. The
         # TdlChannel constructor used that, as well as the sampling time Ts
         # from the jakes object and created a custom channel profile
         self.assertAlmostEqual(self.tdlchannel.channel_profile.Ts, self.Ts)
@@ -764,6 +766,11 @@ class TdlChannelTestCase(unittest.TestCase):
         self.tdlchannel._generate_impulse_response(num_samples=20)
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
+        # This is a SISO channel and therefore number of transmit and
+        # receive antenas is returned as -1
+        self.assertEqual(self.tdlchannel.num_tx_antennas, -1)
+        self.assertEqual(self.tdlchannel.num_rx_antennas, -1)
+
         self.assertEqual(last_impulse_response.num_samples, 20)
         self.assertEqual(last_impulse_response.tap_values_sparse.shape, (15, 20))
 
@@ -777,6 +784,11 @@ class TdlChannelTestCase(unittest.TestCase):
         tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
         tdlchannel._generate_impulse_response(10)
         last_impulse_response = tdlchannel.get_last_impulse_response()
+
+        # This is a MIMO channel. Let's check the number of transmit and
+        # receive antennas
+        self.assertEqual(tdlchannel.num_tx_antennas, 3)
+        self.assertEqual(tdlchannel.num_rx_antennas, 4)
         self.assertEqual(last_impulse_response.num_samples, 10)
         self.assertEqual(last_impulse_response.tap_values_sparse.shape,
                          (15, 4, 3, 10))
@@ -1020,6 +1032,436 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# TODO: move tests (only MIMO specific) here to TdlChannelTestCase
+class TdlMIMOChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        self.Fd = 5     # Doppler frequency (in Hz)
+        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.NRays = 16  # Number of rays for the Jakes model
+
+        # xxxxxxxxxx Create the TDL MIMO channel for testing xxxxxxxxxxxxxx
+        # Create the jakes object that will be passed to TdlMimoChannel
+        self.jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=(3, 2))
+
+        self.tdlmimochannel = fading.TdlMimoChannel(
+            self.jakes, tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+            tap_delays=fading.COST259_TUx.tap_delays)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_constructor_and_num_taps(self):
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # test constructor if we only provide the fading generator
+
+        # For the RayleighSampleGenerator generator Ts will be 1
+        tdlmimochannel_ray = fading.TdlMimoChannel(
+            fading_generators.RayleighSampleGenerator(shape=(3, 2)))
+        self.assertEqual(tdlmimochannel_ray.channel_profile.Ts, 1)
+        self.assertEqual(tdlmimochannel_ray.num_tx_antennas, 2)
+        self.assertEqual(tdlmimochannel_ray.num_rx_antennas, 3)
+
+        # For the JakesSampleGenerator Ts will be the same value from Jakes
+        # generator
+        tdlmimochannel_jakes = fading.TdlMimoChannel(
+            fading_generators.JakesSampleGenerator(shape=(3, 2)))
+        self.assertEqual(tdlmimochannel_jakes.channel_profile.Ts, 0.001)
+        self.assertEqual(tdlmimochannel_jakes.num_tx_antennas, 2)
+        self.assertEqual(tdlmimochannel_jakes.num_rx_antennas, 3)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test changing the shape after creation xxxxxxxxxxxxxxx
+        # Note that we are using a TdlChannel object instead of a
+        # TdlMimoChannel object.
+        tdlchannel_jakes = fading.TdlChannel(
+            fading_generators.JakesSampleGenerator())
+        tdlchannel_jakes._generate_impulse_response()
+        # Set the number of Tx and Rx antennas
+        tdlchannel_jakes.set_num_antennas(4, 3)
+        self.assertEqual(tdlchannel_jakes.num_rx_antennas, 4)
+        self.assertEqual(tdlchannel_jakes.num_tx_antennas, 3)
+        self.assertEqual(tdlchannel_jakes.num_taps, 1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_num_taps_with_and_without_padding(self):
+        self.assertEqual(self.tdlmimochannel.num_taps_with_padding, 67)
+        self.assertEqual(self.tdlmimochannel.num_taps, 15)
+
+    def test_generate_and_get_last_impulse_response(self):
+        self.assertIsNone(self.tdlmimochannel.get_last_impulse_response())
+        self.tdlmimochannel._generate_impulse_response(num_samples=20)
+        last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
+
+        self.assertEqual(last_impulse_response.num_samples, 20)
+        self.assertEqual(last_impulse_response.tap_values_sparse.shape,
+                         (15, 3, 2, 20))
+        self.assertEqual(last_impulse_response.tap_values.shape,
+                         (67, 3, 2, 20))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # For this Ts there are 15 non zero taps and 67 taps in total
+        # including zero padding
+        Ts = 3.255e-08
+        jakes = fading_generators.JakesSampleGenerator(shape=(4, 3), Ts=Ts)
+        tdlmimochannel = fading.TdlMimoChannel(jakes, fading.COST259_TUx)
+        tdlmimochannel._generate_impulse_response(10)
+        last_impulse_response = tdlmimochannel.get_last_impulse_response()
+        self.assertEqual(last_impulse_response.num_samples, 10)
+        self.assertEqual(last_impulse_response.tap_values_sparse.shape,
+                         (15, 4, 3, 10))
+        self.assertEqual(last_impulse_response.tap_values.shape,
+                         (67, 4, 3, 10))
+
+    def test_corrupt_data(self):
+        # xxxxx Test sending single impulse in flat fading channel xxxxxxxx
+        jakes = fading_generators.JakesSampleGenerator(shape=(3, 2))
+
+        tdlmimochannel_flat = fading.TdlMimoChannel(
+            jakes, channel_profile=fading.COST259_TUx)
+        num_samples = 3
+        signal = np.random.randn(2, num_samples) + 1j * np.random.randn(2, num_samples)
+
+        received_signal_flat = tdlmimochannel_flat.corrupt_data(signal)
+
+        # Impulse response used to transmit the signal
+        last_impulse_response = tdlmimochannel_flat.get_last_impulse_response()
+
+        # Impulse response at each sample is just a matrix, since we only
+        # have one tap
+        h0 = last_impulse_response.tap_values[0, :, :, 0]
+        h1 = last_impulse_response.tap_values[0, :, :, 1]
+        h2 = last_impulse_response.tap_values[0, :, :, 2]
+        expected_received_signal_flat = np.zeros((3, num_samples), dtype=complex)
+        expected_received_signal_flat[:, 0] = h0.dot(signal[:, 0])
+        expected_received_signal_flat[:, 1] = h1.dot(signal[:, 1])
+        expected_received_signal_flat[:, 2] = h2.dot(signal[:, 2])
+
+        # Since only one sample was sent and it is equal to 1, then the
+        # received signal will be equal to the full_fading_map
+        np.testing.assert_almost_equal(
+            expected_received_signal_flat,
+            received_signal_flat)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
+        num_samples = 10
+        signal = np.random.randn(2, num_samples) + 1j * np.random.randn(2, num_samples)
+        received_signal = self.tdlmimochannel.corrupt_data(signal)
+        last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
+
+        # Compute the expected received signal
+        # For this Ts we have 15 discretized taps. The indexes of the 15
+        # taps are:
+        # [ 0,  7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]
+        np.testing.assert_array_equal(
+            last_impulse_response.tap_indexes_sparse,
+            np.array([0, 7, 16, 21, 27, 38, 40, 41,
+                      47, 50, 56, 58, 60, 63, 66]))
+
+        # Including zero pading, the impulse response has 67 taps. That
+        # means the channel memory is equal to 66
+        channel_memory = 66
+        self.assertEqual(received_signal.shape, (self.tdlmimochannel.num_rx_antennas,
+                                                 num_samples + channel_memory))
+
+        expected_received_signal = np.zeros(
+            (self.tdlmimochannel.num_rx_antennas,
+             channel_memory + num_samples),
+            dtype=complex)
+
+        # Let's compute the expected received signal
+        tap_values_sparse = last_impulse_response.tap_values_sparse
+
+        expected_received_signal[:, 0:0+num_samples] += (
+            signal[0] * tap_values_sparse[0, :, 0, :] +
+            signal[1] * tap_values_sparse[0, :, 1, :])
+        expected_received_signal[:, 7:7+num_samples] += (
+            signal[0] * tap_values_sparse[1, :, 0, :] +
+            signal[1] * tap_values_sparse[1, :, 1, :])
+        expected_received_signal[:, 16:16+num_samples] += (
+            signal[0] * tap_values_sparse[2, :, 0, :] +
+            signal[1] * tap_values_sparse[2, :, 1, :])
+        expected_received_signal[:, 21:21+num_samples] += (
+            signal[0] * tap_values_sparse[3, :, 0, :] +
+            signal[1] * tap_values_sparse[3, :, 1, :])
+        expected_received_signal[:, 27:27+num_samples] += (
+            signal[0] * tap_values_sparse[4, :, 0, :] +
+            signal[1] * tap_values_sparse[4, :, 1, :])
+        expected_received_signal[:, 38:38+num_samples] += (
+            signal[0] * tap_values_sparse[5, :, 0, :] +
+            signal[1] * tap_values_sparse[5, :, 1, :])
+        expected_received_signal[:, 40:40+num_samples] += (
+            signal[0] * tap_values_sparse[6, :, 0, :] +
+            signal[1] * tap_values_sparse[6, :, 1, :])
+        expected_received_signal[:, 41:41+num_samples] += (
+            signal[0] * tap_values_sparse[7, :, 0, :] +
+            signal[1] * tap_values_sparse[7, :, 1, :])
+        expected_received_signal[:, 47:47+num_samples] += (
+            signal[0] * tap_values_sparse[8, :, 0, :] +
+            signal[1] * tap_values_sparse[8, :, 1, :])
+        expected_received_signal[:, 50:50+num_samples] += (
+            signal[0] * tap_values_sparse[9, :, 0, :] +
+            signal[1] * tap_values_sparse[9, :, 1, :])
+        expected_received_signal[:, 56:56+num_samples] += (
+            signal[0] * tap_values_sparse[10, :, 0, :] +
+            signal[1] * tap_values_sparse[10, :, 1, :])
+        expected_received_signal[:, 58:58+num_samples] += (
+            signal[0] * tap_values_sparse[11, :, 0, :] +
+            signal[1] * tap_values_sparse[11, :, 1, :])
+        expected_received_signal[:, 60:60+num_samples] += (
+            signal[0] * tap_values_sparse[12, :, 0, :] +
+            signal[1] * tap_values_sparse[12, :, 1, :])
+        expected_received_signal[:, 63:63+num_samples] += (
+            signal[0] * tap_values_sparse[13, :, 0, :] +
+            signal[1] * tap_values_sparse[13, :, 1, :])
+        expected_received_signal[:, 66:66+num_samples] += (
+            signal[0] * tap_values_sparse[14, :, 0, :] +
+            signal[1] * tap_values_sparse[14, :, 1, :])
+
+        # Check if the received singal is correct
+        np.testing.assert_array_almost_equal(expected_received_signal,
+                                             received_signal)
+
+    def test_corrupt_data_in_freq_domain(self):
+        fft_size = 16
+        num_samples = 3 * fft_size
+        signal = np.ones((2, num_samples))
+        # num_full_blocks = num_samples // fft_size
+
+        jakes1 = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=(3, 2))
+
+        # Note that tdlmimochannel will modify the jakes1 object
+        tdlmimochannel1 = fading.TdlMimoChannel(fading_generator=jakes1,
+                                        channel_profile=fading.COST259_TUx)
+
+        # we want tdlmimochannel2 to be a copy of tdlmimochannel1 and generate the
+        # same samples
+        tdlmimochannel2 = copy(tdlmimochannel1)
+        # After the copy it will use the same fading_generator
+        # object. Let's copy the fading_generator and replace the one in
+        # tdlmimochannel2 with the copy
+        jakes2 = copy(jakes1)
+        tdlmimochannel2._fading_generator = jakes2
+
+        # xxxxxxxxxx Perform the actual transmission xxxxxxxxxxxxxxxxxxxxxx
+        received_signal = tdlmimochannel1.corrupt_data_in_freq_domain(
+            signal, fft_size)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.assertEqual(received_signal.shape, (3, num_samples))
+
+        # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
+        tdlmimochannel2._generate_impulse_response(num_samples)
+        impulse_response_all = tdlmimochannel2.get_last_impulse_response()
+        # Note that here we have the frequency response for `num_samples`
+        # samples. But the `corrupt_data_in_freq_domain` method only use
+        # multiples of `fft_size` (0*fft_size, 1*fft_size, ...)
+        freq_response_all = impulse_response_all.get_freq_response(fft_size)
+        # Frequency response from each transmitter to each receiver
+        freq_response00 = freq_response_all[:, 0, 0, :]
+        freq_response01 = freq_response_all[:, 0, 1, :]
+        freq_response10 = freq_response_all[:, 1, 0, :]
+        freq_response11 = freq_response_all[:, 1, 1, :]
+        freq_response20 = freq_response_all[:, 2, 0, :]
+        freq_response21 = freq_response_all[:, 2, 1, :]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the received signal is correct xxxxxxxxxxxxxxx
+        # First OFDM symbol
+        # Since we transmitted just 1's, then the received signal should be
+        # equal to the frequency response af the start of the OFDM symbol
+
+        # Receiver 0
+        np.testing.assert_array_almost_equal(
+            received_signal[0, 0:fft_size],
+            freq_response00[:, 0] + freq_response01[:, 0])
+        # Receiver 1
+        np.testing.assert_array_almost_equal(
+            received_signal[1, 0:fft_size],
+            freq_response10[:, 0] + freq_response11[:, 0])
+        # Receiver 2
+        np.testing.assert_array_almost_equal(
+            received_signal[2, 0:fft_size],
+            freq_response20[:, 0] + freq_response21[:, 0])
+
+        # Second OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[0, fft_size:2*fft_size],
+            freq_response00[:, fft_size] + freq_response01[:, fft_size])
+        np.testing.assert_array_almost_equal(
+            received_signal[1, fft_size:2*fft_size],
+            freq_response10[:, fft_size] + freq_response11[:, fft_size])
+        np.testing.assert_array_almost_equal(
+            received_signal[2, fft_size:2*fft_size],
+            freq_response20[:, fft_size] + freq_response21[:, fft_size])
+
+
+        # Third OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[0, 2*fft_size:3*fft_size],
+            freq_response00[:, 2*fft_size] + freq_response01[:, 2*fft_size])
+        np.testing.assert_array_almost_equal(
+            received_signal[1, 2*fft_size:3*fft_size],
+            freq_response10[:, 2*fft_size] + freq_response11[:, 2*fft_size])
+        np.testing.assert_array_almost_equal(
+            received_signal[2, 2*fft_size:3*fft_size],
+            freq_response20[:, 2*fft_size] + freq_response21[:, 2*fft_size])
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test impulse response after transmission xxxxxxxxxxxxx
+        # Since signal corresponds to 3 OFDM symbols, then we should have 3
+        # "samples" in the returned impulse response.
+        impulse_response = tdlmimochannel1.get_last_impulse_response()
+        self.assertEqual(impulse_response.num_samples,
+                         num_samples // fft_size)
+
+        freq_response = impulse_response.get_freq_response(fft_size)
+
+        np.testing.assert_array_almost_equal(
+            freq_response[:, :, :, 0],
+            freq_response_all[:, :, :, 0 * fft_size])
+        np.testing.assert_array_almost_equal(
+            freq_response[:, :, :, 1],
+            freq_response_all[:, :, :, 1*fft_size])
+        np.testing.assert_array_almost_equal(
+            freq_response[:, :, :, 2],
+            freq_response_all[:, :, :, 2*fft_size])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Test corrupt signal with wrong number of elements xxxxxxxxx
+        signal2 = np.ones((2, num_samples-1))
+        with self.assertRaises(ValueError):
+            tdlmimochannel1.corrupt_data_in_freq_domain(signal2, fft_size)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_corrupt_data_in_freq_domain2(self):
+        # This method tests corrupt_data_in_freq_domain, but now specifying
+        # the indexes of the used subcarriers
+        num_rx_ant = 3
+        num_tx_ant = 2
+
+        fft_size = 16
+        num_samples = 5 * fft_size
+        signal = np.ones((2, num_samples))
+        # For these particular indexes we will use half of the subcarriers
+        subcarrier_indexes = np.r_[0:fft_size:2]
+
+        jakes1 = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=(num_rx_ant, num_tx_ant))
+
+        # Note that tdlmimochannel will modify the jakes1 object
+        tdlmimochannel1 = fading.TdlMimoChannel(
+            fading_generator=jakes1,
+            channel_profile=fading.COST259_TUx)
+
+        # we want tdlmimochannel2 to be a copy of tdlmimochannel1 and generate the
+        # same samples
+        tdlmimochannel2 = copy(tdlmimochannel1)
+        # After the copy it will use the same fading_generator
+        # object. Let's copy the fading_generator and replace the one in
+        # tdlmimochannel2 with the copy
+        jakes2 = copy(jakes1)
+        tdlmimochannel2._fading_generator = jakes2
+
+        # xxxxxxxxxx Perform the actual transmission xxxxxxxxxxxxxxxxxxxxxx
+        received_signal = tdlmimochannel1.corrupt_data_in_freq_domain(
+            signal, fft_size, subcarrier_indexes)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
+        tdlmimochannel2._generate_impulse_response(2*num_samples)
+        impulse_response_all = tdlmimochannel2.get_last_impulse_response()
+        # Note that here we have the frequency response for `num_samples`
+        # samples. But the `corrupt_data_in_freq_domain` method only use
+        # multiples of `fft_size` (0*fft_size, 1*fft_size, ...)
+        freq_response_all = impulse_response_all.get_freq_response(fft_size)
+        # Frequency response from each transmitter to each receiver
+        freq_response00 = freq_response_all[:, 0, 0, :]
+        freq_response01 = freq_response_all[:, 0, 1, :]
+        freq_response10 = freq_response_all[:, 1, 0, :]
+        freq_response11 = freq_response_all[:, 1, 1, :]
+        freq_response20 = freq_response_all[:, 2, 0, :]
+        freq_response21 = freq_response_all[:, 2, 1, :]
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test if the received signal is correct xxxxxxxxxxxxxxx
+        block_size = fft_size // 2
+        # First OFDM symbol
+        # Since we transmitted just 1's, then the received signal should be
+        # equal to the frequency response af the start of the OFDM symbol
+
+        # Receiver 0
+        np.testing.assert_array_almost_equal(
+            received_signal[0, 0:block_size],
+            freq_response00[subcarrier_indexes, 0] + freq_response01[subcarrier_indexes, 0])
+        # Receiver 1
+        np.testing.assert_array_almost_equal(
+            received_signal[1, 0:block_size],
+            freq_response10[subcarrier_indexes, 0] + freq_response11[subcarrier_indexes, 0])
+        # Receiver 2
+        np.testing.assert_array_almost_equal(
+            received_signal[2, 0:block_size],
+            freq_response20[subcarrier_indexes, 0] + freq_response21[subcarrier_indexes, 0])
+
+        # Second OFDM symbol
+        np.testing.assert_array_almost_equal(
+            received_signal[0, 1*block_size:2*block_size],
+            (freq_response00[subcarrier_indexes, 1*fft_size] +
+             freq_response01[subcarrier_indexes, 1*fft_size]))
+        np.testing.assert_array_almost_equal(
+            received_signal[1, 1*block_size:2*block_size],
+            (freq_response10[subcarrier_indexes, 1*fft_size] +
+             freq_response11[subcarrier_indexes, 1*fft_size]))
+        np.testing.assert_array_almost_equal(
+            received_signal[2, 1*block_size:2*block_size],
+            (freq_response20[subcarrier_indexes, 1*fft_size] +
+             freq_response21[subcarrier_indexes, 1*fft_size]))
+
+        # Remaining OFDM symbols (from 2 to 10)
+        for i in range(2, 10):
+            np.testing.assert_array_almost_equal(
+                received_signal[0, i*block_size:(i+1)*block_size],
+                (freq_response00[subcarrier_indexes, i*fft_size] +
+                 freq_response01[subcarrier_indexes, i*fft_size]))
+            np.testing.assert_array_almost_equal(
+                received_signal[1, i*block_size:(i+1)*block_size],
+                (freq_response10[subcarrier_indexes, i*fft_size] +
+                 freq_response11[subcarrier_indexes, i*fft_size]))
+            np.testing.assert_array_almost_equal(
+                received_signal[2, i*block_size:(i+1)*block_size],
+                (freq_response20[subcarrier_indexes, i*fft_size] +
+                 freq_response21[subcarrier_indexes, i*fft_size]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test impulse response after transmission xxxxxxxxxxxxx
+        # Since signal corresponds to 10 OFDM symbols (using only half of
+        # the subcarriers in each OFDM symbol), then we should have 10
+        # "samples" in the returned impulse response.
+        impulse_response = tdlmimochannel1.get_last_impulse_response()
+        self.assertEqual(impulse_response.num_samples,
+                         num_samples // block_size)
+
+        freq_response = impulse_response.get_freq_response(fft_size)
+        for i in range(10):
+            for tx_idx in range(num_tx_ant):
+                for rx_idx in range(num_rx_ant):
+                    np.testing.assert_array_almost_equal(
+                        freq_response[:, rx_idx, tx_idx, i],
+                        freq_response_all[:, rx_idx, tx_idx, i * fft_size])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Singleuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1044,15 +1486,15 @@ class SuSisoChannelTestCase(unittest.TestCase):
         self.jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
 
-        self.susisochannel = singleuser.SuSisoChannel(
+        self.susisochannel = singleuser.SuChannel(
             self.jakes, channel_profile=fading.COST259_TUx)
 
     def test_constructor(self):
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Create a SuSisoChannel without specifying any parameter. In this
+        # Create a SuChannel without specifying any parameter. In this
         # case a Rayleigh generator will be assumed and channel will be
         # also flat.
-        flat_rayleight_suchannel = singleuser.SuSisoChannel()
+        flat_rayleight_suchannel = singleuser.SuChannel()
         self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
             flat_rayleight_suchannel.channel_profile.tap_powers_linear,
@@ -1064,12 +1506,12 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Create a SuSisoChannel channel only passing the fading
+        # Create a SuChannel channel only passing the fading
         # generator. Note that in this case the channel will be flat,
         # containing only one tap with power 0dB and delay 0.
         jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
-        suchannel = singleuser.SuSisoChannel(jakes)
+        suchannel = singleuser.SuChannel(jakes)
         self.assertEqual(suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
             suchannel.channel_profile.tap_powers_linear,
@@ -1082,8 +1524,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Frequency Selective channel xxxxxxxxxxxxxxxxxxxxxxxxxx
         jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
-        suchannel = singleuser.SuSisoChannel(jakes,
-                                             channel_profile=fading.COST259_TUx)
+        suchannel = singleuser.SuChannel(jakes,
+                                         channel_profile=fading.COST259_TUx)
         self.assertEqual(suchannel.num_taps, 15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1185,7 +1627,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
             self.Fd, self.Ts, self.NRays, shape=None)
 
         # Note that tdlchannel will modify the jakes1 object
-        susisochannel1 = singleuser.SuSisoChannel(
+        susisochannel1 = singleuser.SuChannel(
             fading_generator=jakes1,
             channel_profile=fading.COST259_TUx)
 
@@ -1279,6 +1721,84 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+class SuMimoChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        self.Fd = 5     # Doppler frequency (in Hz)
+        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.NRays = 16  # Number of rays for the Jakes model
+
+        # Create the jakes object that will be passed to TdlChannel
+        self.jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+
+        self.sumimochannel = singleuser.SuMimoChannel(num_antennas=3,
+            fading_generator=self.jakes, channel_profile=fading.COST259_TUx)
+
+    def test_constructor(self):
+        # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a SuMimoChannel without specifying any parameter. In this
+        # case a Rayleigh generator will be assumed and channel will be
+        # also flat.
+        flat_rayleight_suchannel = singleuser.SuMimoChannel(num_antennas=3)
+        self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
+        np.testing.assert_array_almost_equal(
+            flat_rayleight_suchannel.channel_profile.tap_powers_linear,
+            1.0)
+        np.testing.assert_array_almost_equal(
+            flat_rayleight_suchannel.channel_profile.tap_delays,
+            0.0)
+        self.assertAlmostEqual(flat_rayleight_suchannel.channel_profile.Ts, 1)
+
+        self.assertEqual(flat_rayleight_suchannel.num_tx_antennas, 3)
+        self.assertEqual(flat_rayleight_suchannel.num_rx_antennas, 3)
+        self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a SuMimoChannel channel only passing the fading
+        # generator. Note that in this case the channel will be flat,
+        # containing only one tap with power 0dB and delay 0.
+        jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+        suchannel = singleuser.SuMimoChannel(num_antennas=3,
+                                             fading_generator=jakes)
+        self.assertEqual(suchannel.num_taps, 1)
+        np.testing.assert_array_almost_equal(
+            suchannel.channel_profile.tap_powers_linear,
+            1.0)
+        np.testing.assert_array_almost_equal(
+            suchannel.channel_profile.tap_delays,
+            0.0)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Frequency Selective channel xxxxxxxxxxxxxxxxxxxxxxxxxx
+        jakes = fading_generators.JakesSampleGenerator(
+            self.Fd, self.Ts, self.NRays, shape=None)
+        suchannel = singleuser.SuMimoChannel(num_antennas=3,
+                                             fading_generator=jakes,
+                                             channel_profile=fading.COST259_TUx)
+        self.assertEqual(suchannel.num_taps, 15)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    # TODO: implement-me
+    def test_corrupt_data(self):
+        pass
+
+    # TODO: implement-me
+    def test_corrupt_data_in_freq_domain(self):
+        pass
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Multiuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1286,8 +1806,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
 class MuSisoChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.musisochannel = multiuser.MuSisoChannel(N=2)
-        self.musisochannel2 = multiuser.MuSisoChannel(N=3)
+        self.musisochannel = multiuser.MuChannel(N=2)
+        self.musisochannel2 = multiuser.MuChannel(N=3)
 
         # self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
         # self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
@@ -1298,8 +1818,8 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # take only one path with power 0dB and delay 0. Ts will be 1 for
         # the RayleighSampleGenerator. For the JakesSampleGenerator Ts will
         # assume the value from the JakesSampleGenerator.
-        musisochannel = multiuser.MuSisoChannel(N=N)
-        musisochannel2 = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(N=N)
+        musisochannel2 = multiuser.MuChannel(
             N=N, fading_generator=fading_generators.JakesSampleGenerator())
 
         self.assertEqual(musisochannel._su_siso_channels.shape, (N, N))
@@ -1328,9 +1848,9 @@ class MuSisoChannelTestCase(unittest.TestCase):
         channel_profile = fading.COST259_TUx
         jakes = fading_generators.JakesSampleGenerator(Ts=Ts)
 
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=N, channel_profile=channel_profile, Ts=Ts)
-        musisochannel2 = multiuser.MuSisoChannel(
+        musisochannel2 = multiuser.MuChannel(
             N=N, channel_profile=channel_profile, fading_generator=jakes)
 
         self.assertEqual(musisochannel._su_siso_channels.shape, (N, N))
@@ -1365,7 +1885,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
                 self.assertEqual(suchannel2.channel_profile.Ts, Ts)
 
         # Test unequal number of transmitters and receivers
-        musisochannel = multiuser.MuSisoChannel(N=(1, 3))
+        musisochannel = multiuser.MuChannel(N=(1, 3))
         self.assertEqual(musisochannel._su_siso_channels.shape, (1, 3))
 
     def test_corrupt_data(self):
@@ -1451,7 +1971,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         channel_profile = fading.TdlChannelProfile(
             tap_powers_dB=np.array([0, -5]),
             tap_delays=np.array([0, 3 * Ts]))
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=2, fading_generator=jakes, channel_profile=channel_profile)
         self.assertEqual(musisochannel.num_taps, 2)
         self.assertEqual(musisochannel.num_taps_with_padding, 4)
@@ -1541,7 +2061,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Test for an unequal number of transmitters and receivers
 
         # xxxxxxxxxx Test for 1 receiver and 2 transmitters xxxxxxxxxxxxxxx
-        musisochannel = multiuser.MuSisoChannel(N=(1, 2))
+        musisochannel = multiuser.MuChannel(N=(1, 2))
 
         num_samples = 5
 
@@ -1568,7 +2088,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test for 1 transmitter and 2 receivers xxxxxxxxxxxxxxx
-        musisochannel = multiuser.MuSisoChannel(N=(2, 1))
+        musisochannel = multiuser.MuChannel(N=(2, 1))
 
         num_samples = 5
 
@@ -1639,7 +2159,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
         channel_profile = fading.COST259_TUx
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=2, fading_generator=jakes, channel_profile=channel_profile)
 
         fft_size = 64
@@ -1688,7 +2208,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
         channel_profile = fading.COST259_TUx
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=2, fading_generator=jakes, channel_profile=channel_profile)
 
         fft_size = 64
@@ -1787,7 +2307,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
         channel_profile = fading.COST259_TUx
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=(num_rx, num_tx), fading_generator=jakes, channel_profile=channel_profile)
 
         fft_size = 64
@@ -1878,6 +2398,123 @@ class MuSisoChannelTestCase(unittest.TestCase):
             np.hstack([expected_ofdm_symb1_rx2, expected_ofdm_symb2_rx2,
                        expected_ofdm_symb3_rx2, expected_ofdm_symb4_rx2]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+class MuMimoChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.num_rx_antennas = 3
+        self.num_tx_antennas = 2
+        self.N = 2
+
+        self.mumimochannel = multiuser.MuMimoChannel(
+            N=self.N,
+            num_rx_antennas=self.num_rx_antennas,
+            num_tx_antennas=self.num_tx_antennas)
+
+    def test_constructor(self):
+        N = 4
+        num_rx_antennas=3
+        num_tx_antennas=2
+
+        mumimochannel = multiuser.MuMimoChannel(
+            N, num_rx_antennas, num_tx_antennas)
+
+        self.assertEqual(mumimochannel._su_siso_channels.shape, (N, N))
+
+        for tx in range(N):
+            for rx in range(N):
+                self.assertEqual(
+                    mumimochannel._su_siso_channels[rx, tx].num_tx_antennas,
+                    num_tx_antennas)
+                self.assertEqual(
+                    mumimochannel._su_siso_channels[rx, tx].num_rx_antennas,
+                    num_rx_antennas)
+
+    def test_corrupt_data(self):
+        num_samples = 10
+        data1 = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
+
+        output1 = self.mumimochannel.corrupt_data(data1)
+        impulse_response00 = self.mumimochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = self.mumimochannel.get_last_impulse_response(0, 1)
+        impulse_response10 = self.mumimochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = self.mumimochannel.get_last_impulse_response(1, 1)
+
+        # We only have the first tap. hXX has dimension
+        # `num_rx_ant x num_tx_ant x num_samples`
+        h00 = impulse_response00.tap_values[0]
+        h01 = impulse_response01.tap_values[0]
+        h10 = impulse_response10.tap_values[0]
+        h11 = impulse_response11.tap_values[0]
+
+        expected_output1 = np.empty(self.N, dtype=object)
+        expected_output1[0] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        expected_output1[1] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        for i in range(num_samples):
+            expected_output1[0][:, i] = h00[:,:,i].dot(data1[0,:,i]) + \
+                                        h01[:,:,i].dot(data1[1,:,i])
+            expected_output1[1][:, i] = h10[:,:,i].dot(data1[0,:,i]) + \
+                                        h11[:,:,i].dot(data1[1,:,i])
+
+        np.testing.assert_array_almost_equal(expected_output1[0], output1[0])
+        np.testing.assert_array_almost_equal(expected_output1[1], output1[1])
+
+    def test_corrupt_data_in_freq_domain(self):
+        Ts = 3.25e-8
+        # Create a jakes fading generator
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
+        # Create a channel profile with 2 (sparse) taps. Including zero
+        # padding, this channel as 4 taps with the non zeros taps at delays 0
+        # and 3.
+        channel_profile = fading.COST259_TUx
+        mumimochannel = multiuser.MuMimoChannel(
+            N=self.N, num_rx_antennas=self.num_rx_antennas,
+            num_tx_antennas=self.num_tx_antennas,
+            fading_generator=jakes, channel_profile=channel_profile)
+
+        fft_size = 64
+        num_blocks = 4
+        num_samples = num_blocks * fft_size
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate data for 2 transmitters
+        # data = np.ones((2, num_samples))
+        data = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
+
+        # Pass data throught he channel
+        output = mumimochannel.corrupt_data_in_freq_domain(data, fft_size)
+        self.assertEqual((self.num_rx_antennas, num_samples), output[0].shape)
+        self.assertEqual((self.num_rx_antennas, num_samples), output[1].shape)
+
+        impulse_response00 = mumimochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = mumimochannel.get_last_impulse_response(0, 1)
+        impulse_response10 = mumimochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = mumimochannel.get_last_impulse_response(1, 1)
+
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response01 = impulse_response01.get_freq_response(fft_size)
+        freq_response10 = impulse_response10.get_freq_response(fft_size)
+        freq_response11 = impulse_response11.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        expected_output = np.empty(self.N, dtype=object)
+        expected_output[0] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        expected_output[1] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+
+        for b in range(num_blocks):
+            start_idx = b*fft_size
+            # end_idx = (b+1)*fft_size
+            for k in range(fft_size):
+                expected_output[0][:, start_idx+k] = (
+                    freq_response00[k, :, :, b].dot(data[0, :, start_idx+k]) +
+                    freq_response01[k, :, :, b].dot(data[1, :, start_idx+k]))
+                expected_output[1][:, start_idx+k] = (
+                    freq_response10[k, :, :, b].dot(data[0, :, start_idx+k]) +
+                    freq_response11[k, :, :, b].dot(data[1, :, start_idx+k]))
+
+        # Test if the output and the expected output are equal
+        np.testing.assert_array_almost_equal(expected_output[0], output[0])
+        np.testing.assert_array_almost_equal(expected_output[1], output[1])
 
 
 class MultiUserChannelMatrixTestCase(unittest.TestCase):

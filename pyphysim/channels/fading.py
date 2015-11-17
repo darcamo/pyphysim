@@ -386,7 +386,9 @@ class TdlImpulseResponse(object):
         Returns
         -------
         numpy array
-            The frequency response. Dimension: `fft_size x num_samples`
+            The frequency response. Dimension: `fft_size x num_samples` for
+            SISO impulse response or `fft_size x num_rx x num_tx x num_samples`
+            for MIMO impulse response.
         """
         # Compute the FFT in the "delay" dimension, which captures the
         # multipath characteristics of the channel. The FFT is calculated
@@ -528,7 +530,7 @@ class TdlImpulseResponse(object):
         if num_objs < 2:
             if num_objs == 1:
                 return list_of_impulse_responses[0]
-            else:
+            else:  # pragma: no cover
                 raise ValueError("list_of_impulse_responses must contain at "
                                  "least two TdlImpulseResponse objects.")
 
@@ -541,8 +543,8 @@ class TdlImpulseResponse(object):
             raise ValueError("TdlImpulseResponse objects must have the same "
                              "channel profile object")
 
-        tap_values_sparse = np.hstack(
-            [a.tap_values_sparse for a in list_of_impulse_responses])
+        tap_values_sparse = np.concatenate(
+            [a.tap_values_sparse for a in list_of_impulse_responses], axis=-1)
 
         concatenated_impulse_response = TdlImpulseResponse(
             tap_values_sparse, channel_profile1)
@@ -564,6 +566,11 @@ class TdlChannel(object):
         The instance of a fading generator in the `fading_generators` module.
         It should be a subclass of FadingSampleGenerator. The fading
         generator will be used to generate the channel samples.
+        If the shape of the fading_generator is not None, then it must
+        contain two positive integers, and a MIMO transmission will be
+        employed, where the first integer in shape corresponds to the
+        number of receive antennas while the second integer corresponds to
+        the number of transmit antennas
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : numpy real array
@@ -623,27 +630,56 @@ class TdlChannel(object):
             # else:
             #     channel_profile = channel_profile.get_discretize_profile(Ts)
             channel_profile = channel_profile.get_discretize_profile(Ts)
-        elif channel_profile.Ts != Ts:
+        elif channel_profile.Ts != Ts and Ts is not None:
             # Channel profile is already discretized but it does not agree
             # with the Ts value provided or the one in the fading generator
             raise RuntimeError(
-                "Channel profile is already discretized, but it does not agree"
-                " with the discretized parameter Ts")
+                "Channel profile is already discretized, but it does not "
+                "agree with the discretized parameter Ts")
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Finally save the channel profile to a member attribute
         self._channel_profile = channel_profile
 
-        if fading_generator.shape is None:
-            fading_generator.shape = (self.num_taps,)
-        else:
-            # Note that fading_generator.shape must be a tuple
-            fading_generator.shape = (self.num_taps,) + fading_generator.shape
+        shape = fading_generator.shape
         self._fading_generator = fading_generator
+        self._set_fading_generator_shape(shape)
 
         # Last generated impulse response. This will be set when the
         # _generate_impulse_response method is called
         self._last_impulse_response = None
+
+    def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
+        """
+        Set the number of transmit and receive antennas for MIMO transmission.
+
+        Set both `num_rx_antennas` and `num_tx_antennas` to None for SISO
+        transmission
+
+        Parameters
+        ----------
+        num_rx_antennas : int
+            The number of receive antennas.
+        num_tx_antennas : int
+            The number of transmit antennas.
+        """
+        self._set_fading_generator_shape((num_rx_antennas, num_tx_antennas))
+
+    def _set_fading_generator_shape(self, new_shape):
+        """
+        Set the shape of the fading generator.
+
+        Parameters
+        ----------
+        new_shape : tuple of integers
+            The new shape of the fading generator. Note that the actual
+            shape will be set to (self.num_taps, new_shape)
+        """
+        if new_shape is None:
+            self._fading_generator.shape = (self.num_taps,)
+        else:
+            # Note that fading_generator.shape must be a tuple
+            self._fading_generator.shape = (self.num_taps,) + new_shape
 
     @property
     def channel_profile(self):
@@ -668,7 +704,7 @@ class TdlChannel(object):
         # tap_delays correspond to integers
         return self._channel_profile.num_taps_with_padding
 
-    def _generate_impulse_response(self, num_samples):
+    def _generate_impulse_response(self, num_samples=1):
         """
         Generate a new impulse response of all discretized taps (not
         including possible zero padding) for `num_samples` channel
@@ -719,6 +755,22 @@ class TdlChannel(object):
         impulse_response = TdlImpulseResponse(samples, self._channel_profile)
         self._last_impulse_response = impulse_response
 
+    @property
+    def num_tx_antennas(self):
+        """Get the number of transmit antennas.
+        """
+        if len(self._fading_generator.shape) == 1:
+            return -1
+        return self._fading_generator.shape[2]
+
+    @property
+    def num_rx_antennas(self):
+        """Get the number of receive antennas.
+        """
+        if len(self._fading_generator.shape) == 1:
+            return -1
+        return self._fading_generator.shape[1]
+
     def get_last_impulse_response(self):
         """
         Get the last generated impulse response.
@@ -750,7 +802,7 @@ class TdlChannel(object):
             The received signal after transmission through the TDL channel
         """
         # Number of symbols to be transmitted
-        num_symbols = signal.size
+        num_symbols = signal.shape[-1]
 
         # Generate an impulse response with `num_symbols` samples that we
         # will use to corrupt the data.
@@ -758,17 +810,40 @@ class TdlChannel(object):
 
         # Get the channel memory (number of extra received symbols).
         channel_memory = self.num_taps_with_padding - 1
-        # The output size will be equal to the number of symbols to transit
-        # plus the channel_memory.
-        output = np.zeros(num_symbols + channel_memory, dtype=complex)
 
         # The indexes of the non-zero taps from our impulse response
         tap_indexes_sparse = self._last_impulse_response.tap_indexes_sparse
         # The values of the (sparse) tap
         tap_values_sparse = self._last_impulse_response.tap_values_sparse
 
-        for i, d in enumerate(tap_indexes_sparse):
-            output[d:d + num_symbols] += tap_values_sparse[i] * signal
+        if len(self._fading_generator.shape) == 1:
+            # xxxxxxxxxx SISO Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # The output size will be equal to the number of symbols to transit
+            # plus the channel_memory.
+            output = np.zeros(num_symbols + channel_memory, dtype=complex)
+
+            for i, d in enumerate(tap_indexes_sparse):
+                output[d:d + num_symbols] += tap_values_sparse[i] * signal
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        elif len(self._fading_generator.shape) == 3:
+            # xxxxxxxxxx MIMO Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # The output size will be equal to the number of symbols to transit
+            # plus the channel_memory.
+            _, num_rx_ant, num_tx_ant = self._fading_generator.shape
+
+            output = np.zeros((num_rx_ant, num_symbols + channel_memory),
+                              dtype=complex)
+
+            for i, d in enumerate(tap_indexes_sparse):
+                for tx_idx in range(num_tx_ant):
+                    output[:, d:d + num_symbols] += (
+                        tap_values_sparse[i, :, tx_idx, :] * signal[tx_idx])
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        else:
+            raise RuntimeError(
+                "Shape of the fading generator of the TdlChannel class must "
+                "have either 1 (SISO) or 3 (MIMO) dimensions")
 
         return output
 
@@ -793,7 +868,7 @@ class TdlChannel(object):
             The signal to be transmitted.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
-        carrier_indexes : slice of numpy array of integers
+        carrier_indexes : slice or numpy array of integers
             The indexes of the subcarriers where signal is to be
             transmitted. If it is None assume all subcarriers will be used.
 
@@ -802,6 +877,9 @@ class TdlChannel(object):
         numpy array
             The received signal after transmission through the TDL channel
         """
+        # Number of symbols to be transmitted
+        num_symbols = signal.shape[-1]
+
         # xxxxxxxxxx Get the block size xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if carrier_indexes is None:
             block_size = fft_size
@@ -816,7 +894,7 @@ class TdlChannel(object):
             else:
                 block_size = len(carrier_indexes)
 
-        if signal.size % block_size != 0:
+        if num_symbols % block_size != 0:
             raise ValueError("The num of elements in `signal` must be a "
                              "multiple of number of sent elements per "
                              "`fft_size`.")
@@ -826,12 +904,21 @@ class TdlChannel(object):
         # concatenate these impulse responses at the end so that we can set
         # self._last_impulse_response to the impulse response of all blocks
         impulse_responses = []
+        num_tx_ant = -1  # This will be set latter
 
-        # Output variable representing the received signal
-        output = np.empty(signal.size, dtype=complex)
+        if len(self._fading_generator.shape) == 1:
+            # Output variable representing the received signal
+            output = np.empty(num_symbols, dtype=complex)
+        elif len(self._fading_generator.shape) == 3:
+            _, num_rx_ant, num_tx_ant = self._fading_generator.shape
+            output = np.zeros((num_symbols, num_rx_ant), dtype=complex)
+        else:
+            raise RuntimeError(
+                "Shape of the fading generator of the TdlChannel class must "
+                "have either 1 (SISO) or 3 (MIMO) dimensions")
 
         # Number of full blocks in `signal`
-        num_full_blocks = signal.size // block_size
+        num_full_blocks = num_symbols // block_size
 
         for i in range(num_full_blocks):
             start_idx = block_size * i
@@ -843,18 +930,43 @@ class TdlChannel(object):
             self._generate_impulse_response(1)
             impulse_responses.append(self.get_last_impulse_response())
 
-            # Get the equivalent frequency response of the last generated
-            # impulse response. That is what we will use to corrupt the
-            # current block of signal
-            if carrier_indexes is None:
-                freq_response = self._last_impulse_response.get_freq_response(
-                    fft_size)[:, 0]
-            else:
-                freq_response = self._last_impulse_response.get_freq_response(
-                    fft_size)[carrier_indexes, 0]
+            if len(self._fading_generator.shape) == 1:
+                # xxxxxxxxxx SISO case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # Get the equivalent frequency response of the last generated
+                # impulse response. That is what we will use to corrupt the
+                # current block of signal
+                if carrier_indexes is None:
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[:, 0]
+                else:
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[carrier_indexes, 0]
 
-            output[start_idx:end_idx] = (freq_response *
-                                         signal[start_idx:end_idx])
+                output[start_idx:end_idx] = (freq_response *
+                                             signal[start_idx:end_idx])
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            else:  # len(self._fading_generator.shape) == 3
+                # xxxxxxxxxx MIMO Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # Get the equivalent frequency response of the last generated
+                # impulse response. That is what we will use to corrupt the
+                # current block of signal
+                if carrier_indexes is None:
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[:, :, :, 0]
+                else:
+                    freq_response = \
+                        self._last_impulse_response.get_freq_response(
+                            fft_size)[carrier_indexes, :, :, 0]
+
+                for tx_idx in range(num_tx_ant):
+                    output[start_idx:end_idx, :] += (
+                        freq_response[:, :, tx_idx] *
+                        signal[tx_idx, start_idx:end_idx, np.newaxis])
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # Advance the fading generator by "fft_size - 1" to account how
             # much the channel has "changed" during the duration of the
@@ -864,4 +976,49 @@ class TdlChannel(object):
 
         self._last_impulse_response = TdlImpulseResponse.concatenate_samples(
             impulse_responses)
-        return output
+
+        # Transposition has no effect for the SISO case. For the MIMO case
+        # it will make output have dimension `num_rx_ant x num_samples`
+        return output.T
+
+
+class TdlMimoChannel(TdlChannel):
+    """
+    Tapped Delay Line channel model, which corresponds to a multipath
+    channel.
+
+    You can create a new TdlMimoChannel object either specifying the
+    channel profile or specifying both the channel tap powers and delays.
+
+    Note that the TdlChannel class can already work with multiple antennas
+    if provided `fading_generator` has a shape with two elements (number of
+    receive antennas and number of transmit antennas). The TdlMimoChannel
+    only adds a slight better interface over TdlChannel class for working
+    with MIMO. This class is also useful to test MIMO transmission, with
+    the added `num_tx_antennas` and `num_rx_antennas` properties.
+
+    Parameters
+    ----------
+    fading_generator : Subclass of FadingSampleGenerator
+        The instance of a fading generator in the `fading_generators`
+        module.  It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel samples.  The
+        shape of the fading_generator will be ignored and replaced by
+        provided number of antennas.
+    channel_profile : TdlChannelProfile
+        The channel profile, which specifies the tap powers and delays.
+    tap_powers_dB : numpy real array
+        The powers of each tap (in dB). Dimension: `L x 1`
+        Note: The power of each tap will be a negative number (in dB).
+    tap_delays : numpy real array
+        The delay of each tap (in seconds). Dimension: `L x 1`
+    """
+    def __init__(self, fading_generator, channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None, Ts=None):
+        if fading_generator.shape is None or len(fading_generator.shape) != 2:
+            raise RuntimeError(
+                "The provided fading_generator for the TdlMimoChannel class"
+                " must have a shape with two values")
+
+        super(TdlMimoChannel, self).__init__(fading_generator, channel_profile,
+                                             tap_powers_dB, tap_delays, Ts)

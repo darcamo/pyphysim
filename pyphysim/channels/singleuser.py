@@ -9,13 +9,13 @@ import numpy as np
 from pyphysim.channels import fading, fading_generators
 
 
-class SuSisoChannel(object):
+class SuChannel(object):
     """
     Single User channel corresponding to a Tapped Delay Line channel model,
     which corresponds to a multipath channel. You can use a single tap in
     order to get a flat fading channel.
 
-    You can create a new SuSisoChannel object either specifying the channel
+    You can create a new SuChannel object either specifying the channel
     profile or specifying both the channel tap powers and delays. If only the
     fading_generator is specified then a single tap with unitary power and
     delay zero will be assumed, which corresponds to a flat fading channel
@@ -66,8 +66,7 @@ class SuSisoChannel(object):
 
     def set_pathloss(self, pathloss_value=None):
         """
-        Set the path loss (IN LINEAR SCALE) from each transmitter to each
-        receiver.
+        Set the path loss (IN LINEAR SCALE).
 
         The path loss will be accounted when calling the corrupt_data
         method.
@@ -94,6 +93,22 @@ class SuSisoChannel(object):
 
         self._pathloss_value = pathloss_value
 
+    def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
+        """
+        Set the number of transmit and receive antennas for MIMO transmission.
+
+        Set both `num_rx_antennas` and `num_tx_antennas` to None for SISO
+        transmission
+
+        Parameters
+        ----------
+        num_rx_antennas : int
+            The number of receive antennas.
+        num_tx_antennas : int
+            The number of transmit antennas.
+        """
+        self._tdlchannel.set_num_antennas(num_rx_antennas, num_tx_antennas)
+
     def corrupt_data(self, signal):
         """
         Transmit the signal through the TDL channel.
@@ -108,7 +123,7 @@ class SuSisoChannel(object):
         numpy array
             The received signal after transmission through the TDL channel.
         """
-        # output = super(SuSisoChannel, self).corrupt_data(signal)
+        # output = super(SuChannel, self).corrupt_data(signal)
         output = self._tdlchannel.corrupt_data(signal)
 
         if self._pathloss_value is not None:
@@ -194,3 +209,63 @@ class SuSisoChannel(object):
         Return the channel profile.
         """
         return self._tdlchannel.channel_profile
+
+    @property
+    def num_tx_antennas(self):
+        """Get the number of transmit antennas.
+        """
+        return self._tdlchannel.num_tx_antennas
+
+    @property
+    def num_rx_antennas(self):
+        """Get the number of receive antennas.
+        """
+        return self._tdlchannel.num_rx_antennas
+
+
+class SuMimoChannel(SuChannel):
+    """
+    Single User channel corresponding to a Tapped Delay Line channel model,
+    which corresponds to a multipath channel. You can use a single tap in
+    order to get a flat fading channel.
+
+    You can create a new SuMimoChannel object either specifying the channel
+    profile or specifying both the channel tap powers and delays. If only the
+    fading_generator is specified then a single tap with unitary power and
+    delay zero will be assumed, which corresponds to a flat fading channel
+    model.
+
+    Parameters
+    ----------
+    num_antennas : int
+        Number of transmit and receive antennas.
+    fading_generator : Subclass of FadingSampleGenerator (optional)
+        The instance of a fading generator in the `fading_generators`
+        module.  It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel samples. If
+        not provided then RayleighSampleGenerator will be ised
+    channel_profile : TdlChannelProfile
+        The channel profile, which specifies the tap powers and delays.
+    tap_powers_dB : numpy real array
+        The powers of each tap (in dB). Dimension: `L x 1`
+        Note: The power of each tap will be a negative number (in dB).
+    tap_delays : numpy real array
+        The delay of each tap (in seconds). Dimension: `L x 1`
+    """
+    def __init__(self, num_antennas, fading_generator=None,
+                 channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None,
+                 Ts=None):
+        # Before calling supper to initialize the base class we will set
+        # the shape of the fading generator
+        if fading_generator is None:
+            fading_generator = fading_generators.RayleighSampleGenerator()
+            if channel_profile is None and Ts is None:
+                Ts = 1
+
+        # Set the shape of the fading generator.
+        fading_generator.shape = (num_antennas, num_antennas)
+
+        # Initialize attributes from base class
+        super(SuMimoChannel, self).__init__(fading_generator, channel_profile,
+                                            tap_powers_dB, tap_delays, Ts)
