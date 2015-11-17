@@ -631,11 +631,14 @@ class TdlChannel(object):
             #     channel_profile = channel_profile.get_discretize_profile(Ts)
             channel_profile = channel_profile.get_discretize_profile(Ts)
         elif channel_profile.Ts != Ts:
-            # Channel profile is already discretized but it does not agree
-            # with the Ts value provided or the one in the fading generator
-            raise RuntimeError(
-                "Channel profile is already discretized, but it does not agree"
-                " with the discretized parameter Ts")
+            if Ts is None:
+                Ts = channel_profile.Ts
+            else:
+                # Channel profile is already discretized but it does not agree
+                # with the Ts value provided or the one in the fading generator
+                raise RuntimeError(
+                    "Channel profile is already discretized, but it does not "
+                    "agree with the discretized parameter Ts")
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Finally save the channel profile to a member attribute

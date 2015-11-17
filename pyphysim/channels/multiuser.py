@@ -76,10 +76,10 @@ class MuSisoChannel(object):
                     tap_powers_dB=tap_powers_dB, tap_delays=tap_delays,
                     Ts=Ts)
 
-                # # Let's save the channel profile so that we use the same
-                # # object for the other link channels
-                # channel_profile = self._su_siso_channels[rx, tx].\
-                #     _channel_profile
+                # Let's save the channel profile so that we use the same
+                # object for the other link channels
+                channel_profile = self._su_siso_channels[rx, tx].\
+                    channel_profile
 
         self._pathloss_matrix = None
 
