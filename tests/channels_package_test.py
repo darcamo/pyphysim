@@ -1231,6 +1231,107 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Check if the received singal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Test with switched directions xxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # First let's create a channel without time variation so that we
+        # can perform the transmission twice (once in each direction) and
+        # we have the same fading.
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        Fd = 0     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        NRays = 16  # Number of rays for the Jakes model
+
+        # xxxxxxxxxx Create the TDL MIMO channel for testing xxxxxxxxxxxxxx
+
+        # Create the jakes object that will be passed to TdlChannel
+        num_rx_ant = 3
+        num_tx_ant = 2
+        jakes = fading_generators.JakesSampleGenerator(
+            Fd, Ts, NRays, shape=(num_rx_ant, num_tx_ant))
+
+        tdlmimochannel = fading.TdlMimoChannel(
+            jakes, channel_profile=fading.COST259_TUx)
+
+        num_samples = 10
+
+        signal_uplink = np.random.randint(0, 10, (num_rx_ant, num_samples))
+        tdlmimochannel.switched_direction = True  # switch to uplink
+        received_signal_uplink = tdlmimochannel.corrupt_data(signal_uplink)
+        last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
+
+        # Let's compute the expected received signal
+        tap_values_sparse = last_impulse_response.tap_values_sparse
+
+        expected_received_signal_uplink = np.zeros(
+            (num_tx_ant, channel_memory + num_samples),
+            dtype=complex)
+
+        # Let's compute the expected received signal
+        tap_values_sparse = last_impulse_response.tap_values_sparse
+
+        expected_received_signal_uplink[:, 0:0+num_samples] += (
+            signal_uplink[0] * tap_values_sparse[0, 0, :, :] +
+            signal_uplink[1] * tap_values_sparse[0, 1, :, :] +
+            signal_uplink[2] * tap_values_sparse[0, 2, :, :])
+        expected_received_signal_uplink[:, 7:7+num_samples] += (
+            signal[0] * tap_values_sparse[1, 0, :, :] +
+            signal[1] * tap_values_sparse[1, 1, :, :])
+        expected_received_signal_uplink[:, 16:16+num_samples] += (
+            signal[0] * tap_values_sparse[2, 0, :, :] +
+            signal[1] * tap_values_sparse[2, 1, :, :])
+        expected_received_signal_uplink[:, 21:21+num_samples] += (
+            signal[0] * tap_values_sparse[3, 0, :, :] +
+            signal[1] * tap_values_sparse[3, 1, :, :])
+        expected_received_signal_uplink[:, 27:27+num_samples] += (
+            signal[0] * tap_values_sparse[4, 0, :, :] +
+            signal[1] * tap_values_sparse[4, 1, :, :])
+        expected_received_signal_uplink[:, 38:38+num_samples] += (
+            signal[0] * tap_values_sparse[5, 0, :, :] +
+            signal[1] * tap_values_sparse[5, 1, :, :])
+        expected_received_signal_uplink[:, 40:40+num_samples] += (
+            signal[0] * tap_values_sparse[6, 0, :, :] +
+            signal[1] * tap_values_sparse[6, 1, :, :])
+        expected_received_signal_uplink[:, 41:41+num_samples] += (
+            signal[0] * tap_values_sparse[7, 0, :, :] +
+            signal[1] * tap_values_sparse[7, 1, :, :])
+        expected_received_signal_uplink[:, 47:47+num_samples] += (
+            signal[0] * tap_values_sparse[8, 0, :, :] +
+            signal[1] * tap_values_sparse[8, 1, :, :])
+        expected_received_signal_uplink[:, 50:50+num_samples] += (
+            signal[0] * tap_values_sparse[9, 0, :, :] +
+            signal[1] * tap_values_sparse[9, 1, :, :])
+        expected_received_signal_uplink[:, 56:56+num_samples] += (
+            signal[0] * tap_values_sparse[10, 0, :, :] +
+            signal[1] * tap_values_sparse[10, 1, :, :])
+        expected_received_signal_uplink[:, 58:58+num_samples] += (
+            signal[0] * tap_values_sparse[11, 0, :] +
+            signal[1] * tap_values_sparse[11, 1, :])
+        expected_received_signal_uplink[:, 60:60+num_samples] += (
+            signal[0] * tap_values_sparse[12, 0, :, :] +
+            signal[1] * tap_values_sparse[12, 1, :, :])
+        expected_received_signal_uplink[:, 63:63+num_samples] += (
+            signal[0] * tap_values_sparse[13, 0, :, :] +
+            signal[1] * tap_values_sparse[13, 1, :, :])
+        expected_received_signal_uplink[:, 66:66+num_samples] += (
+            signal[0] * tap_values_sparse[14, 0, :, :] +
+            signal[1] * tap_values_sparse[14, 1, :, :])
+
+        # Check if the received singal is correct
+        np.testing.assert_array_almost_equal(expected_received_signal,
+                                             received_signal)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_corrupt_data_in_freq_domain(self):
         fft_size = 16
@@ -1344,6 +1445,95 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             tdlmimochannel1.corrupt_data_in_freq_domain(signal2, fft_size)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Test with switched directions xxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # First let's create a channel without time variation so that we
+        # can perform the transmission twice (once in each direction) and
+        # we have the same fading.
+        maxSystemBand = 40e6  # 40 MHz bandwidth
+        # Number of subcarriers in this bandwidth
+        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        # Find the maximum FFT size we can use which is below than or equal
+        # to maxNumOfSubcarriersInt
+        max_num_of_subcarriers = int(
+            2 ** math.floor(math.log(max_num_of_subcarriers, 2)))
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 15e3 * max_num_of_subcarriers
+
+        Fd = 0     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        NRays = 16  # Number of rays for the Jakes model
+
+        # xxxxxxxxxx Create the TDL MIMO channel for testing xxxxxxxxxxxxxx
+
+        # Create the jakes object that will be passed to TdlChannel
+        num_rx_ant = 3
+        num_tx_ant = 2
+        jakes = fading_generators.JakesSampleGenerator(
+            Fd, Ts, NRays, shape=(num_rx_ant, num_tx_ant))
+
+        tdlmimochannel = fading.TdlMimoChannel(
+            jakes, channel_profile=fading.COST259_TUx)
+
+        signal_uplink = np.random.randint(0, 10, (num_rx_ant, num_samples))
+        tdlmimochannel.switched_direction = True  # switch to uplink
+        received_signal_uplink = tdlmimochannel.corrupt_data_in_freq_domain(
+            signal_uplink, fft_size)
+
+        self.assertEqual(received_signal_uplink.shape, (num_tx_ant, num_samples))
+
+        last_impulse_response = tdlmimochannel.get_last_impulse_response()
+        freq_response_all = last_impulse_response.get_freq_response(fft_size)
+        # Frequency response from each transmitter to each receiver
+        freq_response00 = freq_response_all[:, 0, 0, :]
+        freq_response01 = freq_response_all[:, 0, 1, :]
+        freq_response10 = freq_response_all[:, 1, 0, :]
+        freq_response11 = freq_response_all[:, 1, 1, :]
+        freq_response20 = freq_response_all[:, 2, 0, :]
+        freq_response21 = freq_response_all[:, 2, 1, :]
+        # import pudb; pudb.set_trace()  ## DEBUG ##
+
+        # xxxxxxxxxx First OFDM symbol
+        expected_received_signal_uplink = np.zeros((num_tx_ant, num_samples),
+                                                   dtype=complex)
+        # First antenna
+        expected_received_signal_uplink[0, 0:fft_size] = (
+            signal_uplink[0,0:fft_size] * freq_response00[:, 0] +
+            signal_uplink[1,0:fft_size] * freq_response10[:, 0] +
+            signal_uplink[2,0:fft_size] * freq_response20[:, 0])
+        # Second antenna
+        expected_received_signal_uplink[1, 0:fft_size] = (
+            signal_uplink[0,0:fft_size] * freq_response01[:, 0] +
+            signal_uplink[1,0:fft_size] * freq_response11[:, 0] +
+            signal_uplink[2,0:fft_size] * freq_response21[:, 0])
+        # xxxxxxxxxx Second OFDM symbol
+        # First antenna
+        expected_received_signal_uplink[0, fft_size:2*fft_size] = (
+            signal_uplink[0,fft_size:2*fft_size] * freq_response00[:, 1] +
+            signal_uplink[1,fft_size:2*fft_size] * freq_response10[:, 1] +
+            signal_uplink[2,fft_size:2*fft_size] * freq_response20[:, 1])
+        # Second antenna
+        expected_received_signal_uplink[1, fft_size:2*fft_size] = (
+            signal_uplink[0,fft_size:2*fft_size] * freq_response01[:, 1] +
+            signal_uplink[1,fft_size:2*fft_size] * freq_response11[:, 1] +
+            signal_uplink[2,fft_size:2*fft_size] * freq_response21[:, 1])
+        # xxxxxxxxxx ThirdOFDM symbol
+        # First antenna
+        expected_received_signal_uplink[0, 2*fft_size:3*fft_size] = (
+            signal_uplink[0,2*fft_size:3*fft_size] * freq_response00[:, 2] +
+            signal_uplink[1,2*fft_size:3*fft_size] * freq_response10[:, 2] +
+            signal_uplink[2,2*fft_size:3*fft_size] * freq_response20[:, 2])
+        # Second antenna
+        expected_received_signal_uplink[1, 2*fft_size:3*fft_size] = (
+            signal_uplink[0,2*fft_size:3*fft_size] * freq_response01[:, 2] +
+            signal_uplink[1,2*fft_size:3*fft_size] * freq_response11[:, 2] +
+            signal_uplink[2,2*fft_size:3*fft_size] * freq_response21[:, 2])
+
+        # Test if expected signal and received signal are equal
+        np.testing.assert_array_almost_equal(expected_received_signal_uplink,
+                                             received_signal_uplink)
 
     def test_corrupt_data_in_freq_domain2(self):
         # This method tests corrupt_data_in_freq_domain, but now specifying

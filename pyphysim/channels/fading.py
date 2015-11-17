@@ -649,6 +649,10 @@ class TdlChannel(object):
         # _generate_impulse_response method is called
         self._last_impulse_response = None
 
+        # If set to True then the channel direction (downlink/uplink) will
+        # be reversed. This is only important for MIMO channels.
+        self.switched_direction = False
+
     def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
         """
         Set the number of transmit and receive antennas for MIMO transmission.
@@ -827,19 +831,29 @@ class TdlChannel(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         elif len(self._fading_generator.shape) == 3:
             # xxxxxxxxxx MIMO Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
             # The output size will be equal to the number of symbols to transit
             # plus the channel_memory.
             _, num_rx_ant, num_tx_ant = self._fading_generator.shape
 
-            output = np.zeros((num_rx_ant, num_symbols + channel_memory),
-                              dtype=complex)
+            if self.switched_direction:
+                # xxxxxxxxxx Code for reversed direction xxxxxxxxxxxxxxxxxx
+                output = np.zeros((num_tx_ant, num_symbols + channel_memory),
+                                  dtype=complex)
+                for i, d in enumerate(tap_indexes_sparse):
+                    for rx_idx in range(num_rx_ant):
+                        output[:, d:d + num_symbols] += (
+                            tap_values_sparse[i, rx_idx, :, :] * signal[rx_idx])
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            else:
+                # xxxxxxxxxx Code for original direction xxxxxxxxxxxxxxxxxx
+                output = np.zeros((num_rx_ant, num_symbols + channel_memory),
+                                  dtype=complex)
 
-            for i, d in enumerate(tap_indexes_sparse):
-                for tx_idx in range(num_tx_ant):
-                    output[:, d:d + num_symbols] += (
-                        tap_values_sparse[i, :, tx_idx, :] * signal[tx_idx])
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                for i, d in enumerate(tap_indexes_sparse):
+                    for tx_idx in range(num_tx_ant):
+                        output[:, d:d + num_symbols] += (
+                            tap_values_sparse[i, :, tx_idx, :] * signal[tx_idx])
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         else:
             raise RuntimeError(
                 "Shape of the fading generator of the TdlChannel class must "
@@ -911,7 +925,12 @@ class TdlChannel(object):
             output = np.empty(num_symbols, dtype=complex)
         elif len(self._fading_generator.shape) == 3:
             _, num_rx_ant, num_tx_ant = self._fading_generator.shape
-            output = np.zeros((num_symbols, num_rx_ant), dtype=complex)
+            if self.switched_direction:
+                # xxxxxxxxxx Code for reversed direction xxxxxxxxxxxxxxxxxx
+                output = np.zeros((num_symbols, num_tx_ant), dtype=complex)
+            else:
+                # xxxxxxxxxx Code for original direction xxxxxxxxxxxxxxxxxx
+                output = np.zeros((num_symbols, num_rx_ant), dtype=complex)
         else:
             raise RuntimeError(
                 "Shape of the fading generator of the TdlChannel class must "
@@ -962,10 +981,19 @@ class TdlChannel(object):
                         self._last_impulse_response.get_freq_response(
                             fft_size)[carrier_indexes, :, :, 0]
 
-                for tx_idx in range(num_tx_ant):
-                    output[start_idx:end_idx, :] += (
-                        freq_response[:, :, tx_idx] *
-                        signal[tx_idx, start_idx:end_idx, np.newaxis])
+
+                if self.switched_direction:
+                    # xxxxxxxxxx Code for reversed direction xxxxxxxxxxxxxx
+                    for rx_idx in range(num_rx_ant):
+                        output[start_idx:end_idx, :] += (
+                            freq_response[:, rx_idx, :] *
+                            signal[rx_idx, start_idx:end_idx, np.newaxis])
+                else:
+                    # xxxxxxxxxx Code for original direction xxxxxxxxxxxxxx
+                    for tx_idx in range(num_tx_ant):
+                        output[start_idx:end_idx, :] += (
+                            freq_response[:, :, tx_idx] *
+                            signal[tx_idx, start_idx:end_idx, np.newaxis])
                 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # Advance the fading generator by "fft_size - 1" to account how
