@@ -351,6 +351,62 @@ class MuChannel(object):
 #         self._pathloss_matrix = pathloss_matrix
 
 
+class MuMimoChannel(MuChannel):
+    """
+    MIMO multiuser channel.
+
+    Each transmitter sends data to its own receiver while interfering to
+    other receivers.
+
+    Note that noise is NOT added.
+
+    Parameters
+    ----------
+    N : int
+        The number of transmit/receive pairs.
+    num_rx_antennas : int
+        Number of receive antennas of each user.
+    num_tx_antennas : int
+        Number of transmit antennas of each user.
+    fading_generator : Subclass of FadingSampleGenerator (optional)
+        The instance of a fading generator in the `fading_generators`
+        module. It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel
+        samples. However, since we have multiple links, the provided fading
+        genrator will actually be used to create similar (but independent)
+        fading generators. If not provided then RayleighSampleGenerator
+        will be ised
+    channel_profile : TdlChannelProfile
+        The channel profile, which specifies the tap powers and delays.
+    tap_powers_dB : numpy real array
+        The powers of each tap (in dB). Dimension: `L x 1`
+        Note: The power of each tap will be a negative number (in dB).
+    tap_delays : numpy real array
+        The delay of each tap (in seconds). Dimension: `L x 1`
+    """
+    def __init__(self, N,
+                 num_rx_antennas, num_tx_antennas, fading_generator=None,
+                 channel_profile=None,
+                 tap_powers_dB=None, tap_delays=None, Ts=None):
+        super(MuMimoChannel, self).__init__(
+            N, fading_generator, channel_profile,
+            tap_powers_dB, tap_delays, Ts)
+
+        # Number of receivers and transmitters
+        if isinstance(N, tuple) or isinstance(N, list):
+            num_rx = N[0]
+            num_tx = N[1]
+        else:
+            num_rx = N
+            num_tx = N
+
+        # Create each link's channel
+        for rx in range(num_rx):
+            for tx in range(num_tx):
+                self._su_siso_channels[rx, tx].set_num_antennas(
+                    num_rx_antennas, num_tx_antennas)
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Old Classes for backward compatibility xxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -2400,6 +2400,123 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+class MuMimoChannelTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.num_rx_antennas = 3
+        self.num_tx_antennas = 2
+        self.N = 2
+
+        self.mumimochannel = multiuser.MuMimoChannel(
+            N=self.N,
+            num_rx_antennas=self.num_rx_antennas,
+            num_tx_antennas=self.num_tx_antennas)
+
+    def test_constructor(self):
+        N = 4
+        num_rx_antennas=3
+        num_tx_antennas=2
+
+        mumimochannel = multiuser.MuMimoChannel(
+            N, num_rx_antennas, num_tx_antennas)
+
+        self.assertEqual(mumimochannel._su_siso_channels.shape, (N, N))
+
+        for tx in range(N):
+            for rx in range(N):
+                self.assertEqual(
+                    mumimochannel._su_siso_channels[rx, tx].num_tx_antennas,
+                    num_tx_antennas)
+                self.assertEqual(
+                    mumimochannel._su_siso_channels[rx, tx].num_rx_antennas,
+                    num_rx_antennas)
+
+    def test_corrupt_data(self):
+        num_samples = 10
+        data1 = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
+
+        output1 = self.mumimochannel.corrupt_data(data1)
+        impulse_response00 = self.mumimochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = self.mumimochannel.get_last_impulse_response(0, 1)
+        impulse_response10 = self.mumimochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = self.mumimochannel.get_last_impulse_response(1, 1)
+
+        # We only have the first tap. hXX has dimension
+        # `num_rx_ant x num_tx_ant x num_samples`
+        h00 = impulse_response00.tap_values[0]
+        h01 = impulse_response01.tap_values[0]
+        h10 = impulse_response10.tap_values[0]
+        h11 = impulse_response11.tap_values[0]
+
+        expected_output1 = np.empty(self.N, dtype=object)
+        expected_output1[0] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        expected_output1[1] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        for i in range(num_samples):
+            expected_output1[0][:, i] = h00[:,:,i].dot(data1[0,:,i]) + \
+                                        h01[:,:,i].dot(data1[1,:,i])
+            expected_output1[1][:, i] = h10[:,:,i].dot(data1[0,:,i]) + \
+                                        h11[:,:,i].dot(data1[1,:,i])
+
+        np.testing.assert_array_almost_equal(expected_output1[0], output1[0])
+        np.testing.assert_array_almost_equal(expected_output1[1], output1[1])
+
+    def test_corrupt_data_in_freq_domain(self):
+        Ts = 3.25e-8
+        # Create a jakes fading generator
+        jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
+        # Create a channel profile with 2 (sparse) taps. Including zero
+        # padding, this channel as 4 taps with the non zeros taps at delays 0
+        # and 3.
+        channel_profile = fading.COST259_TUx
+        mumimochannel = multiuser.MuMimoChannel(
+            N=self.N, num_rx_antennas=self.num_rx_antennas,
+            num_tx_antennas=self.num_tx_antennas,
+            fading_generator=jakes, channel_profile=channel_profile)
+
+        fft_size = 64
+        num_blocks = 4
+        num_samples = num_blocks * fft_size
+        # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Generate data for 2 transmitters
+        # data = np.ones((2, num_samples))
+        data = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
+
+        # Pass data throught he channel
+        output = mumimochannel.corrupt_data_in_freq_domain(data, fft_size)
+        self.assertEqual((self.num_rx_antennas, num_samples), output[0].shape)
+        self.assertEqual((self.num_rx_antennas, num_samples), output[1].shape)
+
+        impulse_response00 = mumimochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = mumimochannel.get_last_impulse_response(0, 1)
+        impulse_response10 = mumimochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = mumimochannel.get_last_impulse_response(1, 1)
+
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response01 = impulse_response01.get_freq_response(fft_size)
+        freq_response10 = impulse_response10.get_freq_response(fft_size)
+        freq_response11 = impulse_response11.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        expected_output = np.empty(self.N, dtype=object)
+        expected_output[0] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        expected_output[1] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+
+        for b in range(num_blocks):
+            start_idx = b*fft_size
+            # end_idx = (b+1)*fft_size
+            for k in range(fft_size):
+                expected_output[0][:, start_idx+k] = (
+                    freq_response00[k, :, :, b].dot(data[0, :, start_idx+k]) +
+                    freq_response01[k, :, :, b].dot(data[1, :, start_idx+k]))
+                expected_output[1][:, start_idx+k] = (
+                    freq_response10[k, :, :, b].dot(data[0, :, start_idx+k]) +
+                    freq_response11[k, :, :, b].dot(data[1, :, start_idx+k]))
+
+        # Test if the output and the expected output are equal
+        np.testing.assert_array_almost_equal(expected_output[0], output[0])
+        np.testing.assert_array_almost_equal(expected_output[1], output[1])
+
+
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
