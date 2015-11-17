@@ -14,7 +14,7 @@ from ..util.misc import randn_c_RS
 from . import singleuser
 
 
-class MuSisoChannel(object):
+class MuChannel(object):
     """
     SISO multiuser channel.
 

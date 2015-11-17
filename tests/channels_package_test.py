@@ -1806,8 +1806,8 @@ class SuMimoChannelTestCase(unittest.TestCase):
 class MuSisoChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.musisochannel = multiuser.MuSisoChannel(N=2)
-        self.musisochannel2 = multiuser.MuSisoChannel(N=3)
+        self.musisochannel = multiuser.MuChannel(N=2)
+        self.musisochannel2 = multiuser.MuChannel(N=3)
 
         # self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
         # self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
@@ -1818,8 +1818,8 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # take only one path with power 0dB and delay 0. Ts will be 1 for
         # the RayleighSampleGenerator. For the JakesSampleGenerator Ts will
         # assume the value from the JakesSampleGenerator.
-        musisochannel = multiuser.MuSisoChannel(N=N)
-        musisochannel2 = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(N=N)
+        musisochannel2 = multiuser.MuChannel(
             N=N, fading_generator=fading_generators.JakesSampleGenerator())
 
         self.assertEqual(musisochannel._su_siso_channels.shape, (N, N))
@@ -1848,9 +1848,9 @@ class MuSisoChannelTestCase(unittest.TestCase):
         channel_profile = fading.COST259_TUx
         jakes = fading_generators.JakesSampleGenerator(Ts=Ts)
 
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=N, channel_profile=channel_profile, Ts=Ts)
-        musisochannel2 = multiuser.MuSisoChannel(
+        musisochannel2 = multiuser.MuChannel(
             N=N, channel_profile=channel_profile, fading_generator=jakes)
 
         self.assertEqual(musisochannel._su_siso_channels.shape, (N, N))
@@ -1885,7 +1885,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
                 self.assertEqual(suchannel2.channel_profile.Ts, Ts)
 
         # Test unequal number of transmitters and receivers
-        musisochannel = multiuser.MuSisoChannel(N=(1, 3))
+        musisochannel = multiuser.MuChannel(N=(1, 3))
         self.assertEqual(musisochannel._su_siso_channels.shape, (1, 3))
 
     def test_corrupt_data(self):
@@ -1971,7 +1971,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         channel_profile = fading.TdlChannelProfile(
             tap_powers_dB=np.array([0, -5]),
             tap_delays=np.array([0, 3 * Ts]))
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=2, fading_generator=jakes, channel_profile=channel_profile)
         self.assertEqual(musisochannel.num_taps, 2)
         self.assertEqual(musisochannel.num_taps_with_padding, 4)
@@ -2061,7 +2061,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Test for an unequal number of transmitters and receivers
 
         # xxxxxxxxxx Test for 1 receiver and 2 transmitters xxxxxxxxxxxxxxx
-        musisochannel = multiuser.MuSisoChannel(N=(1, 2))
+        musisochannel = multiuser.MuChannel(N=(1, 2))
 
         num_samples = 5
 
@@ -2088,7 +2088,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test for 1 transmitter and 2 receivers xxxxxxxxxxxxxxx
-        musisochannel = multiuser.MuSisoChannel(N=(2, 1))
+        musisochannel = multiuser.MuChannel(N=(2, 1))
 
         num_samples = 5
 
@@ -2159,7 +2159,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
         channel_profile = fading.COST259_TUx
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=2, fading_generator=jakes, channel_profile=channel_profile)
 
         fft_size = 64
@@ -2208,7 +2208,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
         channel_profile = fading.COST259_TUx
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=2, fading_generator=jakes, channel_profile=channel_profile)
 
         fft_size = 64
@@ -2307,7 +2307,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # padding, this channel as 4 taps with the non zeros taps at delays 0
         # and 3.
         channel_profile = fading.COST259_TUx
-        musisochannel = multiuser.MuSisoChannel(
+        musisochannel = multiuser.MuChannel(
             N=(num_rx, num_tx), fading_generator=jakes, channel_profile=channel_profile)
 
         fft_size = 64
