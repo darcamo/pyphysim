@@ -84,6 +84,33 @@ class MuChannel(object):
         self._pathloss_matrix = None
 
     @property
+    def switched_direction(self):
+        """
+        Get the value of `switched_direction`.
+
+        Returns
+        -------
+        bool
+            True if direction is switched and False otherwise.
+        """
+        return self._su_siso_channels[0,0].switched_direction
+
+    @switched_direction.setter
+    def switched_direction(self, value):
+        """
+        Set the value of `switched_direction`.
+
+        Parameters
+        ----------
+        value : bool
+            True to switch directions of false to use original direction.
+        """
+        num_rx, num_tx = self._su_siso_channels.shape
+        for rx_idx in range(num_rx):
+            for tx_idx in range(num_tx):
+                self._su_siso_channels[rx_idx, tx_idx].switched_direction = value
+
+    @property
     def channel_profile(self):
         """
         Return the channel profile.

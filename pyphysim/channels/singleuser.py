@@ -189,6 +189,30 @@ class SuChannel(object):
                 self._tdlchannel.get_last_impulse_response()
 
     @property
+    def switched_direction(self):
+        """
+        Get the value of `switched_direction`.
+
+        Returns
+        -------
+        bool
+            True if direction is switched and False otherwise.
+        """
+        return self._tdlchannel.switched_direction
+
+    @switched_direction.setter
+    def switched_direction(self, value):
+        """
+        Set the value of `switched_direction`.
+
+        Parameters
+        ----------
+        value : bool
+            True to switch directions of false to use original direction.
+        """
+        self._tdlchannel.switched_direction = value
+
+    @property
     def num_taps(self):
         """Get the number of taps in the profile."""
         return self._tdlchannel.num_taps

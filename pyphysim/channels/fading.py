@@ -651,7 +651,36 @@ class TdlChannel(object):
 
         # If set to True then the channel direction (downlink/uplink) will
         # be reversed. This is only important for MIMO channels.
-        self.switched_direction = False
+        self._switched_direction = False
+
+    @property
+    def switched_direction(self):
+        """
+        Get the value of `switched_direction`.
+
+        Returns
+        -------
+        bool
+            True if direction is switched and False otherwise.
+        """
+        return self._switched_direction
+
+    @switched_direction.setter
+    def switched_direction(self, value):
+        """
+        Set the value of `switched_direction`.
+
+        Parameters
+        ----------
+        value : bool
+            True to switch directions of false to use original direction.
+        """
+        if not isinstance(value, int):
+            raise TypeError("switched_direction must be a boolean value")
+        # TODO: maybe throw a warning if the TdlChannel object is not a
+        # MIMO version (has multiple antennas)
+
+        self._switched_direction = value
 
     def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
         """
