@@ -248,8 +248,11 @@ class SrsChannelEstimator(object):
         Parameters
         ----------
         received_signal : numpy array
+
             The received SRS signal after being transmitted through the
-            channel (in the frequency domain).
+            channel (in the frequency domain). If this is a 2D numpy array
+            the first dimensions is assumed to be "receive antennas" while
+            the second dimension are the received requence elements.
         num_taps_to_keep : int
             Number of taps (in delay domain) to keep. All taps from 0 to
             `num_taps_to_keep`-1 will be kept and all other taps will be
@@ -266,13 +269,25 @@ class SrsChannelEstimator(object):
         # User's SRS sequence
         r = self._srs_ue.seq_array()
 
-        # First we multiply (elementwise) the received signal by the
-        # conjugate of the user's SRS sequence
-        y = np.fft.ifft(np.conj(r) * received_signal, r.size)
+        if received_signal.ndim == 1:
+            # First we multiply (elementwise) the received signal by the
+            # conjugate of the user's SRS sequence
+            y = np.fft.ifft(np.conj(r) * received_signal, r.size)
 
-        # The channel impulse response consists of the first
-        # `num_taps_to_keep` elements in `y`.
-        tilde_h = y[0:num_taps_to_keep]
+            # The channel impulse response consists of the first
+            # `num_taps_to_keep` elements in `y`.
+            tilde_h = y[0:num_taps_to_keep]
+        elif received_signal.ndim == 2:
+            # Case with multiple receive antennas
+            y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal, r.size)
+
+            # The channel impulse response consists of the first
+            # `num_taps_to_keep` elements in `y`.
+            tilde_h = y[:, 0:num_taps_to_keep]
+        else:
+            ValueError("received_signal must have either one dimension (one "
+                       "receive antenna) or two dimensions (first dimension "
+                       "being the receive antenna dimension).")
 
         # Now we can apply the FFT to get the frequency response.
         # The number of subcarriers is twice the number of elements in the
