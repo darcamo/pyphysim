@@ -111,6 +111,26 @@ class MuChannel(object):
                 self._su_siso_channels[rx_idx, tx_idx].switched_direction = value
 
     @property
+    def num_tx_antennas(self):
+        """Get the number of transmit antennas.
+        """
+        _, num_tx = self._su_siso_channels.shape
+        num_tx_antennas = np.empty(num_tx, dtype=int)
+        for tx_idx in range(num_tx):
+            num_tx_antennas[tx_idx] = self._su_siso_channels[0, tx_idx].num_tx_antennas
+        return num_tx_antennas
+
+    @property
+    def num_rx_antennas(self):
+        """Get the number of receive antennas.
+        """
+        num_rx, _ = self._su_siso_channels.shape
+        num_rx_antennas = np.empty(num_rx, dtype=int)
+        for rx_idx in range(num_rx):
+            num_rx_antennas[rx_idx] = self._su_siso_channels[rx_idx, 0].num_rx_antennas
+        return num_rx_antennas
+
+    @property
     def channel_profile(self):
         """
         Return the channel profile.
