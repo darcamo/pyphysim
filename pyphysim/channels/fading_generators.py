@@ -10,7 +10,7 @@ from ..util.misc import randn_c
 
 # noinspection PyPep8
 def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
-                           RS=None):
+                           current_time=0, phi_l=None, psi_l=None):
     """
     Generates channel samples according to the Jakes model.
 
@@ -21,7 +21,6 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
        :label: jakes_model
 
        h(t) = \\frac{1}{\\sqrt{L}}\\sum_{l=0}^{L-1}\\exp\\{j[2\\pi f_D \\cos(\\phi_l)t+\\psi_l]\\}
-
 
     Parameters
     ----------
@@ -38,12 +37,18 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
         channels. For instance, in order to generate channels samples for a
         MIMO scenario with 3 receive antennas and 2 transmit antennas use a
         shape of (3, 2).
-    RS : A numpy.random.RandomState object.
-        The RandomState object used to generate the random values. If not
-        provided, the global RandomState in numpy will be used.
+    current_time : float
+        The current start time
+    phi_l : numpy array
+        The "phi" part in Jakes model
+    psi_l : numpy array
+        The "psi" part in Jakes modl
 
     Returns
     -------
+    new_current_time : float
+        The new current time (that should be used the next time this
+        function is called to 'continue' the fading.
     h : Numpy array
         The generated channel. If `shape` is None the the shape of the
         returned h is equal to (NSamples,). That is, h is a 1-dimensional
@@ -52,11 +57,35 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
         dimension). For instance, if a `shape` of (3, 2) was provided then
         the shape of the returned h will be (3, 2, NSamples).
     """
-    # $h(t) = \frac{1}{\sqrt{L}}\sum_{l=0}^{L-1}\exp\{j[2\pi f_D \cos(\phi_l)t+\psi_l]\}$
+    # Generate time samples
+    t = np.arange(
+        current_time,  # Start time
+        NSamples * Ts + current_time,
+        Ts * 1.0000000001)
 
-    obj = JakesSampleGenerator(Fd, Ts, L, shape, RS)
-    obj.generate_more_samples(NSamples)
-    return obj.get_samples()
+    if phi_l is None:
+        if shape is None:
+            phi_l = np.random.rand(L, 1)
+        else:
+            phi_l = np.random.rand(L, *shape, 1)
+
+    if psi_l is None:
+        if shape is None:
+            psi_l = np.random.rand(L, 1)
+        else:
+            psi_l = np.random.rand(L, *shape, 1)
+
+    # Update the self._current_time variable with the value of the next
+    # time sample that should be generated when _generate_time_samples
+    # is called again.
+    new_current_time = t[-1] + Ts
+
+    h = (math.sqrt(1.0 / L) *
+         np.sum(np.exp(1j * (2 * np.pi * Fd
+                             * np.cos(phi_l) * t + psi_l)),
+                axis=0))
+
+    return new_current_time, h
 
 
 class FadingSampleGenerator(object):
