@@ -115,18 +115,16 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         NRays = 8  # Number of rays for the Jakes model
 
         # Test generating channel samples for a SISO scenario
-        h = fading_generators.generate_jakes_samples(Fd, Ts, N, NRays)
+        new_current_time, h = fading_generators.generate_jakes_samples(Fd, Ts, N, NRays)
         self.assertEqual(h.size, 1000)
         self.assertEqual(h.shape, (1000,))
+        self.assertAlmostEqual(new_current_time, 1000*Ts)
 
-        h2 = fading_generators.generate_jakes_samples(Fd, Ts, N, NRays, shape=(4, 3))
+        new_current_time, h2 = fading_generators.generate_jakes_samples(
+            Fd, Ts, N, NRays, shape=(4, 3), current_time=3752*Ts)
+        self.assertAlmostEqual(new_current_time, 4752*Ts)
         self.assertEqual(h2.shape, (4, 3, N))
 
-        # Test with a given RandomState object.
-        RS = np.random.RandomState()
-        h3 = fading_generators.generate_jakes_samples(Fd, Ts, N, NRays, shape=(3, 2),
-                                                      RS=RS)
-        self.assertEqual(h3.shape, (3, 2, N))
 
     def test_calc_stream_reduction_matrix(self):
         Re_k = randn_c(3, 2)
