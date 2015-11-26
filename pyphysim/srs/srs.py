@@ -241,7 +241,7 @@ class SrsChannelEstimator(object):
         self._srs_ue = srs_ue
 
     def estimate_channel_freq_domain(self, received_signal,
-                                     num_taps_to_keep=16):
+                                     num_taps_to_keep):
         """
         Estimate the channel based on the received signal.
 

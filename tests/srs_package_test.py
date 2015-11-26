@@ -259,7 +259,8 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the SrsChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y), tilde_H1)
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 16),
+            tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -320,18 +321,20 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
         # Calculate expected estimated channel for user 1
         y1 = np.fft.ifft(np.conj(r1[:, np.newaxis]) * Y, 150, axis=0)
-        tilde_h1 = y1[0:16]
-        tilde_H1 = np.fft.fft(tilde_h1, Nsc, axis=0)
+        tilde_h1_espected = y1[0:16]
+        tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=0)
 
         # Test the SrsChannelEstimator estimation
+        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T, 16)
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y.T), tilde_H1.T)
+            H1_estimated, tilde_H1_espected.T)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
-        error = np.abs(H1[50:-50, :] - tilde_H1[50:-50, :])
+        error = np.abs(H1[50:-50, :] - tilde_H1_espected[50:-50, :])
         np.testing.assert_almost_equal(error/2., np.zeros(error.shape), decimal=2)
+
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":
