@@ -1331,6 +1331,26 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
                                              received_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_corrupt_data2(self):
+        # This method tests test_corrupt_data, but now for a SIMO
+        # system. The only difference is that the transmit signal can be a
+        # 1D array (since we only have one transmit stream) or a 2D array
+        # with only 1 row. Both cases should yield the same solution.
+
+        # xxxxx Test sending single impulse in flat fading channel xxxxxxxx
+        jakes = fading_generators.JakesSampleGenerator(shape=(3, 1), Fd=0, Ts=2e-7)
+
+        tdlmimochannel_flat = fading.TdlMimoChannel(
+            jakes, channel_profile=fading.COST259_TUx)
+        num_samples = 20
+        signal1 = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
+        signal2 = signal1[np.newaxis, :]
+
+        received_signal_flat1 = tdlmimochannel_flat.corrupt_data(signal1)
+        received_signal_flat2 = tdlmimochannel_flat.corrupt_data(signal2)
+
+        np.testing.assert_array_almost_equal(received_signal_flat1, received_signal_flat2)
+
     def test_corrupt_data_in_freq_domain(self):
         fft_size = 16
         num_samples = 3 * fft_size
@@ -1491,7 +1511,6 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         freq_response11 = freq_response_all[:, 1, 1, :]
         freq_response20 = freq_response_all[:, 2, 0, :]
         freq_response21 = freq_response_all[:, 2, 1, :]
-        # import pudb; pudb.set_trace()  ## DEBUG ##
 
         # xxxxxxxxxx First OFDM symbol
         expected_received_signal_uplink = np.zeros((num_tx_ant, num_samples),
@@ -1534,6 +1553,46 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
                                              received_signal_uplink)
 
     def test_corrupt_data_in_freq_domain2(self):
+        # This method tests corrupt_data_in_freq_domain, but now for a SIMO
+        # system. The only difference is that the transmit signal can be a
+        # 1D array (since we only have one transmit stream) or a 2D array
+        # with only 1 row. Both cases should yield the same solution.
+        num_rx_ant = 3
+        num_tx_ant = 1
+
+        fft_size = 16
+        num_samples = 5 * fft_size
+        signal1 = np.ones(num_samples)
+        signal2 = signal1[np.newaxis, :]
+
+        # For these particular indexes we will use half of the subcarriers
+        subcarrier_indexes = np.r_[0:fft_size:2]
+
+        jakes1 = fading_generators.JakesSampleGenerator(
+            Fd=0.0, Ts=self.Ts, L=self.NRays, shape=(num_rx_ant, num_tx_ant))
+
+        # Note that tdlmimochannel will modify the jakes1 object
+        tdlmimochannel1 = fading.TdlMimoChannel(
+            fading_generator=jakes1,
+            channel_profile=fading.COST259_TUx)
+
+        # xxxxxxxxxx Perform the actual transmission xxxxxxxxxxxxxxxxxxxxxx
+        received_signal1 = tdlmimochannel1.corrupt_data_in_freq_domain(
+            signal1, fft_size, subcarrier_indexes)
+
+        received_signal2 = tdlmimochannel1.corrupt_data_in_freq_domain(
+            signal2, fft_size, subcarrier_indexes)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Check that both received signals are equal (note that this is
+        # only valid because the channel does not vary in time domain
+        # (Doppler Frequency was set to zero.)
+        np.testing.assert_array_almost_equal(received_signal1, received_signal2)
+
+        # We don't need to test if received_signal1 is correct, since it
+        # was already tested for the MIMO case.
+
+    def test_corrupt_data_in_freq_domain3(self):
         # This method tests corrupt_data_in_freq_domain, but now specifying
         # the indexes of the used subcarriers
         num_rx_ant = 3

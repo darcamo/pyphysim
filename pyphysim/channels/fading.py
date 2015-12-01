@@ -820,6 +820,41 @@ class TdlChannel(object):
         """
         return self._last_impulse_response
 
+    def __prepare_transmit_signal_shape(self, signal):
+        """
+        Helper method called in corrupt_data and corrupt_data_in_freq_domain
+        methods to prepare the shape of transmit `signal`.
+
+        It there is only one transmit antenna but signal is 1D, then an
+        extra dimension will be added to `signal`. Otherwise the `signal`
+        will be just returned.
+
+        Parameters
+        ----------
+        signal : numpy array
+            The signal to be transmitted. This should be 1D for SISO
+            systems (or SIMO systems) and 2D for MIMO systems.
+
+        Return
+        ------
+        numpy array
+            Either the same signal of signal with an added dimension.
+        """
+        if len(self._fading_generator.shape) == 1:
+            return signal
+        else:
+            _, num_rx_ant, num_tx_ant = self._fading_generator.shape
+
+            if self.switched_direction:
+                # Switched directions
+                if num_rx_ant == 1 and signal.ndim == 1:
+                    signal = np.reshape(signal, (1, signal.size))
+            else:
+                # Original directions
+                if num_tx_ant == 1 and signal.ndim == 1:
+                    signal = np.reshape(signal, (1, signal.size))
+        return signal
+
     def corrupt_data(self, signal):
         """
         Transmit the signal trhough the TDL channel.
@@ -827,7 +862,8 @@ class TdlChannel(object):
         Parameters
         ----------
         signal : numpy array
-            The signal to be transmitted.
+            The signal to be transmitted. This should be 1D for SISO
+            systems (or SIMO systems) and 2D for MIMO systems.
 
         Returns
         -------
@@ -836,6 +872,11 @@ class TdlChannel(object):
         """
         # Number of symbols to be transmitted
         num_symbols = signal.shape[-1]
+
+        # Prepare the dimension in signal. This will either do nothing
+        # (return the same variable), or add an extra singleton dimension
+        # if signal is 1D and we have a SIMO system.
+        signal = self.__prepare_transmit_signal_shape(signal)
 
         # Generate an impulse response with `num_symbols` samples that we
         # will use to corrupt the data.
@@ -908,7 +949,8 @@ class TdlChannel(object):
         Parameters
         ----------
         signal : numpy array
-            The signal to be transmitted.
+            The signal to be transmitted. This should be 1D for SISO
+            systems (or SIMO systems) and 2D for MIMO systems.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
         carrier_indexes : slice or numpy array of integers
@@ -922,6 +964,11 @@ class TdlChannel(object):
         """
         # Number of symbols to be transmitted
         num_symbols = signal.shape[-1]
+
+        # Prepare the dimension in signal. This will either do nothing
+        # (return the same variable), or add an extra singleton dimension
+        # if signal is 1D and we have a SIMO system.
+        signal = self.__prepare_transmit_signal_shape(signal)
 
         # xxxxxxxxxx Get the block size xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         if carrier_indexes is None:
@@ -947,8 +994,6 @@ class TdlChannel(object):
         # concatenate these impulse responses at the end so that we can set
         # self._last_impulse_response to the impulse response of all blocks
         impulse_responses = []
-        num_tx_ant = -1  # This will be set latter
-
         if len(self._fading_generator.shape) == 1:
             # Output variable representing the received signal
             output = np.empty(num_symbols, dtype=complex)
