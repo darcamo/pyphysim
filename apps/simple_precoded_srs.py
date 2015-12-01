@@ -6,11 +6,13 @@ import sys
 sys.path.append('../')
 # from matplotlib import pyplot as plt
 
+import math
 import numpy as np
 from matplotlib import pyplot as plt
 from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
 from pyphysim.channels.fading import COST259_TUx, TdlChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
+from pyphysim.channels.multiuser import MuChannel
 
 if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -35,7 +37,7 @@ if __name__ == '__main__':
     # Jakes process)
 
     # Channel configuration
-    speedTerminal = 3 / 3.6  # Speed in m/s
+    speedTerminal = 0 / 3.6  # Speed in m/s
     fcDbl = 2.6e9  # Central carrier frequency (in Hz)
     timeTTIDbl = 1e-3  # Time of a single TTI
     subcarrierBandDbl = 15e3  # Subcarrier bandwidth (in Hz)
@@ -120,16 +122,20 @@ if __name__ == '__main__':
     F33 = dU33[:, 0].conj()
 
     # xxxxxxxxxx Channels in uplink direction xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    int_path_loss = 0.05  # Path loss of the interfering links
+    int_g = math.sqrt(int_path_loss)  # Gain of interfering links
+    dir_d = 1.0                   #  Gain of direct links
+
     # Dimension: `Nsc x numAnAnt x numUeAnt`
-    uH11 = np.transpose(dH11, axes=[0, 2, 1])
-    uH12 = np.transpose(dH12, axes=[0, 2, 1])
-    uH13 = np.transpose(dH13, axes=[0, 2, 1])
-    uH21 = np.transpose(dH21, axes=[0, 2, 1])
-    uH22 = np.transpose(dH22, axes=[0, 2, 1])
-    uH23 = np.transpose(dH23, axes=[0, 2, 1])
-    uH31 = np.transpose(dH31, axes=[0, 2, 1])
-    uH32 = np.transpose(dH32, axes=[0, 2, 1])
-    uH33 = np.transpose(dH33, axes=[0, 2, 1])
+    uH11 = dir_d * np.transpose(dH11, axes=[0, 2, 1])
+    uH12 = int_g * np.transpose(dH12, axes=[0, 2, 1])
+    uH13 = int_g * np.transpose(dH13, axes=[0, 2, 1])
+    uH21 = int_g * np.transpose(dH21, axes=[0, 2, 1])
+    uH22 = dir_d * np.transpose(dH22, axes=[0, 2, 1])
+    uH23 = int_g * np.transpose(dH23, axes=[0, 2, 1])
+    uH31 = int_g * np.transpose(dH31, axes=[0, 2, 1])
+    uH32 = int_g * np.transpose(dH32, axes=[0, 2, 1])
+    uH33 = dir_d * np.transpose(dH33, axes=[0, 2, 1])
 
     # Compute the equivalent uplink channels
     uH11_eq = uH11.dot(F11)
@@ -152,10 +158,10 @@ if __name__ == '__main__':
          uH12_eq[comb_indexes] * r2[:, np.newaxis] + \
          uH13_eq[comb_indexes] * r3[:, np.newaxis]
     Y2 = uH21_eq[comb_indexes] * r1[:, np.newaxis] + \
-         uH22_eq[comb_indexes] * r2[:,np.newaxis] + \
+         uH22_eq[comb_indexes] * r2[:, np.newaxis] + \
          uH23_eq[comb_indexes] * r3[:, np.newaxis]
     Y3 = uH31_eq[comb_indexes] * r1[:, np.newaxis] + \
-         uH32_eq[comb_indexes] * r2[:,np.newaxis] + \
+         uH32_eq[comb_indexes] * r2[:, np.newaxis] + \
          uH33_eq[comb_indexes] * r3[:, np.newaxis]
 
 
@@ -163,7 +169,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxx Estimate the equivalent channel xxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     tilde_y1 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y1[15:, 0] = 0  # Only keep the first 15 time samples for each antenna
+    tilde_y1[11:, 0] = 0  # Only keep the first 15 time samples for each antenna
 
     plt.figure(figsize=(12, 14))
     plt.subplot(2, 1, 1)
@@ -171,4 +177,6 @@ if __name__ == '__main__':
 
     plt.subplot(2, 1, 2)
     plt.plot(np.abs(np.fft.fft(tilde_y1[:, 0], n=Nsc, axis=0)))
+    plt.hold(True)
+    plt.plot(np.abs(uH11_eq[:,0]), 'r')
     plt.show()
