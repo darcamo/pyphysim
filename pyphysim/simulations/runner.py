@@ -44,12 +44,6 @@ def get_partial_results_filename(results_base_filename,
     partial_results_filename : str
         The name of the partial results file.
     """
-    # Check if current_params is indeed an unpacked variation of another
-    # SimulationParameters object.
-    msg = ("'current_params' must be an unpacked variation of another "
-           "SimulationParameters object.")
-    assert current_params.unpack_index > -1, msg
-
     # This will get the number of unpacked variations of the parent
     # SimulationParameters object.
     total_unpacks = current_params.get_num_unpacked_variations()
