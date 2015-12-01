@@ -240,6 +240,10 @@ class SrsChannelEstimator(object):
     def __init__(self, srs_ue):
         self._srs_ue = srs_ue
 
+    @property
+    def ue_srs_seq(self):
+        return self._srs_ue
+
     def estimate_channel_freq_domain(self, received_signal,
                                      num_taps_to_keep):
         """
