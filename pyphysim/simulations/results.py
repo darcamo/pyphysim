@@ -3,6 +3,8 @@
 
 """Module containing simulation result classes."""
 
+from __future__ import division
+
 import numpy as np
 import os.path
 
@@ -1197,7 +1199,7 @@ class Result(object):
             t = self._total
             if t != 0:
                 return "Result -> {0}: {1}/{2} -> {3}".format(
-                    self.name, v, t, float(v) / t)
+                    self.name, v, t, v / t)
             else:
                 return "Result -> {0}: {1}/{2} -> NaN".format(
                     self.name, v, t)
@@ -1270,7 +1272,7 @@ class Result(object):
             self._value += p_value
             self._total += p_total
 
-            result = float(p_value) / float(p_total)
+            result = p_value / p_total
             self._result_sum += result
             self._result_squared_sum += result**2
 
@@ -1356,9 +1358,9 @@ class Result(object):
             return "Nothing yet".format(self.name)
         else:
             if self._update_type_code == Result.RATIOTYPE:
-                return float(self._value) / self._total
+                return self._value / self._total
             elif self._update_type_code == Result.CHOICETYPE:
-                return self._value / float(self._total)
+                return self._value / self._total
             else:
                 return self._value
 
@@ -1385,7 +1387,7 @@ class Result(object):
         """
         # self._fix_old_version()  # Remove this line in the future
 
-        return float(self._result_sum) / self.num_updates
+        return self._result_sum / self.num_updates
 
     def get_result_var(self):
         """
@@ -1393,7 +1395,7 @@ class Result(object):
         """
         # self._fix_old_version()  # Remove this line in the future
 
-        return ((float(self._result_squared_sum) / self.num_updates) -
+        return ((self._result_squared_sum / self.num_updates) -
                 (self.get_result_mean())**2)
 
     def get_confidence_interval(self, P=95):
