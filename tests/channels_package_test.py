@@ -2304,6 +2304,43 @@ class MuSisoChannelTestCase(unittest.TestCase):
                                              output1[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        musisochannel.switched_direction = True
+        output_swiched = musisochannel.corrupt_data(data1)
+
+        # Get the impulse response from two transmitters to the first
+        # receiver.
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response01 = musisochannel.get_last_impulse_response(0, 1)
+        h00 = impulse_response00.tap_values  # Dim: `num_taps x num samples`
+        h01 = impulse_response01.tap_values  # Dim: `num_taps x num samples`
+
+        # Get the impulse response from two transmitters to the second
+        # receiver.
+        impulse_response10 = musisochannel.get_last_impulse_response(1, 0)
+        impulse_response11 = musisochannel.get_last_impulse_response(1, 1)
+        h10 = impulse_response10.tap_values  # Dim: `num_taps x num samples`
+        h11 = impulse_response11.tap_values  # Dim: `num_taps x num samples`
+
+        expected_received_data0 = np.zeros(
+            num_samples + channel_memory, dtype=complex)
+        expected_received_data1 = np.zeros(
+            num_samples + channel_memory, dtype=complex)
+        for i in range(musisochannel.num_taps_with_padding):
+            expected_received_data0[i:i+num_samples] += (
+                data1[0] * h00[i] +
+                data1[1] * h10[i])
+            expected_received_data1[i:i+num_samples] += (
+                data1[0] * h01[i] +
+                data1[1] * h11[i])
+
+        np.testing.assert_array_almost_equal(expected_received_data0,
+                                             output_swiched[0])
+        np.testing.assert_array_almost_equal(expected_received_data1,
+                                             output_swiched[1])
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_corrupt_data2(self):
         # Test for an unequal number of transmitters and receivers
 
@@ -2398,6 +2435,40 @@ class MuSisoChannelTestCase(unittest.TestCase):
                                              output2[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        # We have 1 transmitter and 2 receivers in the normal direction
+        musisochannel = multiuser.MuChannel(N=(2, 1))
+        # But we will switch directions and thus now we have 2 transmitters
+        # and 1 receiver
+        musisochannel.switched_direction = True
+
+        num_samples = 5
+
+        # Generate data for 1 transmitter
+        data = np.random.randint(0, 10, (2, num_samples))
+
+        # Pass data throught he channel
+        output = musisochannel.corrupt_data(data)
+
+        # Get the impulse response from the single transmitter to each
+        # receiver. The channel is flat, thus we only have one tap.
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response1 = musisochannel.get_last_impulse_response(1, 0)
+        h0 = impulse_response0.tap_values[0]  # We only have the first tap
+        h1 = impulse_response1.tap_values[0]
+
+        expected_received_data = data[0] * h0 + data[1] * h1
+
+        # For a flat channel the number of elements in the output should be
+        # equal to the number of elements in the input.
+        self.assertEqual(output[0].size, num_samples)
+
+        # Test if received data is correct
+        np.testing.assert_array_almost_equal(expected_received_data,
+                                             output[0])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
     def test_corrupt_data_in_freq_domain(self):
         Ts = 3.25e-8
         # Create a jakes fading generator
@@ -2437,6 +2508,39 @@ class MuSisoChannelTestCase(unittest.TestCase):
                               data[1, 2*fft_size:3*fft_size] * freq_response01[:, 2]
         expected_ofdm_symb4 = data[0, 3*fft_size:4*fft_size] * freq_response00[:, 3] +\
                               data[1, 3*fft_size:4*fft_size] * freq_response01[:, 3]
+
+        np.testing.assert_array_almost_equal(
+            output[0],
+            np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
+                       expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        # Switch directions
+        musisochannel.switched_direction = True
+
+        # Transmit in the other direction
+        output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
+
+        self.assertEqual(data[0].shape, output[0].shape)
+        self.assertEqual(data[1].shape, output[1].shape)
+
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response10 = musisochannel.get_last_impulse_response(1, 0)
+
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response10 = impulse_response10.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+
+        expected_ofdm_symb1 = data[0, 0:fft_size] * freq_response00[:, 0] + \
+                              data[1, 0:fft_size] * freq_response10[:, 0]
+        expected_ofdm_symb2 = data[0, fft_size:2*fft_size] * freq_response00[:, 1] +\
+                              data[1, fft_size:2*fft_size] * freq_response10[:, 1]
+        expected_ofdm_symb3 = data[0, 2*fft_size:3*fft_size] * freq_response00[:, 2] +\
+                              data[1, 2*fft_size:3*fft_size] * freq_response10[:, 2]
+        expected_ofdm_symb4 = data[0, 3*fft_size:4*fft_size] * freq_response00[:, 3] +\
+                              data[1, 3*fft_size:4*fft_size] * freq_response10[:, 3]
 
         np.testing.assert_array_almost_equal(
             output[0],
@@ -2543,8 +2647,85 @@ class MuSisoChannelTestCase(unittest.TestCase):
                        expected_ofdm_symb3, expected_ofdm_symb4]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        # Switch directions
+        musisochannel.switched_direction = True
+
+        # Pass data throught he channel
+        output = musisochannel.corrupt_data_in_freq_domain(data, fft_size,
+                                                           subcarrier_indexes)
+
+        self.assertEqual(data[0].shape, output[0].shape)
+        self.assertEqual(data[1].shape, output[1].shape)
+
+        impulse_response00 = musisochannel.get_last_impulse_response(0, 0)
+        impulse_response10 = musisochannel.get_last_impulse_response(1, 0)
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response10 = impulse_response10.get_freq_response(fft_size)
+
+        impulse_response01 = musisochannel.get_last_impulse_response(0, 1)
+        impulse_response11 = musisochannel.get_last_impulse_response(1, 1)
+        freq_response01 = impulse_response01.get_freq_response(fft_size)
+        freq_response11 = impulse_response11.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+        expected_ofdm_symb1 = (data[0, 0:block_size] *
+                               freq_response00[subcarrier_indexes, 0] +
+
+                               data[1, 0:block_size] *
+                               freq_response10[subcarrier_indexes, 0])
+        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+                               freq_response00[subcarrier_indexes, 1] +
+
+                               data[1, block_size:2*block_size] *
+                               freq_response10[subcarrier_indexes, 1])
+        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+                               freq_response00[subcarrier_indexes, 2] +
+
+                               data[1, 2*block_size:3*block_size] *
+                               freq_response10[subcarrier_indexes, 2])
+        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+                               freq_response00[subcarrier_indexes, 3] +
+
+                               data[1, 3*block_size:4*block_size] *
+                               freq_response10[subcarrier_indexes, 3])
+
+        np.testing.assert_array_almost_equal(
+            output[0],
+            np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
+                       expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Expected received signal at second receiver xxxxxxxxxx
+        expected_ofdm_symb1 = (data[0, 0:block_size] *
+                               freq_response01[subcarrier_indexes, 0] +
+
+                               data[1, 0:block_size] *
+                               freq_response11[subcarrier_indexes, 0])
+        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+                               freq_response01[subcarrier_indexes, 1] +
+
+                               data[1, block_size:2*block_size] *
+                               freq_response11[subcarrier_indexes, 1])
+        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+                               freq_response01[subcarrier_indexes, 2] +
+
+                               data[1, 2*block_size:3*block_size] *
+                               freq_response11[subcarrier_indexes, 2])
+        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+                               freq_response01[subcarrier_indexes, 3] +
+
+                               data[1, 3*block_size:4*block_size] *
+                               freq_response11[subcarrier_indexes, 3])
+
+        np.testing.assert_array_almost_equal(
+            output[1],
+            np.hstack([expected_ofdm_symb1, expected_ofdm_symb2,
+                       expected_ofdm_symb3, expected_ofdm_symb4]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_corrupt_data_in_freq_domain3(self):
-    # Test for an unequal number of transmitters and receivers
+        # Test for an unequal number of transmitters and receivers
         Ts = 3.25e-8
         num_tx = 1
         num_rx = 2
@@ -2646,6 +2827,45 @@ class MuSisoChannelTestCase(unittest.TestCase):
                        expected_ofdm_symb3_rx2, expected_ofdm_symb4_rx2]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        # Switch directions. Now we have 2 transmitter and 1 receiver
+        musisochannel.switched_direction = True
+
+        # Generate data for 2 transmitters
+        # data = np.ones((2, num_samples))
+        data = np.random.randint(0, 10, (2, num_samples))
+
+        # Pass data throught he channel
+        output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
+
+        self.assertEqual(data[0].shape, output[0].shape)
+
+        # Impulse response tx 1 to rx 1
+        impulse_response0 = musisochannel.get_last_impulse_response(0, 0)
+        # Impulse response tx 1 to rx 2
+        impulse_response1 = musisochannel.get_last_impulse_response(1, 0)
+        # Frequency response tx 1 to rx 1
+        freq_response0 = impulse_response0.get_freq_response(fft_size)
+        # Frequency response tx 1 to rx 2
+        freq_response1 = impulse_response1.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
+        expected_ofdm_symb1_rx = (data[0, 0:fft_size] * freq_response0[:, 0] +
+                                  data[1, 0:fft_size] * freq_response1[:, 0])
+        expected_ofdm_symb2_rx = (data[0, fft_size:2*fft_size] * freq_response0[:, 1] +
+                                  data[1, fft_size:2*fft_size] * freq_response1[:, 1])
+        expected_ofdm_symb3_rx = (data[0, 2*fft_size:3*fft_size] * freq_response0[:, 2] +
+                                  data[1, 2*fft_size:3*fft_size] * freq_response1[:, 2])
+        expected_ofdm_symb4_rx = (data[0, 3*fft_size:4*fft_size] * freq_response0[:, 3] +
+                                  data[1, 3*fft_size:4*fft_size] * freq_response1[:, 3])
+
+        # Test received signal at the receiver
+        np.testing.assert_array_almost_equal(
+            output[0],
+            np.hstack([expected_ofdm_symb1_rx, expected_ofdm_symb2_rx,
+                       expected_ofdm_symb3_rx, expected_ofdm_symb4_rx]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 class MuMimoChannelTestCase(unittest.TestCase):
     def setUp(self):
@@ -2707,6 +2927,40 @@ class MuMimoChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_output1[0], output1[0])
         np.testing.assert_array_almost_equal(expected_output1[1], output1[1])
 
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        # First let's switch directions
+        self.mumimochannel.switched_direction = True
+
+        # In the reverse direction we have self.num_rx_antennas TRANSMIT antennas
+        data2 = np.random.randint(0, 10, (self.N, self.num_rx_antennas, num_samples))
+
+        # Now let's transmit in the other direction
+        output2 = self.mumimochannel.corrupt_data(data2)
+
+        impulse_response00 = self.mumimochannel.get_last_impulse_response(0, 0)
+        impulse_response10 = self.mumimochannel.get_last_impulse_response(1, 0)
+        impulse_response01 = self.mumimochannel.get_last_impulse_response(0, 1)
+        impulse_response11 = self.mumimochannel.get_last_impulse_response(1, 1)
+
+        # We only have the first tap.
+        h00 = impulse_response00.tap_values[0].T
+        h10 = impulse_response10.tap_values[0].T
+        h01 = impulse_response01.tap_values[0].T
+        h11 = impulse_response11.tap_values[0].T
+
+        expected_output2 = np.empty(self.N, dtype=object)
+        expected_output2[0] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
+        expected_output2[1] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
+        for i in range(num_samples):
+            expected_output2[0][:, i] = h00[i,:,:].dot(data2[0,:,i]) + \
+                                        h10[i,:,:].dot(data2[1,:,i])
+            expected_output2[1][:, i] = h01[i,:,:].dot(data2[0,:,i]) + \
+                                        h11[i,:,:].dot(data2[1,:,i])
+
+        np.testing.assert_array_almost_equal(expected_output2[0], output2[0])
+        np.testing.assert_array_almost_equal(expected_output2[1], output2[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_corrupt_data_in_freq_domain(self):
         Ts = 3.25e-8
         # Create a jakes fading generator
@@ -2762,6 +3016,49 @@ class MuMimoChannelTestCase(unittest.TestCase):
         # Test if the output and the expected output are equal
         np.testing.assert_array_almost_equal(expected_output[0], output[0])
         np.testing.assert_array_almost_equal(expected_output[1], output[1])
+
+        # xxxxxxxxxx Now test with switched directions xxxxxxxxxxxxxxxxxxxx
+        # First we switch directions
+        mumimochannel.switched_direction = True
+
+        # Pass data throught he channel
+        data2 = np.random.randint(0, 10, (self.N, self.num_rx_antennas, num_samples))
+        output2 = mumimochannel.corrupt_data_in_freq_domain(data2, fft_size)
+        # Since we switched directions, the number of "receive" antennas is
+        # equal to the number of transmit antennas in the original
+        # direction
+        self.assertEqual((self.num_tx_antennas, num_samples), output2[0].shape)
+        self.assertEqual((self.num_tx_antennas, num_samples), output2[1].shape)
+
+        impulse_response00 = mumimochannel.get_last_impulse_response(0, 0)
+        impulse_response10 = mumimochannel.get_last_impulse_response(1, 0)
+        impulse_response01 = mumimochannel.get_last_impulse_response(0, 1)
+        impulse_response11 = mumimochannel.get_last_impulse_response(1, 1)
+
+        freq_response00 = impulse_response00.get_freq_response(fft_size)
+        freq_response10 = impulse_response10.get_freq_response(fft_size)
+        freq_response01 = impulse_response01.get_freq_response(fft_size)
+        freq_response11 = impulse_response11.get_freq_response(fft_size)
+
+        # xxxxxxxxxx Expected received signal xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        expected_output2 = np.empty(self.N, dtype=object)
+        expected_output2[0] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
+        expected_output2[1] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
+        for b in range(num_blocks):
+            start_idx = b*fft_size
+            # end_idx = (b+1)*fft_size
+            for k in range(fft_size):
+                expected_output2[0][:, start_idx+k] = (
+                    freq_response00[k, :, :, b].T.dot(data2[0, :, start_idx+k]) +
+                    freq_response10[k, :, :, b].T.dot(data2[1, :, start_idx+k]))
+                expected_output2[1][:, start_idx+k] = (
+                    freq_response01[k, :, :, b].T.dot(data2[0, :, start_idx+k]) +
+                    freq_response11[k, :, :, b].T.dot(data2[1, :, start_idx+k]))
+
+        # Test if the output2 and the expected output2 are equal
+        np.testing.assert_array_almost_equal(expected_output2[0], output2[0])
+        np.testing.assert_array_almost_equal(expected_output2[1], output2[1])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class MultiUserChannelMatrixTestCase(unittest.TestCase):

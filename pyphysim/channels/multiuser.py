@@ -207,17 +207,22 @@ class MuChannel(object):
             Received signal at each receiver. Each row corresponds to one
             receiver.
         """
-        num_rx, num_tx = self._su_siso_channels.shape
+        if self.switched_direction:
+            su_siso_channels = self._su_siso_channels.T
+        else:
+            su_siso_channels = self._su_siso_channels
+
+        num_rx, num_tx = su_siso_channels.shape
         outputs = np.empty(num_rx, dtype=object)
 
         if num_tx == 1 and signal.ndim == 1:
             signal = np.reshape(signal, (1, -1))
 
         for rx in range(num_rx):
-            suchannel = self._su_siso_channels[rx, 0]
+            suchannel = su_siso_channels[rx, 0]
             outputs[rx] = suchannel.corrupt_data(signal[0])
             for tx in range(1, num_tx):
-                suchannel = self._su_siso_channels[rx, tx]
+                suchannel = su_siso_channels[rx, tx]
                 outputs[rx] += suchannel.corrupt_data(signal[tx])
 
         return outputs
@@ -258,18 +263,23 @@ class MuChannel(object):
             Received signal at each receiver. Each row corresponds to one
             receiver.
         """
-        num_rx, num_tx = self._su_siso_channels.shape
+        if self.switched_direction:
+            su_siso_channels = self._su_siso_channels.T
+        else:
+            su_siso_channels = self._su_siso_channels
+
+        num_rx, num_tx = su_siso_channels.shape
         outputs = np.empty(num_rx, dtype=object)
 
         if num_tx == 1 and signal.ndim == 1:
             signal = np.reshape(signal, (1, -1))
 
         for rx in range(num_rx):
-            suchannel = self._su_siso_channels[rx, 0]
+            suchannel = su_siso_channels[rx, 0]
             outputs[rx] = suchannel.corrupt_data_in_freq_domain(
                 signal[0], fft_size, carrier_indexes)
             for tx in range(1, num_tx):
-                suchannel = self._su_siso_channels[rx, tx]
+                suchannel = su_siso_channels[rx, tx]
                 outputs[rx] += suchannel.corrupt_data_in_freq_domain(
                     signal[tx], fft_size, carrier_indexes)
 
