@@ -1355,7 +1355,7 @@ class Result(object):
 
         """
         if self.num_updates == 0:
-            return "Nothing yet".format(self.name)
+            return "Nothing yet"
         else:
             if self._update_type_code == Result.RATIOTYPE:
                 return self._value / self._total
@@ -1363,6 +1363,26 @@ class Result(object):
                 return self._value / self._total
             else:
                 return self._value
+
+    def get_result_accumulated_values(self):
+        """
+        Return the accumulated values.
+
+        Note that in case the result if of type RATIOTYPE this you probably
+        want to call the get_result_accumulated_totals function to also get
+        the totals.
+        """
+        return self._value_list
+
+    def get_result_accumulated_totals(self):
+        """
+        Return the accumulated values.
+
+        Note that in case the result if of type RATIOTYPE this you probably
+        want to call the get_result_accumulated_values function to also get
+        the values.
+        """
+        return self._total_list
 
     # # Remove this in the future
     # def _fix_old_version(self):
