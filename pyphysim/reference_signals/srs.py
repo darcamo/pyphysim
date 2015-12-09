@@ -4,131 +4,43 @@
 
 import numpy as np
 
-from .zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+from .zadoffchu import get_shifted_root_seq
+from .root_sequence import RootSequence
 
-__all__ = ['SrsRootSequence', 'SrsUeSequence', 'SrsChannelEstimator']
+__all__ = ['get_shifted_srs_seq', 'SrsUeSequence', 'SrsChannelEstimator']
 
 
-class SrsRootSequence(object):
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+def get_shifted_srs_seq(root_seq, n_cs):
     """
-    SRS root sequence class.
+    Get the shifted root sequence suitable as the SRS sequence of a user.
 
     Parameters
     ----------
-    root_index : int
-        The SRS root sequence index.
-    Nzc : int
-        The size of the Zadoff-Chu sequence (without any extension).
-    extend_to : int
-        The size of the extended Zadoff-Chu sequence. It None then the
-        sequence will not be extended and will thus have a size equal
-        to Nzc.
+    root_seq : complex numpy array
+        The root sequence to shift.
+    n_cs : int
+        The desired cyclic shift number. This should be an integer from 0
+        to 7, where 0 will just return the base sequence, 1 gives the first
+        shift, and so on.
+
+    Returns
+    -------
+    numpy array
+        The shifted root sequence.
+
+    See Also
+    --------
+    get_shifted_root_seq, get_shifted_dmrs_seq
     """
-
-    def __init__(self, root_index, Nzc, extend_to=None):
-        self._root_index = root_index
-        self._zf_seq_array = calcBaseZC(Nzc, root_index)  # Zadoff-Chu sequence
-        self._extended_zf_seq_array = None  # Extended Zadoff-Chu sequence
-
-        if extend_to is not None:
-            if extend_to <= Nzc:
-                raise AttributeError(
-                    "If 'extend_to' is provided it must be greater than Nzc")
-            else:
-                self._extended_zf_seq_array = get_extended_ZF(
-                    self._zf_seq_array, extend_to)
-
-    @property
-    def Nzc(self):
-        """Get the size of the Zadoff-Chu sequence (without any extension)"""
-        return self._zf_seq_array.size
-
-    @property
-    def size(self):
-        """
-        Return the size (with extension) of the sequece.
-
-        If the sequence is not extended than `size()` will return the same
-        as `Nzc`.
-
-        Returns
-        -------
-        size : int
-            The size of the extended Zadoff-Chu sequence.
-
-        Example
-        -------
-        >>> seq1 = SrsRootSequence(root_index=25, Nzc=139)
-        >>> seq1.size
-        139
-        >>> seq1 = SrsRootSequence(root_index=25, Nzc=139, extend_to=150)
-        >>> seq1.size
-        150
-        """
-        if self._extended_zf_seq_array is None:
-            return self.Nzc
-        else:
-            return self._extended_zf_seq_array.size
-
-    @property
-    def index(self):
-        """Return the SRS root sequence index.
-        """
-        return self._root_index
-
-    def seq_array(self):
-        """
-        Get the extended Zadoff-Chu root sequence as a numpy array.
-
-        Returns
-        -------
-        seq : numpy array
-            The extended Zadoff-Chu sequence
-        """
-        if self._extended_zf_seq_array is None:
-            return self._zf_seq_array
-        else:
-            return self._extended_zf_seq_array
-
-    # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # We can always just get the equivalent numpy array and perform the
-    # operations on it, but having these operations defined here is
-    # convenient
-    def __add__(self, other):  # pragma: no cover
-        """Perform addition with `other`"""
-        return self.seq_array() + other
-
-    def __radd__(self, other):  # pragma: no cover
-        """Perform addition with `other`"""
-        return self.seq_array() + other
-
-    def __mul__(self, other):  # pragma: no cover
-        """Perform multiplication with `other`"""
-        return self.seq_array() * other
-
-    def __rmul__(self, other):  # pragma: no cover
-        """Perform multiplication with `other`"""
-        return self.seq_array() * other
-
-    def conjugate(self):  # pragma: no cover
-        return self.seq_array().conj()
-
-    def conj(self):  # pragma: no cover
-        return self.seq_array().conj()
-
-    def __repr__(self):
-        if self._extended_zf_seq_array is None:
-            return ("<SrsRootSequence("
-                    "root_index={0},Nzc={1})>").format(self._root_index,
-                                                       self._zf_seq_array.size)
-        else:
-            return ("<SrsRootSequence("
-                    "root_index={0},Nzc={1},extend_to={2})>").format(
-                        self._root_index, self._zf_seq_array.size,
-                        self._extended_zf_seq_array.size)
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    return get_shifted_root_seq(root_seq, n_cs, 8)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SrsUeSequence(object):
     """
     SRS sequence of a single user.
@@ -137,15 +49,15 @@ class SrsUeSequence(object):
     ----------
     n_cs : int
         The shift index of the user. This can be an integer from 1 to 8.
-    root_seq : SrsRootSequence object
+    root_seq : RootSequence object
         The SRS root sequence of the base station the user is
-        associated to. This should be an object of the SrsRootSequence
+        associated to. This should be an object of the RootSequence
         class.
     """
 
     def __init__(self, n_cs, root_seq):
         root_seq_array = root_seq.seq_array()
-        self._user_seq_array = getShiftedZF(root_seq_array, n_cs)
+        self._user_seq_array = get_shifted_srs_seq(root_seq_array, n_cs)
         self._n_cs = n_cs
         self._root_index = root_seq.index
 
@@ -161,11 +73,11 @@ class SrsUeSequence(object):
 
         Example
         -------
-        >>> root_seq1 = SrsRootSequence(root_index=25, Nzc=139)
+        >>> root_seq1 = RootSequence(root_index=25, Nzc=139)
         >>> user_seq1 = SrsUeSequence(3, root_seq1)
         >>> user_seq1.size
         139
-        >>> root_seq2 = SrsRootSequence(root_index=25, Nzc=139, extend_to=150)
+        >>> root_seq2 = RootSequence(root_index=25, Nzc=139, extend_to=150)
         >>> user_seq2 = SrsUeSequence(3, root_seq2)
         >>> user_seq2.size
         150

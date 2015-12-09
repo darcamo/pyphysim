@@ -7,7 +7,7 @@ Module containing Zadoff-chu related functions.
 
 import numpy as np
 
-__all__ = ['calcBaseZC', 'getShiftedZF', 'get_extended_ZF']
+__all__ = ['calcBaseZC', 'get_extended_ZF']
 
 
 def calcBaseZC(Nzc, u, q=0):
@@ -37,25 +37,38 @@ def calcBaseZC(Nzc, u, q=0):
     return a_u
 
 
-def getShiftedZF(root_seq, n_cs):
+def get_shifted_root_seq(root_seq, n_cs, denominator):
     """
-    Get the shifted Zadoff-Chu sequence from the root sequence.
+    Get the shifted root sequence suitable as the SRS sequence or the
+    DMRS sequence of a user (depend on the `denominator` parameter).
 
     Parameters
     ----------
     root_seq : complex numpy array
-        The Zadoff-Chu root sequence.
+        The root sequence to be shifted.
     n_cs : int
-        The desired cyclic shift number. This should be an integer from 0
-        to 7, where 0 will just return the base sequence, 1 gives the first
-        shift, and so on.
+        The desired cyclic shift number. This should be an integer from
+        0 to `denominator`-1, where 0 will just return the base
+        sequence, 1 gives the first shift, and so on.
+    denominator : int
+        The denominator in the cyclic shift formula. This should be 8 for
+        SRS and 12 for DMRS.
+
+    Returns
+    -------
+    numpy array
+        The shifted root sequence.
+
+    See Also
+    --------
+    get_shifted_srs_seq, get_shifted_dmrs_seq
     """
     assert (abs(n_cs) >= 0)
-    assert (abs(n_cs) < 8)
+    assert (abs(n_cs) < denominator)
 
-    Nzc = root_seq.size
-    alpha_m = 2 * np.pi * n_cs / 8
-    shifted_seq = np.exp(1j * alpha_m * np.arange(Nzc)) * root_seq
+    all_index_values = np.arange(root_seq.size)
+    alpha_m = 2 * np.pi * n_cs / denominator
+    shifted_seq = np.exp(1j * alpha_m * all_index_values) * root_seq
     return shifted_seq
 
 
@@ -102,5 +115,5 @@ def get_extended_ZF(root_seq, size):
 # if __name__ == '__main__':
 #     np.set_printoptions(precision=4)
 #     a_u = calcBaseZC(23, 4)
-#     r1 = getShiftedZF(a_u, 2)
+#     r1 = get_shifted_srs_seq(a_u, 2)
 #     print(r1)

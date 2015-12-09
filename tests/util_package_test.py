@@ -27,7 +27,7 @@ import doctest
 import numpy as np
 
 from pyphysim.util import misc, conversion
-from pyphysim.srs import zadoffchu
+from pyphysim.reference_signals import zadoffchu
 
 
 class UtilDoctestsTestCase(unittest.TestCase):

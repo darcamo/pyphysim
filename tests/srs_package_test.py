@@ -4,7 +4,7 @@
 # pylint: disable=E1101
 
 """
-Tests for the modules in the srs package.
+Tests for the modules in the reference_signals package.
 
 Each module has several doctests that we run in addition to the unittests
 defined here.
@@ -26,11 +26,14 @@ import unittest
 import doctest
 import numpy as np
 
-from pyphysim.srs import srs
-from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+from pyphysim.reference_signals import srs
+from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
+    get_extended_ZF
+from pyphysim.reference_signals.srs import get_shifted_srs_seq
 from pyphysim.channels.fading import TdlChannel
 from pyphysim.channels.fading import COST259_TUx
 from pyphysim.channels.fading_generators import JakesSampleGenerator
+from pyphysim.reference_signals.root_sequence import RootSequence
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -42,25 +45,25 @@ class SrsDoctestsTestCase(unittest.TestCase):
     package.
     """
     def test_srs_module(self):
-        """Run srs module doctests"""
+        """Run reference_signals module doctests"""
         doctest.testmod(srs)
 
 
 class SrsRootSequenceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        self.root_seq_no_ext1 = srs.SrsRootSequence(root_index=25, Nzc=139)
-        self.root_seq_no_ext2 = srs.SrsRootSequence(root_index=6, Nzc=31)
-        self.root_seq1 = srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=150)
-        self.root_seq2 = srs.SrsRootSequence(root_index=12, Nzc=139, extend_to=150)
-        self.root_seq3 = srs.SrsRootSequence(root_index=25, Nzc=31, extend_to=64)
-        self.root_seq4 = srs.SrsRootSequence(root_index=6, Nzc=31, extend_to=64)
-        self.root_seq5 = srs.SrsRootSequence(root_index=6, Nzc=31, extend_to=32)
-        self.root_seq6 = srs.SrsRootSequence(root_index=6, Nzc=31, extend_to=256)
+        self.root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
+        self.root_seq_no_ext2 = RootSequence(root_index=6, Nzc=31)
+        self.root_seq1 = RootSequence(root_index=25, Nzc=139, extend_to=150)
+        self.root_seq2 = RootSequence(root_index=12, Nzc=139, extend_to=150)
+        self.root_seq3 = RootSequence(root_index=25, Nzc=31, extend_to=64)
+        self.root_seq4 = RootSequence(root_index=6, Nzc=31, extend_to=64)
+        self.root_seq5 = RootSequence(root_index=6, Nzc=31, extend_to=32)
+        self.root_seq6 = RootSequence(root_index=6, Nzc=31, extend_to=256)
 
     def test_init(self):
         with self.assertRaises(AttributeError):
-            srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=64)
+            RootSequence(root_index=25, Nzc=139, extend_to=64)
 
     def test_Nzc(self):
         self.assertEqual(self.root_seq_no_ext1.Nzc, 139)
@@ -127,29 +130,29 @@ class SrsRootSequenceTestCase(unittest.TestCase):
 class SrsUeSequenceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        root_seq_no_ext1 = srs.SrsRootSequence(root_index=25, Nzc=139)
+        root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
         self.user_seq_no_ext1 = srs.SrsUeSequence(n_cs=3, root_seq=root_seq_no_ext1)
 
-        root_seq_no_ext2 = srs.SrsRootSequence(root_index=6, Nzc=31)
+        root_seq_no_ext2 = RootSequence(root_index=6, Nzc=31)
         self.user_seq_no_ext2 = srs.SrsUeSequence(n_cs=1, root_seq=root_seq_no_ext2)
         self.user_seq_no_ext2_other = srs.SrsUeSequence(n_cs=3, root_seq=root_seq_no_ext2)
 
-        root_seq1 = srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=150)
+        root_seq1 = RootSequence(root_index=25, Nzc=139, extend_to=150)
         self.user_seq1 = srs.SrsUeSequence(n_cs=7, root_seq=root_seq1)
 
-        root_seq2 = srs.SrsRootSequence(root_index=12, Nzc=139, extend_to=150)
+        root_seq2 = RootSequence(root_index=12, Nzc=139, extend_to=150)
         self.user_seq2 = srs.SrsUeSequence(n_cs=4, root_seq=root_seq2)
 
-        root_seq3 = srs.SrsRootSequence(root_index=25, Nzc=31, extend_to=64)
+        root_seq3 = RootSequence(root_index=25, Nzc=31, extend_to=64)
         self.user_seq3 = srs.SrsUeSequence(n_cs=1, root_seq=root_seq3)
 
-        root_seq4 = srs.SrsRootSequence(root_index=6, Nzc=31, extend_to=64)
+        root_seq4 = RootSequence(root_index=6, Nzc=31, extend_to=64)
         self.user_seq4 = srs.SrsUeSequence(n_cs=2, root_seq=root_seq4)
 
-        root_seq5 = srs.SrsRootSequence(root_index=6, Nzc=31, extend_to=32)
+        root_seq5 = RootSequence(root_index=6, Nzc=31, extend_to=32)
         self.user_seq5 = srs.SrsUeSequence(n_cs=3, root_seq=root_seq5)
 
-        root_seq6 = srs.SrsRootSequence(root_index=6, Nzc=31, extend_to=256)
+        root_seq6 = RootSequence(root_index=6, Nzc=31, extend_to=256)
         self.user_seq6 = srs.SrsUeSequence(n_cs=5, root_seq=root_seq6)
 
     def test_size(self):
@@ -163,35 +166,35 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.user_seq6.size, 256)
 
     def test_seq_array(self):
-        # calcBaseZC, getShiftedZF, get_extended_ZF
+        # calcBaseZC, get_shifted_srs_seq, get_extended_ZF
 
-        expected_user_seq_no_ext1 = getShiftedZF(calcBaseZC(139, 25), 3)
+        expected_user_seq_no_ext1 = get_shifted_srs_seq(calcBaseZC(139, 25), 3)
         np.testing.assert_array_almost_equal(expected_user_seq_no_ext1,
                                              self.user_seq_no_ext1.seq_array())
-        expected_user_seq_no_ext2 = getShiftedZF(calcBaseZC(31, 6), 1)
+        expected_user_seq_no_ext2 = get_shifted_srs_seq(calcBaseZC(31, 6), 1)
         np.testing.assert_array_almost_equal(expected_user_seq_no_ext2,
                                              self.user_seq_no_ext2.seq_array())
-        expected_user_seq_no_ext2_other_shift = getShiftedZF(calcBaseZC(31, 6), 3)
+        expected_user_seq_no_ext2_other_shift = get_shifted_srs_seq(calcBaseZC(31, 6), 3)
         np.testing.assert_array_almost_equal(
             expected_user_seq_no_ext2_other_shift,
             self.user_seq_no_ext2_other.seq_array())
 
-        expected_user_seq1 = getShiftedZF(get_extended_ZF(calcBaseZC(139, 25), 150), 7)
+        expected_user_seq1 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(139, 25), 150), 7)
         np.testing.assert_array_almost_equal(self.user_seq1.seq_array(),
                                              expected_user_seq1)
-        expected_user_seq2 = getShiftedZF(get_extended_ZF(calcBaseZC(139, 12), 150), 4)
+        expected_user_seq2 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(139, 12), 150), 4)
         np.testing.assert_array_almost_equal(self.user_seq2.seq_array(),
                                              expected_user_seq2)
-        expected_user_seq3 = getShiftedZF(get_extended_ZF(calcBaseZC(31, 25), 64), 1)
+        expected_user_seq3 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 25), 64), 1)
         np.testing.assert_array_almost_equal(self.user_seq3.seq_array(),
                                              expected_user_seq3)
-        expected_user_seq4 = getShiftedZF(get_extended_ZF(calcBaseZC(31, 6), 64), 2)
+        expected_user_seq4 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 64), 2)
         np.testing.assert_array_almost_equal(self.user_seq4.seq_array(),
                                              expected_user_seq4)
-        expected_user_seq5 = getShiftedZF(get_extended_ZF(calcBaseZC(31, 6), 32), 3)
+        expected_user_seq5 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 32), 3)
         np.testing.assert_array_almost_equal(self.user_seq5.seq_array(),
                                              expected_user_seq5)
-        expected_user_seq6 = getShiftedZF(get_extended_ZF(calcBaseZC(31, 6), 256), 5)
+        expected_user_seq6 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 256), 5)
         np.testing.assert_array_almost_equal(self.user_seq6.seq_array(),
                                              expected_user_seq6)
 
@@ -205,10 +208,10 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
     def test_estimate_channel(self):
         user1_seq = srs.SrsUeSequence(
             1,
-            srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150))
         user2_seq = srs.SrsUeSequence(
             4,
-            srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150))
 
         ue1_channel_estimator = srs.SrsChannelEstimator(user1_seq)
 
@@ -271,10 +274,10 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
     def test_estimate_channel_multiple_rx(self):
         user1_seq = srs.SrsUeSequence(
             1,
-            srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150))
         user2_seq = srs.SrsUeSequence(
             4,
-            srs.SrsRootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150))
 
         ue1_channel_estimator = srs.SrsChannelEstimator(user1_seq)
 

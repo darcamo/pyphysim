@@ -10,7 +10,9 @@ import math
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
-from pyphysim.srs.zadoffchu import calcBaseZC, getShiftedZF, get_extended_ZF
+from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
+    get_extended_ZF
+from pyphysim.reference_signals.srs import get_shifted_srs_seq
 from pyphysim.channels.fading import COST259_TUx, TdlChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.channels.multiuser import MuChannel
@@ -332,11 +334,11 @@ def main():
     # xxxxxxxxxxxxxxx Create shifted sequences for 3 users xxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We arbitrarely choose some cyclic shift index and then we call
-    # zadoffchu.getShiftedZF to get the shifted sequence.
+    # zadoffchu.get_shifted_srs_seq to get the shifted sequence.
     shift_index = 4
-    r1 = getShiftedZF(a_u1, shift_index)
-    r2 = getShiftedZF(a_u2, shift_index)
-    r3 = getShiftedZF(a_u3, shift_index)
+    r1 = get_shifted_srs_seq(a_u1, shift_index)
+    r2 = get_shifted_srs_seq(a_u2, shift_index)
+    r3 = get_shifted_srs_seq(a_u3, shift_index)
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Generate channels from users to the BS xxxxxxxxxxxxxx
