@@ -61,7 +61,7 @@ def get_shifted_root_seq(root_seq, n_cs, denominator):
 
     See Also
     --------
-    get_shifted_srs_seq, get_shifted_dmrs_seq
+    get_srs_seq, get_dmrs_seq
     """
     assert (abs(n_cs) >= 0)
     assert (abs(n_cs) < denominator)
@@ -115,5 +115,5 @@ def get_extended_ZF(root_seq, size):
 # if __name__ == '__main__':
 #     np.set_printoptions(precision=4)
 #     a_u = calcBaseZC(23, 4)
-#     r1 = get_shifted_srs_seq(a_u, 2)
+#     r1 = get_srs_seq(a_u, 2)
 #     print(r1)

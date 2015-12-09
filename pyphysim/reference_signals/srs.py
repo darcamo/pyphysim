@@ -7,13 +7,13 @@ import numpy as np
 from .zadoffchu import get_shifted_root_seq
 from .root_sequence import RootSequence
 
-__all__ = ['get_shifted_srs_seq', 'SrsUeSequence', 'SrsChannelEstimator']
+__all__ = ['get_srs_seq', 'SrsUeSequence', 'SrsChannelEstimator']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_shifted_srs_seq(root_seq, n_cs):
+def get_srs_seq(root_seq, n_cs):
     """
     Get the shifted root sequence suitable as the SRS sequence of a user.
 
@@ -33,7 +33,7 @@ def get_shifted_srs_seq(root_seq, n_cs):
 
     See Also
     --------
-    get_shifted_root_seq, get_shifted_dmrs_seq
+    get_shifted_root_seq, get_dmrs_seq
     """
     return get_shifted_root_seq(root_seq, n_cs, 8)
 
@@ -41,23 +41,24 @@ def get_shifted_srs_seq(root_seq, n_cs):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class SrsUeSequence(object):
+class UeSequence(object):
     """
-    SRS sequence of a single user.
+    Reference signal sequence of a single user.
+
+    You should not use this class directly and instead use a class that
+    inherits from it and provides the desired reference sequence.
 
     Parameters
     ----------
-    n_cs : int
-        The shift index of the user. This can be an integer from 1 to 8.
     root_seq : RootSequence object
         The SRS root sequence of the base station the user is
         associated to. This should be an object of the RootSequence
         class.
+    n_cs : int
+        The shift index of the user. This can be an integer from 1 to 8.
     """
-
-    def __init__(self, root_seq, n_cs):
-        root_seq_array = root_seq.seq_array()
-        self._user_seq_array = get_shifted_srs_seq(root_seq_array, n_cs)
+    def __init__(self, root_seq, n_cs, user_seq_array):
+        self._user_seq_array = user_seq_array
         self._n_cs = n_cs
         self._root_index = root_seq.index
 
@@ -125,6 +126,25 @@ class SrsUeSequence(object):
     def conj(self):  # pragma: no cover
         return self.seq_array().conj()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+class SrsUeSequence(UeSequence):
+    """
+    SRS sequence of a single user.
+
+    Parameters
+    ----------
+    root_seq : RootSequence object
+        The SRS root sequence of the base station the user is
+        associated to. This should be an object of the RootSequence
+        class.
+    n_cs : int
+        The shift index of the user. This can be an integer from 0 to 7.
+    """
+    def __init__(self, root_seq, n_cs):
+        root_seq_array = root_seq.seq_array()
+        user_seq_array = get_srs_seq(root_seq_array, n_cs)
+        super(SrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
 
 
 class SrsChannelEstimator(object):

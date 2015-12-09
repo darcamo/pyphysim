@@ -29,7 +29,7 @@ import numpy as np
 from pyphysim.reference_signals import srs
 from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
     get_extended_ZF
-from pyphysim.reference_signals.srs import get_shifted_srs_seq
+from pyphysim.reference_signals.srs import get_srs_seq
 from pyphysim.channels.fading import TdlChannel
 from pyphysim.channels.fading import COST259_TUx
 from pyphysim.channels.fading_generators import JakesSampleGenerator
@@ -169,40 +169,39 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.user_seq6.size, 256)
 
     def test_seq_array(self):
-        # calcBaseZC, get_shifted_srs_seq, get_extended_ZF
+        # calcBaseZC, get_srs_seq, get_extended_ZF
 
-        expected_user_seq_no_ext1 = get_shifted_srs_seq(calcBaseZC(139, 25), 3)
+        expected_user_seq_no_ext1 = get_srs_seq(calcBaseZC(139, 25), 3)
         np.testing.assert_array_almost_equal(expected_user_seq_no_ext1,
                                              self.user_seq_no_ext1.seq_array())
-        expected_user_seq_no_ext2 = get_shifted_srs_seq(calcBaseZC(31, 6), 1)
+        expected_user_seq_no_ext2 = get_srs_seq(calcBaseZC(31, 6), 1)
         np.testing.assert_array_almost_equal(expected_user_seq_no_ext2,
                                              self.user_seq_no_ext2.seq_array())
-        expected_user_seq_no_ext2_other_shift = get_shifted_srs_seq(calcBaseZC(31, 6), 3)
+        expected_user_seq_no_ext2_other_shift = get_srs_seq(calcBaseZC(31, 6), 3)
         np.testing.assert_array_almost_equal(
             expected_user_seq_no_ext2_other_shift,
             self.user_seq_no_ext2_other.seq_array())
 
-        expected_user_seq1 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(139, 25), 150), 7)
+        expected_user_seq1 = get_srs_seq(get_extended_ZF(calcBaseZC(139, 25), 150), 7)
         np.testing.assert_array_almost_equal(self.user_seq1.seq_array(),
                                              expected_user_seq1)
-        expected_user_seq2 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(139, 12), 150), 4)
+        expected_user_seq2 = get_srs_seq(get_extended_ZF(calcBaseZC(139, 12), 150), 4)
         np.testing.assert_array_almost_equal(self.user_seq2.seq_array(),
                                              expected_user_seq2)
-        expected_user_seq3 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 25), 64), 1)
+        expected_user_seq3 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 25), 64), 1)
         np.testing.assert_array_almost_equal(self.user_seq3.seq_array(),
                                              expected_user_seq3)
-        expected_user_seq4 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 64), 2)
+        expected_user_seq4 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 64), 2)
         np.testing.assert_array_almost_equal(self.user_seq4.seq_array(),
                                              expected_user_seq4)
-        expected_user_seq5 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 32), 3)
+        expected_user_seq5 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 32), 3)
         np.testing.assert_array_almost_equal(self.user_seq5.seq_array(),
                                              expected_user_seq5)
-        expected_user_seq6 = get_shifted_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 256), 5)
+        expected_user_seq6 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 256), 5)
         np.testing.assert_array_almost_equal(self.user_seq6.seq_array(),
                                              expected_user_seq6)
 
 
-# TODO: finish implementation
 class SrsChannelEstimatorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

@@ -4,15 +4,15 @@
 
 import numpy as np
 
-from pyphysim.reference_signals.zadoffchu import get_shifted_root_seq
+from .zadoffchu import get_shifted_root_seq
 
-__all__ = ['get_shifted_dmrs_seq']
+__all__ = ['get_dmrs_seq']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_shifted_dmrs_seq(root_seq, n_cs):
+def get_dmrs_seq(root_seq, n_cs):
     """
     Get the shifted root sequence suitable as the DMRS sequence of a user.
 
@@ -32,10 +32,25 @@ def get_shifted_dmrs_seq(root_seq, n_cs):
 
     See Also
     --------
-    get_shifted_root_seq, get_shifted_srs_seq
+    get_shifted_root_seq, get_srs_seq
     """
     return get_shifted_root_seq(root_seq, n_cs, 12)
 
 
 class DmrsUeSequence(object):
-    pass
+    """
+    DMRS sequence of a single user.
+
+    Parameters
+    ----------
+    root_seq : RootSequence object
+        The DMRS root sequence of the base station the user is
+        associated to. This should be an object of the RootSequence
+        class.
+    n_cs : int
+        The shift index of the user. This can be an integer from 0 to 11.
+    """
+    def __init__(self, root_seq, n_cs):
+        root_seq_array = root_seq.seq_array()
+        user_seq_array = get_dmrs_seq(root_seq_array, n_cs)
+        super(SrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
