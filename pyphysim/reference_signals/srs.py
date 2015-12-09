@@ -55,7 +55,7 @@ class SrsUeSequence(object):
         class.
     """
 
-    def __init__(self, n_cs, root_seq):
+    def __init__(self, root_seq, n_cs):
         root_seq_array = root_seq.seq_array()
         self._user_seq_array = get_shifted_srs_seq(root_seq_array, n_cs)
         self._n_cs = n_cs
@@ -74,11 +74,11 @@ class SrsUeSequence(object):
         Example
         -------
         >>> root_seq1 = RootSequence(root_index=25, Nzc=139)
-        >>> user_seq1 = SrsUeSequence(3, root_seq1)
+        >>> user_seq1 = SrsUeSequence(root_seq1, 3)
         >>> user_seq1.size
         139
         >>> root_seq2 = RootSequence(root_index=25, Nzc=139, extend_to=150)
-        >>> user_seq2 = SrsUeSequence(3, root_seq2)
+        >>> user_seq2 = SrsUeSequence(root_seq2, 3)
         >>> user_seq2.size
         150
         """
@@ -96,8 +96,8 @@ class SrsUeSequence(object):
         return self._user_seq_array
 
     def __repr__(self):
-        return "<SrsUeSequence(n_cs={0},root_index={1})>".format(
-            self._n_cs, self._root_index)
+        return "<SrsUeSequence(root_index={0}, n_cs={1})>".format(
+            self._root_index, self._n_cs)
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the

@@ -131,29 +131,32 @@ class SrsUeSequenceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
-        self.user_seq_no_ext1 = srs.SrsUeSequence(n_cs=3, root_seq=root_seq_no_ext1)
+        self.user_seq_no_ext1 = srs.SrsUeSequence(
+            root_seq=root_seq_no_ext1, n_cs=3)
 
         root_seq_no_ext2 = RootSequence(root_index=6, Nzc=31)
-        self.user_seq_no_ext2 = srs.SrsUeSequence(n_cs=1, root_seq=root_seq_no_ext2)
-        self.user_seq_no_ext2_other = srs.SrsUeSequence(n_cs=3, root_seq=root_seq_no_ext2)
+        self.user_seq_no_ext2 = srs.SrsUeSequence(
+            root_seq=root_seq_no_ext2, n_cs=1)
+        self.user_seq_no_ext2_other = srs.SrsUeSequence(
+            root_seq=root_seq_no_ext2, n_cs=3)
 
         root_seq1 = RootSequence(root_index=25, Nzc=139, extend_to=150)
-        self.user_seq1 = srs.SrsUeSequence(n_cs=7, root_seq=root_seq1)
+        self.user_seq1 = srs.SrsUeSequence(root_seq=root_seq1, n_cs=7)
 
         root_seq2 = RootSequence(root_index=12, Nzc=139, extend_to=150)
-        self.user_seq2 = srs.SrsUeSequence(n_cs=4, root_seq=root_seq2)
+        self.user_seq2 = srs.SrsUeSequence(root_seq=root_seq2, n_cs=4)
 
         root_seq3 = RootSequence(root_index=25, Nzc=31, extend_to=64)
-        self.user_seq3 = srs.SrsUeSequence(n_cs=1, root_seq=root_seq3)
+        self.user_seq3 = srs.SrsUeSequence(root_seq=root_seq3, n_cs=1)
 
         root_seq4 = RootSequence(root_index=6, Nzc=31, extend_to=64)
-        self.user_seq4 = srs.SrsUeSequence(n_cs=2, root_seq=root_seq4)
+        self.user_seq4 = srs.SrsUeSequence(root_seq=root_seq4, n_cs=2)
 
         root_seq5 = RootSequence(root_index=6, Nzc=31, extend_to=32)
-        self.user_seq5 = srs.SrsUeSequence(n_cs=3, root_seq=root_seq5)
+        self.user_seq5 = srs.SrsUeSequence(root_seq=root_seq5, n_cs=3)
 
         root_seq6 = RootSequence(root_index=6, Nzc=31, extend_to=256)
-        self.user_seq6 = srs.SrsUeSequence(n_cs=5, root_seq=root_seq6)
+        self.user_seq6 = srs.SrsUeSequence(root_seq=root_seq6, n_cs=5)
 
     def test_size(self):
         self.assertEqual(self.user_seq_no_ext1.size, 139)
@@ -207,11 +210,9 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
     def test_estimate_channel(self):
         user1_seq = srs.SrsUeSequence(
-            1,
-            RootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150), 1)
         user2_seq = srs.SrsUeSequence(
-            4,
-            RootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150), 4)
 
         ue1_channel_estimator = srs.SrsChannelEstimator(user1_seq)
 
@@ -273,11 +274,9 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
     def test_estimate_channel_multiple_rx(self):
         user1_seq = srs.SrsUeSequence(
-            1,
-            RootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150), 1)
         user2_seq = srs.SrsUeSequence(
-            4,
-            RootSequence(root_index=25, Nzc=139, extend_to=150))
+            RootSequence(root_index=25, Nzc=139, extend_to=150), 4)
 
         ue1_channel_estimator = srs.SrsChannelEstimator(user1_seq)
 
