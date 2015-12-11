@@ -40,7 +40,14 @@ class RootSequence(object):
 
     @property
     def Nzc(self):
-        """Get the size of the Zadoff-Chu sequence (without any extension)"""
+        """
+        Get the size of the Zadoff-Chu sequence (without any extension).
+
+        Returns
+        -------
+        int
+            The value of the Nzc property.
+        """
         return self._zf_seq_array.size
 
     @property
@@ -72,7 +79,13 @@ class RootSequence(object):
 
     @property
     def index(self):
-        """Return the SRS root sequence index.
+        """
+        Return the SRS root sequence index.
+
+        Returns
+        -------
+        int
+            The root sequence index.
         """
         return self._root_index
 
@@ -82,7 +95,7 @@ class RootSequence(object):
 
         Returns
         -------
-        seq : numpy array
+        seq : np.ndarray
             The extended Zadoff-Chu sequence
         """
         if self._extended_zf_seq_array is None:
@@ -94,29 +107,98 @@ class RootSequence(object):
     # We can always just get the equivalent numpy array and perform the
     # operations on it, but having these operations defined here is
     # convenient
+
+    # TODO: Make these operation methods (add, mul, etc) also work with
+    # RootSequence objects returning a new RootSequence object. Change the
+    # docstring type information when you do that.
     def __add__(self, other):  # pragma: no cover
-        """Perform addition with `other`"""
+        """
+        Perform addition with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() + other
 
     def __radd__(self, other):  # pragma: no cover
-        """Perform addition with `other`"""
+        """
+        Perform addition with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() + other
 
     def __mul__(self, other):  # pragma: no cover
-        """Perform multiplication with `other`"""
+        """
+        Perform multiplication with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() * other
 
     def __rmul__(self, other):  # pragma: no cover
-        """Perform multiplication with `other`"""
+        """
+        Perform multiplication with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() * other
 
     def conjugate(self):  # pragma: no cover
+        """
+        Return the conjugate of the root sequence as a numpy array.
+
+        Returns
+        -------
+        np.ndarray
+            The conjugate of the root sequence.
+        """
         return self.seq_array().conj()
 
     def conj(self):  # pragma: no cover
+        """
+        Return the conjugate of the root sequence as a numpy array.
+
+        Returns
+        -------
+        np.ndarray
+            The conjugate of the root sequence.
+        """
+
         return self.seq_array().conj()
 
     def __repr__(self):
+        """
+        Get the representation of the object.
+
+        Returns
+        -------
+        str
+            The representation of the object.
+        """
         if self._extended_zf_seq_array is None:
             return ("<SrsRootSequence("
                     "root_index={0},Nzc={1})>").format(self._root_index,

@@ -19,8 +19,8 @@ def get_srs_seq(root_seq, n_cs):
 
     Parameters
     ----------
-    root_seq : complex numpy array
-        The root sequence to shift.
+    root_seq : np.ndarray
+        The root sequence to shift. This is a complex numpy array.
     n_cs : int
         The desired cyclic shift number. This should be an integer from 0
         to 7, where 0 will just return the base sequence, 1 gives the first
@@ -28,7 +28,7 @@ def get_srs_seq(root_seq, n_cs):
 
     Returns
     -------
-    numpy array
+    np.ndarray
         The shifted root sequence.
 
     See Also
@@ -50,12 +50,14 @@ class UeSequence(object):
 
     Parameters
     ----------
-    root_seq : RootSequence object
+    root_seq : RootSequence
         The SRS root sequence of the base station the user is
         associated to. This should be an object of the RootSequence
         class.
     n_cs : int
         The shift index of the user. This can be an integer from 1 to 8.
+    user_seq_array : np.ndarray
+        The user sequence.
     """
     def __init__(self, root_seq, n_cs, user_seq_array):
         self._user_seq_array = user_seq_array
@@ -91,12 +93,20 @@ class UeSequence(object):
 
         Returns
         -------
-        seq : numpy array
+        seq : np.ndarray
             The user's SRS sequence.
         """
         return self._user_seq_array
 
     def __repr__(self):
+        """
+        Get the representation of the object.
+
+        Returns
+        -------
+        str
+            The representation of the object.
+        """
         return "<SrsUeSequence(root_index={0}, n_cs={1})>".format(
             self._root_index, self._n_cs)
 
@@ -104,26 +114,89 @@ class UeSequence(object):
     # We can always just get the equivalent numpy array and perform the
     # operations on it, but having these operations defined here is
     # convenient
+
+    # TODO: Make these operation methods (add, mul, etc) also work with
+    # RootSequence objects returning a new RootSequence object. Change the
+    # docstring type information when you do that.
     def __add__(self, other):  # pragma: no cover
-        """Perform addition with `other`"""
+        """
+        Perform addition with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
+
         return self.seq_array() + other
 
     def __radd__(self, other):  # pragma: no cover
-        """Perform addition with `other`"""
+        """
+        Perform addition with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() + other
 
     def __mul__(self, other):  # pragma: no cover
-        """Perform multiplication with `other`"""
+        """
+        Perform multiplication with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() * other
 
     def __rmul__(self, other):  # pragma: no cover
-        """Perform multiplication with `other`"""
+        """
+        Perform multiplication with `other`.
+
+        Parameters
+        ----------
+        other : np.ndarray
+
+        Returns
+        -------
+        np.ndrray
+        """
         return self.seq_array() * other
 
     def conjugate(self):  # pragma: no cover
+        """
+        Return the conjugate of the root sequence as a numpy array.
+
+        Returns
+        -------
+        np.ndarray
+            The conjugate of the root sequence.
+        """
+
         return self.seq_array().conj()
 
     def conj(self):  # pragma: no cover
+        """
+        Return the conjugate of the root sequence as a numpy array.
+
+        Returns
+        -------
+        np.ndarray
+            The conjugate of the root sequence.
+        """
+
         return self.seq_array().conj()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -134,7 +207,7 @@ class SrsUeSequence(UeSequence):
 
     Parameters
     ----------
-    root_seq : RootSequence object
+    root_seq : RootSequence
         The SRS root sequence of the base station the user is
         associated to. This should be an object of the RootSequence
         class.
@@ -158,7 +231,7 @@ class SrsChannelEstimator(object):
 
     Parameters
     ----------
-    srs_ue : SrsUeSequence object
+    srs_ue : SrsUeSequence
         The user's SRS sequence.
 
     Notes
@@ -183,8 +256,7 @@ class SrsChannelEstimator(object):
 
         Parameters
         ----------
-        received_signal : numpy array
-
+        received_signal : np.ndarray
             The received SRS signal after being transmitted through the
             channel (in the frequency domain). If this is a 2D numpy array
             the first dimensions is assumed to be "receive antennas" while
@@ -197,7 +269,7 @@ class SrsChannelEstimator(object):
 
         Returns
         -------
-        freq_response : numpy array
+        freq_response : np.ndarray
             The channel frequency response. Note that this will have twice
             as many elements as the sent SRS signal, since the SRS signal
             is sent every other subcarrier.

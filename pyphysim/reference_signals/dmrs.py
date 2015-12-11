@@ -5,6 +5,7 @@
 import numpy as np
 
 from .zadoffchu import get_shifted_root_seq
+from .root_sequence import RootSequence
 
 __all__ = ['get_dmrs_seq']
 
@@ -18,7 +19,7 @@ def get_dmrs_seq(root_seq, n_cs):
 
     Parameters
     ----------
-    root_seq : complex numpy array
+    root_seq : np.ndarray
         The root sequence to shift.
     n_cs : int
         The desired cyclic shift number. This should be an integer from 0
@@ -27,7 +28,7 @@ def get_dmrs_seq(root_seq, n_cs):
 
     Returns
     -------
-    numpy array
+    np.ndarray
         The shifted root sequence.
 
     See Also
@@ -43,7 +44,7 @@ class DmrsUeSequence(object):
 
     Parameters
     ----------
-    root_seq : RootSequence object
+    root_seq : RootSequence
         The DMRS root sequence of the base station the user is
         associated to. This should be an object of the RootSequence
         class.
@@ -53,4 +54,4 @@ class DmrsUeSequence(object):
     def __init__(self, root_seq, n_cs):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_dmrs_seq(root_seq_array, n_cs)
-        super(SrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
+        super(DmrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)

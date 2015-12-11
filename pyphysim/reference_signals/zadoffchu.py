@@ -25,7 +25,7 @@ def calcBaseZC(Nzc, u, q=0):
 
     Returns
     -------
-    a_u : numpy array
+    a_u : np.ndarray
         The root Zadoff-Chu sequence.
     """
     # In fact, 'u' must be lower than the largest prime number below or
@@ -44,8 +44,8 @@ def get_shifted_root_seq(root_seq, n_cs, denominator):
 
     Parameters
     ----------
-    root_seq : complex numpy array
-        The root sequence to be shifted.
+    root_seq : np.ndarray
+        The root sequence to be shifted. This is a complex numpy array.
     n_cs : int
         The desired cyclic shift number. This should be an integer from
         0 to `denominator`-1, where 0 will just return the base
@@ -56,8 +56,8 @@ def get_shifted_root_seq(root_seq, n_cs, denominator):
 
     Returns
     -------
-    numpy array
-        The shifted root sequence.
+    np.ndarray
+        The shifted root sequence (a complex numpy array).
 
     See Also
     --------
@@ -78,14 +78,14 @@ def get_extended_ZF(root_seq, size):
 
     Parameters
     ----------
-    root_seq : complex numpy array
-        The root Zadoff-Chu sequence.
+    root_seq : np.ndarray
+        The root Zadoff-Chu sequence. This is a complex numpy array.
     size : int
         The size that the sequence should be extended to.
 
     Returns
     -------
-    output : numpy complex array
+    output : np.ndarray
         The extended root sequence.
 
     Example
