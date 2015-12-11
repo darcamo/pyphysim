@@ -18,19 +18,21 @@ __all__ = ["calc_principal_angles",
 # principal angles does not work when matrix1 and matrix2 have different
 # shapes.
 def calc_principal_angles(matrix1, matrix2):
-    """Calculates the principal angles between `matrix1` and `matrix2`.
+    """
+    Calculates the principal angles between `matrix1` and `matrix2`.
 
     Parameters
     ----------
-    matrix1 : 2D numpy array
+    matrix1 : np.ndarray
         A 2D numpy array.
-    matrix2 : 2D numpy array
+    matrix2 : np.ndarray
         A 2D numpy array.
 
     Returns
     -------
-    princ_angles : 1D numpy array
-        The principal angles between `matrix1` and `matrix2`.
+    np.ndarray
+        The principal angles between `matrix1` and `matrix2`. This is a
+        1D numpy array.
 
     See also
     --------
@@ -71,19 +73,20 @@ def calc_principal_angles(matrix1, matrix2):
 
 
 def calc_chordal_distance_from_principal_angles(principalAngles):
-    """Calculates the chordal distance from the principal angles.
+    """
+    Calculates the chordal distance from the principal angles.
 
     It is given by the square root of the sum of the squares of the sin of
     the principal angles.
 
     Parameters
     ----------
-    principalAngles : 1D numpy array
-        Numpy array with the principal angles.
+    principalAngles : np.ndarray
+        Numpy array with the principal angles. This is a 1D numpy array.
 
     Returns
     -------
-    chord_dist : int
+    chord_dist : float
         The chordal distance.
 
     See also
@@ -101,22 +104,25 @@ def calc_chordal_distance_from_principal_angles(principalAngles):
     >>> print(calc_chordal_distance_from_principal_angles(princ_angles))
     0.473867859572
     """
-    return np.sqrt(np.sum(np.sin(principalAngles) ** 2))
+    # noinspection PyTypeChecker
+    summation = np.asscalar(np.sum(np.sin(principalAngles) ** 2))
+    return math.sqrt(summation)
 
 
 def calc_chordal_distance(matrix1, matrix2):
-    """Calculates the chordal distance between the two matrices
+    """
+    Calculates the chordal distance between the two matrices
 
     Parameters
     ----------
-    matrix1 : 2D numpy array
+    matrix1 : np.ndarray
         A 2D numpy array.
-    matrix2 : 2D numpy array
+    matrix2 : np.ndarray
         A 2D numpy array.
 
     Returns
     -------
-    chord_dist : int
+    chord_dist : float
         The chordal distance.
 
     Notes
@@ -149,18 +155,19 @@ def calc_chordal_distance(matrix1, matrix2):
 
 
 def calc_chordal_distance_2(matrix1, matrix2):
-    """Calculates the chordal distance between the two matrices
+    """
+    Calculates the chordal distance between the two matrices
 
     Parameters
     ----------
-    matrix1 : 2D numpy array
+    matrix1 : np.ndarray
         A 2D numpy array.
-    matrix2 : 2D numpy array
+    matrix2 : np.ndarray
         A 2D numpy array.
 
     Returns
     -------
-    chord_dist : int
+    chord_dist : float
         The chordal distance.
 
     Notes
