@@ -10,3 +10,6 @@ pyzmq
 pandas
 h5py
 ipyparallel
+validate
+zmq
+ipywidgets
