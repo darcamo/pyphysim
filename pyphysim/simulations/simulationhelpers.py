@@ -6,8 +6,13 @@
 import sys
 import argparse
 
-from .progressbar import ProgressbarZMQServer
+try:
+    from ipyparallel import Client, LoadBalancedView, DirectView
+except ImportError:
+    pass
 
+from .progressbar import ProgressbarZMQServer
+from .runner import SimulationRunner
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Command Line Argument Parser xxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -25,6 +30,11 @@ def get_common_parser():
     this function and then calling the `add_argument` method of the
     returned object. See the documentation of argparse.Argumentparser for
     more.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        The command line parser.
     """
     if get_common_parser.parser is None:
         parser = argparse.ArgumentParser()
@@ -83,13 +93,13 @@ def simulate_do_what_i_mean(runner_or_list_of_runners,
 
     Parameters
     ----------
-    runner_or_list_of_runners : SimulationRunner object of a list of them.
+    runner_or_list_of_runners : SimulationRunner | list[SimulationRunner]
         The SimulationRunner object for which either the 'simulate' or the
         'simulate_in_parallel' method will be called. If this is a list,
         then we just call this method individually for each member of the
         list.
-    folder : string
-        Foder to be added to the python path. This should be the main
+    folder : str
+        Folder to be added to the python path. This should be the main
         pyphysim folder
     """
     if isinstance(runner_or_list_of_runners, list):
@@ -112,9 +122,9 @@ def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
 
     Parameters
     ----------
-    client : Ipython parallel Client object.
+    client : Client
         The client from which we will get a direct view to access the engines.
-    folder : string
+    folder : str
         The folder to be added to the python path at each engine.
     """
     # Add the folder to the python path of the main application
@@ -148,11 +158,11 @@ def _simulate_do_what_i_mean_single_runner(runner,
 
     Parameters
     ----------
-    runner : SimulationRunner object
+    runner : SimulationRunner
         The SimulationRunner object for which either the 'simulate' or the
         'simulate_in_parallel' method will be called.
-    folder : string
-        Foder to be added to the python path. This should be the main
+    folder : str
+        Folder to be added to the python path. This should be the main
         pyphysim folder
     block : bool
         Passed to the simulate_in_parallel method when the simulation is
@@ -216,11 +226,11 @@ def _simulate_do_what_i_mean_multiple_runners(
 
     Parameters
     ----------
-    list_of_runners : A list of SimulationRunner objects.
+    list_of_runners : list[SimulationRunner]
         The `_simulate_do_what_i_mean_single_runner` will be called for
         each object in the list.
-    folder : string
-        Foder to be added to the python path. This should be the main
+    folder : str
+        Folder to be added to the python path. This should be the main
         pyphysim folder.
     """
     # If we have a list of SimulationRunner objects, we want two

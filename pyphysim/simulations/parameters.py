@@ -10,7 +10,7 @@ import numpy as np
 
 try:
     # noinspection PyUnresolvedReferences
-    from configobj import ConfigObj, flatten_errors
+    from configobj import ConfigObj, Section, flatten_errors
     # noinspection PyUnresolvedReferences
     from validate import Validator
 except ImportError:  # pragma: no cover
@@ -41,14 +41,14 @@ def combine_simulation_parameters(params1, params2):
 
     Parameters
     ----------
-    params1 : SimulationParameters object
+    params1 : SimulationParameters
         The first SimulationParameters object.
-    params2 : SimulationParameters object
+    params2 : SimulationParameters
         The second SimulationParameters object.
 
     Returns
     -------
-    union : SimulationParameters object
+    union : SimulationParameters
         The union of 'params1' and 'params2'.
     """
     if set(params1.parameters.keys()) != set(params2.parameters.keys()):
@@ -165,17 +165,37 @@ class SimulationParameters(object):
 
     @property
     def unpack_index(self):
-        """Get method for the unpack_index property."""
+        """Get method for the unpack_index property.
+
+        Returns
+        -------
+        int
+            The unpack index. Ir this SimulationParameters object is not
+            an unpacked SimulationParameters then -1 is returned.
+        """
         return self._unpack_index
 
     @property
     def unpacked_parameters(self):
-        """Names of the parameters marked to be unpacked."""
+        """
+        Names of the parameters marked to be unpacked.
+
+        Returns
+        -------
+        list[str]
+        """
         return sorted(self._unpacked_parameters_set)
 
     @property
     def fixed_parameters(self):
-        """Names of the parameters which are NOT marked to be unpacked."""
+        """
+        Names of the parameters which are NOT marked to be unpacked.
+
+        Returns
+        -------
+        list[str]
+            List with the names of the fixed parameter.
+        """
         fixed_params = [name for name in self.parameters.keys()
                         if name not in self._unpacked_parameters_set]
         return fixed_params
@@ -199,14 +219,14 @@ class SimulationParameters(object):
             Index of the created SimulationParameters object when it is
             part of the unpacked variations of another SimulationParameters
             object. See :meth:`get_unpacked_params_list`.
-        original_sim_params : SimulationParameters object
+        original_sim_params : SimulationParameters
             The original SimulationParameters object from which the
             SimulationParameters object that will be created by this method
             came from.
 
         Returns
         -------
-        sim_params : SimulationParameters object
+        sim_params : SimulationParameters
             The corresponding SimulationParameters object.
         """
         sim_params = SimulationParameters()
@@ -221,7 +241,8 @@ class SimulationParameters(object):
 
     @staticmethod
     def create(params_dict):
-        """Creates a new SimulationParameters object.
+        """
+        Creates a new SimulationParameters object.
 
         This static method provides a different way to create a
         SimulationParameters object, already containing the parameters in
@@ -236,7 +257,7 @@ class SimulationParameters(object):
 
         Returns
         -------
-        sim_params : SimulationParameters object
+        sim_params : SimulationParameters
             The corresponding SimulationParameters object.
         """
         return SimulationParameters._create(params_dict)
@@ -287,7 +308,7 @@ class SimulationParameters(object):
         ----------
         name : str
             Name of the parameter to be unpacked.
-        unpack_bool : bool, optional (default to True)
+        unpack_bool : bool, optional
             True activates unpacking for `name`, False deactivates it.
 
         Raises
@@ -324,8 +345,17 @@ class SimulationParameters(object):
         return self.parameters[name]
 
     def __repr__(self):  # pragma: no cover
+        """
+        Get the object representation as a string.
+
+        Returns
+        -------
+        str
+            The object representation as a string.
+        """
         def modify_name(p_name):
-            """Add an * in p_name if it is set to be unpacked
+            """
+            Add an * in p_name if it is set to be unpacked
 
             Parameters
             ----------
@@ -341,7 +371,8 @@ class SimulationParameters(object):
         return '{%s}' % ', '.join(repr_list)
 
     def __len__(self):
-        """Get the number of different parameters stored in the
+        """
+        Get the number of different parameters stored in the
         SimulationParameters object.
 
         Returns
@@ -349,19 +380,24 @@ class SimulationParameters(object):
         length : int
             The number of different parameters stored in the
             SimulationParameters object
-
         """
         return len(self.parameters)
 
     def __iter__(self):  # pragma: no cover
-        """Get an iterator to the parameters in the SimulationParameters
+        """
+        Get an iterator to the parameters in the SimulationParameters
         object.
+
+        Returns
+        -------
+        iterator
+            An iterator to the SimulationParameters object.
         """
         return iter(self.parameters)
 
     def __eq__(self, other):
         """
-        Compare two SimulationParameters objects.
+        Check if two SimulationParameters objects are equal.
 
         Two simulation parameters objects are considered equal if all
         parameters stored in both objects are the same, except for a
@@ -374,8 +410,9 @@ class SimulationParameters(object):
 
         Returns
         -------
-        True if both objects are considered to be equal, returns False
-        otherwise.
+        bool
+            True if both objects are considered to be equal, returns
+            False otherwise.
 
         Notes
         -----
@@ -422,6 +459,23 @@ class SimulationParameters(object):
         return True
 
     def __ne__(self, other):
+        """
+        Check if two SimulationParameters objects are different.
+
+        See documentation for __eq__.
+
+        Parameters
+        ----------
+        other: SimulationParameters
+            The other SimulationParameters to be compared with self.
+
+        Returns
+        -------
+        bool
+            True if both objects are considered to be different, returns
+            False otherwise.
+        """
+
         return not self.__eq__(other)
 
     def get_num_unpacked_variations(self):
@@ -470,14 +524,14 @@ class SimulationParameters(object):
 
         Parameters
         ----------
-        fixed_params_dict : dict
-            A ditionary with the name of the fixed parameters as keys and
+        fixed_params_dict : dict[str, anything]
+            A dictionary with the name of the fixed parameters as keys and
             the fixed value as value.
 
         Returns
         -------
-        indexes : 1D numpy array or an integer
-            The desired indexes.
+        indexes : np.ndarray
+            The desired indexes (1D numpy array or an integer).
 
         Examples
         --------
@@ -566,8 +620,8 @@ class SimulationParameters(object):
 
         Returns
         -------
-        unpacked_parans : list
-           A list of SimulationParameters objecs.
+        list[SimulationParameters]
+           A list of SimulationParameters objects.
 
         Examples
         --------
@@ -680,18 +734,23 @@ class SimulationParameters(object):
 
         Parameters
         ----------
-        filename : src
+        filename : str
             Name of the file from where the results will be loaded.
+
+        Returns
+        -------
+        SimulationParameters
+            The loaded SimulationParameters object.
         """
-        with open(filename, 'rb') as inputfile:
-            obj = pickle.load(inputfile)
+        with open(filename, 'rb') as input_file:
+            obj = pickle.load(input_file)
         return obj
 
     @staticmethod
     def load_from_config_file(filename, spec=None, save_parsed_file=False):
         """
-        Load the SimulationParameters from a config file using the configobj
-        module.
+        Load the SimulationParameters from a config file using the
+        configobj module.
 
         If the config file has a parameter called `unpacked_parameters`,
         which should be a list of strings with the names of other
@@ -699,9 +758,9 @@ class SimulationParameters(object):
 
         Parameters
         ----------
-        filename : src
+        filename : str
             Name of the file from where the results will be loaded.
-        spec : A list of strings
+        spec : list[str], optional
             A list of strings with the config spec. See "validation" in the
             configobj module documentation for more info.
         save_parsed_file : bool
@@ -731,10 +790,10 @@ class SimulationParameters(object):
 
             Parameters
             ----------
-            simulation_params : A SimulationParameters object
+            simulation_params : SimulationParameters
                 The SimulationParameters object where the parameters will
                 be added.
-            config : A configobj.ConfigObj or a configobj.Section object
+            config : configobj.ConfigObj | configobj.Section
                 A ConfigObj object or a Section object. The `config` object
                 can contain parameters (called scalars) or sections which
                 can contain either parameters or other sections.
@@ -789,19 +848,21 @@ class SimulationParameters(object):
             # The exception will only describe the error for the first
             # incorrect parameter.
             if first_error[2] is False:
-                # # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                 # from pprint import pprint
                 # params = SimulationParameters()
                 # add_params(params, conf_file_parser)
                 # pprint(params.parameters)
-                # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                msg = ("Error loading file {0}. Parameter '{1}' in section "
-                       "'{2}' must be provided.")
+                # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                msg = (
+                    "Error loading file {0}. Parameter '{1}' in section "
+                    "'{2}' must be provided.")
                 raise Exception(msg.format(filename, first_error[1],
                                            first_error[0][0]))
             else:
-                msg = ("Error loading file {0}. Parameter '{1}' in section "
-                       "'{2}' is invalid. {3}")
+                msg = (
+                    "Error loading file {0}. Parameter '{1}' in section "
+                    "'{2}' is invalid. {3}")
                 raise Exception(
                     msg.format(filename, first_error[1], first_error[0][0],
                                str(first_error[2]).capitalize()))
@@ -848,7 +909,7 @@ class SimulationParameters(object):
 
         Parameters
         ----------
-        group : An HDF5 group
+        group : h5py.Group
             The group where the parameters will be saved.
 
         Notes
@@ -971,12 +1032,12 @@ class SimulationParameters(object):
 
         Parameters
         ----------
-        group : An HDF5 group
+        group : h5py.Group
             The group from where the parameters will be loaded.
 
         Returns
         -------
-        params : A SimulationParameters object.
+        params : SimulationParameters
             The SimulationParameters object loaded from `group`.
 
         See also
@@ -1006,10 +1067,10 @@ class SimulationParameters(object):
         filename : str
             Name of the file from which the SimulationParameters should be
             loaded.
-
+An HDF5 group
         Returns
         -------
-        params : SimulationParameters object.
+        params : SimulationParameters
             The loaded SimulationParameters object.
         """
         # noinspection PyUnresolvedReferences

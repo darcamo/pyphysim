@@ -39,15 +39,15 @@ def combine_simulation_results(simresults1, simresults2):
 
     Parameters
     ----------
-    simresults1 : SimulationResults object
+    simresults1 : SimulationResults
         The first SimulationResults object to be combined.
-    simresults2 : SimulationResults object
+    simresults2 : SimulationResults
         The second SimulationResults object to be combined.
 
     Returns
     -------
-    union : SimulationResults object
-    The combined SimulationResults object.
+    SimulationResults
+        The combined SimulationResults object.
 
     Examples
     --------
@@ -99,6 +99,720 @@ def combine_simulation_results(simresults1, simresults2):
             union.append_result(result_object)
 
     return union
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Result - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class Result(object):
+    """Class to store a single simulation result.
+
+    A simulation result can be anything, such as the number of errors, a
+    string, an error rate, etc. When creating a `Result` object one needs to
+    specify only the `name` of the stored result and the result `type`.
+
+    The different types indicate how multiple samples (from multiple
+    iterations) of the same Result can be merged (usually to get a result
+    with more statistical reliability). The possible values are SUMTYPE,
+    RATIOTYPE and MISCTYPE.
+
+    In the `SUMTYPE` the new value should be added to current one in update
+    function.
+
+    In the `RATIOTYPE` the new value should be added to current one and
+    total should be also updated in the update function. One caveat is that
+    rates are stored as a number (numerator) and a total (denominator)
+    instead of as a float. For instance, if you need to store a result such
+    as a bit error rate, then you could use the a Result with the RATIOTYPE
+    type and when updating the result, pass the number of bit errors and
+    the number of simulated bits.
+
+    The `MISCTYPE` type can store anything and the update will simple
+    replace the stored value with the current value.
+
+    Parameters
+    ----------
+    name : str
+        Name of the Result.
+    update_type_code : int
+        Type of the result. It must be one of the elements in
+        {Result.SUMTYPE, Result.RATIOTYPE,
+        Result.MISCTYPE, Result.CHOICETYPE}.
+    accumulate_values : bool
+        If True, then the values `value` and `total` will be
+        accumulated in the `update` (and merge) method(s). This means
+        that the Result object will use more memory as more and more
+        values are accumulated, but having all values sometimes is
+        useful to perform statistical calculations. This is useful for
+        debugging/testing.
+    choice_num : int
+        Number of different choices for the CHOICETYPE type. This is a
+        required parameter for the CHOICETYPE type, but it is ignored
+        for the other types
+
+    Examples
+    --------
+    - Example of the SUMTYPE result.
+
+      >>> result1 = Result("name", Result.SUMTYPE)
+      >>> result1.update(13)
+      >>> result1.update(4)
+      >>> result1.get_result()
+      17
+      >>> result1.num_updates
+      2
+      >>> result1
+      Result -> name: 17
+      >>> result1.type_name
+      'SUMTYPE'
+      >>> result1.type_code
+      0
+
+    - Example of the RATIOTYPE result.
+
+      >>> result2 = Result("name2", Result.RATIOTYPE)
+      >>> result2.update(4,10)
+      >>> result2.update(3,4)
+      >>> result2.get_result()
+      0.5
+      >>> result2.type_name
+      'RATIOTYPE'
+      >>> result2.type_code
+      1
+      >>> result2_other = Result("name2", Result.RATIOTYPE)
+      >>> result2_other.update(3,11)
+      >>> result2_other.merge(result2)
+      >>> result2_other.get_result()
+      0.4
+      >>> result2_other.num_updates
+      3
+      >>> result2_other._value
+      10
+      >>> result2_other._total
+      25
+      >>> result2.get_result()
+      0.5
+      >>> print(result2_other)
+      Result -> name2: 10/25 -> 0.4
+
+    - Example of the MISCTYPE result.
+
+      The MISCTYPE result 'merge' process in fact simple replaces the
+      current stored value with the new value.
+
+    """
+    # Like an Enumeration for the type of results.
+    (SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE) = range(4)
+    _all_types = {
+        SUMTYPE: "SUMTYPE",
+        RATIOTYPE: "RATIOTYPE",
+        MISCTYPE: "MISCTYPE",
+        CHOICETYPE: "CHOICETYPE",
+    }
+
+    def __init__(self, name, update_type_code, accumulate_values=False,
+                 choice_num=None):
+        """
+        Constructor for the result object.
+
+        Parameters
+        ----------
+        name : str
+            Name of the Result.
+        update_type_code : int
+            Type of the result. It must be one of the elements in
+            {Result.SUMTYPE, Result.RATIOTYPE,
+            Result.MISCTYPE, Result.CHOICETYPE}.
+        accumulate_values : bool
+            If True, then the values `value` and `total` will be
+            accumulated in the `update` (and merge) method(s). This means
+            that the Result object will use more memory as more and more
+            values are accumulated, but having all values sometimes is
+            useful to perform statistical calculations. This is useful for
+            debugging/testing.
+        choice_num : int
+            Number of different choices for the CHOICETYPE type. This is a
+            required parameter for the CHOICETYPE type, but it is ignored
+            for the other types
+        """
+        self.name = name
+        self._update_type_code = update_type_code
+        self._value = 0
+        self._total = 0
+        # At each update the current result will be added to this variable
+        self._result_sum = 0.0
+        # At each update the square of the current result will be added to
+        # this variable.
+        self._result_squared_sum = 0.0
+        # Number of times the Result object was updated
+        self.num_updates = 0
+
+        if update_type_code == Result.CHOICETYPE:
+            if not isinstance(choice_num, int):
+                raise RuntimeError(
+                    "'choice_num' argument for the Result object must be "
+                    "an integer for the CHOICETYPE type.")
+            else:
+                self._value = np.zeros(choice_num, dtype=float)
+
+        # Accumulation of values: This is useful for debugging/testing
+        self._accumulate_values_bool = accumulate_values
+        self._value_list = []
+        self._total_list = []
+
+    def __eq__(self, other):
+        """
+        Compare two Result objects.
+
+        Two Result objects are considered equal if all attributes in both
+        of them are equal, with the exception of the 'num_updates' member
+        variable which is ignored in the comparison.
+
+        Parameters
+        ----------
+        other : Result
+            The other Result object.
+
+        Returns
+        -------
+        bool
+            True if `other` is equal to `self`, False otherwise.
+        """
+        # All class attributes with the exception of 'num_updates' and
+        # '_value'. The value of 'num_updates' is not important for
+        # equality comparison. The value of '_value' is important, but it
+        # is not included in 'attributes' because it will be explicitly
+        # tested later
+        attributes = ['name', '_update_type_code', '_total',
+                      '_accumulate_values_bool', '_value_list',
+                      '_total_list', '_result_squared_sum', '_result_sum']
+        if self is other:  # pragma: no cover
+            return True
+
+        if not isinstance(other, self.__class__):
+            return False
+
+        result = True
+        for att in attributes:
+            if getattr(self, att) != getattr(other, att):
+                result = False
+
+        # Test if the '_value' fields are equal in both objects
+        if self._update_type_code == Result.CHOICETYPE:
+            # For the CHOICETYPE _value is a numpy array and thus we need
+            # to use 'all_true'
+            if np.array_equal(self._value, other._value) is False:
+                result = False
+        else:
+            if self._value != other._value:
+                result = False
+
+        return result
+
+    def __ne__(self, other):
+        """
+        Compare two Result objects.
+
+        Two Result objects are considered equal if all attributes in both
+        of them are equal, with the exception of the 'num_updates' member
+        variable which is ignored in the comparison.
+
+        Parameters
+        ----------
+        other : Result
+            The other Result object.
+
+        Returns
+        -------
+        bool
+            False if `other` is equal to `self`, True otherwise.
+        """
+        return not self.__eq__(other)
+
+    @property
+    def accumulate_values_bool(self):
+        """
+        Property to see if values are accumulated of not during a call to the
+        `update` method.
+        """
+        return self._accumulate_values_bool
+
+    @staticmethod
+    def create(name, update_type, value, total=0, accumulate_values=False):
+        """
+        Create a Result object and update it with `value` and `total` at
+        the same time.
+
+        Equivalent to creating the object and then calling its
+        :meth:`update` method.
+
+        Parameters
+        ----------
+        name : str
+            Name of the Result.
+        update_type : int
+            Type of the result. It must be one of the elements in
+            {Result.SUMTYPE, Result.RATIOTYPE,
+            Result.MISCTYPE, Result.CHOICETYPE}.
+        value : any
+            Value of the result.
+        total : any | int
+            Total value of the result (used only for the RATIOTYPE and
+            CHOICETYPE). For the CHOICETYPE it is interpreted as the number
+            of different choices.
+        accumulate_values : bool
+            If True, then the values `value` and `total` will be
+            accumulated in the `update` (and merge) method(s). This means
+            that the Result object will use more memory as more and more
+            values are accumulated, but having all values sometimes is
+            useful to perform statistical calculations. This is useful for
+            debugging/testing.
+
+        Returns
+        -------
+        Result
+            The new Result object.
+
+        Notes
+        -----
+        Even if accumulate_values is True the values will not be
+        accumulated for the MISCTYPE.
+
+        See also
+        --------
+        update
+        """
+        if update_type == Result.CHOICETYPE:
+            result = Result(name, update_type, accumulate_values,
+                            choice_num=total)
+            result.update(value)
+        else:
+            result = Result(name, update_type, accumulate_values)
+            result.update(value, total)
+        return result
+
+    @property
+    def type_name(self):
+        """
+        Get the Result type name.
+
+        Returns
+        -------
+        type_name : str
+            The result type string (SUMTYPE, RATIOTYPE, MISCTYPE or
+            CHOICETYPE).
+        """
+        return Result._all_types[self._update_type_code]
+
+    @property
+    def type_code(self):
+        """
+        Get the Result type.
+
+        Returns
+        -------
+        type_code : int
+            The returned value is a number corresponding to one of the
+            types SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE.
+        """
+        return self._update_type_code
+
+    def __repr__(self):
+        if self._update_type_code == Result.RATIOTYPE:
+            v = self._value
+            t = self._total
+            if t != 0:
+                return "Result -> {0}: {1}/{2} -> {3}".format(
+                    self.name, v, t, v / t)
+            else:
+                return "Result -> {0}: {1}/{2} -> NaN".format(
+                    self.name, v, t)
+        else:
+            return "Result -> {0}: {1}".format(self.name, self.get_result())
+
+    def update(self, value, total=None):
+        """
+        Update the current value.
+
+        Parameters
+        ----------
+        value : anything, but usually a number
+            Value to be added to (or replaced) the current value
+
+        total : same type as `value`
+            Value to be added to the current total (only useful for the
+            RATIOTYPE update type)
+
+        Notes
+        -----
+        The way how this update process depends on the Result type and is
+        described below
+
+        - RATIOTYPE: Add "value" to current value and "total" to current
+          total.
+        - SUMTYPE: Add "value" to current value. "total" is ignored.
+        - MISCTYPE: Replace the current value with "value".
+        - CHOICETYPE: Update the choice "value" and the total by 1.
+
+        See also
+        --------
+        create
+        """
+        self.num_updates += 1
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Python does not have a switch statement. We use dictionaries as
+        # the equivalent of a switch statement.
+        # First we define a function for each possibility.
+        def __default_update(*_):  # "*_" denotes the two unused args here
+            """Default update method.
+
+            This will only be called when the update type is not one of the
+            available types. Thus, an exception will be raised.
+
+            """
+            msg = "Can't update a Result object of type '{0}'"
+            raise ValueError(msg.format(self._update_type_code))
+
+        def __update_SUMTYPE_value(p_value, _):
+            """Update the Result object when its type is SUMTYPE."""
+            self._value += p_value
+            self._result_sum += p_value
+            self._result_squared_sum += p_value**2
+            if self._accumulate_values_bool is True:
+                self._value_list.append(p_value)
+
+        def __update_RATIOTYPE_value(p_value, p_total):
+            """Update the Result object when its type is RATIOTYPE.
+
+            Raises
+            ------
+            ValueError
+                If the `p_total` parameter is None (not provided).
+            """
+            if p_total is None:
+                msg = ("A 'p_value' and a 'p_total' are required when updating "
+                       "a Result object of the RATIOTYPE type.")
+                raise ValueError(msg)
+
+            self._value += p_value
+            self._total += p_total
+
+            result = p_value / p_total
+            self._result_sum += result
+            self._result_squared_sum += result**2
+
+            if self._accumulate_values_bool is True:
+                self._value_list.append(p_value)
+                self._total_list.append(p_total)
+
+        def __update_by_replacing_current_value(p_value, _):
+            """Update the Result object when its type is MISCTYPE."""
+            self._value = p_value
+            if self._accumulate_values_bool is True:
+                self._value_list.append(p_value)
+
+        def __update_CHOICETYPE_value(p_value, _):
+            """Update the Result object when its type is CHOICETYPE."""
+            # The provided 'p_value' is used as an index to increase the
+            # choice in self._value, which is stored as a numpy array.
+            assert type(p_value) == int, (
+                "Value for the CHOICETYPE must be an integer.")
+            self._value[p_value] += 1
+            self._total += 1
+            if self._accumulate_values_bool is True:
+                self._value_list.append(p_value)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Now we fill the dictionary with the functions
+        possible_updates = {
+            Result.RATIOTYPE: __update_RATIOTYPE_value,
+            Result.MISCTYPE: __update_by_replacing_current_value,
+            Result.SUMTYPE: __update_SUMTYPE_value,
+            Result.CHOICETYPE: __update_CHOICETYPE_value}
+
+        # Call the apropriated update method. If self._update_type_code does
+        # not contain a key in the possible_updates dictionary (that is, a
+        # valid update type), then the function __default_update is called.
+        possible_updates.get(self._update_type_code,
+                             __default_update)(value, total)
+
+    def merge(self, other):
+        """
+        Merge the result from other with self.
+
+        Parameters
+        ----------
+        other : Result
+            Another Result object.
+        """
+        assert(isinstance(other, self.__class__))
+        # pylint: disable=W0212
+        assert self._update_type_code == other._update_type_code, (
+            "Can only merge two objects with the same name and type")
+        assert self._update_type_code != Result.MISCTYPE, (
+            "Cannot merge results of the MISCTYPE type")
+        assert self.name == other.name, (
+            "Can only merge two objects with the same name and type")
+
+        if self.accumulate_values_bool is True:
+            # The second object must also have been set to accumulate values
+            msg = ("The merged Result also must have been set to accumulate"
+                   " values.")
+            assert other.accumulate_values_bool is True, msg
+
+            self._value_list.extend(other._value_list)
+            self._total_list.extend(other._total_list)
+
+        self.num_updates += other.num_updates
+        self._value += other._value
+        self._total += other._total
+        self._result_sum += other._result_sum
+        self._result_squared_sum += other._result_squared_sum
+
+    def get_result(self):
+        """
+        Get the result stored in the Result object.
+
+        Returns
+        -------
+        results : anything, but usually a number
+            For the RATIOTYPE type get_result will return the
+            `value/total`, while for the other types it will return
+            `value`.
+        """
+        if self.num_updates == 0:
+            return "Nothing yet"
+        else:
+            if self._update_type_code == Result.RATIOTYPE:
+                return self._value / self._total
+            elif self._update_type_code == Result.CHOICETYPE:
+                return self._value / self._total
+            else:
+                return self._value
+
+    def get_result_accumulated_values(self):
+        """
+        Return the accumulated values.
+
+        Note that in case the result if of type RATIOTYPE this you probably
+        want to call the get_result_accumulated_totals function to also get
+        the totals.
+        """
+        return self._value_list
+
+    def get_result_accumulated_totals(self):
+        """
+        Return the accumulated values.
+
+        Note that in case the result if of type RATIOTYPE this you probably
+        want to call the get_result_accumulated_values function to also get
+        the values.
+        """
+        return self._total_list
+
+    # # Remove this in the future
+    # def _fix_old_version(self):
+    #     """
+    #     """
+    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - START xxxxxxxxxxxxxxxxxxxx
+    #     try:
+    #         self._result_sum
+    #     except AttributeError as _:
+    #         if self.type_code == Result.RATIOTYPE:
+    #             n = np.array(self._value_list, dtype=float)
+    #             d = np.array(self._total_list, dtype=float)
+    #             r = n / d
+    #         elif self.type_code == Result.SUMTYPE:
+    #             r = np.array(self._value_list, dtype=float)
+    #         self._result_sum = np.sum(r)
+    #         self._result_squared_sum = np.sum(r**2)
+    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - END xxxxxxxxxxxxxxxxxxxxxx
+
+    def get_result_mean(self):
+        """Get the mean of all the updated results.
+
+        Returns
+        -------
+        float
+            The mean of the result.
+        """
+        # self._fix_old_version()  # Remove this line in the future
+
+        return self._result_sum / self.num_updates
+
+    def get_result_var(self):
+        """
+        Get the variance of all updated results.
+
+        Returns
+        -------
+        float
+            The variance of the results.
+        """
+        # self._fix_old_version()  # Remove this line in the future
+
+        return ((self._result_squared_sum / self.num_updates) -
+                (self.get_result_mean())**2)
+
+    def get_confidence_interval(self, P=95):
+        """
+        Get the confidence inteval that contains the true result with a given
+        probability `P`.
+
+        Parameters
+        ----------
+        P : float
+            The desired confidence (probability in %) that true value is
+            inside the calculated interval. The possible values are
+            described in the documentaiton of the
+            `util.misc.calc_confidence_interval` function`
+
+        Returns
+        -------
+        Interval : np.ndarray
+            Numpy (float) array with two elements.
+
+        See also
+        --------
+        util.misc.calc_confidence_interval
+        """
+        if self._update_type_code == Result.MISCTYPE:
+            message = ("Calling get_confidence_interval is not valid for "
+                       "the MISC update type.")
+            raise RuntimeError(message)
+
+        mean = self.get_result_mean()
+        std = np.sqrt(self.get_result_var())
+        n = self.num_updates
+        return calc_confidence_interval(mean, std, n, P)
+
+    # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # # variables
+    # @staticmethod
+    # def save_to_hdf5_dataset(parent, results_list):
+    #     """
+    #     Create an HDF5 dataset in `parent` and fill it with the Result
+    #     objects
+    #     in `results_list`.
+
+    #     Parameters
+    #     ----------
+    #     parent : An HDF5 group (usually) or file.
+    #         The parent that will contain the dataset.
+    #     results_list : A python list of Result objects.
+    #         A list of Result objects. All of these objects must have the
+    #         same name and update type.
+
+    #     Notes
+    #     -----
+    #     This method is called from the save_to_hdf5_file method in the
+    #     SimulationResults class. It uses the python h5py library and
+    #     `parent` is supposed to be an HDF5 group created with that library.
+
+    #     See also
+    #     --------
+    #     load_from_hdf5_dataset
+    #     """
+    #     # When using the hdf5 format to save the Result object it is not
+    #     # possible to save the accumulated values (if there is any)
+    #     if results_list[0]._accumulate_values_bool is True:
+    #         warnings.warn(
+    #        'Cannot save the accumulated values in a Result to an hdf5 file.')
+
+    #     dtype = [('_value', float), ('_total', float), ('num_updates', int),
+    #              ('_result_sum', float), ('_result_squared_sum', float)]
+    #     name = results_list[0].name
+    #     size = len(results_list)
+    #     ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
+
+    #     r = None
+    #     for i, r in enumerate(results_list):
+    #         # pylint: disable=W0212
+    #         ds[i] = (r._value, r._total, r.num_updates, r._result_sum,
+    #                  r._result_squared_sum)
+
+    #     if r is not None:
+    #         ds.attrs.create('update_type_code', data=r.type_code)
+    #     # Save the TITTLE attribute to be more consistent with what
+    #     # Pytables would do.
+    #     ds.attrs.create("TITLE", name)
+
+    # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
+    # # variables
+    # @staticmethod
+    # def save_to_pytables_table(parent, results_list):
+    #     """
+    #     Save the Result object.
+    #     """
+    #     pytables_file = parent._v_file
+    #     name = results_list[0].name
+    #     # pylint: disable= E1101
+    #     description = {
+    #         '_value': tb.FloatCol(), '_total': tb.FloatCol(),
+    #         'num_updates': tb.IntCol(), '_result_sum': tb.FloatCol(),
+    #         '_result_squared_sum': tb.FloatCol()}
+    #     table = pytables_file.createTable(parent, name, description,
+    #                                       title=name)
+    #     row = table.row
+
+    #     r = None
+    #     for r in results_list:
+    #         # pylint: disable=W0212
+    #         row['_value'] = r._value
+    #         row['_total'] = r._total
+    #         row['num_updates'] = r.num_updates
+    #         row['_result_sum'] = r._result_sum
+    #         row['_result_squared_sum'] = r._result_squared_sum
+    #         row.append()
+
+    #     pytables_file.setNodeAttr(table, 'update_type_code', r.type_code)
+    #     table.flush()
+
+    # @staticmethod
+    # def load_from_hdf5_dataset(ds):
+    #     """Load a list of Rersult objects from an HDF5 dataset.
+
+    #     This dataset was suposelly saved with the save_to_hdf5_dataset
+    #     function.
+
+    #     Parameters
+    #     ----------
+    #     ds : An HDF5 Dataset
+    #         The dataset to be loaded.
+
+    #     Returns
+    #     -------
+    #     results_list : A list of Result objects.
+    #         The list of Result objects loaded from the dataset.
+
+    #     Notes
+    #     -----
+    #     This method is called from the load_from_hdf5_file method in the
+    #     SimulationResults class. It uses the python h5py library and
+    #     `ds` is supposed to be an HDF5 dataset created with that library.
+
+    #     See also
+    #     --------
+    #     save_to_hdf5_dataset
+
+    #     """
+    #     results_list = []
+
+    #     name = ds.name.split('/')[-1]
+    #     update_type_code = ds.attrs['update_type_code']
+    #     for data in ds:
+    #         r = Result.create(name,
+    #                           update_type_code,
+    #                           data['_value'],
+    #                           data['_total'])
+    #         r.num_updates = data['num_updates']
+    #         r._result_sum = data['_result_sum']
+    #         r._result_squared_sum = data['_result_squared_sum']
+    #         results_list.append(r)
+    #     return results_list
+
+# xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -211,8 +925,13 @@ class SimulationResults(object):
 
         Parameters
         ----------
-        other : SimulationResults object
+        other : SimulationResults
             The other SimulationResults object.
+
+        Returns
+        -------
+        bool
+            True if `other` is equal to `self`, False otherwise.
         """
         if self is other:  # pragma: no cover
             return True
@@ -247,8 +966,13 @@ class SimulationResults(object):
 
         Parameters
         ----------
-        other : SimulationResults object
+        other : SimulationResults
             The other SimulationResults object.
+
+        Returns
+        -------
+        bool
+            False if `other` is equal to `self`, True otherwise.
         """
         return not self.__eq__(other)
 
@@ -258,7 +982,8 @@ class SimulationResults(object):
         return self._params
 
     def set_parameters(self, params):
-        """Set the parameters of the simulation used to generate the
+        """
+        Set the parameters of the simulation used to generate the
         simulation results stored in the SimulationResults object.
 
         Parameters
@@ -273,12 +998,21 @@ class SimulationResults(object):
         self._params = params
 
     def __repr__(self):
+        """
+        String representation of the SimulationResults object.
+
+         Returns
+         -------
+         str
+            The string representation of the SimulationResults object.
+         """
         list_of_names = self._results.keys()
         repr_string = "SimulationResults: {0}".format(sorted(list_of_names))
         return repr_string
 
     def add_result(self, result):
-        """Add a result object to the SimulationResults object.
+        """
+        Add a result object to the SimulationResults object.
 
         .. note::
 
@@ -287,9 +1021,8 @@ class SimulationResults(object):
 
         Parameters
         ----------
-        result : An object of the :class:`Result` class
-            Must be an object of the Result class.
-
+        result : Result
+            The Result object to add to the simulation results.
         """
         # Added as a list with a single element
         self._results[result.name] = [result]
@@ -313,30 +1046,31 @@ class SimulationResults(object):
         ----------
         name : str
             Name of the Result.
-        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE}
-            Type of the result (SUMTYPE, RATIOTYPE or MISCTYPE).
-        value : anything, but usually a number
+        update_type : int
+            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
+        value : any
             Value of the result.
-        total : same type as `value`
+        total : any | int
             Total value of the result (used only for the RATIOTYPE and
             ignored for the other types).
-
         """
         result = Result.create(name, update_type, value, total)
         self.add_result(result)
 
     def append_result(self, result):
-        """Append a result to the SimulationResults object. This
-        efectivelly means that the SimulationResults object will now store
-        a list for the given result name. This allow you, for instance, to
-        store multiple bit error rates with the 'BER' name such that
-        simulation_results_object['BER'] will return a list with the Result
-        objects for each value.
+        """
+        Append a result to the SimulationResults object.
+
+        This efectivelly means that the SimulationResults object will
+        now store a list for the given result name. This allow you,
+        for instance, to store multiple bit error rates with the 'BER'
+        name such that simulation_results_object['BER'] will return a
+        list with the Result objects for each value.
 
         Parameters
         ----------
-        result : An object of the :class:`Result` class
-            Must be an object of the Result class.
+        result : Result
+            The Result object to append to the simulation results.
 
         Notes
         -----
@@ -352,7 +1086,6 @@ class SimulationResults(object):
         See also
         --------
         append_all_results, merge_all_results
-
         """
         if result.name in self._results.keys():
             update_type_code = self._results[result.name][0].type_code
@@ -364,12 +1097,13 @@ class SimulationResults(object):
             self.add_result(result)
 
     def append_all_results(self, other):
-        """Append all the results of the other SimulationResults object
+        """
+        Append all the results of the other SimulationResults object
         with self.
 
         Parameters
         ----------
-        other : An object of the :class:`SimulationResults` class.
+        other : SimulationResults
             Another SimulationResults object
 
         See also
@@ -394,7 +1128,7 @@ class SimulationResults(object):
 
         Parameters
         ----------
-        other : An object of the :class:`SimulationResults` class.
+        other : SimulationResults
             Another SimulationResults object
 
         See also
@@ -440,12 +1174,13 @@ class SimulationResults(object):
                     other['num_skipped_reps'][-1])
 
     def get_result_names(self):
-        """Get the names of all results stored in the SimulationResults
+        """
+        Get the names of all results stored in the SimulationResults
         object.
 
         Returns
         -------
-        names : list
+        names : list[str]
             The names of the results stored in the SimulationResults object.
         """
         return self._results.keys()
@@ -531,7 +1266,7 @@ class SimulationResults(object):
 
         Returns
         -------
-        confidence_interval_list : list
+        confidence_interval_list : list[np.ndarray]
             A list of Numpy (float) arrays. Each element in the list is an
             array with two elements, corresponding to the lower and upper
             limits of the confidence interval.8
@@ -561,7 +1296,8 @@ class SimulationResults(object):
         return out
 
     def __getitem__(self, key):
-        """Get the value of the desired result
+        """
+        Get the value of the desired result.
 
         Parameters
         ----------
@@ -594,7 +1330,8 @@ class SimulationResults(object):
         # through this will iterate through the dictionary keys, that is, the
         # name of the results stored in the SimulationResults object.
         # """
-        """Get an iterator to the results stored in the SimulationResults
+        """
+        Get an iterator to the results stored in the SimulationResults
         object.
         """
         try:
@@ -622,7 +1359,7 @@ class SimulationResults(object):
 
         Returns
         -------
-        new_filename : string
+        string
             The name of the file where the results were saved. This will be
             equivalent to `filename` after string replacements (with the
             simulation parameters) are done.
@@ -656,7 +1393,7 @@ class SimulationResults(object):
 
         Returns
         -------
-        new_filename : string
+        string
             The name of the file where the results were saved. This will be
             equivalent to `filename` after string replacements (with the
             simulation parameters) are done.
@@ -687,7 +1424,8 @@ class SimulationResults(object):
 
     @staticmethod
     def load_from_file(filename):
-        """Load the SimulationResults from the file `filename`.
+        """
+        Load the SimulationResults from the file `filename`.
 
         Parameters
         ----------
@@ -696,7 +1434,7 @@ class SimulationResults(object):
 
         Returns
         -------
-        simresults : A SimulationResults object
+        SimulationResults
             The SimulationResults object loaded from the file `filename`.
         """
         with open(filename, 'rb') as inputfile:
@@ -911,667 +1649,3 @@ class SimulationResults(object):
         return df
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Result - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Result(object):
-    """Class to store a single simulation result.
-
-    A simulation result can be anything, such as the number of errors, a
-    string, an error rate, etc. When creating a `Result` object one needs to
-    specify only the `name` of the stored result and the result `type`.
-
-    The different types indicate how multiple samples (from multiple
-    iterations) of the same Result can be merged (usually to get a result
-    with more statistical reliability). The possible values are SUMTYPE,
-    RATIOTYPE and MISCTYPE.
-
-    In the `SUMTYPE` the new value should be added to current one in update
-    function.
-
-    In the `RATIOTYPE` the new value should be added to current one and
-    total should be also updated in the update function. One caveat is that
-    rates are stored as a number (numerator) and a total (denominator)
-    instead of as a float. For instance, if you need to store a result such
-    as a bit error rate, then you could use the a Result with the RATIOTYPE
-    type and when updating the result, pass the number of bit errors and
-    the number of simulated bits.
-
-    The `MISCTYPE` type can store anything and the update will simple
-    replace the stored value with the current value.
-
-    Examples
-    --------
-    - Example of the SUMTYPE result.
-
-      >>> result1 = Result("name", Result.SUMTYPE)
-      >>> result1.update(13)
-      >>> result1.update(4)
-      >>> result1.get_result()
-      17
-      >>> result1.num_updates
-      2
-      >>> result1
-      Result -> name: 17
-      >>> result1.type_name
-      'SUMTYPE'
-      >>> result1.type_code
-      0
-
-    - Example of the RATIOTYPE result.
-
-      >>> result2 = Result("name2", Result.RATIOTYPE)
-      >>> result2.update(4,10)
-      >>> result2.update(3,4)
-      >>> result2.get_result()
-      0.5
-      >>> result2.type_name
-      'RATIOTYPE'
-      >>> result2.type_code
-      1
-      >>> result2_other = Result("name2", Result.RATIOTYPE)
-      >>> result2_other.update(3,11)
-      >>> result2_other.merge(result2)
-      >>> result2_other.get_result()
-      0.4
-      >>> result2_other.num_updates
-      3
-      >>> result2_other._value
-      10
-      >>> result2_other._total
-      25
-      >>> result2.get_result()
-      0.5
-      >>> print(result2_other)
-      Result -> name2: 10/25 -> 0.4
-
-    - Example of the MISCTYPE result.
-
-      The MISCTYPE result 'merge' process in fact simple replaces the
-      current stored value with the new value.
-
-    """
-    # Like an Enumeration for the type of results.
-    (SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE) = range(4)
-    _all_types = {
-        SUMTYPE: "SUMTYPE",
-        RATIOTYPE: "RATIOTYPE",
-        MISCTYPE: "MISCTYPE",
-        CHOICETYPE: "CHOICETYPE",
-    }
-
-    def __init__(self, name, update_type_code, accumulate_values=False,
-                 choice_num=None):
-        """
-        Constructor for the result object.
-
-        Parameters
-        ----------
-        name : str
-            Name of the Result.
-        update_type_code : {SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE}
-            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
-        accumulate_values : bool
-            If True, then the values `value` and `total` will be
-            accumulated in the `update` (and merge) method(s). This means
-            that the Result object will use more memory as more and more
-            values are accumulated, but having all values sometimes is
-            useful to perform statistical calculations. This is useful for
-            debugging/testing.
-        choice_num : int
-            Number of different choices for the CHOICETYPE type. This is a
-            required parameter for the CHOICETYPE type, but it is ignored
-            for the other types
-        """
-        self.name = name
-        self._update_type_code = update_type_code
-        self._value = 0
-        self._total = 0
-        # At each update the current result will be added to this variable
-        self._result_sum = 0.0
-        # At each update the square of the current result will be added to
-        # this variable.
-        self._result_squared_sum = 0.0
-        # Number of times the Result object was updated
-        self.num_updates = 0
-
-        if update_type_code == Result.CHOICETYPE:
-            if not isinstance(choice_num, int):
-                raise RuntimeError(
-                    "'choice_num' argument for the Result object must be "
-                    "an integer for the CHOICETYPE type.")
-            else:
-                self._value = np.zeros(choice_num, dtype=float)
-
-        # Accumulation of values: This is useful for debugging/testing
-        self._accumulate_values_bool = accumulate_values
-        self._value_list = []
-        self._total_list = []
-
-    def __eq__(self, other):
-        """
-        Compare two Result objects.
-
-        Two Result objects are considered equal if all attributes in both
-        of them are equal, with the exception of the 'num_updates' member
-        variable which is ignored in the comparison.
-
-        Parameters
-        ----------
-        other : Result object
-            The other Result object.
-        """
-        # All class attributes with the exception of 'num_updates' and
-        # '_value'. The value of 'num_updates' is not important for
-        # equality comparison. The value of '_value' is important, but it
-        # is not included in 'attributes' because it will be explicitly
-        # tested later
-        attributes = ['name', '_update_type_code', '_total',
-                      '_accumulate_values_bool', '_value_list',
-                      '_total_list', '_result_squared_sum', '_result_sum']
-        if self is other:  # pragma: no cover
-            return True
-
-        if not isinstance(other, self.__class__):
-            return False
-
-        result = True
-        for att in attributes:
-            if getattr(self, att) != getattr(other, att):
-                result = False
-
-        # Test if the '_value' fields are equal in both objects
-        if self._update_type_code == Result.CHOICETYPE:
-            # For the CHOICETYPE _value is a numpy array and thus we need
-            # to use 'all_true'
-            if np.array_equal(self._value, other._value) is False:
-                result = False
-        else:
-            if self._value != other._value:
-                result = False
-
-        return result
-
-    def __ne__(self, other):
-        """
-        Compare two Result objects.
-
-        Two Result objects are considered equal if all attributes in both
-        of them are equal, with the exception of the 'num_updates' member
-        variable which is ignored in the comparison.
-
-        Parameters
-        ----------
-        other : Result object
-            The other Result object.
-        """
-        return not self.__eq__(other)
-
-    @property
-    def accumulate_values_bool(self):
-        """
-        Property to see if values are accumulated of not during a call to the
-        `update` method.
-        """
-        return self._accumulate_values_bool
-
-    @staticmethod
-    def create(name, update_type, value, total=0, accumulate_values=False):
-        """
-        Create a Result object and update it with `value` and `total` at
-        the same time.
-
-        Equivalent to creating the object and then calling its
-        :meth:`update` method.
-
-        Parameters
-        ----------
-        name : str
-            Name of the Result.
-        update_type : {SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE}
-            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
-        value : anything, but usually a number
-            Value of the result.
-        total : same type as `value`
-            Total value of the result (used only for the RATIOTYPE and
-            CHOICETYPE). For the CHOICETYPE it is interpreted as the number
-            of different choices.
-        accumulate_values : bool
-            If True, then the values `value` and `total` will be
-            accumulated in the `update` (and merge) method(s). This means
-            that the Result object will use more memory as more and more
-            values are accumulated, but having all values sometimes is
-            useful to perform statistical calculations. This is useful for
-            debugging/testing.
-
-        Returns
-        -------
-        result : A Result object.
-            The new Result object.
-
-        Notes
-        -----
-        Even if accumulate_values is True the values will not be
-        accumulated for the MISCTYPE.
-
-        See also
-        --------
-        update
-        """
-        if update_type == Result.CHOICETYPE:
-            result = Result(name, update_type, accumulate_values,
-                            choice_num=total)
-            result.update(value)
-        else:
-            result = Result(name, update_type, accumulate_values)
-            result.update(value, total)
-        return result
-
-    @property
-    def type_name(self):
-        """Get the Result type name.
-
-        Returns
-        -------
-        type_name : str
-            The result type string (SUMTYPE, RATIOTYPE or MISCTYPE).
-        """
-        return Result._all_types[self._update_type_code]
-
-    @property
-    def type_code(self):
-        """Get the Result type.
-
-        Returns
-        -------
-        type_code : int
-            The returned value is a number corresponding to one of the
-            types SUMTYPE, RATIOTYPE or MISCTYPE.
-
-        """
-        return self._update_type_code
-
-    def __repr__(self):
-        if self._update_type_code == Result.RATIOTYPE:
-            v = self._value
-            t = self._total
-            if t != 0:
-                return "Result -> {0}: {1}/{2} -> {3}".format(
-                    self.name, v, t, v / t)
-            else:
-                return "Result -> {0}: {1}/{2} -> NaN".format(
-                    self.name, v, t)
-        else:
-            return "Result -> {0}: {1}".format(self.name, self.get_result())
-
-    def update(self, value, total=None):
-        """Update the current value.
-
-        Parameters
-        ----------
-        value : anything, but usually a number
-            Value to be added to (or replaced) the current value
-
-        total : same type as `value`
-            Value to be added to the current total (only useful for the
-            RATIOTYPE update type)
-
-        Notes
-        -----
-        The way how this update process depends on the Result type and is
-        described below
-
-        - RATIOTYPE: Add "value" to current value and "total" to current total
-        - SUMTYPE: Add "value" to current value. "total" is ignored.
-        - MISCTYPE: Replace the current value with "value".
-
-        See also
-        --------
-        create
-
-        """
-        self.num_updates += 1
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Python does not have a switch statement. We use dictionaries as
-        # the equivalent of a switch statement.
-        # First we define a function for each possibility.
-        def __default_update(*_):  # "*_" denotes the two unused args here
-            """Default update method.
-
-            This will only be called when the update type is not one of the
-            available types. Thus, an exception will be raised.
-
-            """
-            msg = "Can't update a Result object of type '{0}'"
-            raise ValueError(msg.format(self._update_type_code))
-
-        def __update_SUMTYPE_value(p_value, _):
-            """Update the Result object when its type is SUMTYPE."""
-            self._value += p_value
-            self._result_sum += p_value
-            self._result_squared_sum += p_value**2
-            if self._accumulate_values_bool is True:
-                self._value_list.append(p_value)
-
-        def __update_RATIOTYPE_value(p_value, p_total):
-            """Update the Result object when its type is RATIOTYPE.
-
-            Raises
-            ------
-            ValueError
-                If the `p_total` parameter is None (not provided).
-            """
-            if p_total is None:
-                msg = ("A 'p_value' and a 'p_total' are required when updating "
-                       "a Result object of the RATIOTYPE type.")
-                raise ValueError(msg)
-
-            self._value += p_value
-            self._total += p_total
-
-            result = p_value / p_total
-            self._result_sum += result
-            self._result_squared_sum += result**2
-
-            if self._accumulate_values_bool is True:
-                self._value_list.append(p_value)
-                self._total_list.append(p_total)
-
-        def __update_by_replacing_current_value(p_value, _):
-            """Update the Result object when its type is MISCTYPE."""
-            self._value = p_value
-            if self._accumulate_values_bool is True:
-                self._value_list.append(p_value)
-
-        def __update_CHOICETYPE_value(p_value, _):
-            """Update the Result object when its type is CHOICETYPE."""
-            # The provided 'p_value' is used as an index to increase the
-            # choice in self._value, which is stored as a numpy array.
-            assert type(p_value) == int, (
-                "Value for the CHOICETYPE must be an integer.")
-            self._value[p_value] += 1
-            self._total += 1
-            if self._accumulate_values_bool is True:
-                self._value_list.append(p_value)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # Now we fill the dictionary with the functions
-        possible_updates = {
-            Result.RATIOTYPE: __update_RATIOTYPE_value,
-            Result.MISCTYPE: __update_by_replacing_current_value,
-            Result.SUMTYPE: __update_SUMTYPE_value,
-            Result.CHOICETYPE: __update_CHOICETYPE_value}
-
-        # Call the apropriated update method. If self._update_type_code does
-        # not contain a key in the possible_updates dictionary (that is, a
-        # valid update type), then the function __default_update is called.
-        possible_updates.get(self._update_type_code,
-                             __default_update)(value, total)
-
-    def merge(self, other):
-        """Merge the result from other with self.
-
-        Parameters
-        ----------
-        other : Result object
-            Another Result object.
-        """
-        assert(isinstance(other, self.__class__))
-        # pylint: disable=W0212
-        assert self._update_type_code == other._update_type_code, (
-            "Can only merge two objects with the same name and type")
-        assert self._update_type_code != Result.MISCTYPE, (
-            "Cannot merge results of the MISCTYPE type")
-        assert self.name == other.name, (
-            "Can only merge two objects with the same name and type")
-
-        if self.accumulate_values_bool is True:
-            # The second object must also have been set to accumulate values
-            msg = ("The merged Result also must have been set to accumulate"
-                   " values.")
-            assert other.accumulate_values_bool is True, msg
-
-            self._value_list.extend(other._value_list)
-            self._total_list.extend(other._total_list)
-
-        self.num_updates += other.num_updates
-        self._value += other._value
-        self._total += other._total
-        self._result_sum += other._result_sum
-        self._result_squared_sum += other._result_squared_sum
-
-    def get_result(self):
-        """Get the result stored in the Result object.
-
-        Returns
-        -------
-        results : anything, but usually a number
-            For the RATIOTYPE type get_result will return the
-            `value/total`, while for the other types it will return
-            `value`.
-
-        """
-        if self.num_updates == 0:
-            return "Nothing yet"
-        else:
-            if self._update_type_code == Result.RATIOTYPE:
-                return self._value / self._total
-            elif self._update_type_code == Result.CHOICETYPE:
-                return self._value / self._total
-            else:
-                return self._value
-
-    def get_result_accumulated_values(self):
-        """
-        Return the accumulated values.
-
-        Note that in case the result if of type RATIOTYPE this you probably
-        want to call the get_result_accumulated_totals function to also get
-        the totals.
-        """
-        return self._value_list
-
-    def get_result_accumulated_totals(self):
-        """
-        Return the accumulated values.
-
-        Note that in case the result if of type RATIOTYPE this you probably
-        want to call the get_result_accumulated_values function to also get
-        the values.
-        """
-        return self._total_list
-
-    # # Remove this in the future
-    # def _fix_old_version(self):
-    #     """
-    #     """
-    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - START xxxxxxxxxxxxxxxxxxxx
-    #     try:
-    #         self._result_sum
-    #     except AttributeError as _:
-    #         if self.type_code == Result.RATIOTYPE:
-    #             n = np.array(self._value_list, dtype=float)
-    #             d = np.array(self._total_list, dtype=float)
-    #             r = n / d
-    #         elif self.type_code == Result.SUMTYPE:
-    #             r = np.array(self._value_list, dtype=float)
-    #         self._result_sum = np.sum(r)
-    #         self._result_squared_sum = np.sum(r**2)
-    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - END xxxxxxxxxxxxxxxxxxxxxx
-
-    def get_result_mean(self):
-        """Get the mean of all the updated results.
-        """
-        # self._fix_old_version()  # Remove this line in the future
-
-        return self._result_sum / self.num_updates
-
-    def get_result_var(self):
-        """
-        Get the variance of all updated results.
-        """
-        # self._fix_old_version()  # Remove this line in the future
-
-        return ((self._result_squared_sum / self.num_updates) -
-                (self.get_result_mean())**2)
-
-    def get_confidence_interval(self, P=95):
-        """
-        Get the confidence inteval that contains the true result with a given
-        probability `P`.
-
-        Parameters
-        ----------
-        P : float
-            The desired confidence (probability in %) that true value is
-            inside the calculated interval. The possible values are
-            described in the documentaiton of the
-            `util.misc.calc_confidence_interval` function`
-
-        Returns
-        -------
-        Interval : Numpy (float) array with two elements.
-
-        See also
-        --------
-        util.misc.calc_confidence_interval
-        """
-        if self._update_type_code == Result.MISCTYPE:
-            message = ("Calling get_confidence_interval is not valid for "
-                       "the MISC update type.")
-            raise RuntimeError(message)
-
-        mean = self.get_result_mean()
-        std = np.sqrt(self.get_result_var())
-        n = self.num_updates
-        return calc_confidence_interval(mean, std, n, P)
-
-    # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
-    # # variables
-    # @staticmethod
-    # def save_to_hdf5_dataset(parent, results_list):
-    #     """
-    #     Create an HDF5 dataset in `parent` and fill it with the Result
-    #     objects
-    #     in `results_list`.
-
-    #     Parameters
-    #     ----------
-    #     parent : An HDF5 group (usually) or file.
-    #         The parent that will contain the dataset.
-    #     results_list : A python list of Result objects.
-    #         A list of Result objects. All of these objects must have the
-    #         same name and update type.
-
-    #     Notes
-    #     -----
-    #     This method is called from the save_to_hdf5_file method in the
-    #     SimulationResults class. It uses the python h5py library and
-    #     `parent` is supposed to be an HDF5 group created with that library.
-
-    #     See also
-    #     --------
-    #     load_from_hdf5_dataset
-    #     """
-    #     # When using the hdf5 format to save the Result object it is not
-    #     # possible to save the accumulated values (if there is any)
-    #     if results_list[0]._accumulate_values_bool is True:
-    #         warnings.warn(
-    #        'Cannot save the accumulated values in a Result to an hdf5 file.')
-
-    #     dtype = [('_value', float), ('_total', float), ('num_updates', int),
-    #              ('_result_sum', float), ('_result_squared_sum', float)]
-    #     name = results_list[0].name
-    #     size = len(results_list)
-    #     ds = parent.create_dataset(name, shape=(size,), dtype=dtype)
-
-    #     r = None
-    #     for i, r in enumerate(results_list):
-    #         # pylint: disable=W0212
-    #         ds[i] = (r._value, r._total, r.num_updates, r._result_sum,
-    #                  r._result_squared_sum)
-
-    #     if r is not None:
-    #         ds.attrs.create('update_type_code', data=r.type_code)
-    #     # Save the TITTLE attribute to be more consistent with what
-    #     # Pytables would do.
-    #     ds.attrs.create("TITLE", name)
-
-    # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
-    # # variables
-    # @staticmethod
-    # def save_to_pytables_table(parent, results_list):
-    #     """
-    #     Save the Result object.
-    #     """
-    #     pytables_file = parent._v_file
-    #     name = results_list[0].name
-    #     # pylint: disable= E1101
-    #     description = {
-    #         '_value': tb.FloatCol(), '_total': tb.FloatCol(),
-    #         'num_updates': tb.IntCol(), '_result_sum': tb.FloatCol(),
-    #         '_result_squared_sum': tb.FloatCol()}
-    #     table = pytables_file.createTable(parent, name, description,
-    #                                       title=name)
-    #     row = table.row
-
-    #     r = None
-    #     for r in results_list:
-    #         # pylint: disable=W0212
-    #         row['_value'] = r._value
-    #         row['_total'] = r._total
-    #         row['num_updates'] = r.num_updates
-    #         row['_result_sum'] = r._result_sum
-    #         row['_result_squared_sum'] = r._result_squared_sum
-    #         row.append()
-
-    #     pytables_file.setNodeAttr(table, 'update_type_code', r.type_code)
-    #     table.flush()
-
-    # @staticmethod
-    # def load_from_hdf5_dataset(ds):
-    #     """Load a list of Rersult objects from an HDF5 dataset.
-
-    #     This dataset was suposelly saved with the save_to_hdf5_dataset
-    #     function.
-
-    #     Parameters
-    #     ----------
-    #     ds : An HDF5 Dataset
-    #         The dataset to be loaded.
-
-    #     Returns
-    #     -------
-    #     results_list : A list of Result objects.
-    #         The list of Result objects loaded from the dataset.
-
-    #     Notes
-    #     -----
-    #     This method is called from the load_from_hdf5_file method in the
-    #     SimulationResults class. It uses the python h5py library and
-    #     `ds` is supposed to be an HDF5 dataset created with that library.
-
-    #     See also
-    #     --------
-    #     save_to_hdf5_dataset
-
-    #     """
-    #     results_list = []
-
-    #     name = ds.name.split('/')[-1]
-    #     update_type_code = ds.attrs['update_type_code']
-    #     for data in ds:
-    #         r = Result.create(name,
-    #                           update_type_code,
-    #                           data['_value'],
-    #                           data['_total'])
-    #         r.num_updates = data['num_updates']
-    #         r._result_sum = data['_result_sum']
-    #         r._result_squared_sum = data['_result_squared_sum']
-    #         results_list.append(r)
-    #     return results_list
-
-# xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
