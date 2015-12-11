@@ -23,19 +23,21 @@ def single_matrix_to_matrix_of_matrices(
 
     Parameters
     ----------
-    single_matrix : 1D numpy array or 2D numpy array
-        The single numpy array.
-    nrows : 1D numpy array of ints
+    single_matrix : np.ndarray
+        The single numpy array. This should be a 1D numpy array or a 2D
+        numpy array.
+    nrows : np.ndarray
         The number of rows of each submatrix (if single_matrix is 2D), or
         the number of elements in each subarray (if single_matrix is 1D).
-    ncols : 1D numpy array of ints, optional
+    ncols : np.ndarray, optional
         The number of rows of each submatrix. If `single_matrix` is a 1D
-        array then ncols should be None (default)
+        array then `ncols` should be None (default)
 
     Returns
     -------
-    array_of_arrays : 1D or 2D numpy array
-        The converted array (1D or 2D) of arrays (1D or 2D).
+    np.ndarray
+        The converted array (1D or 2D) of arrays (1D or 2D) as a 1D or 2D
+        numpy array of arrays.
 
     Notes
     -----
@@ -131,12 +133,12 @@ def dB2Linear(valueIndB):
 
     Parameters
     ----------
-    valueIndB : float or numpy array
+    valueIndB : float | np.ndarray
         Value in dB
 
     Returns
     -------
-    valueInLinear : float or numpy array
+    valueInLinear : float | np.ndarray
         Value in Linear scale.
 
     Examples
@@ -148,16 +150,17 @@ def dB2Linear(valueIndB):
 
 
 def linear2dB(valueInLinear):
-    """Convert input from linear to dB scale.
+    """
+    Convert input from linear to dB scale.
 
     Parameters
     ----------
-    valueInLinear : floar
+    valueInLinear : float | np.ndarray
         Value in Linear scale.
 
     Returns
     -------
-    valueIndB : float
+    valueIndB : float | np.ndarray
         Value in dB scale.
 
     Examples
@@ -169,16 +172,17 @@ def linear2dB(valueInLinear):
 
 
 def dBm2Linear(valueIndBm):
-    """Convert input from dBm to linear scale.
+    """
+    Convert input from dBm to linear scale.
 
     Parameters
     ----------
-    valueIndBm : float
+    valueIndBm : float | np.ndarray
         Value in dBm.
 
     Returns
     -------
-    valueInLinear : float
+    valueInLinear : float | np.ndarray
         Value in linear scale.
 
     Examples
@@ -190,16 +194,17 @@ def dBm2Linear(valueIndBm):
 
 
 def linear2dBm(valueInLinear):
-    """Convert input from linear to dBm scale.
+    """
+    Convert input from linear to dBm scale.
 
     Parameters
     ----------
-    valueInLinear : float
+    valueInLinear : float | np.ndarray
         Value in Linear scale
 
     Returns
     -------
-    valueIndBm : float
+    valueIndBm : float | np.ndarray
         Value in dBm.
 
     Examples
@@ -213,7 +218,8 @@ def linear2dBm(valueInLinear):
 # Code from wikipedia
 # http://en.wikipedia.org/wiki/Gray_code#Constructing_an_n-bit_Gray_code
 def binary2gray(num):
-    """Convert a number (in decimal format) to the corresponding Gray code
+    """
+    Convert a number (in decimal format) to the corresponding Gray code
     (still in decimal format).
 
     Parameters
@@ -265,18 +271,20 @@ def gray2binary(num):
 
 
 def SNR_dB_to_EbN0_dB(SNR, bits_per_symb):
-    """Convert an SNR value (in dB) to the equivalent Eb/N0 value (also in dB).
+    """
+    Convert an SNR value (in dB) to the equivalent Eb/N0 value (also in
+    dB).
 
     Parameters
     ----------
-    SNR : float
+    SNR : float | np.ndarray
         SNR value (in dB)
     bits_per_symb : int
         Number of bits in a symbol.
 
     Returns
     -------
-    EbN0 : float
+    EbN0 : float | np.ndarray
         Eb/N0 value (in dB)
 
     """
@@ -293,14 +301,14 @@ def EbN0_dB_to_SNR_dB(EbN0, bits_per_symb):
 
     Parameters
     ----------
-    EbN0 : float
+    EbN0 : float | np.ndarray
         Eb/N0 value (in dB)
     bits_per_symb : int
         Number of bits in a symbol.
 
     Returns
     -------
-    SNR : float
+    SNR : float | np.ndarray
         SNR value (in dB)
 
     """

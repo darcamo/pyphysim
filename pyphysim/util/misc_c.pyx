@@ -2,24 +2,26 @@
 # -*- coding: utf-8 -*-
 
 cimport numpy as np
+import numpy as np
 
-"""This module reimplements functions in the util.misc module, but using
-Cython for speeding up calculations."""
+"""This module re-implements functions in the util.misc module,
+but using Cython for speeding up calculations. """
 
 # Because we are using cdef, this function won't be available in python
 cdef int _count_bits_single_element(int n):
-    """Count the number of bits that are set in an interger number.
+    """
+    Count the number of bits that are set in an integer number.
 
     Parameters
     ----------
     n : int
-        The interger number.
+        The integer number.
 
     Returns
     -------
-    Number of bits that are equal to 1 in the bit representation of the
-    number `n`.
-
+    int
+        Number of bits that are equal to 1 in the bit representation of
+        the number `n`.
     """
     cdef int count = 0
     while n > 0:
@@ -30,16 +32,17 @@ cdef int _count_bits_single_element(int n):
 
 
 def count_bits_1D_array(np.ndarray[np.int_t, ndim=1] n):
-    """Count the number of bits that are set.
+    """
+    Count the number of bits that are set.
 
     Parameters
     ----------
-    n : 1D numpy array of ints
+    n : np.ndarray
         An integer number or a numpy array of integer numbers.
 
     Returns
     -------
-    num_bits : 1D numpy array of ints
+    num_bits : np.ndarray
         1D numpy array with the number of bits that are set for each
         element in `n`
 
@@ -58,16 +61,17 @@ def count_bits_1D_array(np.ndarray[np.int_t, ndim=1] n):
 
 
 def count_bits(n):
-    """Count the number of bits that are set in `n`.
+    """
+    Count the number of bits that are set in `n`.
 
     Parameters
     ----------
-    n : int or numpy array of ints
+    n : int | np.ndarray
         An integer number or a numpy array of integer numbers.
 
     Returns
     -------
-    num_bits : int or numpy array of ints
+    num_bits : int | np.ndarray
         Number of bits that are set in `n`. If `n` is a numpy array then
         `num_bits` will also be a numpy array with the number of bits that
         are set for each element in `n`

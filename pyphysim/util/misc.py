@@ -28,15 +28,21 @@ def gmd(U, S, V_H, tol=0.0):
 
     Parameters
     ----------
-    U, S, V_H : np.ndarray
-       The three matrices obtained from the SVD of the original matrix you
-       want to decompose.
+    U : np.ndarray
+        First matrix obtained from the SVD decomposition of the original
+        matrix you want to decompose.
+    S : np.ndarray
+        Second matrix obtained from the SVD decomposition of the original
+        matrix you want to decompose.
+    V_H : np.ndarray
+       Third matrix obtained from the SVD decomposition of the original
+       matrix you want to decompose.
     tol : float
         The tolerance.
 
     Returns
     -------
-    Q, R, P : (np.ndarray,np.ndarray,np.ndarray)
+    (np.ndarray,np.ndarray,np.ndarray)
         The three matrices `Q`, `R` and `P` such that `A = QRP^H`, `R` is
         an upper triangular matrix and `Q` and `P` are unitary matrices.
     """
@@ -152,20 +158,20 @@ def gmd(U, S, V_H, tol=0.0):
 
 
 def peig(A, n):
-    """Returns a matrix whose columns are the `n` dominant eigenvectors
-    of `A` (eigenvectors corresponding to the `n` dominant
-    eigenvalues).
+    """
+    Returns a matrix whose columns are the `n` dominant eigenvectors of
+    `A` (eigenvectors corresponding to the `n` dominant eigenvalues).
 
     Parameters
     ----------
-    A : 2D numpy array
+    A : np.ndarray
         A symmetric matrix (bi-dimensional numpy array).
     n : int
         Number of desired dominant eigenvectors.
 
     Returns
     -------
-    [V, D] : list
+    [np.ndarray, np.ndarray]
         A list with two elements where the first element is a 2D numpy
         array with the desired eigenvectors, while the second element is a
         1D numpy array with the corresponding eigenvalues.
@@ -187,8 +193,9 @@ def peig(A, n):
 
     """
     (_, ncols) = A.shape
-    if n > ncols:  # Since A is symmetric we could get either nrows or ncols
-        raise ValueError("`n` must be lower then the number of columns in `A`")
+    if n > ncols:  # A is symmetric -> we could get either nrows or ncols
+        raise ValueError(
+                "`n` must be lower then the number of columns in `A`")
 
     [D, V] = np.linalg.eig(A)
     indexes = np.argsort(D.real)
@@ -199,20 +206,21 @@ def peig(A, n):
 
 
 def leig(A, n):
-    """Returns a matrix whose columns are the `n` least significant
+    """
+    Returns a matrix whose columns are the `n` least significant
     eigenvectors of `A` (eigenvectors corresponding to the `n` dominant
     eigenvalues).
 
     Parameters
     ----------
-    A : 2D numpy array
+    A : np.ndarray
         A symmetric matrix (bi-dimensional numpy array)
     n : int
         Number of desired least significant eigenvectors.
 
     Returns
     -------
-    [V, D] : list
+    [np.ndarray,np.ndarray]
         A list with two elements where the first element is a 2D numpy
         array with the desired eigenvectors, while the second element is a
         1D numpy array with the corresponding eigenvalues.
@@ -234,8 +242,9 @@ def leig(A, n):
 
     """
     (_, ncols) = A.shape
-    if n > ncols:  # Since A is symmetric we could get either nrows or ncols
-        raise ValueError("`n` must be lower then the number of columns in `A`")
+    if n > ncols:  # A is symmetric -> we could get either nrows or ncols
+        raise ValueError(
+                "`n` must be lower then the number of columns in `A`")
 
     [D, V] = np.linalg.eig(A)
     indexes = np.argsort(D.real)
@@ -245,7 +254,8 @@ def leig(A, n):
 
 
 def pretty_time(time_in_seconds):
-    """Return the time in a more friendly way.
+    """
+    Return the time in a more friendly way.
 
     Parameters
     ----------
@@ -282,7 +292,8 @@ def pretty_time(time_in_seconds):
 
 
 def xor(a, b):
-    """Calculates the xor operation between a and b.
+    """
+    Calculates the xor operation between a and b.
 
     In python this is performed with a^b. However, sage changed the "^"
     operator. This xor function was created so that it can be used in
@@ -341,7 +352,8 @@ def randn_c(*args):
 
 
 def randn_c_RS(RS, *args):  # pragma: no cover
-    """Generates a random circularly complex gaussian matrix.
+    """
+    Generates a random circularly complex gaussian matrix.
 
     This is essentially the same as the the randn_c function. The only
     difference is that the randn_c function uses the global RandomState
@@ -350,16 +362,16 @@ def randn_c_RS(RS, *args):  # pragma: no cover
 
     Parameters
     ----------
-    RS : A numpy.random.RandomState object.
+    RS : np.random.RandomState
         The RandomState object used to generate the random values.
-    *args : variable number of ints
+    *args : any
         Variable number of arguments specifying the dimensions of the
         returned array. This is directly passed to the
         numpy.random.randn function.
 
     Returns
     -------
-    result : N-dimensional numpy array
+    result : np.ndarray
         A random N-dimensional numpy array (complex dtype) where the
         `N` is equal to the number of parameters passed to `randn_c`.
 
@@ -372,7 +384,8 @@ def randn_c_RS(RS, *args):  # pragma: no cover
 
 
 def level2bits(n):
-    """Calculates the number of bits needed to represent n different
+    """
+    Calculates the number of bits needed to represent n different
     values.
 
     Parameters
@@ -396,12 +409,13 @@ def level2bits(n):
 
 
 def int2bits(n):
-    """Calculates the number of bits needed to represent an interger n.
+    """
+    Calculates the number of bits needed to represent an interger n.
 
     Parameters
     ----------
     n : int
-        The ingerger number.
+        The integer number.
 
     Returns
     -------
@@ -431,11 +445,12 @@ def int2bits(n):
 # ufunc because we will create the count_bits ufunc with it using
 # numpy.vectorize and count_bits will inherit the documentation.
 def _count_bits_single_element(n):  # pragma: no cover
-    """Count the number of bits that are set in `n`.
+    """
+    Count the number of bits that are set in `n`.
 
     Parameters
     ----------
-    n : int or numpy array of ints
+    n : int | np.ndarray
         An integer number or a numpy array of integer numbers.
 
     Returns
@@ -443,8 +458,8 @@ def _count_bits_single_element(n):  # pragma: no cover
     Number of bits that are equal to 1 in the bit representation of the
     number `n`.
 
-    Exaples
-    -------
+    Examples
+    --------
     >>> a = np.array([3, 0, 2])
     >>> print(count_bits(a))
     [2 0 1]
@@ -467,7 +482,8 @@ count_bits = np.vectorize(_count_bits_single_element)
 
 
 def count_bit_errors(first, second, axis=None):
-    """Compare `first` and `second` and count the number of equivalent bit
+    """
+    Compare `first` and `second` and count the number of equivalent bit
     errors.
 
     The two arguments are assumed to have the index of transmitted and
@@ -480,11 +496,11 @@ def count_bit_errors(first, second, axis=None):
 
     Parameters
     ----------
-    first : int or numpy array of ints
+    first : int | np.ndarray
         The decoded symbols.
-    second : int or numpy array of ints
-        The transmited symbols.
-    axis : int or None (default is None)
+    second : int | np.ndarray
+        The transmitted symbols.
+    axis : int, optional
         Since first and second can be numpy arrays, when axis is not
         provided (that is, it is None) then the total number of bit errors
         of all the elements of the 'difference array' is returned. If axis
@@ -514,7 +530,8 @@ def count_bit_errors(first, second, axis=None):
 
 
 def qfunc(x):
-    """Calculates the qfunction of x.
+    """
+    Calculates the qfunction of x.
 
     Parameters
     ----------
@@ -539,29 +556,32 @@ def qfunc(x):
 
 
 def least_right_singular_vectors(A, n):
-    """Return the three matrices. The first one is formed by the `n` least
-    significative right singular vectors of `A`, the second one is formed
-    by the remaining right singular vectors of `A` and the third one has
-    the singular values of the singular vectors of the second matrix (the
-    most significative ones).
+    """
+    Return the three matrices. The first one is formed by the `n` least
+    significative right singular vectors of `A`, the second one is
+    formed by the remaining right singular vectors of `A` and the third
+    one has the singular values of the singular vectors of the second
+    matrix (the most significative ones).
 
     Parameters
     ----------
-    A : 2D numpy array
+    A : np.ndarray
         A 2D numpy array.
     n : int
-        An interger between 0 and the number of columns of `A`.
+        An integer between 0 and the number of columns of `A`.
 
     Returns
     -------
-    V0 : 2D numpy array
-        The right singular vectors corresponding to the `n` least
-        significant singular values.
-    V1 : 2D numpy array
-        The remaining right singular vectors.
-    S : 1D numpy array
-        The singular values corresponding to the remaining singular vectors
-        `V1`.
+    (np.ndarray, np.ndarray, np.ndarray)
+        The tree matrices V0, V1 and S.
+
+        The matrix V0 has the right singular vectors corresponding to
+        the `n` least significant singular values.
+
+        The matrix V1 has the remaining right singular vectors.
+
+        The matrix S has the singular values corresponding to the
+        remaining singular vectors `V1`.
 
     Notes
     -----
@@ -639,18 +659,19 @@ def least_right_singular_vectors(A, n):
 
 
 def calc_unorm_autocorr(x):
-    """Calculates the unormalized autocorrelation of an array x starting from
-    lag 0.
+    """
+    Calculates the unormalized auto-correlation of an array x starting
+    from lag 0.
 
     Parameters
     ----------
-    x : 1D numpy array
+    x : np.ndarray
         A 1D numpy array.
 
     Returns
     -------
-    result : 1D numpy array
-        The unormalized autocorrelation of `x`.
+    result : np.ndarray
+        The unormalized auto-correlation of `x`.
 
     Examples
     --------
@@ -662,23 +683,24 @@ def calc_unorm_autocorr(x):
     # R = np.convolve(x, x[::-1], 'full')
     R = np.correlate(x, x, 'full')
 
-    # Return the autocorrelation for indexes greater then or equal to 0
+    # Return the auto-correlation for indexes greater then or equal to 0
     return R[R.size // 2:]
 
 
 def calc_autocorr(x):
-    """Calculates the (normalized) autocorrelation of an array x starting
+    """
+    Calculates the (normalized) auto-correlation of an array x starting
     from lag 0.
 
     Parameters
     ----------
-    x : 1D numpy array
+    x : np.ndarray
         A 1D numpy array.
 
     Returns
     -------
-    result : 1D numpy array
-        The ormalized autocorrelation of `x`.
+    result : np.ndarray
+        The normalized auto-correlation of `x`.
 
     Examples
     --------
@@ -708,18 +730,18 @@ def update_inv_sum_diag(invA, diagonal):
 
     Parameters
     ----------
-    invA : numpy array
+    invA : np.ndarray
         A 2D numpy array.
-    diagonal : numpy array
-        A 1D numpy arrray with the elements in the diagonal of `D`.
+    diagonal : np.ndarray
+        A 1D numpy array with the elements in the diagonal of `D`.
 
     Returns
     -------
-    new_inv : numpy array
+    new_inv : np.ndarray
         The inverse of A+D.
 
     """
-    # $$(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u}$$
+    #$$(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u}$$
 
     # This function updates the inverse as the equation above when the
     # vectors "u" and "v" are equal and correspond to a column of the
@@ -765,7 +787,9 @@ def calc_confidence_interval(mean, std, n, P=95):
 
     Returns
     -------
-    Interval : Numpy (float) array with two elements.
+    Interval : [float,float]
+        A list with two float elements, the interval minimum and maximum
+        values.
 
     Notes
     -----
@@ -794,7 +818,7 @@ def calc_confidence_interval(mean, std, n, P=95):
     min_value = mean - (C * norm_std)
     max_value = mean + (C * norm_std)
 
-    return np.array([min_value, max_value])
+    return [min_value, max_value]
 
 
 def get_principal_component_matrix(A, num_components):
@@ -806,14 +830,14 @@ def get_principal_component_matrix(A, num_components):
 
     Parameters
     ----------
-    A : A 2D numpy matrix.
-        The original matrix.
+    A : np.ndarray
+        The original matrix, which is a 2D numpy matrix.
     num_components : int
         Number of components to be kept.
 
     Returns
     -------
-    out : 2D numpy array
+    out : np.ndarray
         The new matrix with the dead dimensions removed.
 
     Notes
@@ -851,9 +875,9 @@ def get_range_representation(array, filename_mode=False):
 
     Parameters
     ----------
-    array : 1D numpy array
+    array : np.ndarray
         The array to be represented as a range expression.
-    filename_mode : bool (default is False)
+    filename_mode : bool, optional
         If True, the returned representation will be more suitable to be
         used as part of a file-name. That is instead of "5:5:40" the string
         "5_(5)_40" would be returned.
@@ -905,9 +929,9 @@ def get_mixed_range_representation(array, filename_mode=False):
 
     Parameters
     ----------
-    array : 1D numpy array
+    array : np.ndarray
         The array to be represented as a range expression.
-    filename_mode : bool (default is False)
+    filename_mode : bool, optional
         If True, the returned representation will be more suitable to be
         used as part of a file-name. That is instead of "5:5:40" the string
         "5_(5)_40" would be returned.
@@ -989,19 +1013,19 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     with the code
     >> name.format(**dictionary)
 
-    The only diference is that some small changes are performed in the
+    The only deference is that some small changes are performed in the
     dictionary prior to this. More specifically, modifications such as
-    changind a numpy array to a more compact representation (when
+    chancing a numpy array to a more compact representation (when
     possible). This is done by converting the numpy arrays with the
     get_mixed_range_representation function.
 
     Parameters
     ----------
     name : str
-        The name fo be formated.
-    dictionary : a python dictionary
+        The name fo be formatted.
+    dictionary : dict
         The dictionary with the values to be replaced in `name`.
-    filename_mode : bool (default is False)
+    filename_mode : bool, optional
         Extra parameter passed to the get_mixed_range_representation
         function. If True, the returned representation will be more
         suitable to be used as part of a file-name. That is instead of
@@ -1015,7 +1039,9 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     Examples
     --------
     >>> name = "something {value1} - {value2} something else {value3}"
-    >>> dictionary = {'value1':'bla bla', 'value2':np.array([5, 10, 15, 20, 25, 30]), 'value3': 76}
+    >>> dictionary = {'value1':'bla bla', \
+                      'value2':np.array([5, 10, 15, 20, 25, 30]), \
+                      'value3': 76}
     >>> replace_dict_values(name, dictionary, True)
     'something bla bla - [5_(5)_30] something else 76'
     """
@@ -1040,7 +1066,7 @@ def equal_dicts(a, b, ignore_keys):
         The first dictionary
     b : dict
         The second dictionary
-    ignore_keys : list or tuple
+    ignore_keys : list | tuple
         A list or tuple with the keys to be ignored.
     """
     ka = set(a).difference(ignore_keys)
@@ -1056,23 +1082,23 @@ def calc_decorrelation_matrix(cov_matrix):
 
     Parameters
     ----------
-    cov_matrix : 2D numpy array
+    cov_matrix : np.ndarray
         The covariance matrix of the original data that will be
         decorrelated. This must be a symmetric and positive semi-definite
         matrix
 
     Returns
     -------
-    decorr_matrix : 2D numpy array
+    np.ndarray
         The decorrelation matrix :math:`\\mtW_D`. If the original data is a
         vector $\vtX$ it can be decorrelated with :math:`\\mtW_D^T \\vtX`.
 
     Notes
     -----
-    The returned `decorr_matrix` matrix will make the covariance of the
-    filtered data a diagonal matrix, but not a identity matrix. If you want
-    the covariance matrix of the filtered data to be an identity matrix
-    what you want to calculate is the "whitening matrix" and not simply a
+    The returned matrix will make the covariance of the filtered data a
+    diagonal matrix, but not a identity matrix. If you want the
+    covariance matrix of the filtered data to be an identity matrix what
+    you want to calculate is the "whitening matrix" and not simply a
     "decorrelation matrix". See the `calc_whitening_matrix` function for
     that.
 
@@ -1093,16 +1119,17 @@ def calc_whitening_matrix(cov_matrix):
 
     Parameters
     ----------
-    cov_matrix : 2D numpy array
+    cov_matrix : np.ndarray
         The covariance matrix of the original data that will be
         decorrelated. This must be a symmetric and positive semi-definite
         matrix
 
     Returns
     -------
-    whitening_matrix : 2D numpy array
-        The whitening matrix :math:`\\mtW_W`. If the original data is a vector $\vtX$
-        it can be whitened with :math:`\\mtW_W^H \\vtX`.
+    whitening_matrix : np.ndarray
+        The whitening matrix :math:`\\mtW_W`. If the original data is a
+        vector :math:`$\\vtX$` it can be whitened with
+        :math:`\\mtW_W^H \\vtX`.
 
     Notes
     -----
@@ -1125,11 +1152,12 @@ def calc_whitening_matrix(cov_matrix):
 
 
 def calc_shannon_sum_capacity(sinrs):
-    """Calculate the sum of the Shannon capacity of the values in `sinrs`
+    """
+    Calculate the sum of the Shannon capacity of the values in `sinrs`
 
     Parameters
     ----------
-    sinrs : 1D numpy array or float
+    sinrs : float | np.ndarray
         SINR values (in linear scale).
 
     Returns
@@ -1139,6 +1167,10 @@ def calc_shannon_sum_capacity(sinrs):
 
     Examples
     --------
+    >>> calc_shannon_sum_capacity(11.4)
+    3.6322682154995127
+    >>> calc_shannon_sum_capacity(20.3)
+    4.4127815253384757
     >>> sinrs_linear = np.array([11.4, 20.3])
     >>> print(calc_shannon_sum_capacity(sinrs_linear))
     8.04504974084
