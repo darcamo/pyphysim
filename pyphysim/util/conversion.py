@@ -13,8 +13,10 @@ __all__ = ['single_matrix_to_matrix_of_matrices', 'dB2Linear', 'linear2dB',
            'SNR_dB_to_EbN0_dB', 'EbN0_dB_to_SNR_dB']
 
 
-def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
-    """Converts a single numpy array to a numpy array of numpy arrays.
+def single_matrix_to_matrix_of_matrices(
+        single_matrix, nrows=None, ncols=None):
+    """
+    Converts a single numpy array to a numpy array of numpy arrays.
 
     For instance, a 6x6 numpy array may be converted to a 3x3 numpy array
     of 2x2 arrays.
@@ -66,7 +68,8 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     >>> # Case where we have a matrix to break in packs of columns
     >>> rows = None
     >>> cols = np.array([1, 2])
-    >>> multi_M=single_matrix_to_matrix_of_matrices(single_matrix, rows, cols)
+    >>> multi_M=single_matrix_to_matrix_of_matrices(single_matrix, \
+                                                    rows, cols)
     >>> print(multi_M[0])
     [[1]
      [2]
@@ -78,7 +81,8 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     >>> # Case where we break into multiple matrices
     >>> rows = np.array([2, 1])
     >>> cols = np.array([1, 2])
-    >>> multi_M=single_matrix_to_matrix_of_matrices(single_matrix, rows, cols)
+    >>> multi_M=single_matrix_to_matrix_of_matrices(single_matrix, \
+                                                    rows, cols)
     >>> print(multi_M[0, 0])
     [[1]
      [2]]
@@ -214,34 +218,35 @@ def binary2gray(num):
 
     Parameters
     ----------
-    num : int
+    num : int | np.ndarray
         The number in decimal encoding
 
     Returns
     -------
-    num_gray : int
+    num_gray : int | np.ndarray
         Corresponding gray code (in decimal format) of `num`.
 
     Examples
     --------
-    >>> binary2gray(np.arange(0,8))
+    >>> binary2gray(np.arange(0, 8))
     array([0, 1, 3, 2, 6, 7, 5, 4])
     """
     return xor((num >> 1), num)
 
 
 def gray2binary(num):
-    """Convert a number in Gray code (in decimal format) to its original
+    """
+    Convert a number in Gray code (in decimal format) to its original
     value (in decimal format).
 
     Parameters
     ----------
-    num : int
+    num : int | np.ndarray
         The number in gray coding
 
     Returns
     -------
-    num_orig : int
+    num_orig : int | np.ndarray
         The original number (in decimal format) whose Gray code
         correspondent is `num`.
 

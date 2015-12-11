@@ -39,8 +39,10 @@ class TdlChannelProfile(object):
 
     Examples
     --------
-    >>> jakes_generator = fading_generators.JakesSampleGenerator(Ts=3.25e-8)
-    >>> tdlchannel = TdlChannel(jakes_generator, channel_profile=COST259_TUx)
+    >>> jakes_generator = \
+            fading_generators.JakesSampleGenerator(Ts=3.25e-8)
+    >>> tdlchannel = TdlChannel(jakes_generator, \
+                                channel_profile=COST259_TUx)
     """
 
     def __init__(self, tap_powers_dB=None, tap_delays=None, name='custom'):

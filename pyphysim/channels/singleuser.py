@@ -16,10 +16,10 @@ class SuChannel(object):
     order to get a flat fading channel.
 
     You can create a new SuChannel object either specifying the channel
-    profile or specifying both the channel tap powers and delays. If only the
-    fading_generator is specified then a single tap with unitary power and
-    delay zero will be assumed, which corresponds to a flat fading channel
-    model.
+    profile or specifying both the channel tap powers and delays. If
+    only the fading_generator is specified then a single tap with
+    unitary power and delay zero will be assumed, which corresponds to a
+    flat fading channel model.
 
     Parameters
     ----------

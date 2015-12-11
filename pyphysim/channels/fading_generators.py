@@ -226,6 +226,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             if shape is None:
                 self._samples = randn_c()
             else:
+                # noinspection PyArgumentList
                 self._samples = randn_c(*shape)
         elif self.shape is None:
             self._samples = randn_c(num_samples)

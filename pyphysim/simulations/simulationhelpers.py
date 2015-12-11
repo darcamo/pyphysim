@@ -11,7 +11,6 @@ except ImportError:
     pass
 
 from .progressbar import ProgressbarZMQServer
-from .runner import SimulationRunner
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -7,9 +7,10 @@ import numpy as np
 
 
 class Projection(object):
-    """Class to calculate the projection, orthogonal projection and
-    reflection of a given matrix in a Subspace `S` spanned by the columns of
-    a matrix `A`.
+    """
+    Class to calculate the projection, orthogonal projection and
+    reflection of a given matrix in a Subspace `S` spanned by the
+    columns of a matrix `A`.
 
     The matrix A is provied in the constructor and after that the functions
     `project`, `oProject` and `reflect` can be called with M as an
@@ -17,7 +18,7 @@ class Projection(object):
 
     Examples
     --------
-    >>> A = np.array([[1+1j, 2-2j], [3-2j, 0], [-1-1j, 2-3j]])
+    >>> A = np.array([[1 + 1j, 2 - 2j], [3 - 2j, 0], [-1 - 1j, 2 - 3j]])
     >>> v = np.array([1, 2, 3])
     >>> P = Projection(A)
     >>> P.project(v)

@@ -4,6 +4,7 @@
 
 import numpy as np
 
+from pyphysim.reference_signals.srs import UeSequence
 from .zadoffchu import get_shifted_root_seq
 from .root_sequence import RootSequence
 
@@ -22,9 +23,9 @@ def get_dmrs_seq(root_seq, n_cs):
     root_seq : np.ndarray
         The root sequence to shift.
     n_cs : int
-        The desired cyclic shift number. This should be an integer from 0
-        to 11, where 0 will just return the base sequence, 1 gives the first
-        shift, and so on.
+        The desired cyclic shift number. This should be an integer from
+        0 to 11, where 0 will just return the base sequence, 1 gives the
+        first shift, and so on.
 
     Returns
     -------
@@ -38,7 +39,7 @@ def get_dmrs_seq(root_seq, n_cs):
     return get_shifted_root_seq(root_seq, n_cs, 12)
 
 
-class DmrsUeSequence(object):
+class DmrsUeSequence(UeSequence):
     """
     DMRS sequence of a single user.
 

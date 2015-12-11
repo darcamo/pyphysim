@@ -130,11 +130,13 @@ class OFDM(object):
 
         Examples
         --------
-        >>> ofdm_obj = OFDM(16, 4, 16)
-        >>> ofdm_obj._get_subcarrier_numbers()
-        array([ 0,  1,  2,  3,  4,  5,  6,  7, -8, -7, -6, -5, -4, -3, -2, -1])
+        >> ofdm_obj = OFDM(16, 4, 16)
+        >> ofdm_obj._get_subcarrier_numbers()
+        array([ 0,  1,  2,  3,  4,  5,  6,  7, \
+                -8, -7, -6, -5, -4, -3, -2, -1])
         """
-        indexes_regular_order = np.r_[0:self.fft_size] - self.fft_size // 2
+        indexes_regular_order = (np.arange(self.fft_size) -
+                                 self.fft_size // 2)
         return np.fft.fftshift(indexes_regular_order)
 
     def _get_used_subcarrier_numbers(self):
@@ -153,11 +155,11 @@ class OFDM(object):
 
         Examples
         --------
-        >>> ofdm_obj = OFDM(16, 4, 10)
-        >>> ofdm_obj._get_used_subcarrier_numbers()
+        >> ofdm_obj = OFDM(16, 4, 10)
+        >> ofdm_obj._get_used_subcarrier_numbers()
         array([ 1,  2,  3,  4,  5, -5, -4, -3, -2, -1])
-        >>> ofdm_obj = OFDM(16, 4, 14)
-        >>> ofdm_obj._get_used_subcarrier_numbers()
+        >> ofdm_obj = OFDM(16, 4, 14)
+        >> ofdm_obj._get_used_subcarrier_numbers()
         array([ 1,  2,  3,  4,  5,  6,  7, -7, -6, -5, -4, -3, -2, -1])
         """
         if self.num_used_subcarriers == self.fft_size:
@@ -189,11 +191,12 @@ class OFDM(object):
 
         Examples
         --------
-        Consider the example below where we have 16 subcarriers and only 10
-        subcarriers are used. The lower and higher subcarrier as well as the
-        DC subcarrier will not be used. The index of the used subcarriers
-        should go then from 11 to 15 (5 subcarriers), skip subcarrier 0,
-        and then go from 1 to 5 (the other 5 subcarriers).
+        Consider the example below where we have 16 subcarriers and only
+        10 subcarriers are used. The lower and higher subcarrier as well
+        as the DC subcarrier will not be used. The index of the used
+        subcarriers should go then from 11 to 15 (5 subcarriers),
+        skip subcarrier 0, and then go from 1 to 5 (the other 5
+        subcarriers).
 
         >>> ofdm_obj = OFDM(16, 4, 10)
         >>> ofdm_obj.get_used_subcarrier_indexes()
@@ -256,11 +259,12 @@ class OFDM(object):
             [input_signal, np.zeros(
                 self.num_used_subcarriers * num_ofdm_symbols - num_symbs)])
 
-        # Change the shape of the imput data. Each row will be modulated as
+        # Change the shape of the input data. Each row will be modulated as
         # one OFDM symbol.
         input_signal.shape = (num_ofdm_symbols, self.num_used_subcarriers)
 
-        input_ifft = np.zeros([num_ofdm_symbols, self.fft_size], dtype=complex)
+        input_ifft = np.zeros([num_ofdm_symbols, self.fft_size],
+                              dtype=complex)
         input_ifft[:, self.get_used_subcarrier_indexes()] \
             = input_signal[:, :]
 
@@ -346,16 +350,18 @@ class OFDM(object):
         suitable to be passed to the FFT function.
 
         """
-        num_ofdm_symbols = received_data.size // (self.fft_size + self.cp_size)
-        received_data.shape = (num_ofdm_symbols, self.fft_size + self.cp_size)
+        num_ofdm_symbols = (received_data.size //
+                            (self.fft_size + self.cp_size))
+        received_data.shape = (num_ofdm_symbols,
+                               self.fft_size + self.cp_size)
         received_data_no_CP = received_data[:, self.cp_size:]
 
         return received_data_no_CP
 
     def _calculate_power_scale(self):
         """
-        Calculate the power scale that needs to be applied in the modulator and
-        removed in the demodulate methods.
+        Calculate the power scale that needs to be applied in the
+        modulator and removed in the demodulate methods.
 
         The power is applied in the modulator method so that the total
         power of the OFDM samples is similar to the total power of the
@@ -404,10 +410,11 @@ class OFDM(object):
         input_ifft = self._prepare_input_signal(input_signal)
 
         # Now we calculate the ifft for the second axis. That is equivalent
-        # to calculate the ifft separatelly for each row in the input_ifft
+        # to calculate the ifft separately for each row in the input_ifft
         # variable.
         output_ifft = (math.sqrt(self._calculate_power_scale()) *
                        np.fft.ifft(input_ifft, self.fft_size, 1))
+        assert isinstance(output_ifft, np.ndarray)
 
         # Add the Cyclic prefix
         modulated_ofdm = self._add_CP(output_ifft)
@@ -416,10 +423,11 @@ class OFDM(object):
         return modulated_ofdm.flatten()
 
     def demodulate(self, received_signal):
-        """Perform the OFDM demodulation of the received_signal.
+        """
+        Perform the OFDM demodulation of the received_signal.
 
-        .. TODO:: Write here about the zeropadding (which is not removed) as
-           well as CP removal.
+        .. TODO:: Write here about the zero-padding (which is not
+           removed) as well as CP removal.
 
         Parameters
         ----------
@@ -441,10 +449,11 @@ class OFDM(object):
         # - Call The FFT
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now we calculate the FFT for the second axis. That is equivalent
-        # to calculate the fft separatelly for each row in the
+        # to calculate the fft separately for each row in the
         # received_signal variable.
         output_fft = (np.fft.fft(received_signal_no_CP, self.fft_size, 1) /
                       math.sqrt(self._calculate_power_scale()))
+        assert isinstance(output_fft, np.ndarray)
 
         # - Call the `_prepare_decoded_signal` method to get the data only
         # from the useful subcarriers
@@ -470,8 +479,8 @@ class OfdmOneTapEqualizer(object):
 
     def _equalize_data(self, data_reshaped, mean_freq_response):
         """
-        Perform the one-tap equalization and return `data` after the channel
-        compensation.
+        Perform the one-tap equalization and return `data` after the
+        channel compensation.
 
         Parameters
         ----------
@@ -479,27 +488,30 @@ class OfdmOneTapEqualizer(object):
             The data to be equalized. If must be a 2D numpy array, where
             different rows correspond to different OFDM symbols and the
             different columns correspond to the USED
-            subcarriers. Dimension: `num OFDM symbols x num Used subcarriers`
+            subcarriers.
+            Dimension: `num OFDM symbols x num Used subcarriers`
         mean_freq_response : np.ndarray
-            The frequence response for each OFDM symbol.
+            The frequency response for each OFDM symbol.
             Dimension: `num OFDM symbols x FFT size`
 
         Returns
         -------
         np.ndarray
-            The received `data` after the one-tap equalizatiob to compensate
-            the channel effect.
+            The received `data` after the one-tap equalization to
+            compensate the channel effect.
             Dimension: `num OFDM symbols x num Used subcarriers`
         """
-        equalized_ofdm_demodulated_data = data_reshaped / mean_freq_response[
-            :, self._ofdm_obj.get_used_subcarrier_indexes()]
+        used_subcarriers_idx = self._ofdm_obj.get_used_subcarrier_indexes()
+
+        equalized_ofdm_demodulated_data = \
+            data_reshaped / mean_freq_response[:, used_subcarriers_idx]
 
         return equalized_ofdm_demodulated_data
 
     def equalize_data(self, data, impulse_response):
         """
-        Perform the one-tap equalization and return `data` after the channel
-        compensation.
+        Perform the one-tap equalization and return `data` after the
+        channel compensation.
 
         Parameters
         ----------
@@ -511,8 +523,8 @@ class OfdmOneTapEqualizer(object):
         Returns
         -------
         np.ndarray
-            The received `data` after the one-tap equalizatiob to compensate
-            the channel effect.
+            The received `data` after the one-tap equalization to
+            compensate the channel effect.
         """
         fft_size = self._ofdm_obj.fft_size
         num_used_subcarriers = self._ofdm_obj.num_used_subcarriers

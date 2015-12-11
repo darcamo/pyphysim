@@ -7,7 +7,8 @@
 Implement classes to represent the progress of a task.
 
 Use the ProgressbarText class for tasks that do not use multiprocessing,
-and the ProgressbarMultiProcessServer class for tasks using multiprocessing.
+and the ProgressbarMultiProcessServer class for tasks using
+multiprocessing.
 
 Basically, the task code must call the "progress" function to update the
 progress bar and pass a number equivalent to the increment in the progress

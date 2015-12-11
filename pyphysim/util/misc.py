@@ -28,7 +28,7 @@ def gmd(U, S, V_H, tol=0.0):
 
     Parameters
     ----------
-    U, S, V_H : 2D numpy arrays
+    U, S, V_H : np.ndarray
        The three matrices obtained from the SVD of the original matrix you
        want to decompose.
     tol : float
@@ -36,7 +36,7 @@ def gmd(U, S, V_H, tol=0.0):
 
     Returns
     -------
-    Q, R, P : 2D numpy array
+    Q, R, P : (np.ndarray,np.ndarray,np.ndarray)
         The three matrices `Q`, `R` and `P` such that `A = QRP^H`, `R` is
         an upper triangular matrix and `Q` and `P` are unitary matrices.
     """
@@ -316,10 +316,10 @@ def randn_c(*args):
 
     Parameters
     ----------
-    *args : variable number of ints
-        Variable number of arguments specifying the dimensions of the
-        returned array. This is directly passed to the numpy.random.randn
-        function.
+    *args : any
+        Variable number of arguments (int values) specifying the
+        dimensions of the returned array. This is directly passed to the
+        numpy.random.randn function.
 
     Returns
     -------

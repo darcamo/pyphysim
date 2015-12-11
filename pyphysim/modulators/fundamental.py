@@ -8,10 +8,9 @@
 """
 Module with class for some fundamental modulators, such as PSK and M-QAM.
 
-All fundamental modulators inherit from the `Modulator` class and should call
-the self.setConstellation method in their __init__ method, as well as
-implement the calcTheoreticalSER and calcTheoreticalBER methods.
-"""
+All fundamental modulators inherit from the `Modulator` class and should
+call the self.setConstellation method in their __init__ method, as well
+as implement the calcTheoreticalSER and calcTheoreticalBER methods. """
 
 try:
     # noinspection PyUnresolvedReferences
@@ -45,7 +44,7 @@ class Modulator(object):
     Examples
     --------
     >>> np.set_printoptions(linewidth=70)
-    >>> constellation = np.array([1+1j, -1+1j, -1-1j, 1-1j])
+    >>> constellation = np.array([1 + 1j, - 1 + 1j, - 1 - 1j, 1 - 1j])
     >>> m=Modulator()
     >>> m.setConstellation(constellation)
     >>> m.symbols
@@ -60,8 +59,9 @@ class Modulator(object):
     array([ 1.+1.j,  1.+1.j,  1.-1.j,  1.-1.j, -1.+1.j,  1.-1.j,  1.-1.j,
             1.-1.j, -1.-1.j, -1.-1.j])
 
-    >>> m.demodulate(np.array([ 1.+1.j, 1.+1.j, 1.-1.j, 1.-1.j, -1.+1.j, \
-                                1.-1.j, 1.-1.j, 1.-1.j, -1.-1.j, -1.-1.j]))
+    >>> m.demodulate(np.array([ 1. + 1.j, 1. + 1.j, 1. - 1.j, 1. - 1.j, \
+                                - 1. + 1.j, 1. - 1.j, 1. - 1.j, 1. - 1.j, \
+                                - 1. - 1.j, - 1. - 1.j]))
     array([0, 0, 3, 3, 1, 3, 3, 3, 2, 2])
     """
 
@@ -188,9 +188,9 @@ class Modulator(object):
         Raises
         ------
         ValueError
-            If inputData has any invalid value such as values greater than
-            self._M - 1. Note that inputData should not have negative values
-            but no check is done for this.
+            If inputData has any invalid value such as values greater
+            than self._M - 1. Note that inputData should not have
+            negative values but no check is done for this.
         """
         try:
             return self.symbols[inputData]
@@ -219,21 +219,20 @@ class Modulator(object):
         # return getClosestSymbol(receivedData).astype(int)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # ### Second Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # ### Second Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # # This versions is a little faster then the first version
         # shape = receivedData.shape
         # num_symbols = receivedData.size
         # output = np.empty(num_symbols, dtype=int)
         # reshaped_received_data = receivedData.flatten()
 
-        # # import pudb
-        # # pudb.set_trace()
         # for ii in xrange(num_symbols):
         #     output[ii] = np.abs(
-        #                  self.symbols - reshaped_received_data[ii]).argmin()
+        #                  self.symbols
+        #                  - reshaped_received_data[ii]).argmin()
         # output.shape = shape
         # return output
-        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Third Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # This version uses more memory because of the numpy broadcasting,
@@ -242,7 +241,8 @@ class Modulator(object):
         reshaped_received_data = receivedData.flatten()
 
         constellation = np.reshape(self.symbols, [self.symbols.size, 1])
-        output = np.abs(constellation - reshaped_received_data).argmin(axis=0)
+        output = np.abs(constellation -
+                        reshaped_received_data).argmin(axis=0)
         output.shape = shape
 
         return output
@@ -449,8 +449,10 @@ class PSK(Modulator):
             A phase offset (in radians) to be applied to the PSK
             constellation.
         """
-        self.setConstellation(self._createConstellation(self._M, phaseOffset))
+        self.setConstellation(
+                self._createConstellation(self._M, phaseOffset))
 
+    # noinspection PyPep8
     def calcTheoreticalSER(self, SNR):
         """Calculates the theoretical (approximation for high M and high
         SNR) symbol error rate for the M-PSK scheme.
@@ -556,8 +558,8 @@ class BPSK(Modulator):
 
     def calcTheoreticalSER(self, SNR):
         """
-        Calculates the theoretical (approximation) symbol error rate for the
-        BPSK scheme.
+        Calculates the theoretical (approximation) symbol error rate for
+        the BPSK scheme.
 
         Parameters
         ----------
@@ -610,9 +612,9 @@ class BPSK(Modulator):
         Raises
         ------
         ValueError
-            If inputData has any invalid value such as values greater than
-            self._M - 1. Note that inputData should not have negative values
-            but no check is done for this.
+            If inputData has any invalid value such as values greater
+            than self._M - 1. Note that inputData should not have
+            negative values but no check is done for this.
 
         """
         if np.any(inputData > 1):
@@ -679,7 +681,8 @@ class QAM(Modulator):
     @staticmethod
     def _createConstellation(M):
         """
-        Generates the Constellation for the (SQUARE) M-QAM modulation scheme.
+        Generates the Constellation for the (SQUARE) M-QAM modulation
+        scheme.
 
         Parameters
         ----------
@@ -707,8 +710,9 @@ class QAM(Modulator):
     @staticmethod
     def _calculateGrayMappingIndexQAM(L):
         """
-        Calculates the indexes that should be applied to the constellation
-        created by _createConstellation in order to correspond to Gray mapping.
+        Calculates the indexes that should be applied to the
+        constellation created by _createConstellation in order to
+        correspond to Gray mapping.
 
         Notice that the square M-QAM constellation is a matrix of dimension
         L x L, where L is the square root of M. Since the constellation was
@@ -800,8 +804,8 @@ class QAM(Modulator):
 
     def calcTheoreticalSER(self, SNR):
         """
-        Calculates the theoretical (approximation) symbol error rate for the
-        QAM scheme.
+        Calculates the theoretical (approximation) symbol error rate for
+        the QAM scheme.
 
         Parameters
         ----------
@@ -821,8 +825,8 @@ class QAM(Modulator):
 
     def calcTheoreticalBER(self, SNR):
         """
-        Calculates the theoretical (approximation) bit error rate for the QAM
-        scheme.
+        Calculates the theoretical (approximation) bit error rate for
+        the QAM scheme.
 
         Parameters
         ----------
