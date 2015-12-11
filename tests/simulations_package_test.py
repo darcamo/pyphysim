@@ -50,11 +50,11 @@ from pyphysim.simulations.results import combine_simulation_results
 from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, \
     real_scalar_or_real_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check
-from pyphysim.simulations.simulationhelpers import get_common_parser
 from pyphysim.simulations.parameters import SimulationParameters, \
     combine_simulation_parameters
 from pyphysim.simulations.results import Result, SimulationResults
-from pyphysim.simulations.runner import SimulationRunner, SkipThisOne
+from pyphysim.simulations.runner import SimulationRunner, SkipThisOne, \
+    get_common_parser
 from pyphysim.util import misc
 
 

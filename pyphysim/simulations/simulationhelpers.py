@@ -4,7 +4,6 @@
 """Module implementing helper functions for simulators."""
 
 import sys
-import argparse
 
 try:
     from ipyparallel import Client, LoadBalancedView, DirectView
@@ -13,67 +12,6 @@ except ImportError:
 
 from .progressbar import ProgressbarZMQServer
 from .runner import SimulationRunner
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Command Line Argument Parser xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_common_parser():
-    """
-    Get the command line parser that can be used.
-
-    The global parser is a singleton object of the argparse.Argumentparser
-    class which is used in the `simulate_do_what_i_mean` function to parse
-    command line arguments.
-
-    It already has two arguments, "index" and "config" configured. If you
-    need more then that, you can get the global parser object by calling
-    this function and then calling the `add_argument` method of the
-    returned object. See the documentation of argparse.Argumentparser for
-    more.
-
-    Returns
-    -------
-    argparse.ArgumentParser
-        The command line parser.
-    """
-    if get_common_parser.parser is None:
-        parser = argparse.ArgumentParser()
-        group = parser.add_argument_group('General')
-
-        help_msg = ('An index for the parameters variations. If provided, '
-                    'only that variation will be simulated.')
-        group.add_argument('-i',       # short version to specify the option
-                           '--index',  # Long version to specify the option
-                           help=help_msg,
-                           metavar='VARIATION INDEX',
-                           type=int,
-                           nargs='?')
-
-        help_msg = 'Name of the file with the simulation parameters'
-        group.add_argument('-c',        # short version to specify the option
-                           '--config',  # Long version to specify the option
-                           help=help_msg,
-                           metavar='CONFIG FILENAME',
-                           # default=default_config_file,
-                           type=str,
-                           nargs='?')
-
-        help_msg = ('Instead of running the simulation, return the number of'
-                    ' variations.')
-        group.add_argument(
-            # short version to specify the option
-            '-n',
-            # Long version to specify the option
-            '--number_variations',
-            help=help_msg,
-            action='store_true')
-
-        get_common_parser.parser = parser
-
-    return get_common_parser.parser
-
-get_common_parser.parser = None
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
