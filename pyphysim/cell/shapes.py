@@ -47,12 +47,26 @@ class Coordinate(object):
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
     def pos(self):
-        """Get method for the pos property."""
+        """
+        Get the coordinate position as a complex number.
+
+        Returns
+        -------
+        complex
+            The coordinate position (a complex number).
+        """
         return self._pos
 
     @pos.setter
     def pos(self, value):
-        """Set method for the pos property."""
+        """
+        Set the coordinate position.
+
+        Parameters
+        ----------
+        value : complex
+            The new coordinate position (a complex number).
+        """
         self._pos = value
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -62,7 +76,7 @@ class Coordinate(object):
 
         Parameters
         ----------
-        other : a coordinate object
+        other : Coordinate
             A different coordinate object.
 
         Returns
@@ -98,8 +112,8 @@ class Coordinate(object):
         ----------
         radius : float
             Distance of the movement in the direction given by `angle`.
-        angle : float (in radians)
-            Angle pointing the direction of the movement.
+        angle : float
+            Angle (in radians) pointing the direction of the movement.
         """
         rel_pos = cmath.rect(radius, angle)
         self.move_by_relative_coordinate(rel_pos)
@@ -107,6 +121,11 @@ class Coordinate(object):
     def __repr__(self):  # pragma: no cover
         """
         Representation of a Coordinate object.
+
+        Returns
+        -------
+        str
+            The string representation of the object.
         """
         return "{0}({1})".format(self.__class__.__name__, self.pos)
 
@@ -116,24 +135,21 @@ class Shape(Coordinate):
     Base class for all 2D shapes.
 
     Each subclass must implement the _get_vertex_positions method.
+
+    Parameters
+    ----------
+    pos : complex
+        Coordinate of the shape in the complex grid.
+    radius : float
+        Radius of the shape. It must be positive.
+    rotation : float
+        Rotation of the shape in degrees.
     """
     # The Shape class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
     __metaclass__ = ABCMeta
 
     def __init__(self, pos, radius, rotation=0):
-        """
-        Initializes the shape.
-
-        Parameters
-        ----------
-        pos : complex
-            Coordinate of the shape in the complex grid.
-        radius : float (positive)
-            Radius of the shape.
-        rotation : float
-            Rotation of the shape in degrees.
-        """
         Coordinate.__init__(self, pos)
 
         self._radius = radius
@@ -152,6 +168,11 @@ class Shape(Coordinate):
     def __repr__(self):  # pragma: no cover
         """
         Representation of a Shape object.
+
+        Returns
+        -------
+        str
+            The string representation of the object.
         """
         return "{0}(pos={1},radius={2},rotation={3})".format(
             self.__class__.__name__,
@@ -162,24 +183,52 @@ class Shape(Coordinate):
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
     def radius(self):
-        """Get method for the radius property"""
+        """
+        Get method for the radius property.
+
+        Returns
+        -------
+        float
+            The Shape radius.
+        """
         return self._radius
 
     @radius.setter
     def radius(self, value):
-        """Set method for the radius property"""
+        """
+        Set method for the radius property.
+
+        Parameters
+        ----------
+        value : float
+            The new radius.
+        """
         self._radius = value
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
     def rotation(self):
-        """Get method for the rotation property."""
+        """
+        Get method for the rotation property.
+
+        Returns
+        -------
+        float
+            The shape rotation.
+        """
         return self._rotation
 
     @rotation.setter
     def rotation(self, value):
-        """Set method for the rotation property."""
+        """
+        Set method for the rotation property.
+
+        Parameters
+        ----------
+        value : float
+            The new shape rotation.
+        """
         self._rotation = value
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -192,8 +241,9 @@ class Shape(Coordinate):
 
         Returns
         -------
-        vertex_positions : 1D numpy array
-            The positions of the vertexes of the shape.
+        vertex_positions : np.ndarray
+            The positions of the vertexes of the shape (as a 1D numpy
+            array).
 
         Notes
         -----
@@ -210,12 +260,25 @@ class Shape(Coordinate):
     def vertices_no_trans_no_rotation(self):  # pragma: no cover
         """
         Get the shape vertexes without translation and rotation.
+
+        Returns
+        -------
+        vertex_positions : np.ndarray
+            The positions of the vertexes of the shape without any
+            translation or rotation (as a 1D numpy array).
         """
         return self._get_vertex_positions()
 
     @property
     def vertices(self):
-        """Get method for the vertices property."""
+        """
+        Get method for the vertices property.
+
+        Returns
+        -------
+        np.ndarray
+            The shape vertexes.
+        """
         vertex_positions = self._get_vertex_positions()
         vertex_positions = self.pos + Shape.calc_rotated_pos(
             vertex_positions, self.rotation)
@@ -236,7 +299,8 @@ class Shape(Coordinate):
         inside_or_not : bool
             True if `point` is inside the shape, False otherwise.
         """
-        mpl_path = path.Path(from_complex_array_to_real_matrix(self.vertices))
+        mpl_path = path.Path(from_complex_array_to_real_matrix(
+                self.vertices))
 
         # This code is used with Matplotlib version 1.2 or higher.
         return mpl_path.contains_point([point.real, point.imag])
@@ -260,11 +324,11 @@ class Shape(Coordinate):
 
         Parameters
         ----------
-        angle : floar
+        angle : float
             Angle in degrees.
-        ratio : float (between 0 and 1)
+        ratio : float
             The ratio from the cell center to the border where the desired
-            point is located.
+            point is located. This MUST be a value between 0 and 1.
 
         Returns
         -------
@@ -441,14 +505,14 @@ class Shape(Coordinate):
 
         Parameters
         ----------
-        cur_pos : complex or numpy array of complexes
+        cur_pos : complex | np.ndarray
             The complex number(s) to be rotated.
         angle: float
             Angle in degrees to rotate the positions.
 
         Returns
         -------
-        rotated_pos : complex or numpy array of complexes
+        rotated_pos : complex | np.ndarray
             The rotate complex number(s).
         """
         angle_rad = angle * np.pi / 180.
@@ -462,26 +526,30 @@ class Hexagon(Shape):
     Besides the `pos`, `radius` and `rotation` properties from the Shape
     base class, the Hexagon also has a height property (read-only) from the
     base of the Hexagon to its center.
+
+    Parameters
+    ----------
+    pos : complex
+        Coordinate of the shape in the complex grid.
+    radius : float
+        Radius of the hexagon. It must be a positive number.
+    rotation : float
+        Rotation of the hexagon in degrees.
     """
 
     def __init__(self, pos, radius, rotation=0):
-        """
-        Initializes the Hexagon object.
-
-        Parameters
-        ----------
-        pos : complex
-            Coordinate of the shape in the complex grid.
-        radius : float (positive number)
-            Radius of the hexagon.
-        rotation : float
-            Rotation of the hexagon in degrees.
-        """
         Shape.__init__(self, pos, radius, rotation)
 
     @property
     def height(self):
-        """Get method for the height property."""
+        """
+        Get method for the height property.
+
+        Returns
+        -------
+        float
+            The height of the Hexagon.
+        """
         return self._radius * np.sqrt(3.) / 2.0
 
     def _get_vertex_positions(self):
@@ -492,7 +560,7 @@ class Hexagon(Shape):
 
         Returns
         -------
-        vertex_positions : 1D numpy array
+        vertex_positions : np.ndarray
             The positions of the vertexes of the shape.
         """
         vertex_positions = np.zeros(6, dtype=complex)
@@ -509,23 +577,20 @@ class Hexagon(Shape):
 class Rectangle(Shape):
     """
     Rectangle shape class.
+
+    The rectangle is initialized from two coordinates as well as from
+    the rotation.
+
+    Parameters
+    ----------
+    first : complex
+        First coordinate (without rotation).
+    second : complex
+        Second coordinate (without rotation).
+    rotation : float
+        Rotation of the rectangle in degrees.
     """
     def __init__(self, first, second, rotation=0):
-        """
-        Initializes the Rectangle object.
-
-        The rectangle is initialized from two coordinates as well as from
-        the rotation.
-
-        Parameters
-        ----------
-        first : complex
-            First coordinate (without rotation).
-        second : complex
-            Second coordinate (without rotation).
-        rotation : float
-            Rotation of the rectangle in degrees.
-        """
         central_pos = (first + second) / 2
         radius = np.abs(second - central_pos)
         Shape.__init__(self, central_pos, radius, rotation)
@@ -536,7 +601,12 @@ class Rectangle(Shape):
 
     def __repr__(self):  # pragma: no cover
         """
-        Representation of a Shape object.
+        Representation of a Rectangle object.
+
+        Returns
+        -------
+        str
+            The string representation of the Rectangle object.
         """
         return "{0}(A={1},B={2},rotation={3})".format(self.__class__.__name__,
                                                       self._lower_coord,
@@ -551,7 +621,7 @@ class Rectangle(Shape):
 
         Returns
         -------
-        vertex_positions : 1D numpy array
+        vertex_positions : np.ndarray
             The positions of the vertexes of the shape.
         """
         vertex_positions = np.zeros(4, dtype=complex)
@@ -620,21 +690,18 @@ class Rectangle(Shape):
 class Circle(Shape):
     """
     Circle shape class.
+
+    A circle is initialized only from a coordinate and a radius.
+
+    Parameters
+    ----------
+    pos : complex
+        Coordinate of the center of the circle.
+    radius : float
+        Circle's radius.
     """
 
     def __init__(self, pos, radius):
-        """
-        Initializes the Circle.
-
-        A circle is initialized only from a coordinate and a radius.
-
-        Parameters
-        ----------
-        pos : complex
-            Coordinate of the center of the circle.
-        radius : floar
-            Circle's radius.
-        """
         Shape.__init__(self, pos, radius)
 
     def _get_vertex_positions(self):
@@ -644,7 +711,7 @@ class Circle(Shape):
 
         Returns
         -------
-        vertex_positions : 1D numpy array
+        vertex_positions : np.ndarray
             The positions of the vertexes of the shape.
 
         Notes
@@ -672,9 +739,9 @@ class Circle(Shape):
         ----------
         angle : float
             Angle (in degrees)
-        ratio : float (between 0 and 1)
+        ratio : float
             The ratio from the cell center to the border where the desired
-            point is located.
+            point is located. It must be a value between 0 and 1.
 
         Returns
         -------
@@ -758,13 +825,14 @@ def from_complex_array_to_real_matrix(a):
 
     Parameters
     ----------
-    a : 1D numpy array (complex dtype)
+    a : np.ndarray
         A numpy array of complex numbers with N elements.
 
     Returns
     -------
-    converted_a : 2D numpy array (float dtype)
-        The converted array with dimension N x 2.
+    np.ndarray
+        The converted array with dimension N x 2. That is, a 2D numpy
+        array.
 
     Notes
     -----
