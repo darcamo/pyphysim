@@ -9,6 +9,7 @@ from numbers import Number
 from collections import Iterable
 import numpy as np
 from scipy.linalg import block_diag
+from . import fading, fading_generators
 from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
 from . import singleuser
@@ -27,7 +28,7 @@ class MuChannel(object):
     ----------
     N : int
         The number of transmit/receive pairs.
-    fading_generator : Subclass of FadingSampleGenerator (optional)
+    fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
         module. It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel
@@ -35,12 +36,12 @@ class MuChannel(object):
         genrator will actually be used to create similar (but independent)
         fading generators. If not provided then RayleighSampleGenerator
         will be ised
-    channel_profile : TdlChannelProfile
+    channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
-    tap_powers_dB : numpy real array
+    tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
+    tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
     def __init__(self, N, fading_generator=None, channel_profile=None,
@@ -112,7 +113,13 @@ class MuChannel(object):
 
     @property
     def num_tx_antennas(self):
-        """Get the number of transmit antennas.
+        """
+        Get the number of transmit antennas.
+
+        Returns
+        -------
+        int
+            The number of transmit antennas.
         """
         _, num_tx = self._su_siso_channels.shape
         num_tx_antennas = np.empty(num_tx, dtype=int)
@@ -122,7 +129,13 @@ class MuChannel(object):
 
     @property
     def num_rx_antennas(self):
-        """Get the number of receive antennas.
+        """
+        Get the number of receive antennas.
+
+        Returns
+        -------
+        int
+            The number of receive antennas.
         """
         num_rx, _ = self._su_siso_channels.shape
         num_rx_antennas = np.empty(num_rx, dtype=int)
@@ -134,15 +147,26 @@ class MuChannel(object):
     def channel_profile(self):
         """
         Return the channel profile.
+
+        Returns
+        -------
+        fading.TdlChannelProfile
+            The channel profile.
         """
         return self._su_siso_channels[0, 0].channel_profile
 
     @property
     def num_taps(self):
+
         """
         Get the number of taps in the profile.
 
         Note that all links have the same channel profile.
+
+        Returns
+        -------
+        int
+            The number of taps in the channel (not including any zero padding).
         """
         return self._su_siso_channels[0, 0].num_taps
 
@@ -155,6 +179,11 @@ class MuChannel(object):
         If the profile is not discretized an exception is raised.
 
         Note that all links have the same channel profile.
+
+        Returns
+        -------
+        int
+            The number of taps in the channel (including any zero padding).
         """
         return self._su_siso_channels[0, 0].num_taps_with_padding
 
@@ -170,7 +199,7 @@ class MuChannel(object):
 
         Parameters
         ----------
-        pathloss_matrix : 2D numpy array
+        pathloss_matrix : np.ndarray
             A matrix with dimension "K x K", where K is the number of
             users, with the path loss (IN LINEAR SCALE) from each
             transmitter (columns) to each receiver (rows). If you want to
@@ -197,13 +226,14 @@ class MuChannel(object):
 
         Parameters
         ----------
-        signal : 2D numpy array (1D array if there is only one transmitter)
-            Signal to be transmitted through the channel. Each row
-            corresponds to the transmit data of one transmitter.
+        signal : np.ndarray
+            Signal to be transmitted through the channel. This should be a 2D
+            numpy array (1D array if there is only one transmitter),
+            where each row corresponds to the transmit data of one transmitter.
 
         Returns
         -------
-        2D numpy array
+        np.ndarray
             Received signal at each receiver. Each row corresponds to one
             receiver.
         """
@@ -247,19 +277,21 @@ class MuChannel(object):
 
         Parameters
         ----------
-        signal : 2D numpy array (1D array if there is only one transmitter)
-            Signal to be transmitted through the channel. Each row
+        signal : np.ndarray
+            Signal to be transmitted through the channel. This should be a 2D
+            numpy array (1D array if there is only one transmitter), where each row
             corresponds to the transmit data of one transmitter.
+
         fft_size : int
             The size of the Fourier transform to get the frequency response.
-        carrier_indexes : slice of numpy array of integers
+        carrier_indexes : slice | np.ndarray
             The indexes of the subcarriers where signal is to be
             transmitted (all users will use the same indexes). If it is
             None assume all subcarriers will be used.
 
         Returns
         -------
-        2D numpy array
+        np.ndarray
             Received signal at each receiver. Each row corresponds to one
             receiver.
         """
@@ -302,7 +334,7 @@ class MuChannel(object):
 
         Returns
         -------
-        TdlImpulseResponse
+        fading.TdlImpulseResponse
             The impulse response of the channel that was used to corrupt
             the last data for the link from transmitter `tx_idx` to
             receiver `rx_idx`.
@@ -425,7 +457,7 @@ class MuMimoChannel(MuChannel):
         Number of receive antennas of each user.
     num_tx_antennas : int
         Number of transmit antennas of each user.
-    fading_generator : Subclass of FadingSampleGenerator (optional)
+    fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
         module. It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel
@@ -433,12 +465,12 @@ class MuMimoChannel(MuChannel):
         genrator will actually be used to create similar (but independent)
         fading generators. If not provided then RayleighSampleGenerator
         will be ised
-    channel_profile : TdlChannelProfile
+    channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
-    tap_powers_dB : numpy real array
+    tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
+    tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
     def __init__(self, N,

@@ -22,7 +22,7 @@ def calc_thermal_noise_power_dBm(T, delta_f):
     Returns
     -------
     noise_var : float
-        Noise power.
+        The noise power.
     """
     # Boltzmann constant
     B = scipy.constants.Boltzmann

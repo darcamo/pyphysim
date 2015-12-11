@@ -6,7 +6,7 @@
 import math
 import numpy as np
 
-from pyphysim.channels import fading, fading_generators
+from . import fading, fading_generators
 
 
 class SuChannel(object):
@@ -23,17 +23,17 @@ class SuChannel(object):
 
     Parameters
     ----------
-    fading_generator : Subclass of FadingSampleGenerator (optional)
+    fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples. If
         not provided then RayleighSampleGenerator will be ised
-    channel_profile : TdlChannelProfile
+    channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
-    tap_powers_dB : numpy real array
+    tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
+    tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
     def __init__(self, fading_generator=None, channel_profile=None,
@@ -76,7 +76,7 @@ class SuChannel(object):
 
         Parameters
         ----------
-        pathloss_value : float
+        pathloss_value : float | None
             The path loss (IN LINEAR SCALE) from the transmitter to the
             receiver. If you want to disable the path loss then set it to
             None.
@@ -115,12 +115,12 @@ class SuChannel(object):
 
         Parameters
         ----------
-        signal : numpy array
+        signal : np.ndarray
             The signal to be transmitted.
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The received signal after transmission through the TDL channel.
         """
         # output = super(SuChannel, self).corrupt_data(signal)
@@ -148,17 +148,18 @@ class SuChannel(object):
 
         Parameters
         ----------
-        signal : numpy array
+        signal : np.ndarray
             The signal to be transmitted.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
-        carrier_indexes : slice of numpy array of integers
-            The indexes of the subcarriers where signal is to be
-            transmitted. If it is None assume all subcarriers will be used.
+        carrier_indexes : slice | np.ndarray
+            The indexes of the subcarriers where signal is to be transmitted.
+            If it is None assume all subcarriers will be used. This can be a
+            slice object or a numpy array of integers.
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The received signal after transmission through the TDL channel
         """
         output = self._tdlchannel.corrupt_data_in_freq_domain(
@@ -178,7 +179,7 @@ class SuChannel(object):
 
         Returns
         -------
-        TdlImpulseResponse
+        fading.TdlImpulseResponse
             The impulse response of the channel that was used to corrupt
             the last data.
         """
@@ -214,7 +215,14 @@ class SuChannel(object):
 
     @property
     def num_taps(self):
-        """Get the number of taps in the profile."""
+        """
+        Get the number of taps in the profile.
+
+        Returns
+        -------
+        int
+            The number of taps in the channel (not including any zero padding).
+        """
         return self._tdlchannel.num_taps
 
     @property
@@ -224,6 +232,11 @@ class SuChannel(object):
         profile is discretized.
 
         If the profile is not discretized an exception is raised.
+
+        Returns
+        -------
+        int
+            The number of taps in the channel (including any zero padding).
         """
         return self._tdlchannel.num_taps_with_padding
 
@@ -231,18 +244,35 @@ class SuChannel(object):
     def channel_profile(self):
         """
         Return the channel profile.
+
+        Returns
+        -------
+        fading.TdlChannelProfile
+            The channel profile.
         """
         return self._tdlchannel.channel_profile
 
     @property
     def num_tx_antennas(self):
-        """Get the number of transmit antennas.
+        """
+        Get the number of transmit antennas.
+
+        Returns
+        -------
+        int
+            The number of transmit antennas.
         """
         return self._tdlchannel.num_tx_antennas
 
     @property
     def num_rx_antennas(self):
-        """Get the number of receive antennas.
+        """
+        Get the number of receive antennas.
+
+        Returns
+        -------
+        int
+            The number of receive antennas.
         """
         return self._tdlchannel.num_rx_antennas
 
@@ -263,17 +293,17 @@ class SuMimoChannel(SuChannel):
     ----------
     num_antennas : int
         Number of transmit and receive antennas.
-    fading_generator : Subclass of FadingSampleGenerator (optional)
+    fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples. If
         not provided then RayleighSampleGenerator will be ised
-    channel_profile : TdlChannelProfile
+    channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
-    tap_powers_dB : numpy real array
+    tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
+    tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
     def __init__(self, num_antennas, fading_generator=None,

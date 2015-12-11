@@ -311,7 +311,8 @@ def xor(a, b):
 
 
 def randn_c(*args):
-    """Generates a random circularly complex gaussian matrix.
+    """
+    Generates a random circularly complex gaussian matrix.
 
     Parameters
     ----------
@@ -322,7 +323,7 @@ def randn_c(*args):
 
     Returns
     -------
-    result : N-dimensional numpy array
+    result : np.ndarray
         A random N-dimensional numpy array (complex dtype) where the `N` is
         equal to the number of parameters passed to `randn_c`.
 

@@ -24,38 +24,40 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
 
     Parameters
     ----------
-    Fd : double
+    Fd : float
         The Doppler frequency (in Hetz).
-    Ts : double
+    Ts : float
         The sample interval (in seconds).
     NSamples : int
         The number of samples to generate.
     L : int
         The number of rays for the Jakes model.
-    shape : tuple (of integers)
+    shape : tuple[int]
         The shape of the generated channel. This is used to generate MIMO
         channels. For instance, in order to generate channels samples for a
         MIMO scenario with 3 receive antennas and 2 transmit antennas use a
         shape of (3, 2).
     current_time : float
         The current start time
-    phi_l : numpy array
+    phi_l : np.ndarray
         The "phi" part in Jakes model
-    psi_l : numpy array
+    psi_l : np.ndarray
         The "psi" part in Jakes modl
 
     Returns
     -------
-    new_current_time : float
-        The new current time (that should be used the next time this
-        function is called to 'continue' the fading.
-    h : Numpy array
-        The generated channel. If `shape` is None the the shape of the
-        returned h is equal to (NSamples,). That is, h is a 1-dimensional
-        numpy array. If `shape` was provided then the shape of h is the
-        provided shape with an additional dimension for the time (the last
-        dimension). For instance, if a `shape` of (3, 2) was provided then
-        the shape of the returned h will be (3, 2, NSamples).
+    (float, np.ndarray)
+        The **first element** in the returned tuple is the **new current
+        time** (that should be used the next time this function is called to
+        'continue' the fading).
+
+        The **second** element in the returned tuple is the **generated
+        channel**. If `shape` is None the the shape of the returned h is
+        equal to ( NSamples,). That is, h is a 1-dimensional numpy array. If
+        `shape` was provided then the shape of h is the provided shape with
+        an additional dimension for the time (the last dimension). For
+        instance, if a `shape` of (3, 2) was provided then the shape of the
+        returned h will be (3, 2, NSamples).
     """
     # Generate time samples
     t = np.arange(
@@ -94,13 +96,11 @@ class FadingSampleGenerator(object):
 
     Parameters
     ----------
-    shape : tuple (of integers) or an int
-
+    shape : tuple[int] | int
         The shape of the sample generator. Each time
         `generate_more_samples(num_samples)` method is called it will
         generate samples with this shape as the first dimensions.
     """
-
     def __init__(self, shape=None):
         self._shape = shape
 
@@ -117,6 +117,10 @@ class FadingSampleGenerator(object):
 
         This is the shape of the samples that will be generated (not
         including num_samples).
+
+        Returns
+        -------
+        tuple[int] | None
         """
         if self._shape is not None and not isinstance(self._shape, Iterable):
             shape = (self._shape, )
@@ -126,7 +130,7 @@ class FadingSampleGenerator(object):
         return shape
 
     @shape.setter
-    def shape(self, value):
+    def shape(self, new_shape):
         """
         Set the shape of the sampling generator.
 
@@ -135,13 +139,18 @@ class FadingSampleGenerator(object):
 
         Parameters
         ----------
-        shape : tuple of integers, an int, or None
+        new_shape : None | int | tuple[int]
             The shape of the generated channel.
         """
-        self._shape = value
+        self._shape = new_shape
 
     def get_samples(self):
-        """Get the last generated sample.
+        """
+        Get the last generated sample.
+
+        Returns
+        -------
+        np.ndarray
         """
         return self._samples
 
@@ -154,17 +163,22 @@ class FadingSampleGenerator(object):
 
         Parameters
         ----------
-        num_samples : int (optional)
+        num_samples : int, optional
             Number of samples (with the provided shape) to generate. If not
             provided it will be assumed to be 1.
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def skip_samples_for_next_generation(self, quantity):  # pragma: no cover
+    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
         """
-        Advance sample generation process by `quantity` similarly to what would
-        happen if you call `generate_more_samples(num_samples=quantity)`,
-        but without actually generating the samples.
+        Advance sample generation process by `num_samples` similarly to what
+        would happen if you call `generate_more_samples(
+        num_samples=num_samples)`, but without actually generating the samples.
+
+        Parameters
+        ----------
+        num_samples : int
+            How many samples to skip.
         """
         raise NotImplementedError("Implement in a subclass")
 
@@ -184,7 +198,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
 
     Parameters
     ----------
-    shape : tuple (of integers) or an int
+    shape : int | tuple[int] | None
         The shape of the sample generator. Each time the
         `generate_jakes_samples` method is called it will generate samples
         with this shape. If not provided, then 1 will be assumed.
@@ -202,7 +216,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
 
         Parameters
         ----------
-        num_samples : int (optional)
+        num_samples : int, optional
             Number of samples (with the provided shape) to generate. If not
             provided it will be assumed to be 1.
         """
@@ -220,14 +234,22 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             shape.append(num_samples)
             self._samples = randn_c(*shape)
 
-    def skip_samples_for_next_generation(self, quantity):  # pragma: no cover
+    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
         """
-        Advance sample generation process by `quantity` similarly to what would
-        happen if you call `generate_more_samples(num_samples=quantity)`,
+        Advance sample generation process by `num_samples` similarly to what would
+        happen if you call `generate_more_samples(num_samples=num_samples)`,
         but without actually generating the samples.
 
         Since the samples generated by RayleighSampleGenerator are
         independent, calling this method has no effect.
+
+        Parameters
+        ----------
+        num_samples : int
+            How many samples to skip. This is ignored in the
+            RayleighSampleGenerator. Since the different samples are
+            uncorrelated then calling `skip_samples_for_next_generation` does
+            not do anything.
         """
         pass
 
@@ -235,6 +257,12 @@ class RayleighSampleGenerator(FadingSampleGenerator):
         """
         Get a similar fading generator with the same configuration, but that
         generates independent samples.
+
+        Returns
+        -------
+        RayleighSampleGenerator
+            Another RayleighSampleGenerator object with the same
+            configuration of this obkect.
         """
         return RayleighSampleGenerator(self._shape)
 
@@ -251,20 +279,20 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
     Parameters
     ----------
-    Fd : double
+    Fd : float
         The Doppler frequency (in Hetz).
-    Ts : double
+    Ts : float
         The sample interval (in seconds).
     L : int
         The number of rays for the Jakes model.
-    shape : tuple (of integers) or an int
+    shape : int | tuple[int]
         The shape of the sample generator. Each time the
         `generate_jakes_samples` method is called it will generate samples
         with this shape. If not provided, then 1 will be assumed. This
         could be used to generate MIMO channels. For instance, in order to
         generate channels samples for a MIMO scenario with 3 receive
         antennas and 2 transmit antennas use a shape of (3, 2).
-    RS : A numpy.random.RandomState object.
+    RS : np.random.RandomState
         The RandomState object used to generate the random values. If not
         provided, the global RandomState in numpy will be used.
 
@@ -308,11 +336,15 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         This is the shape of the samples that will be generated (not
         including num_samples).
+
+        Returns
+        -------
+        tuple[int] | None
         """
         return super(JakesSampleGenerator, self).shape
 
     @shape.setter
-    def shape(self, value):
+    def shape(self, new_shape):
         """
         Set the shape of the sampling generator.
 
@@ -321,13 +353,13 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         Parameters
         ----------
-        shape : tuple of integers, an int, or None
+        new_shape : None | int | tuple[int]
             The shape of the generated channel.
         """
-        self._shape = value
+        self._shape = new_shape
         # Since phi and psi depend on the shape we need to update
         # them. Note that `_set_phi_and_psi_according_to_shape` will use
-        # the value of self._shape
+        # the new_shape of self._shape
         self._set_phi_and_psi_according_to_shape()
 
     @property
@@ -372,12 +404,12 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         Parameters
         ----------
-        num_samples : int
+        num_samples : int, optional
             Number of samples to be generated.
 
         Returns
         -------
-        Numpy Array
+        np.ndarray
             The numpy array with the time samples. The shape of the
             generated time variable is "(1, A, num_samples)", where 'A' has
             as many '1's as the length of self._shape.
@@ -442,7 +474,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         Parameters
         ----------
-        num_samples : int (optional)
+        num_samples : int, optional
             Number of samples (with the provided shape) to generate. If not
             provided it will be assumed to be 1.
 
@@ -460,20 +492,31 @@ class JakesSampleGenerator(FadingSampleGenerator):
                     axis=0))
         self._samples = h
 
-    def skip_samples_for_next_generation(self, quantity):
+    def skip_samples_for_next_generation(self, num_samples):
         """
-        Advance sample generation process by `quantity` similarly to what would
-        happen if you call `generate_more_samples(num_samples=quantity)`,
-        but without actually generating the samples.
+        Advance sample generation process by `num_samples` similarly to what
+        would happen if you call `generate_more_samples(
+        num_samples=num_samples)`, but without actually generating the samples.
 
         This has the effect of advancing the internal time using by
         JakesSampleGenerator without generating any samples.
+
+        Parameters
+        ----------
+        num_samples : int
+            How many samples to skip.
         """
-        self._current_time += quantity * self.Ts
+        self._current_time += num_samples * self.Ts
 
     def get_similar_fading_generator(self):
         """
         Get a similar fading generator with the same configuration, but that
         generates independent samples.
+
+        Returns
+        -------
+        JakesSampleGenerator
+            Another JakesSampleGenerator object with the same configuration
+            of this obkect.
         """
         return JakesSampleGenerator(self._Fd, self._Ts, self._L, self._shape)

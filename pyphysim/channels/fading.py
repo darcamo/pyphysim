@@ -28,11 +28,11 @@ class TdlChannelProfile(object):
 
     Parameters
     ----------
-    tap_powers_dB : real numpy array
+    tap_powers_dB : np.ndarray
         The tap powers (in dB). If both `tap_powers_dB` and `tap_delays`
         are None then a single tap with 0dB power will be assummed at delay
         0.
-    tap_delays : real numpy array
+    tap_delays : np.ndarray
         The tap delays.
     name : str
         A name for the channel profile
@@ -76,6 +76,11 @@ class TdlChannelProfile(object):
         The mean excess delay is the first moment of the power delay profile
         and is defined to be
             math:`\\overline{\\tau} = \\frac{\\sum_k P(\\tau_k)\\tau_k}{\\sum_k P(\\tau_k)}`
+
+        Returns
+        -------
+        float
+            The mean excess delay.
         """
         # $$\overline{\tau} = \frac{\sum_k P(\tau_k)\tau_k}{\sum_k P(\tau_k)}$$
         return self._mean_excess_delay
@@ -92,6 +97,11 @@ class TdlChannelProfile(object):
 
          Typically, when the symbol time period is greater than 10 times
         the RMS delay spread, no ISI equalizer is needed in the receiver.
+
+        Returns
+        -------
+        float
+            The RMS delay spread.
         """
         # $\sigma_t = \sqrt{\overline{t^2} - \overline{\tau}^2}$
         # where
@@ -100,27 +110,57 @@ class TdlChannelProfile(object):
 
     @property
     def name(self):
-        """Get the profile name"""
+        """Get the profile name.
+
+        Returns
+        -------
+        str
+            Profile name.
+        """
         return self._name
 
     @property
     def tap_powers_dB(self):
-        """Get the tap powers (in dB)"""
+        """Get the tap powers (in dB).
+
+        Returns
+        -------
+        np.ndarray
+            The tap powers (in dB).
+        """
         return self._tap_powers_dB
 
     @property
     def tap_powers_linear(self):
-        """Get the tap powers (in linear scale)"""
+        """Get the tap powers (in linear scale).
+
+        Returns
+        -------
+        np.ndarray
+            The tap powers (in linear scale)."""
         return self._tap_powers_linear
 
     @property
     def tap_delays(self):
-        """Get the tap delays"""
+        """Get the tap delays.
+
+        Returns
+        -------
+        np.ndarray
+            The tap delays.
+        """
         return self._tap_delays
 
     @property
     def num_taps(self):
-        """Get the number of taps in the profile."""
+        """Get the number of taps in the profile.
+
+        Returns
+        -------
+        int
+            Number of taps before discretization (does not count possible
+            padding).
+        """
         return self._num_taps
 
     @property
@@ -130,6 +170,12 @@ class TdlChannelProfile(object):
         profile is discretized.
 
         If the profile is not discretized an exception is raised.
+
+        Returns
+        -------
+        int
+            Number of taps after discretization (it counts possible any added
+            padding).
         """
         if self.Ts is None:
             raise RuntimeError('TdlChannelProfile is not discretized')
@@ -143,6 +189,11 @@ class TdlChannelProfile(object):
         object.
 
         If it is not discretized then this returns None.
+
+        Returns
+        -------
+        float
+            The sampling interval (in seconds).
         """
         return self._Ts
 
@@ -200,7 +251,7 @@ class TdlChannelProfile(object):
 
         Returns
         -------
-        (discretized_powers_dB, discretized_delays)
+        (np.ndarray, np.ndarray)
             A tuple with the discretized powers and delays.
         """
         # Compute delay indices
@@ -220,6 +271,13 @@ class TdlChannelProfile(object):
         return discretized_powers_dB, delay_indexes
 
     def __repr__(self):  # pragma: no cover
+        """Get the representation of the object.
+
+        Returns
+        --------
+        str
+            The object representaion as a string.
+        """
         return "<TdlChannelProfile: '{0}' ({1} taps)>".format(
             self.name, self.num_taps)
 
@@ -268,7 +326,7 @@ class TdlImpulseResponse(object):
 
     Parameters
     ----------
-    tap_values : numpy array
+    tap_values : np.ndarray
         The tap_values (not including zero padded taps) of a TDL channel
         generated for the non-zero taps. Dimension: `Num sparse taps x
         SHAPE x num_samples`. The value SHAPE here is the shape of the
@@ -295,6 +353,11 @@ class TdlImpulseResponse(object):
     def tap_values_sparse(self):
         """
         Return the tap values (not including zero padding) as a numpy array.
+
+        Returns
+        -------
+        np.ndarray
+            The tap values (not including possible zero padding).
         """
         return self._tap_values_sparse
 
@@ -302,6 +365,10 @@ class TdlImpulseResponse(object):
     def tap_indexes_sparse(self):
         """
         Return the (sparse) tap indexes.
+
+        Returns
+        -------
+        The indexes of the non-zero taps.
         """
         return self._channel_profile.tap_delays
 
@@ -309,6 +376,11 @@ class TdlImpulseResponse(object):
     def Ts(self):
         """
         Return the sampling interval of this impulse response.
+
+        Returns
+        -------
+        float
+            The sampling interval.
         """
         return self._channel_profile.Ts
 
@@ -316,6 +388,11 @@ class TdlImpulseResponse(object):
     def tap_delays_sparse(self):
         """
         Return the tap delays (which are multiples of the sampling interval).
+
+        Returns
+        -------
+        np.ndarray
+            The tap delays.
         """
         return self.tap_indexes_sparse * self.Ts
 
@@ -323,6 +400,11 @@ class TdlImpulseResponse(object):
     def tap_values(self):
         """
         Return the tap values (including zero padding) as a numpy array.
+
+        Returns
+        -------
+        np.ndarray
+            The tap values (including zero padding).
         """
         if self._tap_values_dense is None:
             self._tap_values_dense = \
@@ -334,6 +416,11 @@ class TdlImpulseResponse(object):
         """
         Get the number of samples (different, "neighbor" impulse responses)
         stored here.
+
+        Returns
+        -------
+        int
+            The number of samples in the `TdlImpulseResponse` object.
         """
         return self._tap_values_sparse.shape[-1]
 
@@ -341,6 +428,11 @@ class TdlImpulseResponse(object):
     def channel_profile(self):
         """
         Return the channel profile.
+
+        Returns
+        -------
+        TdlChannelProfile
+            The channel profile.
         """
         return self._channel_profile
 
@@ -350,7 +442,7 @@ class TdlImpulseResponse(object):
 
         Returns
         -------
-        samples_with_zeros : numpy complex array
+        samples_with_zeros : np.ndarray
             The samples including the extra delays containing zeros.
         """
         num_taps_with_padding = self.tap_indexes_sparse[-1] + 1
@@ -385,7 +477,7 @@ class TdlImpulseResponse(object):
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The frequency response. Dimension: `fft_size x num_samples` for
             SISO impulse response or `fft_size x num_rx x num_tx x num_samples`
             for MIMO impulse response.
@@ -406,6 +498,9 @@ class TdlImpulseResponse(object):
 
         Only the tap values are modified.
 
+        This method is useful for instance to apply the path loss to an
+        existing TdlImpulseResponse object.
+
         Parameters
         ----------
         value : float
@@ -425,6 +520,9 @@ class TdlImpulseResponse(object):
         impulse response.
 
         Only the tap values are modified.
+
+        This method is useful for instance to apply the path loss to an
+        existing TdlImpulseResponse object.
 
         Parameters
         ----------
@@ -562,7 +660,7 @@ class TdlChannel(object):
 
     Parameters
     ----------
-    fading_generator : Subclass of FadingSampleGenerator
+    fading_generator : T <= FadingSampleGenerator
         The instance of a fading generator in the `fading_generators` module.
         It should be a subclass of FadingSampleGenerator. The fading
         generator will be used to generate the channel samples.
@@ -573,10 +671,10 @@ class TdlChannel(object):
         the number of transmit antennas
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
-    tap_powers_dB : numpy real array
+    tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
+    tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
     # Note: It would be better to have only the first argument as
@@ -704,7 +802,7 @@ class TdlChannel(object):
 
         Parameters
         ----------
-        new_shape : tuple of integers
+        new_shape : tuple[int]
             The new shape of the fading generator. Note that the actual
             shape will be set to (self.num_taps, new_shape)
         """
@@ -718,6 +816,11 @@ class TdlChannel(object):
     def channel_profile(self):
         """
         Return the channel profile.
+
+        Returns
+        -------
+        TdlChannelProfile
+            The channel profile.
         """
         return self._channel_profile
 
@@ -725,6 +828,11 @@ class TdlChannel(object):
     def num_taps(self):
         """
         Number of taps not including zero taps after discretization.
+
+        Returns
+        -------
+        int
+            The number of taps (not including padding)
         """
         return self._channel_profile.num_taps
 
@@ -732,6 +840,11 @@ class TdlChannel(object):
     def num_taps_with_padding(self):
         """
         Number of taps including zero taps after discretization.
+
+        Returns
+        -------
+        int
+            The number of taps (including padding)
         """
         # This is only valid if _channel_profile is discretized and the
         # tap_delays correspond to integers
@@ -790,7 +903,13 @@ class TdlChannel(object):
 
     @property
     def num_tx_antennas(self):
-        """Get the number of transmit antennas.
+        """
+        Get the number of transmit antennas.
+
+        Returns
+        -------
+        int
+            The number of transmit antennas.
         """
         if len(self._fading_generator.shape) == 1:
             return -1
@@ -798,7 +917,13 @@ class TdlChannel(object):
 
     @property
     def num_rx_antennas(self):
-        """Get the number of receive antennas.
+        """
+        Get the number of receive antennas.
+
+        Returns
+        -------
+        int
+            The number of receive antennas.
         """
         if len(self._fading_generator.shape) == 1:
             return -1
@@ -831,13 +956,13 @@ class TdlChannel(object):
 
         Parameters
         ----------
-        signal : numpy array
+        signal : np.ndarray
             The signal to be transmitted. This should be 1D for SISO
             systems (or SIMO systems) and 2D for MIMO systems.
 
         Return
         ------
-        numpy array
+        np.ndarray
             Either the same signal of signal with an added dimension.
         """
         if len(self._fading_generator.shape) == 1:
@@ -861,13 +986,13 @@ class TdlChannel(object):
 
         Parameters
         ----------
-        signal : numpy array
+        signal : np.ndarray
             The signal to be transmitted. This should be 1D for SISO
             systems (or SIMO systems) and 2D for MIMO systems.
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The received signal after transmission through the TDL channel
         """
         # Number of symbols to be transmitted
@@ -948,18 +1073,19 @@ class TdlChannel(object):
 
         Parameters
         ----------
-        signal : numpy array
+        signal : np.ndarray
             The signal to be transmitted. This should be 1D for SISO
             systems (or SIMO systems) and 2D for MIMO systems.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
-        carrier_indexes : slice or numpy array of integers
-            The indexes of the subcarriers where signal is to be
-            transmitted. If it is None assume all subcarriers will be used.
+        carrier_indexes : slice | np.ndarray
+            The indexes of the subcarriers where signal is to be transmitted.
+            If it is None assume all subcarriers will be used. This can be a
+            slice object or a numpy array of integers.
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The received signal after transmission through the TDL channel
         """
         # Number of symbols to be transmitted
@@ -1101,7 +1227,7 @@ class TdlMimoChannel(TdlChannel):
 
     Parameters
     ----------
-    fading_generator : Subclass of FadingSampleGenerator
+    fading_generator : T <= FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples.  The
@@ -1109,10 +1235,10 @@ class TdlMimoChannel(TdlChannel):
         provided number of antennas.
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
-    tap_powers_dB : numpy real array
+    tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
         Note: The power of each tap will be a negative number (in dB).
-    tap_delays : numpy real array
+    tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
     def __init__(self, fading_generator, channel_profile=None,

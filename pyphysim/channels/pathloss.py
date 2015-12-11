@@ -57,6 +57,17 @@ class PathLossBase(object):
     account. However, shadowing is not taken into account in the
     :meth:`which_distance_dB` and :meth:`which_distance` functions,
     regardless of the value of the :attr:`use_shadow_bool` variable.
+
+    Attributes
+    ----------
+    sigma_shadow : int
+        The shadowing (in dB)
+    use_shadow_bool : bool
+        If True then shadowing will be used.
+    handle_small_distances_bool : bool
+        If this is True then any negative path loss (in dB) that appears
+        because a distance is too small will considered as 0dB. If this s
+        False then an exception will be raised instead.
     """
     # The PathLossBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
@@ -89,12 +100,12 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path Loss (in dB)
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance to get the desired path loss `PL`.
 
         Raises
@@ -116,9 +127,9 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km)
-        kargs : dict
+        kargs : dict, optional
             Optional parameters for use in subclasses if required.
 
         Other Parameters
@@ -128,7 +139,7 @@ class PathLossBase(object):
 
         Returns
         -------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path loss (in dB).
 
         Raises
@@ -149,7 +160,7 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        d : numpy array
+        d : np.ndarray
             Distance (in Km)
         ax : A matplotlib ax, optional
             The ax where the path loss will be plotted. If not provided, a
@@ -169,7 +180,7 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        d : numpy array
+        d : np.ndarray
             Distance (in correct unit)
         ax : A matplotlib ax, optional
             The ax where the path loss will be plotted. If not provided, a
@@ -220,7 +231,7 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km)
         kargs : dict
             Optional parameters for use in subclasses if required.
@@ -232,7 +243,7 @@ class PathLossBase(object):
 
         Returns
         -------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
         PL = self._calc_deterministic_path_loss_dB(d, **kargs)
@@ -275,7 +286,7 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km)
         kargs : dict
             Extra named parameters. This is used in subclasses for extra
@@ -288,7 +299,7 @@ class PathLossBase(object):
 
         Returns
         -------
-        pl : float or numpy array
+        pl : float | np.ndarray
             Path loss (in linear scale) for the given distance(s).
         """
         pl = conversion.dB2Linear(-self.calc_path_loss_dB(d, **kargs))
@@ -301,12 +312,12 @@ class PathLossBase(object):
 
         Parameters
         ----------
-        pl : float or numpy array
+        pl : float | np.ndarray
             Path loss (in linear scale).
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance(s) that will yield the path loss `pl`.
         """
         d = self.which_distance_dB(-conversion.linear2dB(pl))
@@ -347,12 +358,12 @@ class PathLossIndoorBase(PathLossBase):
 
         Parameters
         ----------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path Loss (in dB)
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             The distance to yield the given path loss.
 
         Raises
@@ -374,7 +385,7 @@ class PathLossIndoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in meters)
 
         Other Parameters
@@ -384,7 +395,7 @@ class PathLossIndoorBase(PathLossBase):
 
         Returns
         -------
-        PL : float or numpy array
+        PL : float | np.ndarray
             The calculated path loss.
 
         Raises
@@ -405,7 +416,7 @@ class PathLossIndoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : numpy array
+        d : np.ndarray
             Distance (in meters)
         ax : A matplotlib ax, optional
             The ax where the path loss will be plotted. If not provided, a
@@ -427,14 +438,14 @@ class PathLossIndoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in meters)
         kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
         -------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
         return super(PathLossIndoorBase, self).calc_path_loss_dB(d, **kargs)
@@ -446,14 +457,14 @@ class PathLossIndoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in meters)
         kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
         -------
-        pl : float or numpy array
+        pl : float | np.ndarray
             Path loss (in linear scale) for the given distance(s).
         """
         pl = conversion.dB2Linear(-self.calc_path_loss_dB(d, **kargs))
@@ -466,12 +477,12 @@ class PathLossIndoorBase(PathLossBase):
 
         Parameters
         ----------
-        pl : float or numpy array
+        pl : float | np.ndarray
             Path loss (in linear scale).
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance(s) that will yield the path loss `pl`.
         """
         d = self.which_distance_dB(-conversion.linear2dB(pl))
@@ -512,12 +523,12 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path Loss (in dB)
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             The distance that yields the given path loss.
 
         Raises
@@ -539,7 +550,7 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km)
 
         Other Parameters
@@ -549,7 +560,7 @@ class PathLossOutdoorBase(PathLossBase):
 
         Returns
         -------
-        PL : float or numpy array
+        PL : float | np.ndarray
             The calculated path loss (in dB).
 
         Raises
@@ -570,7 +581,7 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : numpy array
+        d : np.ndarray
             Distance (in Km)
         ax : A matplotlib ax, optional
             The ax where the path loss will be plotted. If not provided, a
@@ -592,14 +603,14 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km)
         kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
         -------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
         return super(PathLossOutdoorBase, self).calc_path_loss_dB(d)
@@ -610,14 +621,14 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km)
         kargs : dict
             Additional keywords that might be necessary in a subclass.
 
         Returns
         -------
-        pl : float or numpy array
+        pl : float | np.ndarray
             Path loss (in linear scale) for the given distance(s).
         """
         pl = conversion.dB2Linear(-self.calc_path_loss_dB(d))
@@ -670,6 +681,11 @@ class PathLossGeneral(PathLossOutdoorBase):
 
         .. math::
            PL = 10 n \\log_{10} (d) + C
+
+        Returns
+        -------
+        str
+            The Latex representation of the path loss object.
         """
         return '$PL = {0} \\log_{{10}} (d) + {1}$'.format(
             10 * self._n, self._C)
@@ -680,6 +696,11 @@ class PathLossGeneral(PathLossOutdoorBase):
 
         This is useful for representing the path loss object in an IPython
         notebook.
+
+        Returns
+        -------
+        str
+            The Latex representation of the path loss object.
         """
         return "PathLossGeneral (n={0}, C={1}): {2}".format(
             self._n, self._C, self._get_latex_repr())
@@ -718,12 +739,12 @@ class PathLossGeneral(PathLossOutdoorBase):
 
         Parameters
         ----------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path Loss (in dB).
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km).
         """
         d = 10. ** ((PL - self._C) / (10. * self._n))
@@ -743,12 +764,12 @@ class PathLossGeneral(PathLossOutdoorBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km).
 
         Returns
         -------
-        pl_dB : float or numpy array
+        pl_dB : float | np.ndarray
             Path loss in dB.
         """
         if isinstance(d, Iterable):
@@ -833,30 +854,63 @@ class PathLossFreeSpace(PathLossGeneral):
 
         This is useful for representing the path loss object in an IPython
         notebook.
+
+        Returns
+        -------
+        str
+            The Latex representation of the path loss object.
         """
         return "PathLossFreeSpace (n={0}, fc={1}): {2}".format(
             self.n, self.fc, self._get_latex_repr())
 
     @property
     def n(self):
-        """Get method for the n property."""
+        """
+        Get method for the n property.
+
+        Returns
+        -------
+        float
+            The path loss exponent.
+        """
         return self._n
 
     @n.setter
     def n(self, value):
-        """Set method for the n property."""
+        """
+        Set method for the n property.
+
+        Parameters
+        ----------
+        value : float
+            The new path loss exponent.
+        """
         self._n = value
         # If we change 'n', we need to update the C variable
         self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
 
     @property
     def fc(self):  # pragma: no cover
-        """Get method for the fc property."""
+        """
+        Get the central carrier frequency.
+
+        Returns
+        -------
+        float
+            The central carrier frequency.
+         """
         return self._fc
 
     @fc.setter
     def fc(self, value):
-        """Set method for the fc property."""
+        """
+        Set the central carrier frequency (in MHz).
+
+        Parameters
+        ----------
+        value : float
+            Central carrier frequency (in MHz).
+        """
         self._fc = value
         # If we change 'fc', we need to update the C variable
         self._C = self._calculate_C_from_fc_and_n(self._fc, self.n)
@@ -923,6 +977,11 @@ class PathLoss3GPP1(PathLossGeneral):
 
         This is useful for representing the path loss object in an IPython
         notebook.
+
+        Returns
+        -------
+        str
+            The Latex representation of the path loss object.
         """
         return "PathLoss3GPP1: {0}".format(self._get_latex_repr())
 
@@ -949,12 +1008,26 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
     @property
     def fc(self):
-        """Get method for the fc property."""
+        """
+        Get the central carrier frequency.
+
+        Returns
+        -------
+        float
+            The central carrier frequency.
+        """
         return self._fc
 
     @fc.setter
     def fc(self, value):
-        """Set method for the fc property."""
+        """
+        Set the central carrier frequency (in MHz).
+
+        Parameters
+        ----------
+        value : float
+            Central carrier frequency (in MHz).
+        """
         self._fc = value
 
     def _repr_latex_(self):  # pragma: no cover
@@ -963,6 +1036,11 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         This is useful for representing the path loss object in an IPython
         notebook.
+
+        Returns
+        -------
+        str
+            The Latex representation of the path loss object.
         """
         return "PathLossMetisPS7 (fc={0}):\n{1}".format(
             self.fc, self.get_latex_repr())
@@ -981,10 +1059,15 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         Parameters
         ----------
-        num_walls : int or None
+        num_walls : int, None
             Number of walls. LOS is used if it is 0 and NLOS is used if it
             is greater than zero. If it is None, then letters are used
             instead of numeric values.
+
+        Returns
+        -------
+        str
+            The Latex representation (equation) for the PathLossGeneral class.
         """
         if num_walls is None:
             values = {'A': 'A', 'B': 'B', 'C': 'C', 'X': 'X'}
@@ -1029,9 +1112,9 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         Parameters
         ----------
-        d : float or float numpy array.
+        d : float | np.ndarray
             Distance (in meters).
-        num_walls : int or int numpy array
+        num_walls : int | np.ndarray
             Indicates how many walls the signal has to pass. If num_walls
             is zero, then Line-of-Sight parameters are used. If it is
             greater than zero then Non-Sign-of-Sight parameters are
@@ -1041,7 +1124,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         Returns
         -------
-        pl_dB : float or numpy array
+        pl_dB : float | np.ndarray
             Path loss in dB.
         """
         if isinstance(num_walls, Iterable):
@@ -1103,8 +1186,13 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         Parameters
         ----------
-        d : float or float numpy array.
+        d : float | np.ndarray
             Distance (in meters).
+
+        Returns
+        -------
+        pl_dB : float | np.ndarray
+            Path loss in dB.
         """
         if isinstance(d, Iterable):
             log10 = np.log10
@@ -1145,15 +1233,15 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         Parameters
         ----------
-        d : float of numpy array
+        d : float | np.ndarray
             Distance (in meters).
-        num_walls : int or numpy int array
+        num_walls : int | np.ndarray
             Number of walls between the transmitter and the receiver. If it
             is an int array it must have the same dimension as `d`.
 
         Returns
         -------
-        pl_dB : float or numpy array
+        pl_dB : float | np.ndarray
             Path loss in dB.
         """
         if isinstance(d, Iterable):
@@ -1185,6 +1273,23 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
     def _calc_deterministic_path_loss_dB(self, d,
                                          num_walls=0):  # pragma: no cover
+        """
+        Calculates the Path Loss (in dB) for a given distance (in meters)
+        without including the shadowing.
+
+        Parameters
+        ----------
+        d : float | np.ndarray
+            Distance (in meters)
+        num_walls : int | np.ndarray
+            Number of walls between the transmitter and the receiver. If it
+            is an int array it must have the same dimension as `d`.
+
+        Returns
+        -------
+        PL : float | np.ndarray
+            The calculated path loss.
+        """
         return self._calc_PS7_path_loss_dB_same_floor(d, num_walls)
 
 
@@ -1251,12 +1356,27 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
     # xxxxxxxxxx fc property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
     def fc(self):
-        """Get method for the fc property."""
+        """
+        Get the central carrier frequency.
+
+        Returns
+        -------
+        float
+            The central carrier frequency.
+        """
         return self._fc
 
     @fc.setter
     def fc(self, value):
-        """Set method for the fc property."""
+        """
+        Set the central carrier frequency (in MHz).
+
+        Parameters
+        ----------
+        value : float
+            Central carrier frequency (in MHz).
+        """
+
         if value < 150.0 or value > 1500:
             msg = ("The carrier frequency for the Okomura Hata model must be"
                    " between 150 and 1500 (values in MHz).")
@@ -1267,12 +1387,27 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
     # xxxxxxxxxx hbs property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
     def hbs(self):
-        """Get method for the hbs property."""
+        """
+        Get the height of the Base Station property.
+
+        Returns
+        -------
+        float
+            Height of the Base Station (in meters).
+        """
         return self._hbs
 
     @hbs.setter
     def hbs(self, value):
-        """Set method for the hbs property."""
+        """
+        Set the height of the Base Station property (in meters).
+
+        Parameters
+        ----------
+        value : float
+            The Height of the Base Station (in meters). This should be
+            between 30m to 200m.
+        """
         if value < 30.0 or value > 200.0:
             msg = ("The Base Station antenna height for the Okomura Hata "
                    "model must be between 30 and 200 (values in meters).")
@@ -1283,12 +1418,27 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
     # xxxxxxxxxx hms property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
     def hms(self):
-        """Get method for the hms property."""
+        """
+        Get the height of the Mobile Station property.
+
+        Returns
+        -------
+        float
+            Height of the Mobile Station (in meters).
+        """
         return self._hms
 
     @hms.setter
     def hms(self, value):
-        """Set method for the hms property."""
+        """
+        Set the height of the Mobile Station property (in meters).
+
+        Parameters
+        ----------
+        value : float
+            The Height of the Mobile Station (in meters). This should be
+            between 1m to 10m.
+        """
         if value < 1.0 or value > 10.0:
             msg = ("The Mobile Station antenna height for the Okomura Hata "
                    "model must be between 1 and 10 (values in meters).")
@@ -1304,7 +1454,15 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
     @area_type.setter
     def area_type(self, value):
-        """Set method for the area_type property."""
+        """
+        Set method for the area_type property.
+
+        Parameters
+        ----------
+        value : str
+            The area type to set. This should be one of the values in
+            ['open', 'suburban', 'medium city', 'large city'].
+        """
         if value not in ['open', 'suburban', 'medium city', 'large city']:
             raise RuntimeError('Invalid area type: {0}'.format(value))
         self._area_type = value
@@ -1337,7 +1495,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
         Returns
         -------
-        a : float
+        float
             The mobile antenna height correction.
         """
         if self.area_type in ['open', 'suburban', 'medium city']:
@@ -1403,7 +1561,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
         Parameters
         ----------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km). Can be between 1km and 20Km.
 
         Returns
@@ -1442,12 +1600,12 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
         Parameters
         ----------
-        PL : float or numpy array
+        PL : float | np.ndarray
             Path loss (in dB).
 
         Returns
         -------
-        d : float or numpy array
+        d : float | np.ndarray
             Distance (in Km).
         """
         # TODO: implement-me
