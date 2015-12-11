@@ -34,18 +34,19 @@ def calc_post_processing_SINRs(channel, W, G_H, noise_var=None):
 
     Parameters
     ----------
-    channel : 2D numpy array
-        The MIMO channel.
-    W : 2D numpy array
-        The precoder for the MIMO scheme.
-    G_H : 2D numpy array
-        The receive filter for the MIMO scheme.
+    channel : np.ndarray
+        The MIMO channel. This should be a 2D numpy array.
+    W : np.ndarray
+        The precoder for the MIMO scheme. This should be a 2D numpy array.
+    G_H : np.ndarray
+        The receive filter for the MIMO scheme. This should be a 2D numpy
+        array.
     noise_var : float
         The noise variance
 
     Returns
     -------
-    sinrs : 1D numpy array
+    sinrs : np.ndarray
         The SINR of all streams (in linear scale).
     """
     return linear2dB(
@@ -59,18 +60,18 @@ def calc_post_processing_linear_SINRs(channel, W, G_H, noise_var=None):
 
     Parameters
     ----------
-    channel : 2D numpy array
-        The MIMO channel.
-    W : 2D numpy array
-        The precoder for the MIMO scheme.
-    G_H : 2D numpy array
-        The receive filter for the MIMO scheme.
+    channel : np.ndarray
+        The MIMO channel. This should be a 2D numpy array.
+    W : np.ndarray
+        The precoder for the MIMO scheme. This should be a 2D numpy array.
+    G_H : np.ndarray
+        The receive filter for the MIMO scheme. This should be a 2D numpy array.
     noise_var : float
         The noise variance
 
     Returns
     -------
-    sinrs : 1D numpy array.
+    sinrs : np.ndarray
         The SINR of all streams (in linear scale).
     """
     if noise_var is None:  # pragma: nocover
@@ -132,21 +133,19 @@ class MimoBase(object):
     static methods` (because there is no linear precoder or receive filter
     for the MIMO shcme in the subclass, for instance), then you should
     implement the `calc_linear_SINRs` method in the subclass instead.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MIMO channel matrix. This should be a 1D or 2D numpy array. The
+        allowed dimensions will depend on the particular MIMO scheme
+        implemented in a subclass.
     """
     # The MimoBase class is an abstract class and all methods marked as
     # 'abstract' must be implemented in a subclass.
     __metaclass__ = ABCMeta
 
     def __init__(self, channel=None):
-        """
-        Initialized the MimoBase object.
-
-        Parameters
-        ----------
-        channel : 1D or 2D numpy array
-            MIMO channel matrix. The allowed dimensions will depend on the
-            particular MIMO scheme implemented in a subclass.
-        """
         self._channel = None
         if channel is not None:
             self.set_channel_matrix(channel)
@@ -157,9 +156,10 @@ class MimoBase(object):
 
         Parameters
         ----------
-        channel : 1D or 2D numpy array
-            MIMO channel matrix. The allowed dimensions will depend on the
-            particular MIMO scheme implemented in a subclass.
+        channel : np.ndarray
+            MIMO channel matrix. This should be a 1D or 2D numpy array. The
+            allowed dimensions will depend on the particular MIMO scheme
+            implemented in a subclass.
         """
         self._channel = channel
 
@@ -167,6 +167,11 @@ class MimoBase(object):
     def Nt(self):
         """
         Get the number of transmit antennas
+
+        Returns
+        -------
+        int
+            The number of transmit antennas.
         """
         return self._channel.shape[1]
 
@@ -174,6 +179,11 @@ class MimoBase(object):
     def Nr(self):
         """
         Get the number of receive antennas
+
+        Returns
+        -------
+        int
+            The number of receive antennas.
         """
         return self._channel.shape[0]
 
@@ -184,12 +194,12 @@ class MimoBase(object):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The precoder that can be aplied to the input data.
         """
         raise NotImplementedError(
@@ -202,14 +212,14 @@ class MimoBase(object):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         noise_var : float
             The noise variance.
 
         Returns
         -------
-        G_H : 2D numpy array
+        G_H : np.ndarray
             The receive_filter that can be aplied to the input data.
         """
         raise NotImplementedError(
@@ -223,6 +233,11 @@ class MimoBase(object):
         Notes
         -----
         This method must be implemented in each subclass of `MimoBase`.
+
+        Returns
+        -------
+        int
+            The number of layers.
         """
         m = 'getNumberOfLayers still needs to be implemented in the {0} class'
         raise NotImplementedError(m.format(self.__class__.__name__))
@@ -235,12 +250,12 @@ class MimoBase(object):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The Zero-Forcing receive filter.
 
         Notes
@@ -257,14 +272,14 @@ class MimoBase(object):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         noise_var : float
             Noise variance.
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The MMSE receive filter.
         """
         H = channel
@@ -285,7 +300,7 @@ class MimoBase(object):
 
         Returns
         -------
-        sinrs : 1D numpy array
+        sinrs : np.ndarray
             The sinrs (in linear scale) of the multiple streams.
         """
         W = self._calc_precoder(self._channel)
@@ -304,7 +319,7 @@ class MimoBase(object):
 
         Returns
         -------
-        SINRs : 1D numpy array
+        SINRs : np.ndarray
             The SINRs (in dB) of the multiple streams.
         """
         return linear2dB(self.calc_linear_SINRs(noise_var))
@@ -317,8 +332,18 @@ class MimoBase(object):
 
         Parameters
         ----------
-        transmit_data : numpy array
+        transmit_data : np.ndarray
             The data to be transmitted.
+
+        Returns
+        -------
+        decoded_data : np.ndarray
+            The decoded data.
+
+        Returns
+        -------
+        encoded_data : np.ndarray
+            The encoded `transmit_data`.
         """
         msg = 'encode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
@@ -331,8 +356,13 @@ class MimoBase(object):
 
         Parameters
         ----------
-        received_data : numpy array
+        received_data : np.ndarray
             The received data.
+
+        Returns
+        -------
+        decoded_data : np.ndarray
+            The decoded data.
         """
         msg = 'decode still needs to be implemented in the {0} class'
         raise NotImplementedError(msg.format(self.__class__.__name__))
@@ -354,20 +384,17 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
 
     Other optional methods that might be useful implementing in subclasses
     are the `_calc_precoder` and `_calc_receive_filter` methods.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MISO channel matrix/vector. MISO schemes are defined for
+        scenarios with multiple transmit antennas and a single receive
+        antenna. If `channel` is 2D, then the first dimension size must
+        be equal to 1.
     """
 
     def __init__(self, channel=None):
-        """
-        Initialized the MimoBase object.
-
-        Parameters
-        ----------
-        channel : 1D or 2D numpy array
-            MISO channel matrix/vector. MISO schemes are defined for
-            scenarios with multiple transmit antennas and a single receive
-            antenna. If `channel` is 2D, then the first dimension size must
-            be equal to 1.
-        """
         MimoBase.__init__(self, channel=None)
         if channel is not None:
             self.set_channel_matrix(channel)
@@ -378,11 +405,15 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
 
         Parameters
         ----------
-        channel : 1D or 2D numpy array
+        channel : np.ndarray
             MISO channel vector. A MISO scheme is defined for the scenario
             with multiple transmit antennas and a single receive
             antenna. If channel is 2D then the first dimension size must be
             equal to 1.
+
+        Returns
+        -------
+        None
         """
         # We will store the channel as a 2D numpy to be consistent with the
         # other MIMO classes
@@ -403,6 +434,11 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
 
         Because a MISO scheme only has one receive antenna then then number
         of layers is always equal to 1.
+
+        Returns
+        -------
+        int
+            The number of layers.
         """
         return 1
 
@@ -418,6 +454,11 @@ class Blast(MimoBase):
     :meth:`set_noise_var` method). If the noise variance is positive the
     MMSE filter will be used, otherwise noise variance will be ignored and
     the Zero-Forcing filter will be used.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MIMO channel matrix.
     """
 
     def __init__(self, channel=None):
@@ -430,7 +471,7 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         """
         MimoBase.__init__(self, channel)
@@ -442,7 +483,7 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         """
         Nr, Nt = channel.shape
@@ -483,6 +524,10 @@ class Blast(MimoBase):
             Noise variance for the MMSE filter (if `noise_var` is
             positive). If `noise_var` is negative then the Zero-Forcing
             filter will be used and `noise_var` will be ignored.
+
+        Returns
+        -------
+        None
         """
         if noise_var is None:
             self._noise_var = 0.0
@@ -503,12 +548,12 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The precoder that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -521,14 +566,16 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         noise_var : float
-            The noise variance.
+            The noise variance. If a value is provided then MMSE filter will
+            be used. If it is not provided (or None is passes) then Zero
+            Force filter will be used.
 
         Returns
         -------
-        G_H : 2D numpy array
+        G_H : np.ndarray
             The receive_filter that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -550,13 +597,13 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
+        transmit_data : np.ndarray
             A numpy array with a number of elements which is a multiple of
             the number of transmit antennas.
 
         Returns
         -------
-        encoded_data : 2D numpy array
+        encoded_data : np.ndarray
             The encoded `transmit_data`.
 
         Raises
@@ -583,13 +630,13 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        received_data : 2D received data
+        received_data : np.ndarray
             Received data, which was encoded with the Blast scheme and
             corrupted by the channel `channel`.
 
         Returns
         -------
-        decoded_data : 1D numpy array
+        decoded_data : np.ndarray
             The decoded data.
         """
         G_H = self._calc_receive_filter(self._channel, self._noise_var)
@@ -606,21 +653,18 @@ class MRT(MisoBase):
 
     The number of streams for the MRT scheme is always equal to one, but it
     still employs multiple transmit antennas.
+
+    If `channel` is not provided you need to call the `set_channel_matrix`
+    method before calling the other methods.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MISO channel vector. It must be a 1D numpy array, where the
+        number of receive antennas is assumed to be equal to 1.
     """
 
     def __init__(self, channel=None):
-        """
-        Initialized the MRT object.
-
-        If `channel` is not provided you need to call the
-        `set_channel_matrix` method before calling the other methods.
-
-        Parameters
-        ----------
-        channel : 1D numpy array
-            MISO channel vector. It must be a 1D numpy array, where the
-            number of receive antennas is assumed to be equal to 1.
-        """
         MisoBase.__init__(self, channel)
 
     # noinspection PyUnresolvedReferences
@@ -637,12 +681,12 @@ class MRT(MisoBase):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix with dimention (1, Nt).
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The precoder that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -656,14 +700,14 @@ class MRT(MisoBase):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         noise_var : float
             The noise variance.
 
         Returns
         -------
-        G_H : 2D numpy array
+        G_H : np.ndarray
             The receive_filter that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -682,12 +726,12 @@ class MRT(MisoBase):
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
+        transmit_data : np.ndarray
             A numpy array with the data to be transmitted.
 
         Returns
         -------
-        encoded_data : 2D numpy array
+        encoded_data : np.ndarray
             The encoded `transmit_data`.
         """
         # Add an extra first dimension so that broadcast does the right
@@ -705,13 +749,13 @@ class MRT(MisoBase):
 
         Parameters
         ----------
-        received_data : 2D or 1D numpy array
+        received_data : np.ndarray
             Received data, which was encoded with the MRT scheme and
             corrupted by the channel `channel`.
 
         Returns
         -------
-        decoded_data : 1D numpy array
+        decoded_data : np.ndarray
             The decoded data.
         """
         G_H = self._calc_receive_filter(self._channel)
@@ -736,17 +780,14 @@ class MRC(Blast):
     The receive filter in the `Blast` class already does the maximum ratio
     combining. Therefore, this MRC class simply inherits from the Blast
     class and only exists for completion.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MIMO channel matrix.
     """
 
     def __init__(self, channel=None):
-        """
-        Initialized the MRC object.
-
-        Parameters
-        ----------
-        channel : 2D numpy array
-            MIMO channel matrix.
-        """
         Blast.__init__(self, channel)
 
     def set_channel_matrix(self, channel):
@@ -755,7 +796,7 @@ class MRC(Blast):
 
         Parameters
         ----------
-        channel : 1D or 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix. The MRC MIMO scheme is defined for the
             scenario with multiple receive antennas and a single receive
             antenna. If channel is 1D assume that the number of transmit
@@ -775,17 +816,14 @@ class MRC(Blast):
 class SVDMimo(Blast):
     """
     MIMO class for the SVD MIMO scheme.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MIMO channel matrix.
     """
 
     def __init__(self, channel=None):
-        """
-        Initialized the SVD MIMO object.
-
-        Parameters
-        ----------
-        channel : 2D numpy array
-            MIMO channel matrix.
-        """
         Blast.__init__(self, channel)
 
     @staticmethod
@@ -798,12 +836,12 @@ class SVDMimo(Blast):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix with dimention (1, Nt).
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The precoder that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -821,14 +859,14 @@ class SVDMimo(Blast):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         noise_var : float
             The noise variance.
 
         Returns
         -------
-        G_H : 2D numpy array
+        G_H : np.ndarray
             The receive_filter that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -847,12 +885,12 @@ class SVDMimo(Blast):
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
+        transmit_data : np.ndarray
             A numpy array with the data to be transmitted.
 
         Returns
         -------
-        encoded_data : 2D numpy array
+        encoded_data : np.ndarray
             The encoded `transmit_data`.
         """
         num_elements = transmit_data.size
@@ -875,13 +913,13 @@ class SVDMimo(Blast):
 
         Parameters
         ----------
-        received_data : 2D numpy array
+        received_data : np.ndarray
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
 
         Returns
         -------
-        decoded_data : 1D numpy array
+        decoded_data : np.ndarray
             The decoded data.
         """
         G_H = self._calc_receive_filter(self._channel)
@@ -897,17 +935,14 @@ class SVDMimo(Blast):
 class GMDMimo(Blast):
     """
     MIMO class for the GMD based MIMO scheme.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MIMO channel matrix.
     """
 
     def __init__(self, channel=None):
-        """
-        Initialized the SVD MIMO object.
-
-        Parameters
-        ----------
-        channel : 2D numpy array
-            MIMO channel matrix.
-        """
         Blast.__init__(self, channel)
 
     @staticmethod
@@ -923,12 +958,12 @@ class GMDMimo(Blast):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix with dimention (1, Nt).
 
         Returns
         -------
-        W : 2D numpy array
+        W : np.ndarray
             The precoder that can be aplied to the input data.
         """
         Nt = channel.shape[1]
@@ -946,14 +981,14 @@ class GMDMimo(Blast):
 
         Parameters
         ----------
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
         noise_var : float
             The noise variance.
 
         Returns
         -------
-        G_H : 2D numpy array
+        G_H : np.ndarray
             The receive_filter that can be aplied to the input data.
         """
         U, S, V_H = np.linalg.svd(channel)
@@ -981,12 +1016,12 @@ class GMDMimo(Blast):
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
+        transmit_data : np.ndarray
             A numpy array with the data to be transmitted.
 
         Returns
         -------
-        encoded_data : 2D numpy array
+        encoded_data : np.ndarray
             The encoded `transmit_data`.
         """
         num_elements = transmit_data.size
@@ -1007,13 +1042,13 @@ class GMDMimo(Blast):
 
         Parameters
         ----------
-        received_data : 2D numpy array
+        received_data : np.ndarray
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
 
         Returns
         -------
-        decoded_data : 1D numpy array
+        decoded_data : np.ndarray
             The decoded data.
         """
         G_H = self._calc_receive_filter(self._channel, self._noise_var)
@@ -1027,17 +1062,14 @@ class GMDMimo(Blast):
 class Alamouti(MimoBase):
     """
     MIMO class for the Alamouti scheme.
+
+    Parameters
+    ----------
+    channel : np.ndarray
+        MIMO channel matrix.
     """
 
     def __init__(self, channel=None):
-        """
-        Initialized the Alamouti object.
-
-        Parameters
-        ----------
-        channel : 2D numpy array
-            MIMO channel matrix.
-        """
         MimoBase.__init__(self, channel)
 
     @staticmethod
@@ -1068,8 +1100,12 @@ class Alamouti(MimoBase):
 
         Parameters
         ----------
-        channel : 1D or 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
+
+        Returns
+        -------
+        None
         """
         if len(channel.shape) == 1:
             super(Alamouti, self).set_channel_matrix(channel[np.newaxis, :])
@@ -1106,7 +1142,7 @@ class Alamouti(MimoBase):
 
         Returns
         -------
-        sinrs : 1D numpy array
+        sinrs : np.ndarray
             The sinrs (in linear scale) of the multiple streams.
         """
         # The linear post-processing SINR for the Alamouti scheme is given by
@@ -1125,12 +1161,12 @@ class Alamouti(MimoBase):
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
+        transmit_data : np.ndarray
             Data to be encoded by the Alamouit scheme.
 
         Returns
         -------
-        encoded_data : 2D numpy array
+        encoded_data : np.ndarray
             The encoded `transmit_data` (without dividing the power among
             transmit antennas).
 
@@ -1153,12 +1189,12 @@ class Alamouti(MimoBase):
 
         Parameters
         ----------
-        transmit_data : 1D numpy array
+        transmit_data : np.ndarray
             Data to be encoded by the Alamouit scheme.
 
         Returns
         -------
-        encoded_data : 2D numpy array
+        encoded_data : np.ndarray
             The encoded `transmit_data`.
         """
         return self._encode(transmit_data) / math.sqrt(2)
@@ -1175,15 +1211,15 @@ class Alamouti(MimoBase):
 
         Parameters
         ----------
-        received_data`: 2D numpy array
+        received_data : np.ndarray
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
-        channel : 2D numpy array
+        channel : np.ndarray
             MIMO channel matrix.
 
         Returns
         -------
-        decoded_data : 1D numpy array
+        decoded_data : np.ndarray
             The decoded data (without power compensating the power division
             performed during transmission).
 
@@ -1227,13 +1263,13 @@ class Alamouti(MimoBase):
 
         Parameters
         ----------
-        received_data : 2D numpy array
+        received_data : np.ndarray
             Received data, which was encoded with the Alamouit scheme and
             corrupted by the channel `channel`.
 
         Returns
         -------
-        decoded_data : 1D numpy array
+        decoded_data : np.ndarray
             The decoded data.
         """
         return self._decode(received_data, self._channel) * math.sqrt(2)
