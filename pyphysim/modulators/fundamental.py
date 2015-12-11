@@ -77,7 +77,14 @@ class Modulator(object):
 
     @property
     def name(self):
-        """Get method for the 'name' property."""
+        """
+        Get method for the 'name' property.
+
+        Returns
+        -------
+        str
+            The name of the modulator.
+        """
         return "{0:d}-{1:s}".format(self._M, self.__class__.__name__)
 
     @property
@@ -110,6 +117,14 @@ class Modulator(object):
         return self._K
 
     def __repr__(self):  # pragma: no cover
+        """
+        Get the string representation of the object.
+
+        Returns
+        -------
+        str
+            String representation of the object.
+        """
         return "{0} object".format(self.name)
 
     def setConstellation(self, symbols):
@@ -121,7 +136,7 @@ class Modulator(object):
 
         Parameters
         ----------
-        symbols : numpy array
+        symbols : np.ndarray
             A an numpy array with the symbol table.
         """
         M = symbols.size
@@ -162,12 +177,12 @@ class Modulator(object):
 
         Parameters
         ----------
-        inputData : Numpy array
+        inputData : np.ndarray
             Data to be modulated.
 
         Returns
         -------
-        modulated_data : numpy array
+        modulated_data : np.ndarray
             The modulated data
 
         Raises
@@ -188,12 +203,12 @@ class Modulator(object):
 
         Parameters
         ----------
-        receivedData : numpy array
+        receivedData : np.ndarray
             Data to be demodulated.
 
         Returns
         -------
-        demodulated_data : numpy array
+        demodulated_data : np.ndarray
             The demodulated data.
         """
         # xxxxxxxxxx First Try xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -239,12 +254,12 @@ class Modulator(object):
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        SER : float or array like
+        SER : float | np.ndarray
             The theoretical symbol error rate.
 
         See also
@@ -264,12 +279,12 @@ class Modulator(object):
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        BER : float or array like
+        BER : float | np.ndarray
             The theoretical bit error rate.
 
         See also
@@ -300,7 +315,7 @@ class Modulator(object):
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
         packet_length : int
             The package length. That is, the number of bits in each
@@ -308,7 +323,7 @@ class Modulator(object):
 
         Returns
         -------
-        PER : float
+        PER : float | np.ndarray
             The theoretical package error rate.
 
         See also
@@ -339,7 +354,7 @@ class Modulator(object):
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
         packet_length : int
             The package length. That is, the number of bits in each
@@ -347,7 +362,7 @@ class Modulator(object):
 
         Returns
         -------
-        se : float of array like (same as the SNR attribute)
+        se : float | np.ndarray
             The theoretical spectral efficiency.
 
         See also
@@ -378,7 +393,7 @@ class PSK(Modulator):
         ----------
         M : int
             The modulation cardinality
-        phaseOffset: float, optional (default to 0)
+        phaseOffset: float, optional
             A phase offset (in radians) to be applied to the PSK
             constellation.
 
@@ -411,7 +426,7 @@ class PSK(Modulator):
 
         Returns
         -------
-        symbols : numpy array
+        symbols : np.ndarray
             The PSK constellation with the desired cardinality and phase
             offset.
 
@@ -442,12 +457,12 @@ class PSK(Modulator):
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        SER : float or array like
+        SER : float | np.ndarray
             The theoretical symbol error rate.
         """
         snr = dB2Linear(SNR)
@@ -464,12 +479,12 @@ class PSK(Modulator):
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        BER : float or array like
+        BER : float | np.ndarray
             The theoretical bit error rate.
         """
         # $P_b = \frac{1}{k}P_s$
@@ -492,6 +507,14 @@ class QPSK(PSK):  # pragma: no cover
         PSK.__init__(self, 4, PI / 4.)
 
     def __repr__(self):  # pragma: no cover
+        """
+        Get the string representation of the object.
+
+        Returns
+        -------
+        str
+            String representation of the object.
+        """
         return "QPSK object"
 # xxxxx End of QPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -510,23 +533,40 @@ class BPSK(Modulator):
 
     @property
     def name(self):
+        """
+        Get the name property.
+
+        Returns
+        -------
+        str
+            The name of the modulator.
+        """
         return "{0:s}".format(self.__class__.__name__)
 
     def __repr__(self):  # pragma: no cover
+        """
+        Get the string representation of the object.
+
+        Returns
+        -------
+        str
+            String representation of the object.
+        """
         return "BPSK object"
 
     def calcTheoreticalSER(self, SNR):
-        """Calculates the theoretical (approximation) symbol error rate for
-        the BPSK scheme.
+        """
+        Calculates the theoretical (approximation) symbol error rate for the
+        BPSK scheme.
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        SER : float or array like
+        SER : float | np.ndarray
             The theoretical symbol error rate.
         """
         snr = dB2Linear(SNR)
@@ -537,32 +577,34 @@ class BPSK(Modulator):
         return ser
 
     def calcTheoreticalBER(self, SNR):
-        """Calculates the theoretical (approximation) bit error rate for
-        the BPSK scheme.
+        """
+        Calculates the theoretical (approximation) bit error rate for the
+        BPSK scheme.
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        BER : float or array like
+        BER : float | np.ndarray
             The theoretical bit error rate.
         """
         return self.calcTheoreticalSER(SNR)
 
     def modulate(self, inputData):
-        """Modulate the input data (decimal data).
+        """
+        Modulate the input data (decimal data).
 
         Parameters
         ----------
-        inputData : Numpy array
+        inputData : np.ndarray
             Data to be modulated.
 
         Returns
         -------
-        modulated_data : numpy array
+        modulated_data : np.ndarray
             The modulated data
 
         Raises
@@ -578,16 +620,17 @@ class BPSK(Modulator):
         return 1 - 2 * inputData
 
     def demodulate(self, receivedData):
-        """Demodulate the data.
+        """
+        Demodulate the data.
 
         Parameters
         ----------
-        receivedData : numpy array
+        receivedData : np.ndarray
             Data to be demodulated.
 
         Returns
         -------
-        demodulated_data : numpy array
+        demodulated_data : np.ndarray
             The demodulated data.
         """
         # noinspection PyUnresolvedReferences
@@ -635,8 +678,8 @@ class QAM(Modulator):
 
     @staticmethod
     def _createConstellation(M):
-        """Generates the Constellation for the (SQUARE) M-QAM modulation
-        scheme.
+        """
+        Generates the Constellation for the (SQUARE) M-QAM modulation scheme.
 
         Parameters
         ----------
@@ -645,7 +688,7 @@ class QAM(Modulator):
 
         Returns
         -------
-        symbols : numpy array
+        symbols : np.ndarray
             The QAM constellation with the desired cardinality.
         """
         # Size of the square. The square root is exact
@@ -663,9 +706,9 @@ class QAM(Modulator):
 
     @staticmethod
     def _calculateGrayMappingIndexQAM(L):
-        """Calculates the indexes that should be applied to the
-        constellation created by _createConstellation in order to
-        correspond to Gray mapping.
+        """
+        Calculates the indexes that should be applied to the constellation
+        created by _createConstellation in order to correspond to Gray mapping.
 
         Notice that the square M-QAM constellation is a matrix of dimension
         L x L, where L is the square root of M. Since the constellation was
@@ -697,7 +740,7 @@ class QAM(Modulator):
 
         Returns
         -------
-        indexes : numpy array of integers
+        indexes : np.ndarray
             indexes that should be applied to the constellation created by
             _createConstellation in order to correspond to Gray mapping
 
@@ -723,17 +766,18 @@ class QAM(Modulator):
 
     # noinspection PyPep8
     def _calcTheoreticalSingleCarrierErrorRate(self, SNR):
-        """Calculates the theoretical (approximation) error rate of a
-        single carrier in the QAM system (QAM has two carriers).
+        """
+        Calculates the theoretical (approximation) error rate of a single
+        carrier in the QAM system (QAM has two carriers).
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        Psc : float or array like
+        Psc : float | np.ndarray
             The theoretical single carrier error rate.
 
         Notes
@@ -755,17 +799,18 @@ class QAM(Modulator):
         return Psc
 
     def calcTheoreticalSER(self, SNR):
-        """Calculates the theoretical (approximation) symbol error rate for
-        the QAM scheme.
+        """
+        Calculates the theoretical (approximation) symbol error rate for the
+        QAM scheme.
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        SER : float or array like
+        SER : float | np.ndarray
             The theoretical symbol error rate.
         """
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
@@ -775,17 +820,18 @@ class QAM(Modulator):
         return ser
 
     def calcTheoreticalBER(self, SNR):
-        """Calculates the theoretical (approximation) bit error rate for
-        the QAM scheme.
+        """
+        Calculates the theoretical (approximation) bit error rate for the QAM
+        scheme.
 
         Parameters
         ----------
-        SNR : float or array like
+        SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
 
         Returns
         -------
-        BER : float or array like
+        BER : float | np.ndarray
             The theoretical bit error rate.
         """
         # For higher SNR values and gray mapping, each symbol error

@@ -8,6 +8,8 @@ Module implementing OFDM modulation and demodulation.
 import numpy as np
 import math
 
+from ..channels import fading
+
 __all__ = ['OFDM', 'OfdmOneTapEqualizer']
 
 
@@ -21,7 +23,7 @@ class OFDM(object):
         Size of the FFT and IFFT used by the OFDM class.
     cp_size : int
         Size of the cyclic prefix (in samples).
-    num_used_subcarriers : int, optional (default to fft_size)
+    num_used_subcarriers : int, optional
         Number of used subcarriers. Must be greater than or equal to 2
         and lower than or equal to fft_size. If not provided, fft_size
         will be used
@@ -32,8 +34,6 @@ class OFDM(object):
         If the any of the parameters are invalid.
     """
     def __init__(self, fft_size, cp_size, num_used_subcarriers=None):
-        """Initializates the OFDM object.
-        """
         self.fft_size = 0
         self.cp_size = 0
         self.num_used_subcarriers = 0
@@ -41,7 +41,8 @@ class OFDM(object):
         self.set_parameters(fft_size, cp_size, num_used_subcarriers)
 
     def set_parameters(self, fft_size, cp_size, num_used_subcarriers=None):
-        """Set the OFDM parameters.
+        """
+        Set the OFDM parameters.
 
         Parameters
         ----------
@@ -49,7 +50,7 @@ class OFDM(object):
             Size of the FFT and IFFT used by the OFDM class.
         cp_size : int
             Size of the cyclic prefix (in samples).
-        num_used_subcarriers : int, optional (default to fft_size)
+        num_used_subcarriers : int, optional
             Number of used subcarriers. Must be greater than or equal to 2
             and lower than or equal to fft_size. If not provided, fft_size
             will be used
@@ -81,8 +82,9 @@ class OFDM(object):
         self.num_used_subcarriers = num_used_subcarriers
 
     def _calc_zeropad(self, input_data_size):
-        """Calculates the number of zeros that must be added to the input
-        data to make it a multiple of the OFDM size.
+        """
+        Calculates the number of zeros that must be added to the input data
+        to make it a multiple of the OFDM size.
 
         The number of zeros that must be added to the input data is
         returned along with the number of OFDM symbols that will be
@@ -95,13 +97,12 @@ class OFDM(object):
 
         Returns
         -------
-        (zeropad, num_ofdm_symbols) : tuple
+        (zeropad, num_ofdm_symbols) : tuple[int,int]
             A tuple with zeropad and num_ofdm_symbols. Zeropad is the
             number of zeros added to the input data to make the total
             number of elements a multiple of the number of used
             subcarriers. Num_ofdm_symbols is the number of OFDM symbols
             required to transmit `input_data_size` symbols.
-
         """
         num_ofdm_symbols = (int(np.ceil(float(input_data_size) /
                                         self.num_used_subcarriers)))
@@ -123,7 +124,7 @@ class OFDM(object):
 
         Returns
         -------
-        1D numpy array
+        np.ndarray
             Numbers of all subcarriers, including the negative, the DC and
             the positive subcarriers
 
@@ -147,7 +148,7 @@ class OFDM(object):
 
         Returns
         -------
-        1D numpy array
+        np.ndarray
             Number of the actually used subcarriers.
 
         Examples
@@ -178,7 +179,7 @@ class OFDM(object):
 
         Returns
         -------
-        indexes : 1D numpy array
+        indexes : np.ndarray
             Subcarrier indexes of the subcarriers actually used in a way
             suitable for python indexing.
 
@@ -210,8 +211,9 @@ class OFDM(object):
         return indexes_proper
 
     def _prepare_input_signal(self, input_signal):
-        """Prepare the input signal to be passed to the IFFT in the
-        modulate function.
+        """
+        Prepare the input signal to be passed to the IFFT in the modulate
+        function.
 
         The input signal must be prepared before it is passed to the IFFT
         in the OFDM modulate function.
@@ -229,13 +231,13 @@ class OFDM(object):
 
         Parameters
         ----------
-        input_signal : 1D numpy array
+        input_signal : np.ndarray
             Input signal that must be modulated by the OFDM modulate
             function.
 
         Returns
         -------
-        input_ifft : 1D numpy array
+        input_ifft : np.ndarray
             Signal suitable to be passed to the IFFT function to actually
             perform the OFDM modulation.
 
@@ -265,7 +267,8 @@ class OFDM(object):
         return input_ifft
 
     def _prepare_decoded_signal(self, decoded_signal):
-        """Prepare the decoded signal that was processed by the FFT in the
+        """
+        Prepare the decoded signal that was processed by the FFT in the
         demodulate function.
 
         This is equivalent of reversing the indexing that was done by the
@@ -273,13 +276,13 @@ class OFDM(object):
 
         Parameters
         ----------
-        decoded_signal : 1D numpy array
+        decoded_signal : np.ndarray
             Signal that was decoded by the FFT in the OFDM demodulate
             method.
 
         Returns
         -------
-        demodulated_samples : 1D numpy array
+        demodulated_samples : np.ndarray
             Demodulated samples of the symbols that were modulated by the
             OFDM object (for instance the PSK or M-QAM symbols passed to
             OFDM).
@@ -301,19 +304,18 @@ class OFDM(object):
             :, self.get_used_subcarrier_indexes()].flatten()
 
     def _add_CP(self, input_data):
-        """Add the Cyclic prefix to the input data.
-
-        Note that `input_data` must have a shape of (Number of OFDM
-        symbols, IFFT size).
+        """
+        Add the Cyclic prefix to the input data.
 
         Parameters
         ----------
-        input_data : 2D numpy array
-            OFDM modulated data (after the IFFT).
+        input_data : np.ndarray
+            OFDM modulated data (after the IFFT). This must be a 2D numpy
+            array with shape (Number of OFDM symbols, IFFT size).
 
         Returns
         -------
-        output : 1D numpy array
+        output : np.ndarray
             The `input_data` with the cyclic prefix added. The shape of the
             output is (Number of OFDM symbols, IFFT size + CP Size).
 
@@ -325,19 +327,18 @@ class OFDM(object):
         return output
 
     def _remove_CP(self, received_data):
-        """Remove the Cyclic prefix of the received data.
+        """
+        Remove the Cyclic prefix of the received data.
 
         Parameters
         ----------
-        received_data : 2D numpy array
-            Data that must be demodulated by the OFDM object. This is a one
-            dimensional array.
+        received_data : np.ndarray
+            Data that must be demodulated by the OFDM object.
 
         Returns
         -------
-        output : 1D numpy array
-            Received data without the Cyclic prefix. This is a
-            bi-dimensional array.
+        output : np.ndarray
+            Received data without the Cyclic prefix.
 
         Notes
         -----
@@ -376,20 +377,21 @@ class OFDM(object):
         return power_scale
 
     def modulate(self, input_signal):
-        """Perform the OFDM modulation of the input_signal.
+        """
+        Perform the OFDM modulation of the input_signal.
 
         .. TODO:: Write here about the performed zeropadding as well as CP
            addition.
 
         Parameters
         ----------
-        input_signal : 1D numpy array
+        input_signal : np.ndarray
             Input signal that must be modulated by the OFDM modulate
             function.
 
         Returns
         -------
-        output : 1D numpy array
+        output : np.ndarray
             An array with the samples of the modulated OFDM symbols.
 
         """
@@ -421,14 +423,13 @@ class OFDM(object):
 
         Parameters
         ----------
-        received_signal : 1D numpy array
+        received_signal : np.ndarray
             An array with the samples of the received OFDM symbols.
 
         Returns
         -------
-        demodulated_data : 1D numpy array
+        demodulated_data : np.ndarray
             Demodulated symbols.
-
         """
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # - Remove the Cyclic Prefix -> the output will have a shape of
@@ -474,18 +475,18 @@ class OfdmOneTapEqualizer(object):
 
         Parameters
         ----------
-        data_reshaped : numpy array
+        data_reshaped : np.ndarray
             The data to be equalized. If must be a 2D numpy array, where
             different rows correspond to different OFDM symbols and the
             different columns correspond to the USED
             subcarriers. Dimension: `num OFDM symbols x num Used subcarriers`
-        mean_freq_response : numpy array
+        mean_freq_response : np.ndarray
             The frequence response for each OFDM symbol.
             Dimension: `num OFDM symbols x FFT size`
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The received `data` after the one-tap equalizatiob to compensate
             the channel effect.
             Dimension: `num OFDM symbols x num Used subcarriers`
@@ -502,14 +503,14 @@ class OfdmOneTapEqualizer(object):
 
         Parameters
         ----------
-        data : numpy array
+        data : np.ndarray
             The data to be equalized.
-        impulse_response : channels.TdlImpulseResponse
+        impulse_response : fading.TdlImpulseResponse
             The impulse response of the channel.
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The received `data` after the one-tap equalizatiob to compensate
             the channel effect.
         """
