@@ -118,7 +118,8 @@ class Projection(object):
 
         Examples
         --------
-        >>> A = np.array([[1 + 1j, 2 - 2j], [3 - 2j, 0], [-1 - 1j, 2 - 3j]])
+        >>> A = np.array([[1 + 1j, 2 - 2j], [3 - 2j, 0], \
+                          [-1 - 1j, 2 - 3j]])
         >>> # Matrix that projects into the subspace spanned by the columns
         >>> # of A
         >>> Q = calcProjectionMatrix(A)
@@ -157,7 +158,7 @@ class Projection(object):
         Examples
         --------
         >>> A = np.array([[1, 2], [2, 2], [4, 3]])
-        >>> # Matrix that projects into the subspace orthognal to the
+        >>> # Matrix that projects into the subspace orthogonal to the
         >>> # subspace spanned by the columns of A
         >>> oQ = calcOrthogonalProjectionMatrix(A)
         >>> print(oQ)

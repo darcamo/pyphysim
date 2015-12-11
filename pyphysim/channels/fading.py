@@ -1153,9 +1153,9 @@ class TdlChannel(object):
 
             if len(self._fading_generator.shape) == 1:
                 # xxxxxxxxxx SISO case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                # Get the equivalent frequency response of the last generated
-                # impulse response. That is what we will use to corrupt the
-                # current block of signal
+                # Get the equivalent frequency response of the last
+                # generated impulse response. That is what we will use
+                # to corrupt the current block of signal
                 if carrier_indexes is None:
                     freq_response = \
                         self._last_impulse_response.get_freq_response(
@@ -1171,9 +1171,9 @@ class TdlChannel(object):
 
             else:  # len(self._fading_generator.shape) == 3
                 # xxxxxxxxxx MIMO Case xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                # Get the equivalent frequency response of the last generated
-                # impulse response. That is what we will use to corrupt the
-                # current block of signal
+                # Get the equivalent frequency response of the last
+                # generated impulse response. That is what we will use
+                # to corrupt the current block of signal
                 if carrier_indexes is None:
                     freq_response = \
                         self._last_impulse_response.get_freq_response(
@@ -1182,7 +1182,6 @@ class TdlChannel(object):
                     freq_response = \
                         self._last_impulse_response.get_freq_response(
                             fft_size)[carrier_indexes, :, :, 0]
-
 
                 if self.switched_direction:
                     # xxxxxxxxxx Code for reversed direction xxxxxxxxxxxxxx

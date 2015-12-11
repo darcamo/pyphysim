@@ -67,7 +67,7 @@ def calc_principal_angles(matrix1, matrix2):
     S[S > 1] = 1  # Change values greater then 1 to 1
 
     # The singular values in the matrix S are equal to the cosine of the
-    # principal angles. We can calcuate the arc-cosine of each element
+    # principal angles. We can calculate the arc-cosine of each element
     # then.
     return np.arccos(S)
 
@@ -145,10 +145,10 @@ def calc_chordal_distance(matrix1, matrix2):
     Q1 = np.linalg.qr(matrix1)[0]
     Q2 = np.linalg.qr(matrix2)[0]
 
-    # ncols = matrix1.shape[1]  # Deve ser igual a matrix2.shape[1].
+    # ncols = matrix1.shape[1]  # Must be equal to matrix2.shape[1].
 
-    # As primeiras ncols colunas de Q1 e Q2 formam a base ortonormal de
-    # ran(matrix1) e ran(matrix2), respectivamente
+    # The first ncols columns of Q1 and Q2 make orthogonal basis of
+    # ran(matrix1) and ran(matrix2), respectively
     Q1_sqr = Q1.dot(Q1.conjugate().transpose())
     Q2_sqr = Q2.dot(Q2.conjugate().transpose())
     return np.linalg.norm(Q1_sqr - Q2_sqr, 'fro') / math.sqrt(2.)

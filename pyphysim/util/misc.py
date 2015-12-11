@@ -11,12 +11,6 @@ import numpy as np
 from scipy.special import erfc
 
 
-# import math.erf
-# erf can also be found in the scipy.special library
-# erf can also be found in the math library -> python 2.7 ou above
-# erf can also be found in the mpmath library
-
-
 def gmd(U, S, V_H, tol=0.0):
     """
     Perform the Geometric Mean Decomposition of a matrix A, whose SVD is
@@ -65,7 +59,7 @@ def gmd(U, S, V_H, tol=0.0):
     d = np.copy(S)  # We copy here to avoid changing 'S'
 
     # l = min(m, n)
-    p = np.sum(S >= tol)  # Number of singular values >= tol
+    p = np.asscalar(np.sum(S >= tol))  # Number of singular values >= tol
 
     # If there is no singular value greater then the tolerance, then we
     # return nothing
@@ -358,7 +352,7 @@ def randn_c_RS(RS, *args):  # pragma: no cover
     This is essentially the same as the the randn_c function. The only
     difference is that the randn_c function uses the global RandomState
     object in numpy, while randn_c_RS use the provided RandomState
-    object. This allow us greatter control.
+    object. This allow us greater control.
 
     Parameters
     ----------
@@ -410,7 +404,7 @@ def level2bits(n):
 
 def int2bits(n):
     """
-    Calculates the number of bits needed to represent an interger n.
+    Calculates the number of bits needed to represent an integer n.
 
     Parameters
     ----------
