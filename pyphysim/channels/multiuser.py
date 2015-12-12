@@ -629,26 +629,55 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     # Property to get the number of receive antennas
     @property
     def Nr(self):
-        """Get method for the Nr property."""
+        """
+        Get method for the Nr property.
+
+        Returns
+        -------
+        np.ndarray
+            The number of receive antennas of all users.
+        """
         return self._Nr
 
     # Property to get the number of transmit antennas
     @property
     def Nt(self):
-        """Get method for the Nt property."""
+        """
+        Get method for the Nt property.
+
+        Returns
+        -------
+        np.ndarray
+            The number of transmit antennas of all users.
+        """
         return self._Nt
 
     # Property to get the number of users
     @property
     def K(self):
-        """Get method for the K property."""
+        """
+        Get method for the K property.
+
+        Returns
+        -------
+        int
+            The number of users (transmit-receive pairs).
+        """
         return self._K
 
     # Property to get the matrix of channel matrices (with pass loss
     # applied if any)
     @property
     def H(self):
-        """Get method for the H property."""
+        """
+        Get method for the H property.
+
+        Returns
+        -------
+        np.ndarray
+            The channel from all transmitters to all receivers. This is a
+            numpy array of numpy arrays.
+        """
         if self._pathloss_matrix is None:
             # No path loss
             return self._H_no_pathloss
@@ -665,7 +694,15 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     # Property to get the big channel matrix (with pass loss applied if any)
     @property
     def big_H(self):
-        """Get method for the big_H property."""
+        """
+        Get method for the big_H property.
+
+        Returns
+        -------
+        np.ndarray
+            The channel from all transmitters to all receivers as a single
+            big matrix (numpy complex array)
+        """
         if self._pathloss_matrix is None:
             # No path lossr
             return self._big_H_no_pathloss
@@ -752,8 +789,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             array.
         Kr : int
             Number of receivers to consider.
-        Kt : int, optional (default to the value of Kr)
-            Number of transmitters to consider.
+        Kt : int, optional
+            Number of transmitters to consider. It not provided the value of
+            Kr will be used.
 
         Returns
         -------
@@ -821,6 +859,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         K : int
             Number of transmit/receive pairs.
 
+        Returns
+        -------
+        None
+
         Raises
         ------
         ValueError
@@ -868,7 +910,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         self._H_no_pathloss.setflags(write=False)
 
     def randomize(self, Nr, Nt, K):
-        """Generates a random channel matrix for all users.
+        """
+        Generates a random channel matrix for all users.
 
         Parameters
         ----------
@@ -1014,12 +1057,27 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
     @property
     def W(self):
-        """Get method for the post processing filter W."""
+        """
+        Post processing filters (a list of 2D numpy arrays) for each user.
+
+        Returns
+        -------
+        list[np.ndarray]
+            The Post processing filters for each user.
+        """
         return self._W
 
     @property
     def big_W(self):
-        """Get method for the big_W property."""
+        """
+        Post processing filters (a block diagonal matrix) for each user.
+
+        Returns
+        -------
+        np.ndarray
+            The big block diagonal matrix with the post processing filters
+            for each user.
+        """
         if self._big_W is None and self.W is not None:
             # noinspection PyArgumentList
             self._big_W = block_diag(*self.W)
@@ -1100,7 +1158,6 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         # number of external interference sources, while the self.K
         # property will return only the number of users, which is what we
         # want here.
-
         concatenated_data = np.vstack(data)
         concatenated_output = self.corrupt_concatenated_data(
             concatenated_data)
@@ -1202,14 +1259,16 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         ----------
         k : int
             Index of the desired receiver.
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This should be a 1D numpy array of 2D numpy
+            arrays.
 
         Returns
         -------
-        Qk : 2D numpy complex array.
-            The interference covariance matrix at receiver :math:`k`.
+        Qk : np.ndarray
+            The interference covariance matrix at receiver :math:`k` (a 2D
+            numpy complex array).
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \sigma_n^2 \mtI_{N_k}$$
         Qk = self._calc_Q_impl(k, F_all_users)
@@ -1229,6 +1288,18 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         the :math:`k`-th receiver with a joint processing scheme.
 
         See the documentation of the calc_JP_Q method.
+
+        Parameters
+        ----------
+        k : int
+            The user idex.
+        F_all_users : list[np.ndarray]
+            The precoders of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The interference covariance matrix (without any noise).
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H$$
         interfering_users = set(range(self.K)) - {k}
@@ -1260,13 +1331,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         ----------
         k : int
             Index of the desired receiver.
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
 
         Returns
         -------
-        Qk : 2D numpy complex array.
+        Qk : np.ndarray
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \sigma_n^2 \mtI_{N_k}$$
@@ -1292,17 +1363,21 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
         k : int
             Index of the desired user.
-        N0_or_Rek : float or a 2D numpy array
+        N0_or_Rek : float | np.ndarray
             If this is a 2D numpy array, it is interpreted as the
             covariance matrix of any external interference plus noise. If
             this is a number, it is interpreted as the noise power, in
             which case the covariance matrix will be an identity matrix
             times this noise power.
+
+        Returns
+        -------
+        first_part : np.ndarray
         """
         # The first part in Bkl is given by
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtR e_k$$
@@ -1338,7 +1413,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
     # noinspection PyPep8
     def _calc_Bkl_cov_matrix_second_part(self, Fk, k, l):
-        """Calculates the second part in the equation of the Blk covariance
+        """
+        Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
         include the identity matrix).
 
@@ -1348,7 +1424,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of the desired user.
         k : int
             Index of the desired user.
@@ -1357,7 +1433,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        second_part : 2D numpy complex array.
+        second_part : np.ndarray
             Second part in equation (28) of [Cadambe2008]_.
 
         """
@@ -1395,12 +1471,12 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
         k : int
             Index of the desired user.
-        N0_or_Rek : float or a 2D numpy array
+        N0_or_Rek : float | np.ndarray
             If this is a 2D numpy array, it is interpreted as the
             covariance matrix of any external interference plus noise. If
             this is a number, it is interpreted as the noise power, in
@@ -1409,14 +1485,13 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Bkl : 1D numpy array of 2D numpy arrays
+        Bkl : np.ndarray
             Covariance matrix of all streams of user k. Each element of the
-            returned 1D numpy array is a 2D numpy complex array
-            corresponding to the covariance matrix of one stream of user k.
+            returned 1D numpy array is a 2D numpy complex array corresponding
+            to the covariance matrix of one stream of user k.
 
         Notes
         -----
-
         To be simple, a function that returns the covariance matrix of only
         a single stream "l" of the desired user "k" could be implemented,
         but in the order to calculate the max SINR algorithm we need the
@@ -1446,19 +1521,19 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Hk : 2D numpy array
+        Hk : np.ndarray
             The channel from all transmitters (not including external
             interference source, if any) to receiver k.
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
-        Rek : 2D numpy array
+        Rek : np.ndarray
             Covariance matrix of the external interference (if there is
             any) plus noise.
 
         Returns
         -------
-        numpy array
+        np.ndarray
             The `first_part` for the Bkl matrix computation.
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[k]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[k]\dagger} + \mtR e_k$$
@@ -1494,13 +1569,17 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
         k : int
             Index of the desired user.
         noise_power : float
             The noise power.
+
+        Returns
+        -------
+        np.ndarray
         """
         # The first part in Bkl is given by
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtI_{N^{[k]}}$$
@@ -1519,6 +1598,16 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         """
         Common implementation of the _calc_JP_Bkl_cov_matrix_second_part
         method.
+
+        Parameters
+        ----------
+        Hk : np.ndarray
+        Fk : np.ndarray
+        l : int
+
+        Returns
+        -------
+        np.ndarray
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[k]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[k]\dagger}$$
         Hk_H = Hk.transpose().conjugate()
@@ -1541,7 +1630,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of the desired user.
         k : int
             Index of the desired user.
@@ -1550,9 +1639,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        second_part : 2D numpy complex array.
+        second_part : np.ndarray.
             Second part in equation (28) of [Cadambe2008]_.
-
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[k]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[k]\dagger}$$
         Hk = self.get_Hk(k)
@@ -1560,9 +1648,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
     # noinspection PyPep8
     def _calc_JP_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
-        """Calculates the interference-plus-noise covariance matrix for all
-        streams at receiver :math:`k` according to equation (28) in
-        [Cadambe2008]_.
+        """
+        Calculates the interference-plus-noise covariance matrix for all
+        streams at receiver :math:`k` according to equation (28) in [
+        Cadambe2008]_.
 
         The interference-plus-noise covariance matrix for stream :math:`l`
         of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
@@ -1580,12 +1669,12 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
         k : int
             Index of the desired user.
-        N0_or_Rek : float or a 2D numpy array
+        N0_or_Rek : float | np.ndarray
             If this is a 2D numpy array, it is interpreted as the
             covariance matrix of any external interference plus noise. If
             this is a number, it is interpreted as the noise power, in
@@ -1594,7 +1683,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Bkl : 1D numpy array of 2D numpy arrays
+        Bkl : np.ndarray
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
@@ -1629,20 +1718,20 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of user k.
-        Uk : 2D numpy array
+        Uk : np.ndarray
             The receive filter of user k (before applying the conjugate
             transpose).
         k : int
             Index of the desired user.
-        Bkl_all_l : A sequence of 2D numpy arrays.
+        Bkl_all_l : list[np.ndarray]
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 
         Returns
         -------
-        SINR_k : 1D numpy array
+        SINR_k : np.ndarray
             The SINR for the different streams of user k.
         """
         Ns_k = Fk.shape[1]
@@ -1677,15 +1766,19 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F : 1D numpy array of 2D numpy arrays
-            The precoders of all users.
-        U : 1D numpy array of 2D numpy arrays
-            The receive filters of all users.
+        F : np.ndarray
+            The precoders of all users. This should be a 1D numpy array of 2D
+            numpy arrays.
+
+        U : np.ndarray
+            The receive filters of all users. This should be a 1D numpy array
+            of 2D numpy arrays.
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in linear scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in linear scale) of all streams of all users. This is a
+            1D numpy array of 1D numpy arrays (of floats)
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -1700,6 +1793,26 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     def _calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l):
         """
         Implementation of the :meth:`_calc_JP_SINR_k method`.
+
+        Parameters
+        ----------
+        Hk : np.ndarray
+            Channel from all transmitters to receiver k.
+        Fk : 2D numpy array
+            The precoder of user k.
+        Uk : 2D numpy array
+            The receive filter of user k (before applying the conjugate
+            transpose).
+        k : int
+            Index of the desired user.
+        Bkl_all_l : list[np.ndarray]
+            A sequence (1D numpy array, a list, etc) of 2D numpy arrays
+            corresponding to the Bkl matrices for all 'l's.
+
+        Returns
+        -------
+        SINR_k : np.ndarray
+            The SINR for the different streams of user k.
 
         Notes
         -----
@@ -1733,7 +1846,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         return SINR_k
 
     def _calc_JP_SINR_k(self, k, Fk, Uk, Bkl_all_l):
-        """Calculates the SINR of all streams of user 'k'.
+        """
+        Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
@@ -1744,15 +1858,14 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             transpose).
         k : int
             Index of the desired user.
-        Bkl_all_l : A sequence of 2D numpy arrays.
+        Bkl_all_l : list[np.ndarray]
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 
         Returns
         -------
-        SINR_k : 1D numpy array
+        SINR_k : np.ndarray
             The SINR for the different streams of user k.
-
         """
         Hk = self.get_Hk(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
@@ -1767,15 +1880,18 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F : 1D numpy array of 2D numpy arrays
-            The precoders of all users.
-        U : 1D numpy array of 2D numpy arrays
-            The receive filters of all users.
+        F : np.ndarray
+            The precoders of all users. This should be a 1D numpy array of 2D
+            numpy arrays.
+        U : np.ndarray
+            The receive filters of all users. This should be a 1D numpy array
+            of 2D numpy arrays.
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in linear scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in linear scale) of all streams of all users. This is a
+            1D numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
