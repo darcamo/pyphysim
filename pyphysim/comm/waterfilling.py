@@ -19,7 +19,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
 
     Parameters
     ----------
-    vtChannels : 1D numpy array
+    vtChannels : np.ndarray
         Numpy array with the channel POWER gains (power of the parallel
         AWGN channels).
     dPt : float
@@ -31,7 +31,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
 
     Returns
     -------
-    (vtOptP, mu) : tuple
+    (vtOptP, mu) : (np.ndarray, float)
         A tuple with vtOptP and mu, where vtOptP are the optimum powers,
         while mu is the water level.
     """
