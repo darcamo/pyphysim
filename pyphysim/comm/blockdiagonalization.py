@@ -633,6 +633,7 @@ class BlockDiaginalizer(object):
             for index in desired_users:
                 vtIndexes.extend(range(iNrU * index, (index + 1) * iNrU))
         else:
+            assert isinstance(desired_users, int)
             vtIndexes = range(iNrU * desired_users, (desired_users + 1) * iNrU)
         return mt_channel[vtIndexes, :]
 
@@ -1022,7 +1023,7 @@ class EnhancedBD(BDWithExtIntBase):
         Heq_k_P : np.ndarray
             The equivalent channel of user `k` after the block
             diagonalization process and any stream reduction (2D numpy array).
-        P : np.ndarray
+        P : np.ndarray, optional
             P has the most significant singular vectors of the external
             interference plus noise covariance matrix for each
             receiver.
@@ -1080,6 +1081,7 @@ class EnhancedBD(BDWithExtIntBase):
         """
         mtP = np.dot(Wk, Heq_k_red)
         desired_power = np.abs(np.diagonal(mtP)) ** 2
+        # noinspection PyTypeChecker
         internal_interference = np.sum(
             np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
 

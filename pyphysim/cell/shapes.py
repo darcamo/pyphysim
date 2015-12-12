@@ -300,7 +300,7 @@ class Shape(Coordinate):
             True if `point` is inside the shape, False otherwise.
         """
         mpl_path = path.Path(from_complex_array_to_real_matrix(
-                self.vertices))
+            self.vertices))
 
         # This code is used with Matplotlib version 1.2 or higher.
         return mpl_path.contains_point([point.real, point.imag])
@@ -614,10 +614,8 @@ class Rectangle(Shape):
             The string representation of the Rectangle object.
         """
         return "{0}(A={1},B={2},rotation={3})".format(
-                self.__class__.__name__,
-                self._lower_coord,
-                self._upper_coord,
-                self.rotation)
+            self.__class__.__name__, self._lower_coord,
+            self._upper_coord, self.rotation)
 
     def _get_vertex_positions(self):
         """
@@ -730,9 +728,9 @@ class Circle(Shape):
         """
         num_vertexes = 12
         angles = np.linspace(
-                0,
-                (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
-                num_vertexes)
+            0,
+            (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
+            num_vertexes)
 
         vertex_positions = self._radius * np.exp(1j * angles)
         return vertex_positions

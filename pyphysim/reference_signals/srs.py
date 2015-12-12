@@ -294,9 +294,9 @@ class SrsChannelEstimator(object):
             tilde_h = y[:, 0:num_taps_to_keep]
         else:
             raise ValueError(
-                    "received_signal must have either one dimension ("
-                    "one receive antenna) or two dimensions (first "
-                    "dimension being the receive antenna dimension).")
+                "received_signal must have either one dimension ("
+                "one receive antenna) or two dimensions (first "
+                "dimension being the receive antenna dimension).")
 
         # Now we can apply the FFT to get the frequency response.
         # The number of subcarriers is twice the number of elements in the

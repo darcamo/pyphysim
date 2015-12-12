@@ -94,7 +94,7 @@ class MuChannel(object):
         bool
             True if direction is switched and False otherwise.
         """
-        return self._su_siso_channels[0,0].switched_direction
+        return self._su_siso_channels[0, 0].switched_direction
 
     @switched_direction.setter
     def switched_direction(self, value):
@@ -109,7 +109,8 @@ class MuChannel(object):
         num_rx, num_tx = self._su_siso_channels.shape
         for rx_idx in range(num_rx):
             for tx_idx in range(num_tx):
-                self._su_siso_channels[rx_idx, tx_idx].switched_direction = value
+                self._su_siso_channels[rx_idx, tx_idx].\
+                    switched_direction = value
 
     @property
     def num_tx_antennas(self):
@@ -124,7 +125,8 @@ class MuChannel(object):
         _, num_tx = self._su_siso_channels.shape
         num_tx_antennas = np.empty(num_tx, dtype=int)
         for tx_idx in range(num_tx):
-            num_tx_antennas[tx_idx] = self._su_siso_channels[0, tx_idx].num_tx_antennas
+            num_tx_antennas[tx_idx] = \
+                self._su_siso_channels[0, tx_idx].num_tx_antennas
         return num_tx_antennas
 
     @property
@@ -140,7 +142,8 @@ class MuChannel(object):
         num_rx, _ = self._su_siso_channels.shape
         num_rx_antennas = np.empty(num_rx, dtype=int)
         for rx_idx in range(num_rx):
-            num_rx_antennas[rx_idx] = self._su_siso_channels[rx_idx, 0].num_rx_antennas
+            num_rx_antennas[rx_idx] = \
+                self._su_siso_channels[rx_idx, 0].num_rx_antennas
         return num_rx_antennas
 
     @property
@@ -279,9 +282,8 @@ class MuChannel(object):
         ----------
         signal : np.ndarray
             Signal to be transmitted through the channel. This should be a 2D
-            numpy array (1D array if there is only one transmitter), where each row
-            corresponds to the transmit data of one transmitter.
-
+            numpy array (1D array if there is only one transmitter),
+            where each row corresponds to the transmit data of one transmitter.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
         carrier_indexes : slice | np.ndarray
@@ -594,7 +596,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        seed : Int or array like
+        seed : None | int | array_like
             Random seed initializing the pseudo-random number
             generator. See np.random.RandomState help for more info.
         """
@@ -607,7 +609,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        seed : Int or array like
+        seed : None | int | array_like
             Random seed initializing the pseudo-random number
             generator. See np.random.RandomState help for more info.
         """
@@ -681,39 +683,73 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     # the pathloss.
     @property
     def pathloss(self):
-        """Get method for the pathloss property."""
+        """
+        Get method for the pathloss property.
+
+        Returns
+        -------
+        None | np.ndarray
+            The pathloss matrix (if one was set).
+        """
         return self._pathloss_matrix
 
     @property
     def last_noise(self):
-        """Get method for the last_noise property."""
+        """
+        Get method for the last_noise property.
+
+        Returns
+        -------
+        None | np.ndarray
+            The last AWGN noise array added to corrupt the data.
+        """
         return self._last_noise
 
     @property
     def noise_var(self):
-        """Get method for the noise_var property."""
+        """
+        Get method for the noise_var property.
+
+        Returns
+        -------
+        None | float
+            The noise variance, if noise is being added in "corrupt_*data"
+            methods.
+        """
         return self._noise_var
 
     @noise_var.setter
     def noise_var(self, value):
-        """Set method for the noise_var property."""
+        """
+        Set method for the noise_var property.
+
+        Parameters
+        ----------
+        value: float | None
+            The noise variance used when generating a new noise vector to add
+            in the "corrupt_*data" methods. If `value` is None then noise
+            addition is disabled.
+        """
         if value is not None:
             assert value >= 0.0, "Noise variance must be >= 0."
         self._noise_var = value
 
     @staticmethod
     def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
-        """Convert from a small matrix to a big matrix by repeating elements
+        """
+        Convert from a small matrix to a big matrix by repeating elements
         according to the number of receive and transmit antennas.
 
         Parameters
         ----------
-        small_matrix : 2D numpy array
+        small_matrix : np.ndarray
             Any 2D numpy array
-        Nr : 1D numpy array
-            Number of antennas at each receiver.
-        Nt : 1D numpy array
-            Number of antennas at each transmitter.
+        Nr : np.ndarray
+            Number of antennas at each receiver. This should be a 1D numpy
+            array.
+        Nt : np.ndarray
+            Number of antennas at each transmitter. This should be a 1D numpy
+            array.
         Kr : int
             Number of receivers to consider.
         Kt : int, optional (default to the value of Kr)
@@ -721,8 +757,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        big_matrix : 2D numpy array
-            The converted matrix.
+        big_matrix : np.ndarray
+            The converted matrix. This is a 2D numpy array
 
         Notes
         -----
@@ -769,17 +805,18 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         return big_matrix
 
     def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
-        """Initializes the multiuser channel matrix from the given
+        """
+        Initializes the multiuser channel matrix from the given
         `channel_matrix`.
 
         Parameters
         ----------
-        channel_matrix : 2D numpy array
+        channel_matrix : np.ndarray
             A matrix concatenating the channel of all users (from each
-            transmitter to each receiver).
-        Nr : int or 1D numpy array
+            transmitter to each receiver). This is a 2D numpy array.
+        Nr : int | np.ndarray
             Number of antennas at each receiver.
-        Nt : int or 1D numpy array
+        Nt : int | np.ndarray
             Number of antennas at each transmitter.
         K : int
             Number of transmit/receive pairs.
@@ -835,10 +872,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Nr : 1D numpy array or integers or a single integer
+        Nr : int | np.ndarray
             Number of receive antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
-        Nt : 1D numpy array or integers or a single integer
+        Nt : int | np.ndarray
             Number of transmit antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
         K : int
@@ -871,7 +908,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         self._H_no_pathloss.setflags(write=False)
 
     def get_Hkl(self, k, l):
-        """Get the channel matrix from user `l` to user `k`.
+        """
+        Get the channel matrix from user `l` to user `k`.
 
         Parameters
         ----------
@@ -882,8 +920,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        channel : 2D numpy array
-            Channel from transmitter `l` to receiver `k`.
+        channel : np.ndarray
+            Channel from transmitter `l` to receiver `k`. This is a 2D numpy
+            array.
 
         See also
         --------
@@ -914,7 +953,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         return channel[k, l]
 
     def get_Hk(self, k):
-        """Get the channel from all transmitters to receiver `k`.
+        """
+        Get the channel from all transmitters to receiver `k`.
 
         Parameters
         ----------
@@ -923,8 +963,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        channel_k : 2D numpy array
-            Channel from all transmitters to receiver `k`.
+        channel_k : np.ndarray
+            Channel from all transmitters to receiver `k`. This is a 2D numpy
+            array.
 
         See also
         --------
@@ -963,8 +1004,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        filters : List of 2D np arrays or a 1D np array of 2D np arrays.
-            The post processing filters of each user.
+        filters : list[np.ndarray] | np.ndarray
+            The post processing filters of each user. This should be a list
+            of 2D np arrays or a 1D np array of 2D np arrays.
         """
         self._W = filters
         # This will be set in the get property only when required.
@@ -992,7 +1034,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        data : 2D numpy array
+        data : np.ndarray
             A bi-dimensional numpy array with the concatenated data of all
             transmitters. The dimension of data is sum(self.Nt) x
             NSymb. That is, the number of rows corresponds to the sum of
@@ -1001,7 +1043,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        output : 2D numpy array
+        output : np.ndarray
             A bi-dimension numpy array where the number of rows corresponds
             to the sum of the number of receive antennas of all users and
             the number of columns correspond to the number of transmitted
@@ -1037,7 +1079,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        data : 1D numpy array of 2D numpy arrays
+        data : np.ndarray
             An array of numpy matrices with the data of the multiple
             users. The k-th element in `data` is a numpy array with
             dimension Nt_k x NSymbs, where Nt_k is the number of transmit
@@ -1046,7 +1088,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Returns
         -------
-        output : 1D numpy array of 2D numpy arrays
+        output : np.ndarray
             A numpy array where each element contais the received data (a
             2D numpy array) of a user.
 
@@ -1083,7 +1125,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        pathloss_matrix : 2D numpy array
+        pathloss_matrix : np.ndarray
             A matrix with dimension "K x K", where K is the number of
             users, with the path loss (IN LINEAR SCALE) from each
             transmitter (columns) to each receiver (rows). If you want to
@@ -1125,6 +1167,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         the :math:`k`-th receiver.
 
         See the documentation of the calc_Q method.
+
+        Returns
+        -------
+        np.ndarray
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H$$
         interfering_users = set(range(self.K)) - {k}
@@ -1934,8 +1980,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        channel_k : 2D numpy array
-            Channel from all transmitters to receiver `k`.
+        channel_k : np.ndarray
+            Channel from all transmitters to receiver `k` (2D numpy array).
 
         See also
         --------

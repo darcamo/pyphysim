@@ -873,8 +873,7 @@ class Cell3Sec(CellBase):
             the generated random user. The value must be between 0 and 0.7.
         """
         for _ in range(num_users):
-            self.add_random_user_in_sector(
-                    sector, user_color, min_dist_ratio)
+            self.add_random_user_in_sector(sector, user_color, min_dist_ratio)
 
     # noinspection PyUnresolvedReferences
     def plot(self, ax=None):  # pragma: no cover
@@ -920,14 +919,14 @@ class Cell3Sec(CellBase):
               self.secradius)
 
         line1 = plt.Line2D(
-                [self.pos.real, p1.real], [self.pos.imag, p1.imag],
-                linestyle='dashed', color='black', alpha=0.5)
+            [self.pos.real, p1.real], [self.pos.imag, p1.imag],
+            linestyle='dashed', color='black', alpha=0.5)
         line2 = plt.Line2D(
-                [self.pos.real, p2.real], [self.pos.imag, p2.imag],
-                linestyle='dashed', color='black', alpha=0.5)
+            [self.pos.real, p2.real], [self.pos.imag, p2.imag],
+            linestyle='dashed', color='black', alpha=0.5)
         line3 = plt.Line2D(
-                [self.pos.real, p3.real], [self.pos.imag, p3.imag],
-                linestyle='dashed', color='black', alpha=0.5)
+            [self.pos.real, p3.real], [self.pos.imag, p3.imag],
+            linestyle='dashed', color='black', alpha=0.5)
 
         ax.add_line(line1)
         ax.add_line(line2)
@@ -965,13 +964,12 @@ class CellSquare(shapes.Rectangle, CellBase):
     def __init__(self, pos, side_length, cell_id=None, rotation=0):
         half_side = side_length / 2.
         shapes.Rectangle.__init__(
-                self,
-                pos - half_side - 1j * half_side,
-                pos + half_side + 1j * half_side, rotation)
+            self,
+            pos - half_side - 1j * half_side,
+            pos + half_side + 1j * half_side, rotation)
 
-        CellBase.__init__(self, pos,
-                          math.sqrt(2.0) * side_length / 2.,
-                          cell_id, rotation)
+        CellBase.__init__(
+            self, pos, math.sqrt(2.0) * side_length / 2., cell_id, rotation)
 
     def plot(self, ax=None):  # pragma: no cover
         """
@@ -1308,8 +1306,7 @@ class Cluster(shapes.Shape):
             # cell type is not valid an exception will be raised in the
             # '_calc_cell_positions' method which is called before this
             # point.
-            raise RuntimeError(
-                    "Invalid cell type: '{0}'".format(cell_type))
+            raise RuntimeError("Invalid cell type: '{0}'".format(cell_type))
 
         # Finally, create the cells at the specified positions (also
         # rotated)
@@ -1653,7 +1650,7 @@ class Cluster(shapes.Shape):
                 cell_radius, num_cells, rotation)
         else:
             raise RuntimeError(
-                    "Invalid cell type: '{0}'".format(cell_type))
+                "Invalid cell type: '{0}'".format(cell_type))
 
         # xxxxx Possibly translate the positions of each cell xxxxxxxxxxxxx
         # The coordinates of the cells calculated up to now consider the
@@ -1747,12 +1744,12 @@ class Cluster(shapes.Shape):
             # xxxxx Get the positions of cells from 2 to 7 xxxxxxxxxxxxxxxx
             # angles_first_ring -> 30:60:330 -> 30,90,150,210,270,330
             angles_first_ring = np.linspace(
-                    np.pi / 6., 11. * np.pi / 6., 6)
+                np.pi / 6., 11. * np.pi / 6., 6)
             max_value = min(num_cells, 7)
             for index in range(1, max_value):
                 angle = angles_first_ring[index - 1]
                 cell_positions[index, 0] = cmath.rect(
-                        2 * cell_height, angle)
+                    2 * cell_height, angle)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Get the positions of cells from 8 to 19 xxxxxxxxxxxxxxx
@@ -1932,9 +1929,15 @@ class Cluster(shapes.Shape):
         outer_vertexes : np.ndarray
             The cluster outer vertexes.
         """
-        # Filter function. Returns True for vertexes which are closer to
-        # the shape center then distance.
         def f(x):
+            """
+            Filter function. Returns True for vertexes which are closer to the
+            shape center than `distance`.
+
+            Parameters
+            ----------
+            x : np.ndarray
+            """
             return np.abs(x - central_pos) > distance
 
         vertexes = vertexes[f(vertexes)]
@@ -2141,7 +2144,7 @@ class Cluster(shapes.Shape):
                 # Note that here cell_ids will be a single value, as well
                 # as user_color and min_dist_ratio
                 self.get_cell_by_id(cell_ids).add_random_user(
-                        user_color, min_dist_ratio)
+                    user_color, min_dist_ratio)
 
     def add_border_users(self,
                          cell_ids, angles, ratios=None, user_color=None):
@@ -2261,8 +2264,8 @@ class Cluster(shapes.Shape):
         None
         """
         positions = Cluster._calc_cell_positions(
-                self.cell_radius, self.num_cells,
-                self._cell_type, self.rotation)
+            self.cell_radius, self.num_cells,
+            self._cell_type, self.rotation)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # noinspection PyUnresolvedReferences

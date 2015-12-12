@@ -188,8 +188,7 @@ def peig(A, n):
     """
     (_, ncols) = A.shape
     if n > ncols:  # A is symmetric -> we could get either nrows or ncols
-        raise ValueError(
-                "`n` must be lower then the number of columns in `A`")
+        raise ValueError("`n` must be lower then the number of columns in `A`")
 
     [D, V] = np.linalg.eig(A)
     indexes = np.argsort(D.real)
@@ -237,8 +236,7 @@ def leig(A, n):
     """
     (_, ncols) = A.shape
     if n > ncols:  # A is symmetric -> we could get either nrows or ncols
-        raise ValueError(
-                "`n` must be lower then the number of columns in `A`")
+        raise ValueError("`n` must be lower then the number of columns in `A`")
 
     [D, V] = np.linalg.eig(A)
     indexes = np.argsort(D.real)

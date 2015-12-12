@@ -10,6 +10,7 @@ import itertools
 import argparse
 
 try:
+    # noinspection PyUnresolvedReferences
     from ipyparallel import LoadBalancedView, DirectView
 except ImportError:
     pass
@@ -84,7 +85,6 @@ def get_common_parser():
 
 get_common_parser.parser = None
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -707,7 +707,7 @@ class SimulationRunner(object):
         # current_params then it will be replaced by the current value of
         # 'some_param'.
         message = self.progressbar_message.format(
-                **current_params.parameters)
+            **current_params.parameters)
 
         # By default, the returned function is a dummy function that does
         # nothing
@@ -967,7 +967,7 @@ class SimulationRunner(object):
             # Perform the first iteration of _run_simulation
             current_sim_results = \
                 self.__run_simulation_and_track_elapsed_time(
-                        current_params)
+                    current_params)
             # Add the extra 'num_skipped_reps' Result.
             current_sim_results.add_new_result('num_skipped_reps',
                                                Result.SUMTYPE, 0)
@@ -1113,7 +1113,7 @@ class SimulationRunner(object):
         # pylint: disable= W0212
         # noinspection PyProtectedMember
         return obj._simulate_for_current_params_common(
-                current_params, update_progress_func)
+            current_params, update_progress_func)
 
     def __get_print_variation_iterator(self, num_variations, start=0):
         """

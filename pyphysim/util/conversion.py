@@ -26,7 +26,7 @@ def single_matrix_to_matrix_of_matrices(
     single_matrix : np.ndarray
         The single numpy array. This should be a 1D numpy array or a 2D
         numpy array.
-    nrows : np.ndarray
+    nrows : np.ndarray, optional
         The number of rows of each submatrix (if single_matrix is 2D), or
         the number of elements in each subarray (if single_matrix is 1D).
     ncols : np.ndarray, optional

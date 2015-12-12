@@ -310,7 +310,7 @@ class MimoBase(object):
         W = self._calc_precoder(self._channel)
         G_H = self._calc_receive_filter(self._channel, noise_var)
         sinrs = calc_post_processing_SINRs(
-                self._channel, W, G_H, noise_var)
+            self._channel, W, G_H, noise_var)
         return sinrs
 
     def calc_SINRs(self, noise_var):
@@ -426,7 +426,7 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
         # other MIMO classes
         if len(channel.shape) == 1:
             super(MisoBase, self).set_channel_matrix(
-                    channel[np.newaxis, :])
+                channel[np.newaxis, :])
         else:
             Nr = channel.shape[0]
             if Nr != 1:
@@ -544,7 +544,7 @@ class Blast(MimoBase):
             self._noise_var = noise_var
         else:
             raise ValueError(
-                    'Noise variance must be a non-negative value.')
+                'Noise variance must be a non-negative value.')
 
     @staticmethod
     def _calc_precoder(channel):
@@ -1106,8 +1106,8 @@ class Alamouti(MimoBase):
         called if this method is ever called.
         """
         raise RuntimeError(
-                "Alamouti scheme has no linear receive filter that"
-                " can be directly applied to the received data")
+            "Alamouti scheme has no linear receive filter that"
+            " can be directly applied to the received data")
 
     def set_channel_matrix(self, channel):
         """
@@ -1124,13 +1124,13 @@ class Alamouti(MimoBase):
         """
         if len(channel.shape) == 1:
             super(Alamouti, self).set_channel_matrix(
-                    channel[np.newaxis, :])
+                channel[np.newaxis, :])
         else:
             _, Nt = channel.shape
             if Nt != 2:
                 msg = ("The number of transmit antennas must be equal to "
                        "2 for the {0} scheme").format(
-                        self.__class__.__name__)
+                           self.__class__.__name__)
                 raise ValueError(msg)
             super(Alamouti, self).set_channel_matrix(channel)
 

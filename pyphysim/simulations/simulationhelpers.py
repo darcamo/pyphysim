@@ -6,6 +6,7 @@
 import sys
 
 try:
+    # noinspection PyUnresolvedReferences
     from ipyparallel import Client, LoadBalancedView, DirectView
 except ImportError:
     pass
@@ -98,10 +99,10 @@ def _simulate_do_what_i_mean_single_runner(runner,
     runner : SimulationRunner
         The SimulationRunner object for which either the 'simulate' or the
         'simulate_in_parallel' method will be called.
-    folder : str
+    folder : str, optional
         Folder to be added to the python path. This should be the main
         pyphysim folder
-    block : bool
+    block : bool, optional
         Passed to the simulate_in_parallel method when the simulation is
         performed in parallel. If this is false, you need to call the
         method 'wait_parallel_simulation' of the runner object at some

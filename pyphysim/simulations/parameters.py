@@ -451,6 +451,7 @@ class SimulationParameters(object):
             # whose value does not matter when comparing if two
             # SimulationResults objects are equal or not.
             if key != "rep_max":
+                # noinspection PyTypeChecker
                 if np.any(self.parameters[key] != other.parameters[key]):
                     return False
 

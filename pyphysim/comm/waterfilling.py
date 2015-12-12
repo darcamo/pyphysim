@@ -38,6 +38,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     # Sort Channels (descending order)
     vtChannelsSortIndexes = np.argsort(vtChannels)[::-1]
     vtChannelsSorted = vtChannels[vtChannelsSortIndexes]
+    assert isinstance(vtChannelsSorted, np.ndarray)
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Calculates the water level that touches the worst channel (the higher
@@ -58,6 +59,9 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
     Ps = (minMu - float(noiseVar) / (
         Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+
+    # Ps should be a numpy array
+    assert isinstance(Ps, np.ndarray)
 
     while (sum(Ps) > dPt) and (dRemoveChannels < dNChannels):
         dRemoveChannels += 1

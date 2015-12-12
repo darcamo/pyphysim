@@ -450,7 +450,7 @@ class PSK(Modulator):
             constellation.
         """
         self.setConstellation(
-                self._createConstellation(self._M, phaseOffset))
+            self._createConstellation(self._M, phaseOffset))
 
     # noinspection PyPep8
     def calcTheoreticalSER(self, SNR):
