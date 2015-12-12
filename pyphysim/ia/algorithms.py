@@ -22,6 +22,7 @@ from itertools import product
 from .iabase import IASolverBaseClass
 from ..util.misc import peig, leig, update_inv_sum_diag, \
     get_principal_component_matrix, least_right_singular_vectors
+from ..channels import multiuser as muchannels
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver',
@@ -39,8 +40,13 @@ class ClosedFormIASolver(IASolverBaseClass):
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
+    use_best_init : bool
+        If true, all possible initializations (subsets of the
+        eigenvectors of the 'E' matrix)for the first precoder will be
+        tested and the best solution will be used. If false, the first
+        initialization will be used.
 
     Notes
     -----
@@ -51,17 +57,6 @@ class ClosedFormIASolver(IASolverBaseClass):
        Aug. 2008.
     """
     def __init__(self, multiUserChannel, use_best_init=True):
-        """
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        use_best_init : bool
-            If true, all possible initializations (subsets of the
-            eigenvectors of the 'E' matrix)for the first precoder will be
-            tested and the best solution will be used. If false, the first
-            initialization will be used.
-        """
         IASolverBaseClass.__init__(self, multiUserChannel)
         self._use_best_init = use_best_init
 
@@ -71,6 +66,11 @@ class ClosedFormIASolver(IASolverBaseClass):
         Calculates the "E" matrix, given by
 
         :math:`\\mtE = \\mtH_{31}^{-1}\\mtH_{32}\\mtH_{12}^{-1}\\mtH_{13}\\mtH_{23}^{-1}\\mtH_{21}`.
+
+        Returns
+        -------
+        np.ndarray
+            The "E" matrix.
         """
         # $\mtE = \mtH_{31}^{-1}\mtH_{32}\mtH_{12}^{-1}\mtH_{13}\mtH_{23}^{-1}\mtH_{21}$
 
@@ -103,7 +103,7 @@ class ClosedFormIASolver(IASolverBaseClass):
 
         Returns
         -------
-        all_initializations : A list of numpy arrays.
+        all_initializations : list[np.ndarray]
             All possible subsets (with size Ns) of the eigenvectors of the
             matrix E
         """
@@ -124,7 +124,7 @@ class ClosedFormIASolver(IASolverBaseClass):
 
         Parameters
         ----------
-        F0 : numpy array
+        F0 : np.ndarray
             The first precoder. If not provided, the matrix 'E' will be
             calculated (with the _calc_E method) and the the first Ns
             eigenvectors will be used as F0.
@@ -193,9 +193,9 @@ class ClosedFormIASolver(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -284,7 +284,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
     """
 
@@ -294,12 +294,6 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     __metaclass__ = ABCMeta
 
     def __init__(self, multiUserChannel):
-        """
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        """
         IASolverBaseClass.__init__(self, multiUserChannel)
 
         # Count how many times the step method was called. This will be
@@ -368,7 +362,14 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
     @initialize_with.setter
     def initialize_with(self, value):
-        """Set method for the initialize_with property."""
+        """
+        Set method for the initialize_with property.
+
+        Parameters
+        ----------
+        value : str
+            A string with the initialization method.
+        """
         options = ['random', 'alt_min', 'closed_form', 'fix', 'svd']
         if value in options:
             self._initialize_with = value
@@ -465,9 +466,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -491,9 +492,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -551,9 +552,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -578,9 +579,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -614,9 +615,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -733,10 +734,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        F_old : 1D numpy array of numpy arrays
-            The precoder of all users (in a previous iteration).
-        F_new : 1D numpy array of numpy arrays
-            The precoder of all users (in the current iteration).
+        F_old : np.ndarray
+            The precoder of all users (in a previous iteration). This is a 1D
+            numpy array of numpy arrays.
+        F_new : np.ndarray
+            The precoder of all users (in the current iteration). This is a 1D
+            numpy array of numpy arrays.
 
         Returns
         -------
@@ -775,9 +778,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
@@ -861,7 +864,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
 
     Notes
@@ -873,12 +876,6 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
        on, pp.2445,2448, 19-24 April 2009
     """
     def __init__(self, multiUserChannel):
-        """
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         self._C = []    # Basis of the interference subspace for each user
@@ -903,9 +900,9 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        cost : float (real non-negative number)
+        cost : float
             The Cost of the algorithm for the current iteration of the
-            precoder
+            precoder. This is a real non-negative number.
         """
         Cost = 0
         # This will get all combinations of (k,l) without repetition. This
@@ -937,7 +934,8 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         self._updateC()
 
     def _step(self):
-        """Performs one iteration of the algorithm.
+        """
+        Performs one iteration of the algorithm.
 
         The step method is usually all you need to call to perform an
         iteration of the Alternating Minimization algorithm. It will update
@@ -1105,17 +1103,11 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
     """
 
     def __init__(self, multiUserChannel):
-        """
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
     def get_cost(self):
@@ -1131,9 +1123,9 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        cost : float (real non-negative number)
+        cost : float
             The Cost of the algorithm for the current iteration of the
-            precoder
+            precoder. This is a (real non-negative number).
         """
         # $$C = Tr[\mtU_k^H \mtQ_k \mtU_k]$$
         cost = 0
@@ -1147,7 +1139,14 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         return cost
 
     def _calc_Uk_all_k(self):
-        """Calculates the receive filter of all users.
+        """
+        Calculates the receive filter of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The Uk array of each user. This is a 1D numpy array of numpy
+            arrays.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
 
@@ -1158,9 +1157,14 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         return Uk
 
     def _calc_Uk_all_k_rev(self):
-        """Calculates the receive filter of all users in the reverse
-        network.
+        """
+        Calculates the receive filter of all users in the reverse network.
 
+        Returns
+        -------
+        np.ndarray
+            The Uk array of each user. This is a 1D numpy array of numpy
+            arrays.
         """
         Uk_rev = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
@@ -1219,7 +1223,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
 
     Notes
@@ -1233,17 +1237,12 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     """
 
     def __init__(self, multiUserChannel):
-        """
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
     # noinspection PyPep8
     def _calc_Bkl_cov_matrix_first_part_rev(self, k):
-        """Calculates the first part in the equation of the Blk covariance
+        """
+        Calculates the first part in the equation of the Blk covariance
         matrix of the reverse channel.
 
         Parameters
@@ -1253,7 +1252,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        Bkl_first_part_rev : 2D numpy complex array
+        Bkl_first_part_rev : np.ndarray
             First part in equation (28) of [Cadambe2008]_, but for the
             reverse channel.
 
@@ -1287,7 +1286,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     # noinspection PyPep8,PyPep8
     def _calc_Bkl_cov_matrix_second_part_rev(self, k, l):
-        """Calculates the second part in the equation of the Blk covariance
+        """
+        Calculates the second part in the equation of the Blk covariance
         matrix of the reverse channel..
 
         The second part is given by
@@ -1303,7 +1303,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        second_part : 2D numpy complex array.
+        second_part : np.ndarray
             Second part in equation (28) of [Cadambe2008]_.
 
         See also
@@ -1326,7 +1326,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     # noinspection PyPep8
     def _calc_Bkl_cov_matrix_all_l_rev(self, k):
-        """Calculates the interference-plus-noise covariance matrix for all
+        """
+        Calculates the interference-plus-noise covariance matrix for all
         streams at "receiver" :math:`k` for the reverse channel.
 
         Parameters
@@ -1336,7 +1337,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        Bkl_rev : 1D numpy array of 2D numpy arrays
+        Bkl_rev : np.ndarray
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
@@ -1359,15 +1360,16 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     @classmethod
     def _calc_Ukl(cls, Hkk, Vk, Bkl, l):
-        """Calculates the Ukl matrix in equation (29) of [Cadambe2008]_.
+        """
+        Calculates the Ukl matrix in equation (29) of [Cadambe2008]_.
 
         Parameters
         ----------
-        Hkk : 2D numpy complex array
+        Hkk : np.ndarray
             Channel from transmitter K to receiver K.
-        Vk : 2D numpy array
+        Vk : np.ndarray
             Precoder of user k.
-        Bkl : 2D numpy complex array
+        Bkl : np.ndarray
             The previously calculates Bkl matrix in equation (28) of
             [Cadambe2008]_
         l : int
@@ -1375,9 +1377,9 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        Ukl : 2D numpy array (with self.Nr[k] rows and a single column)
-            The calculated Ukl matrix.
-
+        Ukl : np.ndarray
+            The calculated Ukl matrix. This is a 2D numpy array (with
+            self.Nr[k] rows and a single column).
         """
         Vkl = Vk[:, l:l + 1]
 
@@ -1388,25 +1390,26 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
     @classmethod
     def _calc_Uk(cls, Hkk, Vk, Bkl_all_l):
-        """Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
+        """
+        Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
         calculates the receive filter (a vector) only for the :math:`l`-th
-        stream :meth:`calc_Uk` calculates a receive filter (a matrix) for
-        all streams.
+        stream :meth:`calc_Uk` calculates a receive filter (a matrix) for all
+        streams.
 
         Parameters
         ----------
-        Hkk : 2D numpy complex array
+        Hkk : np.ndarray
             Channel from transmitter K to receiver K.
-        Vk : 2D numpy array
+        Vk : np.ndarray
             Precoder of user k.
-        Bkl_all_l : 1D numpy array of 2D numpy arrays.
+        Bkl_all_l : np.ndarray
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
 
         Returns
         -------
-        Uk : 2D numpy array.
+        Uk : np.ndarray
             The receive filver for all streams of user k.
         """
         num_streams = Bkl_all_l.size
@@ -1419,7 +1422,14 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         return Uk / np.linalg.norm(Uk, 'fro')
 
     def _calc_Uk_all_k(self):
-        """Calculates the receive filter of all users.
+        """
+        Calculates the receive filter of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The receive filter of all users. This is a numpy array of numpy
+            arrays.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
         for k in range(self.K):
@@ -1429,7 +1439,14 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         return Uk
 
     def _calc_Uk_all_k_rev(self):
-        """Calculates the receive filter of all users for the reverse channel.
+        """
+        Calculates the receive filter of all users for the reverse channel.
+
+         Returns
+        -------
+        np.ndarray
+            The receive filter of all users for the reverse channel. This is
+            a numpy array of numpy arrays.
         """
         Uk = np.empty(self.K, dtype=np.ndarray)
         F = self._W  # The precoder is the receive filter of the direct channel
@@ -1489,7 +1506,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
 
     Notes
@@ -1500,12 +1517,6 @@ class MMSEIASolver(IterativeIASolverBaseClass):
     """
 
     def __init__(self, multiUserChannel):
-        """
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        """
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
         self._mu = None
@@ -1520,9 +1531,9 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -1541,7 +1552,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         Returns
         -------
-        Uk : 2D numpy array
+        Uk : np.ndarray
             The receive filter of the user 'k'.
         """
         # $$\mtU_k = \left( \sum_{i=1}^K \mtH_{ki} \mtV_i \mtV_i^H \mtH_{ki}^H + \sigma_n^2 \mtI \right)^{-1} \mtH_{kk} \mtV_k$$
@@ -1581,12 +1592,17 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         Parameters
         ----------
-        sum_term : numpy array
+        sum_term : np.ndarray
             The sumation term in the formula to calculate the precoder.
         mu_i : float
             The value of the lagrange multiplier
-        H_herm_U : numpy array
+        H_herm_U : np.ndarray
             The value of :math:`H_ii^H U_i`
+
+        Returns
+        -------
+        np.ndarray
+            The Vi matrix for the given parameters.
         """
         N = sum_term.shape[0]
         Vi = np.linalg.solve(sum_term + mu_i * np.eye(N), H_herm_U)
@@ -1604,13 +1620,18 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
         Parameters
         ----------
-        inv_sum_term : numpy array
+        inv_sum_term : np.ndarray
             The inverse of the sumation term in the formula to calculate
             the precoder when mu_i is equal to zero.
         mu_i : float
             The value of the lagrange multiplier
-        H_herm_U : numpy array
+        H_herm_U : np.ndarray
             The value of :math:`H_ii^H U_i`
+
+        Returns
+        -------
+        np.ndarray
+            The Vi matrix for the given parameters.
         """
         N = inv_sum_term.shape[0]
         diagonal = mu_i * np.ones(N)  # Vector of N elements
@@ -1627,14 +1648,14 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         ----------
         i : int
             User index
-        mu_i : float or None
+        mu_i : float, optional
             The value of the Lagrange multiplier. If it is None (default),
             then the best value will be found and used to calculate the
             precoder.
 
         Returns
         -------
-        Vi : numpy array
+        Vi : np.ndarray
             The calculate precoder of the i-th user.
         """
         # $$\mtV_i = \left( \sum_{k=1}^K \mtH_{ki}^H \mtU_k \mtU_k^H \mtH_{ki} + \mu_i \mtI \right)^{-1} \mtH_{ii}^H \mtU_i$$
@@ -1825,16 +1846,14 @@ class GreedStreamIASolver(object):
     keep going until each user has only one stream or the sum capacity
     after stream reduction is lower. The final solution will be for the
     number of streams that yielded the largest sum capacity.
+
+    Parameters
+    ----------
+    iasolver_obj : T <= IASolverBaseClass
+        Must be an object of a derived class of IterativeIASolverBaseClass.
     """
 
     def __init__(self, iasolver_obj):
-        """
-
-        Parameters
-        ----------
-        iasolver_obj : A ia solver object.
-            Must be an object of a derived class of IterativeIASolverBaseClass.
-        """
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
 
@@ -1857,7 +1876,14 @@ class GreedStreamIASolver(object):
 
     @property
     def runned_iterations(self):
-        """Get method for the runned_iterations property."""
+        """
+        Get method for the runned_iterations property.
+
+        Returns
+        -------
+        int
+            The number of runned iterations.
+        """
         return self._runned_iterations
 
     def solve(self, Ns, P=None):
@@ -1868,16 +1894,17 @@ class GreedStreamIASolver(object):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
         Returns
         -------
-        Number of iterations the iterative interference alignment algorithm
-        run.
+        int
+            Number of iterations the iterative interference alignment
+            algorithm run.
         """
         self._iasolver.clear()
         self._runned_iterations = 0
@@ -2019,16 +2046,13 @@ class BruteForceStreamIASolver(object):
     variability we set the initialization method to 'svd' (see
     'initialize_with' property in the IterativeIASolverBaseClass class) so
     that the initialization is always the same.
+
+    Parameters
+    ----------
+    iasolver_obj : T <= IASolverBaseClass
+        Must be an object of a derived class of IterativeIASolverBaseClass.
     """
-
     def __init__(self, iasolver_obj):
-        """
-
-        Parameters
-        ----------
-        iasolver_obj : A ia solver object.
-            Must be an object of a derived class of IterativeIASolverBaseClass.
-        """
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
 
@@ -2062,17 +2086,39 @@ class BruteForceStreamIASolver(object):
 
     @property
     def runned_iterations(self):
-        """Get method for the runned_iterations property."""
+        """
+        Get method for the runned_iterations property.
+
+        Returns
+        -------
+        int
+            The number of runned iterations.
+        """
         return self._runned_iterations
 
     @property
     def stream_combinations(self):
-        """Get method for the stream_combinations property."""
+        """
+        Get method for the stream_combinations property.
+
+        Returns
+        -------
+        tuple
+            Tuple containing every possible stream combination.
+        """
         return self._stream_combinations
 
     @property
     def every_sum_capacity(self):
-        """Get method for the every_sum_capacity property."""
+        """
+        Get method for the every_sum_capacity property.
+
+        Returns
+        -------
+        tuple
+            Tuple containing the sum capacity for each stream combination in
+            `self.stream_combinations`.
+        """
         return self._every_sum_capacity
 
     def solve(self, Ns, P=None):
@@ -2083,17 +2129,18 @@ class BruteForceStreamIASolver(object):
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             MAXIMUM number of streams of each user. All possible values
             from 1 to Ns (or Ns[k], if Ns is an array) will tried.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
         Returns
         -------
-        Number of iterations the iterative interference alignment algorithm
-        run.
+        int
+            Number of iterations the iterative interference alignment
+            algorithm run.
         """
         self._iasolver.clear()
         self._runned_iterations = 0

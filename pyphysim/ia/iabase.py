@@ -49,7 +49,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
     Parameters
     ----------
-    multiUserChannel : A MultiUserChannelMatrix object.
+    multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
     """
 
@@ -58,19 +58,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     __metaclass__ = ABCMeta
 
     def __init__(self, multiUserChannel):
-        """
-        Initialize the variables that every IA solver will have.
-
-        Parameters
-        ----------
-        multiUserChannel : A MultiUserChannelMatrix object.
-            The multiuser channel.
-        """
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
         if not isinstance(multiUserChannel, muchannels.MultiUserChannelMatrix):
-            raise ValueError("multiUserChannel must be an object of the"
-                             " comm.channels.MultiUserChannelMatrix class"
-                             " (or a subclass).")
+            raise ValueError(
+                "multiUserChannel must be an object of the "
+                "MultiUserChannelMatrix class (or a subclass).")
         # Channel of all users
         self._multiUserChannel = multiUserChannel
 
@@ -153,8 +145,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        cost : float (real non-negative number)
-            The Cost of the current IA solution.
+        cost : float
+            The Cost of the current IA solution (a real non-negative number).
         """
         return -1
 
@@ -162,6 +154,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     def noise_var(self):
         """
         Get method for the noise_var property.
+
+        Returns
+        -------
+        float
+            The noise variance (a real non-negative number).
         """
         noise_var = self._multiUserChannel.noise_var
         if noise_var is None:
@@ -173,6 +170,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     def F(self):
         """
         Transmit precoder of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The precoders of all users (a 1D numpy array of 2D numpy arrays).
         """
         return self._F
 
@@ -180,6 +182,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     def full_F(self):
         """
         Transmit precoder of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The precoders of all users (a 1D numpy array of 2D numpy arrays).
         """
         if self._full_F is None:
             self._full_F = self._F * np.sqrt(self.P)
@@ -200,13 +207,13 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F : 1D numpy array of 2D numpy arrays.
+        F : np.ndarray
             A numpy array where each element is the (normalized) precoder
             (a 2D numpy array) of one user.
-        full_F : 1D numpy array of 2D numpy arrays.
+        full_F : np.ndarray
             A numpy array where each element is the precoder (a 2D numpy
             array) of one user.
-        P : 1D numpy array
+        P : np.ndarray
             The maximum transmit power. If not provided the current value
             of self.P will be kept as it is.
         """
@@ -241,6 +248,12 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     def W(self):
         """
         Receive filter of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The receive filter of all users. (a 1D numpy array of 2D numpy
+            arrays).
         """
         # If self._W is None but self._W_H is not None than we need to
         # update self_W from self._W_H.
@@ -255,6 +268,12 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     def W_H(self):
         """
         Get method for the W_H property.
+
+        Returns
+        -------
+        np.ndarray
+            The conjugate of the receive filter of all users. (a 1D numpy
+            array of 2D numpy arrays).
         """
         # If self._W_H is None but self._W is not None than we need to
         # update self_W_H from self._W.
@@ -272,6 +291,12 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The full_W_H property returns the equivalent filter of the IA
         filter plus the post processing filter.
+
+        Returns
+        -------
+        np.ndarray
+            The equivalent filter of the IA filter plus the post processing
+            filter.
         """
         if self._full_W_H is None:
             if self.W_H is not None:
@@ -297,6 +322,12 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         The full_W property returns the equivalent filter of the IA
         filter plus the post processing filter.
+
+        Returns
+        -------
+        np.ndarray
+            the equivalent filter of the IA filter plus the post processing
+            filter.
         """
         if self._full_W is None:
             self._full_W = np.empty(self.K, dtype=np.ndarray)
@@ -313,13 +344,14 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        W_H : 1D numpy array of 2D numpy arrays.
+        W_H : np.ndarray
             A numpy array where each element is the receive filter (a 2D
-            numpy array) of one user.
-
-        W : 1D numpy array of 2D numpy arrays.
+            numpy array) of one user. This is a 1D numpy array of 2D numpy
+            arrays.
+        W : np.ndarray
             A numpy array where each element is the receive filter (a 2D
-            numpy array) of one user.
+            numpy array) of one user. This is a 1D numpy array of 2D numpy
+            arrays.
         """
         self._clear_receive_filter()
 
@@ -346,7 +378,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Hk_eq : 2D numpy array
+        Hk_eq : np.ndarray
             The equivalent channel.
 
         Notes
@@ -369,6 +401,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     def P(self):
         """
         Transmit power of all users.
+
+        Returns
+        -------
+        np.ndarray
+            The power of all users.
         """
         if self._P is None:
             P = np.ones(self.K, dtype=float)
@@ -379,6 +416,15 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     @P.setter
     def P(self, value):
         """Transmit power of all users.
+
+        Parameters
+        ----------
+        value : float | np.ndarray
+            The new power of all users.
+
+        Returns
+        -------
+        None
         """
         if value is None:
             # Note that if self._P is None then the getter property will
@@ -406,7 +452,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Ns : 1D numpy array
+        Ns : np.ndarray
             Number of streams of all users.
         """
         return self._Ns
@@ -434,7 +480,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Nr : 1D numpy array
+        Nr : np.ndarray
             Number of receive antennas of all users.
         """
         return self._multiUserChannel.Nr
@@ -446,7 +492,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Nt : 1D numpy array
+        Nt : np.ndarray
             Number of transmit antennas of all users.
         """
         return self._multiUserChannel.Nt
@@ -457,9 +503,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -499,7 +545,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        H : 2D numpy array
+        H : np.ndarray
             The channel matrix between transmitter l and receiver k.
         """
         return self._multiUserChannel.get_Hkl(k, l)
@@ -526,7 +572,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        H : 2D numpy array
+        H : np.ndarray
             The channel matrix between transmitter l and receiver k in the
             reverse network.
 
@@ -559,7 +605,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Qk : 2D numpy complex array.
+        Qk : np.ndarray
             The interference covariance matrix at receiver :math:`k`.
 
         Notes
@@ -584,7 +630,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Qk_rev : 2D numpy complex array.
+        Qk_rev : np.ndarray
             The interference covariance matrix at receiver :math:`k` in the
             reverse network.
 
@@ -627,11 +673,16 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         ----------
         k : int
             The index of the desired user.
-        Qk : 2D numpy complex array
+        Qk : np.ndarray
             The covariance matrix of the remaining interference at receiver
             k. If not provided, it will be automatically calculated. In
             that case, the `P` attribute will also be taken into account if
             it is set.
+
+        Returns
+        -------
+        float
+            The percentage of the interference in the desired signal space.
 
         Notes
         -----
@@ -661,8 +712,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in linear scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in linear scale) of all streams of all users. This is a
+            1D numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -707,8 +759,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in linear scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in linear scale) of all streams of all users. This is a
+            1D numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -729,8 +782,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in dB scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in dB scale) of all streams of all users. This is a 1D
+            numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -745,6 +799,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         Calculates the sum capacity of the current solution.
 
         The SINRs are estimated and appyied to the Shannon capacity formula
+
+        Returns
+        -------
+        float
+            The sum capacity of the current solution.
         """
         return np.sum(np.log2(1 + np.hstack(self.calc_SINR())))
 
@@ -769,7 +828,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Bkl_first_part : 2D numpy complex array
+        Bkl_first_part : np.ndarray
             First part in equation (28) of [Cadambe2008]_.
         """
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$$
@@ -806,7 +865,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        second_part : 2D numpy complex array.
+        second_part : np.ndarray
             Second part in equation (28) of [Cadambe2008]_.
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
@@ -849,7 +908,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Returns
         -------
-        Bkl : 1D numpy array of 2D numpy arrays
+        Bkl : np.ndarray
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
@@ -886,13 +945,13 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         ----------
         k : int
             Index of the desired user.
-        Bkl_all_l : A sequence of 2D numpy arrays.
+        Bkl_all_l : list[np.ndarray]
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 
         Returns
         -------
-        SINR_k : 1D numpy array
+        SINR_k : np.ndarray
             The SINR for the different streams of user k.
         """
         Hkk = self._get_channel(k, k)
@@ -927,9 +986,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Ns : int or 1D numpy array
+        Ns : int | np.ndarray
             Number of streams of each user.
-        P : 1D numpy array
+        P : np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
