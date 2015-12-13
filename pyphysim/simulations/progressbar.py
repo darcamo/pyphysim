@@ -1902,7 +1902,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         count : int
             The new amount of progress.
         """
-        # noinspection PyArgumentList
+        # noinspection PyArgumentList,PyTypeChecker
         self._progress_func(self, count)
 
     def __call__(self, count):
@@ -1917,7 +1917,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         count : int
             The new amount of progress.
         """
-        # noinspection PyArgumentList
+        # noinspection PyArgumentList,PyTypeChecker
         self._progress_func(self, count)
 
     def _progress(self, count):
@@ -1961,6 +1961,6 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
 
         self._progress_func = ProgressbarZMQClient._progress
-        # noinspection PyArgumentList
+        # noinspection PyArgumentList,PyTypeChecker
         self._progress_func(self, count)
 # xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

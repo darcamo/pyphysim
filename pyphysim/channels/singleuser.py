@@ -127,6 +127,7 @@ class SuChannel(object):
         output = self._tdlchannel.corrupt_data(signal)
 
         if self._pathloss_value is not None:
+            # noinspection PyTypeChecker
             output *= math.sqrt(self._pathloss_value)
 
         return output
@@ -166,6 +167,7 @@ class SuChannel(object):
             signal, fft_size, carrier_indexes)
 
         if self._pathloss_value is not None:
+            # noinspection PyTypeChecker
             output *= math.sqrt(self._pathloss_value)
         return output
 
@@ -186,6 +188,7 @@ class SuChannel(object):
         if self._pathloss_value is None:
             return self._tdlchannel.get_last_impulse_response()
         else:
+            # noinspection PyTypeChecker
             return math.sqrt(self._pathloss_value) * \
                 self._tdlchannel.get_last_impulse_response()
 

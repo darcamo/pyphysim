@@ -6,7 +6,6 @@
 
 import math
 from numbers import Number
-from collections import Iterable
 import numpy as np
 from scipy.linalg import block_diag
 from . import fading, fading_generators
@@ -26,7 +25,7 @@ class MuChannel(object):
 
     Parameters
     ----------
-    N : int
+    N : int | list[int,int] | tuple[int,int]
         The number of transmit/receive pairs.
     fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
@@ -286,7 +285,7 @@ class MuChannel(object):
             where each row corresponds to the transmit data of one transmitter.
         fft_size : int
             The size of the Fourier transform to get the frequency response.
-        carrier_indexes : slice | np.ndarray
+        carrier_indexes : slice | np.ndarray | list[int]
             The indexes of the subcarriers where signal is to be
             transmitted (all users will use the same indexes). If it is
             None assume all subcarriers will be used.
@@ -687,6 +686,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
                 # matrix has the same dimension as the
                 # self._big_H_no_pathloss matrix and we are performing
                 # element-wise multiplication here.
+                # noinspection PyTypeChecker
                 self._H_with_pathloss = self._H_no_pathloss * np.sqrt(
                     self._pathloss_matrix)
             return self._H_with_pathloss
@@ -712,6 +712,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
                 # matrix has the same dimension as the
                 # self._big_H_no_pathloss matrix and we are performing
                 # element-wise multiplication here.
+                # noinspection PyTypeChecker
                 self._big_H_with_pathloss = self._big_H_no_pathloss * np.sqrt(
                     self._pathloss_big_matrix)
             return self._big_H_with_pathloss
@@ -833,7 +834,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         cumNr = np.hstack([0, np.cumsum(Nr)])
         cumNt = np.hstack([0, np.cumsum(Nt)])
-        big_matrix = np.ones([np.sum(Nr), np.sum(Nt)],
+        big_matrix = np.ones([int(np.sum(Nr)), int(np.sum(Nt))],
                              dtype=small_matrix.dtype)
 
         for rx in range(Kr):
@@ -1451,9 +1452,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
     # noinspection PyPep8
     def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
-        """Calculates the interference-plus-noise covariance matrix for all
-        streams at receiver :math:`k` according to equation (28) in
-        [Cadambe2008]_.
+        """
+        Calculates the interference-plus-noise covariance matrix for all
+        streams at receiver :math:`k` according to equation (28) in [
+        Cadambe2008]_.
 
         The interference-plus-noise covariance matrix for stream :math:`l`
         of user :math:`k` is given by Equation (28) in [Cadambe2008]_,
@@ -1471,9 +1473,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : list[np.ndarray]
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This can be a list of numpy arrays or a 1D numpy
+            array of numpy arrays.
         k : int
             Index of the desired user.
         N0_or_Rek : float | np.ndarray
@@ -1589,6 +1592,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Rek = (noise_power * np.eye(self.Nr[k]))
         Hk = self.get_Hk(k)
+        # noinspection PyTypeChecker
         return self._calc_JP_Bkl_cov_matrix_first_part_impl(
             Hk, F_all_users, Rek)
 
@@ -1669,9 +1673,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : list[np.ndarray]
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This can be either a 1D numpy array of numpy
+            arrays or a list of numpy arrays.
         k : int
             Index of the desired user.
         N0_or_Rek : float | np.ndarray
@@ -1725,7 +1730,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             transpose).
         k : int
             Index of the desired user.
-        Bkl_all_l : list[np.ndarray]
+        Bkl_all_l : list[np.ndarray] | np.ndarray
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 
@@ -1798,13 +1803,11 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         ----------
         Hk : np.ndarray
             Channel from all transmitters to receiver k.
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of user k.
-        Uk : 2D numpy array
+        Uk : np.ndarray
             The receive filter of user k (before applying the conjugate
             transpose).
-        k : int
-            Index of the desired user.
         Bkl_all_l : list[np.ndarray]
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
@@ -1851,14 +1854,14 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of user k.
-        Uk : 2D numpy array
+        Uk : np.ndarray
             The receive filter of user k (before applying the conjugate
             transpose).
         k : int
             Index of the desired user.
-        Bkl_all_l : list[np.ndarray]
+        Bkl_all_l : list[np.ndarray] | np.ndarray
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 
@@ -2033,13 +2036,13 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        data : 2D numpy array
+        data : np.ndarray
             An array of numpy matrices with the data of the multiple
             users. The k-th element in `data` is a numpy array with
             dimension Nt_k x NSymbs, where Nt_k is the number of transmit
             antennas of the k-th user and NSymbs is the number of
             transmitted symbols.
-        ext_int_data : 1D numpy array of 2D numpy arrays
+        ext_int_data : list[np.ndarray] | np.ndarray
             An array of numpy matrices with the data of the external
             interference sources. The l-th element is the data transmitted
             by the l-th external interference source, which must have a
@@ -2048,7 +2051,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        output : 1D numpy array of 2D numpy arrays
+        output : np.ndarray
             A numpy array where each element contais the received data (a
             2D numpy array) of a user.
         """
@@ -2064,7 +2067,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        data : 2D numpy array
+        data : np.ndarray
             A bi-dimensional numpy array with the concatenated data of all
             transmitters as well as the data from all external interference
             sources. The dimension of data is (sum(self._Nt) +
@@ -2075,7 +2078,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        output : 2D numpy array
+        output : np.ndarray
             A bi-dimension numpy array where the number of rows corresponds
             to the sum of the number of receive antennas of all users and
             the number of columns correspond to the number of transmitted
@@ -2148,7 +2151,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        channel_k : 2D numpy array
+        channel_k : np.ndarray
             Channel from all transmitters to receiver `k`.
 
         See also
@@ -2189,31 +2192,31 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        Nr : 1D numpy array
+        Nr : np.ndarray
             Number of antennas at each receiver.
-        Nt : 1D numpy array
+        Nt : np.ndarray
             Number of antennas at each transmitter.
         K : int
             Number of transmit/receive pairs.
-        NtE : int or iterable
+        NtE : int | list[int] | np.ndarray
             Number of transmit antennas of the external interference
             source(s). If `NtE` is an iterable, the number of external
             interference sources will be the len(NtE).
 
         Returns
         -------
-        output : a tuple
-            The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt)
+        output : tuple
+            The tuple (full_Nr, full_Nt, full_K, extIntK, extIntNt).
         """
-        if isinstance(NtE, Iterable):
-            # We have multiple external interference sources
-            extIntK = len(NtE)
-            extIntNt = np.array(NtE)
-        else:
+        if isinstance(NtE, (int, np.int_)):
             # NtE is a scalar number, which means we have a single external
             # interference source.
             extIntK = 1
             extIntNt = np.array([NtE])
+        else:
+            # We have multiple external interference sources
+            extIntK = len(NtE)
+            extIntNt = np.array(NtE)
 
         # Number of receive antennas also including the number of receive
         # antennas of the interference users (which are zeros)
@@ -2239,16 +2242,16 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        channel_matrix : 2D numpy array
+        channel_matrix : np.ndarray
             A matrix concatenating the channel of all transmitters
             (including the external interference sources) to all receivers.
-        Nr : 1D numpy array
+        Nr : np.ndarray
             Number of antennas at each receiver.
-        Nt : 1D numpy array
+        Nt : np.ndarray
             Number of antennas at each transmitter.
         K : int
             Number of transmit/receive pairs.
-        NtE : int or iterable
+        NtE : int | list[int] | np.ndarray
             Number of transmit antennas of the external interference
             source(s). If NtE is an iterable, the number of external
             interference sources will be the len(NtE).
@@ -2275,15 +2278,15 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        Nr : 1D array or an int
+        Nr : int | np.ndarray
             Number of receive antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
-        Nt : 1D array or an int
+        Nt : int | np.ndarray
             Number of transmit antennas of each user. If an integer is
             specified, all users will have that number of receive antennas.
         K : int
             Number of users.
-        NtE : 1D array or an int
+        NtE : int | list[int] | np.ndarray
             Number of transmit antennas of the external interference
             source(s). If NtE is an iterable, the number of external
             interference sources will be the len(NtE).
@@ -2319,7 +2322,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        pathloss_matrix : 2D numpy array
+        pathloss_matrix : np.ndarray
             A matrix with dimension "K x K", where K is the number of
             users, with the path loss (IN LINEAR SCALE) from each
             transmitter (columns) to each receiver (rows). If you want to
@@ -2328,7 +2331,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             each receiver. The number of rows of ext_int_pathloss must be
             equal to the number of receives, while the number of columns
             must be equal to the number of external interference sources.
-        ext_int_pathloss : numpy array
+        ext_int_pathloss : np.ndarray
             The external interference path loss.
         """
         # A matrix with the path loss from each transmitter to each
@@ -2362,12 +2365,12 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        pe : float, optional [default=1]
+        pe : float, optional
             External interference power (in linear scale)
 
         Returns
         -------
-        R_all_k : 1D array of numpy matrices
+        R_all_k : np.ndarray
             Return a numpy array, where each element is the covariance
             matrix of the external interference at one receiver.
         """
@@ -2393,7 +2396,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        R_all_k : 1D array of numpy matrices
+        R_all_k : np.ndarray
             Return a numpy array, where each element is the covariance
             matrix of the external interference plus noise at one receiver.
         """
@@ -2432,15 +2435,16 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         ----------
         k : int
             Index of the desired receiver.
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This should be either a list of numpy
+            2D arrays or a 1D numpy array of 2D numpy arrays.
         pe : float
             The power of the external interference source(s).
 
         Returns
         -------
-        Qk : 2D numpy complex array.
+        Qk : np.ndarray
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{kj} \mtF_j \mtF_j^H \mtH_{kj}^H + \mtR_e$$
@@ -2460,9 +2464,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         ----------
         k : int
             Index of the desired receiver.
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This is a 1D numpy array of 2D numpy array.
 
         See also
         --------
@@ -2498,15 +2502,15 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         ----------
         k : int
             Index of the desired receiver.
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This is a 1D numpy array of 2D numpy array.
         pe : float
             The power of the external interference source(s).
 
         Returns
         -------
-        Qk : 2D numpy complex array.
+        Qk : np.ndarray
             The interference covariance matrix at receiver :math:`k`.
         """
         # $$\mtQ k = \sum_{j=1, j \neq k}^{K} \frac{P_j}{Ns_j} \mtH_{k} \mtF_j \mtF_j^H \mtH_{k}^H + \mtR_e$$
@@ -2526,17 +2530,20 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        F : 1D numpy array of 2D numpy arrays
-            The precoders of all users.
-        U : 1D numpy array of 2D numpy arrays
-            The receive filters of all users.
+        F : list[np.ndarray] | np.ndarray
+            The precoders of all users. This should be either a list of numpy
+            2D arrays or a 1D numpy array of 2D numpy arrays.
+        U : list[np.ndarray] | np.ndarray
+            The receive filters of all users. This should be either a list of
+            numpy 2D arrays or a 1D numpy array of 2D numpy arrays.
         pe : float
             Power of the external interference source.
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in linear scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in linear scale) of all streams of all users. This is a
+            1D numpy array of 1D numpy arrays (of floats)
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -2563,13 +2570,19 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        F_all_users : 1D numpy array of 2D numpy array
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). This can be either a 1D numpy array of numpy
+            arrays or a list of numpy arrays.
         k : int
             Index of the desired user.
-        Rek : 2D numpy array
+        Rek : np.ndarray
             Covariance matrix of the external interference plus noise.
+
+        Returns
+        -------
+        np.ndarray
+            The first part in the equation of the Blk covariance matrix.
         """
         # The first part in Bkl is given by
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[k]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[k]\dagger} + \mtR e_k$$
@@ -2592,7 +2605,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of the desired user.
         k : int
             Index of the desired user.
@@ -2601,7 +2614,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        second_part : 2D numpy complex array.
+        second_part : np.ndarray
             Second part in equation (28) of [Cadambe2008]_.
 
         """
@@ -2615,20 +2628,20 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        Fk : 2D numpy array
+        Fk : np.ndarray
             The precoder of user k.
-        Uk : 2D numpy array
+        Uk : np.ndarray
             The receive filter of user k (before applying the conjugate
             transpose).
         k : int
             Index of the desired user.
-        Bkl_all_l : A sequence of 2D numpy arrays.
+        Bkl_all_l : list[np.ndarray] | np.ndarray
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 
         Returns
         -------
-        SINR_k : 1D numpy array
+        SINR_k : np.ndarray
             The SINR for the different streams of user k.
 
         """
@@ -2645,17 +2658,20 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Parameters
         ----------
-        F : 1D numpy array of 2D numpy arrays
-            The precoders of all users.
-        U : 1D numpy array of 2D numpy arrays
-            The receive filters of all users.
+        F : np.ndarray
+            The precoders of all users. This is a 1D numpy array of 2D numpy
+            arrays.
+        U : np.ndarray
+            The receive filters of all users. This is a 1D numpy array of 2D
+            numpy arrays.
         pe : float
             The external interference power.
 
         Returns
         -------
-        SINRs : 1D numpy array of 1D numpy arrays (of floats)
-            The SINR (in linear scale) of all streams of all users.
+        SINRs : np.ndarray
+            The SINR (in linear scale) of all streams of all users. This is a
+            1D numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)

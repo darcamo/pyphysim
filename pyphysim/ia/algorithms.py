@@ -662,12 +662,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                 if cond > 1e4:
                     mod_users.append(k)
                     # [U, S, V_H] = np.linalg.svd(self._F[k])
-                    max_sing_value = S.max()
+                    max_sing_value = np.asscalar(S.max())
                     # Calculate the number of significative singular
                     # values. Basically, any singular value (and corresponding
-                    # dimension) lower then max_sing_value/1e8 will be
+                    # dimension) lower then max_sing_value/1e4 will be
                     # discarded.
-                    n = np.sum(S > max_sing_value / 1.0e4)
+                    n = np.count_nonzero(np.greater(S, max_sing_value / 1.0e4))
 
                     # Store the number of significative singular values for
                     # that user
@@ -1916,7 +1916,7 @@ class GreedStreamIASolver(object):
 
         # First we check if any user has more then one stream, since
         # otherwise we can't remove any stream.
-        if np.any(self._iasolver.Ns > 1):
+        if np.any(np.greater(self._iasolver.Ns, 1)):
             # If yes, then set 'keep_going' to True to indicate that the
             # stream reduction should be tried.
             keep_going = True
@@ -1982,7 +1982,7 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Check if at least one user has more then 1 stream xxxxx
-            if not np.any(self._iasolver.Ns > 1):
+            if not np.any(np.greater(self._iasolver.Ns, 1)):
                 # If there is no user with more then 1 stream, then we
                 # can't reduce streams anymore. Let's stop the while loop
                 # then.

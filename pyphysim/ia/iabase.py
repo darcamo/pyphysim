@@ -945,7 +945,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         ----------
         k : int
             Index of the desired user.
-        Bkl_all_l : list[np.ndarray]
+        Bkl_all_l : list[np.ndarray] | nd.ndarray
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
 

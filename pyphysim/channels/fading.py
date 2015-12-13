@@ -1185,12 +1185,14 @@ class TdlChannel(object):
 
                 if self.switched_direction:
                     # xxxxxxxxxx Code for reversed direction xxxxxxxxxxxxxx
+                    # noinspection PyUnboundLocalVariable
                     for rx_idx in range(num_rx_ant):
                         output[start_idx:end_idx, :] += (
                             freq_response[:, rx_idx, :] *
                             signal[rx_idx, start_idx:end_idx, np.newaxis])
                 else:
                     # xxxxxxxxxx Code for original direction xxxxxxxxxxxxxx
+                    # noinspection PyUnboundLocalVariable
                     for tx_idx in range(num_tx_ant):
                         output[start_idx:end_idx, :] += (
                             freq_response[:, :, tx_idx] *

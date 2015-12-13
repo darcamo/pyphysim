@@ -419,6 +419,7 @@ class SimulationRunner(object):
         if self._results_base_filename is None:
             filename = None
         else:
+            # noinspection PyTypeChecker
             filename = self.results.get_filename_with_replaced_params(
                 self._results_base_filename)
         return filename
@@ -958,6 +959,7 @@ class SimulationRunner(object):
             # that the "while" statement after this try/except block
             # will have a head start and if current_rep is greater than
             # or equal to rep_max the while loop won't run at all.
+            # noinspection PyUnresolvedReferences
             current_rep = current_sim_results.current_rep
 
         # If loading partial results failed then we will run the FIRST

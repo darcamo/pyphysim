@@ -1574,6 +1574,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         else:
             log10 = math.log10
 
+        # noinspection PyTypeChecker
         if np.any(d < 1.0) or np.any(d > 20.0):
             msg = ('Distance for the Okomura Hata model should be between'
                    ' 1Km and 20Km')

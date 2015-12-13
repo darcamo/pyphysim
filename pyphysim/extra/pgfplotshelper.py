@@ -38,11 +38,11 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
 
     Parameters
     ----------
-    x : Iterable (numpy array or a list)
+    x : np.ndarray | list[float] | list[int]
         The data for the 'x' axis in the plot.
-    y : Iterable (numpy array or a list)
+    y : np.ndarray | list[float] | list[int]
         The data for the 'x' axis in the plot
-    errors : Iterable (numpy array or a list) or None
+    errors : np.ndarray | list[float] | list[int], optional
         The error for plotting the errorbars.
     options : str
         pgfplot options for the plot line.
@@ -57,7 +57,7 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
 
     # xxxxxxxxxx Creates the coordinates part of the plot line xxxxxxxxxxxx
     points = zip(x, y)
-    num_points = len(points)
+    num_points = min(len(x), len(y))
     if errors is None:
         points_string = "\n".join([str(p) for p in points])
         plot_line = "plot[]\ncoordinates{{{0}}};".format(points_string)
