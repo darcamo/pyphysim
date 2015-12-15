@@ -22,7 +22,8 @@ except ImportError as e:  # pragma: no cover
     import pickle
 
 from .configobjvalidation import real_numpy_array_check, \
-    integer_numpy_array_check, integer_scalar_or_integer_numpy_array_check, \
+    integer_numpy_array_check, \
+    integer_scalar_or_integer_numpy_array_check, \
     real_scalar_or_real_numpy_array_check
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
@@ -52,20 +53,22 @@ def combine_simulation_parameters(params1, params2):
         The union of 'params1' and 'params2'.
     """
     if set(params1.parameters.keys()) != set(params2.parameters.keys()):
-        raise RuntimeError(['Both SimulationParameters objects must have'
-                            ' the same parameters.'])
+        raise RuntimeError('Both SimulationParameters objects must have'
+                           ' the same parameters.')
 
     if set(params1.unpacked_parameters) != set(params2.unpacked_parameters):
-        raise RuntimeError(['Both SimulationParameters objects must have'
-                            ' the same unpacked parameters (only the values'
-                            ' should can be different).'])
+        raise RuntimeError(
+                'Both SimulationParameters objects must have'
+                ' the same unpacked parameters (only the values'
+                ' should can be different).')
 
     fixed_parameters = params1.fixed_parameters
     for key in fixed_parameters:
         if params1[key] != params2[key]:
-            raise RuntimeError(['The fixed parameters in both '
-                                'SimulationParameters objects must have the'
-                                ' same value.'])
+            raise RuntimeError(
+                    'The fixed parameters in both '
+                    'SimulationParameters objects must have the'
+                    ' same value.')
 
     union = SimulationParameters()
 
@@ -323,7 +326,8 @@ class SimulationParameters(object):
                 else:
                     self._unpacked_parameters_set.remove(name)
             else:
-                raise ValueError("Parameter {0} is not iterable".format(name))
+                raise ValueError(
+                    "Parameter {0} is not iterable".format(name))
         else:
             raise ValueError("Unknown parameter: `{0}`".format(name))
 
@@ -497,7 +501,7 @@ class SimulationParameters(object):
         """
         # If self._original_sim_params is not None, that means that this
         # SimulationParameters object is in fact one of the unpacked
-        # variations of another Simulationparameters object. In that case,
+        # variations of another SimulationParameters object. In that case,
         # we return the number of unpacked variations of the original
         # object.
         if self._original_sim_params is not None:
@@ -506,7 +510,8 @@ class SimulationParameters(object):
         if len(self._unpacked_parameters_set) == 0:
             return 1
         else:
-            # Generator for the lengths of the parameters set to be unpacked
+            # Generator for the lengths of the parameters set to be
+            # unpacked
             gen_values = (
                 len(self.parameters[i]) for i in self._unpacked_parameters_set)
             # Just multiply all the lengths
@@ -616,8 +621,8 @@ class SimulationParameters(object):
 
     def get_unpacked_params_list(self):
         """
-        Get a list of SimulationParameters objects, each one corresponding to a
-        possible combination of (unpacked) parameters.
+        Get a list of SimulationParameters objects, each one
+        corresponding to a possible combination of (unpacked) parameters.
 
         Returns
         -------
@@ -626,7 +631,7 @@ class SimulationParameters(object):
 
         Examples
         --------
-        Supose you have a SimulationParameters object with the parameters
+        Suppose you have a SimulationParameters object with the parameters
         'a', 'b', 'c' and 'd' as below
 
         >>> simparams = SimulationParameters()
@@ -829,7 +834,7 @@ class SimulationParameters(object):
                                            preserve_errors=True,
                                            copy=True)
 
-        # Note that if thare was no parsing errors, then "result" will be
+        # Note that if there was no parsing errors, then "result" will be
         # 'True'.  It there was an error, then result will be a dictionary
         # with each parameter as a key. The value of each key will be
         # either 'True' if that parameter was parsed without error or a
@@ -942,7 +947,8 @@ class SimulationParameters(object):
         group.attrs.create('_unpacked_parameters_set', data=list(
             self._unpacked_parameters_set))
 
-        # Save the _unpack_index member variable as an attribute of the group.
+        # Save the _unpack_index member variable as an attribute of the
+        # group.
         group.attrs.create('_unpack_index', data=self._unpack_index)
 
     # TODO: finish implementing this (and remove the "pragma no cover")
@@ -992,6 +998,7 @@ class SimulationParameters(object):
 
     #     Notes
     #     -----
+
     #     This method is called from the save_to_pytables_file method in the
     #     SimulationResults class. It uses the python pytables library and
     #     `group` is supposed to be an pytables group created with that
@@ -1011,7 +1018,7 @@ class SimulationParameters(object):
     #     # Note that we need to convert _unpacked_parameters_set to a list,
     #     # since a set has no native HDF5 equivalent.
 
-    #     # TODO: Currently the atribute will be saved as a python object,
+    #     # TODO: Currently the attribute will be saved as a python object,
     #     # but it should be an array of strings.
     #     pytables_file.setNodeAttr(group, '_unpacked_parameters_set', list(
     #         self._unpacked_parameters_set))

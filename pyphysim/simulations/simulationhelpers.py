@@ -61,7 +61,8 @@ def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
     Parameters
     ----------
     client : Client
-        The client from which we will get a direct view to access the engines.
+        The client from which we will get a direct view to access the
+        engines.
     folder : str
         The folder to be added to the python path at each engine.
     """
@@ -117,9 +118,9 @@ def _simulate_do_what_i_mean_single_runner(runner,
     else:
         run_in_parallel = True
         try:
-            # If we can get an IPython view that means that the IPython engines
-            # are running. In that case we will perform the simulation in
-            # parallel
+            # If we can get an IPython view that means that the IPython
+            # engines are running. In that case we will perform the
+            # simulation in parallel
             from ipyparallel import Client
             # cl = Client(profile="ssh")
             cl = Client(profile="default")

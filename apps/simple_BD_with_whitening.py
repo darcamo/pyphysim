@@ -65,7 +65,7 @@ multiuser_channel.randomize(Nr, Nt, K, ext_int_rank)
 input_data = np.random.randint(0, M, [np.sum(Ns_BD), NSymbs])
 symbols = modulator.modulate(input_data)
 
-BD = blockdiagonalization.BlockDiaginalizer(K, transmit_power, noise_var)
+BD = blockdiagonalization.BlockDiagonalizer(K, transmit_power, noise_var)
 enhancedBD = blockdiagonalization.EnhancedBD(K, transmit_power, noise_var, pe)
 
 (newH, Ms) = BD.block_diagonalize_no_waterfilling(multiuser_channel.big_H_no_ext_int)

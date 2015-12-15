@@ -21,7 +21,7 @@ class TdlChannelProfile(object):
 
     Some profiles are defined as objects of this class, such as
     COST259_TUx, COST259_RAx and COST259_HTx. These can be used when
-    instantiating a `TdlChannel` obejct.
+    instantiating a `TdlChannel` object.
 
     Note that the tap powers and delays are not necessarily `discretized`
     to some sampling interval.
@@ -30,7 +30,7 @@ class TdlChannelProfile(object):
     ----------
     tap_powers_dB : np.ndarray
         The tap powers (in dB). If both `tap_powers_dB` and `tap_delays`
-        are None then a single tap with 0dB power will be assummed at delay
+        are None then a single tap with 0dB power will be assumed at delay
         0.
     tap_delays : np.ndarray
         The tap delays.
@@ -65,7 +65,8 @@ class TdlChannelProfile(object):
 
         aux = (np.sum(self._tap_powers_linear * self._tap_delays ** 2) /
                np.sum(self._tap_powers_linear))
-        self._rms_delay_spread = math.sqrt(aux - self._mean_excess_delay ** 2)
+        self._rms_delay_spread = math.sqrt(
+                aux - self._mean_excess_delay ** 2)
 
         # Sampling interval when the channel profile is discretized. You
         # can call the
@@ -168,16 +169,16 @@ class TdlChannelProfile(object):
     @property
     def num_taps_with_padding(self):
         """
-        Get the number of taps in the profile including zero-padding when the
-        profile is discretized.
+        Get the number of taps in the profile including zero-padding
+        when the profile is discretized.
 
         If the profile is not discretized an exception is raised.
 
         Returns
         -------
         int
-            Number of taps after discretization (it counts possible any added
-            padding).
+            Number of taps after discretization (it counts possible any
+            added padding).
         """
         if self.Ts is None:
             raise RuntimeError('TdlChannelProfile is not discretized')
@@ -187,8 +188,8 @@ class TdlChannelProfile(object):
     @property
     def Ts(self, ):
         """
-        Get the sampling interval used for discretizing this channel profile
-        object.
+        Get the sampling interval used for discretizing this channel
+        profile object.
 
         If it is not discretized then this returns None.
 
@@ -234,7 +235,8 @@ class TdlChannelProfile(object):
         name = "{0} (discretized)".format(self.name)
         powers, delays = self._calc_discretized_tap_powers_and_delays(Ts)
 
-        discretized_channel_profile = TdlChannelProfile(powers, delays, name)
+        discretized_channel_profile = TdlChannelProfile(
+                powers, delays, name)
         discretized_channel_profile._Ts = Ts
 
         return discretized_channel_profile
@@ -278,14 +280,14 @@ class TdlChannelProfile(object):
         Returns
         --------
         str
-            The object representaion as a string.
+            The object representation as a string.
         """
         return "<TdlChannelProfile: '{0}' ({1} taps)>".format(
             self.name, self.num_taps)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Channel Profiel Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Channel Profile Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Channel profiles define the power and delays (according to the norm) for
 # use with when creating TdlChannel objects
@@ -296,8 +298,9 @@ class TdlChannelProfile(object):
 COST259_TUx = TdlChannelProfile(np.array([
     -5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3, -16.9, -17.1,
     -17.4, -19, -19, -19.8, -21.5, -21.6, -22.1, -22.6, -23.5, -24.3]),
-    np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349, 1533,
-              1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9,
+    np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349,
+              1533, 1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]
+             ) * 1e-9,
     'COST259_TU')
 
 
@@ -310,12 +313,13 @@ COST259_RAx = TdlChannelProfile(np.array(
 
 
 # COST 259 Hilly Terrain
-COST259_HTx = TdlChannelProfile(np.array(
-    [-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3, -17.7,
-     -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0, -29.9, -30.0, -30.7]),
-    np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941., 15000.,
-              16172., 16492., 16876., 16882., 16978., 17615., 17827., 17849.,
-              18016.]) * 1e-9, 'COST259_HT')
+COST259_HTx = TdlChannelProfile(
+    np.array([-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3,
+              -17.7, -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0,
+              -29.9, -30.0, -30.7]),
+    np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941.,
+              15000., 16172., 16492., 16876., 16882., 16978., 17615.,
+              17827., 17849., 18016.]) * 1e-9, 'COST259_HT')
 
 
 class TdlImpulseResponse(object):
@@ -354,7 +358,8 @@ class TdlImpulseResponse(object):
     @property
     def tap_values_sparse(self):
         """
-        Return the tap values (not including zero padding) as a numpy array.
+        Return the tap values (not including zero padding) as a numpy
+        array.
 
         Returns
         -------
@@ -389,7 +394,8 @@ class TdlImpulseResponse(object):
     @property
     def tap_delays_sparse(self):
         """
-        Return the tap delays (which are multiples of the sampling interval).
+        Return the tap delays (which are multiples of the sampling
+        interval).
 
         Returns
         -------
@@ -460,7 +466,8 @@ class TdlImpulseResponse(object):
 
         # Fill the non-zero taps in samples_with_zeros in the correct
         # indexes
-        samples_with_zeros[self.tap_indexes_sparse] = self._tap_values_sparse
+        samples_with_zeros[self.tap_indexes_sparse] = \
+            self._tap_values_sparse
 
         # Disable write on this array so that it has no risk of deviating
         # from self._tap_values_sparse
@@ -480,9 +487,9 @@ class TdlImpulseResponse(object):
         Returns
         -------
         np.ndarray
-            The frequency response. Dimension: `fft_size x num_samples` for
-            SISO impulse response or `fft_size x num_rx x num_tx x num_samples`
-            for MIMO impulse response.
+            The frequency response. Dimension: `fft_size x num_samples`
+            for SISO impulse response or `fft_size x num_rx x num_tx x
+            num_samples` for MIMO impulse response.
         """
         # Compute the FFT in the "delay" dimension, which captures the
         # multipath characteristics of the channel. The FFT is calculated
@@ -490,7 +497,9 @@ class TdlImpulseResponse(object):
         # corresponds to the second dimension is the time dimension (as the
         # channel response changes in time)
         freq_response = np.fft.fft(
-            self._get_samples_including_the_extra_zeros(), fft_size, axis=0)
+            self._get_samples_including_the_extra_zeros(),
+            fft_size,
+            axis=0)
         return freq_response
 
     def __mul__(self, value):
@@ -614,7 +623,7 @@ class TdlImpulseResponse(object):
         Concatenate multiple TdlImpulseResponse objects and return the new
         concatenated TdlImpulseResponse.
 
-        This contatenation is performed in the "samples" dimension.
+        This concatenation is performed in the "samples" dimension.
 
         Parameters
         ----------
@@ -631,8 +640,9 @@ class TdlImpulseResponse(object):
             if num_objs == 1:
                 return list_of_impulse_responses[0]
             else:  # pragma: no cover
-                raise ValueError("list_of_impulse_responses must contain at "
-                                 "least two TdlImpulseResponse objects.")
+                raise ValueError("list_of_impulse_responses must contain "
+                                 "at least two TdlImpulseResponse "
+                                 "objects.")
 
         # We should test if all elements in list_of_impulse_responses have
         # the same profile, but in order to avoid too much overhead we only
@@ -640,11 +650,12 @@ class TdlImpulseResponse(object):
         channel_profile1 = list_of_impulse_responses[0].channel_profile
         channel_profile2 = list_of_impulse_responses[1].channel_profile
         if channel_profile1 is not channel_profile2:
-            raise ValueError("TdlImpulseResponse objects must have the same "
-                             "channel profile object")
+            raise ValueError("TdlImpulseResponse objects must have the "
+                             "same channel profile object")
 
         tap_values_sparse = np.concatenate(
-            [a.tap_values_sparse for a in list_of_impulse_responses], axis=-1)
+            [a.tap_values_sparse for a in list_of_impulse_responses],
+            axis=-1)
 
         concatenated_impulse_response = TdlImpulseResponse(
             tap_values_sparse, channel_profile1)
@@ -663,14 +674,14 @@ class TdlChannel(object):
     Parameters
     ----------
     fading_generator : T <= FadingSampleGenerator
-        The instance of a fading generator in the `fading_generators` module.
-        It should be a subclass of FadingSampleGenerator. The fading
-        generator will be used to generate the channel samples.
+        The instance of a fading generator in the `fading_generators`
+        module. It should be a subclass of FadingSampleGenerator. The
+        fading generator will be used to generate the channel samples.
         If the shape of the fading_generator is not None, then it must
         contain two positive integers, and a MIMO transmission will be
         employed, where the first integer in shape corresponds to the
-        number of receive antennas while the second integer corresponds to
-        the number of transmit antennas
+        number of receive antennas while the second integer corresponds
+        to the number of transmit antennas
     channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
@@ -697,8 +708,8 @@ class TdlChannel(object):
                 # Ts was provided and the fading generator also has it, but
                 # they are not the same value. Let's raise an exception
                 raise RuntimeError(
-                    "The provided sampling interval Ts is "
-                    "different from the one in the Jakes sample generator.")
+                    "The provided sampling interval Ts is different from "
+                    "the one in the Jakes sample generator.")
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -886,7 +897,7 @@ class TdlChannel(object):
 
         # xxxxxxxxxx Apply the power to each tap xxxxxxxxxxxxxxxxxxxxxxxxxx
         # Note that here we only apply the power to the taps. The delays
-        # will be applyed when the fading is actually used.
+        # will be applied when the fading is actually used.
 
         # Note that self._tap_linear_powers_discretized has a single
         # dimension. We need to add singleton dimensions as necessary
@@ -1079,11 +1090,12 @@ class TdlChannel(object):
             The signal to be transmitted. This should be 1D for SISO
             systems (or SIMO systems) and 2D for MIMO systems.
         fft_size : int
-            The size of the Fourier transform to get the frequency response.
+            The size of the Fourier transform to get the frequency
+            response.
         carrier_indexes : slice | np.ndarray
-            The indexes of the subcarriers where signal is to be transmitted.
-            If it is None assume all subcarriers will be used. This can be a
-            slice object or a numpy array of integers.
+            The indexes of the subcarriers where signal is to be
+            transmitted. If it is None assume all subcarriers will be
+            used. This can be a slice object or a numpy array of integers.
 
         Returns
         -------

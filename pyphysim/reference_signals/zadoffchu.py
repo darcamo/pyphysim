@@ -74,7 +74,8 @@ def get_shifted_root_seq(root_seq, n_cs, denominator):
 
 def get_extended_ZF(root_seq, size):
     """
-    Cyclic Extend the Zadoff-Chu root sequence to have size equal to `size`.
+    Cyclic Extend the Zadoff-Chu root sequence to have size equal to
+    `size`.
 
     Parameters
     ----------

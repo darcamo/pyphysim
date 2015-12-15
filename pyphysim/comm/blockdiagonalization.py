@@ -6,9 +6,9 @@
 """Module implementing the block diagonalization algorithm.
 
 There are two ways to use this module. You can either use the
-:class:`BlockDiaginalizer` class, or you can use the
+:class:`BlockDiagonalizer` class, or you can use the
 :meth:`block_diagonalize` and the :meth:`calc_receive_filter` functions
-(which use the BlockDiaginalizer class in their implementation).
+(which use the BlockDiagonalizer class in their implementation).
 
 """
 
@@ -19,12 +19,13 @@ from scipy.linalg import block_diag
 from ..comm import waterfilling
 from ..util.misc import least_right_singular_vectors, \
     calc_shannon_sum_capacity, calc_whitening_matrix
-from ..util.conversion import single_matrix_to_matrix_of_matrices, linear2dB
+from ..util.conversion import single_matrix_to_matrix_of_matrices, \
+    linear2dB
 from ..subspace.projections import calcProjectionMatrix
 from ..modulators.fundamental import Modulator
 from ..channels.multiuser import MultiUserChannelMatrixExtInt
 
-__all__ = ['block_diagonalize', 'calc_receive_filter', 'BlockDiaginalizer',
+__all__ = ['block_diagonalize', 'calc_receive_filter', 'BlockDiagonalizer',
            'BDWithExtIntBase', 'WhiteningBD', 'EnhancedBD']
 
 
@@ -56,16 +57,17 @@ def block_diagonalize(mtChannel, num_users, iPu, noise_var):
     Notes
     -----
     The block diagonalization algorithm is described in [1]_, where
-    different power allocations are illustrated. The :class:`BlockDiaginalizer`
-    class implement two power allocation methods, a global power
-    allocation, and a 'per transmitter' power allocation.
+    different power allocations are illustrated. The
+    :class:`BlockDiagonalizer` class implement two power allocation
+    methods, a global power allocation, and a 'per transmitter' power
+    allocation.
 
     .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
        "Zero-Forcing Methods for Downlink Spatial Multiplexing
        in Multiuser MIMO Channels," IEEE Transactions on Signal
        Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
     """
-    BD = BlockDiaginalizer(num_users, iPu, noise_var)
+    BD = BlockDiagonalizer(num_users, iPu, noise_var)
     results_tuple = BD.block_diagonalize(mtChannel)
     return results_tuple
 
@@ -86,7 +88,7 @@ def calc_receive_filter(newH):
         that W_bd_H is directly applied to the received signals (no need
         to calculate the conjugate transpose).
     """
-    return BlockDiaginalizer.calc_receive_filter(newH)
+    return BlockDiagonalizer.calc_receive_filter(newH)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -151,7 +153,7 @@ def _calc_effective_throughput(sinrs, modulator, packet_length):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class BlockDiaginalizer(object):
+class BlockDiagonalizer(object):
     """
     Class to perform the block diagonalization algorithm in a joint
     transmission scenario.
@@ -163,7 +165,7 @@ class BlockDiaginalizer(object):
     diagonalization algorithm assures that each receiver does not see
     interference from the other receivers.
 
-    The waterfilling algorithm is also applied to optimally distribute the
+    The water-filling algorithm is also applied to optimally distribute the
     power. However, in the case with multiple base stations, the power
     restriction in each base station must be respected. Therefore, after
     the power is optimally allocated at each base station all powers will
@@ -171,7 +173,7 @@ class BlockDiaginalizer(object):
     the highest energy. This is what is done in the
     :meth:`block_diagonalize` method.
 
-    If the power should not be optimally allocated with the waterfilling
+    If the power should not be optimally allocated with the water-filling
     algorithm, use the :meth:`block_diagonalize_no_waterfilling` method
     instead. The power restriction in each base station will still be
     respected, but the base station will equally divide its power among the
@@ -191,21 +193,21 @@ class BlockDiaginalizer(object):
     --------
 
     Consider the case where we have 3 base station (BSs) jointly
-    transmitting to 3 users, where each base station has a power of 1.5, the
-    number of antennas (at each BS and at each receiver) is 2, and the
-    noise variance is 1e-4. The channel can be block diagonalized for this
-    scenario with
+    transmitting to 3 users, where each base station has a power of 1.5,
+    the number of antennas (at each BS and at each receiver) is 2,
+    and the noise variance is 1e-4. The channel can be block
+    diagonalized for this scenario with
 
     >>> bs_power = 1.5
     >>> noise_var = 1e-4
     >>> num_users = 2
     >>> Ntx = 2  # Number of transmit antennas (per BS)
     >>> Nrx = 2  # Number of receive antennas (per user)
-    >>> # Create the BlockDiaginalizer object
-    >>> bd = BlockDiaginalizer(num_users, bs_power, noise_var)
+    >>> # Create the BlockDiagonalizer object
+    >>> bd = BlockDiagonalizer(num_users, bs_power, noise_var)
     >>> channel = np.array([[-0.9834-0.0123j,  0.6503-0.3189j,  \
     0.5484+1.7049j, -1.0891-0.1025j], [-0.5911-0.3055j, -0.6205+0.3375j, \
-    -0.7995+0.3723j,  0.7412-1.2537j], [-0.2732+0.475j , -0.4191+0.4019j,  \
+    -0.7995+0.3723j,  0.7412-1.2537j], [-0.2732+0.475j , -0.4191+0.4019j, \
     0.1047-0.5592j,  0.7548-1.0214j], [ 0.5377-0.208j , -0.1480-1.0527j, \
     -0.6373+0.4081j, -0.5854-0.8135j]])
     >>> (newH, Ms) = bd.block_diagonalize(channel)
@@ -232,7 +234,7 @@ class BlockDiaginalizer(object):
     -----
     The block diagonalization algorithm is described in [1]_, where
     different power allocations are illustrated. The
-    :class:`BlockDiaginalizer` class implement two power allocation
+    :class:`BlockDiagonalizer` class implement two power allocation
     methods, a global power allocation, and a 'per transmitter' power
     allocation.
 
@@ -245,7 +247,7 @@ class BlockDiaginalizer(object):
     def __init__(self, num_users, iPu, noise_var):
         self.num_users = num_users
         self.iPu = iPu
-        # Noise power is used in the waterfilling calculations
+        # Noise power is used in the water-filling calculations
         self.noise_var = noise_var
 
     # noinspection PyPep8
@@ -336,14 +338,14 @@ class BlockDiaginalizer(object):
             Sigma.extend(S)
 
         # Concatenates the precoder for each user to form the complete Ms
-        # matrix. Ms_bad is the version without waterfilling.
+        # matrix. Ms_bad is the version without water-filling.
         # This is equivalent to "concatenate(Ms_bad, axis=1)"
         Ms_bad = np.hstack(Ms_bad)
         Sigma = np.array(Sigma)
         return Ms_bad, Sigma
 
     def _perform_global_waterfilling_power_scaling(self, Ms_bad, Sigma):
-        """Perform the power scaling based on the waterfilling algorithm for
+        """Perform the power scaling based on the water-filling algorithm for
         all the parallel channel gains in `Sigma`.
 
         This power scaling method corresponds to maximizing the sum rate
@@ -382,25 +384,26 @@ class BlockDiaginalizer(object):
 
         return Ms_good
 
-    def _perform_normalized_waterfilling_power_scaling(self, Ms_bad, Sigma):
-        """Perform the power scaling based on the waterfilling algorithm for
-        all the parallel channel gains in `Sigma`, but normalize the result
-        by the power of the base station transmitting with the highest
-        power.
+    def _perform_normalized_waterfilling_power_scaling(
+            self, Ms_bad, Sigma):
+        """Perform the power scaling based on the water-filling
+        algorithm for all the parallel channel gains in `Sigma`,
+        but normalize the result by the power of the base station
+        transmitting with the highest power.
 
-        When we have a joint transmission where multiple base stations act
-        as a single base station, then performing the waterfilling on all
-        the channels for the total available power may result in some base
-        station transmitting with a higher power then it actually
-        can. Therefore, we normalize the power of the strongest BS so that
-        the power restriction at each BS is satisfied. This is sub-optimal
-        since the other BSs will use less power then available, but it is
-        simple and it works.
+        When we have a joint transmission where multiple base stations
+        act as a single base station, then performing the water-filling
+        on all the channels for the total available power may result in
+        some base station transmitting with a higher power then it
+        actually can. Therefore, we normalize the power of the strongest
+        BS so that the power restriction at each BS is satisfied. This
+        is sub-optimal since the other BSs will use less power then
+        available, but it is simple and it works.
 
         Parameters
         ----------
         Ms_bad : np.ndarray
-            The previously calculated modulation matrix (without any powr
+            The previously calculated modulation matrix (without any power
             scaling)
         Sigma : np.ndarray
             The singular values of the effective channel when Ms_bad is
@@ -409,8 +412,8 @@ class BlockDiaginalizer(object):
         Returns
         -------
         Ms_good : np.ndarray
-            The modulation matrix with the normalized power scaling applied.
-            This is a 2D numpy array.
+            The modulation matrix with the normalized power scaling
+            applied. This is a 2D numpy array.
 
         """
         # Number of receive antennas per user
@@ -419,7 +422,7 @@ class BlockDiaginalizer(object):
         # is equal to the number of receive antennas
         iNtU = Sigma.size // self.num_users
 
-        # First we perform the global waterfilling
+        # First we perform the global water-filling
         Ms_good = self._perform_global_waterfilling_power_scaling(
             Ms_bad, Sigma)
 
@@ -452,7 +455,7 @@ class BlockDiaginalizer(object):
         users, where each `iNUsers` rows correspond to one user.
 
         For an example, see the documentation of the
-        :class:`BlockDiaginalizer` class.
+        :class:`BlockDiagonalizer` class.
 
         Parameters
         ----------
@@ -479,8 +482,8 @@ class BlockDiaginalizer(object):
 
         # Scale the power of this modulation assuring the power restriction
         # is not violated in any of the base stations.
-        Ms_good = self._perform_normalized_waterfilling_power_scaling(Ms_bad,
-                                                                      Sigma)
+        Ms_good = self._perform_normalized_waterfilling_power_scaling(
+                Ms_bad, Sigma)
 
         # Finally calculates the Block diagonal channel
         newH = np.dot(mtChannel, Ms_good)
@@ -491,7 +494,7 @@ class BlockDiaginalizer(object):
     def block_diagonalize_no_waterfilling(self, mtChannel):
         """
         Performs the block diagonalization, but without applying the
-        waterfilling algorithm.
+        water-filling algorithm.
 
         The power of each base station is equally divided such that the
         square of the Frobenius norm or the columns of Ms_good
@@ -557,8 +560,8 @@ class BlockDiaginalizer(object):
         Returns
         -------
         W_bd : np.ndarray
-            The zero-forcing matrix (2D numpy array) to separate each stream
-            of each user.
+            The zero-forcing matrix (2D numpy array) to separate each
+            stream of each user.
         """
         W_bd = np.linalg.pinv(newH)
         return W_bd
@@ -612,7 +615,7 @@ class BlockDiaginalizer(object):
         receivers, each with 2 receive antennas, where the transmitter has
         6 transmit antennas.
 
-        >>> BD = BlockDiaginalizer(3, 0, 0)
+        >>> BD = BlockDiagonalizer(3, 0, 0)
         >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]),\
                                  3 * np.ones([2, 6])])
         >>> BD._get_sub_channel(channel, [0,2])
@@ -626,7 +629,8 @@ class BlockDiaginalizer(object):
 
         """
         nrows = mt_channel.shape[0]
-        iNrU = nrows // self.num_users  # Number of receive antennas per user
+        # Number of receive antennas per user
+        iNrU = nrows // self.num_users
 
         if isinstance(desired_users, collections.Iterable):
             vtIndexes = []
@@ -634,11 +638,12 @@ class BlockDiaginalizer(object):
                 vtIndexes.extend(range(iNrU * index, (index + 1) * iNrU))
         else:
             assert isinstance(desired_users, int)
-            vtIndexes = range(iNrU * desired_users, (desired_users + 1) * iNrU)
+            vtIndexes = range(iNrU * desired_users,
+                              (desired_users + 1) * iNrU)
         return mt_channel[vtIndexes, :]
 
 
-class BDWithExtIntBase(BlockDiaginalizer):
+class BDWithExtIntBase(BlockDiagonalizer):
     """
     Class to perform the block diagonalization algorithm in a joint
     transmission scenario taking into account the external interference.
@@ -658,7 +663,7 @@ class BDWithExtIntBase(BlockDiaginalizer):
         Power of the external interference source (in linear scale)
     """
     def __init__(self, num_users, iPu, noise_var, pe):
-        BlockDiaginalizer.__init__(self, num_users, iPu, noise_var)
+        BlockDiagonalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
     def calc_whitening_matrices(self, mu_channel):
@@ -711,15 +716,16 @@ class WhiteningBD(BDWithExtIntBase):
         BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
 
     @staticmethod
-    def _calc_receive_filter_with_whitening(newH, whitening_filter, Nr, Nt):
+    def _calc_receive_filter_with_whitening(
+            newH, whitening_filter, Nr, Nt):
         """
         Calculates the Zero-Forcing receive filter of all users.
 
         Parameters
         ----------
         newH : np.ndarray
-            The block diagonalized channel (with the whitening applied). This
-            should be a 2D numpy array.
+            The block diagonalized channel (with the whitening applied).
+            This should be a 2D numpy array.
         whitening_filter : np.ndarray
             The whitening filter of all users. This is a block diagonal
             matrix where each "block" is the whitening filter of a user.
@@ -734,9 +740,10 @@ class WhiteningBD(BDWithExtIntBase):
             A 1D numpy array where each element corresponds to the receive
             filter for a user. This is a 1D numpy array of 2D numpy arrays.
         """
-        # W = np.linalg.inv(np.dot(whitening_filter_k.conjugate().T, Heq_k))
+        # W = np.linalg.inv(
+        #     np.dot(whitening_filter_k.conjugate().T, Heq_k))
         K = Nr.size
-        big_W = np.dot(BlockDiaginalizer.calc_receive_filter(newH),
+        big_W = np.dot(BlockDiagonalizer.calc_receive_filter(newH),
                        whitening_filter)
         Wk_all_users = np.empty(K, dtype=np.ndarray)
         aux = single_matrix_to_matrix_of_matrices(big_W, Nr, Nt)
@@ -786,7 +793,7 @@ class WhiteningBD(BDWithExtIntBase):
 
         # We will now apply the regular block diagonalization algorithm in
         # this equivalent channel matrix.
-        (newH, Ms) = BlockDiaginalizer.block_diagonalize_no_waterfilling(
+        (newH, Ms) = BlockDiagonalizer.block_diagonalize_no_waterfilling(
             self, H_matrix_equiv)
 
         # xxxxxxxxxx Calculates the precoder for each transmitter xxxxxxxxx
@@ -809,7 +816,7 @@ class EnhancedBD(BDWithExtIntBase):
     The EnhancedBD class performs the block diagonalization characteristic
     to the joint transmission scenario where multiple base stations act as
     a single transmitter to send data to the users. However, in addition to
-    what the BlockDiaginalizer class does the EnhancedBD class can also
+    what the BlockDiagonalizer class does the EnhancedBD class can also
     take external interference into account.
 
     One way to reduce of eliminate the external interference is to
@@ -829,7 +836,7 @@ class EnhancedBD(BDWithExtIntBase):
 
     Notes
     -----
-    See the :class:`BlockDiaginalizer` class for details about the block
+    See the :class:`BlockDiagonalizer` class for details about the block
     diagonalization process.
     """
 
@@ -920,8 +927,8 @@ class EnhancedBD(BDWithExtIntBase):
             this dictionary must contain the "num_streams" keyword with the
             desired number of transmit streams. For the
             "effective_throughput" metric this dictionary mst contain the
-            "modulatro" and "packet_length" keywords with a modulator
-            object and an integer, respectivelly. For the other metrics
+            "modulator" and "packet_length" keywords with a modulator
+            object and an integer, respectively. For the other metrics
             metric_func_extra_args_dict will be ignored.
 
         Returns
@@ -1137,8 +1144,8 @@ class EnhancedBD(BDWithExtIntBase):
 
         # Since we are not handling external interference, we simple call
         # the block_diagonalize_no_waterfilling method from the
-        # BlockDiaginalizer class.
-        (newH, Ms_good) = BlockDiaginalizer.block_diagonalize_no_waterfilling(
+        # BlockDiagonalizer class.
+        (newH, Ms_good) = BlockDiagonalizer.block_diagonalize_no_waterfilling(
             self, mu_channel.big_H_no_ext_int)
 
         # Since there is no stream reduction, the number of streams of each
@@ -1412,7 +1419,7 @@ class EnhancedBD(BDWithExtIntBase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxx Case where self._metric_func is used xxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # In this case the number of sacrified streams is automatically
+        # In this case the number of sacrificed streams is automatically
         # determined according to the self._metric_func function. This
         # function is set in the set_ext_int_handling_metric method, where
         # any extra arguments (besides sinr) that should be passed to this

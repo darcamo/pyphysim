@@ -27,7 +27,7 @@ class SuChannel(object):
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples. If
-        not provided then RayleighSampleGenerator will be ised
+        not provided then RayleighSampleGenerator will be used
     channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
@@ -53,8 +53,9 @@ class SuChannel(object):
                                                  tap_delays=np.zeros(1),
                                                  Ts=Ts)
         else:
-            # More parameters were provided. We will have then a TDL channel
-            # model. Let's iust pass these parameters to the base class.
+            # More parameters were provided. We will have then a TDL
+            # channel model. Let's just pass these parameters to the
+            # base class.
             self._tdlchannel = fading.TdlChannel(
                 fading_generator,
                 channel_profile, tap_powers_dB, tap_delays,
@@ -95,7 +96,8 @@ class SuChannel(object):
 
     def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
         """
-        Set the number of transmit and receive antennas for MIMO transmission.
+        Set the number of transmit and receive antennas for MIMO
+        transmission.
 
         Set both `num_rx_antennas` and `num_tx_antennas` to None for SISO
         transmission
@@ -152,11 +154,12 @@ class SuChannel(object):
         signal : np.ndarray
             The signal to be transmitted.
         fft_size : int
-            The size of the Fourier transform to get the frequency response.
+            The size of the Fourier transform to get the frequency
+            response.
         carrier_indexes : slice | np.ndarray
-            The indexes of the subcarriers where signal is to be transmitted.
-            If it is None assume all subcarriers will be used. This can be a
-            slice object or a numpy array of integers.
+            The indexes of the subcarriers where signal is to be
+            transmitted. If it is None assume all subcarriers will be
+            used. This can be a slice object or a numpy array of integers.
 
         Returns
         -------
@@ -224,15 +227,16 @@ class SuChannel(object):
         Returns
         -------
         int
-            The number of taps in the channel (not including any zero padding).
+            The number of taps in the channel (not including any zero
+            padding).
         """
         return self._tdlchannel.num_taps
 
     @property
     def num_taps_with_padding(self):
         """
-        Get the number of taps in the profile including zero-padding when the
-        profile is discretized.
+        Get the number of taps in the profile including zero-padding
+        when the profile is discretized.
 
         If the profile is not discretized an exception is raised.
 
@@ -286,11 +290,11 @@ class SuMimoChannel(SuChannel):
     which corresponds to a multipath channel. You can use a single tap in
     order to get a flat fading channel.
 
-    You can create a new SuMimoChannel object either specifying the channel
-    profile or specifying both the channel tap powers and delays. If only the
-    fading_generator is specified then a single tap with unitary power and
-    delay zero will be assumed, which corresponds to a flat fading channel
-    model.
+    You can create a new SuMimoChannel object either specifying the
+    channel profile or specifying both the channel tap powers and
+    delays. If only the fading_generator is specified then a single tap
+    with unitary power and delay zero will be assumed, which corresponds
+    to a flat fading channel model.
 
     Parameters
     ----------
@@ -300,7 +304,7 @@ class SuMimoChannel(SuChannel):
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples. If
-        not provided then RayleighSampleGenerator will be ised
+        not provided then RayleighSampleGenerator will be used
     channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
@@ -324,5 +328,6 @@ class SuMimoChannel(SuChannel):
         fading_generator.shape = (num_antennas, num_antennas)
 
         # Initialize attributes from base class
-        super(SuMimoChannel, self).__init__(fading_generator, channel_profile,
-                                            tap_powers_dB, tap_delays, Ts)
+        super(SuMimoChannel, self).__init__(
+            fading_generator, channel_profile,
+            tap_powers_dB, tap_delays, Ts)

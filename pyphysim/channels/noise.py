@@ -9,7 +9,7 @@ from ..util.conversion import linear2dBm
 
 def calc_thermal_noise_power_dBm(T, delta_f):
     """
-    Calculate the termal noise power for the given room temperature
+    Calculate the thermal noise power for the given room temperature
     `T` (in Cº) and bandwidth `delta_f` (in Hz).
 
     Parameters

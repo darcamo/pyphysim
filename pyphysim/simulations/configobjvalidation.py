@@ -85,6 +85,7 @@ def _parse_int_range_expr(value):
 
 
 # pylint: disable= W0622
+# noinspection PyShadowingBuiltins
 def real_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a numpy array (of floats).
@@ -127,7 +128,7 @@ def real_numpy_array_check(value, min=None, max=None):
         # Remove '[' and ']' if they exist.
         if value[0] == '[' and value[-1] == ']':
             value = value[1:-1].strip()
-            value = value.replace(',', ' ')  # Replace any commas by a space
+            value = value.replace(',', ' ')  # Replace commas with spaces
             value = value.split()  # Split based on spaces
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -171,7 +172,7 @@ def real_numpy_array_check(value, min=None, max=None):
 # pylint: disable= W0622
 def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
     """
-    Parse and validate `value` as a floar number if possible and, if not,
+    Parse and validate `value` as a float number if possible and, if not,
     parse it as a numpy array (of floats).
 
     Value can be either a single number, a range expression in the form of
@@ -261,15 +262,16 @@ def integer_numpy_array_check(value, min=None, max=None):
         # Remove '[' and ']' if they exist.
         if value[0] == '[' and value[-1] == ']':
             value = value[1:-1].strip()
-            value = value.replace(',', ' ')  # Replace any commas by a space
+            value = value.replace(',', ' ')  # Replace commas by spaces
             value = value.split()  # Split based on spaces
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Test if it is a list or not
     if isinstance(value, list):
-        # If it is a list, each element can be either a number of a 'range
-        # expression' that can be parsed with _parse_int_range_expr. We simple
-        # apply integer_numpy_array_check on each element in the list to do
+        # If it is a list, each element can be either a number of a
+        # 'range expression' that can be parsed with
+        # _parse_int_range_expr. We simple apply
+        # integer_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
         value = [integer_numpy_array_check(a, min, max) for a in value]
         out = np.hstack(value)
@@ -304,8 +306,8 @@ def integer_numpy_array_check(value, min=None, max=None):
 
 def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
     """
-    Parse and validate `value` as an integer number if possible and, if not,
-    parse it as a numpy array (of integers).
+    Parse and validate `value` as an integer number if possible and,
+    if not, parse it as a numpy array (of integers).
 
     Value can be either a single number, a range expression in the form of
     min:max or min:step:max, or even a list containing numbers and range

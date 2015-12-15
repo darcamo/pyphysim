@@ -122,8 +122,8 @@ class PathLossBase(object):
     @abstractmethod
     def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
         """
-        Calculates the Path Loss (in dB) for a given distance (in Km) without
-        including the shadowing.
+        Calculates the Path Loss (in dB) for a given distance (in Km)
+        without including the shadowing.
 
         Parameters
         ----------
@@ -170,7 +170,8 @@ class PathLossBase(object):
             "**extra_args" (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
-        self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args, 'Km')
+        self._plot_deterministic_path_loss_in_dB_impl(
+                d, ax, extra_args, 'Km')
 
     def _plot_deterministic_path_loss_in_dB_impl(
             self, d, ax=None, extra_args=None,
@@ -252,7 +253,8 @@ class PathLossBase(object):
                 # If 'd' is a numpy array (or something similar such as a
                 # list), shadow must be a numpy array with the same shape
                 shadow = conversion.dB2Linear(
-                    np.random.standard_normal(np.size(d)) * self.sigma_shadow)
+                    np.random.standard_normal(
+                            np.size(d)) * self.sigma_shadow)
                 shadow.shape = np.shape(d)
             else:
                 # If 'd' is not an array but add a scalar shadowing
@@ -282,7 +284,8 @@ class PathLossBase(object):
 
     def calc_path_loss(self, d, **kargs):  # pragma: no cover
         """
-        Calculates the path loss (linear scale) for a given distance (in Km).
+        Calculates the path loss (linear scale) for a given distance (in
+        Km).
 
         Parameters
         ----------
@@ -412,7 +415,8 @@ class PathLossIndoorBase(PathLossBase):
     def plot_deterministic_path_loss_in_dB(
             self, d, ax=None, extra_args=None):  # pragma: no cover
         """
-        Plot the path loss (in dB) for the distance values in `d` (in meters).
+        Plot the path loss (in dB) for the distance values in `d` (in
+        meters).
 
         Parameters
         ----------
@@ -472,8 +476,8 @@ class PathLossIndoorBase(PathLossBase):
 
     def which_distance(self, pl):  # pragma: no cover
         """
-        Calculates the required distance (in meters) to achieve the given path
-        loss. It is the inverse of the calc_path_loss function.
+        Calculates the required distance (in meters) to achieve the
+        given path loss. It is the inverse of the calc_path_loss function.
 
         Parameters
         ----------
@@ -617,7 +621,8 @@ class PathLossOutdoorBase(PathLossBase):
 
     def calc_path_loss(self, d, **kargs):
         """
-        Calculates the path loss (linear scale) for a given distance (in Km).
+        Calculates the path loss (linear scale) for a given distance (in
+        Km).
 
         Parameters
         ----------
@@ -644,9 +649,9 @@ class PathLossGeneral(PathLossOutdoorBase):
 
     :math:`PL = 10 n \\log_{10} (d) + C`
 
-    where `PL` is in dB, `n` is the path loss exponent (usually in the range
-    of 2 to 4) and `d` is the distance between the transmitter and the
-    receiver.
+    where `PL` is in dB, `n` is the path loss exponent (usually in the
+    range of 2 to 4) and `d` is the distance between the transmitter and
+    the receiver.
 
     Parameters
     ----------
@@ -1500,7 +1505,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         """
         if self.area_type in ['open', 'suburban', 'medium city']:
 
-            # Suburban and ruran areas (f in MHz
+            # Suburban and rural areas (f in MHz
             # $a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$
             a = ((1.1 * math.log10(self.fc) - 0.7) *
                  self.hms - 1.56 * math.log10(self.fc) + 0.8)

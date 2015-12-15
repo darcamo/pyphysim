@@ -99,7 +99,7 @@ class Projection(object):
     def calcProjectionMatrix(A):
         """
         Calculates the projection matrix that projects a vector (or a
-        matrix) into the sinal space spanned by the columns of `A`.
+        matrix) into the signal space spanned by the columns of `A`.
 
         Parameters
         ----------

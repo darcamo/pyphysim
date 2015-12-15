@@ -278,7 +278,7 @@ class SrsChannelEstimator(object):
         r = self._srs_ue.seq_array()
 
         if received_signal.ndim == 1:
-            # First we multiply (elementwise) the received signal by the
+            # First we multiply (element-wise) the received signal by the
             # conjugate of the user's SRS sequence
             y = np.fft.ifft(np.conj(r) * received_signal, r.size)
 
@@ -287,7 +287,8 @@ class SrsChannelEstimator(object):
             tilde_h = y[0:num_taps_to_keep]
         elif received_signal.ndim == 2:
             # Case with multiple receive antennas
-            y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal, r.size)
+            y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal,
+                            r.size)
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.

@@ -1005,8 +1005,6 @@ class CellSquare(shapes.Rectangle, CellBase):
         else:
             ax.autoscale_view(False, True, True)
 
-    # We need to re-implement this method because if is a little different
-    # if self.is_pofor the square cell type
     def add_user(self, new_user, relative_pos_bool=True):
         """
         Adds a new user to the cell.
@@ -1931,8 +1929,8 @@ class Cluster(shapes.Shape):
         """
         def f(x):
             """
-            Filter function. Returns True for vertexes which are closer to the
-            shape center than `distance`.
+            Filter function. Returns True for vertexes which are closer
+            to the shape center than `distance`.
 
             Parameters
             ----------

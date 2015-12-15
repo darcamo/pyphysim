@@ -85,13 +85,15 @@ def combine_simulation_results(simresults1, simresults2):
             fixed_parameters = unpack.parameters
 
             try:
-                index1 = simresults1.params.get_pack_indexes(fixed_parameters)
+                index1 = simresults1.params.get_pack_indexes(
+                        fixed_parameters)
                 result_object.merge(result_list1[index1])
             except ValueError:
                 pass
 
             try:
-                index2 = simresults2.params.get_pack_indexes(fixed_parameters)
+                index2 = simresults2.params.get_pack_indexes(
+                        fixed_parameters)
                 result_object.merge(result_list2[index2])
             except ValueError:
                 pass
@@ -107,9 +109,10 @@ def combine_simulation_results(simresults1, simresults2):
 class Result(object):
     """Class to store a single simulation result.
 
-    A simulation result can be anything, such as the number of errors, a
-    string, an error rate, etc. When creating a `Result` object one needs to
-    specify only the `name` of the stored result and the result `type`.
+    A simulation result can be anything, such as the number of errors,
+    a string, an error rate, etc. When creating a `Result` object one
+    needs to specify only the `name` of the stored result and the result
+    `type`.
 
     The different types indicate how multiple samples (from multiple
     iterations) of the same Result can be merged (usually to get a result
@@ -332,8 +335,8 @@ class Result(object):
     @property
     def accumulate_values_bool(self):
         """
-        Property to see if values are accumulated of not during a call to the
-        `update` method.
+        Property to see if values are accumulated of not during a call
+        to the `update` method.
         """
         return self._accumulate_values_bool
 
@@ -428,7 +431,8 @@ class Result(object):
                 return "Result -> {0}: {1}/{2} -> NaN".format(
                     self.name, v, t)
         else:
-            return "Result -> {0}: {1}".format(self.name, self.get_result())
+            return "Result -> {0}: {1}".format(
+                self.name, self.get_result())
 
     def update(self, value, total=None):
         """
@@ -491,8 +495,8 @@ class Result(object):
                 If the `p_total` parameter is None (not provided).
             """
             if p_total is None:
-                msg = ("A 'p_value' and a 'p_total' are required when updating "
-                       "a Result object of the RATIOTYPE type.")
+                msg = ("A 'p_value' and a 'p_total' are required when "
+                       "updating a Result object of the RATIOTYPE type.")
                 raise ValueError(msg)
 
             self._value += p_value
@@ -531,9 +535,10 @@ class Result(object):
             Result.SUMTYPE: __update_SUMTYPE_value,
             Result.CHOICETYPE: __update_CHOICETYPE_value}
 
-        # Call the apropriated update method. If self._update_type_code does
-        # not contain a key in the possible_updates dictionary (that is, a
-        # valid update type), then the function __default_update is called.
+        # Call the appropriated update method. If self._update_type_code
+        #  does not contain a key in the possible_updates dictionary (
+        # that is, a valid update type), then the function
+        # __default_update is called.
         possible_updates.get(self._update_type_code,
                              __default_update)(value, total)
 
@@ -556,9 +561,10 @@ class Result(object):
             "Can only merge two objects with the same name and type")
 
         if self.accumulate_values_bool is True:
-            # The second object must also have been set to accumulate values
-            msg = ("The merged Result also must have been set to accumulate"
-                   " values.")
+            # The second object must also have been set to accumulate
+            # values
+            msg = ("The merged Result also must have been set to "
+                   "accumulate values.")
             assert other.accumulate_values_bool is True, msg
 
             self._value_list.extend(other._value_list)
@@ -611,24 +617,6 @@ class Result(object):
         """
         return self._total_list
 
-    # # Remove this in the future
-    # def _fix_old_version(self):
-    #     """
-    #     """
-    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - START xxxxxxxxxxxxxxxxxxxx
-    #     try:
-    #         self._result_sum
-    #     except AttributeError as _:
-    #         if self.type_code == Result.RATIOTYPE:
-    #             n = np.array(self._value_list, dtype=float)
-    #             d = np.array(self._total_list, dtype=float)
-    #             r = n / d
-    #         elif self.type_code == Result.SUMTYPE:
-    #             r = np.array(self._value_list, dtype=float)
-    #         self._result_sum = np.sum(r)
-    #         self._result_squared_sum = np.sum(r**2)
-    #     # xxxxxxxxxx REMOVE THIS IN THE FUTURE - END xxxxxxxxxxxxxxxxxxxxxx
-
     def get_result_mean(self):
         """Get the mean of all the updated results.
 
@@ -657,15 +645,15 @@ class Result(object):
 
     def get_confidence_interval(self, P=95):
         """
-        Get the confidence inteval that contains the true result with a given
-        probability `P`.
+        Get the confidence interval that contains the true result with a
+        given probability `P`.
 
         Parameters
         ----------
         P : float
             The desired confidence (probability in %) that true value is
             inside the calculated interval. The possible values are
-            described in the documentaiton of the
+            described in the documentation of the
             `util.misc.calc_confidence_interval` function`
 
         Returns
@@ -708,7 +696,8 @@ class Result(object):
     #     -----
     #     This method is called from the save_to_hdf5_file method in the
     #     SimulationResults class. It uses the python h5py library and
-    #     `parent` is supposed to be an HDF5 group created with that library.
+    #     `parent` is supposed to be an HDF5 group created with that
+    #     library.
 
     #     See also
     #     --------
@@ -771,9 +760,9 @@ class Result(object):
 
     # @staticmethod
     # def load_from_hdf5_dataset(ds):
-    #     """Load a list of Rersult objects from an HDF5 dataset.
+    #     """Load a list of Result objects from an HDF5 dataset.
 
-    #     This dataset was suposelly saved with the save_to_hdf5_dataset
+    #     This dataset was supposedly saved with the save_to_hdf5_dataset
     #     function.
 
     #     Parameters
@@ -837,7 +826,7 @@ class SimulationResults(object):
 
     Examples
     --------
-    - Creating a SimulationResults onject and adding a few results to it
+    - Creating a SimulationResults object and adding a few results to it
 
       .. code-block:: python
 
@@ -1047,7 +1036,8 @@ class SimulationResults(object):
         name : str
             Name of the Result.
         update_type : int
-            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE).
+            Type of the result (SUMTYPE, RATIOTYPE, MISCTYPE or
+            CHOICETYPE).
         value : any
             Value of the result.
         total : any | int
@@ -1061,7 +1051,7 @@ class SimulationResults(object):
         """
         Append a result to the SimulationResults object.
 
-        This efectivelly means that the SimulationResults object will
+        This effectively means that the SimulationResults object will
         now store a list for the given result name. This allow you,
         for instance, to store multiple bit error rates with the 'BER'
         name such that simulation_results_object['BER'] will return a
@@ -1483,9 +1473,9 @@ class SimulationResults(object):
     #     Returns
     #     -------
     #     new_filename : string
-    #         The name of the file where the results were saved. This will be
-    #         equivalent to `filename` after string replacements (with the
-    #         simulation parameters) are done.
+    #         The name of the file where the results were saved. This will
+    #         be equivalent to `filename` after string replacements (with
+    #         the simulation parameters) are done.
 
     #     See also
     #     --------
@@ -1521,22 +1511,22 @@ class SimulationResults(object):
     #         for name, value in attrs.items():
     #             fid.attrs.create(name, value)
 
-    #     # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxx
     #     g = fid.create_group('results')
     #     # Save the TITTLE attribute to be more consistent with what
     #     # Pytables would do.
     #     g.attrs.create("TITLE", "Simulation Results")
     #     for r in self:
     #         Result.save_to_hdf5_dataset(g, r)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
+    #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxx
     #     pg = fid.create_group('parameters')
     #     # Save the TITTLE attribute to be more consistent with what
     #     # Pytables would do.
     #     pg.attrs.create("TITLE", "Simulation Parameters")
     #     self.params.save_to_hdf5_group(pg)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     #     fid.close()
     #     return filename
@@ -1559,24 +1549,25 @@ class SimulationResults(object):
     #         for name, value in attrs.items():
     #             fid.setNodeAttr(fid.root, name, value)
 
-    #     # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxxxx
-    #     g = fid.createGroup(fid.root, 'results', title="Simulation Results")
+    #     # xxxxxxxxxx Save the results in the 'results' group xxxxxxxxxxxx
+    #     g = fid.createGroup(
+    #         fid.root, 'results', title="Simulation Results")
     #     for r in self:
     #         Result.save_to_pytables_table(g, r)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxxxx
+    #     # xxxxxxxxxx Save the parameters in the 'parameters' group xxxxxx
     #     pg = fid.createGroup(fid.root, 'parameters',
     #                          title="Simulation Parameters")
     #     self.params.save_to_pytables_group(pg)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     #     fid.close()
 
     # @staticmethod
     # def load_from_hdf5_file(filename):
-    #     """Load a SimulationResults object from an HDF5 file saved with the
-    #     save_to_hdf5_file method.
+    #     """Load a SimulationResults object from an HDF5 file saved with
+    #     the save_to_hdf5_file method.
 
     #     Parameters
     #     ----------
@@ -1601,7 +1592,7 @@ class SimulationResults(object):
     #     # Get the original filename variable
     #     simresults.original_filename = fid.attrs['original_filename']
 
-    #     # xxxxxxxxxx Results group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Results group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #     rg = fid['results']
 
     #     for result_name in rg:
@@ -1610,19 +1601,19 @@ class SimulationResults(object):
     #         #     = Result.load_from_hdf5_dataset(ds)
     #         result = Result.load_from_hdf5_dataset(ds)[-1]
     #         simresults.add_result(result)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #     # xxxxxxxxxx Parameters grop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxx Parameters group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #     try:
-    #         # We only set the simulation parameters if it was stored in the
-    #         # hdf5 file.
+    #         # We only set the simulation parameters if it was stored in
+    #         # the hdf5 file.
     #         pg = fid['parameters']
     #         simresults.set_parameters(
     #             SimulationParameters.load_from_hdf5_group(pg))
     #     except KeyError:  # pragma: no cover
     #         pass
 
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     #     fid.close()
     #     return simresults
 

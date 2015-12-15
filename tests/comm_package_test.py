@@ -100,7 +100,7 @@ class WaterfillingTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Block Diagonalization Module xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class BlockDiaginalizerTestCase(unittest.TestCase):
-    """Unittests for the BlockDiaginalizer class in the blockdiagonalization
+    """Unittests for the BlockDiagonalizer class in the blockdiagonalization
     module.
 
     """
@@ -117,7 +117,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.iNr = self.iNrk * self.num_users  # Total number of Rx antennas
         self.iNt = self.iNtk * self.num_users  # Total number of Tx antennas
 
-        self.BD = blockdiagonalization.BlockDiaginalizer(
+        self.BD = blockdiagonalization.BlockDiagonalizer(
             self.num_users,
             self.Pu,
             self.noise_var)

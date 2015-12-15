@@ -22,7 +22,8 @@ from ..util.misc import pretty_time
 from .progressbar import ProgressbarText, ProgressbarText2, \
     ProgressbarText3, ProgressbarZMQServer, ProgressBarIPython
 
-__all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
+__all__ = ["get_partial_results_filename", "SimulationRunner",
+           "SkipThisOne"]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -53,7 +54,7 @@ def get_common_parser():
 
         help_msg = ('An index for the parameters variations. If provided, '
                     'only that variation will be simulated.')
-        group.add_argument('-i',       # short version to specify the option
+        group.add_argument('-i',       # short version to specify the opt
                            '--index',  # Long version to specify the option
                            help=help_msg,
                            metavar='VARIATION INDEX',
@@ -61,16 +62,16 @@ def get_common_parser():
                            nargs='?')
 
         help_msg = 'Name of the file with the simulation parameters'
-        group.add_argument('-c',        # short version to specify the option
-                           '--config',  # Long version to specify the option
+        group.add_argument('-c',        # short version to specify the opt
+                           '--config',  # Long version to specify the opt
                            help=help_msg,
                            metavar='CONFIG FILENAME',
                            # default=default_config_file,
                            type=str,
                            nargs='?')
 
-        help_msg = ('Instead of running the simulation, return the number of'
-                    ' variations.')
+        help_msg = ('Instead of running the simulation, return the '
+                    'number of variations.')
         group.add_argument(
             # short version to specify the option
             '-n',
@@ -215,7 +216,7 @@ class SimulationRunner(object):
            # Save the results of this iteration to a SimulationResults
            # object and return it
            simResults = SimulationResults()
-           simResults.add_new_result(...)  # Each one is a metric of interest
+           simResults.add_new_result(...)  # Add one each result you want
            simResults.add_new_result(...)
            return simResults
 
@@ -307,7 +308,7 @@ class SimulationRunner(object):
         # - If it is 'text1' then the ProgressbarText class will be used.
         # - If it is 'text2' then the ProgressbarText2 class will be used.
         # - If it is None, then no progressbar will be used.
-        # - If it is a callable, then that calable object must receive two
+        # - If it is a callable, then that callable object must receive two
         #   arguments, the rep_max and the message values, and return a
         #   function that receives a single argument (the custom
         #   parameters).
@@ -380,7 +381,8 @@ class SimulationRunner(object):
 
     def set_results_filename(self, filename=None):
         """
-        Set the name of the file where the simulation results will be saved.
+        Set the name of the file where the simulation results will be
+        saved.
 
         This must be done before calling the `simulate` of the
         `simulate_in_parallel` methods.
@@ -441,10 +443,10 @@ class SimulationRunner(object):
             results_filename = '{0}.pickle'.format(results_base_filename)
         return results_filename
 
-    def _get_progress_output_sinc(self,
-                                  param_variation_index):  # pragma: no cover
+    def _get_progress_output_sink(
+            self, param_variation_index):  # pragma: no cover
         """
-        Get the output sinc for the progressbars.
+        Get the output sink for the progressbars.
 
         If 'self.progress_output_type' is equal to 'screen' this method
         will simple return sys.stdout.
@@ -501,7 +503,8 @@ class SimulationRunner(object):
             pass
 
     def __save_partial_results(self, current_rep, current_params,
-                               current_sim_results, partial_results_filename):
+                               current_sim_results,
+                               partial_results_filename):
         """
         Save the partial simulation results to a file.
 
@@ -573,9 +576,9 @@ class SimulationRunner(object):
 
     def __run_simulation_and_track_elapsed_time(self, current_parameters):
         """
-        Perform the _run_simulation method and track its execution time. This
-        time will be added as a Result to the returned SimulationResults
-        object from _run_simulation.
+        Perform the _run_simulation method and track its execution time.
+        This time will be added as a Result to the returned
+        SimulationResults object from _run_simulation.
 
         Parameters
         ----------
@@ -628,8 +631,8 @@ class SimulationRunner(object):
             the run iteration.
 
         """
-        raise NotImplementedError("'_run_simulation' must be implemented in"
-                                  " a subclass of SimulationRunner")
+        raise NotImplementedError("'_run_simulation' must be implemented "
+                                  "in a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
     def _keep_going(self,
@@ -722,7 +725,7 @@ class SimulationRunner(object):
         # sys.stdout, otherwise it will be a file object. Note that
         # self.progress_output_type is used when
         # self.update_progress_function_style is either 'text1' or 'text2'.
-        output_progress_sinc = self._get_progress_output_sinc(
+        output_progress_sink = self._get_progress_output_sink(
             current_params.unpack_index)
 
         # If the self.update_progress_function_style attribute matches one
@@ -732,7 +735,7 @@ class SimulationRunner(object):
             # We will use the ProgressbarText class
             # noinspection PyArgumentList
             self._pbar = ProgressbarText(self.rep_max, '*', message,
-                                         output=output_progress_sinc,
+                                         output=output_progress_sink,
                                          **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
             self._pbar.delete_progress_file_after_completion = True
@@ -740,7 +743,7 @@ class SimulationRunner(object):
             # We will use the ProgressbarText2 class
             # noinspection PyArgumentList
             self._pbar = ProgressbarText2(self.rep_max, '*', message,
-                                          output=output_progress_sinc,
+                                          output=output_progress_sink,
                                           **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
             self._pbar.delete_progress_file_after_completion = True
@@ -857,7 +860,7 @@ class SimulationRunner(object):
 
     # This method is called when the SimulationRunner class is pickled
     def __getstate__(self):  # pragma: no cover
-        # We will pickle everything as default, escept for the "_pbar"
+        # We will pickle everything as default, except for the "_pbar"
         # member variable that will not be pickled. The reason is that
         # it may be a ProgressbarZMQServer object, which cannot be
         # pickled (uses ZMQ sockets).
@@ -1002,7 +1005,7 @@ class SimulationRunner(object):
                 # current_rep. After that, the while loop will continue the
                 # simulation.
                 current_sim_results['num_skipped_reps'][-1].update(1)
-                # TODO: Maybe log that one repetition was skippet
+                # TODO: Maybe log that one repetition was skipped
                 # print("\nAlready skipped {0} repetitions").format(
                 #     current_sim_results['num_skipped_reps'][-1].get_result())
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

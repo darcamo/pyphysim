@@ -41,11 +41,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
     The implementation of the `_updateF` method must set the _F variable
     with the correct value.
 
-    Another method that can be implemented is the get_cost method. It should
-    return the cost of the current IA solution. What is considered "the
-    cost" varies from one IA algorithm to another, but should always be a
-    real non-negative number. If get_cost is not implemented a value of -1
-    is returned.
+    Another method that can be implemented is the get_cost method. It
+    should return the cost of the current IA solution. What is
+    considered "the cost" varies from one IA algorithm to another,
+    but should always be a real non-negative number. If get_cost is not
+    implemented a value of -1 is returned.
 
     Parameters
     ----------
@@ -59,7 +59,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
     def __init__(self, multiUserChannel):
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
-        if not isinstance(multiUserChannel, muchannels.MultiUserChannelMatrix):
+        if not isinstance(multiUserChannel,
+                          muchannels.MultiUserChannelMatrix):
             raise ValueError(
                 "multiUserChannel must be an object of the "
                 "MultiUserChannelMatrix class (or a subclass).")
@@ -107,7 +108,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         """
         Clear the precoder filter.
 
-        This should be called in the beginning of the implemetnation of the
+        This should be called in the beginning of the implementation of the
         `_updateF` method in subclasses.
         """
         self._F = None
@@ -146,7 +147,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         Returns
         -------
         cost : float
-            The Cost of the current IA solution (a real non-negative number).
+            The Cost of the current IA solution (a real non-negative
+            number).
         """
         return -1
 
@@ -174,7 +176,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         Returns
         -------
         np.ndarray
-            The precoders of all users (a 1D numpy array of 2D numpy arrays).
+            The precoders of all users (a 1D numpy array of 2D numpy
+            arrays).
         """
         return self._F
 
@@ -186,7 +189,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         Returns
         -------
         np.ndarray
-            The precoders of all users (a 1D numpy array of 2D numpy arrays).
+            The precoders of all users (a 1D numpy array of 2D numpy
+            arrays).
         """
         if self._full_F is None:
             self._full_F = self._F * np.sqrt(self.P)
@@ -359,17 +363,18 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             raise RuntimeError("Either 'W' or 'W_H' must be provided.")
 
         if W is not None and W_H is not None:
-            raise RuntimeError(
-                "Either 'W' or 'W_H' must be provided (but not both of them.")
+            raise RuntimeError("Either 'W' or 'W_H' must be provided ("
+                               "but not both of them.")
 
         self._W = W
         self._W_H = W_H
 
     def _calc_equivalent_channel(self, k):
         """
-        Calculates the equivalent channel for user :math:`k` considering the
-        effect of the precoder (including transmit power), the actual
-        channel, and the receive filter (without power compensation).
+        Calculates the equivalent channel for user :math:`k` considering
+        the effect of the precoder (including transmit power),
+        the actual channel, and the receive filter (without power
+        compensation).
 
         Parameters
         ----------
@@ -383,7 +388,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Notes
         -----
-        This method is used only internaly in order to calculate the "W"
+        This method is used only internally in order to calculate the "W"
         get property so that the returned filter W compensates the effect
         of the direct channel.
         """
@@ -437,13 +442,14 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
                 raise ValueError("P cannot be negative or equal to zero.")
         else:
             if len(value) != self.K:
-                raise ValueError("P must be set to a sequency of length K")
+                raise ValueError("P must be set to a sequence of length K")
             else:
                 value = np.array(value)
                 if np.all(value > 0.0):
                     self._P = np.array(value)
                 else:
-                    raise ValueError("P cannot be negative or equal to zero.")
+                    raise ValueError(
+                            "P cannot be negative or equal to zero.")
 
     @property
     def Ns(self):
@@ -523,7 +529,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         self._F = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
-            self._F[k] = normalized(randn_c_RS(self._rs, self.Nt[k], Ns[k]))
+            self._F[k] = normalized(
+                randn_c_RS(self._rs, self.Nt[k], Ns[k]))
 
         # This will create a new array so that we can modify self._Ns
         # internally without changing the original Ns variable passed to
@@ -713,8 +720,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         Returns
         -------
         SINRs : np.ndarray
-            The SINR (in linear scale) of all streams of all users. This is a
-            1D numpy array of 1D numpy arrays (of floats).
+            The SINR (in linear scale) of all streams of all users. This
+            is a 1D numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -798,7 +805,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         """
         Calculates the sum capacity of the current solution.
 
-        The SINRs are estimated and appyied to the Shannon capacity formula
+        The SINRs are estimated and applied to the Shannon capacity formula
 
         Returns
         -------

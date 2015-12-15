@@ -113,7 +113,8 @@ class ClosedFormIASolver(IASolverBaseClass):
 
         all_subsets = []
 
-        for comb_index in itertools.combinations(range(num_eigenvectors), Ns):
+        for comb_index in itertools.combinations(range(num_eigenvectors),
+                                                 Ns):
             all_subsets.append(eigenvectors[:, comb_index])
 
         return all_subsets
@@ -138,8 +139,9 @@ class ClosedFormIASolver(IASolverBaseClass):
             E = self._calc_E()
             Ns0 = self.Ns[0]
 
-            # The first precoder is given by any subset of the eigenvectors of
-            # the "E" matrix. We simple get the first Ns_0 eigenvectors of E.
+            # The first precoder is given by any subset of the
+            # eigenvectors of the "E" matrix. We simple get the first
+            # Ns_0 eigenvectors of E.
             eigenvectors = np.linalg.eig(E)[1]
             F0 = eigenvectors[:, 0:Ns0]
             self._F[0] = F0
@@ -320,8 +322,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # performed with the Closed Form algorithm, while if it is
         # 'alt_min' the initialization is performed with the Alternating
         # Minimizations algorithm.
-        self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
-                                                         use_best_init=True)
+        self._closed_form_ia_solver = ClosedFormIASolver(
+            multiUserChannel, use_best_init=True)
 
         # If self is of the class AlternatingMinIASolver, then the
         # initialization with the Alternating Minimizations algorithm makes
@@ -329,11 +331,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         if isinstance(self, AlternatingMinIASolver):
             self._alt_min_ia_solver = None
         else:
-            self._alt_min_ia_solver = AlternatingMinIASolver(multiUserChannel)
+            self._alt_min_ia_solver = AlternatingMinIASolver(
+                multiUserChannel)
 
         # Can be: 'random', 'closed_form', 'alt_min', or 'fix'
         #
-        # 'random' -> Precvoder will be initialized randomly and then the
+        # 'random' -> Precoder will be initialized randomly and then the
         #             receive filter will be updated (using the _updateW
         #             method which is implemented in the subclass..
         #
@@ -483,8 +486,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     # noinspection PyUnusedLocal
     def _initialize_F_with_svd_and_find_W(self, Ns, P):
         """
-        Initialize the IA Solution from the most significant singular vectors
-        of each user's channel.
+        Initialize the IA Solution from the most significant singular
+        vectors of each user's channel.
 
         The implementation here simple initializes the precoder variable of
         each user as the most significant singular vector(s) of that
@@ -511,7 +514,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             # The second variable returned by least_right_singular_vectors
             # has the corresponds to the most significant singular
             # vectors.
-            _, V1, _ = least_right_singular_vectors(Hkk, self.Nr[k] - Ns[k])
+            _, V1, _ = least_right_singular_vectors(
+                    Hkk, self.Nr[k] - Ns[k])
             self._F[k] = V1 / np.linalg.norm(V1, 'fro')
 
         # Method called before the _updateW method
@@ -664,10 +668,11 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     # [U, S, V_H] = np.linalg.svd(self._F[k])
                     max_sing_value = np.asscalar(S.max())
                     # Calculate the number of significative singular
-                    # values. Basically, any singular value (and corresponding
-                    # dimension) lower then max_sing_value/1e4 will be
-                    # discarded.
-                    n = np.count_nonzero(np.greater(S, max_sing_value / 1.0e4))
+                    # values. Basically, any singular value (and
+                    # corresponding dimension) lower then
+                    # max_sing_value/1e4 will be discarded.
+                    n = np.count_nonzero(
+                        np.greater(S, max_sing_value / 1.0e4))
 
                     # Store the number of significative singular values for
                     # that user
@@ -682,7 +687,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
                     if self._full_F[k] is not None:
                         # Original norm of the _full_F[k] precoder
-                        original_norm = np.linalg.norm(self._full_F[k], 'fro')
+                        original_norm = np.linalg.norm(self._full_F[k],
+                                                       'fro')
                         new_full_F = get_principal_component_matrix(
                             self._full_F[k], n)
                         # Restore the original norm
@@ -696,29 +702,29 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # the index of the users whose precoders were modified. We need to
         # also modify the receive filter for those users.
         if len(mod_users) > 0:
-            # Note that we still need to remove the dead dimensions of the
-            # receive filter. However, depending on the algorithm, either the
-            # _W or the _W_H member variable was set while the other is None
-            # (at this point).
+            # Note that we still need to remove the dead dimensions of
+            # the receive filter. However, depending on the algorithm,
+            # either the _W or the _W_H member variable was set while
+            # the other is None (at this point).
             if self._W_H is None:
-                # Since _W_H is None that means that we need to modify the _W
-                # member variable
+                # Since _W_H is None that means that we need to modify
+                # the _W member variable
                 for k, n in zip(mod_users, num_significant_sing_values):
                     new_W = get_principal_component_matrix(self._W[k], n)
                     self._W[k] = new_W
 
             elif self._W is None:
-                # Since _W is None that means that we need to modify the _W_H
-                # member variable
+                # Since _W is None that means that we need to modify the
+                #  _W_H member variable
                 for k, n in zip(mod_users, num_significant_sing_values):
                     W = self._W_H[k].conj().T
                     new_W = get_principal_component_matrix(W, n)
                     self._W_H[k] = new_W.conj().T
             else:
-                # If both self._W and self._W_H are not None then something
-                # wrong happened. Maybe you called the self.W or the self.W_H
-                # properties by mistake before _solve_finalize is called
-                # (in the solve method).
+                # If both self._W and self._W_H are not None then
+                # something wrong happened. Maybe you called the self.W
+                # or the self.W_H properties by mistake before
+                # _solve_finalize is called (in the solve method).
                 raise Exception("I should not be here.")
 
     @classmethod
@@ -814,7 +820,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._solve_init(Ns, P)
 
         # This will be used to detect of the precoder did not
-        # significativelly change
+        # significative change
         # TODO: Should I use full_F instead of F???
         old_F = self._F
         for _ in range(self.max_iterations):
@@ -855,12 +861,12 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     of users involved in the IA process. However, note that alignment is
     only feasible for some cases configurations.
 
-    An example of a common exenario is a scenario with 3 pairs or
+    An example of a common scenario is a scenario with 3 pairs or
     transmitter/receiver with 2 antennas in each node and 1 stream
     transmitted per node.
 
     You can determine the scenario of an AlternatingMinIASolver object by
-    infering the variables K, Nt, Nr and Ns.
+    inferring the variables K, Nt, Nr and Ns.
 
     Parameters
     ----------
@@ -1214,12 +1220,12 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     This algorithm is applicable to a "K-user" scenario and it is
     described in [Cadambe2008]_.
 
-    An example of a common exenario is a scenario with 3 pairs or
+    An example of a common scenario is a scenario with 3 pairs or
     transmitter/receiver with 2 antennas in each node and 1 stream
     transmitted per node.
 
     You can determine the scenario of an MaxSinrIASolver object by
-    infering the variables K, Nt, Nr and Ns.
+    inferring the variables K, Nt, Nr and Ns.
 
     Parameters
     ----------
@@ -1410,7 +1416,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         Returns
         -------
         Uk : np.ndarray
-            The receive filver for all streams of user k.
+            The receive filter for all streams of user k.
         """
         num_streams = Bkl_all_l.size
         num_Rx = Bkl_all_l[0].shape[0]
@@ -1502,7 +1508,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
     transmitted per node.
 
     You can determine the scenario of an MMSEIASolver object by
-    infering the variables K, Nt, Nr and Ns.
+    inferring the variables K, Nt, Nr and Ns.
 
     Parameters
     ----------
@@ -1593,7 +1599,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         Parameters
         ----------
         sum_term : np.ndarray
-            The sumation term in the formula to calculate the precoder.
+            The summation term in the formula to calculate the precoder.
         mu_i : float
             The value of the lagrange multiplier
         H_herm_U : np.ndarray
@@ -1621,7 +1627,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         Parameters
         ----------
         inv_sum_term : np.ndarray
-            The inverse of the sumation term in the formula to calculate
+            The inverse of the summation term in the formula to calculate
             the precoder when mu_i is equal to zero.
         mu_i : float
             The value of the lagrange multiplier
@@ -1940,7 +1946,8 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxx Find the index of the stream to be removed xxxxxxx
             # Note that you need to have called the solve method of the
             # self._iasolver object before you call this method here.
-            user_idx, stream_idx = self._find_index_stream_with_worst_sinr()
+            user_idx, stream_idx = \
+                self._find_index_stream_with_worst_sinr()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Remove the stream and find a new IA solution xxxxxxxxxx
@@ -2019,7 +2026,8 @@ class GreedStreamIASolver(object):
 
         # Let's discard any user that has only one stream, since we can't
         # reduce the number of streams of that user.
-        valid_users_idx = np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
+        valid_users_idx = \
+            np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
         min_sinr_user_idx = [
             i for i in min_sinr_user_idx if i in valid_users_idx]
 
@@ -2116,8 +2124,8 @@ class BruteForceStreamIASolver(object):
         Returns
         -------
         tuple
-            Tuple containing the sum capacity for each stream combination in
-            `self.stream_combinations`.
+            Tuple containing the sum capacity for each stream
+            combination in `self.stream_combinations`.
         """
         return self._every_sum_capacity
 
@@ -2181,8 +2189,10 @@ class BruteForceStreamIASolver(object):
         # xxxxx Compute the solution for the remaining combinations xxxxxxx
         for comb in stream_combinations:
             self._iasolver.clear()
-            self._runned_iterations += self._iasolver.solve(np.array(comb), P)
-            self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())
+            self._runned_iterations += \
+                self._iasolver.solve(np.array(comb), P)
+            self._every_sum_capacity.append(
+                    self._iasolver.calc_sum_capacity())
 
             # If the current solution is better then the best one, store it
             # as the new best solution.

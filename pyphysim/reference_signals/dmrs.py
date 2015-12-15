@@ -55,4 +55,5 @@ class DmrsUeSequence(UeSequence):
     def __init__(self, root_seq, n_cs):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_dmrs_seq(root_seq_array, n_cs)
-        super(DmrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
+        super(DmrsUeSequence, self).__init__(
+                root_seq, n_cs, user_seq_array)

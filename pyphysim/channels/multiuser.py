@@ -32,9 +32,9 @@ class MuChannel(object):
         module. It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel
         samples. However, since we have multiple links, the provided fading
-        genrator will actually be used to create similar (but independent)
+        generator will actually be used to create similar (but independent)
         fading generators. If not provided then RayleighSampleGenerator
-        will be ised
+        will be used
     channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
@@ -159,7 +159,6 @@ class MuChannel(object):
 
     @property
     def num_taps(self):
-
         """
         Get the number of taps in the profile.
 
@@ -168,15 +167,16 @@ class MuChannel(object):
         Returns
         -------
         int
-            The number of taps in the channel (not including any zero padding).
+            The number of taps in the channel (not including any zero
+            padding).
         """
         return self._su_siso_channels[0, 0].num_taps
 
     @property
     def num_taps_with_padding(self):
         """
-        Get the number of taps in the profile including zero-padding when the
-        profile is discretized.
+        Get the number of taps in the profile including zero-padding
+        when the profile is discretized.
 
         If the profile is not discretized an exception is raised.
 
@@ -197,7 +197,8 @@ class MuChannel(object):
         The path loss will be accounted when calling the corrupt_data
         method.
 
-        If you want to disable the path loss, set `pathloss_matrix` to None.
+        If you want to disable the path loss, set `pathloss_matrix` to
+        None.
 
         Parameters
         ----------
@@ -229,9 +230,10 @@ class MuChannel(object):
         Parameters
         ----------
         signal : np.ndarray
-            Signal to be transmitted through the channel. This should be a 2D
-            numpy array (1D array if there is only one transmitter),
-            where each row corresponds to the transmit data of one transmitter.
+            Signal to be transmitted through the channel. This should be
+            a 2D numpy array (1D array if there is only one
+            transmitter), where each row corresponds to the transmit
+            data of one transmitter.
 
         Returns
         -------
@@ -262,8 +264,8 @@ class MuChannel(object):
     def corrupt_data_in_freq_domain(self, signal, fft_size,
                                     carrier_indexes=None):
         """
-        Corrupt data passed through the TDL channels of each link, but in the
-        frequency domain..
+        Corrupt data passed through the TDL channels of each link,
+        but in the frequency domain..
 
         For each link, this is ROUGHLY equivalent to modulating `signal`
         with OFDM using `fft_size` subcarriers, transmitting through a
@@ -280,11 +282,13 @@ class MuChannel(object):
         Parameters
         ----------
         signal : np.ndarray
-            Signal to be transmitted through the channel. This should be a 2D
-            numpy array (1D array if there is only one transmitter),
-            where each row corresponds to the transmit data of one transmitter.
+            Signal to be transmitted through the channel. This should be
+            a 2D numpy array (1D array if there is only one
+            transmitter), where each row corresponds to the transmit
+            data of one transmitter.
         fft_size : int
-            The size of the Fourier transform to get the frequency response.
+            The size of the Fourier transform to get the frequency
+            response.
         carrier_indexes : slice | np.ndarray | list[int]
             The indexes of the subcarriers where signal is to be
             transmitted (all users will use the same indexes). If it is
@@ -407,7 +411,7 @@ class MuChannel(object):
 #         Returns
 #         -------
 #         1D numpy array of 2D numpy arrays
-#             A numpy array where each element (or row) contais the received
+#             A numpy array where each element (or row) contains the received
 #             data of a user.
 #         """
 #         return np.dot(self._get_channel_samples(), data)
@@ -463,9 +467,9 @@ class MuMimoChannel(MuChannel):
         module. It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel
         samples. However, since we have multiple links, the provided fading
-        genrator will actually be used to create similar (but independent)
+        generator will actually be used to create similar (but independent)
         fading generators. If not provided then RayleighSampleGenerator
-        will be ised
+        will be used
     channel_profile : fading.TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
@@ -504,9 +508,9 @@ class MuMimoChannel(MuChannel):
 # use the value of self.noise_var whenever possible.
 class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     """
-    Stores the (fast fading) channel matrix of a multi-user scenario. The
-    path-loss from each transmitter to each receiver is also be accounted if
-    the set_pathloss is called to set the path-loss matrix.
+    Stores the (fast fading) channel matrix of a multi-user scenario.
+    The path-loss from each transmitter to each receiver is also be
+    accounted if the set_pathloss is called to set the path-loss matrix.
 
     This channel matrix can be seem as an concatenation of blocks (of
     non-uniform size) where each block is a channel from one transmitter to
@@ -691,7 +695,8 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
                     self._pathloss_matrix)
             return self._H_with_pathloss
 
-    # Property to get the big channel matrix (with pass loss applied if any)
+    # Property to get the big channel matrix (with pass loss applied if
+    # any)
     @property
     def big_H(self):
         """
@@ -704,7 +709,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
             big matrix (numpy complex array)
         """
         if self._pathloss_matrix is None:
-            # No path lossr
+            # No path loss
             return self._big_H_no_pathloss
         else:
             if self._big_H_with_pathloss is None:
@@ -713,8 +718,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
                 # self._big_H_no_pathloss matrix and we are performing
                 # element-wise multiplication here.
                 # noinspection PyTypeChecker
-                self._big_H_with_pathloss = self._big_H_no_pathloss * np.sqrt(
-                    self._pathloss_big_matrix)
+                self._big_H_with_pathloss = (
+                    self._big_H_no_pathloss *
+                    np.sqrt(self._pathloss_big_matrix))
             return self._big_H_with_pathloss
 
     # Property to get the pathloss. Use the "set_pathloss" method to set
@@ -1043,7 +1049,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Set the post-processing filters.
 
         The post-processing filters will be applied to the data after if
-        has been currupted by the channel in either the `corrupt_data` or
+        has been corrupted by the channel in either the `corrupt_data` or
         the `corrupt_concatenated_data` methods.
 
         Parameters
@@ -1148,7 +1154,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Returns
         -------
         output : np.ndarray
-            A numpy array where each element contais the received data (a
+            A numpy array where each element contains the received data (a
             2D numpy array) of a user.
 
         """
@@ -1293,7 +1299,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Parameters
         ----------
         k : int
-            The user idex.
+            The user index.
         F_all_users : list[np.ndarray]
             The precoders of all users.
 
@@ -1772,12 +1778,11 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Parameters
         ----------
         F : np.ndarray
-            The precoders of all users. This should be a 1D numpy array of 2D
-            numpy arrays.
-
-        U : np.ndarray
-            The receive filters of all users. This should be a 1D numpy array
+            The precoders of all users. This should be a 1D numpy array
             of 2D numpy arrays.
+        U : np.ndarray
+            The receive filters of all users. This should be a 1D numpy
+            array of 2D numpy arrays.
 
         Returns
         -------
@@ -1884,11 +1889,11 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         Parameters
         ----------
         F : np.ndarray
-            The precoders of all users. This should be a 1D numpy array of 2D
-            numpy arrays.
-        U : np.ndarray
-            The receive filters of all users. This should be a 1D numpy array
+            The precoders of all users. This should be a 1D numpy array
             of 2D numpy arrays.
+        U : np.ndarray
+            The receive filters of all users. This should be a 1D numpy
+            array of 2D numpy arrays.
 
         Returns
         -------
@@ -2352,16 +2357,16 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
                     pathloss_matrix_with_ext_int, self._Nr, self._Nt,
                     self.K, self._K)
 
-            # Assures that _pathloss_matrix and _pathloss_big_matrix will stay
-            # in sync by disallowing modification of individual elements in
-            # both of them.
+            # Assures that _pathloss_matrix and _pathloss_big_matrix
+            # will stay in sync by disallowing modification of
+            # individual elements in both of them.
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
     def calc_cov_matrix_extint_without_noise(self, pe=1):
         """
-        Calculates the covariance matrix of the external interference without
-        include the noise.
+        Calculates the covariance matrix of the external interference
+        without include the noise.
 
         Parameters
         ----------
@@ -2659,19 +2664,19 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         Parameters
         ----------
         F : np.ndarray
-            The precoders of all users. This is a 1D numpy array of 2D numpy
-            arrays.
-        U : np.ndarray
-            The receive filters of all users. This is a 1D numpy array of 2D
+            The precoders of all users. This is a 1D numpy array of 2D
             numpy arrays.
+        U : np.ndarray
+            The receive filters of all users. This is a 1D numpy array
+            of 2D numpy arrays.
         pe : float
             The external interference power.
 
         Returns
         -------
         SINRs : np.ndarray
-            The SINR (in linear scale) of all streams of all users. This is a
-            1D numpy array of 1D numpy arrays (of floats).
+            The SINR (in linear scale) of all streams of all users. This
+            is a 1D numpy array of 1D numpy arrays (of floats).
         """
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
@@ -2679,6 +2684,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         Re_all_k = self.calc_cov_matrix_extint_plus_noise(pe)
 
         for k in range(self.K):
-            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, Re_all_k[k])
+            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(
+                F, k, Re_all_k[k])
             SINRs[k] = self._calc_JP_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs

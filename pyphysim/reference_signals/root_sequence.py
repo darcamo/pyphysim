@@ -27,13 +27,13 @@ class RootSequence(object):
 
     def __init__(self, root_index, Nzc, extend_to=None):
         self._root_index = root_index
-        self._zf_seq_array = calcBaseZC(Nzc, root_index)  # Zadoff-Chu sequence
+        self._zf_seq_array = calcBaseZC(Nzc, root_index)  # Zadoff-Chu seq
         self._extended_zf_seq_array = None  # Extended Zadoff-Chu sequence
 
         if extend_to is not None:
             if extend_to <= Nzc:
-                raise AttributeError(
-                    "If 'extend_to' is provided it must be greater than Nzc")
+                raise AttributeError("If 'extend_to' is provided it "
+                                     "must be greater than Nzc")
             else:
                 self._extended_zf_seq_array = get_extended_ZF(
                     self._zf_seq_array, extend_to)
@@ -53,7 +53,7 @@ class RootSequence(object):
     @property
     def size(self):
         """
-        Return the size (with extension) of the sequece.
+        Return the size (with extension) of the sequence.
 
         If the sequence is not extended than `size()` will return the same
         as `Nzc`.
@@ -201,8 +201,9 @@ class RootSequence(object):
         """
         if self._extended_zf_seq_array is None:
             return ("<SrsRootSequence("
-                    "root_index={0},Nzc={1})>").format(self._root_index,
-                                                       self._zf_seq_array.size)
+                    "root_index={0},Nzc={1})>").format(
+                        self._root_index,
+                        self._zf_seq_array.size)
         else:
             return ("<SrsRootSequence("
                     "root_index={0},Nzc={1},extend_to={2})>").format(

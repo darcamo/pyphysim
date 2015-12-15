@@ -51,7 +51,7 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
     # is greater then the total available power then we remove the worst
     # channel and repeat the process.
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # Calculates minimum waterlevel $\mu$ required to use all channels
+    # Calculates minimum water-level $\mu$ required to use all channels
     dNChannels = vtChannels.size
     dRemoveChannels = 0
 
@@ -68,7 +68,8 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         minMu = float(noiseVar) / (
             Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
         Ps = (minMu - float(noiseVar) / (
-            Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+            Es *
+            vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     # Distributes the remaining power among the all the remaining channels
     dPdiff = dPt - np.sum(Ps)

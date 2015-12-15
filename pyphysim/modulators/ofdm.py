@@ -386,7 +386,7 @@ class OFDM(object):
         """
         Perform the OFDM modulation of the input_signal.
 
-        .. TODO:: Write here about the performed zeropadding as well as CP
+        .. TODO:: Write here about the performed zero-padding as well as CP
            addition.
 
         Parameters

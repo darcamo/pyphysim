@@ -38,8 +38,8 @@ try:
     # noinspection PyUnresolvedReferences
     import zmq
 except ImportError:  # pragma: no cover
-    # We don't have a fallback for zmq, but only the ProgressbarZMQServer and
-    # ProgressbarZMQClient classes require it
+    # We don't have a fallback for zmq, but only the
+    # ProgressbarZMQServer and ProgressbarZMQClient classes require it
     pass
 
 from ..util.misc import pretty_time
@@ -496,7 +496,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         representation : str
             A string with the representation of the percentage.
         """
-        # Remove any fractinonal part
+        # Remove any fractional part
         percent_done = int(percent)
         elapsed_time = self.elapsed_time
 
@@ -512,7 +512,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         all_full = self.width - sides_length
 
         # Calculates how many characters will be used to represent the
-        # `percend_done` value
+        # `percent_done` value
         num_hashes = int((percent_done / 100.0) * all_full)
 
         prog_bar = (left_side + self.progresschar * num_hashes + ' ' *
@@ -579,7 +579,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         update the `prog_bar` member variable with the text representation
         of the progressbar.
 
-        This method is responsable to sending this text representation to
+        This method is responsible to sending this text representation to
         the output.
         """
         # We will only write the progress if it actually changed since
@@ -680,8 +680,8 @@ class ProgressbarText(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
-                                     output)
+        ProgressbarTextBase.__init__(
+                self, finalcount, progresschar, message, output)
 
         # stores how many characters where already printed in a previous
         # call to the `progress` function
@@ -702,7 +702,7 @@ class ProgressbarText(ProgressbarTextBase):
 
         Returns
         -------
-        bartitle : str
+        str
             The bar title.
 
         Notes
@@ -1028,7 +1028,7 @@ class ProgressBarIPython(ProgressBarBase):
         # This method is called everytime the `progress` method is
         # called. However, for progressbar using IPython widgets we only
         # need to display the widget once and IPython will take care of
-        # redisplaying it whenever the widget changes. Therefore, we don't
+        # re-displaying it whenever the widget changes. Therefore, we don't
         # need to do anything here and we will display the widget in the
         # `_perform_initialization` method instead, since it is called only
         # once.
@@ -1264,7 +1264,7 @@ class ProgressbarDistributedServerBase(object):
         filename : str
             Name of a file where the data will be written to. If this is
             None then all progress will be printed in the standard output
-            (defaut)
+            (default)
         start_delay : float, optional
             Delay in seconds before starting the progressbar. During this
             time it is still possible to register new clients and the
@@ -1442,7 +1442,7 @@ class ProgressbarDistributedClientBase(object):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarMultiProcessServer - START xxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarMultiProcessServer - START xxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
     """Class that prints a representation of the current progress of
@@ -1617,11 +1617,11 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
             The new amount of progress.
         """
         self._client_data_list[self.client_id] = count
-# xxxxxxxxxx ProgressbarMultiProcessServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx ProgressbarMultiProcessServer - END xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx ProgressbarZMQServer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx ProgressbarZMQServer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ProgressbarZMQServer(ProgressbarDistributedServerBase):
     """
@@ -1766,7 +1766,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         filename : str
             Name of a file where the data will be written to. If this is
             None then all progress will be printed in the standard output
-            (defaut)
+            (default)
         start_delay : float
             Delay in seconds before starting the progressbar. During this
             time it is still possible to register new clients and the
@@ -1807,13 +1807,14 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         This method is called inside a loop in the _update_progress method.
         """
 
-        pending_mensages = True
-        while pending_mensages is True and self.running.is_set():
+        pending_messages = True
+        while pending_messages is True and self.running.is_set():
             try:
                 # Try to read a message. If this fail we will get a
-                # zmq.ZMQError exception and then pending_mensages will be
+                # zmq.ZMQError exception and then pending_messages will be
                 # set to False so that we exit the while loop.
-                message = self._zmq_pull_socket.recv_string(flags=zmq.NOBLOCK)
+                message = self._zmq_pull_socket.recv_string(
+                        flags=zmq.NOBLOCK)
 
                 # If we are here that means that a new message was
                 # successfully received from the client.  Let's call the
@@ -1821,7 +1822,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
                 # update the self._client_data_list member variable.
                 self._parse_progress_message(message)
             except zmq.ZMQError:
-                pending_mensages = False
+                pending_messages = False
 
     # This method run in a different process and thus the python coverage
     # program does not detect it is run even when it is run. Therefore, we
@@ -1887,7 +1888,8 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         # method that will create the socket, connect it to the main
         # progressbar and finally set "_progress_func" to the "_progress"
         # method that will actually update the progress.
-        self._progress_func = ProgressbarZMQClient._connect_and_update_progress
+        self._progress_func = \
+            ProgressbarZMQClient._connect_and_update_progress
 
         # ZMQ Variables: These variables will be set the first time the
         # progress method is called.
@@ -1928,7 +1930,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         count : int
             The new amount of progress.
         """
-        # The mensage is a string composed of the client ID and the current
+        # The message is a string composed of the client ID and the current
         # count
         message = "{0}:{1}".format(self.client_id, count)
         self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
@@ -1963,4 +1965,4 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         self._progress_func = ProgressbarZMQClient._progress
         # noinspection PyArgumentList,PyTypeChecker
         self._progress_func(self, count)
-# xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
