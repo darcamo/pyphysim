@@ -27,9 +27,12 @@ A summary of the available packages in PyPhysim is shown below.
 
    cell
    comm
+   channels
    ia
    MATLAB
-   plot
+   mimo
+   extra
    subspace
    util
    simulations
+   reference_signals

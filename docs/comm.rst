@@ -12,9 +12,4 @@ Modules in the comm package
    :template: module_template.txt
 
    blockdiagonalization
-   channels
-   mimo
-   modulators
-   ofdm
-   pathloss
    waterfilling
