@@ -692,7 +692,8 @@ class SimulationRunner(object):
             The current combination of simulation parameters. This should
             be used to perform any replacement in the
             self.progressbar_message string that will be written in the
-            progressbar.
+            progressbar. Note that string replacement will also work in
+            self.progressbar_message for a 'rep_max' field.
 
         Returns
         -------
@@ -711,7 +712,7 @@ class SimulationRunner(object):
         # current_params then it will be replaced by the current value of
         # 'some_param'.
         message = self.progressbar_message.format(
-            **current_params.parameters)
+            **current_params.parameters, rep_max=self.rep_max)
 
         # By default, the returned function is a dummy function that does
         # nothing
