@@ -61,9 +61,20 @@ class SrsRootSequenceTestCase(unittest.TestCase):
         self.root_seq5 = RootSequence(root_index=6, size=32)  # Nzc->31
         self.root_seq6 = RootSequence(root_index=6, size=256, Nzc=31)
 
+        # Small available sizes are only 12 and 24.
+        self.small_root_seq1 = RootSequence(root_index=15, size=12)
+        self.small_root_seq2 = RootSequence(root_index=23, size=12)
+        self.small_root_seq3 = RootSequence(root_index=15, size=24)
+        self.small_root_seq4 = RootSequence(root_index=23, size=24)
+
     def test_init(self):
         with self.assertRaises(AttributeError):
             RootSequence(root_index=25, size=64, Nzc=139)
+
+        with self.assertRaises(AttributeError):
+            RootSequence(root_index=25, size=3)
+        with self.assertRaises(AttributeError):
+            RootSequence(root_index=25, size=14)
 
     def test_Nzc(self):
         self.assertEqual(self.root_seq_no_ext1.Nzc, 139)
@@ -83,7 +94,40 @@ class SrsRootSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.root_seq5.size, 32)
         self.assertEqual(self.root_seq6.size, 256)
 
+        self.assertEqual(self.small_root_seq1.size, 12)
+        self.assertEqual(self.small_root_seq2.size, 12)
+        self.assertEqual(self.small_root_seq3.size, 24)
+        self.assertEqual(self.small_root_seq4.size, 24)
+
     def test_seq_array(self):
+        # xxxxxxxxxx Small Root Sequences xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Line 15 of the first table
+        expected_small_root_seq1 = np.array(
+            [3, -1, 1, -3, -1, -1, 1, 1, 3, 1, -1, -3])
+        # Line 23 of the first table
+        expected_small_root_seq2 = np.array(
+            [1, 1, -1, -3, -1, -3, 1, -1, 1, 3, -1, 1])
+        # Line 15 of the second table
+        expected_small_root_seq3 = np.array(
+            [-1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3,
+             1, 3, 1, -1, -3, -3, -1, -1, -3, -3, -3, -1])
+        # Line 23 of the second table
+        expected_small_root_seq4 = np.array(
+            [-1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3,
+             -1, 3, -1, 3, 3, -3, 3, 1, -1, 3, 3])
+
+        np.testing.assert_array_almost_equal(self.small_root_seq1.seq_array(),
+                                             expected_small_root_seq1)
+        np.testing.assert_array_almost_equal(self.small_root_seq2.seq_array(),
+                                             expected_small_root_seq2)
+        np.testing.assert_array_almost_equal(self.small_root_seq3.seq_array(),
+                                             expected_small_root_seq3)
+        np.testing.assert_array_almost_equal(self.small_root_seq4.seq_array(),
+                                             expected_small_root_seq4)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Zadoff-Chu Sequences xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_root__no_ext1 = calcBaseZC(139, 25)
         np.testing.assert_array_almost_equal(
             self.root_seq_no_ext1.seq_array(), expected_root__no_ext1)
@@ -125,6 +169,7 @@ class SrsRootSequenceTestCase(unittest.TestCase):
              expected_root_seq6, expected_root_seq6, expected_root_seq6[0:8]])
         np.testing.assert_array_almost_equal(
             self.root_seq6.seq_array(), expected_root_seq6)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class SrsUeSequenceTestCase(unittest.TestCase):

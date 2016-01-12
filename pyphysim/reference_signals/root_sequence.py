@@ -9,6 +9,85 @@ from .zadoffchu import calcBaseZC, get_extended_ZF
 __all__ = ['RootSequence']
 
 
+# List of prime numbers lower than 282.
+_SMALL_PRIME_LIST = np.array(
+    [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
+     61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131,
+     137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
+     199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271,
+     277, 281])
+
+# Table with root sequence for sequence size equal to 12 (number of
+# subcarriers in one PRB)
+ROOT_TABLE1 = {
+    '0': np.array([-1, 1, 3, -3, 3, 3, 1, 1, 3, 1, -3, 3]),
+    '1': np.array([1, 1, 3, 3, 3, -1, 1, -3, -3, 1, -3, 3]),
+    '2': np.array([1, 1, -3, -3, -3, -1, -3, -3, 1, -3, 1, -1]),
+    '3': np.array([-1, 1, 1, 1, 1, -1, -3, -3, 1, -3, 3, -1]),
+    '4': np.array([-1, 3, 1, -1, 1, -1, -3, -1, 1, -1, 1, 3]),
+    '5': np.array([1, -3, 3, -1, -1, 1, 1, -1, -1, 3, -3, 1]),
+    '6': np.array([-1, 3, -3, -3, -3, 3, 1, -1, 3, 3, -3, 1]),
+    '7': np.array([-3, -1, -1, -1, 1, -3, 3, -1, 1, -3, 3, 1]),
+    '8': np.array([1, -3, 3, 1, -1, -1, -1, 1, 1, 3, -1, 1]),
+    '9': np.array([1, -3, -1, 3, 3, -1, -3, 1, 1, 1, 1, 1]),
+    '10': np.array([-1, 3, -1, 1, 1, -3, -3, -1, -3, -3, 3, -1]),
+    '11': np.array([3, 1, -1, -1, 3, 3, -3, 1, 3, 1, 3, 3]),
+    '12': np.array([1, -3, 1, 1, -3, 1, 1, 1, -3, -3, -3, 1]),
+    '13': np.array([3, 3, -3, 3, -3, 1, 1, 3, -1, -3, 3, 3]),
+    '14': np.array([-3, 1, -1, -3, -1, 3, 1, 3, 3, 3, -1, 1]),
+    '15': np.array([3, -1, 1, -3, -1, -1, 1, 1, 3, 1, -1, -3]),
+    '16': np.array([1, 3, 1, -1, 1, 3, 3, 3, -1, -1, 3, -1]),
+    '17': np.array([-3, 1, 1, 3, -3, 3, -3, -3, 3, 1, 3, -1]),
+    '18': np.array([-3, 3, 1, 1, -3, 1, -3, -3, -1, -1, 1, -3]),
+    '19': np.array([-1, 3, 1, 3, 1, -1, -1, 3, -3, -1, -3, -1]),
+    '20': np.array([-1, -3, 1, 1, 1, 1, 3, 1, -1, 1, -3, -1]),
+    '21': np.array([-1, 3, -1, 1, -3, -3, -3, -3, -3, 1, -1, -3]),
+    '22': np.array([1, 1, -3, -3, -3, -3, -1, 3, -3, 1, -3, 3]),
+    '23': np.array([1, 1, -1, -3, -1, -3, 1, -1, 1, 3, -1, 1]),
+    '24': np.array([1, 1, 3, 1, 3, 3, -1, 1, -1, -3, -3, 1]),
+    '25': np.array([1, -3, 3, 3, 1, 3, 3, 1, -3, -1, -1, 3]),
+    '26': np.array([1, 3, -3, -3, 3, -3, 1, -1, -1, 3, -1, -3]),
+    '27': np.array([-3, -1, -3, -1, -3, 3, 1, -1, 1, 3, -3, -3]),
+    '28': np.array([-1, 3, -3, 3, -1, 3, 3, -3, 3, 3, -1, -1]),
+    '29': np.array([3, -3, -3, -1, -1, -3, -1, 3, -3, 3, 1, -1])
+}
+
+# Table with root sequence for sequence size equal to 24 (number of
+# subcarriers in two PRBs)
+ROOT_TABLE2 = {
+    '0': np.array([-1, 3, 1, -3, 3, -1, 1, 3, -3, 3, 1, 3, -3, 3, 1, 1, -1, 1, 3, -3, 3, -3, -1, -3]),
+    '1': np.array([-3, 3, -3, -3, -3, 1, -3, -3, 3, -1, 1, 1, 1, 3, 1, -1, 3, -3, -3, 1, 3, 1, 1, -3]),
+    '2': np.array([3, -1, 3, 3, 1, 1, -3, 3, 3, 3, 3, 1, -1, 3, -1, 1, 1, -1, -3, -1, -1, 1, 3, 3]),
+    '3': np.array([-1, -3, 1, 1, 3, -3, 1, 1, -3, -1, -1, 1, 3, 1, 3, 1, -1, 3, 1, 1, -3, -1, -3, -1]),
+    '4': np.array([-1, -1, -1, -3, -3, -1, 1, 1, 3, 3, -1, 3, -1, 1, -1, -3, 1, -1, -3, -3, 1, -3, -1, -1]),
+    '5': np.array([-3, 1, 1, 3, -1, 1, 3, 1, -3, 1, -3, 1, 1, -1, -1, 3, -1, -3, 3, -3, -3, -3, 1, 1]),
+    '6': np.array([1, 1, -1, -1, 3, -3, -3, 3, -3, 1, -1, -1, 1, -1, 1, 1, -1, -3, -1, 1, -1, 3, -1, -3]),
+    '7': np.array([-3, 3, 3, -1, -1, -3, -1, 3, 1, 3, 1, 3, 1, 1, -1, 3, 1, -1, 1, 3, -3, -1, -1, 1]),
+    '8': np.array([-3, 1, 3, -3, 1, -1, -3, 3, -3, 3, -1, -1, -1, -1, 1, -3, -3, -3, 1, -3, -3, -3, 1, -3]),
+    '9': np.array([1, 1, -3, 3, 3, -1, -3, -1, 3, -3, 3, 3, 3, -1, 1, 1, -3, 1, -1, 1, 1, -3, 1, 1]),
+    '10': np.array([-1, 1, -3, -3, 3, -1, 3, -1, -1, -3, -3, -3, -1, -3, -3, 1, -1, 1, 3, 3, -1, 1, -1, 3]),
+    '11': np.array([1, 3, 3, -3, -3, 1, 3, 1, -1, -3, -3, -3, 3, 3, -3, 3, 3, -1, -3, 3, -1, 1, -3, 1]),
+    '12': np.array([1, 3, 3, 1, 1, 1, -1, -1, 1, -3, 3, -1, 1, 1, -3, 3, 3, -1, -3, 3, -3, -1, -3, -1]),
+    '13': np.array([3, -1, -1, -1, -1, -3, -1, 3, 3, 1, -1, 1, 3, 3, 3, -1, 1, 1, -3, 1, 3, -1, -3, 3]),
+    '14': np.array([-3, -3, 3, 1, 3, 1, -3, 3, 1, 3, 1, 1, 3, 3, -1, -1, -3, 1, -3, -1, 3, 1, 1, 3]),
+    '15': np.array([-1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3, 1, 3, 1, -1, -3, -3, -1, -1, -3, -3, -3, -1]),
+    '16': np.array([-1, -3, 3, -1, -1, -1, -1, 1, 1, -3, 3, 1, 3, 3, 1, -1, 1, -3, 1, -3, 1, 1, -3, -1]),
+    '17': np.array([1, 3, -1, 3, 3, -1, -3, 1, -1, -3, 3, 3, 3, -1, 1, 1, 3, -1, -3, -1, 3, -1, -1, -1]),
+    '18': np.array([1, 1, 1, 1, 1, -1, 3, -1, -3, 1, 1, 3, -3, 1, -3, -1, 1, 1, -3, -3, 3, 1, 1, -3]),
+    '19': np.array([1, 3, 3, 1, -1, -3, 3, -1, 3, 3, 3, -3, 1, -1, 1, -1, -3, -1, 1, 3, -1, 3, -3, -3]),
+    '20': np.array([-1, -3, 3, -3, -3, -3, -1, -1, -3, -1, -3, 3, 1, 3, -3, -1, 3, -1, 1, -1, 3, -3, 1, -1]),
+    '21': np.array([-3, -3, 1, 1, -1, 1, -1, 1, -1, 3, 1, -3, -1, 1, -1, 1, -1, -1, 3, 3, -3, -1, 1, -3]),
+    '22': np.array([-3, -1, -3, 3, 1, -1, -3, -1, -3, -3, 3, -3, 3, -3, -1, 1, 3, 1, -3, 1, 3, 3, -1, -3]),
+    '23': np.array([-1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3, -1, 3, -1, 3, 3, -3, 3, 1, -1, 3, 3]),
+    '24': np.array([1, -1, 3, 3, -1, -3, 3, -3, -1, -1, 3, -1, 3, -1, -1, 1, 1, 1, 1, -1, -1, -3, -1, 3]),
+    '25': np.array([1, -1, 1, -1, 3, -1, 3, 1, 1, -1, -1, -3, 1, 1, -3, 1, 3, -3, 1, 1, -3, -3, -1, -1]),
+    '26': np.array([-3, -1, 1, 3, 1, 1, -3, -1, -1, -3, 3, -3, 3, 1, -3, 3, -3, 1, -1, 1, -3, 1, 1, 1]),
+    '27': np.array([-1, -3, 3, 3, 1, 1, 3, -1, -3, -1, -1, -1, 3, 1, -3, -3, -1, 3, -3, -1, -3, -1, -3, -1]),
+    '28': np.array([-1, -3, -1, -1, 1, -3, -1, -1, 1, -1, -3, 1, 1, -3, 1, -3, -3, 3, 1, 1, -1, 3, -1, -1]),
+    '29': np.array([1, 1, -1, -1, -3, -1, 3, -1, 3, -1, 1, 3, 1, -1, 3, 1, 3, -3, -3, 1, -1, -1, 1, 3])
+}
+
+
 class RootSequence(object):
     """
     Class representing the root sequence of the reference signals.
@@ -26,35 +105,47 @@ class RootSequence(object):
         provided then the largest prime number lower than or equal to
         `size` will be used.
     """
-    # List of prime numbers lower than 282.
-    _SMALL_PRIME_LIST = np.array(
-        [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
-         61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131,
-         137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
-         199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271,
-         277, 281])
+    n_sc_PRB = 12  # Number of subcarriers in a PRB in LTE
 
     def __init__(self, root_index, size=None, Nzc=None):
         if size is None and Nzc is None:
             raise AttributeError("Either 'size' or 'Nzc' (or both) must "
                                  "be provided.")
+        if size is None:
+            size = Nzc
+
         if Nzc is None:
             Nzc = self._get_largest_prime_lower_than_number(size)
 
-        self._root_index = root_index
-        self._zf_seq_array = calcBaseZC(Nzc, root_index)  # Zadoff-Chu seq
-        self._extended_zf_seq_array = None  # Extended Zadoff-Chu sequence
-
-        if size is not None and Nzc is not None:
-            if size <= Nzc:
+        if size < Nzc:
                 raise AttributeError("If 'size' and Nzc are provided, "
                                      "then size must be greater than Nzc")
-            else:
-                self._extended_zf_seq_array = get_extended_ZF(
-                    self._zf_seq_array, size)
 
-    @classmethod
-    def _get_largest_prime_lower_than_number(cls, seq_size):
+        self._root_index = root_index
+        self._seq_array = None
+        self._extended_seq_array = None  # Extended Zadoff-Chu sequence
+
+        if size > 2 * self.n_sc_PRB:
+            # If size is greater then 2 * n_sc_PRB, the root
+            # sequence is an extended Zadoff-Chu sequence. First let's
+            # compute the Zadoff-Chu sequence.
+            self._seq_array = calcBaseZC(Nzc, root_index)  # Zadoff-Chu seq
+
+            # Now, if size is greater than Nzc, let's compute the cyclic
+            # extension of the root sequence.
+            if size > Nzc:
+                self._extended_seq_array = get_extended_ZF(self._seq_array,
+                                                           size)
+        else:  # size must be either n_sc_PRB or 2*n_sc_PRB
+            if size == self.n_sc_PRB:
+                self._seq_array = ROOT_TABLE1['{0}'.format(root_index)]
+            elif size == 2*self.n_sc_PRB:
+                self._seq_array = ROOT_TABLE2['{0}'.format(root_index)]
+            else:
+                raise AttributeError("Invalid root sequence size")
+
+    @staticmethod
+    def _get_largest_prime_lower_than_number(seq_size):
         """
         Get the largest prime number lower than `seq_size`.
 
@@ -68,7 +159,7 @@ class RootSequence(object):
         int
             The largest prime number lower than `seq_size`.
         """
-        p = cls._SMALL_PRIME_LIST[cls._SMALL_PRIME_LIST <= seq_size][-1]
+        p = _SMALL_PRIME_LIST[_SMALL_PRIME_LIST <= seq_size][-1]
         return p
 
     @property
@@ -81,7 +172,7 @@ class RootSequence(object):
         int
             The value of the Nzc property.
         """
-        return self._zf_seq_array.size
+        return self._seq_array.size
 
     @property
     def size(self):
@@ -105,10 +196,10 @@ class RootSequence(object):
         >>> seq1.size
         150
         """
-        if self._extended_zf_seq_array is None:
+        if self._extended_seq_array is None:
             return self.Nzc
         else:
-            return self._extended_zf_seq_array.size
+            return self._extended_seq_array.size
 
     @property
     def index(self):
@@ -131,10 +222,10 @@ class RootSequence(object):
         seq : np.ndarray
             The extended Zadoff-Chu sequence
         """
-        if self._extended_zf_seq_array is None:
-            return self._zf_seq_array
+        if self._extended_seq_array is None:
+            return self._seq_array
         else:
-            return self._extended_zf_seq_array
+            return self._extended_seq_array
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the
@@ -232,14 +323,14 @@ class RootSequence(object):
         str
             The representation of the object.
         """
-        if self._extended_zf_seq_array is None:
+        if self._extended_seq_array is None:
             return ("<SrsRootSequence("
                     "root_index={0},Nzc={1})>").format(
                         self._root_index,
-                        self._zf_seq_array.size)
+                        self._seq_array.size)
         else:
             return ("<SrsRootSequence("
                     "root_index={0},size={2},Nzc={1})>").format(
-                        self._root_index, self._zf_seq_array.size,
-                        self._extended_zf_seq_array.size)
+                        self._root_index, self._seq_array.size,
+                        self._extended_seq_array.size)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

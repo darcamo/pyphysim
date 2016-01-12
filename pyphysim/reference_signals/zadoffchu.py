@@ -28,6 +28,7 @@ def calcBaseZC(Nzc, u, q=0):
     a_u : np.ndarray
         The root Zadoff-Chu sequence.
     """
+    #$X = e^\frac{-j \pi u n (n+1)}{\text{Nzc}}$
     # In fact, 'u' must be lower than the largest prime number below or
     # equal to Nzc
     assert (u < Nzc)
