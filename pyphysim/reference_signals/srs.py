@@ -80,7 +80,7 @@ class UeSequence(object):
         >>> user_seq1 = SrsUeSequence(root_seq1, 3)
         >>> user_seq1.size
         139
-        >>> root_seq2 = RootSequence(root_index=25, Nzc=139, extend_to=150)
+        >>> root_seq2 = RootSequence(root_index=25, Nzc=139, size=150)
         >>> user_seq2 = SrsUeSequence(root_seq2, 3)
         >>> user_seq2.size
         150

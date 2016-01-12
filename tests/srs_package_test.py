@@ -54,24 +54,24 @@ class SrsRootSequenceTestCase(unittest.TestCase):
         """Called before each test."""
         self.root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
         self.root_seq_no_ext2 = RootSequence(root_index=6, Nzc=31)
-        self.root_seq1 = RootSequence(root_index=25, Nzc=139, extend_to=150)
-        self.root_seq2 = RootSequence(root_index=12, Nzc=139, extend_to=150)
-        self.root_seq3 = RootSequence(root_index=25, Nzc=31, extend_to=64)
-        self.root_seq4 = RootSequence(root_index=6, Nzc=31, extend_to=64)
-        self.root_seq5 = RootSequence(root_index=6, Nzc=31, extend_to=32)
-        self.root_seq6 = RootSequence(root_index=6, Nzc=31, extend_to=256)
+        self.root_seq1 = RootSequence(root_index=25, size=150)  # Nzc->149
+        self.root_seq2 = RootSequence(root_index=12, size=150, Nzc=139)
+        self.root_seq3 = RootSequence(root_index=25, size=64, Nzc=31)
+        self.root_seq4 = RootSequence(root_index=6, size=64)  # Nzc->61
+        self.root_seq5 = RootSequence(root_index=6, size=32)  # Nzc->31
+        self.root_seq6 = RootSequence(root_index=6, size=256, Nzc=31)
 
     def test_init(self):
         with self.assertRaises(AttributeError):
-            RootSequence(root_index=25, Nzc=139, extend_to=64)
+            RootSequence(root_index=25, size=64, Nzc=139)
 
     def test_Nzc(self):
         self.assertEqual(self.root_seq_no_ext1.Nzc, 139)
         self.assertEqual(self.root_seq_no_ext2.Nzc, 31)
-        self.assertEqual(self.root_seq1.Nzc, 139)
+        self.assertEqual(self.root_seq1.Nzc, 149)
         self.assertEqual(self.root_seq2.Nzc, 139)
         self.assertEqual(self.root_seq3.Nzc, 31)
-        self.assertEqual(self.root_seq4.Nzc, 31)
+        self.assertEqual(self.root_seq4.Nzc, 61)
         self.assertEqual(self.root_seq5.Nzc, 31)
         self.assertEqual(self.root_seq6.Nzc, 31)
 
@@ -91,8 +91,8 @@ class SrsRootSequenceTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             self.root_seq_no_ext2.seq_array(), expected_root__no_ext2)
 
-        expected_root_seq1 = calcBaseZC(139, 25)
-        expected_root_seq1 = np.hstack([expected_root_seq1, expected_root_seq1[0:11]])
+        expected_root_seq1 = calcBaseZC(149, 25)
+        expected_root_seq1 = np.hstack([expected_root_seq1, expected_root_seq1[0:1]])
         np.testing.assert_array_almost_equal(
             self.root_seq1.seq_array(), expected_root_seq1)
 
@@ -107,9 +107,9 @@ class SrsRootSequenceTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             self.root_seq3.seq_array(), expected_root_seq3)
 
-        expected_root_seq4 = calcBaseZC(31, 6)
+        expected_root_seq4 = calcBaseZC(61, 6)
         expected_root_seq4 = np.hstack(
-            [expected_root_seq4, expected_root_seq4, expected_root_seq4[0:2]])
+            [expected_root_seq4, expected_root_seq4[0:3]])
         np.testing.assert_array_almost_equal(
             self.root_seq4.seq_array(), expected_root_seq4)
 
@@ -140,22 +140,22 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         self.user_seq_no_ext2_other = srs.SrsUeSequence(
             root_seq=root_seq_no_ext2, n_cs=3)
 
-        root_seq1 = RootSequence(root_index=25, Nzc=139, extend_to=150)
+        root_seq1 = RootSequence(root_index=25, size=150, Nzc=139)
         self.user_seq1 = srs.SrsUeSequence(root_seq=root_seq1, n_cs=7)
 
-        root_seq2 = RootSequence(root_index=12, Nzc=139, extend_to=150)
+        root_seq2 = RootSequence(root_index=12, size=150, Nzc=139)
         self.user_seq2 = srs.SrsUeSequence(root_seq=root_seq2, n_cs=4)
 
-        root_seq3 = RootSequence(root_index=25, Nzc=31, extend_to=64)
+        root_seq3 = RootSequence(root_index=25, size=64, Nzc=31)
         self.user_seq3 = srs.SrsUeSequence(root_seq=root_seq3, n_cs=1)
 
-        root_seq4 = RootSequence(root_index=6, Nzc=31, extend_to=64)
+        root_seq4 = RootSequence(root_index=6, size=64, Nzc=31)
         self.user_seq4 = srs.SrsUeSequence(root_seq=root_seq4, n_cs=2)
 
-        root_seq5 = RootSequence(root_index=6, Nzc=31, extend_to=32)
+        root_seq5 = RootSequence(root_index=6, size=32, Nzc=31)
         self.user_seq5 = srs.SrsUeSequence(root_seq=root_seq5, n_cs=3)
 
-        root_seq6 = RootSequence(root_index=6, Nzc=31, extend_to=256)
+        root_seq6 = RootSequence(root_index=6, size=256, Nzc=31)
         self.user_seq6 = srs.SrsUeSequence(root_seq=root_seq6, n_cs=5)
 
     def test_size(self):
@@ -209,9 +209,9 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
     def test_estimate_channel(self):
         user1_seq = srs.SrsUeSequence(
-            RootSequence(root_index=25, Nzc=139, extend_to=150), 1)
+                RootSequence(root_index=25, size=150, Nzc=139), 1)
         user2_seq = srs.SrsUeSequence(
-            RootSequence(root_index=25, Nzc=139, extend_to=150), 4)
+                RootSequence(root_index=25, size=150, Nzc=139), 4)
 
         ue1_channel_estimator = srs.SrsChannelEstimator(user1_seq)
 
@@ -273,9 +273,9 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
 
     def test_estimate_channel_multiple_rx(self):
         user1_seq = srs.SrsUeSequence(
-            RootSequence(root_index=25, Nzc=139, extend_to=150), 1)
+                RootSequence(root_index=25, size=150, Nzc=139), 1)
         user2_seq = srs.SrsUeSequence(
-            RootSequence(root_index=25, Nzc=139, extend_to=150), 4)
+                RootSequence(root_index=25, size=150, Nzc=139), 4)
 
         ue1_channel_estimator = srs.SrsChannelEstimator(user1_seq)
 

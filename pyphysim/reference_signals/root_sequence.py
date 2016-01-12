@@ -17,26 +17,59 @@ class RootSequence(object):
     ----------
     root_index : int
         The SRS root sequence index.
-    Nzc : int
-        The size of the Zadoff-Chu sequence (without any extension).
-    extend_to : int
-        The size of the extended Zadoff-Chu sequence. It None then the
+    size : int
+        The size of the extended Zadoff-Chu sequence. If None then the
         sequence will not be extended and will thus have a size equal
         to Nzc.
+    Nzc : int
+        The size of the Zadoff-Chu sequence (without any extension). If not
+        provided then the largest prime number lower than or equal to
+        `size` will be used.
     """
+    # List of prime numbers lower than 282.
+    _SMALL_PRIME_LIST = np.array(
+        [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
+         61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131,
+         137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
+         199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271,
+         277, 281])
 
-    def __init__(self, root_index, Nzc, extend_to=None):
+    def __init__(self, root_index, size=None, Nzc=None):
+        if size is None and Nzc is None:
+            raise AttributeError("Either 'size' or 'Nzc' (or both) must "
+                                 "be provided.")
+        if Nzc is None:
+            Nzc = self._get_largest_prime_lower_than_number(size)
+
         self._root_index = root_index
         self._zf_seq_array = calcBaseZC(Nzc, root_index)  # Zadoff-Chu seq
         self._extended_zf_seq_array = None  # Extended Zadoff-Chu sequence
 
-        if extend_to is not None:
-            if extend_to <= Nzc:
-                raise AttributeError("If 'extend_to' is provided it "
-                                     "must be greater than Nzc")
+        if size is not None and Nzc is not None:
+            if size <= Nzc:
+                raise AttributeError("If 'size' and Nzc are provided, "
+                                     "then size must be greater than Nzc")
             else:
                 self._extended_zf_seq_array = get_extended_ZF(
-                    self._zf_seq_array, extend_to)
+                    self._zf_seq_array, size)
+
+    @classmethod
+    def _get_largest_prime_lower_than_number(cls, seq_size):
+        """
+        Get the largest prime number lower than `seq_size`.
+
+        Parameters
+        ----------
+        seq_size : int
+            The sequence size.
+
+        Returns
+        -------
+        int
+            The largest prime number lower than `seq_size`.
+        """
+        p = cls._SMALL_PRIME_LIST[cls._SMALL_PRIME_LIST <= seq_size][-1]
+        return p
 
     @property
     def Nzc(self):
@@ -68,7 +101,7 @@ class RootSequence(object):
         >>> seq1 = RootSequence(root_index=25, Nzc=139)
         >>> seq1.size
         139
-        >>> seq1 = RootSequence(root_index=25, Nzc=139, extend_to=150)
+        >>> seq1 = RootSequence(root_index=25, Nzc=139, size=150)
         >>> seq1.size
         150
         """
@@ -206,7 +239,7 @@ class RootSequence(object):
                         self._zf_seq_array.size)
         else:
             return ("<SrsRootSequence("
-                    "root_index={0},Nzc={1},extend_to={2})>").format(
+                    "root_index={0},size={2},Nzc={1})>").format(
                         self._root_index, self._zf_seq_array.size,
                         self._extended_zf_seq_array.size)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
