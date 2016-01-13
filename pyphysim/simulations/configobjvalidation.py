@@ -170,6 +170,7 @@ def real_numpy_array_check(value, min=None, max=None):
 
 
 # pylint: disable= W0622
+# noinspection PyShadowingBuiltins
 def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a float number if possible and, if not,
@@ -220,6 +221,7 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
     return value
 
 
+# noinspection PyShadowingBuiltins
 def integer_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as a numpy array (of integers).
@@ -304,6 +306,7 @@ def integer_numpy_array_check(value, min=None, max=None):
     return out
 
 
+# noinspection PyShadowingBuiltins
 def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
     """
     Parse and validate `value` as an integer number if possible and,

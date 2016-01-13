@@ -261,7 +261,7 @@ class BlockDiagonalizer(object):
         Diagonalization algorithm. The returned modulation matrix is
         equivalent to Equation (12) of [1]_ but without the power scaling
         matrix $\\Lambda$. Therefore, for the complete BD algorithm it is
-        still necessary to perform this power scalling in the output of
+        still necessary to perform this power scaling in the output of
         _calc_BD_matrix_no_power_scaling.
 
         Parameters

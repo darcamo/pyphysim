@@ -56,7 +56,8 @@ def combine_simulation_parameters(params1, params2):
         raise RuntimeError('Both SimulationParameters objects must have'
                            ' the same parameters.')
 
-    if set(params1.unpacked_parameters) != set(params2.unpacked_parameters):
+    if set(params1.unpacked_parameters) != set(
+            params2.unpacked_parameters):
         raise RuntimeError(
                 'Both SimulationParameters objects must have'
                 ' the same unpacked parameters (only the values'
@@ -512,8 +513,8 @@ class SimulationParameters(object):
         else:
             # Generator for the lengths of the parameters set to be
             # unpacked
-            gen_values = (
-                len(self.parameters[i]) for i in self._unpacked_parameters_set)
+            gen_values = (len(self.parameters[i]) for
+                          i in self._unpacked_parameters_set)
             # Just multiply all the lengths
             import operator
             import functools
@@ -614,8 +615,8 @@ class SimulationParameters(object):
         indexes = eval(
             "aux" + "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if indexes.size == 1:
-            indexes = indexes[0]
+        # if indexes.size == 1:
+        #     indexes = indexes[0]
 
         return indexes
 
@@ -715,7 +716,8 @@ class SimulationParameters(object):
         # variable) as well as the original SimulationParameters object
         # from where it came from (stored in the _original_sim_params
         # variable).
-        sim_params_list = [SimulationParameters._create(v, i, self) for i, v in
+        sim_params_list = [SimulationParameters._create(v, i, self)
+                           for i, v in
                            enumerate(all_possible_dicts_list)]
         return sim_params_list
 

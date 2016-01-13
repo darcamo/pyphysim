@@ -50,7 +50,8 @@ def simulate_do_what_i_mean(runner_or_list_of_runners,
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
+def _add_folder_to_ipython_engines_path(  # pragma: no cover
+        client, folder):
     """
     Add a folder to sys.path of each ipython engine.
 

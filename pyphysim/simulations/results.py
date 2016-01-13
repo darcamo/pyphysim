@@ -707,9 +707,10 @@ class Result(object):
     #     # possible to save the accumulated values (if there is any)
     #     if results_list[0]._accumulate_values_bool is True:
     #         warnings.warn(
-    #        'Cannot save the accumulated values in a Result to an hdf5 file.')
+    #        'Cannot save the accumulated values in'
+    #        ' a Result to an hdf5 file.')
 
-    #     dtype = [('_value', float), ('_total', float), ('num_updates', int),
+    #     dtype=[('_value', float),('_total', float),('num_updates', int),
     #              ('_result_sum', float), ('_result_squared_sum', float)]
     #     name = results_list[0].name
     #     size = len(results_list)

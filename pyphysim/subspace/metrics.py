@@ -72,6 +72,7 @@ def calc_principal_angles(matrix1, matrix2):
     return np.arccos(S)
 
 
+# noinspection PyPep8
 def calc_chordal_distance_from_principal_angles(principalAngles):
     """
     Calculates the chordal distance from the principal angles.
@@ -101,7 +102,7 @@ def calc_chordal_distance_from_principal_angles(principalAngles):
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
     >>> princ_angles = calc_principal_angles(A, B)
-    >>> print(calc_chordal_distance_from_principal_angles(princ_angles))
+    >>> print(round(calc_chordal_distance_from_principal_angles(princ_angles), 12))
     0.473867859572
     """
     # noinspection PyTypeChecker

@@ -98,7 +98,7 @@ class UeSequence(object):
         """
         return self._user_seq_array
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         """
         Get the representation of the object.
 
@@ -260,7 +260,7 @@ class SrsChannelEstimator(object):
             The received SRS signal after being transmitted through the
             channel (in the frequency domain). If this is a 2D numpy array
             the first dimensions is assumed to be "receive antennas" while
-            the second dimension are the received requence elements.
+            the second dimension are the received sequence elements.
         num_taps_to_keep : int
             Number of taps (in delay domain) to keep. All taps from 0 to
             `num_taps_to_keep`-1 will be kept and all other taps will be
@@ -275,7 +275,7 @@ class SrsChannelEstimator(object):
             is sent every other subcarrier.
         """
         # User's SRS sequence
-        r = self._srs_ue.seq_array()
+        r = self.ue_srs_seq.seq_array()
 
         if received_signal.ndim == 1:
             # First we multiply (element-wise) the received signal by the
@@ -294,7 +294,7 @@ class SrsChannelEstimator(object):
             # `num_taps_to_keep` elements in `y`.
             tilde_h = y[:, 0:num_taps_to_keep]
         else:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 "received_signal must have either one dimension ("
                 "one receive antenna) or two dimensions (first "
                 "dimension being the receive antenna dimension).")

@@ -120,7 +120,8 @@ class PathLossBase(object):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(
+            self, d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.
@@ -381,7 +382,8 @@ class PathLossIndoorBase(PathLossBase):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self,
+                                         d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in meters)
         without including the shadowing.
@@ -452,7 +454,8 @@ class PathLossIndoorBase(PathLossBase):
         PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
-        return super(PathLossIndoorBase, self).calc_path_loss_dB(d, **kargs)
+        return super(PathLossIndoorBase, self).calc_path_loss_dB(d,
+                                                                 **kargs)
 
     def calc_path_loss(self, d, **kargs):  # pragma: no cover
         """
@@ -547,7 +550,8 @@ class PathLossOutdoorBase(PathLossBase):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d,
+                                         **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.
@@ -680,7 +684,8 @@ class PathLossGeneral(PathLossOutdoorBase):
 
     def _get_latex_repr(self):  # pragma: no cover
         """
-        Get the Latex representation (equation) for the PathLossGeneral class.
+        Get the Latex representation (equation) for the PathLossGeneral
+        class.
 
         The general equation is given by
 

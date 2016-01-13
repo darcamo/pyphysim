@@ -1503,7 +1503,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
     This algorithm is applicable to a "K-user" scenario and it is
     described in [Peters2011]_.
 
-    An example of a common exenario is a scenario with 3 pairs or
+    An example of a common scenario is a scenario with 3 pairs or
     transmitter/receiver with 2 antennas in each node and 1 stream
     transmitted per node.
 
@@ -1697,7 +1697,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # as a singular matrix, which means that we will perform the
         # diagonal loading
         if cond > 5e4:  # pragma: no cover
-            # Calculates the load_factor (arbitrarily choosen as 1/100 the
+            # Calculates the load_factor (arbitrarily chosen as 1/100 the
             # mean of the current singular values of sum_term).
             load_factor = S.mean() / 100.0
             # pylint: disable= E1103
@@ -1766,7 +1766,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
                 # xxxxxxxxxx Handle case where a bad mu_i was found xxxxxxx
                 # Sometimes the optimization algorithm finds a solution,
-                # but it is clearly wrong with a very high vamue of
+                # but it is clearly wrong with a very high value of
                 # mu_i. In that case we will do some scaling and try again.
                 if abs(mu_i) > 1e20:
                     mu_i = optimize.newton(

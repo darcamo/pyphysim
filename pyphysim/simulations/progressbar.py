@@ -351,6 +351,7 @@ class ProgressBarBase(object):
 # http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/
 # /examples/notebooks/Progress%20Bars.ipynb
 #
+# noinspection PyAbstractClass
 class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
     """
     Base class for Text progressbars.

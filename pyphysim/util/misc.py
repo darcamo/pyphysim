@@ -1042,7 +1042,8 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     new_dict = {}
     for n, v in dictionary.items():
         if isinstance(v, np.ndarray):
-            v = "[{0}]".format(get_mixed_range_representation(v, filename_mode))
+            v = "[{0}]".format(
+                    get_mixed_range_representation(v, filename_mode))
         new_dict[n] = v
 
     return name.format(**new_dict)

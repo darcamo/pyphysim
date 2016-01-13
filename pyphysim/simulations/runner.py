@@ -228,7 +228,7 @@ class SimulationRunner(object):
     default_config_file : str
         Name of the config file. This will be parsed with configobj.
     config_spec : list[str]
-        Configuration specification to validade the config file.
+        Configuration specification to validate the config file.
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     save_parsed_file : bool
@@ -315,7 +315,7 @@ class SimulationRunner(object):
         # --- When the simulation is performed in parallel ----------------
         # - If it is None then no progressbar will be used
         # - If it is not None then a socket progressbar will be used, which
-        #   employes the same style as 'text2'
+        #   employs the same style as 'text2'
         self.update_progress_function_style = 'text2'
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
@@ -390,7 +390,7 @@ class SimulationRunner(object):
         The `filename` argument is formatted with the simulation
         parameters. That is, suppose there are two parameters Nr=2 and
         Nt=1, then if `filename` is equal to "results_for_{Nr}x{Nt}" the
-        actual name of the file used to stote the simulation results will
+        actual name of the file used to store the simulation results will
         be "results_for_2x1.pickle".
 
         The advantage of setting the name of the results file with

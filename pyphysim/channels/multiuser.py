@@ -362,7 +362,8 @@ class MuChannel(object):
 #     ----------
 #     N : int
 #         The number of transmit/receive pairs.
-#     fading_generator : Object of some class derived from FadingSampleGenerator
+#     fading_generator : Object of some class derived from
+#         FadingSampleGenerator
 #         The fading generator. If not provided, then an object of the
 #         RayleighSampleGenerator class will be created.
 #     """
@@ -377,8 +378,8 @@ class MuChannel(object):
 
 #     def _get_channel_samples(self):
 #         """
-#         Get the fading generated channel samples while also applying the path
-#         loss, if it was set with the `set_pathloss` method
+#         Get the fading generated channel samples while also applying the
+#         path loss, if it was set with the `set_pathloss` method
 
 #         Returns
 #         -------
@@ -392,7 +393,7 @@ class MuChannel(object):
 #                        self._pathloss_matrix)
 #         return samples
 
-#     # TODO: update fading samples after this method is called. After you do
+#   # TODO: update fading samples after this method is called. After you do
 #     # this, add a test for it in MuSisoChannelTestCase.test_corrupt_data
 #     def corrupt_data(self, data):
 #         """
@@ -403,16 +404,16 @@ class MuChannel(object):
 #         Parameters
 #         ----------
 #         data : 1D numpy array or 2D numpy array
-#             If `data` is a 1D numpy array, the k-th element corresponds to
-#             the symbol transmitted to the k-th user. If `data` is a 2D
+#             If `data` is a 1D numpy array, the k-th element corresponds
+#             to the symbol transmitted to the k-th user. If `data` is a 2D
 #             numpy array then the k-th row corresponds to the symbols
 #             transmitted to the k-th user.
 
 #         Returns
 #         -------
 #         1D numpy array of 2D numpy arrays
-#             A numpy array where each element (or row) contains the received
-#             data of a user.
+#             A numpy array where each element (or row) contains the
+#             received data of a user.
 #         """
 #         return np.dot(self._get_channel_samples(), data)
 
@@ -424,7 +425,8 @@ class MuChannel(object):
 #         The path loss will be accounted when calling the corrupt_data
 #         method.
 
-#         If you want to disable the path loss, set `pathloss_matrix` to None.
+#         If you want to disable the path loss, set `pathloss_matrix` to
+#         None.
 
 #         Parameters
 #         ----------
@@ -2057,7 +2059,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         Returns
         -------
         output : np.ndarray
-            A numpy array where each element contais the received data (a
+            A numpy array where each element contains the received data (a
             2D numpy array) of a user.
         """
         input_data = np.hstack([data, ext_int_data])

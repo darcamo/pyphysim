@@ -724,11 +724,13 @@ class TdlChannel(object):
             channel_profile = TdlChannelProfile(tap_powers_dB, tap_delays)
         else:
             assert(isinstance(channel_profile, TdlChannelProfile)),\
-                'channel_profile must be an obj of the TdlChannelProfile class'
+                ('channel_profile must be an obj '
+                 'of the TdlChannelProfile class')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # The channel profile is not discretized yet. We need to discretize it.
+        # The channel profile is not discretized yet. We need to
+        # discretize it.
         if not channel_profile.is_discretized:
             if (isinstance(fading_generator,
                            fading_generators.RayleighSampleGenerator) and
@@ -995,7 +997,7 @@ class TdlChannel(object):
 
     def corrupt_data(self, signal):
         """
-        Transmit the signal trhough the TDL channel.
+        Transmit the signal though the TDL channel.
 
         Parameters
         ----------
@@ -1130,7 +1132,7 @@ class TdlChannel(object):
                              "`fft_size`.")
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # Variable to stopre the impulse responses for each block. We will
+        # Variable to store the impulse responses for each block. We will
         # concatenate these impulse responses at the end so that we can set
         # self._last_impulse_response to the impulse response of all blocks
         impulse_responses = []

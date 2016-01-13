@@ -238,7 +238,8 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             shape.append(num_samples)
             self._samples = randn_c(*shape)
 
-    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
+    def skip_samples_for_next_generation(self,
+                                         num_samples):  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -275,6 +276,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
 # TODO: Remove the RS parameter or make it work with the
 # get_similar_fading_generator method.  You could also move it to the base
 # class and add it as an argument to RayleighSampleGenerator
+# noinspection PyPep8
 class JakesSampleGenerator(FadingSampleGenerator):
     """
     Class that generated fading samples according to the Jakes model given
@@ -447,7 +449,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         # appropriated shape for later use.
         if self._shape is not None:
             # Ex: If self._shape is (2,3) then the shape of the generated
-            # 't' variable should be (1,1,1,NSnum_samples). The first
+            # 't' variable should be (1,1,1,num_samples). The first
             # dimension correspond to the number of taps (that is, self.L),
             # the following two dimensions correspond to the dimensions in
             # self._shape, and the last dimension corresponds to the number
@@ -492,6 +494,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         t = self._generate_time_samples(num_samples)
 
         # Finally calculate the channel samples
+        # noinspection PyTypeChecker
         h = (math.sqrt(1.0 / self.L) *
              np.sum(np.exp(1j * (2 * np.pi * self.Fd *
                                  np.cos(self._phi_l) * t + self._psi_l)),

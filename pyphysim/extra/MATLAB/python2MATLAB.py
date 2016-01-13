@@ -84,9 +84,10 @@ def to_mat_str(x, format_string='+.12e'):
     if x.ndim == 2:
         if x.shape[1] == 1:
             # This is a Column vector
-            output = '[{0}]'.format(convert_row_or_col(np.reshape(x, x.size),
-                                                       format_string,
-                                                       separator='; '))
+            output = '[{0}]'.format(
+                    convert_row_or_col(np.reshape(x, x.size),
+                                       format_string,
+                                       separator='; '))
         else:
             # This is not a column vector
             output = []

@@ -101,6 +101,9 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(expected_c_ext, c_ext)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Root Sequence Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SrsRootSequenceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -121,8 +124,9 @@ class SrsRootSequenceTestCase(unittest.TestCase):
 
     def test_init(self):
         with self.assertRaises(AttributeError):
+            RootSequence(root_index=25)
+        with self.assertRaises(AttributeError):
             RootSequence(root_index=25, size=64, Nzc=139)
-
         with self.assertRaises(AttributeError):
             RootSequence(root_index=25, size=3)
         with self.assertRaises(AttributeError):
