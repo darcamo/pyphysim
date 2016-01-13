@@ -34,6 +34,7 @@ from pyphysim.channels.fading import TdlChannel
 from pyphysim.channels.fading import COST259_TUx
 from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.reference_signals.root_sequence import RootSequence
+from pyphysim.reference_signals import zadoffchu
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -47,6 +48,57 @@ class SrsDoctestsTestCase(unittest.TestCase):
     def test_srs_module(self):
         """Run reference_signals module doctests"""
         doctest.testmod(srs)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Zadoff-Chu Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# TODO: finish implementation
+class ZadoffChuFunctionsTestCase(unittest.TestCase):
+    """
+    Module to test the Zadoff-Chu related functions in the zadoffchu
+    module.
+    """
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_calcBaseZC(self):
+        # TODO: Implement-me
+        pass
+
+    def test_getShiftedZF(self):
+        # TODO: Implement-me
+        pass
+
+    def test_get_extended_ZF(self):
+        a = zadoffchu.calcBaseZC(139, u=20)
+        b = zadoffchu.calcBaseZC(31, u=14)
+        c = zadoffchu.calcBaseZC(19, u=5)
+
+        # Compute and test the extended root sequence a for size 150
+        a_ext = zadoffchu.get_extended_ZF(a, 150)
+        expected_a_ext = np.hstack([a, a[0:11]])
+        self.assertEqual(a_ext.size, 150)
+        np.testing.assert_almost_equal(expected_a_ext, a_ext)
+
+        # Compute and test the extended root sequence b for size 32
+        b_ext = zadoffchu.get_extended_ZF(b, 32)
+        expected_b_ext = np.hstack([b, b[0]])
+        self.assertEqual(b_ext.size, 32)
+        np.testing.assert_almost_equal(expected_b_ext, b_ext)
+
+        # Compute and test the extended root sequence c for size 32
+        c_ext = zadoffchu.get_extended_ZF(c, 32)
+        expected_c_ext = np.hstack([c, c[0:13]])
+        self.assertEqual(c_ext.size, 32)
+        np.testing.assert_almost_equal(expected_c_ext, c_ext)
+
+        # Compute and test the extended root sequence c for size 64
+        c_ext = zadoffchu.get_extended_ZF(c, 64)
+        expected_c_ext = np.hstack([c, c, c, c[0:7]])
+        self.assertEqual(c_ext.size, 64)
+        np.testing.assert_almost_equal(expected_c_ext, c_ext)
 
 
 class SrsRootSequenceTestCase(unittest.TestCase):
