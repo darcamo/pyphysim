@@ -94,7 +94,7 @@ def get_extended_ZF(root_seq, size):
     -------
     >>> root_seq = np.array([1, 2, 3, 4, 5])
     >>> get_extended_ZF(root_seq, 8)
-    [1,2,3,4,5,1,2,3]
+    array([1, 2, 3, 4, 5, 1, 2, 3])
     """
     root_seq_size = root_seq.size
     if size - root_seq_size > root_seq_size:

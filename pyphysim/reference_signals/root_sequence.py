@@ -168,9 +168,13 @@ class RootSequence(object):
                                                            size)
         else:  # size must be either n_sc_PRB or 2*n_sc_PRB
             if size == self.n_sc_PRB:
-                self._seq_array = ROOT_TABLE1['{0}'.format(root_index)]
+                self._seq_array = np.exp(
+                    1j * (np.pi/4.0) *
+                    ROOT_TABLE1['{0}'.format(root_index)])
             elif size == 2*self.n_sc_PRB:
-                self._seq_array = ROOT_TABLE2['{0}'.format(root_index)]
+                self._seq_array = np.exp(
+                    1j * (np.pi/4.0) *
+                    ROOT_TABLE2['{0}'.format(root_index)])
             else:
                 raise AttributeError("Invalid root sequence size")
 
