@@ -107,8 +107,8 @@ class UeSequence(object):
         str
             The representation of the object.
         """
-        return "<SrsUeSequence(root_index={0}, n_cs={1})>".format(
-            self._root_index, self._n_cs)
+        return "<{0}(root_index={1}, n_cs={2})>".format(
+            self.__class__.__name__, self._root_index, self._n_cs)
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the

@@ -8,7 +8,7 @@ from pyphysim.reference_signals.srs import UeSequence
 from .zadoffchu import get_shifted_root_seq
 from .root_sequence import RootSequence
 
-__all__ = ['get_dmrs_seq']
+__all__ = ['get_dmrs_seq', 'DmrsUeSequence']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -56,4 +56,4 @@ class DmrsUeSequence(UeSequence):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_dmrs_seq(root_seq_array, n_cs)
         super(DmrsUeSequence, self).__init__(
-                root_seq, n_cs, user_seq_array)
+            root_seq, n_cs, user_seq_array)
