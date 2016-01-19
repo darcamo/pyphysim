@@ -26,7 +26,7 @@ import doctest
 import numpy as np
 
 import pyphysim.reference_signals
-from pyphysim.reference_signals.srs import SrsUeSequence, SrsChannelEstimator
+from pyphysim.reference_signals.srs import SrsUeSequence, CazacBasedChannelEstimator
 from pyphysim.reference_signals.dmrs import DmrsUeSequence
 from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
     get_extended_ZF
@@ -315,7 +315,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
                                              expected_user_seq6)
 
 
-class SrsChannelEstimatorTestCase(unittest.TestCase):
+class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
         pass
@@ -330,7 +330,7 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         user2_seq = SrsUeSequence(
             RootSequence(root_index=25, size=size, Nzc=Nzc), 4)
 
-        ue1_channel_estimator = SrsChannelEstimator(user1_seq)
+        ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
 
         speed_terminal = 3/3.6               # Speed in m/s
         fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
@@ -376,7 +376,7 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         tilde_h1 = y1[0:16]
         tilde_H1 = np.fft.fft(tilde_h1, Nsc)
 
-        # Test the SrsChannelEstimator estimation
+        # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
             ue1_channel_estimator.estimate_channel_freq_domain(Y, 16),
             tilde_H1)
@@ -398,8 +398,8 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
             RootSequence(root_index=25, size=size, Nzc=Nzc), 4)
 
         # Set size_multiplier to 1, since we won't use the comb pattern
-        ue1_channel_estimator = SrsChannelEstimator(user1_seq,
-                                                    size_multiplier=1)
+        ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
+                                                           size_multiplier=1)
 
         speed_terminal = 3/3.6               # Speed in m/s
         fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
@@ -444,7 +444,7 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         tilde_h1 = y1[0:16]
         tilde_H1 = np.fft.fft(tilde_h1, Nsc)
 
-        # Test the SrsChannelEstimator estimation
+        # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
             ue1_channel_estimator.estimate_channel_freq_domain(Y, 16),
             tilde_H1)
@@ -465,7 +465,7 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         user2_seq = SrsUeSequence(
             RootSequence(root_index=25, size=size, Nzc=Nzc), 4)
 
-        ue1_channel_estimator = SrsChannelEstimator(user1_seq)
+        ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
 
         speed_terminal = 3/3.6               # Speed in m/s
         fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
@@ -512,7 +512,7 @@ class SrsChannelEstimatorTestCase(unittest.TestCase):
         tilde_h1_espected = y1[0:16]
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=0)
 
-        # Test the SrsChannelEstimator estimation
+        # Test the CazacBasedChannelEstimator estimation
         H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T, 16)
         np.testing.assert_array_almost_equal(
             H1_estimated, tilde_H1_espected.T)

@@ -7,7 +7,7 @@ import numpy as np
 from .zadoffchu import get_shifted_root_seq
 from .root_sequence import RootSequence
 
-__all__ = ['get_srs_seq', 'SrsUeSequence', 'SrsChannelEstimator']
+__all__ = ['get_srs_seq', 'SrsUeSequence', 'CazacBasedChannelEstimator']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -220,10 +220,11 @@ class SrsUeSequence(UeSequence):
         super(SrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
 
 
-class SrsChannelEstimator(object):
+class CazacBasedChannelEstimator(object):
     """
-    Estimated the (uplink) channel based on the (SRS or DMRS) reference
-    sequence sent by one user.
+    Estimated the (uplink) channel based on CAZAC (Constant Amplitude Zero
+    AutoCorrelation) reference sequences sent by one user (either SRS or
+    DMRS).
 
     The estimation is performed according to the paper [Bertrand2011]_,
     where the received signal in the FREQUENCY DOMAIN is used by the
