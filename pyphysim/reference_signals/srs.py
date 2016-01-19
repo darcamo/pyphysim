@@ -222,17 +222,28 @@ class SrsUeSequence(UeSequence):
 
 class SrsChannelEstimator(object):
     """
-    Estimated the (uplink) channel based on the SRS sequence sent by one
-    user.
+    Estimated the (uplink) channel based on the (SRS or DMRS) reference
+    sequence sent by one user.
 
     The estimation is performed according to the paper [Bertrand2011]_,
     where the received signal in the FREQUENCY DOMAIN is used by the
     estimator.
 
+    Note that for SRS sequences usually a comb pattern is employed such
+    that only half of the subcarriers is used to send pilot
+    symbols. Therefore, an FFT in the during the estimation will
+    effectively interpolate for the other subcarriers. This is controlled
+    by the `size_multiplier` argument (default is 2 to accommodate comb
+    pattern). If all subcarriers are used to send pilot symbols then set
+    `size_multiplier` to 1.
+
     Parameters
     ----------
     srs_ue : SrsUeSequence
         The user's SRS sequence.
+    size_multiplier : int
+        Multiplication factor for the FFT to get the the actual channel
+        size.
 
     Notes
     -----
@@ -242,11 +253,13 @@ class SrsChannelEstimator(object):
        73rd IEEE Vehicular Technology Conference.
     """
 
-    def __init__(self, srs_ue):
+    def __init__(self, srs_ue, size_multiplier=2):
         self._srs_ue = srs_ue
+        self._size_multiplier = size_multiplier
 
     @property
     def ue_srs_seq(self):
+        """Get the sequence of the UE."""
         return self._srs_ue
 
     def estimate_channel_freq_domain(self, received_signal,
@@ -260,7 +273,10 @@ class SrsChannelEstimator(object):
             The received SRS signal after being transmitted through the
             channel (in the frequency domain). If this is a 2D numpy array
             the first dimensions is assumed to be "receive antennas" while
-            the second dimension are the received sequence elements.
+            the second dimension are the received sequence elements. The
+            number of elements in the reseived signal (per antenna) is
+            equal to the channel size (number of subcarriers) divided by
+            `size_multiplier`.
         num_taps_to_keep : int
             Number of taps (in delay domain) to keep. All taps from 0 to
             `num_taps_to_keep`-1 will be kept and all other taps will be
@@ -303,6 +319,6 @@ class SrsChannelEstimator(object):
         # The number of subcarriers is twice the number of elements in the
         # SRS sequence due to the comb pattern
         Nsc = r.size
-        tilde_H = np.fft.fft(tilde_h, 2 * Nsc)
+        tilde_H = np.fft.fft(tilde_h, self._size_multiplier * Nsc)
 
         return tilde_H
