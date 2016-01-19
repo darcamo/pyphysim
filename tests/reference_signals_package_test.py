@@ -26,7 +26,9 @@ import doctest
 import numpy as np
 
 import pyphysim.reference_signals
-from pyphysim.reference_signals.srs import SrsUeSequence, CazacBasedChannelEstimator
+from pyphysim.reference_signals.srs import SrsUeSequence
+from pyphysim.reference_signals.channel_estimation import \
+    CazacBasedChannelEstimator
 from pyphysim.reference_signals.dmrs import DmrsUeSequence
 from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
     get_extended_ZF
@@ -240,6 +242,9 @@ class RootSequenceTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SrsUeSequenceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -315,6 +320,9 @@ class SrsUeSequenceTestCase(unittest.TestCase):
                                              expected_user_seq6)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Channel Estimation Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -524,6 +532,9 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(error/2., np.zeros(error.shape), decimal=2)
 
 
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx DMRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class DmrsUeSequenceTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
