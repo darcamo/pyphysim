@@ -118,7 +118,7 @@ class MuChannel(object):
 
         Returns
         -------
-        int
+        np.ndarray
             The number of transmit antennas.
         """
         _, num_tx = self._su_siso_channels.shape

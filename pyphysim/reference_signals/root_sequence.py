@@ -137,7 +137,7 @@ class RootSequence(object):
     """
     n_sc_PRB = 12  # Number of subcarriers in a PRB in LTE
 
-    def __init__(self, root_index, size=None, Nzc=None):
+    def __init__(self, root_index: int, size: int=None, Nzc: int=None):
         if size is None and Nzc is None:
             raise AttributeError("Either 'size' or 'Nzc' (or both) must "
                                  "be provided.")
@@ -148,8 +148,8 @@ class RootSequence(object):
             Nzc = self._get_largest_prime_lower_than_number(size)
 
         if size < Nzc:
-                raise AttributeError("If 'size' and Nzc are provided, "
-                                     "then size must be greater than Nzc")
+            raise AttributeError("If 'size' and Nzc are provided, "
+                                 "then size must be greater than Nzc")
 
         self._root_index = root_index
         self._seq_array = None
