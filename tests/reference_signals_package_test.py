@@ -328,7 +328,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         """Called before each test."""
         pass
 
-    def test_estimate_channel(self):
+    def test_estimate_channel_with_srs(self):
         Nsc = 300                            # 300 subcarriers
         size = Nsc // 2
         Nzc = 139
@@ -386,7 +386,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y, 16),
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15),
             tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
@@ -454,7 +454,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y, 16),
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15),
             tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
@@ -462,6 +462,80 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
         np.testing.assert_almost_equal(error/2., np.zeros(error.size), decimal=2)
+
+    def test_estimate_channel_with_dmrs(self):
+        Nsc = 24
+        size = Nsc
+
+        user1_seq = DmrsUeSequence(
+            RootSequence(root_index=17, size=size), 1)
+        user2_seq = DmrsUeSequence(
+            RootSequence(root_index=13, size=size), 4)
+
+        ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
+                                                           size_multiplier=1)
+
+        speed_terminal = 3/3.6               # Speed in m/s
+        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8/fcDbl              # Carrier wave length
+        Fd = speed_terminal / wave_length    # Doppler Frequency
+        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
+        L = 16                               # Number of jakes taps
+
+        jakes1 = JakesSampleGenerator(Fd, Ts, L)
+        jakes2 = JakesSampleGenerator(Fd, Ts, L)
+
+        # Create a TDL channel object for each user
+        tdlchannel1 = TdlChannel(jakes1, channel_profile=COST259_TUx)
+        tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
+
+        # Generate channel that would corrupt the transmit signal.
+        tdlchannel1._generate_impulse_response(1)
+        tdlchannel2._generate_impulse_response(1)
+
+        # Get the generated impulse response
+        impulse_response1 = tdlchannel1.get_last_impulse_response()
+        impulse_response2 = tdlchannel2.get_last_impulse_response()
+
+        # Get the corresponding frequency response
+        freq_resp_1 = impulse_response1.get_freq_response(Nsc)
+        H1 = freq_resp_1[:, 0]
+        freq_resp_2 = impulse_response2.get_freq_response(Nsc)
+        H2 = freq_resp_2[:, 0]
+
+        # Sequence of the users
+        r1 = user1_seq.seq_array()
+        r2 = user2_seq.seq_array()
+
+        # Received signal (in frequency domain) of user 1
+        Y1 = H1 * r1
+        Y2 = H2 * r2
+        Y = Y1 + Y2
+
+        # Calculate expected estimated channel for user 1
+        y1 = np.fft.ifft(np.conj(r1) * Y, size)
+        tilde_h1 = y1[0:4]
+        tilde_H1 = np.fft.fft(tilde_h1, Nsc)
+
+        # xxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        a = y1[0:4]
+        A = np.fft.fft(a, Nsc)
+        import matplotlib.pyplot as plt
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Test the CazacBasedChannelEstimator estimation
+        np.testing.assert_array_almost_equal(
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 3),
+            tilde_H1)
+
+        # Test if true channel and estimated channel are similar. Since the
+        # channel estimation error is higher at the first and last
+        # subcarriers we will test only the inner 200 subcarriers
+        error = np.abs(H1[5:-5] - tilde_H1[5:-5])
+        np.testing.assert_almost_equal(
+            error/2., np.zeros(error.size), decimal=2)
+
 
     def test_estimate_channel_multiple_rx(self):
         Nsc = 300                            # 300 subcarriers
@@ -521,7 +595,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=0)
 
         # Test the CazacBasedChannelEstimator estimation
-        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T, 16)
+        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T, 15)
         np.testing.assert_array_almost_equal(
             H1_estimated, tilde_H1_espected.T)
 

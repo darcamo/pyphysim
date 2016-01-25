@@ -4,6 +4,8 @@
 """Module with channel estimation implementations based on the reference
 signals in this package. """
 import numpy as np
+from .srs import SrsUeSequence
+from .dmrs import DmrsUeSequence
 
 
 class CazacBasedChannelEstimator(object):
@@ -26,9 +28,9 @@ class CazacBasedChannelEstimator(object):
 
     Parameters
     ----------
-    srs_ue : SrsUeSequence
+    ue_ref_seq : SrsUeSequence | DmrsUeSequence
         The user's SRS sequence.
-    size_multiplier : int
+    size_multiplier : int, optional
         Multiplication factor for the FFT to get the the actual channel
         size.
 
@@ -40,14 +42,14 @@ class CazacBasedChannelEstimator(object):
        73rd IEEE Vehicular Technology Conference.
     """
 
-    def __init__(self, srs_ue, size_multiplier=2):
-        self._srs_ue = srs_ue
+    def __init__(self, ue_ref_seq, size_multiplier=2):
+        self._ue_ref_sequence = ue_ref_seq
         self._size_multiplier = size_multiplier
 
     @property
-    def ue_srs_seq(self):
+    def ue_ref_seq(self):
         """Get the sequence of the UE."""
-        return self._srs_ue
+        return self._ue_ref_sequence
 
     def estimate_channel_freq_domain(self, received_signal,
                                      num_taps_to_keep):
@@ -61,7 +63,7 @@ class CazacBasedChannelEstimator(object):
             channel (in the frequency domain). If this is a 2D numpy array
             the first dimensions is assumed to be "receive antennas" while
             the second dimension are the received sequence elements. The
-            number of elements in the reseived signal (per antenna) is
+            number of elements in the received signal (per antenna) is
             equal to the channel size (number of subcarriers) divided by
             `size_multiplier`.
         num_taps_to_keep : int
@@ -78,7 +80,7 @@ class CazacBasedChannelEstimator(object):
             is sent every other subcarrier.
         """
         # User's SRS sequence
-        r = self.ue_srs_seq.seq_array()
+        r = self.ue_ref_seq.seq_array()
 
         if received_signal.ndim == 1:
             # First we multiply (element-wise) the received signal by the
@@ -87,7 +89,7 @@ class CazacBasedChannelEstimator(object):
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.
-            tilde_h = y[0:num_taps_to_keep]
+            tilde_h = y[0:num_taps_to_keep+1]
         elif received_signal.ndim == 2:
             # Case with multiple receive antennas
             y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal,
@@ -95,7 +97,7 @@ class CazacBasedChannelEstimator(object):
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.
-            tilde_h = y[:, 0:num_taps_to_keep]
+            tilde_h = y[:, 0:num_taps_to_keep+1]
         else:
             raise ValueError(  # pragma: no cover
                 "received_signal must have either one dimension ("
