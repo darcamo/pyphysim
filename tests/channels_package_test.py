@@ -29,7 +29,7 @@ from copy import copy
 import numpy as np
 from scipy.linalg import block_diag
 from pyphysim.channels import noise, fading_generators, fading, singleuser, \
-    multiuser, pathloss
+    multiuser, pathloss, antennagain
 from pyphysim.comm import blockdiagonalization
 from pyphysim.ia.algorithms import ClosedFormIASolver
 from pyphysim.util.conversion import single_matrix_to_matrix_of_matrices, dB2Linear
@@ -6168,6 +6168,60 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
             self.pl._calc_deterministic_path_loss_dB(d))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Antenna Gain Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class AntGainOmniTestCase(unittest.TestCase):
+    def test_get_antenna_gain(self):
+        A = antennagain.AntGainOmni()
+        angle1 = 10
+        angle2 = -35
+        angle3 = 163
+        angle4 = -68
+        self.assertAlmostEqual(A.get_antenna_gain(angle1), 1.0)
+        self.assertAlmostEqual(A.get_antenna_gain(angle2), 1.0)
+        self.assertAlmostEqual(A.get_antenna_gain(angle3), 1.0)
+        self.assertAlmostEqual(A.get_antenna_gain(angle4), 1.0)
+
+        # Now with numpy arrays
+        gains = A.get_antenna_gain(np.array([angle1, angle2, angle3, angle4]))
+        self.assertEqual(gains.shape, (4,))
+        np.testing.assert_array_almost_equal(gains, np.ones(4))
+
+
+class AntGain3GPP25996TestCase(unittest.TestCase):
+    def test_get_antenna_gain(self):
+        #\(-\min\left[ 12\left( \frac{\theta}{\theta_{3dB}} \right)^2, A_m \right]\), where \(-180 \geq \theta \geq 180\)
+        A = antennagain.AntGainBS3GPP25996()
+        antenna_gain = A.ant_gain
+        angle1 = 10
+        angle2 = -35
+        angle3 = 163
+        angle4 = -68
+        angle5 = -90
+        angle6 = -95
+        expected_gain1 = antenna_gain * dB2Linear(-12 * (angle1/70.) ** 2)
+        expected_gain2 = antenna_gain * dB2Linear(-12 * (angle2/70.) ** 2)
+        expected_gain3 = antenna_gain * dB2Linear(-20)
+        expected_gain4 = antenna_gain * dB2Linear(-12 * (angle4/70.) ** 2)
+        expected_gain5 = antenna_gain * dB2Linear(-12 * (angle5/70.) ** 2)
+        expected_gain6 = antenna_gain * dB2Linear(-20)
+        self.assertAlmostEqual(A.get_antenna_gain(angle1), expected_gain1)
+        self.assertAlmostEqual(A.get_antenna_gain(angle2), expected_gain2)
+        self.assertAlmostEqual(A.get_antenna_gain(angle3), expected_gain3)
+        self.assertAlmostEqual(A.get_antenna_gain(angle4), expected_gain4)
+        self.assertAlmostEqual(A.get_antenna_gain(angle5), expected_gain5)
+        self.assertAlmostEqual(A.get_antenna_gain(angle6), expected_gain6)
+
+        # Now with numpy arrays
+        gains = A.get_antenna_gain(np.array([angle1, angle2, angle3,
+                                             angle4, angle5, angle6]))
+        self.assertEqual(gains.shape, (6,))
+        np.testing.assert_array_almost_equal(
+            gains,
+            np.array([expected_gain1, expected_gain2, expected_gain3,
+                      expected_gain4, expected_gain5, expected_gain6]))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
