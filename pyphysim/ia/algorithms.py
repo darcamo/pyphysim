@@ -893,7 +893,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     @IterativeIASolverBaseClass.initialize_with.setter
     def initialize_with(self, value):
         """Set method for the initialize_with property."""
-        if value == 'alt_min':
+        if value == 'alt_min':  # pragma: nocover
             msg = "Can't use '{0}' initialization with '{1}' class '{0}'"
             raise RuntimeError(msg.format(value, self.__class__.__name__))
 
@@ -1757,7 +1757,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                     mu_i = optimize.newton(  # pylint: disable= E1101
                         func, min_mu_i,
                         args=(sum_term, Hii_herm_U, self.P[i]), maxiter=200)
-                except RuntimeError:
+                except RuntimeError:  # pragma: nocover
                     # We get a RuntimeError if the maximum number of
                     # iterations has been reached.
                     raise RuntimeError(

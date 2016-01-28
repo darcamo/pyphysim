@@ -29,6 +29,7 @@ import math
 from pyphysim.modulators import fundamental, ofdm
 from pyphysim.modulators import OFDM
 from pyphysim.util.misc import randn_c
+from pyphysim.channels import fading, fading_generators
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -590,6 +591,65 @@ class OfdmTestCase(unittest.TestCase):
             demodulated_symbols3.round(),
             input_signal3
         )
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+class OfdmOneTapEqualizerTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_equalize_data(self):
+        num_of_subcarriers = 24
+        ofdm_obj = OFDM(num_of_subcarriers, cp_size=8)
+        onetap_equalizer = ofdm.OfdmOneTapEqualizer(ofdm_obj)
+        qam_obj = fundamental.QAM(4)
+
+        # Input data
+        data = np.random.randint(0, 4, size=2*num_of_subcarriers)
+
+        # Modulate with QAM
+        symbols = qam_obj.modulate(data)
+
+        # Modulate with OFDM
+        transmit_data = ofdm_obj.modulate(symbols)
+
+        # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Calculate the actual bandwidth that we will use
+        bandwidth = 55e3 * num_of_subcarriers
+        Fd = 50     # Doppler frequency (in Hz)
+        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        NRays = 16  # Number of rays for the Jakes model
+
+        jakes = fading_generators.JakesSampleGenerator(
+            Fd, Ts, NRays, shape=None)
+
+        tdlchannel = fading.TdlChannel(
+            jakes, tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+            tap_delays=fading.COST259_TUx.tap_delays)
+
+        channel_memory = tdlchannel.num_taps_with_padding - 1
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Pass the signal through the channel xxxxxxxxxxxxxxxxxx
+        received_signal = tdlchannel.corrupt_data(transmit_data)
+
+        # Impulse response used to transmit the signal
+        last_impulse_response = tdlchannel.get_last_impulse_response()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx OFDM Reception xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Demodulate with OFDM
+        received_demodulated_data = ofdm_obj.demodulate(
+            received_signal[:-channel_memory])
+
+        received_equalized_data = onetap_equalizer.equalize_data(
+            received_demodulated_data, last_impulse_response)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Demodulation and testing xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        demodulated_received_data = qam_obj.demodulate(received_equalized_data)
+        np.testing.assert_array_equal(data, demodulated_received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 

@@ -788,7 +788,7 @@ class TdlChannel(object):
         value : bool
             True to switch directions of false to use original direction.
         """
-        if not isinstance(value, int):
+        if not isinstance(value, bool):
             raise TypeError("switched_direction must be a boolean value")
         # TODO: maybe throw a warning if the TdlChannel object is not a
         # MIMO version (has multiple antennas)
@@ -1064,7 +1064,7 @@ class TdlChannel(object):
                         output[:, d:d + num_symbols] += (
                             tap_values_sparse[i, :, tx_idx, :] * signal[tx_idx])
                 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        else:
+        else:  # pragma: no cover
             raise RuntimeError(
                 "Shape of the fading generator of the TdlChannel class must "
                 "have either 1 (SISO) or 3 (MIMO) dimensions")
@@ -1147,7 +1147,7 @@ class TdlChannel(object):
             else:
                 # xxxxxxxxxx Code for original direction xxxxxxxxxxxxxxxxxx
                 output = np.zeros((num_symbols, num_rx_ant), dtype=complex)
-        else:
+        else:  # pragma: no cover
             raise RuntimeError(
                 "Shape of the fading generator of the TdlChannel class must "
                 "have either 1 (SISO) or 3 (MIMO) dimensions")
@@ -1244,7 +1244,7 @@ class TdlMimoChannel(TdlChannel):
 
     Parameters
     ----------
-    fading_generator : T <= FadingSampleGenerator
+    fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples.  The
@@ -1261,7 +1261,7 @@ class TdlMimoChannel(TdlChannel):
     def __init__(self, fading_generator, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
         if fading_generator.shape is None or len(fading_generator.shape) != 2:
-            raise RuntimeError(
+            raise RuntimeError(  # pragma: nocover
                 "The provided fading_generator for the TdlMimoChannel class"
                 " must have a shape with two values")
 

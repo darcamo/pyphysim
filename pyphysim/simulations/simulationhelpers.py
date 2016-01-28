@@ -8,7 +8,7 @@ import sys
 try:
     # noinspection PyUnresolvedReferences
     from ipyparallel import Client, LoadBalancedView, DirectView
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 from .progressbar import ProgressbarZMQServer
@@ -50,8 +50,8 @@ def simulate_do_what_i_mean(runner_or_list_of_runners,
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def _add_folder_to_ipython_engines_path(  # pragma: no cover
-        client, folder):
+def _add_folder_to_ipython_engines_path(
+        client, folder):  # pragma: no cover
     """
     Add a folder to sys.path of each ipython engine.
 

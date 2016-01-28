@@ -642,6 +642,21 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         out = fading.TdlImpulseResponse.concatenate_samples(
             [impulse_response2])
         self.assertTrue(out is impulse_response2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxx Test if an exception is raised xxxxxxxxxxxxxxxxxx
+        # If we try to concatenate impulse responses with different channel
+        # profiles objects (identity, not just parameters) an exception
+        # should be raised
+        Ts = 3.255e-08
+        tu = fading.COST259_TUx
+        tu_discretized = tu.get_discretize_profile(Ts)
+        impulse_response3 = fading.TdlImpulseResponse(
+            tap_values2, tu_discretized)
+        with self.assertRaises(ValueError):
+            fading.TdlImpulseResponse.concatenate_samples(
+                [self.impulse_response, impulse_response3])
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_plot_impulse_response(self):
         # self.impulse_response.plot_impulse_response()
@@ -1030,7 +1045,6 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-# TODO: move tests (only MIMO specific) here to TdlChannelTestCase
 class TdlMIMOChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -1265,6 +1279,13 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         num_samples = 10
 
         signal_uplink = np.random.randint(0, 10, (num_rx_ant, num_samples))
+
+        # If we try to set switched_direction to anything that is not True
+        # or False an exception is raised
+        with self.assertRaises(TypeError):
+            tdlmimochannel.switched_direction = 1
+
+        # Now correctly set switched_direction to True
         tdlmimochannel.switched_direction = True  # switch to uplink
         received_signal_uplink = tdlmimochannel.corrupt_data(signal_uplink)
         last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
@@ -1517,36 +1538,36 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
                                                    dtype=complex)
         # First antenna
         expected_received_signal_uplink[0, 0:fft_size] = (
-            signal_uplink[0,0:fft_size] * freq_response00[:, 0] +
-            signal_uplink[1,0:fft_size] * freq_response10[:, 0] +
-            signal_uplink[2,0:fft_size] * freq_response20[:, 0])
+            signal_uplink[0, 0:fft_size] * freq_response00[:, 0] +
+            signal_uplink[1, 0:fft_size] * freq_response10[:, 0] +
+            signal_uplink[2, 0:fft_size] * freq_response20[:, 0])
         # Second antenna
         expected_received_signal_uplink[1, 0:fft_size] = (
-            signal_uplink[0,0:fft_size] * freq_response01[:, 0] +
-            signal_uplink[1,0:fft_size] * freq_response11[:, 0] +
-            signal_uplink[2,0:fft_size] * freq_response21[:, 0])
+            signal_uplink[0, 0:fft_size] * freq_response01[:, 0] +
+            signal_uplink[1, 0:fft_size] * freq_response11[:, 0] +
+            signal_uplink[2, 0:fft_size] * freq_response21[:, 0])
         # xxxxxxxxxx Second OFDM symbol
         # First antenna
         expected_received_signal_uplink[0, fft_size:2*fft_size] = (
-            signal_uplink[0,fft_size:2*fft_size] * freq_response00[:, 1] +
-            signal_uplink[1,fft_size:2*fft_size] * freq_response10[:, 1] +
-            signal_uplink[2,fft_size:2*fft_size] * freq_response20[:, 1])
+            signal_uplink[0, fft_size:2*fft_size] * freq_response00[:, 1] +
+            signal_uplink[1, fft_size:2*fft_size] * freq_response10[:, 1] +
+            signal_uplink[2, fft_size:2*fft_size] * freq_response20[:, 1])
         # Second antenna
         expected_received_signal_uplink[1, fft_size:2*fft_size] = (
-            signal_uplink[0,fft_size:2*fft_size] * freq_response01[:, 1] +
-            signal_uplink[1,fft_size:2*fft_size] * freq_response11[:, 1] +
-            signal_uplink[2,fft_size:2*fft_size] * freq_response21[:, 1])
+            signal_uplink[0, fft_size:2*fft_size] * freq_response01[:, 1] +
+            signal_uplink[1, fft_size:2*fft_size] * freq_response11[:, 1] +
+            signal_uplink[2, fft_size:2*fft_size] * freq_response21[:, 1])
         # xxxxxxxxxx ThirdOFDM symbol
         # First antenna
         expected_received_signal_uplink[0, 2*fft_size:3*fft_size] = (
-            signal_uplink[0,2*fft_size:3*fft_size] * freq_response00[:, 2] +
-            signal_uplink[1,2*fft_size:3*fft_size] * freq_response10[:, 2] +
-            signal_uplink[2,2*fft_size:3*fft_size] * freq_response20[:, 2])
+            signal_uplink[0, 2*fft_size:3*fft_size] * freq_response00[:, 2] +
+            signal_uplink[1, 2*fft_size:3*fft_size] * freq_response10[:, 2] +
+            signal_uplink[2, 2*fft_size:3*fft_size] * freq_response20[:, 2])
         # Second antenna
         expected_received_signal_uplink[1, 2*fft_size:3*fft_size] = (
-            signal_uplink[0,2*fft_size:3*fft_size] * freq_response01[:, 2] +
-            signal_uplink[1,2*fft_size:3*fft_size] * freq_response11[:, 2] +
-            signal_uplink[2,2*fft_size:3*fft_size] * freq_response21[:, 2])
+            signal_uplink[0, 2*fft_size:3*fft_size] * freq_response01[:, 2] +
+            signal_uplink[1, 2*fft_size:3*fft_size] * freq_response11[:, 2] +
+            signal_uplink[2, 2*fft_size:3*fft_size] * freq_response21[:, 2])
 
         # Test if expected signal and received signal are equal
         np.testing.assert_array_almost_equal(expected_received_signal_uplink,
@@ -6170,7 +6191,7 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Antenna Gain Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Antenna Gain Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx1xx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class AntGainOmniTestCase(unittest.TestCase):
     def test_get_antenna_gain(self):
@@ -6189,10 +6210,26 @@ class AntGainOmniTestCase(unittest.TestCase):
         self.assertEqual(gains.shape, (4,))
         np.testing.assert_array_almost_equal(gains, np.ones(4))
 
+        # Repeat the test for an antenna with a gain
+        B = antennagain.AntGainOmni(ant_gain=-1)  # gain in dBi
+        C = antennagain.AntGainOmni(ant_gain=3)  # gain in dBi
+
+        self.assertAlmostEqual(B.get_antenna_gain(angle1), dB2Linear(-1.0))
+        self.assertAlmostEqual(B.get_antenna_gain(angle2), dB2Linear(-1.0))
+        self.assertAlmostEqual(B.get_antenna_gain(angle3), dB2Linear(-1.0))
+        self.assertAlmostEqual(B.get_antenna_gain(angle4), dB2Linear(-1.0))
+
+        self.assertAlmostEqual(C.get_antenna_gain(angle1), dB2Linear(3.0))
+        self.assertAlmostEqual(C.get_antenna_gain(angle2), dB2Linear(3.0))
+        self.assertAlmostEqual(C.get_antenna_gain(angle3), dB2Linear(3.0))
+        self.assertAlmostEqual(C.get_antenna_gain(angle4), dB2Linear(3.0))
+
+
 
 class AntGain3GPP25996TestCase(unittest.TestCase):
     def test_get_antenna_gain(self):
         #\(-\min\left[ 12\left( \frac{\theta}{\theta_{3dB}} \right)^2, A_m \right]\), where \(-180 \geq \theta \geq 180\)
+        # xxxxxxxxxx Test for 3-Sector cells xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         A = antennagain.AntGainBS3GPP25996()
         antenna_gain = A.ant_gain
         angle1 = 10
@@ -6222,6 +6259,29 @@ class AntGain3GPP25996TestCase(unittest.TestCase):
             gains,
             np.array([expected_gain1, expected_gain2, expected_gain3,
                       expected_gain4, expected_gain5, expected_gain6]))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for 6-sector cells xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        B = antennagain.AntGainBS3GPP25996(number_of_sectors=6)
+        antenna_gain = B.ant_gain
+        expected_gain1 = antenna_gain * dB2Linear(-12 * (angle1/35.) ** 2)
+        expected_gain2 = antenna_gain * dB2Linear(-12 * (angle2/35.) ** 2)
+        expected_gain3 = antenna_gain * dB2Linear(-23)
+        expected_gain4 = antenna_gain * dB2Linear(-23)
+        expected_gain5 = antenna_gain * dB2Linear(-23)
+        expected_gain6 = antenna_gain * dB2Linear(-23)
+        self.assertAlmostEqual(B.get_antenna_gain(angle1), expected_gain1)
+        self.assertAlmostEqual(B.get_antenna_gain(angle2), expected_gain2)
+        self.assertAlmostEqual(B.get_antenna_gain(angle3), expected_gain3)
+        self.assertAlmostEqual(B.get_antenna_gain(angle4), expected_gain4)
+        self.assertAlmostEqual(B.get_antenna_gain(angle5), expected_gain5)
+        self.assertAlmostEqual(B.get_antenna_gain(angle6), expected_gain6)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Different number of sectors raise an exception xxxxxxxxxxxx
+        with self.assertRaises(ValueError):
+            antennagain.AntGainBS3GPP25996(number_of_sectors=9)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

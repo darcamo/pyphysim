@@ -1278,7 +1278,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5.) + X
         return pl_dB
 
-    def which_distance_dB(self, PL):
+    def which_distance_dB(self, PL):  # pragma: nocover
         pass
 
     def _calc_deterministic_path_loss_dB(self, d,

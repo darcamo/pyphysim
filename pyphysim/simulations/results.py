@@ -597,7 +597,7 @@ class Result(object):
             else:
                 return self._value
 
-    def get_result_accumulated_values(self):
+    def get_result_accumulated_values(self):  # pragma: no cover
         """
         Return the accumulated values.
 
@@ -607,7 +607,7 @@ class Result(object):
         """
         return self._value_list
 
-    def get_result_accumulated_totals(self):
+    def get_result_accumulated_totals(self):  # pragma: no cover
         """
         Return the accumulated values.
 

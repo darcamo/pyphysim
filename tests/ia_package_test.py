@@ -36,6 +36,7 @@ from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, \
     MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
     IterativeIASolverBaseClass, GreedStreamIASolver, BruteForceStreamIASolver
 from pyphysim.util.misc import peig, leig, randn_c
+from pyphysim.util.conversion import linear2dB
 
 
 class CustomTestCase(unittest.TestCase):
@@ -2018,41 +2019,56 @@ class MaxSinrIASolerTestCase(CustomTestCase):
         iasolver._updateW()
 
         SINR_all_users = iasolver.calc_SINR()
+        SINR_all_users_in_dB = iasolver.calc_SINR_in_dB()
 
         # xxxxxxxxxx Noise Variance of 0.0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
         B0l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=0, noise_power=0.0)
         expected_SINR0 = iasolver._calc_SINR_k(0, B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+        np.testing.assert_almost_equal(linear2dB(expected_SINR0),
+                                       SINR_all_users_in_dB[0])
 
         # k = 1
         B1l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=1, noise_power=0.0)
         expected_SINR1 = iasolver._calc_SINR_k(1, B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+        np.testing.assert_almost_equal(linear2dB(expected_SINR1),
+                                       SINR_all_users_in_dB[1])
 
         # k = 1
         B2l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=2, noise_power=0.0)
         expected_SINR2 = iasolver._calc_SINR_k(2, B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        np.testing.assert_almost_equal(linear2dB(expected_SINR2),
+                                       SINR_all_users_in_dB[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Noise Variance of 0.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # k = 0
         multiUserChannel.noise_var = 0.1
         SINR_all_users = iasolver.calc_SINR()
+        SINR_all_users_in_dB = iasolver.calc_SINR_in_dB()
+
         B0l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=0, noise_power=0.1)
         expected_SINR0 = iasolver._calc_SINR_k(0, B0l_all_l)
         np.testing.assert_almost_equal(expected_SINR0, SINR_all_users[0])
+        np.testing.assert_almost_equal(linear2dB(expected_SINR0 ),
+                                       SINR_all_users_in_dB[0])
 
         # k = 1
         B1l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=1, noise_power=0.1)
         expected_SINR1 = iasolver._calc_SINR_k(1, B1l_all_l)
         np.testing.assert_almost_equal(expected_SINR1, SINR_all_users[1])
+        np.testing.assert_almost_equal(linear2dB(expected_SINR1 ),
+                                       SINR_all_users_in_dB[1])
 
         # k = 1
         B2l_all_l = iasolver._calc_Bkl_cov_matrix_all_l(k=2, noise_power=0.1)
         expected_SINR2 = iasolver._calc_SINR_k(2, B2l_all_l)
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
+        np.testing.assert_almost_equal(linear2dB(expected_SINR2 ),
+                                       SINR_all_users_in_dB[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_get_channel_rev(self):
@@ -3252,7 +3268,9 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
         """Called before each test."""
         pass
 
-    def test_solve(self):
+    def test_solve_and_clear(self):
+        # Test the solve method and the clear method
+
         # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
@@ -3280,10 +3298,13 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
 
         # xxxxxxxxxx Find the solution xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         iasolver._iasolver.max_iterations = 200
+        self.assertEqual(iasolver.runned_iterations, 0)
+
         iasolver.solve(Ns, P)
+        self.assertGreater(iasolver.runned_iterations, 0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Soltion found by the algorithm xxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Solution found by the algorithm xxxxxxxxxxxxxxxxxxxxxx
         full_F0 = np.matrix(iasolver._iasolver.full_F[0])
         full_F1 = np.matrix(iasolver._iasolver.full_F[1])
         full_F2 = np.matrix(iasolver._iasolver.full_F[2])
@@ -3354,6 +3375,24 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
+            # xxxxxxxxxx Now test the clear method xxxxxxxxxxxxxxxxxxxxxxxx
+            self.assertNotEqual(iasolver.stream_combinations, ())
+            self.assertNotEqual(iasolver.every_sum_capacity, [])
+            self.assertIsNotNone(iasolver._best_F)
+            self.assertIsNotNone(iasolver._best_full_F)
+            self.assertIsNotNone(iasolver._best_W_H)
+            self.assertIsNotNone(iasolver._best_Ns)
+
+            iasolver.clear()
+
+            self.assertEqual(iasolver.stream_combinations, ())
+            self.assertEqual(iasolver.every_sum_capacity, [])
+            self.assertIsNone(iasolver._best_F)
+            self.assertIsNone(iasolver._best_full_F)
+            self.assertIsNone(iasolver._best_W_H)
+            self.assertIsNone(iasolver._best_Ns)
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
         except AssertionError:  # pragma: no cover
             # Since this test failed, let's save its state so that we can
             # reproduce it
@@ -3361,5 +3400,5 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
             raise  # re-raises the last exception
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: nocover
     unittest.main()

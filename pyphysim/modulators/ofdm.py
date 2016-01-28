@@ -16,24 +16,30 @@ __all__ = ['OFDM', 'OfdmOneTapEqualizer']
 class OFDM(object):
     """
     OFDM class.
-
-    Parameters
-    ----------
-    fft_size : int
-        Size of the FFT and IFFT used by the OFDM class.
-    cp_size : int
-        Size of the cyclic prefix (in samples).
-    num_used_subcarriers : int, optional
-        Number of used subcarriers. Must be greater than or equal to 2
-        and lower than or equal to fft_size. If not provided, fft_size
-        will be used
-
-    Raises
-    ------
-    ValueError
-        If the any of the parameters are invalid.
     """
     def __init__(self, fft_size, cp_size, num_used_subcarriers=None):
+        """
+        Initialize the OFDM object.
+
+        Parameters
+        ----------
+        fft_size : int
+            Size of the FFT and IFFT used by the OFDM class.
+        cp_size : int
+            Size of the cyclic prefix (in samples).
+        num_used_subcarriers : int, optional
+            Number of used subcarriers. Must be greater than or equal to 2
+            and lower than or equal to fft_size. If not provided, fft_size
+            will be used
+
+        Returns
+        -------
+        OFDM
+
+        Raises
+        ------
+        ValueError
+            If the any of the parameters are invalid."""
         self.fft_size = 0
         self.cp_size = 0
         self.num_used_subcarriers = 0

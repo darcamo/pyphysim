@@ -962,7 +962,7 @@ class ProgressbarText3(ProgressbarTextBase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressBarIPython xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class ProgressBarIPython(ProgressBarBase):
+class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
     """
     Progressbar for IPython notebooks.
 

@@ -2376,7 +2376,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
             if len(lview) == 0:
                 self.skipTest("At least one IPython engine must be running.")
         except IOError:
-            self.skipTest("The IPython engines were not found. ('tests' profile)")
+            self.skipTest(
+                "The IPython engines were not found. ('tests' profile)")
 
         from simulations_package_test import _DummyRunner
         dview.execute('import simulations_package_test', block=True)

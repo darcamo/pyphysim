@@ -12,7 +12,7 @@ import argparse
 try:
     # noinspection PyUnresolvedReferences
     from ipyparallel import LoadBalancedView, DirectView
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 from .parameters import SimulationParameters

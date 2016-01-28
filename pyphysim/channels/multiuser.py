@@ -42,6 +42,11 @@ class MuChannel(object):
         Note: The power of each tap will be a negative number (in dB).
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
+
+    Returns
+    -------
+    MuChannel
+        The created object.
     """
     def __init__(self, N, fading_generator=None, channel_profile=None,
                  tap_powers_dB=None, tap_delays=None, Ts=None):
