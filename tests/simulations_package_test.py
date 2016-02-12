@@ -29,6 +29,7 @@ from time import sleep
 from io import StringIO
 from itertools import repeat
 from copy import copy
+import json
 
 try:
     # noinspection PyUnresolvedReferences
@@ -749,6 +750,88 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(unpacked_list[index3]['third'], 2)
         self.assertEqual(unpacked_list[index3]['fourth'], 'A')
         self.assertEqual(unpacked_list[index3]['fifth'], 'Z')
+
+    def test_to_dict_and_from_dict(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # xxxxxxxxxx Test converting to and from a dictionary xxxxxxxxxxxxx
+        # First test converting to a dictionary
+        out = self.sim_params._to_dict()
+        self.assertIsInstance(out, dict)
+        self.assertEqual(out['parameters'], self.sim_params.parameters)
+        self.assertEqual(out['unpacked_parameters_set'],
+                         self.sim_params._unpacked_parameters_set)
+        self.assertEqual(out['unpack_index'], self.sim_params._unpack_index)
+        self.assertEqual(out['original_sim_params'],
+                         self.sim_params._original_sim_params)
+
+        # Now test converting from the dictionay
+        sim_params = SimulationParameters._from_dict(out)
+        self.assertEqual(sim_params, self.sim_params)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Repeat tests with unpacked parameters xxxxxxxxxxxxxxxx
+        # First test converting to a dictionary
+        sim_params_unpacked_list = self.sim_params.get_unpacked_params_list()
+
+        for sim_params_elem in sim_params_unpacked_list:
+        # sim_params_elem = sim_params_unpacked_list[0]
+            out_elem = sim_params_elem._to_dict()
+            self.assertIsInstance(out_elem, dict)
+            self.assertEqual(out_elem['parameters'], sim_params_elem.parameters)
+            self.assertEqual(out_elem['unpacked_parameters_set'],
+                             sim_params_elem._unpacked_parameters_set)
+            self.assertEqual(out_elem['unpack_index'], sim_params_elem._unpack_index)
+            self.assertEqual(out_elem['original_sim_params'],
+                             sim_params_elem._original_sim_params._to_dict())
+
+            # Now test converting from the dictionay
+            sim_params_elem_d = SimulationParameters._from_dict(out_elem)
+            self.assertEqual(sim_params_elem, sim_params_elem_d)
+            self.assertEqual(sim_params_elem_d._original_sim_params,
+                             self.sim_params)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_to_json_and_from_json(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.add('fourth', ['A', 'B'])
+        self.sim_params.set_unpack_parameter('third')
+        self.sim_params.set_unpack_parameter('fourth')
+
+        # xxxxxxxxxx Test converting to and from a json xxxxxxxxxxxxxxxxxxx
+        # First test converting to json
+        encoded_params = self.sim_params.to_json()
+        self.assertIsInstance(encoded_params, str)
+
+        # This will raise an exception if encoded_params is not valid json
+        _ = json.loads(encoded_params)
+
+        # Now test converting from json
+        decoded_params = SimulationParameters.from_json(encoded_params)
+        self.assertTrue(self.sim_params == decoded_params)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Repeat tests with unpacked parameters xxxxxxxxxxxxxxxx
+        sim_params_unpacked_list = self.sim_params.get_unpacked_params_list()
+        for sim_params_elem in sim_params_unpacked_list:
+            # First test converting to json
+            encoded_sim_params_elem = sim_params_elem.to_json()
+            self.assertIsInstance(encoded_sim_params_elem, str)
+
+            # This will raise an exception if encoded_params is not valid json
+            _ = json.loads(encoded_params)
+
+            # Now test converting from json
+            decoded_sim_params_elem = SimulationParameters.from_json(
+                encoded_sim_params_elem)
+            self.assertEqual(decoded_sim_params_elem, sim_params_elem)
+            self.assertEqual(decoded_sim_params_elem._original_sim_params,
+                             self.sim_params)
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_pickle_file(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -2629,7 +2712,7 @@ def _get_progress_string_from_file(filename):
         # created it yet. Let's wait a little if that happen and try one
         # more time.
         import time
-        time.speep(3)
+        time.sleep(3)
         fid = open(filename, 'r')
     finally:
         content_string = fid.read()

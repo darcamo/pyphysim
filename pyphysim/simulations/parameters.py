@@ -21,10 +21,13 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
+import json
 from .configobjvalidation import real_numpy_array_check, \
     integer_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check, \
     real_scalar_or_real_numpy_array_check
+from ..util.serialize import NumpyOrSetEncoder, \
+    json_numpy_or_set_obj_hook
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
 
@@ -905,6 +908,73 @@ class SimulationParameters(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return params
+
+    def _to_dict(self):
+        """
+        Convert the SimulationParameters object to a dictionary for easier
+        further serialization.
+        """
+        original_sim_params = self._original_sim_params
+        if original_sim_params is not None:
+            original_sim_params = original_sim_params._to_dict()
+
+        out = {'parameters': self.parameters,
+               'unpacked_parameters_set': self._unpacked_parameters_set,
+               'unpack_index': self.unpack_index,
+               'original_sim_params': original_sim_params}
+        return out
+
+    @staticmethod
+    def _from_dict(d):
+        """
+        Create a new SimulationParameters object from a dictionary.
+
+        Parameters
+        ----------
+        d : dict
+            The dictionary with the data.
+
+        Returns
+        -------
+        SimulationParameters
+            The new SimulationParameters object.
+        """
+        sim_params = SimulationParameters()
+        sim_params.parameters = d['parameters']
+        sim_params._unpacked_parameters_set = d['unpacked_parameters_set']
+        sim_params._unpack_index = d['unpack_index']
+
+        original_sim_params = d['original_sim_params']
+        if original_sim_params is not None:
+            original_sim_params = SimulationParameters._from_dict(
+                original_sim_params)
+
+        sim_params._original_sim_params = original_sim_params
+        return sim_params
+
+    def to_json(self):
+        """Convert the SimulationParameters object to json.
+
+        Returns
+        -------
+        str
+            Json representation of the SimulationParameters.
+        """
+        return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
+
+    @staticmethod
+    def from_json(data):
+        """
+        Convert a json representation of the simulation parameters to an
+        actual SimulationParameters object.
+
+        Parameters
+        ----------
+        data : str
+            The json representation of the SimulationParameters object.
+        """
+        d = json.loads(data, object_hook=json_numpy_or_set_obj_hook)
+        return SimulationParameters._from_dict(d)
 
     # TODO: finish implementing this (and remove the "pragma no cover")
     def save_to_hdf5_group(self, group):  # pragma: no cover
