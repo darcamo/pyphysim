@@ -25,8 +25,9 @@ except NameError:  # pragma: no cover
 import unittest
 import doctest
 import numpy as np
+import json
 
-from pyphysim.util import misc, conversion
+from pyphysim.util import misc, conversion, serialize
 
 
 class UtilDoctestsTestCase(unittest.TestCase):
@@ -753,6 +754,58 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertAlmostEqual(
             expected_sum_capacity,
             misc.calc_shannon_sum_capacity(sinrs_linear))
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Serialize Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class NumpyOrSetEncoderTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        self.a = np.arange(100)
+        self.b = np.array([[10, 20, 30.2], [100, 200, 300]])
+
+    def test_json_encode_decode(self):
+        # xxxxxxxxxx Test for Numpy arrays xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        encoded_a = json.dumps(self.a, cls=serialize.NumpyOrSetEncoder)
+        self.assertIsInstance(encoded_a, str)
+        decoded_a = json.loads(encoded_a,
+                               object_hook=serialize.json_numpy_or_set_obj_hook)
+        np.testing.assert_array_almost_equal(self.a, decoded_a)
+
+        encoded_b = json.dumps(self.b, cls=serialize.NumpyOrSetEncoder)
+        self.assertIsInstance(encoded_b, str)
+        decoded_b = json.loads(encoded_b,
+                               object_hook=serialize.json_numpy_or_set_obj_hook)
+        np.testing.assert_array_almost_equal(self.b, decoded_b)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for numpy scalars (ints or floats) xxxxxxxxxxxxxx
+        # Numpy scalars will be converted to native numpy scalars before
+        # serialization. Therefore, they will be deserialized as native
+        # ints or floats.
+        s1 = self.a[34]
+        encoded_s1 = json.dumps(s1, cls=serialize.NumpyOrSetEncoder)
+        self.assertIsInstance(encoded_s1, str)
+        decoded_s1 = json.loads(encoded_s1)
+        self.assertEqual(s1, decoded_s1)
+
+        s2 = self.b[1,0]
+        encoded_s2 = json.dumps(s2, cls=serialize.NumpyOrSetEncoder)
+        self.assertIsInstance(encoded_s2, str)
+        decoded_s2 = json.loads(encoded_s2)
+        self.assertAlmostEqual(s2, decoded_s2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test for sets xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        c = {1, 5, 20}  # A python native set
+        encoded_c = json.dumps(c, cls=serialize.NumpyOrSetEncoder)
+        self.assertIsInstance(encoded_a, str)
+        decoded_c = json.loads(encoded_c,
+                               object_hook=serialize.json_numpy_or_set_obj_hook)
+        self.assertSetEqual(c, decoded_c)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
