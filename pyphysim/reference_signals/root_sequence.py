@@ -122,6 +122,12 @@ class RootSequence(object):
     """
     Class representing the root sequence of the reference signals.
 
+    The root sequence is generated using two possible formulas, one used
+    for a sequence size smaller than :math:`3M_{sc}^{RS}` and another for
+    sequence size equal to or greater than :math:`3M_{sc}^{RS}`, where
+    :math:`3M_{sc}^{RS}` is the number of subcarriers in a PRB (12
+    subcarriers).
+
     Parameters
     ----------
     root_index : int
