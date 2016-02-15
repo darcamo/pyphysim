@@ -29,8 +29,8 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
 
     Parameters
     ----------
-    vtChannels : 1D numpy array
-        Channel gains of the parallel AWGN channels.
+    vtChannels : np.ndarray
+        Channel gains of the parallel AWGN channels. This is a 1D numpy array.
     waterLevel : float
         Water level.
     channelLength : float
@@ -149,8 +149,8 @@ def drawWF(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
 
     Parameters
     ----------
-    vtChannels : 1D numpy array
-        Channel gains of the parallel AWGN channels.
+    vtChannels : np.ndarray
+        Channel gains of the parallel AWGN channels. This is a 1D numpy array.
     waterLevel : float
         Water level.
     noiseVar : float

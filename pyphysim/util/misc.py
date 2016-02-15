@@ -59,6 +59,7 @@ def gmd(U, S, V_H, tol=0.0):
     d = np.copy(S)  # We copy here to avoid changing 'S'
 
     # l = min(m, n)
+    # noinspection PyTypeChecker
     p = np.asscalar(np.sum(S >= tol))  # Number of singular values >= tol
 
     # If there is no singular value greater then the tolerance, then we
@@ -503,7 +504,7 @@ def count_bit_errors(first, second, axis=None):
 
     Returns
     -------
-    bit_errors : int
+    bit_errors : int | np.ndarray
         The total number of bit errors.
 
     Examples
@@ -895,6 +896,7 @@ def get_range_representation(array, filename_mode=False):
     elif step.dtype == float:
         step = round(float(step), 12)
 
+    # noinspection PyTypeChecker
     if np.allclose(array[1:] - step, array[0:-1]):
         # array is an arithmetic progression
         if filename_mode is True:

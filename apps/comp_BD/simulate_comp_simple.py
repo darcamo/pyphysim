@@ -13,10 +13,10 @@ import os
 
 try:
     pyphysim_dir = os.path.split(
-        os.path.abspath(os.path.join(os.path.dirname(__file__),'../')))[0]
-    sys.path.append(pyphysim_dir)
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))[0]
 except NameError:
-    sys.path.append('../../')
+    pyphysim_dir = '../'
+sys.path.append(pyphysim_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np

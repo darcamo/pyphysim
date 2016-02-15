@@ -707,12 +707,14 @@ class SimulationRunner(object):
         simulate_in_parallel method if the
         _get_parallel_update_progress_function method.
         """
+        if 'rep_max' not in current_params.parameters:
+            current_params.parameters['rep_max'] = self.rep_max
+
         # If the progressbar_message has any string replacements in the
         # form {some_param} where 'some_param' is a parameter in
         # current_params then it will be replaced by the current value of
         # 'some_param'.
-        message = self.progressbar_message.format(
-            **current_params.parameters, rep_max=self.rep_max)
+        message = self.progressbar_message.format(**current_params.parameters)
 
         # By default, the returned function is a dummy function that does
         # nothing

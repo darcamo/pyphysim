@@ -17,7 +17,6 @@ except NameError:
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
 
-from pyphysim import channels
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.ia import algorithms
 from pyphysim.simulations.progressbar import ProgressbarText
@@ -28,16 +27,18 @@ import pyphysim.channels.multiuser
 
 
 def calc_capacity(sinr):
-    """Calculate the Sum capacity.
+    """
+    Calculate the Sum capacity.
 
     Parameters
     ----------
-    sinr : 1D numpy array of 1D arrays.
-        The sinr (in linear scale) of all streams of all users.
+    sinr : np.ndarray
+        The sinr (in linear scale) of all streams of all users. This is a 1D
+        numpy array of 1D arrays.
 
     Returns
     -------
-    capacity : float
+    capacity : np.ndarray
         The capacity of each user.
     """
 

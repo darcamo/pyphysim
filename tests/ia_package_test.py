@@ -370,7 +370,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
             full_F[k] = np.sqrt(P[k]) * F[k]
 
             # factor can be any value from 0.75 to 1.0
-            factor = np.random.rand()/4 + 0.75
+            factor = np.random.random_sample()/4 + 0.75
             full_F_other[k] = np.sqrt(factor) * full_F[k]
 
         iasolver1.set_precoders(F, P=P)
@@ -680,6 +680,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                     expected_second_part,
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
 
+    # noinspection PyTypeChecker
     def test_calc_Bkl(self):
         # For the case of a single stream per user Bkl (which only has l=0)
         # is equal to Qk plus I (identity matrix)
@@ -940,6 +941,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             self.iasolver.full_F[2],
             self.iasolver.F[2] * np.sqrt(P[2]))
 
+    # noinspection PyTypeChecker
     def test_updateW(self):
         P = np.array([1.1, 0.86, 1.328])
         self.iasolver.P = P
@@ -1684,6 +1686,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         # print np.linalg.norm(full_W_H2 * H20 * full_F0)**2
         # print np.linalg.norm(full_W_H2 * H21 * full_F1)**2
 
+    # noinspection PyTypeChecker
     def test_calc_SINR_old(self):
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = AlternatingMinIASolver(multiUserChannel)
@@ -2000,8 +2003,8 @@ class MaxSinrIASolerTestCase(CustomTestCase):
                         Ukl_H, np.dot(Bkl_all_l[l], Ukl))
                 )
 
-                np.testing.assert_array_almost_equal(expectedSINRkl,
-                                                     SINR_k_all_l[l])
+                self.assertAlmostEqual(expectedSINRkl,
+                                       SINR_k_all_l[l])
 
     def test_calc_SINR(self):
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -2641,6 +2644,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(self.iasolver.W[2],
                                              expected_W2)
 
+    # noinspection PyTypeChecker
     def test_updateW_with_very_small_power(self):
         self.iasolver._multiUserChannel.noise_var = 1e-22
         P = self.P * 1e-20
@@ -2717,6 +2721,8 @@ class MMSEIASolverTestCase(CustomTestCase):
     def test_calc_Vi_for_a_given_mu(self):
         sum_term = randn_c(3, 3)
         sum_term = sum_term.dot(sum_term.conj().T)
+        ":type: np.ndarray"
+
         mu = 0.135
         H_herm_U = randn_c(3, 2)
 

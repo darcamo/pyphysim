@@ -22,10 +22,10 @@ import os
 
 try:
     pyphysim_dir = os.path.split(
-        os.path.abspath(os.path.join(os.path.dirname(__file__),'../')))[0]
-    sys.path.append(pyphysim_dir)
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))[0]
 except NameError:
-    sys.path.append('../')
+    pyphysim_dir = '../'
+sys.path.append(pyphysim_dir)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 import numpy as np
@@ -115,6 +115,8 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
                              'QAM': fundamental.QAM,
                              'BPSK': fundamental.BPSK}
         self.modulator = modulator_options[self.params['modulator']](M)
+        ":type: fundamental.PSK | fundamental.QPSK | fundamental.QAM | fundamental.BPSK"
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -180,7 +182,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         """
         cluster0 = self.cell_grid.get_cluster_from_index(0)
         cell_ids = np.arange(1, current_params['num_cells'] + 1)
-        cluster0.remove_all_users()
+        cluster0.delete_all_users()
         cluster0.add_random_users(cell_ids)
 
     def _create_symmetric_far_away_users_scenario(self, current_params):
@@ -557,17 +559,19 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Ns_all_users : 1D numpy array of size K.
+        Ns_all_users : np.ndarray
             Number of streams for each user. This variable controls how
             many data streams will be generated for each user of the K
-            users.
-        external_int_data_all_metrics : 2D numpy array
-            The data of the external interference sources.
-        MsPk_all_users : 1D numpy array of 2D numpy arrays
+            users. This is a 1D numpy array of size K.
+        external_int_data_all_metrics : np.ndarray
+            The data of the external interference sources (2D numpy array).
+        MsPk_all_users : np.ndarray
             The precoders of all users returned by the block diagonalize
-            method for the given metric.
-        Wk_all_users : 1D numpy array of 2D numpy arrays
-            The receive filter for all users.
+            method for the given metric. This is a 1D numpy array of 2D numpy
+            arrays.
+        Wk_all_users : np.ndarray
+            The receive filter for all users (1D numpy array of 2D numpy
+            arrays).
         metric_name : string
             Metric name. This string will be appended to each result name.
 
@@ -872,7 +876,8 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
-    from simulate_comp import BDSimulationRunner
+    # noinspection PyUnresolvedReferences
+    from apps.comp_BD.simulate_comp import BDSimulationRunner
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # File name (without extension) for the figure and result files.
@@ -891,6 +896,7 @@ if __name__ == '__main__':
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
     try:
+        # noinspection PyUnresolvedReferences
         from matplotlib import pyplot as plt
         _MATPLOTLIB_AVAILABLE = True
     except ImportError:

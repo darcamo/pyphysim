@@ -207,6 +207,7 @@ class ClosedFormIASolver(IASolverBaseClass):
         if isinstance(Ns, int):
             Ns = np.ones(3, dtype=int) * Ns
         else:
+            # noinspection PyTypeChecker
             assert len(Ns) == 3
 
         # This will create a new array so that we can modify self._Ns
@@ -621,7 +622,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         ----------
         Ns : int | np.ndarray
             Number of streams of each user.
-        P : np.ndarray
+        P : float | np.ndarray
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -786,7 +787,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         ----------
         Ns : int | np.ndarray
             Number of streams of each user.
-        P : np.ndarray
+        P : np.ndarray, optional
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
@@ -810,6 +811,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         if isinstance(Ns, int):
             Ns = np.ones(self.K, dtype=int) * Ns
         else:
+            # noinspection PyTypeChecker
             assert len(Ns) == self.K
 
         # This will create a new array so that we can modify self._Ns
@@ -1574,6 +1576,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                                          aux.conj().T)
 
         sum_term2 = sum_term + self.noise_var * np.eye(self.Nr[k])
+        ":type: np.ndarray"
 
         Uk = np.linalg.solve(sum_term2, np.dot(Hkk, Vk))
         return Uk
@@ -1922,6 +1925,7 @@ class GreedStreamIASolver(object):
 
         # First we check if any user has more then one stream, since
         # otherwise we can't remove any stream.
+        # noinspection PyTypeChecker
         if np.any(np.greater(self._iasolver.Ns, 1)):
             # If yes, then set 'keep_going' to True to indicate that the
             # stream reduction should be tried.
@@ -1989,6 +1993,7 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Check if at least one user has more then 1 stream xxxxx
+            # noinspection PyTypeChecker
             if not np.any(np.greater(self._iasolver.Ns, 1)):
                 # If there is no user with more then 1 stream, then we
                 # can't reduce streams anymore. Let's stop the while loop

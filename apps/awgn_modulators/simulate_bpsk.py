@@ -18,7 +18,7 @@ except NameError:
     sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from simulate_psk import VerySimplePskSimulationRunner
+from apps.awgn_modulators.simulate_psk import VerySimplePskSimulationRunner
 from pyphysim.modulators import fundamental
 
 
@@ -30,6 +30,7 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
     """
 
     def __init__(self):
+        import numpy as np
         VerySimplePskSimulationRunner.__init__(self)
 
         snr = np.array([0, 2, 4, 6, 8, 10])
@@ -42,7 +43,9 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
 
 
 if __name__ == '__main__':
+    # noinspection PyPackageRequirements
     from pylab import *
+    # noinspection PyUnresolvedReferences
     from apps.awgn_modulators.simulate_bpsk import VerySimpleBpskSimulationRunner
 
     sim = VerySimpleBpskSimulationRunner()

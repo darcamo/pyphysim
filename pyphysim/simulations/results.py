@@ -273,8 +273,9 @@ class Result(object):
 
         Parameters
         ----------
-        other : Result
-            The other Result object.
+        other : Result | any
+            The other Result object. It it is not a Result object then the
+            comparison will always yield False.
 
         Returns
         -------
@@ -359,7 +360,7 @@ class Result(object):
             Result.MISCTYPE, Result.CHOICETYPE}.
         value : any
             Value of the result.
-        total : any | int
+        total : any | int | float
             Total value of the result (used only for the RATIOTYPE and
             CHOICETYPE). For the CHOICETYPE it is interpreted as the number
             of different choices.
@@ -1196,7 +1197,7 @@ class SimulationResults(object):
 
         Returns
         -------
-        result_list : list
+        result_list : List
             A list with the stored values for the result with name
             `result_name`
 

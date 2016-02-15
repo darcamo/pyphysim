@@ -42,6 +42,7 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
                                    " Simulation - SNR: {SNR}"
 
 if __name__ == '__main__':
+    # noinspection PyPackageRequirements
     from pylab import *
     sim = VerySimpleQamSimulationRunner()
     sim.simulate()

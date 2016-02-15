@@ -8,7 +8,6 @@ Module containing function related to serialization.
 
 import numpy as np
 import json
-import base64
 
 
 class NumpyOrSetEncoder(json.JSONEncoder):
@@ -18,7 +17,7 @@ class NumpyOrSetEncoder(json.JSONEncoder):
     def default(self, obj):
         """
         If input object is an ndarray it will be converted into a dict holding
-        dtype, shape and the data, base64 encoded.
+        data, dtype, _is_numpy_array and shape.
 
         Parameters
         ----------

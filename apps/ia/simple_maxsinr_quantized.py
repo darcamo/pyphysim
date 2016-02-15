@@ -40,8 +40,8 @@ def gen_codebook(codebook_size, dimension):
 
     Returns
     -------
-    codebook : 2D numpy array
-        The generated codebook.
+    codebook : np.ndarray
+        The generated codebook (2D numpy array).
     """
     codebook = np.empty([codebook_size, dimension], dtype=complex)
     for i in range(codebook_size):
@@ -62,11 +62,11 @@ def calc_dist(vec, codeword):
 
     Parameters
     ----------
-    vec : 1D numpy array
-        The matrix to be quantized
-    codeword : 1D numpy array
+    vec : np.ndarray
+        The matrix to be quantized. This is a 1D numpy array.
+    codeword : np.ndarray
         One codeword from the codebook. The norm of the codeworkd should be
-        equal to 1.
+        equal to 1. This is a 1D numpy array.
 
     Returns
     -------
@@ -84,10 +84,10 @@ def calc_angle_dist(vec, codeword):
 
     Parameters
     ----------
-    vec : 1D numpy array
-        The matrix to be quantized
-    codeword : 1D numpy array
-        One codeword from the codebook.
+    vec : np.ndarray
+        The matrix to be quantized (1D numpy array).
+    codeword : np.ndarray
+        One codeword from the codebook (1D numpy array).
 
     Returns
     -------
@@ -110,10 +110,10 @@ def quant_small_matrix(small_matrix, codebook):
 
     Parameters
     ----------
-    small_matrix : 2D numpy array
-        The matrix to be quantized
-    codebook : 2D numpy array
-        The codebook, where each row corresponds to a codeword.
+    small_matrix : np.ndarray
+        The matrix to be quantized (2D numpy array).
+    codebook : np.ndarray
+        The codebook (2D numpy array), where each row corresponds to a codeword.
 
     Returns
     -------
@@ -133,22 +133,23 @@ def my_quant_func(true_matrix, Nr, Nt, K, codebook):
 
     Parameters
     ----------
-    true_matrix : 2D numpy array
+    true_matrix : np.ndarray
         The channel matrix correspondint to the channel from all
-        transmitters to all receivers.
-    Nr : int
+        transmitters to all receivers. This is a 2D numpy array.
+    Nr : int | np.ndarray
         The number of receive antennas of each user.
-    Nt : int
+    Nt : int | np.ndarray
         The number of transmit antennas of each user.
     K : int
         The number of users
-    codebook : 2D numpy array
-        The codebook (generated with the `gen_codebook` function.
+    codebook : np.ndarray
+        The codebook (generated with the `gen_codebook` function). This is a
+        2D numpy array.
 
     Returns
     -------
-    quantize_channel : 2D numpy array
-        The quantized channel
+    quantize_channel : np.ndarray
+        The quantized channel (2D numpy array).
     """
     quantize_channel = np.empty(true_matrix.shape, dtype=complex)
 

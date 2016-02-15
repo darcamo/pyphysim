@@ -165,6 +165,7 @@ class PSKTestCase(unittest.TestCase):
 
         # Test if an exception is raised for invalid arguments
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             self.psk_obj.modulate(4)
         with self.assertRaises(ValueError):
             self.psk_obj2.modulate(10)
@@ -547,6 +548,7 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
         input_signal = np.r_[1:105] + 1j * np.r_[1:105]
+        ":type: np.ndarray"
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
@@ -564,6 +566,8 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
         input_signal2 = np.r_[1:105] + 1j * np.r_[1:105]
+        ":type: np.ndarray"
+
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols2 = self.ofdm_object.modulate(input_signal2)
 
@@ -579,6 +583,8 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
         input_signal3 = np.r_[1:110]+1j * np.r_[1:110]
+        ":type: np.ndarray"
+
         self.ofdm_object.set_parameters(64, 16, 52)
         modulated_ofdm_symbols3 = self.ofdm_object.modulate(input_signal3)
 

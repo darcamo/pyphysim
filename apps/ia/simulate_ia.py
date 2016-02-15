@@ -24,11 +24,10 @@ from time import time
 import numpy as np
 from pprint import pprint
 
-from pyphysim.simulations.runner import SimulationRunner
+from pyphysim.simulations.runner import SimulationRunner, get_common_parser
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import SimulationResults, Result
-from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean, \
-    get_common_parser
+from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
 from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
@@ -742,6 +741,7 @@ def main_plot(algorithms_to_simulate, index=0):  # pylint: disable=R0914,R0915
     title = ("BER for Different Algorithms ({max_iterations} Max Iterations)\n"
              "K={K}, Nr={Nr}, Nt={Nt}, Ns={Ns}, {M}-{modulator}")
     title = title.replace("{max_iterations}", str(max_iterations))
+    # noinspection PyUnboundLocalVariable
     ax.set_title(title.format(**parameters_dict))
 
     ax.set_yscale('log')
@@ -781,6 +781,7 @@ if __name__ == '__main__':
     # This include statement may seem unnecessary, since these classes are
     # defined in this file, but they are important when the simulation is
     # performed in parallel in IPython engines.
+    # noinspection PyUnresolvedReferences
     from apps.ia.simulate_ia import ClosedFormSimulationRunner, \
     AlternatingSimulationRunner, MMSESimulationRunner, \
     MaxSINRSimulationRunner  #, MinLeakageSimulationRunner

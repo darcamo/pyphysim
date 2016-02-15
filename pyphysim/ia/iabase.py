@@ -509,9 +509,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        Ns : int | np.ndarray
+        Ns : int | list[int] | np.ndarray
             Number of streams of each user.
-        P : np.ndarray
+        P : np.ndarray | None, optional
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """

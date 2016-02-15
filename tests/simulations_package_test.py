@@ -39,6 +39,7 @@ except ImportError:  # pragma: no cover
     _IPYTHON_AVAILABLE = False
 
 try:  # pragma: nocover
+    # noinspection PyUnresolvedReferences
     from pandas import DataFrame
     _PANDAS_AVAILABLE = True
 except ImportError:  # pragma: nocover
@@ -266,6 +267,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     # "integer_scalar_or_integer_numpy_array_check" function.
     def test_integer_scalar_or_integer_numpy_array_check(self):
         try:
+            # noinspection PyUnresolvedReferences
             import validate
         except ImportError:  # pragma: no cover
             self.skipTest("The validate module is not installed")
@@ -292,10 +294,10 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # Test validation against the minimum and maximum allowed value
         value = "6"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            integer_scalar_or_integer_numpy_array_check(value, min=10.0)
+            integer_scalar_or_integer_numpy_array_check(value, min=10)
 
         with self.assertRaises(validate.VdtValueTooBigError):
-            integer_scalar_or_integer_numpy_array_check(value, max=5.0)
+            integer_scalar_or_integer_numpy_array_check(value, max=5)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
@@ -563,6 +565,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertTrue(self.sim_params == other)
 
         # Test comparison with something of a different class
+        # noinspection PyTypeChecker
         self.assertFalse(self.sim_params == 10.4)
 
         # Test if two objects are different if the _unpack_index value is
@@ -1004,6 +1007,7 @@ class SimulationParametersTestCase(unittest.TestCase):
     #     delete_file_if_possible(filename2)
     #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # noinspection PyUnresolvedReferences
     def test_load_from_config_file(self):
         try:
             import configobj
@@ -1222,6 +1226,7 @@ class ResultTestCase(unittest.TestCase):
         # Test if an exception is raised if we try to create a result type
         # with choice_num not being an integer
         with self.assertRaises(RuntimeError):
+            # noinspection PyTypeChecker
             Result("name4", Result.CHOICETYPE, choice_num=6.6)
 
     def test_get_update_type(self):
@@ -1291,6 +1296,7 @@ class ResultTestCase(unittest.TestCase):
 
         # Test if an exception is thrown when updating a result of some
         # unknown type
+        # noinspection PyTypeChecker
         result_invalid = Result('invalid', 'invalid_type')
         with self.assertRaises(ValueError):
             result_invalid.update(10)
@@ -1616,7 +1622,7 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
 
-
+    
 class SimulationResultsTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationResults class in the results module.
@@ -1653,6 +1659,7 @@ class SimulationResultsTestCase(unittest.TestCase):
 
         # Try to set the parameters to an invalid object
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             self.simresults.set_parameters(10)
 
         # Set the simulation parameters
@@ -1820,6 +1827,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertTrue(self.simresults != simresults)
 
         # Let's test with something of a different class
+        # noinspection PyTypeChecker
         self.assertFalse(self.simresults == 20)
 
     def test_get_result_values_list(self):
@@ -1833,6 +1841,8 @@ class SimulationResultsTestCase(unittest.TestCase):
             [0.55, 0.4])
 
         lulu_list = self.simresults.get_result_values_list('lulu')
+        ":type: list[np.ndarray]"
+
         np.testing.assert_array_almost_equal(
             lulu_list[0],
             np.array([0., 0.5, 0., 0.5, 0., 0.]))
@@ -2213,7 +2223,7 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
         sim_results = SimulationResults()
 
         # This will have a different value for eacn simulation parameters
-        random_value = np.random.rand()
+        random_value = np.random.random_sample()
         value = 1.2 * P + random_value
         sim_results.add_new_result('result1', Result.RATIOTYPE, value, 1)
 
@@ -2304,11 +2314,13 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # self.assertRaises(NotImplementedError,
         #                   self.S1._get_vertex_positions)
         with self.assertRaises(NotImplementedError):
+            # noinspection PyTypeChecker
             self.runner._run_simulation(None)
 
     def test_keep_going(self):
         # the _keep_going method in the SimulationRunner class should
         # return True
+        # noinspection PyTypeChecker
         self.assertTrue(self.runner._keep_going(None, None, None))
 
     def test_set_results_filename(self):
@@ -2462,7 +2474,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
             self.skipTest(
                 "The IPython engines were not found. ('tests' profile)")
 
-        from simulations_package_test import _DummyRunner
+        # noinspection PyUnresolvedReferences
+        from tests.simulations_package_test import _DummyRunner
         dview.execute('import simulations_package_test', block=True)
 
         runner = _DummyRunner()
@@ -2572,7 +2585,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # random value. The 'P' parameter is an array with 5 elements, all
         # of them equal to 2.0. That means that if we didn't have a random
         # part all elements in the returned results would be equal.
-        from simulations_package_test import _DummyRunnerRandom
+        # noinspection PyUnresolvedReferences
+        from tests.simulations_package_test import _DummyRunnerRandom
         dummyrunnerrandom = _DummyRunnerRandom()
         dummyrunnerrandom.simulate_in_parallel(lview)
 
@@ -3220,6 +3234,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
 
     def test_update_progress(self):
         try:
+            # noinspection PyUnresolvedReferences
             import zmq
         except ImportError:  # pragma: no cover
             self.skipTest("The zmq module is not installed")

@@ -185,15 +185,15 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
 
     Parameters
     ----------
-    value : str
+    value : str | list[str]
         The string to be converted. This can be either a single number, a
         range expression in the form of min:max or min:step:max, or even a
         list containing numbers and range expressions.
-    min : int
+    min : int | float
         The minimum allowed value. If the converted value is (or have)
         lower than `min` then the VdtValueTooSmallError exception will be
         raised.
-    max : int
+    max : int | float
         The maximum allowed value. If the converted value is (or have)
         greater than `man` then the VdtValueTooSmallError exception will be
         raised.

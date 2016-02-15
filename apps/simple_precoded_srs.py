@@ -8,22 +8,23 @@ sys.path.append('../')
 
 import math
 import numpy as np
-import matplotlib
 from matplotlib import pyplot as plt
 from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
     get_extended_ZF
 from pyphysim.reference_signals.srs import get_srs_seq
 from pyphysim.channels.fading import COST259_TUx, TdlChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
-from pyphysim.channels.multiuser import MuChannel
 from pyphysim.util.conversion import linear2dB
 
+# noinspection PyPackageRequirements
 import bokeh.plotting as bp
 # from bokeh.plotting import figure, output_server, show, ColumnDataSource, gridplot
-from bokeh.models import HoverTool, BoxSelectTool
-from bokeh.charts import Line, Scatter
+# noinspection PyPackageRequirements
+from bokeh.models import HoverTool
+# noinspection PyPackageRequirements
 import bokeh.models.widgets as bw
-from bokeh.io import gridplot, vform
+# noinspection PyPackageRequirements
+from bokeh.io import gridplot
 
 
 

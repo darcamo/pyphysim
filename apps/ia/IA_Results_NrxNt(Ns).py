@@ -25,6 +25,7 @@ from pyphysim.extra.pgfplotshelper import *
 # In Ipython run this script with
 #     run -i IA_Results_2x2(1).py
 try:
+    # noinspection PyUnboundLocalVariable,PyUnresolvedReferences
     initialized
 except NameError as e:
     print("This line should not be executed")
@@ -116,10 +117,14 @@ if __name__ == '__main__':
         initialized = True
 
     ## xxxxxxxxxx SNR variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # noinspection PyUnboundLocalVariable
     SNR_alt_min = np.array(alt_min_results.params['SNR'])
+    # noinspection PyUnboundLocalVariable
     SNR_closed_form = np.array(closed_form_results.params['SNR'])
+    # noinspection PyUnboundLocalVariable
     SNR_max_SINR = np.array(max_sinrn_results.params['SNR'])
     # SNR_min_leakage = np.array(min_leakage_results.params['SNR'])
+    # noinspection PyUnboundLocalVariable
     SNR_mmse = np.array(mmse_results.params['SNR'])
 
     ## xxxxxxxxxx BER Variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -257,6 +262,7 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Mean IA Iterations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # noinspection PyUnboundLocalVariable
     ITER_ALL_ALGS = "{0}\n\n{1}\n\n{2}".format(
         generate_pgfplots_plotline(SNR_alt_min,
                                    mean_ia_iterations_alt_min[max_iterations],
@@ -321,6 +327,7 @@ if __name__ == '__main__':
     with open('sum_capacity_template.tikz', 'r') as fid:
         sum_capacity_plot_template = fid.read()
 
+    # noinspection PyUnboundLocalVariable
     ber_plot_filename = ("ber_all_ia_algs_{Nr}x{Nt}({Ns})_max_iter_"
                          "{max_iter}.tikz").format(Nr=Nr,
                                                    Nt=Nt,

@@ -19,13 +19,13 @@ except NameError:
     sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+import numpy as np
 from pyphysim.simulations import *
 from pyphysim.modulators import fundamental
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.util import misc
 
 
-# noinspection PyShadowingNames
 class VerySimplePskSimulationRunner(SimulationRunner):
     """This is a complete example with the minimum code to actually perform
     a simulation.
@@ -141,10 +141,10 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
         Parameters
         ----------
-        current_params : SimulationParameters object
+        current_parameters : SimulationParameters object
             SimulationParameters object with the parameters of the
             simulation.
-        current_sim_results : SimulationResults object
+        simulation_results : SimulationResults object
             SimulationResults object from the last iteration (merged with
             all the previous results)
         current_rep : int
@@ -179,6 +179,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
 
 if __name__ == '__main__':
+    # noinspection PyPackageRequirements
     from pylab import *
     sim = VerySimplePskSimulationRunner()
     sim.simulate()

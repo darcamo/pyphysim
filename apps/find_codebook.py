@@ -76,13 +76,23 @@ class CodebookFinder(object):
     def _generate_complex_random_codebook(self, K, Nt, Ns):
         """Generates a complex random codebook.
 
-        Arguments:
-        - `K`: Number of precoders in the codebook
-        - `Nt`: Number of rows (transmit antennas) in each precoder
-        - `Ns`: Number of columns (number of streams) in each precoder
+        Parameters
+        ----------
+        K : int
+            Number of precoders in the codebook
+        Nt : int
+            Number of rows (transmit antennas) in each precoder
+        Ns : int
+            Number of columns (number of streams) in each precoder
+
+        Returns
+        -------
+        np.ndarray
         """
-        C = (1. / math.sqrt(2.0)) * (self._rs.randn(K, Nt, Ns) + (1j * self._rs.randn(K, Nt, Ns)))
-        for k in xrange(0, K):
+        C = (1. / math.sqrt(2.0)) * (
+            self._rs.randn(K, Nt, Ns) + (1j * self._rs.randn(K, Nt, Ns)))
+        ":type: np.ndarray"
+        for k in range(0, K):
             C[k, :, :] /= np.linalg.norm(C[k, :, :], 'fro')
 
         return C
@@ -96,7 +106,7 @@ class CodebookFinder(object):
         - `Ns`: Number of columns (number of streams) in each precoder
         """
         C = self._rs.randn(K, Nt, Ns)
-        for k in xrange(0, K):
+        for k in range(0, K):
             C[k, :, :] /= np.linalg.norm(C[k, :, :], 'fro')
 
         return C
@@ -183,7 +193,7 @@ class CodebookFinder(object):
         }
 
         # Simulation
-        for rep in xrange(0, rep_max + 1):
+        for rep in range(0, rep_max + 1):
             self.progressbar.progress(rep)
             # Call the apropriated codebook generating function and passes
             # the K, Nt, and Ns arguments to it.

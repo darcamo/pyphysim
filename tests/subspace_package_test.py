@@ -119,21 +119,21 @@ class MetricsTestCase(unittest.TestCase):
             np.array([0., 0.54312217]))
 
     def test_calculating_the_chordal_distance(self):
-        expected_chord_dist = np.array([0.473867859572])
+        expected_chord_dist = 0.473867859572
 
         # Test calcChordalDistance
-        np.testing.assert_array_almost_equal(
+        self.assertAlmostEqual(
             metrics.calc_chordal_distance(self.A, self.B),
             expected_chord_dist)
 
         # Test calcChordalDistance2
-        np.testing.assert_array_almost_equal(
+        self.assertAlmostEqual(
             metrics.calc_chordal_distance_2(self.A, self.B),
             expected_chord_dist)
 
         # Test
         principal_angles = metrics.calc_principal_angles(self.A, self.B)
-        np.testing.assert_array_almost_equal(
+        self.assertAlmostEqual(
             metrics.calc_chordal_distance_from_principal_angles(
                 principal_angles),
             expected_chord_dist)

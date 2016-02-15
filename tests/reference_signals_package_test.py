@@ -393,7 +393,11 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
-        np.testing.assert_almost_equal(error/2., np.zeros(error.size), decimal=2)
+        ":type: np.ndarray"
+
+        np.testing.assert_almost_equal(error/2.,
+                                       np.zeros(error.size),
+                                       decimal=2)
 
     def test_estimate_channel_without_comb_pattern(self):
         Nsc = 300   # 300 subcarriers
@@ -461,7 +465,11 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
-        np.testing.assert_almost_equal(error/2., np.zeros(error.size), decimal=2)
+        ":type: np.ndarray"
+
+        np.testing.assert_almost_equal(error/2.,
+                                       np.zeros(error.size),
+                                       decimal=2)
 
     def test_estimate_channel_with_dmrs(self):
         Nsc = 24
@@ -470,7 +478,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         user1_seq = DmrsUeSequence(
             RootSequence(root_index=17, size=size), 1)
         user2_seq = DmrsUeSequence(
-            RootSequence(root_index=13, size=size), 4)
+            RootSequence(root_index=17, size=size), 4)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
                                                            size_multiplier=1)
@@ -521,7 +529,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # xxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         a = y1[0:4]
         A = np.fft.fft(a, Nsc)
-        import matplotlib.pyplot as plt
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Test the CazacBasedChannelEstimator estimation
@@ -533,6 +540,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[5:-5] - tilde_H1[5:-5])
+        ":type: np.ndarray"
+
         np.testing.assert_almost_equal(
             error/2., np.zeros(error.size), decimal=2)
 
@@ -603,7 +612,11 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50, :] - tilde_H1_espected[50:-50, :])
-        np.testing.assert_almost_equal(error/2., np.zeros(error.shape), decimal=2)
+        ":type: np.ndarray"
+
+        np.testing.assert_almost_equal(error/2.,
+                                       np.zeros(error.shape),
+                                       decimal=2)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

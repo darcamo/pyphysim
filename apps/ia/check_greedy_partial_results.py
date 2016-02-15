@@ -7,20 +7,7 @@ sys.path.append('../../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from time import time
-import numpy as np
-# from pprint import pprint
-
-from numpy.linalg.linalg import LinAlgError
-from pyphysim.simulations.runner import SimulationRunner, SkipThisOne
-from pyphysim.simulations.parameters import SimulationParameters
-from pyphysim.simulations.results import SimulationResults, Result
-from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
-from pyphysim.comm import modulators, channels, pathloss
-from pyphysim.util.conversion import dB2Linear, dBm2Linear
-from pyphysim.util import misc
-from pyphysim.ia import algorithms
-from pyphysim.cell import cell
+from pyphysim.simulations.results import SimulationResults
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -41,8 +28,8 @@ if __name__ == '__main__':
         initialize_with = params['initialize_with']
         SNR = params['SNR']
         # print('Unpacked parameters')
-        print('scenario: {0:>10} | stream_sel_method: {1:>6s} | '
-              'SNR: {2:>4}').format(scenario, stream_sel_method, SNR)
+        print(('scenario: {0:>10} | stream_sel_method: {1:>6s} | '
+              'SNR: {2:>4}').format(scenario, stream_sel_method, SNR))
 
         # if scenario == 'NoPathLoss' and stream_sel_method == 'brute':
         #     print "SNR {0}: Ber {1}".format(SNR, result['ber'])

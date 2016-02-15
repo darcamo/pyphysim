@@ -528,10 +528,10 @@ class Blast(MimoBase):
 
         Parameters
         ----------
-        noise_var : float
+        noise_var : float | None
             Noise variance for the MMSE filter (if `noise_var` is
-            positive). If `noise_var` is negative then the Zero-Forcing
-            filter will be used and `noise_var` will be ignored.
+            positive). If `noise_var` is 0.0 or None then the Zero-Forcing
+            filter will be used.
 
         Returns
         -------

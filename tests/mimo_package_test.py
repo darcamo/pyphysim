@@ -93,12 +93,12 @@ def calc_SINRs(channel, W, G_H, noise_var):
 
     Parameters
     ----------
-    channel : 2D numpy array
-        The MIMO channel.
-    W : 2D numpy array
-        The precoder for the MIMO scheme.
-    G_H : 2D numpy array
-        The receive filter for the MIMO scheme.
+    channel : np.ndarray
+        The MIMO channel (2D numpy array).
+    W : np.ndarray
+        The precoder for the MIMO scheme (2D numpy array).
+    G_H : np.ndarray
+        The receive filter for the MIMO scheme (2D numpy array).
     noise_var : float
         The noise variance
 
@@ -262,7 +262,10 @@ class MRTTestCase(unittest.TestCase):
         self.mrt_object.set_channel_matrix(channel)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
+        ":type: np.ndarray"
         W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1) / math.sqrt(Nt)
+        ":type: np.ndarray"
+
         encoded_data = self.mrt_object.encode(data)
 
         expected_encoded_data = W * data_aux
@@ -276,8 +279,11 @@ class MRTTestCase(unittest.TestCase):
         self.mrt_object.set_channel_matrix(channel)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
+        ":type: np.ndarray"
+
         encoded_data = self.mrt_object.encode(data)
         W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1)
+        ":type: np.ndarray"
 
         expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -293,8 +299,11 @@ class MRTTestCase(unittest.TestCase):
         self.mrt_object.set_channel_matrix(channel2)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
+        ":type: np.ndarray"
+
         encoded_data = self.mrt_object.encode(data)
         W = np.exp(-1j * np.angle(channel2)).reshape(Nt, 1)
+        ":type: np.ndarray"
 
         expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -313,6 +322,8 @@ class MRTTestCase(unittest.TestCase):
 
         # Add '0.1' as a noise term
         received_data = channel.dot(encoded_data) + 0.0001
+        ":type: np.ndarray"
+
         decoded_data = self.mrt_object.decode(received_data)
 
         self.assertEqual(len(decoded_data.shape), 1)
@@ -328,6 +339,8 @@ class MRTTestCase(unittest.TestCase):
 
         # Add '0.1' as a noise term
         received_data = channel.dot(encoded_data) + 0.0001
+        ":type: np.ndarray"
+
         decoded_data = self.mrt_object.decode(received_data)
 
         self.assertEqual(len(decoded_data.shape), 1)
@@ -446,6 +459,8 @@ class SVDMimoTestCase(unittest.TestCase):
 
         _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
+        ":type: np.ndarray"
+
         expected_encoded_data = W.dot(data_aux)
         np.testing.assert_array_almost_equal(
             expected_encoded_data, encoded_data)
@@ -463,6 +478,8 @@ class SVDMimoTestCase(unittest.TestCase):
 
         _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
+        ":type: np.ndarray"
+
         expected_encoded_data = W.dot(data_aux)
         np.testing.assert_array_almost_equal(
             expected_encoded_data, encoded_data)
@@ -534,6 +551,7 @@ class GMDMimoTestCase(unittest.TestCase):
         U, S, V_H = np.linalg.svd(channel)
         _, _, P = gmd(U, S, V_H)
         W = P / math.sqrt(Nt)
+        ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data.reshape(Nr, -1))
         np.testing.assert_array_almost_equal(
@@ -615,6 +633,7 @@ class AlamoutiTestCase(unittest.TestCase):
 
     def test_encode(self):
         data = np.r_[0:16] + np.r_[0:16] * 1j
+        ":type: np.ndarray"
 
         expected_encoded_data = np.array(
             [[0 + 0j, -1 + 1j, 2 + 2j, -3 + 3j, 4 + 4j, -5 + 5j, 6 + 6j,
@@ -631,6 +650,8 @@ class AlamoutiTestCase(unittest.TestCase):
 
     def test_decode(self):
         data = np.r_[0:16] + np.r_[0:16] * 1j
+        ":type: np.ndarray"
+
         encoded_data = self.alamouti_object.encode(data)
         # We will test the deconding with a random channel
         channel = randn_c(3, 2)

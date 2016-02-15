@@ -36,6 +36,12 @@ import pyphysim.channels.multiuser
 
 def calc_SINRs_and_capacity(solver):
     """
+    Calculates the SINRs.
+
+    Parameters
+    ----------
+    solver : T < IASolverBaseClass
+        The IA solver.
     """
     SINRs = solver.calc_SINR_in_dB()
     sinrs = solver.calc_SINR()

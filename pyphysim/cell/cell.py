@@ -137,6 +137,7 @@ class AccessPoint(Node):
 
         # List to store the users associated with this access point
         self._users = []
+        ":type: list"
 
         # ID of the access point
         self.id = ap_id
@@ -210,7 +211,7 @@ class AccessPoint(Node):
 
         Returns
         -------
-        list
+        list[Node]
             The users associated with the AccessPoint.
         """
         return self._users
@@ -1627,7 +1628,7 @@ class Cluster(shapes.Shape):
             possible values: 'simple', '3sec', or 'square'.
             If it is 'simple' it means the standard hexagon shaped cell.
             If '3sec' it means a 3 sectorized cell composed of 3 hexagons.
-        rotation : float
+        rotation : float | None, optional
             Rotation of the cluster.
 
         Returns
@@ -1678,7 +1679,7 @@ class Cluster(shapes.Shape):
             Radius of each cell in the cluster.
         num_cells : int
             Number of cells in the cluster.
-        rotation : float
+        rotation : float | None, optional
             Rotation of the cluster.
 
         Returns
@@ -1710,7 +1711,7 @@ class Cluster(shapes.Shape):
             Radius of each cell in the cluster.
         num_cells : int
             Number of cells in the cluster.
-        rotation : float
+        rotation : float | None, optional
             Rotation of the cluster.
 
         Returns
@@ -1806,7 +1807,7 @@ class Cluster(shapes.Shape):
             The side length of each square cell in the cluster.
         num_cells : int
             Number of cells in the cluster.
-        rotation : float
+        rotation : float | None, optional
             Rotation of the cluster.
 
         Returns

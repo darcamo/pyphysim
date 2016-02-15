@@ -177,7 +177,7 @@ class Modulator(object):
 
         Parameters
         ----------
-        inputData : np.ndarray
+        inputData : np.ndarray | int
             Data to be modulated.
 
         Returns
@@ -226,7 +226,7 @@ class Modulator(object):
         # output = np.empty(num_symbols, dtype=int)
         # reshaped_received_data = receivedData.flatten()
 
-        # for ii in xrange(num_symbols):
+        # for ii in range(num_symbols):
         #     output[ii] = np.abs(
         #                  self.symbols
         #                  - reshaped_received_data[ii]).argmin()
@@ -617,6 +617,7 @@ class BPSK(Modulator):
             negative values but no check is done for this.
 
         """
+        # noinspection PyTypeChecker
         if np.any(inputData > 1):
             raise ValueError("Input data can only contains '0's and '1's")
         return 1 - 2 * inputData

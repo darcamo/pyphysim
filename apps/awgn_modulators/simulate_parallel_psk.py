@@ -154,7 +154,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         current_params : SimulationParameters object
             SimulationParameters object with the parameters of the
             simulation.
-        current_sim_results : SimulationResults object
+        simulation_results : SimulationResults object
             SimulationResults object from the last iteration (merged with
             all the previous results)
         current_rep : int
@@ -211,6 +211,7 @@ if __name__ == '__main__':
     dview.execute('sys.path.append("{0}")'.format(parent_dir))
 
     from matplotlib import pyplot as plt
+    # noinspection PyUnresolvedReferences
     from apps.awgn_modulators.simulate_parallel_psk import \
         VerySimplePskSimulationRunner
 

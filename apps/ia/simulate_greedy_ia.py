@@ -53,8 +53,6 @@ class IASimulationRunner(SimulationRunner):
         Name of the file containing the simulation parameters. If the file
         does not exist, a new file will be created with the provided name
         containing the default parameter values in the `spec`.
-    alg : str
-        The top algorithm to run. This can be either 'greedy' or 'brute'.
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
@@ -335,6 +333,7 @@ class IASimulationRunner(SimulationRunner):
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # inputData has the data of all users (vertically stacked)
         inputData = self.data_RS.randint(0, M, [np.sum(Ns), NSymbs])
+        ":type: np.ndarray"
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -810,6 +809,7 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
 # xxxxxxxxxxxxxxx Main xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':
+    # noinspection PyUnresolvedReferences
     from apps.ia.simulate_greedy_ia import IASimulationRunner
     main_simulate()
     main_plot()

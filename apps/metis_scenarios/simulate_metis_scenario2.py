@@ -25,7 +25,7 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 # import matplotlib as mpl
 
-from apps.simulate_metis_scenario import calc_room_positions_square, \
+from apps.metis_scenarios.simulate_metis_scenario import calc_room_positions_square, \
     get_ap_positions, calc_num_walls, plot_all_rooms
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.cell import shapes
@@ -45,16 +45,17 @@ def find_ap_assoc_best_channel(pl_all_plus_wl):
 
     Parameters
     ----------
-    pl_all_plus_wl : 2D numpy array (Dim: num users x num APs)
-        The path loss in linear scale including also any wall losses.
+    pl_all_plus_wl : np.ndarray
+        The path loss in linear scale including also any wall losses. This is
+        a 2D numpy array (Dim: num users x num APs).
 
     Return
     ------
-    ap_assoc : 1D int numpy array
-        The int vector indicating with which AP each user is
-        associated. The number of elements in this vector is equal to the
-        number of users and each element is the index of the AP that the
-        user will associate with.
+    ap_assoc : np.ndarray
+        The int vector indicating with which AP each user is associated. This
+        is a 1D int numpy array and the number of elements in this vector is
+        equal to the number of users and each element is the index of the AP
+        that the user will associate with.
     """
     ap_assoc = np.argmax(pl_all_plus_wl, axis=-1)
     return ap_assoc
@@ -371,6 +372,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
             users_plt.set_color(users_colors)
 
             # Set the details text
+            # noinspection PyUnboundLocalVariable
             details.set_text(text)
             ax1.figure.canvas.draw()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

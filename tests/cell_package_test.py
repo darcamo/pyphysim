@@ -177,8 +177,13 @@ class HexagonTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.H1._get_vertex_positions(),
                                       self.H3._get_vertex_positions())
 
-        expected_vertexes = 1.5 * np.exp(
-            1j * np.pi * np.linspace(0, 300, 6) / 180.)
+        # noinspection PyTypeChecker
+        aux = 1j * np.pi * np.linspace(0, 300, 6) / 180.
+        ":type: np.ndarray"
+
+        expected_vertexes = 1.5 * np.exp(aux)
+        ":type: np.ndarray"
+
         # Lets sort the expected vertexes (regarding the angle of the
         # vertexes)
         expected_vertexes \
@@ -192,6 +197,8 @@ class HexagonTestCase(unittest.TestCase):
                                              obtained_vertexes)
 
         expected_vertexes2 = (2. / 1.5) * expected_vertexes
+        ":type: np.ndarray"
+
         obtained_vertexes2 = self.H2._get_vertex_positions()
         np.testing.assert_array_almost_equal(expected_vertexes2,
                                              obtained_vertexes2)
@@ -339,6 +346,8 @@ class CircleTestCase(unittest.TestCase):
         angles = np.linspace(0,
                              (num_vertexes - 1.) / num_vertexes * 360,
                              num_vertexes)
+        ":type: np.ndarray"
+
         # pylint: disable=E1103
         expected_vertexes = np.array(
             list(map(self.C1.get_border_point,
@@ -366,7 +375,7 @@ class CircleTestCase(unittest.TestCase):
 
 class ShapesModuleMethodsTestCase(unittest.TestCase):
     def test_from_complex_array_to_real_matrix(self, ):
-        A = np.random.randn(10) + 1j * np.random.randn(10)
+        A = np.random.random_sample(10) + 1j * np.random.random_sample(10)
         B = A.copy()
         B.shape = (B.size, 1)
 
@@ -965,6 +974,7 @@ class ClusterTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.C3.external_radius,
                                4.3588989435406731 * self.C3.cell_radius)
 
+    # noinspection PyTypeChecker
     def test_calc_cell_positions_hexagon(self):
         # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
         positions = cell.Cluster._calc_cell_positions_hexagon(
@@ -1006,6 +1016,7 @@ class ClusterTestCase(unittest.TestCase):
                                              48.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # noinspection PyTypeChecker
     def test_calc_cell_positions_3sec(self):
         # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
         positions = cell.Cluster._calc_cell_positions_3sec(
@@ -1049,6 +1060,7 @@ class ClusterTestCase(unittest.TestCase):
                                              48.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # noinspection PyTypeChecker
     def test_calc_cell_positions_square(self):
         # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
         positions = cell.Cluster._calc_cell_positions_square(

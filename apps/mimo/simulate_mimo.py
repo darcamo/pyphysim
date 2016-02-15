@@ -435,6 +435,7 @@ def simulate_general(runner, results_filename):
 
     if run_in_parallel is True:
         print("-----> Simulation will be run in Parallel")
+        # noinspection PyUnboundLocalVariable
         runner.simulate_in_parallel(lview)
     else:
         print("-----> Simulation will be run serially")
@@ -449,6 +450,7 @@ def simulate_general(runner, results_filename):
 
 
 def simulate_alamouti(config_file_name='mimo_alamouti_config_file.txt'):
+    # noinspection PyUnresolvedReferences
     from apps.mimo.simulate_mimo import AlamoutiSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
@@ -465,6 +467,7 @@ def simulate_alamouti(config_file_name='mimo_alamouti_config_file.txt'):
 
 
 def simulate_blast(config_file_name='mimo_blast_config_file.txt'):
+    # noinspection PyUnresolvedReferences
     from apps.mimo.simulate_mimo import BlastSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
@@ -481,6 +484,7 @@ def simulate_blast(config_file_name='mimo_blast_config_file.txt'):
 
 
 def simulate_mrc(config_file_name='mimo_mrc_config_file.txt'):
+    # noinspection PyUnresolvedReferences
     from apps.mimo.simulate_mimo import MRCSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
@@ -497,6 +501,7 @@ def simulate_mrc(config_file_name='mimo_mrc_config_file.txt'):
 
 
 def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
+    # noinspection PyUnresolvedReferences
     from apps.mimo.simulate_mimo import MRTSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
@@ -513,6 +518,7 @@ def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
 
 
 def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
+    # noinspection PyUnresolvedReferences
     from apps.mimo.simulate_mimo import SVDMimoSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx
@@ -529,6 +535,7 @@ def simulate_svdmimo(config_file_name='mimo_svdmimo_config_file.txt'):
 
 
 def simulate_gmdmimo(config_file_name='mimo_gmdmimo_config_file.txt'):
+    # noinspection PyUnresolvedReferences
     from apps.mimo.simulate_mimo import GMDMimoSimulationRunner
 
     # xxxxxxxxxx Creates the simulation runner object xxxxxxxxxxxxxxxxxxxxx

@@ -1124,6 +1124,7 @@ class TdlChannel(object):
                 indexes = carrier_indexes.indices(fft_size)
                 block_size = (indexes[1] - indexes[0]) // indexes[2]
             else:
+                assert isinstance(carrier_indexes, np.ndarray)
                 block_size = len(carrier_indexes)
 
         if num_symbols % block_size != 0:

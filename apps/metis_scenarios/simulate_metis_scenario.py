@@ -37,6 +37,18 @@ from pyphysim.channels.noise import calc_thermal_noise_power_dBm
 def calc_room_positions_square(side_length, num_rooms):
     """
     Calculate the central positions of the square rooms.
+
+    Parameters
+    ----------
+    side_length : float
+        The length of one side of the square room.
+    num_rooms : int
+        The number of rooms.
+
+    Returns
+    -------
+    np.ndarray
+        The room positions.
     """
     sqrt_num_rooms = int(math.sqrt(num_rooms))
 
@@ -45,6 +57,7 @@ def calc_room_positions_square(side_length, num_rooms):
 
     int_positions = np.unravel_index(np.arange(num_rooms), (sqrt_num_rooms,
                                                             sqrt_num_rooms))
+    ":type: (np.ndarray, np.ndarray)"
 
     room_positions = (side_length * (int_positions[1] + 1j *
                                      int_positions[0][::-1] - 0.5-0.5j))
@@ -111,18 +124,20 @@ def calc_num_walls(side_length, room_positions, ap_positions):
     ----------
     side_length : float
         The side length of the square room.
-    room_positions : 2D complex numpy array
-        The positions of all rooms in the grid.
-    ap_positions : 1D complex numpy array
-        The positions of access points in the grid.
+    room_positions : np.ndarray
+        The positions of all rooms in the grid (2D complex numpy array).
+    ap_positions : np.ndarray
+        The positions of access points in the grid (1D complex numpy array).
 
     Returns
     -------
-    num_walls : 2D numpy array of ints
-        The number of walls from each room to access point.
+    num_walls : np.ndarray
+        The number of walls from each room to access point (2D numpy array of
+        ints).
     """
     all_positions_diffs = (room_positions.reshape(-1, 1)
                            - 1.0001*ap_positions.reshape(1, -1))
+    ":type: np.ndarray"
 
     num_walls \
         = np.round(
@@ -139,7 +154,7 @@ def prepare_sinr_array_for_color_plot(
 
     Parameters
     ----------
-    sinr_array : TYPE
+    sinr_array : np.ndarray
     num_rooms_per_side : TYPE
     num_discrete_positions_per_room : TYPE
     """
@@ -166,15 +181,15 @@ def get_ap_positions(room_positions, decimation=1):
 
     Parameters
     ----------
-    room_positions : 2D numpy array with shape (n, n)
-        The positions of each room.
+    room_positions : np.ndarray
+        The positions of each room. This is a 2D numpy array with shape (n, n).
     decimation : int
         The decimation (in number of room) of the APs.
 
     Returns
     -------
-    ap_positions : 1D numpy array with shape (n**2)
-        The position of the arrays.
+    ap_positions : np.ndarray
+        The position of the arrays. This is a 1D numpy array with shape (n**2).
     """
     mask = np.zeros(room_positions.shape, dtype=bool)
 
@@ -204,16 +219,16 @@ def simulate_for_a_given_ap_assoc(
 
     Parameters
     ----------
-    pl : 5D numpy float array
+    pl : np.ndarray
         The path loss (in LINEAR SCALE) from each discrete position in each
-        room to each access point. Dimension: (n, n, d, d, a) where 'n' is
+        room to each access point. Dimension: (n, n, d, d, a), where 'n' is
         the number of rooms per dimension, 'd' is the number of discrete
-        positons in one room (per dimension) and 'a' is the number of
-        access points.
-    ap_assoc : 4D numpy int array
+        positons in one room (per dimension) and 'a' is the number of access
+        points.
+    ap_assoc : np.ndarray
         The index of the access point that each discrete point in each room
         is associated with. Dimension: (n, n, d, d)
-    wall_losses_dB : 5D numpy int array
+    wall_losses_dB : np.ndarray
         The wall losses (in dB) from each discrete user in each room to
         each access point. Dimension: (n, n, d, d, a)
     Pt : float
@@ -223,8 +238,9 @@ def simulate_for_a_given_ap_assoc(
 
     Returns
     -------
-    sinr_array_dB : 4D numpy array
-        The SINR (in dB) of each discrete point of each room.
+    sinr_array_dB : np.ndarray
+        The SINR (in dB) of each discrete point of each room. This is a 4D
+        numpy array.
     """
     wall_losses = dB2Linear(-wall_losses_dB)
 
@@ -248,6 +264,7 @@ def simulate_for_a_given_ap_assoc(
         # Each element in desired_power is the desired power of one user
         # associated with the current access point
         desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
+        # noinspection PyTypeChecker
         undesired_power = np.sum(
             Pt * wall_losses[mask][:, mask_i_aps] * pl[mask][:, mask_i_aps],
             axis=-1)
@@ -261,6 +278,18 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
                                     power_params):
     """
     Perform the simulation.
+
+    Parameters
+    ----------
+    scenario_params : dict
+        Dictionary with the scenario parameters.
+    power_params : dict
+        Dictionary with the power related parameters.
+
+    Returns
+    -------
+    tuple[np.ndarray]
+        Tuple with 4 numpy arrays with the results.
     """
     # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
     # The size of the side of each square room
@@ -293,6 +322,7 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
     aux = np.linspace(
         -(1. - step), (1. - step), num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
+    ":type: np.ndarray"
     user_relative_positions = aux[1] + 1j * aux[0][::-1]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

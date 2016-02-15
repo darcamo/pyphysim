@@ -328,7 +328,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         W_bd = blockdiagonalization.calc_receive_filter(newH)
 
         np.testing.assert_array_almost_equal(np.dot(W_bd, newH),
-                                             np.eye(np.sum(self.iNt)))
+                                             np.eye(self.iNt))
 
         # Retest for each individual user
         W0 = W_bd[0:2, 0:2]
@@ -655,12 +655,13 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         expected_spectral_efficiency = np.sum(
             psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
+        ":type: float"
 
         spectral_efficiency = blockdiagonalization._calc_effective_throughput(
             sinrs_linear, psk_obj, packet_length)
 
-        np.testing.assert_array_almost_equal(spectral_efficiency,
-                                             expected_spectral_efficiency)
+        self.assertAlmostEqual(spectral_efficiency,
+                               expected_spectral_efficiency)
 
     def test_block_diagonalize_no_waterfilling(self):
         Nr = np.array([2, 2])
