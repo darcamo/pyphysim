@@ -1354,6 +1354,45 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result4._value_list, [3, 1, 0, 3, 4])
         self.assertEqual(result4._total_list, [])
 
+    def test_create(self):
+        r1 = Result.create(name='nome1',
+                           update_type=Result.SUMTYPE,
+                           value=10.4,
+                           accumulate_values=False)
+        r1.update(3.5)
+        self.assertEqual(r1.num_updates, 2)
+        self.assertEqual(r1.get_result(), 13.9)
+        self.assertEqual(r1._value_list, [])
+        self.assertEqual(r1._total_list, [])
+
+        r2 = Result.create(name='nome2',
+                           update_type=Result.RATIOTYPE,
+                           value=10.4,
+                           total=20.2,
+                           accumulate_values=True)
+        r2.update(2, 3)
+        r2.update(4.2, 5.3)
+        self.assertEqual(r2.num_updates, 3)
+        self.assertAlmostEqual(r2.get_result(), 0.58245614)
+        self.assertEqual(r2._value_list, [10.4, 2, 4.2])
+        self.assertEqual(r2._total_list, [20.2, 3, 5.3])
+
+        r3 = Result.create(name='nome3',
+                           update_type=Result.MISCTYPE,
+                           value='valor',
+                           accumulate_values=True)
+        self.assertEqual(r3.num_updates, 1)
+        self.assertEqual(r3.get_result(), 'valor')
+
+        r4 = Result.create(name='nome4',
+                           update_type=Result.CHOICETYPE,
+                           value=3,
+                           total=6,
+                           accumulate_values=True)
+        r4.update(5)
+        self.assertEqual(r4.num_updates, 2)
+        np.testing.assert_equal(r4._value, [0, 0, 0, 1, 0, 1])
+
     def test_merge(self):
         # Test merge of Results of SUMTYPE
         self.result1.update(13)

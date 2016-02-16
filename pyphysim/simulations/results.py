@@ -7,6 +7,7 @@ from __future__ import division
 
 import numpy as np
 import os.path
+from collections import Iterable
 
 from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, \
@@ -256,7 +257,7 @@ class Result(object):
                     "'choice_num' argument for the Result object must be "
                     "an integer for the CHOICETYPE type.")
             else:
-                self._value = np.zeros(choice_num, dtype=float)
+                self._value = np.zeros(choice_num, dtype=int)
 
         # Accumulation of values: This is useful for debugging/testing
         self._accumulate_values_bool = accumulate_values
@@ -363,7 +364,8 @@ class Result(object):
         total : any | int | float
             Total value of the result (used only for the RATIOTYPE and
             CHOICETYPE). For the CHOICETYPE it is interpreted as the number
-            of different choices.
+            of different choices if it is an integer or the current value of
+            each choice if it is a list.
         accumulate_values : bool
             If True, then the values `value` and `total` will be
             accumulated in the `update` (and merge) method(s). This means
@@ -387,6 +389,10 @@ class Result(object):
         update
         """
         if update_type == Result.CHOICETYPE:
+            if total == 0:
+                raise RuntimeError(
+                    "When creating a new Result of CHOICETYPE you must "
+                    "provide the 'total' as well as the 'value.")
             result = Result(name, update_type, accumulate_values,
                             choice_num=total)
             result.update(value)
@@ -521,8 +527,9 @@ class Result(object):
             """Update the Result object when its type is CHOICETYPE."""
             # The provided 'p_value' is used as an index to increase the
             # choice in self._value, which is stored as a numpy array.
-            assert type(p_value) == int, (
+            assert isinstance(p_value, (int, np.int, np.int32, np.int64)), (
                 "Value for the CHOICETYPE must be an integer.")
+
             self._value[p_value] += 1
             self._total += 1
             if self._accumulate_values_bool is True:
