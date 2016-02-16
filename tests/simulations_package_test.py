@@ -1661,7 +1661,96 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
 
-    
+    def test_to_dict_from_dict(self):
+        self.result1.update(13)
+        self.result1.update(30)
+
+        self.result2.update(3, 10)
+        self.result2.update(6, 7)
+        self.result2.update(1, 15)
+
+        self.result3.update(3)
+        self.result3.update("some string")
+        self.result3.update(2)
+
+        self.result4.update(3)
+        self.result4.update(1)
+        self.result4.update(0)
+        self.result4.update(3)
+        self.result4.update(4)
+
+        # xxxxxxxxxx Test converting to a dictionary xxxxxxxxxxxxxxxxxxxxxx
+        result1_dict = self.result1._to_dict()
+        result2_dict = self.result2._to_dict()
+        result3_dict = self.result3._to_dict()
+        result4_dict = self.result4._to_dict()
+
+        self.assertIsInstance(result1_dict, dict)
+        self.assertIsInstance(result2_dict, dict)
+        self.assertIsInstance(result3_dict, dict)
+        self.assertIsInstance(result4_dict, dict)
+
+        # We will not test individual dictionary keys here, since we will
+        # test later if we can recover the actual Result object from the
+        # dictionary and that should be enough.
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test converting from a dictionary xxxxxxxxxxxxxxxxxxxx
+        result1 = Result._from_dict(result1_dict)
+        result2 = Result._from_dict(result2_dict)
+        result3 = Result._from_dict(result3_dict)
+        result4 = Result._from_dict(result4_dict)
+
+        self.assertEqual(self.result1, result1)
+        self.assertEqual(self.result2, result2)
+        self.assertEqual(self.result3, result3)
+        self.assertEqual(self.result4, result4)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_to_json_and_from_json(self):
+        self.result1.update(13)
+        self.result1.update(30)
+
+        self.result2.update(3, 10)
+        self.result2.update(6, 7)
+        self.result2.update(1, 15)
+
+        self.result3.update(3)
+        self.result3.update("some string")
+        self.result3.update(2)
+
+        self.result4.update(3)
+        self.result4.update(1)
+        self.result4.update(0)
+        self.result4.update(3)
+        self.result4.update(4)
+
+        # TODO: finish implementation
+        # xxxxxxxxxx Test converting to and from a json xxxxxxxxxxxxxxxxxxx
+        # First test converting to json
+        result1_json = self.result1.to_json()
+        result2_json = self.result2.to_json()
+        result3_json = self.result3.to_json()
+        result4_json = self.result4.to_json()
+
+        # This will raise an exception if encoded_params is not valid json
+        _ = json.loads(result1_json)
+        _ = json.loads(result2_json)
+        _ = json.loads(result3_json)
+        _ = json.loads(result4_json)
+
+        # Now test converting from json
+        result1 = Result.from_json(result1_json)
+        result2 = Result.from_json(result2_json)
+        result3 = Result.from_json(result3_json)
+        result4 = Result.from_json(result4_json)
+
+        self.assertEqual(self.result1, result1)
+        self.assertEqual(self.result2, result2)
+        self.assertEqual(self.result3, result3)
+        self.assertEqual(self.result4, result4)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 class SimulationResultsTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationResults class in the results module.

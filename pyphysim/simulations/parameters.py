@@ -953,25 +953,26 @@ class SimulationParameters(object):
         return sim_params
 
     def to_json(self):
-        """Convert the SimulationParameters object to json.
+        """
+        Convert the SimulationParameters object to JSON.
 
         Returns
         -------
         str
-            Json representation of the SimulationParameters.
+            JSON representation of the SimulationParameters.
         """
         return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
 
     @staticmethod
     def from_json(data):
         """
-        Convert a json representation of the simulation parameters to an
+        Convert a JSON representation of the simulation parameters to an
         actual SimulationParameters object.
 
         Parameters
         ----------
         data : str
-            The json representation of the SimulationParameters object.
+            The JSON representation of the SimulationParameters object.
         """
         d = json.loads(data, object_hook=json_numpy_or_set_obj_hook)
         return SimulationParameters._from_dict(d)

@@ -9,9 +9,12 @@ import numpy as np
 import os.path
 from collections import Iterable
 
+import json
 from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, \
     replace_dict_values
+from ..util.serialize import NumpyOrSetEncoder, \
+    json_numpy_or_set_obj_hook
 
 try:
     import cPickle as pickle
@@ -683,6 +686,89 @@ class Result(object):
         n = self.num_updates
         return calc_confidence_interval(mean, std, n, P)
 
+    def _to_dict(self):
+        """
+        Convert the Result object to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            The dictionary representation of the object.
+        """
+        d = {'name': self.name,
+             'update_type_code': self._update_type_code,
+             'value': self._value,
+             'total': self._total,
+             'result_sum': self._result_sum,
+             'result_squared_sum': self._result_squared_sum,
+             'num_updates': self.num_updates,
+             'accumulate_values_bool': self._accumulate_values_bool,
+             'value_list': self._value_list,
+             'total_list': self._total_list}
+        return d
+
+    @staticmethod
+    def _from_dict(d):
+        """
+        Convert from a dictionary to a Result object.
+
+        Parameters
+        ----------
+        d : dict
+            The dictionary representing the Result.
+
+        Returns
+        -------
+        Result
+            The converted object.
+        """
+        if isinstance(d['value'], Iterable) and d['update_type_code'] == Result.CHOICETYPE:
+            values = d['value']
+
+            r = Result(name=d['name'], update_type_code=d['update_type_code'],
+                       accumulate_values=d['accumulate_values_bool'],
+                       choice_num=len(values))
+
+            for i, v in enumerate(values):
+                for _ in range(v):
+                    r.update(i)
+
+        else:
+            r = Result.create(name=d['name'], update_type=d['update_type_code'],
+                              value=d['value'], total=d['total'],
+                              accumulate_values=d['accumulate_values_bool'])
+            r._value_list = d['value_list']
+            r._total_list = d['total_list']
+            r.num_updates = d['num_updates']
+            r._result_sum = d['result_sum']
+            r._result_squared_sum = d['result_squared_sum']
+        return r
+
+    def to_json(self):
+        """
+        Convert the Return object to JSON.
+
+        Returns
+        -------
+        str
+            JSON representation of the SimulationParameters.
+        """
+        return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
+
+    @staticmethod
+    def from_json(data):
+        """
+        Convert a JSON representation of the simulation parameters to an
+        actual Result object.
+
+        Parameters
+        ----------
+        data : str
+            The JSON representation of the Result object.
+        """
+        d = json.loads(data, object_hook=json_numpy_or_set_obj_hook)
+        return Result._from_dict(d)
+
     # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
     # # variables
     # @staticmethod
@@ -1274,8 +1360,6 @@ class SimulationResults(object):
         --------
         util.misc.calc_confidence_interval
         """
-        from collections import Iterable
-
         if fixed_params is None:
             fixed_params = {}
 
