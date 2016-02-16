@@ -270,9 +270,9 @@ if __name__ == '__main__':
 
         # xxxxx Calculates the symbol and bit error rates xxxxxxxxxxxxxxxxx
         symbolErrors = symbolErrors + np.sum(inputData != demodulated_data)
-        bitErrors = bitErrors + misc.count_bit_errors(inputData, demodulated_data)
+        bitErrors += misc.count_bit_errors(inputData, demodulated_data)
         numSymbols = numSymbols + inputData.size
-        numBits = numBits + inputData.size * fundamental.level2bits(M)
+        numBits += inputData.size * fundamental.level2bits(M)
         #ia_cost = ia_solver.get_cost()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

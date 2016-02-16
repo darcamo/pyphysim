@@ -531,7 +531,7 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 4, 52)
 
-        input_ifft2 = self.ofdm_object._prepare_input_signal(input_signal[0:52])
+        #input_ifft2 = self.ofdm_object._prepare_input_signal(input_signal[0:52])
         power_scale2 = self.ofdm_object._calculate_power_scale()
         expected_data_no_power_scale2 = np.hstack([
             np.fft.ifft(input_ifft[0, :]),

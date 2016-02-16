@@ -65,6 +65,20 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
         ap_assoc, transmitting_aps, Pt, noise_var):
     """
     Perform the simulation for a given AP association.
+
+    Parameters
+    ----------
+    pl_plus_wl_tx_aps : np.ndarray
+    ap_assoc : np.ndarray
+    transmitting_aps : np.ndarray
+    Pt : float | np.ndarray
+    noise_var : float
+        The noise variance.
+
+    Returns
+    -------
+    (np.ndarray, np.ndarray)
+        A tuple with the SINRs and the capacity.
     """
     # Output variables
     sinr_array = np.empty(ap_assoc.shape, dtype=float)
@@ -111,6 +125,23 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
                        plot_results_bool=True):
     """
     Run the simulation.
+
+    Parameters
+    ----------
+    scenario_params : dict
+        Dictionary with simulation parameters.
+        The keys are: 'side_length', 'single_wall_loss_dB',
+        'num_rooms_per_side' and 'ap_decimation'.
+    power_params : dict
+        Dictionary with the power related parameters.
+        The keys are 'Pt_dBm' and 'noise_power_dBm'.
+    plot_results_bool : bool
+        True if results should be plotted after the simulation finishes.
+
+    Returns
+    -------
+    (np.ndarray, np.ndarray)
+        Tuple with (sinr_array_pl_metis_ps7_dB, capacity_metis_ps7)
     """
     # xxxxxxxxxx Simulation Scenario Configuration xxxxxxxxxxxxxxxxxxxxxxxx
     # The size of the side of each square room
@@ -135,6 +166,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
 
     Pt = dBm2Linear(Pt_dBm)  # 20 dBm transmit power
     noise_var = dBm2Linear(noise_power_dBm)
+    ":type: float"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the positions of all rooms xxxxxxxxxxxxxxxxxxxxx
@@ -215,6 +247,9 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     # xxxxxxxxxx Find which Access Points should stay on xxxxxxxxxxxxxxxxxx
     # Indexes of the active APs
     transmitting_aps, users_count = np.unique(ap_assoc, return_counts=True)
+    # Asserts to tell pycharm that these are numpy arrays
+    assert isinstance(transmitting_aps, np.ndarray)
+    assert isinstance(users_count, np.ndarray)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -223,6 +258,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     # Take the path loss plus wall losses only for the transmitting aps
     pl_all_plus_wall_losses_tx_aps = pl_all_plus_wl.take(
         transmitting_aps, axis=1)
+    ":type: np.ndarray"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx
@@ -317,7 +353,12 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
 
         # Define the callback function for the pick event
         def on_pick(event):
-            """Callback for the pick event in the matplotlib plot."""
+            """Callback for the pick event in the matplotlib plot.
+
+            Parameters
+            ----------
+            event : Matplotlib event
+            """
             # We will reset users colors on each pick
             users_colors = np.empty(ap_assoc.size, dtype='U1')
             users_colors[:] = 'r'

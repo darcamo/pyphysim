@@ -742,6 +742,15 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm, ax=None):
     """
     Plot the spectral efficiency from the `results` object for all metrics
     given a desirable external interference power `Pe_dBm`
+
+    Parameters
+    ----------
+    results : SimulationResults
+        The simulation results.
+    Pe_dBm : float | int
+        The external interference power.
+    ax : Matplotlib axes
+        The where to plot.
     """
     from matplotlib import pyplot as plt
 
@@ -811,7 +820,17 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
     """
     Plot the packet error rate from the `results` object for all metrics
     given a desirable external interference power `Pe_dBm`
+
+    Parameters
+    ----------
+    results : SimulationResults
+        The simulation results.
+    Pe_dBm : float | int
+        The external interference power.
+    ax : Matplotlib axes
+        The where to plot.
     """
+    # noinspection PyShadowingNames
     from matplotlib import pyplot as plt
 
     params = results.params
@@ -914,7 +933,7 @@ if __name__ == '__main__1':
 
     SNR = results.params['SNR']
     if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
-        Pe_dBm = 10
+        Pe_dBm = 10.
 
         # Save the Spectral Efficiency curve for the given Pe_dBm
         spec_fig = plot_spectral_efficience_all_metrics(results, Pe_dBm)

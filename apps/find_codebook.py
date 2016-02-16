@@ -24,7 +24,9 @@ import numpy as np
 import scipy.io
 
 from pyphysim.subspace.metrics import calc_chordal_distance_from_principal_angles, calc_principal_angles
-from pyphysim.simulations import progressbar
+from pyphysim.simulations.progressbar import DummyProgressbar, \
+    ProgressbarMultiProcessServer
+
 from pyphysim.util.misc import pretty_time
 
 
@@ -36,18 +38,24 @@ class CodebookFinder(object):
 
     def __init__(self, Nt, Ns, K, codebook_type=COMPLEX, prng_seed=None):
         """
-        Arguments:
-        - `Nt`: Number of rows in each precoder in the codebook
-        - `Ns`: Number of columns of each precoder in the codebook
-        - `K`: Number of precoders in the codebook
-        - `codebook_type`: Type of the desired codebook. The allowed values are: COMPLEX, REAL, and COMPLEX_QEGT.
-        - `prng_seed`: Seed for the pseudo-random number generator. This is
-                       passed to numpy and, if not provided, numpy will
-                       provide a random seed. You only need to provide this
-                       you you need the results to be reproductible or if
-                       you are creating CodebookFinder multiples objects to
-                       work in multiple process and you want to guarantee
-                       that they will have a different seed.
+        Parameters
+        ----------
+        Nt : int
+            Number of rows in each precoder in the codebook.
+        Ns : int
+            Number of columns of each precoder in the codebook.
+        K : int
+            Number of precoders in the codebook.
+        codebook_type : int
+            Type of the desired codebook. The allowed values are: COMPLEX,
+            REAL, and COMPLEX_QEGT.
+        prng_seed : TYPE, optional
+            Seed for the pseudo-random number generator. This is passed to
+            numpy and, if not provided, numpy will provide a random seed. You
+            only need to provide this you you need the results to be
+            reproductible or if you are creating CodebookFinder multiples
+            objects to work in multiple process and you want to guarantee
+            that they will have a different seed.
         """
         self._rs = np.random.RandomState(prng_seed)
 
@@ -68,7 +76,7 @@ class CodebookFinder(object):
 
         # For now we set self.progressbar to a dummy progressbar.
         # Set this to a useful progressbar to track progress
-        self.progressbar = progressbar.DummyProgressbar()
+        self.progressbar = DummyProgressbar()
 
     def __repr__(self):
         return "CodebookFinder: {0} {1} precoders in G({2},{3}) with minimum distance {4:.4f}".format(self._K, self.type, self._Nt, self._Ns, self._min_dist)
@@ -128,6 +136,12 @@ class CodebookFinder(object):
     @staticmethod
     def type_to_string(codebook_type):
         """Get the codebook type as a string.
+
+        Parameters
+        ----------
+        codebook_type : int
+            The codebook type. The allowed values are CodebookFinder.COMPLEX,
+            CodebookFinder.REAL, and CodebookFinder.COMPLEX_QEGT.
         """
         types = {
             CodebookFinder.COMPLEX: "Complex",
@@ -180,9 +194,11 @@ class CodebookFinder(object):
 
     def find_codebook(self, rep_max=100):
         """
-        Arguments:
-        - `rep_max`: Number of simulations, that is, number of generated
-                     random codebooks
+        Parameters
+        ----------
+        rep_max : int
+            Number of simulations, that is, number of generated random
+            codebooks
         """
         # The function used to create a random codebook depends on the
         # self._codebook_type variable
@@ -229,19 +245,29 @@ class CodebookFinder(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def find_codebook(Nt, Ns, K, rep_max, prng_seed=None, codebook_type=CodebookFinder.COMPLEX, progressbar=None):
-    """Create a CodebookFinder object, use it to find a codebook and return
- the codebook found.
+def find_codebook(Nt, Ns, K, rep_max, prng_seed=None,
+                  codebook_type=CodebookFinder.COMPLEX, progressbar=None):
+    """
+    Create a CodebookFinder object, use it to find a codebook and return the
+    codebook found.
 
-    Arguments:
-    - `Kt`: Number of rows in each precoder in the codebook
-    - `Ns`: Number of columns of each precoder in the codebook
-    - `K`: Number of precoders in the codebook
-    - `rep_max`: Number of simulations, that is, number of generated random
-                 codebooks
-    - `prng_seed`: Seed for the pseudo-random number generator
-    - `codebook_type`: Type of the codebook. The allowed values are:
-                       COMPLEX, REAL, and COMPLEX_QEGT
+    Parameters
+    ----------
+    Nt : int
+        Number of rows in each precoder in the codebook
+    Ns : int
+        Number of columns of each precoder in the codebook
+    K : int
+        Number of precoders in the codebook
+    rep_max : int
+        Number of simulations, that is, number of generated random codebooks
+    prng_seed : int
+        Seed for the pseudo-random number generator
+    codebook_type : int
+        Type of the codebook. The allowed values are CodebookFinder.COMPLEX,
+        CodebookFinder.REAL, and CodebookFinder.COMPLEX_QEGT.
+    progressbar : TYPE
+        The progressbar.
     """
     cb = CodebookFinder(Nt, Ns, K, CodebookFinder.COMPLEX, prng_seed)
     # An object is always true
@@ -291,8 +317,15 @@ def find_codebook(Nt, Ns, K, rep_max, prng_seed=None, codebook_type=CodebookFind
 def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def find_codebook_wrapper(queue, args):
-        """Wrapper that calls find_codebook and put the result value in a
-        queue.
+        """
+        Wrapper that calls find_codebook and put the result value in a queue.
+
+        Parameters
+        ----------
+        queue : multiprocessing.Queue
+            The multiprocessing queue to run.
+        args : list
+            List with extra arguments.
         """
         queue.put(find_codebook(*args))
 
@@ -330,7 +363,10 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Multiprocess progressbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    pb = progressbar.ProgressbarMultiProcessServer(message="Find {0} {1} precoders in G({2},{3})".format(K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
+    pb = ProgressbarMultiProcessServer(
+        message="Find {0} {1} precoders in G({2},{3})".format(
+            K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
+    ":type: ProgressbarMultiProcessServer"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Create the processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -346,7 +382,7 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
             codebook_type,
             # Register a progressbar proxy for the process to be tracked by
             # the ProgressbarMultiProcessText processbar
-            pb.register_function_and_get_proxy_progressbar(rep_max)]
+            pb.register_client_and_get_proxy_progressbar(rep_max)]
 
         procs.append(multiprocessing.Process(target=find_codebook_wrapper, args=[queue, proc_args]))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

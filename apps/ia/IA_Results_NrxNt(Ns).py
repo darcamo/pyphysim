@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Script para gerar os plots"""
+"""Script to generate the plots."""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -35,7 +35,20 @@ except NameError as e:
 
 ## xxxxxxxxxx Function Definitions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def get_ber_for_given_num_iter(result_obj, max_iterations):
-    """Docstring"""
+    """Docstring
+
+    Parameters
+    ----------
+    result_obj : SimulationResults
+        TRhe SimulationResults object.
+    max_iterations : int
+        The maximum number of iterations.
+
+    Returns
+    -------
+    list
+        The bit error rate (BER).
+    """
     ber = result_obj.get_result_values_list(
         'ber',
         fixed_params={'max_iterations': max_iterations})
@@ -43,7 +56,20 @@ def get_ber_for_given_num_iter(result_obj, max_iterations):
 
 
 def get_sum_capacity_for_given_num_iter(result_obj, max_iterations):
-    """Docstring"""
+    """Docstring
+
+    Parameters
+    ----------
+    result_obj : SimulationResults
+        TRhe SimulationResults object.
+    max_iterations : int
+        The maximum number of iterations.
+
+    Returns
+    -------
+    float
+        The Sum Capacity.
+    """
     sum_capacity = result_obj.get_result_values_list(
         'sum_capacity',
         fixed_params={'max_iterations': max_iterations})
@@ -51,13 +77,37 @@ def get_sum_capacity_for_given_num_iter(result_obj, max_iterations):
 
 
 def get_mean_iterations(result_obj, max_iterations):
-    """Docstring"""
+    """Docstring
+
+    Parameters
+    ----------
+    result_obj : SimulationResults
+        TRhe SimulationResults object.
+    max_iterations : int
+        The maximum number of iterations.
+
+    Returns
+    -------
+
+    """
     mean_ia_terations = get_num_mean_ia_iterations(result_obj, {'max_iterations': max_iterations})
     return mean_ia_terations
 
 
 def get_num_runned_reps(sim_results_object, fixed_params=None):
-    """Docstring"""
+    """Docstring
+
+    Parameters
+    ----------
+    sim_results_object : SimulationResults
+        The SimulationResults object.
+    fixed_params : dict
+        Dictionary specifying the fixed values.
+
+    Returns
+    -------
+    np.ndarray
+        The number of runned repetitions."""
     if fixed_params is None:
         fixed_params = {}
 
@@ -67,7 +117,20 @@ def get_num_runned_reps(sim_results_object, fixed_params=None):
 
 
 def get_num_mean_ia_iterations(sim_results_object, fixed_params=None):
-    """Docstring"""
+    """Docstring
+
+    Parameters
+    ----------
+    sim_results_object : SimulationResults
+        The SimulationResults object.
+    fixed_params : dict
+        Dictionary specifying the fixed values.
+
+    Returns
+    -------
+    List
+        A list with the ie runned iterations.
+    """
     if fixed_params is None:
         fixed_params = {}
     return sim_results_object.get_result_values_list('ia_runned_iterations', fixed_params)

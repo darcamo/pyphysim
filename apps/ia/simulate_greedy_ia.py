@@ -265,6 +265,7 @@ class IASimulationRunner(SimulationRunner):
         cluster0.delete_all_users()
         cluster0.add_random_users(cell_ids)
 
+    # noinspection PyUnusedLocal
     def _create_no_path_loss_scenario(self, current_params):
         """
         Run this method to set variables specific to the 'NoPathLoss' scenario.
@@ -598,12 +599,17 @@ def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
 
 def get_dataframe_from_results(results):
     """
-    Get a pandas DataFrame for the results in a well organized way suitable
+    Get a Pandas DataFrame for the results in a well organized way suitable
     for saving.
 
     Parameters
     ----------
-    results : TYPE
+    results : SimulationResults
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame with the content of the `results` object.
     """
     df = results.to_dataframe()
 
@@ -646,6 +652,10 @@ def get_dataframe_from_results(results):
 def main_plot(index=0):  # pylint: disable=R0914,R0915
     """
     Function called to plot the results from a previous simulation.
+
+    Parameters
+    ----------
+    index : int
     """
     from matplotlib import pyplot as plt
 

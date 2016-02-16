@@ -9,12 +9,10 @@ import numpy as np
 import os.path
 from collections import Iterable
 
-import json
 from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, \
     replace_dict_values
-from ..util.serialize import NumpyOrSetEncoder, \
-    json_numpy_or_set_obj_hook, JsonSerializable
+from ..util.serialize import JsonSerializable
 
 try:
     import cPickle as pickle

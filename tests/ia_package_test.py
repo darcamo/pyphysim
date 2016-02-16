@@ -1957,7 +1957,6 @@ class MaxSinrIASolerTestCase(CustomTestCase):
 
         for k in range(self.K):
             Bkl_all_l = self.iasolver._calc_Bkl_cov_matrix_all_l(k)
-            expected_Uk = np.empty(self.Ns[k], dtype=np.ndarray)
             Hkk = self.iasolver._get_channel(k, k)
             Vk = self.iasolver.full_F[k]
             Uk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l)
@@ -2608,7 +2607,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         # xxxxx Calculates the expected receive filter for the user 1 xxxxx
         H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
         H10_F0 = np.sqrt(P[0]) * np.dot(H10, F0)
-        H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
+        # H11_F2 = np.sqrt(P[1]) * np.dot(H11, F1)
         H12_F2 = np.sqrt(P[2]) * np.dot(H12, F2)
         sum1 = (
             np.dot(H10_F0, H10_F0.conj().T)
@@ -2620,7 +2619,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the expected receive filter for the user 2 xxxxx
-        H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
+        # H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
         H20_F0 = np.sqrt(P[0]) * np.dot(H20, F0)
         H21_F1 = np.sqrt(P[1]) * np.dot(H21, F1)
         H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
@@ -2680,7 +2679,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the expected receive filter for the user 1 xxxxx
-        H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
+        # H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
         H10_F0 = np.sqrt(P[0]) * np.dot(H10, F0)
         H11_F1 = np.sqrt(P[1]) * np.dot(H11, F1)
         H12_F2 = np.sqrt(P[2]) * np.dot(H12, F2)
@@ -2694,7 +2693,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Calculates the expected receive filter for the user 2 xxxxx
-        H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
+        # H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)
         H20_F0 = np.sqrt(P[0]) * np.dot(H20, F0)
         H21_F1 = np.sqrt(P[1]) * np.dot(H21, F1)
         H22_F2 = np.sqrt(P[2]) * np.dot(H22, F2)

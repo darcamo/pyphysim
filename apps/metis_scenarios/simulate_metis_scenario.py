@@ -210,7 +210,8 @@ def get_ap_positions(room_positions, decimation=1):
 
 
 def simulate_for_a_given_ap_assoc(
-        pl, ap_assoc, wall_losses_dB, Pt, noise_var):
+        pl : np.ndarray, ap_assoc : np.ndarray, wall_losses_dB : np.ndarray,
+        Pt : float, noise_var : float) -> np.ndarray:
     """
     Simulate and return the SINR for a given path loss and AP associations.
 
@@ -219,26 +220,26 @@ def simulate_for_a_given_ap_assoc(
 
     Parameters
     ----------
-    pl : np.ndarray
+    pl
         The path loss (in LINEAR SCALE) from each discrete position in each
         room to each access point. Dimension: (n, n, d, d, a), where 'n' is
         the number of rooms per dimension, 'd' is the number of discrete
         positons in one room (per dimension) and 'a' is the number of access
         points.
-    ap_assoc : np.ndarray
+    ap_assoc
         The index of the access point that each discrete point in each room
         is associated with. Dimension: (n, n, d, d)
-    wall_losses_dB : np.ndarray
+    wall_losses_dB
         The wall losses (in dB) from each discrete user in each room to
         each access point. Dimension: (n, n, d, d, a)
-    Pt : float
+    Pt
         Transmit power.
-    noise_var : float
+    noise_var
         Noise variance (power)
 
     Returns
     -------
-    sinr_array_dB : np.ndarray
+    sinr_array_dB
         The SINR (in dB) of each discrete point of each room. This is a 4D
         numpy array.
     """

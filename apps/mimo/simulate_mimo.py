@@ -44,7 +44,8 @@ class MIMOSimulationRunner(SimulationRunner):
 
     Parameters
     ----------
-    MimoSchemeClass : The class of the MIMO scheme object
+    MimoSchemeClass : T < mimo.MimoBase
+        The class of the MIMO scheme object.
         The MIMO scheme class, which should be a subclass of comm.mimo
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
@@ -390,6 +391,18 @@ class GMDMimoSimulationRunner(MIMOSimulationRunner):
 def simulate_general(runner, results_filename):
     """
     Function with the general code to simulate the MIMO schemes.
+
+    Parameters
+    ----------
+    runner : MIMOSimulationRunner
+        The simulation runner object.
+    results_filename : str
+        Name of the file where results should be saved.
+
+    Returns
+    -------
+    (SimulationResults, str)
+        Simulation results and name of the file where it was saved.
     """
 
     # xxxxxxxxxx Print the simulation parameters xxxxxxxxxxxxxxxxxxxxxxxxxx

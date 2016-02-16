@@ -33,6 +33,8 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
         Channel gains of the parallel AWGN channels. This is a 1D numpy array.
     waterLevel : float
         Water level.
+    noiseVar : float
+        The noise variance.
     channelLength : float
         Length (in cm) of the representation of each channel in the X axis.
 
@@ -50,6 +52,15 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
     def pointsToString(points):
         """
         Auxiliary function
+
+        Parameters
+        ----------
+        points : np.ndarray
+
+        Returns
+        -------
+        str
+            String representation of the points.
         """
         pointsString = ""
         for index in range(0, numChannels):

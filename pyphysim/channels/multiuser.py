@@ -1357,7 +1357,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         ----------
         k : int
             Index of the desired receiver.
-        F_all_users : list[np.ndarray]
+        F_all_users : np.ndarray | list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
 

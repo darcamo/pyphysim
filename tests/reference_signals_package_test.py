@@ -526,11 +526,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tilde_h1 = y1[0:4]
         tilde_H1 = np.fft.fft(tilde_h1, Nsc)
 
-        # xxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        a = y1[0:4]
-        A = np.fft.fft(a, Nsc)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
             ue1_channel_estimator.estimate_channel_freq_domain(Y, 3),

@@ -211,13 +211,13 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F : np.ndarray
+        F : np.ndarray | list[np.ndarray], optional
             A numpy array where each element is the (normalized) precoder
             (a 2D numpy array) of one user.
-        full_F : np.ndarray
+        full_F : np.ndarray | list[np.ndarray], optional
             A numpy array where each element is the precoder (a 2D numpy
             array) of one user.
-        P : np.ndarray
+        P : np.ndarray, optional
             The maximum transmit power. If not provided the current value
             of self.P will be kept as it is.
         """
@@ -348,11 +348,11 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        W_H : np.ndarray
+        W_H : np.ndarray | list[np.ndarray]
             A numpy array where each element is the receive filter (a 2D
             numpy array) of one user. This is a 1D numpy array of 2D numpy
             arrays.
-        W : np.ndarray
+        W : np.ndarray | np.ndarray
             A numpy array where each element is the receive filter (a 2D
             numpy array) of one user. This is a 1D numpy array of 2D numpy
             arrays.

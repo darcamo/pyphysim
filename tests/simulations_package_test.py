@@ -252,12 +252,12 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            parsed_array = real_scalar_or_real_numpy_array_check(
+            real_scalar_or_real_numpy_array_check(
                 array_string, min=4, max=30)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         with self.assertRaises(validate.VdtValueTooBigError):
-            parsed_array = real_scalar_or_real_numpy_array_check(
+            real_scalar_or_real_numpy_array_check(
                 array_string, min=0, max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -336,11 +336,11 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            parsed_array = integer_scalar_or_integer_numpy_array_check(
+            integer_scalar_or_integer_numpy_array_check(
                 array_string, min=4, max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
-            parsed_array = integer_scalar_or_integer_numpy_array_check(
+            integer_scalar_or_integer_numpy_array_check(
                 array_string, min=0, max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -830,6 +830,8 @@ class SimulationParametersTestCase(unittest.TestCase):
             # Now test converting from json
             decoded_sim_params_elem = SimulationParameters.from_json(
                 encoded_sim_params_elem)
+            ":type: SimulationParameters"
+
             self.assertEqual(decoded_sim_params_elem, sim_params_elem)
             self.assertEqual(decoded_sim_params_elem._original_sim_params,
                              self.sim_params)
@@ -1073,7 +1075,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         fid.close()
 
         with self.assertRaises(Exception):
-            params2 = SimulationParameters.load_from_config_file(
+            SimulationParameters.load_from_config_file(
                 filename, spec)
 
         # Now we do not provide the required parameter max_iterations
@@ -1083,7 +1085,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         fid.close()
 
         with self.assertRaises(Exception):
-            params2 = SimulationParameters.load_from_config_file(
+            SimulationParameters.load_from_config_file(
                 filename, spec)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

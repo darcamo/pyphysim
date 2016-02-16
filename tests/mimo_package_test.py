@@ -36,8 +36,9 @@ from pyphysim.util.conversion import linear2dB
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class MimoDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the comm
-    package."""
+    """
+    Test case that run all the doctests in the modules of the mimo module.
+    """
     def test_mimo(self, ):
         """Run doctests in the mimo module."""
         doctest.testmod(mimo)
@@ -55,19 +56,21 @@ def calc_Bl(channel, W, l, noise_var=0.0):
     \\[B_l = \\sum_{d=1, d\\neq l}^{d_i} (\\mtH \\mtV^{[\\star d]} \\mtV^{[\\star d] \\mtH} \\mtH^H - \\mtH \\mtV^{[\\star l]} \\mtV^{[\\star l] \\mtH} \\mtH^H + \\sigma_n^2 \\mtI_{N_r} )\\]
 
     Parameters
-    channel : 2D numpy array
-        The single user MIMO channel matrix.
-    W : 2D numpy array
-        The user precoder.
-    l :int
+    ----------
+    channel : np.ndarray
+        The single user MIMO channel matrix (2D numpy array).
+    W : np.ndarray
+        The user precoder (2D numpy array).
+    l : int
         The index of the desired stream.
     noise_var : float
         The noise variance.
 
     Returns
     -------
-    Bl : 2D numpy array
-        The interference plus noise covariance matrix for stream 'l'.
+    Bl : np.ndarray
+        The interference plus noise covariance matrix (2D numpy array) for
+        stream 'l'.
     """
     _, Ns = W.shape
     Nr, _ = channel.shape
@@ -104,8 +107,8 @@ def calc_SINRs(channel, W, G_H, noise_var):
 
     Returns
     -------
-    sinrs : 1D numpy array
-        The SINR of all streams (in linear scale).
+    sinrs : np.ndarray
+        The SINR (in linear scale). of all streams (1D numpy array).
     """
     _, Ns = W.shape
     sinrs = np.empty(Ns, dtype=float)

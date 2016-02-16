@@ -21,13 +21,11 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
-import json
 from .configobjvalidation import real_numpy_array_check, \
     integer_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check, \
     real_scalar_or_real_numpy_array_check
-from ..util.serialize import NumpyOrSetEncoder, \
-    json_numpy_or_set_obj_hook, JsonSerializable
+from ..util.serialize import JsonSerializable
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
 

@@ -202,8 +202,8 @@ class ConversionTestCase(unittest.TestCase):
     def test_SNR_dB_to_EbN0_dB(self):
         bps_1 = 2
         bps_2 = 4
-        SNR1 = 10
-        SNR2 = 15
+        SNR1 = 10.
+        SNR2 = 15.
 
         self.assertAlmostEqual(conversion.SNR_dB_to_EbN0_dB(SNR1, bps_1),
                                6.98970004336)
@@ -218,14 +218,14 @@ class ConversionTestCase(unittest.TestCase):
     def test_EbN0_dB_to_SNR_dB(self):
         bps_1 = 2
         bps_2 = 4
-        SNR1 = 10
-        SNR2 = 15
+        SNR1 = 10.
+        SNR2 = 15.
 
-        EbN0_1_1 = conversion.SNR_dB_to_EbN0_dB(SNR1, bps_1)
-        EbN0_1_2 = conversion.SNR_dB_to_EbN0_dB(SNR1, bps_2)
+        EbN0_1_1 = conversion.SNR_dB_to_EbN0_dB(SNR1, bps_1)  # type: float
+        EbN0_1_2 = conversion.SNR_dB_to_EbN0_dB(SNR1, bps_2)  # type: float
 
-        EbN0_2_1 = conversion.SNR_dB_to_EbN0_dB(SNR2, bps_1)
-        EbN0_2_2 = conversion.SNR_dB_to_EbN0_dB(SNR2, bps_2)
+        EbN0_2_1 = conversion.SNR_dB_to_EbN0_dB(SNR2, bps_1)  # type: float
+        EbN0_2_2 = conversion.SNR_dB_to_EbN0_dB(SNR2, bps_2)  # type: float
 
         self.assertAlmostEqual(conversion.EbN0_dB_to_SNR_dB(EbN0_1_1, bps_1),
                                SNR1)
@@ -497,7 +497,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         D = np.diag([1.2, 1.5, 0.9])
         invA = np.linalg.inv(A)
         expected_invB = np.linalg.inv(A + D)
-        invB = misc.update_inv_sum_diag(invA, D.diagonal())
+        _ = misc.update_inv_sum_diag(invA, D.diagonal())
         # There was a bug before that misc.update_inv_sum_diag was
         # modifying invA. We call misc.update_inv_sum_diag again to capture
         # that bug if it ever comes back.

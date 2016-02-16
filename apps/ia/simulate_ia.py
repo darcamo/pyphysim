@@ -523,6 +523,11 @@ class MMSESimulationRunner(IASimulationRunner):
 def main_simulate(algorithms_to_simulate):
     """
     Function called to perform the simulation.
+
+    Parameters
+    ----------
+    algorithms_to_simulate : list[str]
+        List with the names of the algorithms to simulate.
     """
     tic = time()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -604,7 +609,20 @@ def main_simulate(algorithms_to_simulate):
 # This function is only used in the implementation of the main_plot
 # function.
 def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
-    """Function with the common code to plot the BER."""
+    """
+    Function with the common code to plot the BER.
+
+    Parameters
+    ----------
+    simulationresults_obj : SimulationResults
+        The simulation results.
+    fixed_params : dict
+        Dictionary with the fixed parameters (parameter name as key and
+        parameter value as value)
+    ax : Matplotlib axes
+    label : str
+    fmt : str
+    """
     # Get the SNR
     SNR = np.array(simulationresults_obj.params['SNR'])
 
@@ -624,7 +642,20 @@ def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
 # This function is only used in the implementation of the main_plot
 # function.
 def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
-    """Function with the common code to plot the Sum Capacity."""
+    """
+    Function with the common code to plot the Sum Capacity.
+
+    Parameters
+    ----------
+    simulationresults_obj : SimulationResults
+        The simulation results.
+    fixed_params : dict
+        Dictionary with the fixed parameters (parameter name as key and
+        parameter value as value)
+    ax : Matplotlib axes
+    label : str
+    fmt : str
+    """
     # Get the SNR
     SNR = np.array(simulationresults_obj.params['SNR'])
 
@@ -643,6 +674,13 @@ def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
 def main_plot(algorithms_to_simulate, index=0):  # pylint: disable=R0914,R0915
     """
     Function called to plot the results from a previous simulation.
+
+    Parameters
+    ----------
+    algorithms_to_simulate : list[str]
+        List of algorithm names to simulate.
+    index : int
+        The index to simulate.
     """
     from matplotlib import pyplot as plt
 

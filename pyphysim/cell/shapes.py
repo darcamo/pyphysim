@@ -760,18 +760,18 @@ class Circle(Shape):
         angle_rad = np.pi * angle / 180.
         return self.pos + np.exp(1j * angle_rad) * self.radius * ratio
 
-    def is_point_inside_shape(self, point):
+    def is_point_inside_shape(self, point : complex) -> bool:
         """
         Test is a point is inside the circle
 
         Parameters
         ----------
-        point : complex
+        point
             A single complex number.
 
         Returns
         -------
-        inside_or_not : bool
+        inside_or_not
             True if `point` is inside the circle, False otherwise.
         """
         return np.abs(self.pos - point) < self.radius

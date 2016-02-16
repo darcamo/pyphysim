@@ -789,14 +789,14 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se4 = (
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs4[0]),
-                packet_length))
-            +
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs4[1]),
-                packet_length)))
+        # se4 = (
+        #     np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+        #         linear2dB(sinrs4[0]),
+        #         packet_length))
+        #     +
+        #     np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+        #         linear2dB(sinrs4[1]),
+        #         packet_length)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now with the Fixed Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
@@ -853,14 +853,14 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
-        se5 = (
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs5[0]),
-                packet_length))
-            +
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs5[1]),
-                packet_length)))
+        # se5 = (
+        #     np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+        #         linear2dB(sinrs5[0]),
+        #         packet_length))
+        #     +
+        #     np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
+        #         linear2dB(sinrs5[1]),
+        #         packet_length)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
