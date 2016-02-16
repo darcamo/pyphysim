@@ -12,7 +12,21 @@ import json
 
 class NumpyOrSetEncoder(json.JSONEncoder):
     """
-    Json encoder for numpy arrays.
+    JSON encoder for numpy arrays.
+
+    Pass this class to json.dumps when converting a dictionary to json so
+    that any field which with a numpy array as value will be properly
+    converted.
+
+    This encoder will also handle numpy scalars and the native python set
+    types.
+
+    When you need to convert the json representation back, use the
+    `json_numpy_or_set_obj_hook` function.
+
+    See Also
+    --------
+    json_numpy_or_set_obj_hook
     """
     def default(self, obj):
         """
@@ -62,6 +76,10 @@ def json_numpy_or_set_obj_hook(dct):
     np.ndarray | set | dict
         The decoded numpy array or None if the encoded json data was not an
         encoded numpy array.
+
+    See Also
+    --------
+    NumpyOrSetEncoder
     """
     if isinstance(dct, dict) and '_is_numpy_array' in dct:
         if dct['_is_numpy_array'] is True:
@@ -82,6 +100,76 @@ def json_numpy_or_set_obj_hook(dct):
                 'indicating that the object should be python set, but it '
                 'was set to False, which is not valid.')
     return dct
+
+
+
+class JsonSerializable(object):
+    """
+    Base class for classes you want to be JSON serializable (convert
+    to/from JSON).
+
+    You can call the methods `to_json` and `from_json` methods (the later
+    is a staticmethod).
+
+    Note that a subclass must implement the `_to_dict` and `_from_dict` methods.
+    """
+
+    def _to_dict(self, ):
+        """
+        Convert the object to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            The dictionary representation of the object.
+        """
+        raise NotImplementedError("Implement in a subclass")
+
+    @staticmethod
+    def _from_dict(d):
+        """
+        Convert from a dictionary to an object.
+
+        Parameters
+        ----------
+        d : dict
+            The dictionary representing the object.
+
+        Returns
+        -------
+        Result
+            The converted object.
+        """
+        raise NotImplementedError("Implement in a subclass")
+
+    def to_json(self):
+        """
+        Convert the object to JSON.
+
+        Returns
+        -------
+        str
+            JSON representation of the object.
+        """
+        return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
+
+    @classmethod
+    def from_json(cls, data):
+        """
+        Convert a JSON representation of the object to an actual object.
+
+        Parameters
+        ----------
+        data : str
+            The JSON representation of the object.
+
+        Returns
+        -------
+        any
+            The actual object
+        """
+        d = json.loads(data, object_hook=json_numpy_or_set_obj_hook)
+        return cls._from_dict(d)
 
 
 # xxxxxxxxxx Test and Example Usage xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

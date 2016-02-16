@@ -14,7 +14,7 @@ from .parameters import SimulationParameters, combine_simulation_parameters
 from ..util.misc import calc_confidence_interval, equal_dicts, \
     replace_dict_values
 from ..util.serialize import NumpyOrSetEncoder, \
-    json_numpy_or_set_obj_hook
+    json_numpy_or_set_obj_hook, JsonSerializable
 
 try:
     import cPickle as pickle
@@ -110,7 +110,7 @@ def combine_simulation_results(simresults1, simresults2):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Result - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Result(object):
+class Result(JsonSerializable):
     """Class to store a single simulation result.
 
     A simulation result can be anything, such as the number of errors,
@@ -743,31 +743,6 @@ class Result(object):
             r._result_sum = d['result_sum']
             r._result_squared_sum = d['result_squared_sum']
         return r
-
-    def to_json(self):
-        """
-        Convert the Return object to JSON.
-
-        Returns
-        -------
-        str
-            JSON representation of the SimulationParameters.
-        """
-        return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
-
-    @staticmethod
-    def from_json(data):
-        """
-        Convert a JSON representation of the simulation parameters to an
-        actual Result object.
-
-        Parameters
-        ----------
-        data : str
-            The JSON representation of the Result object.
-        """
-        d = json.loads(data, object_hook=json_numpy_or_set_obj_hook)
-        return Result._from_dict(d)
 
     # # TODO: Save the _value_list, _total_list and _accumulate_values_bool
     # # variables

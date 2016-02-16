@@ -27,7 +27,7 @@ from .configobjvalidation import real_numpy_array_check, \
     integer_scalar_or_integer_numpy_array_check, \
     real_scalar_or_real_numpy_array_check
 from ..util.serialize import NumpyOrSetEncoder, \
-    json_numpy_or_set_obj_hook
+    json_numpy_or_set_obj_hook, JsonSerializable
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
 
@@ -94,7 +94,7 @@ def combine_simulation_parameters(params1, params2):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationParameters - START xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class SimulationParameters(object):
+class SimulationParameters(JsonSerializable):
     """Class to store the simulation parameters.
 
     A SimulationParameters object acts as a container for all simulation
@@ -951,31 +951,6 @@ class SimulationParameters(object):
 
         sim_params._original_sim_params = original_sim_params
         return sim_params
-
-    def to_json(self):
-        """
-        Convert the SimulationParameters object to JSON.
-
-        Returns
-        -------
-        str
-            JSON representation of the SimulationParameters.
-        """
-        return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
-
-    @staticmethod
-    def from_json(data):
-        """
-        Convert a JSON representation of the simulation parameters to an
-        actual SimulationParameters object.
-
-        Parameters
-        ----------
-        data : str
-            The JSON representation of the SimulationParameters object.
-        """
-        d = json.loads(data, object_hook=json_numpy_or_set_obj_hook)
-        return SimulationParameters._from_dict(d)
 
     # TODO: finish implementing this (and remove the "pragma no cover")
     def save_to_hdf5_group(self, group):  # pragma: no cover
