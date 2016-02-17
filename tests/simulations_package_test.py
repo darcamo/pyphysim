@@ -798,6 +798,14 @@ class SimulationParametersTestCase(unittest.TestCase):
                              self.sim_params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Test with an empty SimulationParameters xxxxxxxxxxxxxx
+        empty_simparams = SimulationParameters()
+        empty_simparams_dict = empty_simparams._to_dict()
+        empty_simparams_d = SimulationParameters._from_dict(
+            empty_simparams_dict)
+        self.assertEqual(empty_simparams, empty_simparams_d)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_to_json_and_from_json(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
@@ -2029,6 +2037,39 @@ class SimulationResultsTestCase(unittest.TestCase):
             c2[0], expected_list_of_confidence_intervals[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_to_dict_from_dict(self):
+        # xxxxxxxxxx Test converting to a dictionary xxxxxxxxxxxxxxxxxxxxxx
+        simresults_dict = self.simresults._to_dict()
+        self.assertIsInstance(simresults_dict, dict)
+
+        # We will not test all individual dictionary keys here, since we
+        # will test later if we can recover the actual SimulationResults
+        # object from the dictionary and that should be enough.
+
+        # For now we only test in the individual Result objects in
+        # SimulationResults were converted to their own dictionary
+        # representations
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test converting from a dictionary xxxxxxxxxxxxxxxxxxxx
+        simresults = SimulationResults._from_dict(simresults_dict)
+        self.assertEqual(self.simresults, simresults)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_to_json_and_from_json(self):
+        # xxxxxxxxxx Test converting to and from a json xxxxxxxxxxxxxxxxxxx
+        # First test converting to json
+        simresults_json = self.simresults.to_json()
+        # This will raise an exception if encoded_params is not valid json
+        _ = json.loads(simresults_json)
+
+        # Now test converting from json
+        simresults = SimulationResults.from_json(simresults_json)
+
+        self.assertEqual(self.simresults, simresults)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     def test_save_to_and_load_from_file(self):
         base_filename = 'results_({age})_({temperature})_({factor}).pickle'
 
@@ -2217,20 +2258,20 @@ class SimulationResultsTestCase(unittest.TestCase):
         params.set_unpack_parameter('bias')
         params.add("Name", "Some string")
 
-        results = SimulationResults()
+        sim_results = SimulationResults()
         for p in params.get_unpacked_params_list():
             extra = p['extra']
             SNR = p['SNR']
             bias = p['bias']
-            results.append_result(Result.create(
+            sim_results.append_result(Result.create(
                 'res1', Result.SUMTYPE, extra*SNR+bias))
-            results.append_result(Result.create(
+            sim_results.append_result(Result.create(
                 'res2', Result.SUMTYPE, bias*SNR+extra))
-        results.set_parameters(params)
+        sim_results.set_parameters(params)
 
         # Now lets convert this SimulationResults object to a pandas
         # DataFrame
-        df = results.to_dataframe()
+        df = sim_results.to_dataframe()
 
         # The DataFrame should have the same number of rows as the number
         # of parameters variations
@@ -2500,9 +2541,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
-        results = SimulationResults.load_from_file(
+        sim_results = SimulationResults.load_from_file(
             dummyrunner.results_filename)
-        self.assertEqual(results, dummyrunner.results)
+        self.assertEqual(sim_results, dummyrunner.results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2608,16 +2649,16 @@ class SimulationRunnerTestCase(unittest.TestCase):
         from tests.simulations_package_test import _DummyRunner
         dview.execute('import simulations_package_test', block=True)
 
-        runner = _DummyRunner()
-        runner.progressbar_message = 'bla'
+        sim_runner = _DummyRunner()
+        sim_runner.progressbar_message = 'bla'
         # runner.update_progress_function_style = 'text1'
 
         # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
         filename = 'runner_results_bias_{bias}'
-        runner.set_results_filename(filename)
+        sim_runner.set_results_filename(filename)
 
         # This will make the progressbar print to a file, instead of stdout
-        runner.progress_output_type = 'file'  # Default is 'screen'
+        sim_runner.progress_output_type = 'file'  # Default is 'screen'
 
         # Remove old file from previous test run
         _delete_pickle_files()
@@ -2626,23 +2667,23 @@ class SimulationRunnerTestCase(unittest.TestCase):
         _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        runner.simulate_in_parallel(lview)
+        sim_runner.simulate_in_parallel(lview)
 
-        results_extra_1 = runner.results.get_result_values_list(
+        results_extra_1 = sim_runner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
         np.testing.assert_array_almost_equal(
             results_extra_1, expected_results_extra_1)
 
-        results_extra_2 = runner.results.get_result_values_list(
+        results_extra_2 = sim_runner.results.get_result_values_list(
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
         np.testing.assert_array_almost_equal(
             results_extra_2, expected_results_extra_2)
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
-        results = SimulationResults.load_from_file(runner.results_filename)
-        self.assertEqual(results, runner.results)
+        sim_results = SimulationResults.load_from_file(sim_runner.results_filename)
+        self.assertEqual(sim_results, sim_runner.results)
         _delete_pickle_files()
         _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2651,7 +2692,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Now we do not set the results filename
         runner2 = _DummyRunner()
         runner2.simulate_in_parallel(lview)
-        self.assertEqual(results, runner2.results)
+        self.assertEqual(sim_results, runner2.results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Repeat the test with wrong partial results xxxxxxxxxxx
@@ -2799,9 +2840,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
-        results = SimulationResults.load_from_file(
+        sim_results = SimulationResults.load_from_file(
             dummyrunner.results_filename)
-        self.assertEqual(results, dummyrunner.results)
+        self.assertEqual(sim_results, dummyrunner.results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # # xxxxxxxxxx Repeat the test xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

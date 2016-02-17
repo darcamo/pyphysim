@@ -875,7 +875,7 @@ class Result(JsonSerializable):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationResults - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class SimulationResults(object):
+class SimulationResults(JsonSerializable):
     """Store results from simulations.
 
     This class is used in the SimulationRunner class in order to store
@@ -1430,6 +1430,88 @@ class SimulationResults(object):
         except KeyError:  # pragma: nocover
             pass
         return filename
+
+    # noinspection PyMethodMayBeStatic
+    def _to_dict(self):
+        """
+        Convert the SimulationResults object to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            The dictionary representation of the SimulationResults object.
+        """
+        # -----------------------------------------------------------------
+        def list_of_results_to_list_of_dicts(result_list):
+            """
+            Convert a list of Result objects into a list of dictionary
+            representations ob Result objects.
+
+            Parameters
+            ----------
+            result_list : list[Result]
+                List of Result objects.
+
+            Returns
+            -------
+            list[dict]
+                List of dictionary representations of the Result objects.
+            """
+            out = [r._to_dict() for r in result_list]
+            return out
+        # -----------------------------------------------------------------
+
+        results = {n: list_of_results_to_list_of_dicts(v) for n, v in self._results.items()}
+
+        d = {'params': self._params._to_dict(),
+             'runned_reps': self.runned_reps,
+             'original_filename': self.original_filename,
+             'results': results}
+
+        return d
+
+    @staticmethod
+    def _from_dict(d):
+        """
+        Convert from a dictionary to a SimulationResults object.
+
+        Parameters
+        ----------
+        d : dict
+            The dictionary representing the SimulationResults.
+
+        Returns
+        -------
+        Result
+            The converted object.
+        """
+        def list_of_dicts_to_list_of_results(result_list):
+            """
+            Convert a list of dictionary representations of Result objects to a
+            list of Result objects.
+
+            Parameters
+            ----------
+            result_list : list[dict]
+                List of dictionary representations of the Result objects.
+
+            Returns
+            -------
+            list[Result]
+                List of Result objects.
+            """
+            out = [Result._from_dict(r) for r in result_list]
+            return out
+
+        results = {n: list_of_dicts_to_list_of_results(v) for n, v in d['results'].items()}
+
+        simresults = SimulationResults()
+        simresults._params = SimulationParameters._from_dict(d['params'])
+        simresults.runned_reps = d['runned_reps']
+        simresults.original_filename = d['original_filename']
+        simresults._results = results
+
+        return simresults
 
     def save_to_file(self, filename):
         """
