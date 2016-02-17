@@ -53,7 +53,7 @@ class CodebookFinder(object):
             Seed for the pseudo-random number generator. This is passed to
             numpy and, if not provided, numpy will provide a random seed. You
             only need to provide this you you need the results to be
-            reproductible or if you are creating CodebookFinder multiples
+            reproducible or if you are creating CodebookFinder multiples
             objects to work in multiple process and you want to guarantee
             that they will have a different seed.
         """
@@ -108,10 +108,14 @@ class CodebookFinder(object):
     def _generate_real_random_codebook(self, K, Nt, Ns):
         """Generates a real random codebook.
 
-        Arguments:
-        - `K`: Number of precoders in the codebook
-        - `Nt`: Number of rows (transmit antennas) in each precoder
-        - `Ns`: Number of columns (number of streams) in each precoder
+        Parameters
+        ----------
+        K : int
+            Number of precoders in the codebook
+        Nt : int
+            Number of rows (transmit antennas) in each precoder
+        Ns : int
+            Number of columns (number of streams) in each precoder
         """
         C = self._rs.randn(K, Nt, Ns)
         for k in range(0, K):
@@ -120,13 +124,17 @@ class CodebookFinder(object):
         return C
 
     def _generate_complex_qegt_random_codebook(self, K, Nt, Ns):
-        """Generates a complex Quantazed Equal Gain Transmission random
+        """Generates a complex Quantized Equal Gain Transmission random
         codebook.
 
-        Arguments:
-        - `K`: Number of precoders in the codebook
-        - `Nt`: Number of rows (transmit antennas) in each precoder
-        - `Ns`: Number of columns (number of streams) in each precoder
+        Parameters
+        ----------
+        K : int
+            Number of precoders in the codebook
+        Nt : int
+            Number of rows (transmit antennas) in each precoder
+        Ns : int
+            Number of columns (number of streams) in each precoder
 
         """
         C = self._rs.rand(K, Nt, Ns) * np.pi
@@ -152,7 +160,8 @@ class CodebookFinder(object):
 
     @staticmethod
     def calc_min_chordal_dist(codebook):
-        """Claculates the minimum chordal distance in the Codebook.
+        """
+        Calculates the minimum chordal distance in the Codebook.
 
         Note that the codebook is a 3-dimensional complex numpy array with
         dimension `K x Nt x Ns` (K is the number of precoders in the codebook,
@@ -161,10 +170,15 @@ class CodebookFinder(object):
 
         Parameters
         ----------
-        codebook : A 3-dimensional (K x Nt x Ns) complex numpy array
-            The codebook for which the monimum chordal distance should be
-            calculated.
+        codebook : np.ndarray
+            The codebook for which the minimum chordal distance should be
+            calculated. This is a 3-dimensional (K x Nt x Ns) complex numpy
+            array.
 
+        Returns
+        -------
+        (float, np.ndarray)
+            The tuple (min_dist, principal_angles).
         """
         K = codebook.shape[0]
 
@@ -179,7 +193,7 @@ class CodebookFinder(object):
 
         # for comb in calc_all_comb_indexes(K):
         for comb in combinations(range(0, K), 2):
-            #comb is a tuple with two elements
+            # comb is a tuple with two elements
             pa = calc_principal_angles(codebook[comb[0]], codebook[comb[1]])
             principal_angles.append(pa)
             dists[index] = calc_chordal_distance_from_principal_angles(pa)
@@ -188,6 +202,7 @@ class CodebookFinder(object):
         min_index = dists.argmin()  # Index of the minimum distance (in the
                                     # flattened array)
         min_dist = dists.flatten()[min_index]  # Same as dists.min()
+        ":type: float"
         principal_angles = np.array(principal_angles[min_index])
 
         return min_dist, principal_angles
@@ -211,7 +226,7 @@ class CodebookFinder(object):
         # Simulation
         for rep in range(0, rep_max + 1):
             self.progressbar.progress(rep)
-            # Call the apropriated codebook generating function and passes
+            # Call the appropriated codebook generating function and passes
             # the K, Nt, and Ns arguments to it.
             C = gen_functions[self._codebook_type](self, self._K, self._Nt, self._Ns)
             # C = generate_complex_random_codebook(self._K, self._Nt, self._Ns)
@@ -230,7 +245,7 @@ class CodebookFinder(object):
 
     @property
     def principal_angles(self):
-        """Pricipal angles between the precoders in the found codebook."""
+        """Principal angles between the precoders in the found codebook."""
         return self._principal_angle
 
     @property
@@ -316,18 +331,18 @@ def find_codebook(Nt, Ns, K, rep_max, prng_seed=None,
 # Acha melhores codebooks e salva em um arquivo
 def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    def find_codebook_wrapper(queue, args):
+    def find_codebook_wrapper(q, args):
         """
         Wrapper that calls find_codebook and put the result value in a queue.
 
         Parameters
         ----------
-        queue : multiprocessing.Queue
-            The multiprocessing queue to run.
+        q : multiprocessing.Queue
+            The multiprocessing q to run.
         args : list
             List with extra arguments.
         """
-        queue.put(find_codebook(*args))
+        q.put(find_codebook(*args))
 
     def save_results(best_dist, best_codebook, best_principal_angles, filename):
         # Save matlab version
@@ -377,7 +392,7 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
             Ns,
             K,
             rep_max,
-            # TODO: Pensar em um modo de garantir sementes diferentes
+            # TODO: Think in a way to guarantee different seeds
             np.random.randint(0, 10000, 1).item(),
             codebook_type,
             # Register a progressbar proxy for the process to be tracked by
@@ -464,7 +479,7 @@ if __name__ == '__main__':
     #         cmd_folder = os.getcwd()
     # finally:
     #     if cmd_folder not in sys.path:
-    #         # Add the parent folder to the beggining of the path
+    #         # Add the parent folder to the beginning of the path
     #         sys.path.insert(0, cmd_folder)
 
     # sys.path.append("../")

@@ -636,7 +636,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         unpacked_params_list = self.sim_params.get_unpacked_params_list()
 
         # If we call the get_num_unpacked_variations method of a unpacked
-        # SimulationParameters object, it should returd the number of
+        # SimulationParameters object, it should return the number of
         # unpacked variations of the PARENT object, instead just returning
         # 1.
         for u in unpacked_params_list:
@@ -771,7 +771,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(out['original_sim_params'],
                          self.sim_params._original_sim_params)
 
-        # Now test converting from the dictionay
+        # Now test converting from the dictionary
         sim_params = SimulationParameters._from_dict(out)
         self.assertEqual(sim_params, self.sim_params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -791,7 +791,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             self.assertEqual(out_elem['original_sim_params'],
                              sim_params_elem._original_sim_params._to_dict())
 
-            # Now test converting from the dictionay
+            # Now test converting from the dictionary
             sim_params_elem_d = SimulationParameters._from_dict(out_elem)
             self.assertEqual(sim_params_elem, sim_params_elem_d)
             self.assertEqual(sim_params_elem_d._original_sim_params,
@@ -900,7 +900,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             'second': ['aha', 'ahe'],
             'third': [10],
             'fourth': [30],
-            'fifth': ['hum', 'mian'],
+            'fifth': ['hum', 'blabla'],
             'sixth': ['a', 'b', 'c'],
             'seventh': ['ok', 'not ok', 'maybe']})
 
@@ -1812,7 +1812,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     def test_get_result_names(self):
         # The output of the get_result_names is a list of names. We
         # transform it into a set in this test only to make the order of
-        # the names uninportant.
+        # the names unimportant.
         expected_output = {'lala', 'lele', 'lulu'}
         self.assertEqual(set(self.simresults.get_result_names()),
                          expected_output)
@@ -1886,7 +1886,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults['lele'][0].num_updates, 3)
 
         # Test if an empty SimulationResults object can merge with another
-        # SimulationResults objec.
+        # SimulationResults object.
         emptyresults = SimulationResults()
         emptyresults.merge_all_results(self.simresults)
         self.assertEqual(
@@ -2073,7 +2073,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     def test_save_to_and_load_from_file(self):
         base_filename = 'results_({age})_({temperature})_({factor}).pickle'
 
-        # Set sime simulation parameters
+        # Set simulation parameters
         self.simresults.params.add('factor', 0.5)
         self.simresults.params.add('temperature', 50.5)
         self.simresults.params.add('age', 3)
@@ -2141,7 +2141,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     #     # self.simresults.add_result(result_acu)
     #     # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    #     # Set sime simulation parameters
+    #     # Set simulation parameters
     #     self.simresults.params.add('factor', [0.5, 0.6])
     #     self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
     #     self.simresults.params.add('age', 3)
@@ -2204,7 +2204,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     #     except OSError:  # pragma: no cover
     #         pass
 
-    #     # Set sime simulation parameters
+    #     # Set simulation parameters
     #     self.simresults.params.add('factor', [0.5, 0.6])
     #     self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
     #     self.simresults.params.add('age', 3)
@@ -2393,7 +2393,7 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
         P = current_params['P']
         sim_results = SimulationResults()
 
-        # This will have a different value for eacn simulation parameters
+        # This will have a different value for each simulation parameters
         random_value = np.random.random_sample()
         value = 1.2 * P + random_value
         sim_results.add_new_result('result1', Result.RATIOTYPE, value, 1)
@@ -2468,7 +2468,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     def setUp(self):
         self.runner = SimulationRunner(read_command_line_args=False)
 
-    # Test if the SimulationRunner sets a few default attributs in its init
+    # Test if the SimulationRunner sets a few default attributes in its init
     # method.
     def test_default_values(self):
         # Note that we are also testing the elapsed_time and runned_reps
@@ -2501,7 +2501,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         dummyrunner.set_results_filename("some_name_{bias}_{extra}")
 
-        # Note that this line would be unecessary if we had call the
+        # Note that this line would be unnecessary if we had call the
         # 'simulate' method of dummyrunner.
         dummyrunner.results.set_parameters(dummyrunner.params)
 
@@ -2603,7 +2603,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         pr = SimulationResults.load_from_file(
             'partial_results/dummyrunner_results_bias_1.3_unpack_04.pickle')
 
-        #  Get the parameters from the laoded result
+        #  Get the parameters from the loded result
         bias = pr.params['bias']
         snr = pr.params['SNR']
         extra = pr.params['extra']
@@ -3267,7 +3267,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
                         self.mpbar._client_data_list)
 
     # Note: This method will sleep for 0.01 seconds thus adding to the total
-    # amount of time required to run all tests. Unfortunatelly, this is a
+    # amount of time required to run all tests. Unfortunately, this is a
     # necessary cost.
     def test_updater(self):
         # Remove old file from previous test run

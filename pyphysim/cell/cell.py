@@ -2105,7 +2105,7 @@ class Cluster(shapes.Shape):
             all cells will be assumed.
         num_users : int
             Number of users to be added to each cell.
-        user_color : str
+        user_color : str | list[str]
             Color of the user's marker.
         min_dist_ratio : float
             Minimum allowed (relative) distance between the cell center and

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Simple script to simpulate a CoMP transmission which consists of a
+Simple script to simulate a CoMP transmission which consists of a
 simple block diagonalization of the channel.
 """
 

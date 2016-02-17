@@ -33,7 +33,7 @@ except NameError as e:
     max_iterations = "{0}".format(5)
 
 
-## xxxxxxxxxx Function Definitions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxx Function Definitions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def get_ber_for_given_num_iter(result_obj, max_iterations):
     """Docstring
 
@@ -90,7 +90,8 @@ def get_mean_iterations(result_obj, max_iterations):
     -------
 
     """
-    mean_ia_terations = get_num_mean_ia_iterations(result_obj, {'max_iterations': max_iterations})
+    mean_ia_terations = get_num_mean_ia_iterations(
+        result_obj, {'max_iterations': max_iterations})
     return mean_ia_terations
 
 
@@ -137,7 +138,7 @@ def get_num_mean_ia_iterations(sim_results_object, fixed_params=None):
 
 
 if __name__ == '__main__':
-    ## xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if initialized is False:
         print("Reading result files")
         # xxxxx Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -179,7 +180,7 @@ if __name__ == '__main__':
 
         initialized = True
 
-    ## xxxxxxxxxx SNR variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx SNR variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # noinspection PyUnboundLocalVariable
     SNR_alt_min = np.array(alt_min_results.params['SNR'])
     # noinspection PyUnboundLocalVariable
@@ -190,7 +191,7 @@ if __name__ == '__main__':
     # noinspection PyUnboundLocalVariable
     SNR_mmse = np.array(mmse_results.params['SNR'])
 
-    ## xxxxxxxxxx BER Variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx BER Variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ber_closed_form = get_ber_for_given_num_iter(closed_form_results, 5)
 
     ber_alt_min = {"5": get_ber_for_given_num_iter(alt_min_results, 5),
@@ -232,7 +233,7 @@ if __name__ == '__main__':
                 "55": get_ber_for_given_num_iter(mmse_results, 55),
                 "60": get_ber_for_given_num_iter(mmse_results, 60)}
 
-    ## xxxxxxxxxx Sum Capacity Variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Sum Capacity Variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sum_capacity_closed_form = get_sum_capacity_for_given_num_iter(
         closed_form_results, 5)
 
@@ -278,7 +279,7 @@ if __name__ == '__main__':
         "55": get_sum_capacity_for_given_num_iter(mmse_results, 55),
         "60": get_sum_capacity_for_given_num_iter(mmse_results, 60)}
 
-    ## xxxxxxxxxx Mean IA Iteration Vairables xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Mean IA Iteration Variables xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     mean_ia_iterations_alt_min = {
         "5": get_mean_iterations(alt_min_results, 5),
         "10": get_mean_iterations(alt_min_results, 10),

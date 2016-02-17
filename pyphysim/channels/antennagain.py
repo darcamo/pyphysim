@@ -6,7 +6,7 @@ import numpy as np
 from ..util.conversion import dB2Linear
 
 
-#See http://www.qtc.jp/3GPP/Specs/25996-a00.pdf
+# See http://www.qtc.jp/3GPP/Specs/25996-a00.pdf
 
 class AntGainBase(object):  # pragma: no cover
     """Base class for antenna models.

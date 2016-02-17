@@ -224,7 +224,7 @@ def simulate_for_a_given_ap_assoc(
         The path loss (in LINEAR SCALE) from each discrete position in each
         room to each access point. Dimension: (n, n, d, d, a), where 'n' is
         the number of rooms per dimension, 'd' is the number of discrete
-        positons in one room (per dimension) and 'a' is the number of access
+        positions in one room (per dimension) and 'a' is the number of access
         points.
     ap_assoc
         The index of the access point that each discrete point in each room
@@ -354,7 +354,7 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate distances: each user to each AP xxxxxxxxxxxxxxxx
-    # Dimension: (romm_row, room_c, user_row, user_col, num_APs)
+    # Dimension: (room_row, room_c, user_row, user_col, num_APs)
     dists_m = np.abs(
         user_positions[:, :, :, :, np.newaxis]
         - ap_positions.reshape([1, 1, 1, 1, -1]))

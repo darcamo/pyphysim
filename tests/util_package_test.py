@@ -285,7 +285,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
             for j in range(i, 4):
                 self.assertNotAlmostEqual(0.0, R[i, j])
 
-            # Elemetns below the diagonal are equal to zero
+            # Elements below the diagonal are equal to zero
             for j in range(i):
                 self.assertAlmostEqual(0.0, R[i, j])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -717,7 +717,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         self.assertEqual(misc.pretty_time(6000), '1h:40m:00s')
         self.assertEqual(misc.pretty_time(6015), '1h:40m:15s')
-        # Lets add two minuts (120 seconds)
+        # Lets add two minutes (120 seconds)
         self.assertEqual(misc.pretty_time(6135), '1h:42m:15s')
 
         self.assertEqual(misc.pretty_time(6137), '1h:42m:17s')

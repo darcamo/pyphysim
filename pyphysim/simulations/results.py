@@ -1461,7 +1461,8 @@ class SimulationResults(JsonSerializable):
             return out
         # -----------------------------------------------------------------
 
-        results = {n: list_of_results_to_list_of_dicts(v) for n, v in self._results.items()}
+        results = {n: list_of_results_to_list_of_dicts(v)
+                   for n, v in self._results.items()}
 
         d = {'params': self._params._to_dict(),
              'runned_reps': self.runned_reps,
@@ -1503,7 +1504,8 @@ class SimulationResults(JsonSerializable):
             out = [Result._from_dict(r) for r in result_list]
             return out
 
-        results = {n: list_of_dicts_to_list_of_results(v) for n, v in d['results'].items()}
+        results = {n: list_of_dicts_to_list_of_results(v)
+                   for n, v in d['results'].items()}
 
         simresults = SimulationResults()
         simresults._params = SimulationParameters._from_dict(d['params'])

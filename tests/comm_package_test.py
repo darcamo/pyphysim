@@ -38,8 +38,8 @@ from pyphysim.subspace.projections import calcProjectionMatrix
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class CommDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the comm
-    package."""
+    """Test case that run all the doctests in the modules of the comm
+    package. """
     def test_blockdiagonalization(self, ):
         """Run doctests in the blockdiagonalization module."""
         doctest.testmod(blockdiagonalization)
@@ -109,10 +109,10 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.Pu = 5.  # Power for each user
         self.noise_var = 1e-6
         self.num_users = 3
-        self.num_antenas = 2
+        self.num_antennas = 2
 
-        self.iNrk = self.num_antenas  # Number of receive antennas per user
-        self.iNtk = self.num_antenas  # Number of transmit antennas per user
+        self.iNrk = self.num_antennas  # Number of receive antennas per user
+        self.iNtk = self.num_antennas  # Number of transmit antennas per user
 
         self.iNr = self.iNrk * self.num_users  # Total number of Rx antennas
         self.iNt = self.iNtk * self.num_users  # Total number of Tx antennas
@@ -198,19 +198,19 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
                                 np.linalg.norm(Ms_good, 'fro') ** 2)
 
         # xxxxx Test the Individual power restriction of each user xxxxxxxx
-        # Cummulated number of transmit antennas
+        # accumulated number of transmit antennas
         cum_Nt = np.cumsum(
             np.hstack([0,
-                       np.ones(self.num_users, dtype=int) * self.num_antenas]))
+                       np.ones(self.num_users, dtype=int) * self.num_antennas]))
 
         individual_powers = []
         for i in range(self.num_users):
-            # Most likelly only one base station (the one with the worst
+            # Most likely only one base station (the one with the worst
             # channel) will employ a precoder with total power of `Pu`,
             # while the other base stations will use less power.
             individual_powers.append(
                 np.linalg.norm(
-                    Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antenas], 'fro'
+                    Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antennas], 'fro'
                 ) ** 2)
             # 1e-12 is included to avoid false test fails due to small
             # precision errors
@@ -222,7 +222,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         Pu = self.Pu
         noise_var = self.noise_var
         num_users = self.num_users
-        num_antenas = self.num_antenas
+        num_antennas = self.num_antennas
 
         channel = randn_c(self.iNr, self.iNt)
         (newH, Ms) = blockdiagonalization.block_diagonalize(
@@ -249,27 +249,27 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.assertGreaterEqual(total_power,
                                 np.linalg.norm(Ms, 'fro') ** 2)
 
-        # Cummulated number of receive antennas
+        # accumulated number of receive antennas
         cum_Nt = np.cumsum(
-            np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
+            np.hstack([0, np.ones(num_users, dtype=int) * num_antennas]))
 
         # Individual power restriction of each class
         individual_powers = []
         tol = 1e-12  # Tolerance for the GreaterEqual test
         for i in range(num_users):
-            # Most likelly only one base station (the one with the worst
+            # Most likely only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(
                 np.linalg.norm(
-                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro') ** 2)
+                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antennas], 'fro') ** 2)
             self.assertGreaterEqual(Pu + tol,
                                     individual_powers[-1])
 
     def test_block_diagonalize_no_waterfilling(self):
         Pu = self.Pu
         num_users = self.num_users
-        num_antenas = self.num_antenas
+        num_antennas = self.num_antennas
 
         channel = randn_c(self.iNr, self.iNt)
         (newH, Ms) = self.BD.block_diagonalize_no_waterfilling(channel)
@@ -296,19 +296,19 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.assertGreaterEqual(total_power + tol,
                                 np.linalg.norm(Ms, 'fro') ** 2)
 
-        # Cummulated number of receive antennas
+        # accumulated number of receive antennas
         cum_Nt = np.cumsum(
-            np.hstack([0, np.ones(num_users, dtype=int) * num_antenas]))
+            np.hstack([0, np.ones(num_users, dtype=int) * num_antennas]))
 
         # Individual power restriction of each class
         individual_powers = []
         for i in range(num_users):
-            # Most likelly only one base station (the one with the worst
+            # Most likely only one base station (the one with the worst
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(
                 np.linalg.norm(
-                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antenas], 'fro'
+                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antennas], 'fro'
                 ) ** 2)
             self.assertGreaterEqual(Pu + tol,
                                     individual_powers[-1])
@@ -317,7 +317,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         Pu = self.Pu
         noise_var = self.noise_var
         num_users = self.num_users
-        # num_antenas = self.num_antenas
+        # num_antennas = self.num_antennas
         channel = randn_c(self.iNr, self.iNt)
 
         (newH, _) = blockdiagonalization.block_diagonalize(
@@ -421,7 +421,7 @@ class WhiteningBDTestCase(unittest.TestCase):
         self.assertEqual(Ms1.shape[1], Ns_all[0])
         self.assertEqual(Ms2.shape[1], Ns_all[1])
 
-        # Most likelly only one base station (the one with the worst
+        # Most likely only one base station (the one with the worst
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
         tol = 1e-10
@@ -703,7 +703,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         self.assertEqual(Ms1.shape[1], Ns_all[0])
         self.assertEqual(Ms2.shape[1], Ns_all[1])
 
-        # Most likelly only one base station (the one with the worst
+        # Most likely only one base station (the one with the worst
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
         tol = 1e-10

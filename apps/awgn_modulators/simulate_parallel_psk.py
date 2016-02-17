@@ -6,7 +6,7 @@ Perform the simulation of the transmission of PSK symbols through an
 awgn channel.
 
 This performs the same simulation "in serial" and "in parallel" as an
-example of the diferences between both methods in a SimulationRunner
+example of the differences between both methods in a SimulationRunner
 subclass.
 """
 
@@ -165,12 +165,12 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         result : bool
             True if the simulation should continue or False otherwise.
         """
-        # Return true as long as cumulated_bit_errors is lower then
+        # Return true as long as accumulated_bit_errors is lower then
         # max_bit_errors
-        cumulated_bit_errors \
+        accumulated_bit_errors \
             = simulation_results['bit_errors'][-1].get_result()
         max_bit_errors = current_params['max_bit_errors']
-        return cumulated_bit_errors < max_bit_errors
+        return accumulated_bit_errors < max_bit_errors
 
     def get_data_to_be_plotted(self):
         """The get_data_to_be_plotted is not part of the simulation, but it

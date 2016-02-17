@@ -91,20 +91,19 @@ if __name__ == '__main__':
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
     rep_max = 100
 
-    alt_min_SINRs         = np.empty(rep_max, dtype=np.ndarray)
-    max_sinr_SINRs        = np.empty(rep_max, dtype=np.ndarray)
-    mmse_SINRs            = np.empty(rep_max, dtype=np.ndarray)
-    alt_min_capacity      = np.empty(rep_max, dtype=np.ndarray)
-    max_sinr_capacity     = np.empty(rep_max, dtype=np.ndarray)
-    mmse_capacity         = np.empty(rep_max, dtype=np.ndarray)
-    alt_min_sum_capacity  = np.empty(rep_max, dtype=float)
+    alt_min_SINRs = np.empty(rep_max, dtype=np.ndarray)
+    max_sinr_SINRs = np.empty(rep_max, dtype=np.ndarray)
+    mmse_SINRs = np.empty(rep_max, dtype=np.ndarray)
+    alt_min_capacity = np.empty(rep_max, dtype=np.ndarray)
+    max_sinr_capacity = np.empty(rep_max, dtype=np.ndarray)
+    mmse_capacity = np.empty(rep_max, dtype=np.ndarray)
+    alt_min_sum_capacity = np.empty(rep_max, dtype=float)
     max_sinr_sum_capacity = np.empty(rep_max, dtype=float)
-    mmse_sum_capacity     = np.empty(rep_max, dtype=float)
+    mmse_sum_capacity = np.empty(rep_max, dtype=float)
 
-    alt_min_runned_iterations  = np.empty(rep_max, dtype=int)
+    alt_min_runned_iterations = np.empty(rep_max, dtype=int)
     max_sinr_runned_iterations = np.empty(rep_max, dtype=int)
     mmse_runned_iterations = np.empty(rep_max, dtype=int)
 

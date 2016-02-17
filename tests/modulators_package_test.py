@@ -34,8 +34,8 @@ from pyphysim.channels import fading, fading_generators
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class MimoDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the comm
-    package."""
+    """Test case that run all the doctests in the modules of the comm
+    package. """
     def test_modulators(self):
         """Run doctests in the modulators module."""
         doctest.testmod(fundamental)
@@ -104,7 +104,7 @@ class PSKTestCase(unittest.TestCase):
             self.psk_obj2.calcTheoreticalBER(SNR_values),
             theoretical_ser2 / 3.)
 
-    # The calcTheoreticalPER method is defined in the Modulatros class, but
+    # The calcTheoreticalPER method is defined in the Modulators class, but
     # can only be tested in a subclass, since it depends on the
     # calcTheoreticalBER method. Therefore, we chose to test it here.
     def test_calc_theoretical_PER(self):
@@ -435,7 +435,7 @@ class OfdmTestCase(unittest.TestCase):
         (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
             input_signal.size)
         # We used 60 subcarriers, but we have 52 elements -> We need to add
-        # 8 zeros at the end of the unput data
+        # 8 zeros at the end of the input data
         self.assertEqual(zeropad, 8)
         # But we still have only one OFDM symbol
         self.assertEqual(num_ofdm_symbols, 1)
@@ -662,7 +662,7 @@ class OfdmOneTapEqualizerTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# Power Specral Density
+# Power Spectral Density
 def plot_psd_OFDM_symbols():  # pragma: no cover
     """Plot the power spectral density of OFDM modulated symbols.
 

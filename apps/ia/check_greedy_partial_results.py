@@ -34,7 +34,6 @@ if __name__ == '__main__':
         # if scenario == 'NoPathLoss' and stream_sel_method == 'brute':
         #     print "SNR {0}: Ber {1}".format(SNR, result['ber'])
 
-
         # SNR 0.0: Ber [Result -> ber: 192516/6502400 -> 0.0296069143701]
         # SNR 5.0: Ber [Result -> ber: 32498/7090800 -> 0.00458312179162]
         # SNR 10.0: Ber [Result -> ber: 2108/10665200 -> 0.000197652177174]

@@ -65,7 +65,7 @@ def calc_dist(vec, codeword):
     vec : np.ndarray
         The matrix to be quantized. This is a 1D numpy array.
     codeword : np.ndarray
-        One codeword from the codebook. The norm of the codeworkd should be
+        One codeword from the codebook. The norm of the codeword should be
         equal to 1. This is a 1D numpy array.
 
     Returns
@@ -211,7 +211,7 @@ if __name__ == '__main__':
     numSymbols = 0
     numBits = 0
 
-    # xxxxxxxxxx Quantization paramters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    # xxxxxxxxxx Quantization parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     codebook_size = 512
     dimension = 4
     codebook = gen_codebook(codebook_size, dimension)
@@ -254,8 +254,8 @@ if __name__ == '__main__':
             transmit_signal_precoded)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
-        #dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
+        # xxxxx Perform the Interference Cancellation xxxxxxxxxxxxxxxxxxxxx
+        # dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
         # This will cancel the interference
         received_data_no_interference = map(np.dot,
                                             ia_solver.W_H, received_data)

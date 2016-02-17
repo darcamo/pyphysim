@@ -159,11 +159,11 @@ class MIMOSimulationRunner(SimulationRunner):
         return simResults
 
     # def _keep_going(self, current_params, simulation_results, current_rep):
-    #     cumulated_bit_errors \
+    #     accumulated_bit_errors \
     #         = simulation_results['bit_errors'][-1].get_result()
 
     #     max_bit_errors = current_params['max_bit_errors']
-    #     return cumulated_bit_errors < max_bit_errors
+    #     return accumulated_bit_errors < max_bit_errors
 
 
 class AlamoutiSimulationRunner(MIMOSimulationRunner):

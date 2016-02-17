@@ -198,7 +198,7 @@ def estimate_channels_remove_direct_and_perform_SIC(
 
     # Perform SIC for the weakest interfering link
     if np.linalg.norm(uH12_eq_est) > np.linalg.norm(uH13_eq_est):
-        # H12 is stronguer than H13. Let' remove interference from UE 2 and
+        # H12 is stronger than H13. Let' remove interference from UE 2 and
         # estimate again for UE 3
         Y1_SIC = Y1_no_dir  - (uH12_eq_est[comb_indexes] * r2[:, np.newaxis])
         tilde_y13 = np.fft.ifft(Y1_SIC * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
@@ -206,11 +206,14 @@ def estimate_channels_remove_direct_and_perform_SIC(
         uH13_eq_est = np.fft.fft(tilde_y13, n=Nsc, axis=0)
         pass
     else:
-        # H13 is stronguer than H12. Let' remove interference from UE 3 and
+        # H13 is stronger than H12. Let' remove interference from UE 3 and
         # estimate again for UE 2
-        Y1_SIC = Y1_no_dir  - (uH13_eq_est[comb_indexes] * r3[:, np.newaxis])
-        tilde_y12 = np.fft.ifft(Y1_SIC * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-        tilde_y12[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+        Y1_SIC = Y1_no_dir - (uH13_eq_est[comb_indexes] * r3[:, np.newaxis])
+        tilde_y12 = np.fft.ifft(Y1_SIC * r2[:, np.newaxis].conj(),
+                                n=Nsc//2,
+                                axis=0)
+        # Only keep the first 11 time samples for each antenna
+        tilde_y12[11:, :] = 0
         uH12_eq_est = np.fft.fft(tilde_y12, n=Nsc, axis=0)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -334,7 +337,7 @@ def main():
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Create shifted sequences for 3 users xxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # We arbitrarely choose some cyclic shift index and then we call
+    # We arbitrarily choose some cyclic shift index and then we call
     # zadoffchu.get_srs_seq to get the shifted sequence.
     shift_index = 4
     r1 = get_srs_seq(a_u1, shift_index)
@@ -528,7 +531,7 @@ def main():
     tabs_an3 = bw.Tabs(tabs=[tab1, tab2, tab3])
 
 
-    # Put each AN tab as a pannel of an "ANs tab" and show it
+    # Put each AN tab as a panel of an "ANs tab" and show it
     tabs1 = bw.Panel(child=tabs_an1, title="AN1")
     tabs2 = bw.Panel(child=tabs_an2, title="AN2")
     tabs3 = bw.Panel(child=tabs_an3, title="AN3")

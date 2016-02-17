@@ -913,6 +913,8 @@ class SimulationParameters(JsonSerializable):
         further serialization.
         """
         original_sim_params = self._original_sim_params
+        ":type: SimulationParameters"
+
         if original_sim_params is not None:
             original_sim_params = original_sim_params._to_dict()
 

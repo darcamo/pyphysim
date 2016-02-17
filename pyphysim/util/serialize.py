@@ -102,7 +102,6 @@ def json_numpy_or_set_obj_hook(dct):
     return dct
 
 
-
 class JsonSerializable(object):
     """
     Base class for classes you want to be JSON serializable (convert

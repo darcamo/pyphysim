@@ -271,7 +271,8 @@ def gray2binary(num):
     return temp
 
 
-def SNR_dB_to_EbN0_dB(SNR : Union[float, np.ndarray], bits_per_symb : int) -> Union[float, np.ndarray]:
+def SNR_dB_to_EbN0_dB(SNR: Union[float, np.ndarray],
+                      bits_per_symb: int) -> Union[float, np.ndarray]:
     """
     Convert an SNR value (in dB) to the equivalent Eb/N0 value (also in
     dB).
@@ -295,7 +296,8 @@ def SNR_dB_to_EbN0_dB(SNR : Union[float, np.ndarray], bits_per_symb : int) -> Un
     return EbN0
 
 
-def EbN0_dB_to_SNR_dB(EbN0 : Union[float, np.ndarray], bits_per_symb : int) -> Union[float, np.ndarray]:
+def EbN0_dB_to_SNR_dB(EbN0: Union[float, np.ndarray],
+                      bits_per_symb: int) -> Union[float, np.ndarray]:
     """Convert an Eb/N0 value (in dB) to the equivalent SNR value (also in dB).
 
     Parameters

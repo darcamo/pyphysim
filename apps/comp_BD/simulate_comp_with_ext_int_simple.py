@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Simple script to simpulate a CoMP transmission with the possible stream
+Simple script to simulate a CoMP transmission with the possible stream
 reduction
 """
 
@@ -213,7 +213,7 @@ print(misc.pretty_time(toc - tic))
 # 1m:41s
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# xxxxx Pe_dBm de 35, packet_length = 60 -> Metrica da capacidade xxxxxxxxx
+# xxxxx Pe_dBm de 35, packet_length = 60 -> Capacity Metric xxxxxxxxx
 # num_symbol_errors: 314956.0
 # num_symbols: 30101000.0
 # SER: 0.0104633068669

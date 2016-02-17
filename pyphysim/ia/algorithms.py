@@ -2065,7 +2065,7 @@ class BruteForceStreamIASolver(object):
     iasolver_obj : T <= IASolverBaseClass
         Must be an object of a derived class of IterativeIASolverBaseClass.
     """
-    def __init__(self, iasolver_obj):
+    def __init__(self, iasolver_obj: IASolverBaseClass):
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
 

@@ -29,8 +29,8 @@ from pyphysim.util.misc import randn_c
 
 
 class SubspaceDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the subspace
-    package.
+    """
+    Test case that run all the doctests in the modules of the subspace package.
     """
     def test_metrics(self):
         """Run metrics doctests"""

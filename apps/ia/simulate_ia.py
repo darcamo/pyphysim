@@ -55,7 +55,7 @@ class IASimulationRunner(SimulationRunner):
     spec : List of strings
         The specification used to read the simulation configuration
         from the file `default_config_file`. See the validation part in the
-        docummentation of the configobj module for details.
+        documentation of the configobj module for details.
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
@@ -168,7 +168,7 @@ class IASimulationRunner(SimulationRunner):
             transmit_signal_precoded)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Perform the Interference Cancellation xxxxxxxxxxxxxxxxxxxxx
         received_data_no_interference = map(
             np.dot, self.ia_solver.full_W_H, received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -577,14 +577,14 @@ def main_simulate(algorithms_to_simulate):
     # xxxxxxxxxx Max SINR Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     if "Max SINR" in algorithms_to_simulate:
         print("Simulating Max SINR algorithm")
-        max_sinrn_runner = MaxSINRSimulationRunner('ia_config_file.txt')
-        pprint(max_sinrn_runner.params.parameters)
+        max_sinr_runner = MaxSINRSimulationRunner('ia_config_file.txt')
+        pprint(max_sinr_runner.params.parameters)
         # print("IA Solver: {0}\n".format(
-        #     max_sinrn_runner.ia_solver.__class__))
+        #     max_sinr_runner.ia_solver.__class__))
         name = ("ia_max_sinr_results_{M}-{modulator}_{Nr}x{Nt}_({Ns})"
                 "_MaxIter_{max_iterations}_{initialize_with}")
-        max_sinrn_runner.set_results_filename(name)
-        all_simulation_runner_objs.append(max_sinrn_runner)
+        max_sinr_runner.set_results_filename(name)
+        all_simulation_runner_objs.append(max_sinr_runner)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx MMSE Runner xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -626,7 +626,7 @@ def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
     # Get the SNR
     SNR = np.array(simulationresults_obj.params['SNR'])
 
-    # Get the BER and BER eror interval limits
+    # Get the BER and BER interval limits
     ber = simulationresults_obj.get_result_values_list(
         'ber',
         fixed_params=fixed_params)
@@ -825,7 +825,7 @@ if __name__ == '__main__':
     MaxSINRSimulationRunner  #, MinLeakageSimulationRunner
 
     # xxxxxxxxxx Command Line options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    # The returned parser already has two possiblr arguments: "config" and
+    # The returned parser already has two possible arguments: "config" and
     # "index".
     parser = get_common_parser()
     parser.description = ("Simulator for several Interference "

@@ -69,12 +69,12 @@ def main():
     pbar = ProgressbarText(RepMax, message="Simulating for SNR: {0}".format(SNR))
 
     for rep in range(RepMax):
-        # Creat the channel
+        # Create the channel
         multiUserChannel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(Nr, Nt, K)
         multiUserChannel.noise_var = noise_var
 
-        # Creat the IA solver object
+        # Create the IA solver object
         mmse_ia_solver = algorithms.MMSEIASolver(multiUserChannel)
         max_sinr_ia_solver = algorithms.MaxSinrIASolver(multiUserChannel)
 

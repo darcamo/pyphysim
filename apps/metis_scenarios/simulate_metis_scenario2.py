@@ -401,7 +401,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
                 users_AP = ap_assoc[ind]
                 # Plot a yellow circle in the user's AP
                 ap_pos = ap_positions[users_AP]
-                # CHange the collor of other users in the same AP to green and
+                # Change the color of other users in the same AP to green and
                 # the current user to cyan
                 users_colors[ap_assoc == users_AP] = 'g'
                 users_colors[ind] = 'c'

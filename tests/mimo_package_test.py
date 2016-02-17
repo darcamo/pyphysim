@@ -75,7 +75,7 @@ def calc_Bl(channel, W, l, noise_var=0.0):
     _, Ns = W.shape
     Nr, _ = channel.shape
     N = np.eye(Nr) * noise_var
-    # Idex of all streams, except 'l'
+    # Index of all streams, except 'l'
     idx = np.array([i for i in range(Ns) if i != l])
 
     if Ns > 1:
@@ -191,7 +191,7 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a zero-force filter
         self.blast_object.set_noise_var(None)  # This should use the ZF filter
-        channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(4, 3)  # 3 transmit antennas and 4 receive antennas
         self.blast_object.set_channel_matrix(channel)
         received_data2 = np.dot(channel, encoded_data)
         decoded_data2 = self.blast_object.decode(received_data2)
@@ -200,7 +200,7 @@ class BlastTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Test with a random channel and a MMSE filter
         self.blast_object.set_noise_var(0.00000001)
-        channel = randn_c(4, 3)  # 3 transmitt antennas and 4 receive antennas
+        channel = randn_c(4, 3)  # 3 transmit antennas and 4 receive antennas
         self.blast_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.blast_object.decode(received_data3)
@@ -332,7 +332,7 @@ class MRTTestCase(unittest.TestCase):
         self.assertEqual(len(decoded_data.shape), 1)
         np.testing.assert_array_almost_equal(decoded_data, data, decimal=4)
 
-        # Now we are explicitting changing the shape of the channel
+        # Now we are explicitly changing the shape of the channel
         # variable to include the first dimension corresponding to a single
         # receive antenna
         channel.shape = (1, Nt)
@@ -656,7 +656,7 @@ class AlamoutiTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         encoded_data = self.alamouti_object.encode(data)
-        # We will test the deconding with a random channel
+        # We will test the decoding with a random channel
         channel = randn_c(3, 2)
         self.alamouti_object.set_channel_matrix(channel)
         received_data = np.dot(channel, encoded_data)

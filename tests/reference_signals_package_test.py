@@ -71,7 +71,7 @@ class SrsDoctestsTestCase(unittest.TestCase):
 # TODO: finish implementation
 class ZadoffChuFunctionsTestCase(unittest.TestCase):
     """
-    Module to test the Zadoff-Chu related functions in the zadoffchu
+    Module to test the Zadoff-Chu related functions in the Zadoff-Chu
     module.
     """
     def setUp(self):

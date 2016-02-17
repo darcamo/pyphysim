@@ -111,7 +111,7 @@ def print_statistics_table(statistic_table):
     ----------
     statistic_table : TYPE
     """
-    # Remoce rows in statistic_table which have a zero percentage
+    # Remove rows in statistic_table which have a zero percentage
     filtered_table = [(a, b) for (a, b) in statistic_table if b != 0]
     for line in filtered_table:
         print('{0}: {1}%'.format(line[0], line[1]))

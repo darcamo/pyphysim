@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # the file.
     result = conf_file_parser.validate(validator, preserve_errors=True, copy=True)
 
-    # Note that if thare was no parsing errors, then "result" will be True.
+    # Note that if there was no parsing errors, then "result" will be True.
     # It there was an error, then result will be a dictionary with each
     # parameter as a key. The value of each key will be either 'True' if
     # that parameter was parsed without error or a "validate.something"

@@ -152,7 +152,7 @@ class IASimulationRunner(SimulationRunner):
         # Note that the Noise variance will be set in the
         # _on_simulate_current_params_start method. In the NoPathLoss
         # scenario it will be set as 1.0 regardless of the value of
-        # params['N0'] to avoid problens in the IA algorithms. In the other
+        # params['N0'] to avoid problems in the IA algorithms. In the other
         # scenarios it will be set to self.params['N0'].
         #
         # In any case the transmit power will be calculated accordingly in
@@ -210,7 +210,7 @@ class IASimulationRunner(SimulationRunner):
         """
         Prepare the channel object for the current iteration.
 
-        This will create user in random positons and calculate pathloss (if
+        This will create user in random positions and calculate pathloss (if
         the scenario includes it). After that, it will generate random
         channels from all transmitters to all receivers.
 
@@ -244,7 +244,7 @@ class IASimulationRunner(SimulationRunner):
             # Path loss from each base station to each user
             pathloss = self.path_loss_obj.calc_path_loss(dists)
 
-            # Set the path loss in themulti user channel object
+            # Set the path loss in the multi user channel object
             self.multiUserChannel.set_pathloss(pathloss)
         else:
             raise RuntimeError(
@@ -276,7 +276,7 @@ class IASimulationRunner(SimulationRunner):
     def _run_simulation(self,   # pylint: disable=R0914,R0915
                         current_parameters):
         # xxxxxxxxxx Prepare the scenario for this iteration. xxxxxxxxxxxxx
-        # This will create user in random positons and calculate pathloss
+        # This will create user in random positions and calculate pathloss
         # (if the scenario includes it). After that, it will generate
         # random channels from all transmitters to all receivers.
         self._create_users_channels_according_to_scenario(current_parameters)
@@ -358,7 +358,7 @@ class IASimulationRunner(SimulationRunner):
             transmit_signal_precoded)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Perform the Interference Cancelation xxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Perform the Interference Cancellation xxxxxxxxxxxxxxxxxxxxx
         received_data_no_interference = map(
             np.dot, self.ia_solver.full_W_H, received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -563,7 +563,7 @@ def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
     # Get the SNR
     SNR = np.array(simulationresults_obj.params['SNR'])
 
-    # Get the BER and BER eror interval limits
+    # Get the BER and BER interval limits
     ber = simulationresults_obj.get_result_values_list(
         'ber',
         fixed_params=fixed_params)

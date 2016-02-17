@@ -527,7 +527,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         simResults.add_result(spec_effic_result_capacity)
         simResults.add_result(sinr_result_capacity)
 
-        # Add the effective thoughput results
+        # Add the effective throughput results
         simResults.add_result(ber_result_effec_throughput)
         simResults.add_result(ser_result_effec_throughput)
         simResults.add_result(per_result_effec_throughput)
@@ -589,7 +589,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         symbols = self.modulator.modulate(input_data)
 
         # Prepare the transmit data. That is, the precoded_data as well as
-        # the external interferece sources' data.
+        # the external interference sources' data.
         precoded_data = np.dot(np.hstack(MsPk_all_users),
                                symbols)
 

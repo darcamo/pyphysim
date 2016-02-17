@@ -76,7 +76,7 @@ if __name__ == '__main__':
     #     Hij = multiuserchannel.get_Hkl(i, j)
     #     Hij_eff = np.dot(
     #         ia_solver.full_W_H[i], np.dot(Hij, ia_solver.full_F[j]))
-    #     print "Eigenvalus: {0}".format(np.linalg.svd(Hij_eff)[1].round(6)[0])
+    #     print "Eigenvalues: {0}".format(np.linalg.svd(Hij_eff)[1].round(6)[0])
     #     print "Eigenvector: {0}".format(
     #         np.linalg.svd(Hij_eff)[0].round(6)[0][0])
     #     print

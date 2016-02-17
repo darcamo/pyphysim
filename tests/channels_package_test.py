@@ -411,7 +411,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         # of the discretized taps (from the original ones) are
         # [ 0  7 16 16 16 21 27 38 40 40 41 47 47 50 56 56 58 60 63 66]
         # Note that some taps have the same indexes and this will be summed
-        # toguether.
+        # together.
         tap_powers_linear = tu.tap_powers_linear
         # The TDL class will normalized the tap powers so that the channel
         # has unit power.
@@ -694,6 +694,7 @@ class TdlChannelTestCase(unittest.TestCase):
             tap_delays=fading.COST259_TUx.tap_delays)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    # noinspection PyTypeChecker
     def test_constructor_and_num_taps(self):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # test constructor if we only provide the fading generator
@@ -709,16 +710,16 @@ class TdlChannelTestCase(unittest.TestCase):
             fading_generators.JakesSampleGenerator())
         self.assertEqual(tdlchannel_jakes.channel_profile.Ts, 0.001)
 
-        # In both cases the channel profiel has only one tap with unitary
+        # In both cases the channel profile has only one tap with unitary
         # power end delay 0
         np.testing.assert_array_almost_equal(
-            tdlchannel_ray.channel_profile.tap_powers_dB, 0)
+            tdlchannel_ray.channel_profile.tap_powers_dB, 0.0)
         np.testing.assert_array_almost_equal(
-            tdlchannel_jakes.channel_profile.tap_powers_dB, 0)
+            tdlchannel_jakes.channel_profile.tap_powers_dB, 0.0)
         np.testing.assert_array_almost_equal(
-            tdlchannel_ray.channel_profile.tap_delays, 0)
+            tdlchannel_ray.channel_profile.tap_delays, 0.0)
         np.testing.assert_array_almost_equal(
-            tdlchannel_jakes.channel_profile.tap_delays, 0)
+            tdlchannel_jakes.channel_profile.tap_delays, 0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -780,7 +781,7 @@ class TdlChannelTestCase(unittest.TestCase):
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
         # This is a SISO channel and therefore number of transmit and
-        # receive antenas is returned as -1
+        # receive antennas is returned as -1
         self.assertEqual(self.tdlchannel.num_tx_antennas, -1)
         self.assertEqual(self.tdlchannel.num_rx_antennas, -1)
 
@@ -812,7 +813,6 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])
 
-        num_samples = 1
         received_signal = self.tdlchannel.corrupt_data(signal)
 
         # Impulse response used to transmit the signal
@@ -826,7 +826,8 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
+        signal = np.random.standard_normal(num_samples) + \
+                 1j * np.random.standard_normal(num_samples)
         received_signal = self.tdlchannel.corrupt_data(signal)
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
@@ -839,7 +840,7 @@ class TdlChannelTestCase(unittest.TestCase):
             np.array([0, 7, 16, 21, 27, 38, 40, 41,
                       47, 50, 56, 58, 60, 63, 66]))
 
-        # Including zero pading, the impulse response has 67 taps. That
+        # Including zero padding, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
         channel_memory = 66
         expected_received_signal = np.zeros(channel_memory + num_samples, dtype=complex)
@@ -862,7 +863,7 @@ class TdlChannelTestCase(unittest.TestCase):
         expected_received_signal[63:63+num_samples] += signal * tap_values_sparse[13]
         expected_received_signal[66:66+num_samples] += signal * tap_values_sparse[14]
 
-        # Check if the received singal is correct
+        # Check if the received signal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
 
@@ -1180,7 +1181,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             np.array([0, 7, 16, 21, 27, 38, 40, 41,
                       47, 50, 56, 58, 60, 63, 66]))
 
-        # Including zero pading, the impulse response has 67 taps. That
+        # Including zero padding, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
         channel_memory = 66
         self.assertEqual(received_signal.shape, (self.tdlmimochannel.num_rx_antennas,
@@ -1240,7 +1241,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             signal[0] * tap_values_sparse[14, :, 0, :] +
             signal[1] * tap_values_sparse[14, :, 1, :])
 
-        # Check if the received singal is correct
+        # Check if the received signal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1287,11 +1288,11 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
 
         # Now correctly set switched_direction to True
         tdlmimochannel.switched_direction = True  # switch to uplink
-        received_signal_uplink = tdlmimochannel.corrupt_data(signal_uplink)
+        # received_signal_uplink = tdlmimochannel.corrupt_data(signal_uplink)
         last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
 
         # Let's compute the expected received signal
-        tap_values_sparse = last_impulse_response.tap_values_sparse
+        # tap_values_sparse = last_impulse_response.tap_values_sparse
 
         expected_received_signal_uplink = np.zeros(
             (num_tx_ant, channel_memory + num_samples),
@@ -1347,7 +1348,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             signal[0] * tap_values_sparse[14, 0, :, :] +
             signal[1] * tap_values_sparse[14, 1, :, :])
 
-        # Check if the received singal is correct
+        # Check if the received signal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1364,7 +1365,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         tdlmimochannel_flat = fading.TdlMimoChannel(
             jakes, channel_profile=fading.COST259_TUx)
         num_samples = 20
-        signal1 = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
+        signal1 = np.random.standard_normal(num_samples) + \
+                  1j * np.random.standard_normal(num_samples)
         signal2 = signal1[np.newaxis, :]
 
         received_signal_flat1 = tdlmimochannel_flat.corrupt_data(signal1)
@@ -1731,7 +1733,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Singleuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Single user Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SuSisoChannelTestCase(unittest.TestCase):
     def setUp(self):
@@ -1757,6 +1759,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         self.susisochannel = singleuser.SuChannel(
             self.jakes, channel_profile=fading.COST259_TUx)
 
+    # noinspection PyTypeChecker
     def test_constructor(self):
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create a SuChannel without specifying any parameter. In this
@@ -1817,7 +1820,6 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])
 
-        num_samples = 1
         received_signal = self.susisochannel.corrupt_data(signal)
 
         # Impulse response used to transmit the signal
@@ -1845,7 +1847,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        signal = np.random.randn(num_samples) + 1j * np.random.randn(num_samples)
+        signal = np.random.standard_normal(num_samples) + \
+                 1j * np.random.standard_normal(num_samples)
         received_signal = self.susisochannel.corrupt_data(signal)
         last_impulse_response = self.susisochannel.get_last_impulse_response()
 
@@ -1858,7 +1861,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
             np.array([0, 7, 16, 21, 27, 38, 40, 41,
                       47, 50, 56, 58, 60, 63, 66]))
 
-        # Including zero pading, the impulse response has 67 taps. That
+        # Including zero padding, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
         channel_memory = 66
         expected_received_signal = np.zeros(channel_memory + num_samples, dtype=complex)
@@ -1881,7 +1884,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         expected_received_signal[63:63+num_samples] += signal * tap_values_sparse[13]
         expected_received_signal[66:66+num_samples] += signal * tap_values_sparse[14]
 
-        # Check if the received singal is correct
+        # Check if the received signal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
 
@@ -1899,7 +1902,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
             fading_generator=jakes1,
             channel_profile=fading.COST259_TUx)
 
-        # Set the path loss. The receuved signal will be multiplied by
+        # Set the path loss. The received signal will be multiplied by
         # sqrt(pathloss)
         pathloss = 0.0025
         susisochannel1.set_pathloss(pathloss)
@@ -2162,7 +2165,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Generate data for 2 transmitters
         data1 = np.random.randint(0, 10, (2, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output1 = self.musisochannel.corrupt_data(data1)
 
         # Get the impulse response from two transmitters to the first
@@ -2196,7 +2199,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         pathloss_matrix = np.array([[0.8, 0.4], [0.3, 0.95]])
         self.musisochannel.set_pathloss(pathloss_matrix)
 
-        # Pass data throught he channel
+        # Pass data through the channel
         output1 = self.musisochannel.corrupt_data(data1)
 
         # Get the impulse response from two transmitters to the first
@@ -2245,7 +2248,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         self.assertEqual(musisochannel.num_taps_with_padding, 4)
         channel_memory = musisochannel.num_taps_with_padding - 1
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output1 = musisochannel.corrupt_data(data1)
 
         # Due to channel memory the received signal has more samples
@@ -2286,7 +2289,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         pathloss_matrix = np.array([[0.8, 0.4], [0.3, 0.95]])
         musisochannel.set_pathloss(pathloss_matrix)
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output1 = musisochannel.corrupt_data(data1)
 
         # Due to channel memory the received signal has more samples
@@ -2373,7 +2376,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Generate data for 2 transmitters
         data1 = np.random.randint(0, 10, (2, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output1 = musisochannel.corrupt_data(data1)
 
         # Get the impulse response from two transmitters to the first
@@ -2400,7 +2403,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Generate data for 1 transmitter
         data1 = np.random.randint(0, 10, (1, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output1 = musisochannel.corrupt_data(data1)
 
         # Get the impulse response from the single transmitter to each
@@ -2430,7 +2433,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Generate data for 1 transmitter
         data2 = np.random.randint(0, 10, num_samples)
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output2 = musisochannel.corrupt_data(data2)
 
         # Get the impulse response from the single transmitter to each
@@ -2468,7 +2471,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Generate data for 1 transmitter
         data = np.random.randint(0, 10, (2, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = musisochannel.corrupt_data(data)
 
         # Get the impulse response from the single transmitter to each
@@ -2508,7 +2511,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # data = np.ones((2, num_samples))
         data = np.random.randint(0, 10, (2, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
 
         self.assertEqual(data[0].shape, output[0].shape)
@@ -2595,7 +2598,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # data = np.ones((2, num_samples))
         data = np.random.randint(0, 10, (2, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = musisochannel.corrupt_data_in_freq_domain(data, fft_size,
                                                            subcarrier_indexes)
 
@@ -2672,7 +2675,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Switch directions
         musisochannel.switched_direction = True
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = musisochannel.corrupt_data_in_freq_domain(data, fft_size,
                                                            subcarrier_indexes)
 
@@ -2766,7 +2769,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # data = np.ones((2, num_samples))
         data = np.random.randint(0, 10, (1, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
 
         self.assertEqual(data[0].shape, output[0].shape)
@@ -2810,7 +2813,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # Generate data for 1 transmitter
         data2 = np.random.randint(0, 10, num_samples)
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output2 = musisochannel.corrupt_data_in_freq_domain(data2, fft_size)
 
         self.assertEqual(data2.shape, output2[0].shape)
@@ -2856,7 +2859,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # data = np.ones((2, num_samples))
         data = np.random.randint(0, 10, (2, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = musisochannel.corrupt_data_in_freq_domain(data, fft_size)
 
         self.assertEqual(data[0].shape, output[0].shape)
@@ -3003,7 +3006,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
         # data = np.ones((2, num_samples))
         data = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
 
-        # Pass data throught he channel
+        # Pass data through he channel
         output = mumimochannel.corrupt_data_in_freq_domain(data, fft_size)
         self.assertEqual((self.num_rx_antennas, num_samples), output[0].shape)
         self.assertEqual((self.num_rx_antennas, num_samples), output[1].shape)
@@ -3042,7 +3045,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
         # First we switch directions
         mumimochannel.switched_direction = True
 
-        # Pass data throught he channel
+        # Pass data through he channel
         data2 = np.random.randint(0, 10, (self.N, self.num_rx_antennas, num_samples))
         output2 = mumimochannel.corrupt_data_in_freq_domain(data2, fft_size)
         # Since we switched directions, the number of "receive" antennas is
@@ -3191,7 +3194,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         self.assertEqual(self.multiH.H.shape, (K, K))
 
-        # We don't really need to test multiH.H because the code was alread
+        # We don't really need to test multiH.H because the code was already
         # tested in test_from_big_matrix
 
     def test_get_channel(self):
@@ -3356,7 +3359,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.multiH.randomize(self.Nr, self.Nt, self.K)
 
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Note that the corrupt_concatenated_data is implicitelly called by
+        # Note that the corrupt_concatenated_data is implicitly called by
         # corrupt_data and thus we will only test corrupt_data.
         output = self.multiH.corrupt_data(input_data)
 
@@ -3377,7 +3380,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         pathloss = np.abs(np.random.randn(self.K, self.K))
         self.multiH.set_pathloss(pathloss)
 
-        # Note that the corrupt_concatenated_data is implicitelly called by
+        # Note that the corrupt_concatenated_data is implicitly called by
         # corrupt_data and thus we will only test corrupt_data. Also, they
         # are affected by the pathloss.
         output2 = self.multiH.corrupt_data(input_data)
@@ -3542,7 +3545,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q0)
 
         # Now with noise variance different of 0
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
         Qk = self.multiH.calc_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
@@ -3569,7 +3572,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q1)
 
         # Now with noise variance different of 0
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
         Qk = self.multiH.calc_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
@@ -3598,7 +3601,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
 
         # Now with noise variance different of 0
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
         Qk = self.multiH.calc_Q(k, F_all_k)
         np.testing.assert_array_almost_equal(
@@ -3615,7 +3618,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         P = np.array([1.2, 1.5, 0.9])
 
         self.multiH.randomize(Nr, Nt, K)
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
 
         F_all_k = np.empty(K, dtype=np.ndarray)
@@ -3961,7 +3964,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
                 F, k, N0_or_Rek=0.0001)
             SINR_k_all_l = multiUserChannel._calc_SINR_k(
-                k, F[k], U[k], Bkl_all_l)
+                k, Fk, Uk, Bkl_all_l)
 
             for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
@@ -4861,7 +4864,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q0_no_noise)
 
         # Now with external interference and noise
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
         Qk = self.multiH.calc_Q(k, F_all_k)
         expected_Q0 = expected_Q0_no_noise + np.eye(2) * noise_var
@@ -4904,7 +4907,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q1_no_noise)
 
         # Now with external interference and noise
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
         Qk = self.multiH.calc_Q(k, F_all_k)
         expected_Q1 = expected_Q1_no_noise + np.eye(2) * noise_var
@@ -4947,7 +4950,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2_no_noise)
 
         # Now with external interference and noise
-        noise_var = round(0.1 * np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
         self.multiH.noise_var = noise_var
         Qk = self.multiH.calc_Q(k, F_all_k)
         expected_Q2 = expected_Q2_no_noise + np.eye(2) * noise_var
@@ -4963,8 +4966,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Transmit power of all users
         P = np.array([1.2, 1.5, 0.9])
 
-        noise_var = round(0.1 * np.random.rand(), 4)
-        Pe = round(np.random.rand(), 4)
+        noise_var = round(0.1 * np.random.random_sample(), 4)
+        Pe = round(np.random.random_sample(), 4)
 
         self.multiH.randomize(Nr, Nt, K, NtE)
         # We don't set the noise variance here because the first tests will
@@ -5291,7 +5294,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Bkl_all_l = multiUserChannel._calc_Bkl_cov_matrix_all_l(
                 F, k, Re[k])
             SINR_k_all_l = multiUserChannel._calc_SINR_k(
-                k, F[k], U[k], Bkl_all_l)
+                k, Fk, Uk, Bkl_all_l)
 
             for l in range(Ns[k]):
                 Ukl = Uk[:, l:l + 1]
@@ -5990,7 +5993,7 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         A = 18.7
         B = 46.8
         C = 20
-        X = 0
+        # X = 0
 
         # Simple test
         d = 10
@@ -6030,7 +6033,7 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         LOS_index = (num_walls == 0)
         NLOS_index = ~LOS_index
 
-        X = 5 * (num_walls[NLOS_index] - 1)
+        # X = 5 * (num_walls[NLOS_index] - 1)
 
         expected_pl_dB = np.empty(5, dtype=float)
 
@@ -6125,6 +6128,7 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 
         # Distances for which the path loss will be calculated
         d = np.linspace(1, 20, 20)
+        ":type: np.ndarray"
 
         # xxxxxxxxxx Test for the 'open' area type xxxxxxxxxxxxxxxxxxxxxxxx
         self.pl.area_type = 'open'

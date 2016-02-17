@@ -50,8 +50,7 @@ class ConcreteShape(shapes.Shape):
 # UPDATE THIS CLASS if another module is added to the comm package
 class CellDoctestsTestCase(unittest.TestCase):
     """
-    Teste case that run all the doctests in the modules of the cell
-    package.
+    Test case that run all the doctests in the modules of the cell package.
     """
 
     def test_shapes(self):
@@ -170,7 +169,7 @@ class HexagonTestCase(unittest.TestCase):
                                np.sqrt(3.0) * self.H3.radius / 2.0)
 
     def test_get_vertex_positions(self):
-        # Even though H1 and H2 have different position and rottion, they
+        # Even though H1 and H2 have different position and rotation, they
         # have the same radius and since _get_vertex_positions does not
         # account translation and rotation then the _get_vertex_positions
         # method should return the same value for both of them.
@@ -232,7 +231,7 @@ class HexagonTestCase(unittest.TestCase):
             self.assertTrue(self.H1.is_point_inside_shape(0.9999999 * v))
             self.assertFalse(self.H1.is_point_inside_shape(1.0000001 * v))
 
-        # This test is very imcomplete. If any bugs are found in
+        # This test is very incomplete. If any bugs are found in
         # is_point_inside_shape add tests for them here
 
     def test_get_border_point(self):
@@ -434,14 +433,14 @@ class CellTestCase(unittest.TestCase):
         # We have successfully added 3 users to the cell
         self.assertEqual(self.C1.num_users, 3)
 
-        # This user will fall ouside the cell and add_user should raise an
+        # This user will fall outside the cell and add_user should raise an
         # exception
         user4 = cell.Node(0.4 + 0.8j)
         self.assertRaises(ValueError, self.C1.add_user,
                           # Args to self.C1.add_user
                           user4)
 
-        # This user will also fall ouside the cell and add_user should
+        # This user will also fall outside the cell and add_user should
         # raise an exception
         user5 = cell.Node(0 + 0j)
         self.assertRaises(ValueError, self.C1.add_user,
@@ -1102,7 +1101,7 @@ class ClusterTestCase(unittest.TestCase):
 
         # THIS TEST IS NOT COMPLETE
         #
-        # Except for C1, we are only testing the number of verexes here,
+        # Except for C1, we are only testing the number of vertexes here,
         # but at least it is something.
         C3 = cell.Cluster(cell_radius=1.0, num_cells=3)
         self.assertEqual(len(C3.vertices), 12)
@@ -1194,7 +1193,7 @@ class ClusterTestCase(unittest.TestCase):
         # 3. Add multiple users to multiple cells with different angles,
         # ratios, etc.
         self.C1.delete_all_users()
-        # Notice how we have to repeate "angles" 3 times, one time for each
+        # Notice how we have to repeat "angles" 3 times, one time for each
         # cell_id. We also set a different color for the users in each
         # cell.
         self.C1.add_border_users(cell_ids,

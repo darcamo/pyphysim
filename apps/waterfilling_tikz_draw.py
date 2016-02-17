@@ -90,7 +90,7 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
     \\usepackage{{times}}
     \\usepackage[T1]{{fontenc}}
     \\usepackage{{amsmath,amssymb}} % Part of AMS-LaTeX
-    % One of the good things of the amsmath package is the math enviroments matrix, pmatrix, bmatrix, Bmatrix, vmatrix and Vmatrix
+    % One of the good things of the amsmath package is the math environments matrix, pmatrix, bmatrix, Bmatrix, vmatrix and Vmatrix
     \\usepackage{{graphicx}}
     \\usepackage{{tikz}} % Create graphics in Latex
     \\usepackage{{cancel}} % teste $\\cancel{{x}}$ e voce vera o que ele faz. Outro melhor ainda e $\\cancelto{{x}}{{0}}$.

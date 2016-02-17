@@ -106,7 +106,7 @@ class CustomTestCase(unittest.TestCase):
         Parameters
         ----------
         filename : str
-            The name of the file to laod the state.
+            The name of the file to load the state.
         iasolver : IA Solver object
             The IA solver whose state will be saved (the state of the
             MultiUserChannelMatrix associated with that IA solver object
@@ -158,8 +158,7 @@ class CustomTestCase(unittest.TestCase):
 
 # UPDATE THIS CLASS if another module is added to the ia package
 class IaDoctestsTestCase(unittest.TestCase):
-    """Teste case that run all the doctests in the modules of the ia
-    package."""
+    """Test case that run all the doctests in the modules of the ia package. """
 
     def test_ia(self):
         """Run doctests in the ia module."""
@@ -234,7 +233,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.iasolver.P,
                                              np.array([1.3, 1.2, 1.8]))
 
-        # If we try to set P with a sequency of wrong length (different
+        # If we try to set P with a sequence of wrong length (different
         # from the number of users) an exception should be raised.
         with self.assertRaises(ValueError):
             self.iasolver.P = [1.2, 2.1]
@@ -808,7 +807,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_SINR_k(self):
-        # This test is implemented in the MaxSinrIASolerTestCase class.
+        # This test is implemented in the MaxSinrIASolverTestCase class.
         pass
 
 
@@ -1077,7 +1076,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         iasolver2.solve(Ns)
 
         # Test of the equivalent direct channel is equal to one while the
-        # equivalent clross channels are equivalent to zero
+        # equivalent cross channels are equivalent to zero
         for l in range(3):
             for k in range(3):
                 Hlk = iasolver._get_channel(l, k)
@@ -1167,7 +1166,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             solver.initialize_with = 'fix'
-            # When the 'fix' initialization type is set the randonmizeF
+            # When the 'fix' initialization type is set the randomizeF
             # method must be called before the
             # '_dont_initialize_F_and_only_and_find_W' method (called
             # inside 'solve_init' method) is called. Since that is not the
@@ -1183,7 +1182,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test the random initialization xxxxxxxxxxxxxxxxxxxxxxx
         solver.initialize_with = 'random'
-        # Initialize the normalized precoder of each suer with a random one
+        # Initialize the normalized precoder of each user with a random one
         # (with 2 streams)
 
         Ns = 2
@@ -1271,7 +1270,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test the SVD initialization xxxxxxxxxxxxxxxxxxxxxxxxxx
         solver.initialize_with = 'svd'
-        # Initialize the normalized precoder of each suer with a random one
+        # Initialize the normalized precoder of each user with a random one
         # (with 2 streams)
         solver._solve_init(Ns=Ns, P=1.0)
 
@@ -1797,7 +1796,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         self.assertAlmostEqual(self.iasolver.runned_iterations, 0.0)
 
 
-class MaxSinrIASolerTestCase(CustomTestCase):
+class MaxSinrIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -3190,7 +3189,7 @@ class GreedStreamIASolverTestCase(CustomTestCase):
         iasolver.solve(Ns, P)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxxxxxxx Soltion found by the algorithm xxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx Solution found by the algorithm xxxxxxxxxxxxxxxxxxxxxx
         full_F0 = np.matrix(iasolver._iasolver.full_F[0])
         full_F1 = np.matrix(iasolver._iasolver.full_F[1])
         full_F2 = np.matrix(iasolver._iasolver.full_F[2])
