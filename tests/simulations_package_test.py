@@ -2071,7 +2071,9 @@ class SimulationResultsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_save_to_and_load_from_file(self):
-        base_filename = 'results_({age})_({temperature})_({factor}).pickle'
+        base_filename = 'results_({age})_({temperature})_({factor})'
+        base_pickle_filename = "{0}.pickle".format(base_filename)
+        base_json_filename = "{0}.json".format(base_filename)
 
         # Set simulation parameters
         self.simresults.params.add('factor', 0.5)
@@ -2086,12 +2088,15 @@ class SimulationResultsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Save to the file and get the actual filename used to save the file
-        filename = self.simresults.save_to_file(base_filename)
+        filename_pickle = self.simresults.save_to_file(base_pickle_filename)
+        filename_json = self.simresults.save_to_file(base_json_filename)
 
         # Load from the file
-        simresults2 = SimulationResults.load_from_file(filename)
+        simresults2 = SimulationResults.load_from_file(filename_pickle)
+        simresults3 = SimulationResults.load_from_file(filename_json)
 
-        self.assertEqual(simresults2.original_filename, base_filename)
+        # xxxxxxxxxx Test file saved and loaded from pickle file xxxxxxxxxx
+        self.assertEqual(simresults2.original_filename, base_pickle_filename)
         self.assertEqual(len(self.simresults), len(simresults2))
         self.assertEqual(set(self.simresults.get_result_names()),
                          set(simresults2.get_result_names()))
@@ -2122,7 +2127,48 @@ class SimulationResultsTestCase(unittest.TestCase):
                                simresults2.params['factor'])
 
         # Delete the where the results were saved
-        delete_file_if_possible(filename)
+        delete_file_if_possible(filename_pickle)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test file saved and loaded from json file xxxxxxxxxxxx
+        # This will raise an exception if encoded_params is not valid json
+        with open(filename_json, 'r') as fid:
+            _ = json.load(fid)
+
+        self.assertEqual(simresults3.original_filename, base_json_filename)
+        self.assertEqual(len(self.simresults), len(simresults3))
+        self.assertEqual(set(self.simresults.get_result_names()),
+                         set(simresults3.get_result_names()))
+
+        self.assertEqual(self.simresults['lala'][0].type_code,
+                         simresults3['lala'][0].type_code)
+        self.assertEqual(self.simresults['lele'][0].type_code,
+                         simresults3['lele'][0].type_code)
+        self.assertEqual(self.simresults['lulu'][0].type_code,
+                         simresults3['lulu'][0].type_code)
+
+        self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
+                               simresults3['lala'][0].get_result(),)
+        self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
+                               simresults3['lele'][0].get_result(),)
+        np.testing.assert_array_almost_equal(
+            self.simresults['lulu'][0].get_result(),
+            simresults3['lulu'][0].get_result(),)
+        self.assertAlmostEqual(self.simresults['name'][0].get_result(),
+                               simresults3['name'][0].get_result(),)
+
+        # test if the parameters were also saved
+        self.assertEqual(self.simresults.params['age'],
+                         simresults3.params['age'])
+        self.assertAlmostEqual(self.simresults.params['temperature'],
+                               simresults3.params['temperature'])
+        self.assertAlmostEqual(self.simresults.params['factor'],
+                               simresults3.params['factor'])
+
+        # Delete the where the results were saved
+        delete_file_if_possible(filename_json)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
     # def test_save_to_and_load_from_hdf5_file(self):
     #     base_filename = 'results_({age})_({temperature})_({factor})'

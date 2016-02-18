@@ -1515,6 +1515,40 @@ class SimulationResults(JsonSerializable):
 
         return simresults
 
+    def _save_to_pickle(self, filename):
+        """
+        Save the SimulationResults object to the pickle file with name
+        `filename`.
+
+        Parameters
+        ----------
+        filename : src
+            Name of the file to save the SimulationResults object.
+        """
+        # For python3 compatibility the file must be opened in binary mode
+        with open(filename, 'wb') as output:
+            # We use the protocol version 2, since it is the highest
+            # protocol that is supported by both python 2 and python
+            # 3. Note that we still need to be careful when unpickling,
+            # since a file pickled with python 2 might raise a
+            # UnicodeDecodeError exception when unpickled with python 3. We
+            # solve this in the `load_from_config_file` method by
+            # specifying the encoding when unpickling the file.
+            pickle.dump(self, output, protocol=2)
+
+    def _save_to_json(self, filename):
+        """
+        Save the SimulationResults object to the json file with name
+        `filename`.
+
+        Parameters
+        ----------
+        filename : src
+            Name of the file to save the SimulationResults object.
+        """
+        with open(filename, 'w') as output:
+            output.write(self.to_json())
+
     def save_to_file(self, filename):
         """
         Save the SimulationResults to the file `filename`.
@@ -1541,42 +1575,29 @@ class SimulationResults(JsonSerializable):
         # Get the file extension (if there is any). If it is not equal to
         # '.pickle' that means we need to add the '.pickle' extension.
         ext = os.path.splitext(filename)[-1]
-        if ext != '.pickle':
+        if ext == '':
             filename = '{0}.pickle'.format(filename)
+            ext = '.pickle'
 
         # Save the original filename before string replacements
         self.original_filename = filename
 
+        # To get the actual filename we perform the parameter replacements
         filename = self.get_filename_with_replaced_params(filename)
 
-        # For python3 compatibility the file must be opened in binary mode
-        with open(filename, 'wb') as output:
-            # We use the protocol version 2, since it is the highest
-            # protocol that is supported by both python 2 and python
-            # 3. Note that we still need to be careful when unpickling,
-            # since a file pickled with python 2 might raise a
-            # UnicodeDecodeError exception when unpickled with python 3. We
-            # solve this in the `load_from_config_file` method by
-            # specifying the encoding when unpickling the file.
-            pickle.dump(self, output, protocol=2)
+        # xxxxxxxxxx Finally save to the appropriated file xxxxxxxxxxxxxxxx
+        ext_to_save_func_mapping = {'.pickle': self._save_to_pickle,
+                                    '.json': self._save_to_json}
+        save_func = ext_to_save_func_mapping[ext]
+
+        # Save the SimulationResults to the file with the desired format
+        save_func(filename)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return filename
 
     @staticmethod
-    def load_from_file(filename):
-        """
-        Load the SimulationResults from the file `filename`.
-
-        Parameters
-        ----------
-        filename : src
-            Name of the file from where the results will be loaded.
-
-        Returns
-        -------
-        SimulationResults
-            The SimulationResults object loaded from the file `filename`.
-        """
+    def _load_from_pickle_file(filename):
         with open(filename, 'rb') as inputfile:
             try:
                 obj = pickle.load(inputfile)
@@ -1600,6 +1621,35 @@ class SimulationResults(JsonSerializable):
             #         filename))
 
         return obj
+
+    @staticmethod
+    def _load_from_json_file(filename):
+        with open(filename, 'r') as inputfile:
+            json_data = inputfile.read()
+        obj = SimulationResults.from_json(json_data)
+        return obj
+
+    @staticmethod
+    def load_from_file(filename):
+        """
+        Load the SimulationResults from the file `filename`.
+
+        Parameters
+        ----------
+        filename : src
+            Name of the file from where the results will be loaded.
+
+        Returns
+        -------
+        SimulationResults
+            The SimulationResults object loaded from the file `filename`.
+        """
+        ext = os.path.splitext(filename)[-1]
+        ext_to_load_func_mapping = {'.pickle': SimulationResults._load_from_pickle_file,
+                                    '.json': SimulationResults._load_from_json_file}
+        load_func = ext_to_load_func_mapping[ext]
+
+        return load_func(filename)
 
     # def save_to_hdf5_file(self, filename, attrs=None):
     #     """
