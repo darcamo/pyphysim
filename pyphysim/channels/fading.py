@@ -1094,7 +1094,7 @@ class TdlChannel(object):
         fft_size : int
             The size of the Fourier transform to get the frequency
             response.
-        carrier_indexes : slice | np.ndarray
+        carrier_indexes : slice | np.ndarray | list[int]
             The indexes of the subcarriers where signal is to be
             transmitted. If it is None assume all subcarriers will be
             used. This can be a slice object or a numpy array of integers.
@@ -1124,7 +1124,7 @@ class TdlChannel(object):
                 indexes = carrier_indexes.indices(fft_size)
                 block_size = (indexes[1] - indexes[0]) // indexes[2]
             else:
-                assert isinstance(carrier_indexes, np.ndarray)
+                assert isinstance(carrier_indexes, (np.ndarray, list))
                 block_size = len(carrier_indexes)
 
         if num_symbols % block_size != 0:
