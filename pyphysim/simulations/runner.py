@@ -440,7 +440,12 @@ class SimulationRunner(object):
         if results_base_filename is None:
             results_filename = None
         else:
-            results_filename = '{0}.pickle'.format(results_base_filename)
+            ext = os.path.splitext(results_base_filename)[-1]
+            if ext == '.pickle':
+                results_filename = results_base_filename
+            else:
+                results_filename = '{0}.pickle'.format(results_base_filename)
+
         return results_filename
 
     def _get_progress_output_sink(

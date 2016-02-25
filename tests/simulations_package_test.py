@@ -2552,7 +2552,22 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner.results.set_parameters(dummyrunner.params)
 
         self.assertEqual(
-            dummyrunner.results_filename, "some_name_1.3_[2.2,4.1].pickle")
+            "some_name_1.3_[2.2,4.1].pickle", dummyrunner.results_filename)
+
+        # xxxxxxxxxx Test setting file name with extension xxxxxxxxxxxxxxxx
+        dummyrunner2 = _DummyRunner()
+        dummyrunner2.set_results_filename()
+        self.assertIsNone(dummyrunner2.results_filename)
+
+        dummyrunner2.set_results_filename("some_name_{bias}_{extra}.pickle")
+
+        # Note that this line would be unnecessary if we had call the
+        # 'simulate' method of dummyrunner.
+        dummyrunner2.results.set_parameters(dummyrunner.params)
+
+        self.assertEqual(
+            "some_name_1.3_[2.2,4.1].pickle", dummyrunner2.results_filename)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_simulate(self):
         # from tests.simulations_package_test import _DummyRunner
@@ -2671,7 +2686,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         try:
             from ipyparallel import Client
-            cl = Client(profile="tests")
+            cl = Client(profile="tests", timeout=1.0)
 
             dview = cl.direct_view()
             # Reset the engines so that we don't have variables there from
@@ -2700,7 +2715,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # runner.update_progress_function_style = 'text1'
 
         # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
-        filename = 'runner_results_bias_{bias}'
+        filename = 'runner_results_bias_{bias}.pickle'
         sim_runner.set_results_filename(filename)
 
         # This will make the progressbar print to a file, instead of stdout
