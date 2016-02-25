@@ -31,8 +31,10 @@ class CazacBasedChannelEstimator(object):
     ue_ref_seq : SrsUeSequence | DmrsUeSequence
         The user's SRS sequence.
     size_multiplier : int, optional
-        Multiplication factor for the FFT to get the the actual channel
-        size.
+        Multiplication factor for the FFT to get the actual channel size.
+        When using the comb pattern for SRS this should be 2 (default value),
+        but for DMRS, which does not employ the comb pattern, this should be
+        set to 1.
 
     Notes
     -----
