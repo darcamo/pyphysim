@@ -51,7 +51,7 @@ class UeSequence(object):
     Parameters
     ----------
     root_seq : RootSequence
-        The SRS root sequence of the base station the user is
+        The root sequence of the base station the user is
         associated to. This should be an object of the RootSequence
         class.
     n_cs : int
@@ -67,12 +67,12 @@ class UeSequence(object):
     @property
     def size(self):
         """
-        Return the size of the user's SRS sequence.
+        Return the size of the reference signal sequence.
 
         Returns
         -------
         size : int
-            The size of the user's SRS sequence.
+            The size of the user's reference signal sequence.
 
         Example
         -------
@@ -89,12 +89,12 @@ class UeSequence(object):
 
     def seq_array(self):
         """
-        Get the user's SRS sequence as a numpy array.
+        Get reference signal sequence as a numpy array.
 
         Returns
         -------
         seq : np.ndarray
-            The user's SRS sequence.
+            The user's reference signal sequence.
         """
         return self._user_seq_array
 
@@ -218,5 +218,3 @@ class SrsUeSequence(UeSequence):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_srs_seq(root_seq_array, n_cs)
         super(SrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
-
-

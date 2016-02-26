@@ -29,7 +29,7 @@ class CazacBasedChannelEstimator(object):
     Parameters
     ----------
     ue_ref_seq : SrsUeSequence | DmrsUeSequence
-        The user's SRS sequence.
+        The reference signal sequence.
     size_multiplier : int, optional
         Multiplication factor for the FFT to get the actual channel size.
         When using the comb pattern for SRS this should be 2 (default value),
@@ -61,7 +61,7 @@ class CazacBasedChannelEstimator(object):
         Parameters
         ----------
         received_signal : np.ndarray
-            The received SRS signal after being transmitted through the
+            The received reference signal after being transmitted through the
             channel (in the frequency domain). If this is a 2D numpy array
             the first dimensions is assumed to be "receive antennas" while
             the second dimension are the received sequence elements. The
@@ -81,12 +81,12 @@ class CazacBasedChannelEstimator(object):
             as many elements as the sent SRS signal, since the SRS signal
             is sent every other subcarrier.
         """
-        # User's SRS sequence
+        # Reference signal sequence
         r = self.ue_ref_seq.seq_array()
 
         if received_signal.ndim == 1:
             # First we multiply (element-wise) the received signal by the
-            # conjugate of the user's SRS sequence
+            # conjugate of the reference signal sequence
             y = np.fft.ifft(np.conj(r) * received_signal, r.size)
 
             # The channel impulse response consists of the first
