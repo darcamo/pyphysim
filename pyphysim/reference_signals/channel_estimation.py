@@ -4,7 +4,7 @@
 """Module with channel estimation implementations based on the reference
 signals in this package. """
 import numpy as np
-from .srs import SrsUeSequence
+from .srs import SrsUeSequence, UeSequence
 from .dmrs import DmrsUeSequence
 
 
@@ -28,7 +28,7 @@ class CazacBasedChannelEstimator(object):
 
     Parameters
     ----------
-    ue_ref_seq : SrsUeSequence | DmrsUeSequence
+    ue_ref_seq : SrsUeSequence | DmrsUeSequence | np.ndarray
         The reference signal sequence.
     size_multiplier : int, optional
         Multiplication factor for the FFT to get the actual channel size.
@@ -45,6 +45,11 @@ class CazacBasedChannelEstimator(object):
     """
 
     def __init__(self, ue_ref_seq, size_multiplier=2):
+        # If ue_ref_seq is not an instance of UeSequence (or a subclass)
+        # assume it is a numpy array.
+        if isinstance(ue_ref_seq, UeSequence):
+            ue_ref_seq = ue_ref_seq.seq_array()
+
         self._ue_ref_sequence = ue_ref_seq
         self._size_multiplier = size_multiplier
 
@@ -82,7 +87,7 @@ class CazacBasedChannelEstimator(object):
             is sent every other subcarrier.
         """
         # Reference signal sequence
-        r = self.ue_ref_seq.seq_array()
+        r = self.ue_ref_seq
 
         if received_signal.ndim == 1:
             # First we multiply (element-wise) the received signal by the
