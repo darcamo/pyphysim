@@ -82,9 +82,9 @@ class CazacBasedChannelEstimator(object):
         Returns
         -------
         freq_response : np.ndarray
-            The channel frequency response. Note that this will have twice
-            as many elements as the sent SRS signal, since the SRS signal
-            is sent every other subcarrier.
+            The channel frequency response. Note that for SRS sequences
+            this will have twice as many elements as the sent SRS signal,
+            since the SRS signal is sent every other subcarrier.
         """
         # Reference signal sequence
         r = self.ue_ref_seq
@@ -118,3 +118,78 @@ class CazacBasedChannelEstimator(object):
         tilde_H = np.fft.fft(tilde_h, self._size_multiplier * Nsc)
 
         return tilde_H
+
+
+class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
+    """
+    Estimated the (uplink) channel based on CAZAC (Constant Amplitude Zero
+    AutoCorrelation) reference sequences sent by one user including the
+    Orthogonal Cover Code (OCC).
+
+    With OCC the user will send reference signal in multiple time slots, in
+    each slot multiplied with the respective OCC sequence element.
+
+    Parameters
+    ----------
+    ue_ref_seq : DmrsUeSequence
+        The reference signal sequence.
+    """
+    def __init__(self, ue_ref_seq):
+        cover_code = ue_ref_seq.cover_code
+        ue_ref_seq_array = ue_ref_seq.seq_array()
+        reference_seq = ue_ref_seq_array[0] * cover_code[0]
+
+        super(CazacBasedWithOCCChannelEstimator, self).__init__(
+            reference_seq, size_multiplier=1)
+
+        self._cover_code = cover_code
+
+    @property
+    def cover_code(self):
+        """Get the cover code of the UE."""
+        return self._cover_code
+
+    def estimate_channel_freq_domain(self, received_signal,
+                                     num_taps_to_keep):
+        """
+        Estimate the channel based on the received signal with cover codes.
+
+        Parameters
+        ----------
+        received_signal : np.ndarray
+            The received reference signal after being transmitted through
+            the channel (in the frequency domain). This can be either a 2D
+            or a 3D numpy array. The first dimension corresponds to the
+            cover codes and the last dimension (second for 2D abd third for
+            3D numpy array) corresponds to the received sequece
+            elements. If it is a 3D numpy array the second dimension
+            corresponds to is assumed to be "receive antennas".
+            The number of elements in the received signal (per antenna) is
+            equal to the channel size (number of subcarriers) divided by
+            `size_multiplier`.
+        num_taps_to_keep : int
+            Number of taps (in delay domain) to keep. All taps from 0 to
+            `num_taps_to_keep`-1 will be kept and all other taps will be
+            zeroed before applying the FFT to get the channel response in
+            the frequency domain.
+
+        Returns
+        -------
+        freq_response : np.ndarray
+            The channel frequency response.
+        """
+        if received_signal.ndim==2:
+            # Apply the cover code
+            received_signal_mean = np.mean(
+                received_signal * self.cover_code[:, np.newaxis],
+                axis=0)
+        elif received_signal.ndim==3:
+            received_signal_mean = np.mean(
+                received_signal * self.cover_code[:, np.newaxis, np.newaxis],
+                axis=0)
+        else:
+            raise RuntimeError('Invalid dimension for received_signal')
+
+        # Call the estimate_channel_freq_domain from the base class
+        return super(CazacBasedWithOCCChannelEstimator, self).\
+            estimate_channel_freq_domain(received_signal_mean, num_taps_to_keep)

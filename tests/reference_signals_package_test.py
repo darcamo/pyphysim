@@ -28,7 +28,7 @@ import numpy as np
 import pyphysim.reference_signals
 from pyphysim.reference_signals.srs import SrsUeSequence
 from pyphysim.reference_signals.channel_estimation import \
-    CazacBasedChannelEstimator
+    CazacBasedChannelEstimator, CazacBasedWithOCCChannelEstimator
 from pyphysim.reference_signals.dmrs import DmrsUeSequence
 from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
     get_extended_ZF
@@ -607,6 +607,172 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50, :] - tilde_H1_espected[50:-50, :])
+        ":type: np.ndarray"
+
+        np.testing.assert_almost_equal(error/2.,
+                                       np.zeros(error.shape),
+                                       decimal=2)
+
+
+class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
+    def setUp(self):
+        """Called before each test."""
+        pass
+
+    def test_estimate_channel_with_dmrs(self):
+        Nsc = 24
+        size = Nsc
+
+        cover_codes = [np.array([-1, 1]), np.array([1, 1])]
+        user1_seq = DmrsUeSequence(
+            root_seq=RootSequence(root_index=17, size=size),
+            n_cs=1,
+            cover_code=cover_codes[0])
+        user2_seq = DmrsUeSequence(
+            root_seq=RootSequence(root_index=17, size=size),
+            n_cs=4,
+            cover_code=cover_codes[1])
+
+        ue1_channel_estimator = CazacBasedWithOCCChannelEstimator(user1_seq)
+
+        speed_terminal = 3/3.6               # Speed in m/s
+        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8/fcDbl              # Carrier wave length
+        Fd = speed_terminal / wave_length    # Doppler Frequency
+        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
+        L = 16                               # Number of jakes taps
+
+        jakes1 = JakesSampleGenerator(Fd, Ts, L)
+        jakes2 = JakesSampleGenerator(Fd, Ts, L)
+
+        # Create a TDL channel object for each user
+        tdlchannel1 = TdlChannel(jakes1, channel_profile=COST259_TUx)
+        tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
+
+        # Generate channel that would corrupt the transmit signal.
+        tdlchannel1._generate_impulse_response(1)
+        tdlchannel2._generate_impulse_response(1)
+
+        # Get the generated impulse response
+        impulse_response1 = tdlchannel1.get_last_impulse_response()
+        impulse_response2 = tdlchannel2.get_last_impulse_response()
+
+        # Get the corresponding frequency response
+        freq_resp_1 = impulse_response1.get_freq_response(Nsc)
+        H1 = freq_resp_1[:, 0]
+        freq_resp_2 = impulse_response2.get_freq_response(Nsc)
+        H2 = freq_resp_2[:, 0]
+
+        # Sequence of the users
+        r1 = user1_seq.seq_array()
+        r2 = user2_seq.seq_array()
+
+        # Received signal (in frequency domain) of user 1
+        Y1 = H1 * r1
+        Y2 = H2 * r2
+        Y = Y1 + Y2
+
+        # Calculate expected estimated channel for user 1
+        cover_code1 = cover_codes[0]
+        Y_with_cover_code = (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+        r1_no_cover_code = r1[0] * cover_code1[0]
+
+        y1 = np.fft.ifft(np.conj(r1_no_cover_code) * Y_with_cover_code, size)
+        tilde_h1 = y1[0:4]
+        tilde_H1 = np.fft.fft(tilde_h1, Nsc)
+
+        # Test the CazacBasedWithOCCChannelEstimator estimation
+        np.testing.assert_array_almost_equal(
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 3),
+            tilde_H1)
+
+        # Test if true channel and estimated channel are similar. Since the
+        # channel estimation error is higher at the first and last
+        # subcarriers we will test only the inner 200 subcarriers
+        error = np.abs(H1 - tilde_H1)
+        ":type: np.ndarray"
+
+        np.testing.assert_almost_equal(
+            error/2., np.zeros(error.size), decimal=2)
+
+
+    def test_estimate_channel_multiple_rx(self):
+        Nsc = 24
+        size = Nsc
+
+        cover_codes = [np.array([-1, 1]), np.array([1, 1])]
+        user1_seq = DmrsUeSequence(
+            RootSequence(root_index=25, size=size),
+            1,
+            cover_code=cover_codes[0])
+        user2_seq = DmrsUeSequence(
+            RootSequence(root_index=25, size=size),
+            4,
+            cover_code=cover_codes[0])
+
+        ue1_channel_estimator = CazacBasedWithOCCChannelEstimator(user1_seq)
+
+        speed_terminal = 3/3.6               # Speed in m/s
+        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8/fcDbl              # Carrier wave length
+        Fd = speed_terminal / wave_length    # Doppler Frequency
+        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
+        L = 16                               # Number of jakes taps
+
+        # Create the fading generators and set multiple receive antennas
+        jakes1 = JakesSampleGenerator(Fd, Ts, L, shape=(3, 1))
+        jakes2 = JakesSampleGenerator(Fd, Ts, L, shape=(3, 1))
+
+        # Create a TDL channel object for each user
+        tdlchannel1 = TdlChannel(jakes1, channel_profile=COST259_TUx)
+        tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
+
+        # Generate channel that would corrupt the transmit signal.
+        tdlchannel1._generate_impulse_response(1)
+        tdlchannel2._generate_impulse_response(1)
+
+        # Get the generated impulse response
+        impulse_response1 = tdlchannel1.get_last_impulse_response()
+        impulse_response2 = tdlchannel2.get_last_impulse_response()
+
+        # Get the corresponding frequency response
+        freq_resp_1 = impulse_response1.get_freq_response(Nsc)
+        H1 = freq_resp_1[:, :, 0, 0].T
+        freq_resp_2 = impulse_response2.get_freq_response(Nsc)
+        H2 = freq_resp_2[:, :, 0, 0].T
+
+        # Sequence of the users
+        r1 = user1_seq.seq_array()
+        r2 = user2_seq.seq_array()
+
+        # Received signal (in frequency domain) of user 1
+        Y1 = H1[np.newaxis] * r1[:, np.newaxis]
+        Y2 = H2[np.newaxis] * r2[:, np.newaxis]
+        Y = Y1 + Y2
+
+        # Calculate expected estimated channel for user 1
+        cover_code1 = cover_codes[0]
+        Y_with_cover_code = (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+        r1_no_cover_code = r1[0] * cover_code1[0]
+
+        y1 = np.fft.ifft(
+            np.conj(r1_no_cover_code[np.newaxis]) * Y_with_cover_code,
+            size,
+            axis=1)
+        tilde_h1_espected = y1[:, 0:16]
+        tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=1)
+
+        # Test the CazacBasedWithOCCChannelEstimator estimation
+        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y, 15)
+        np.testing.assert_array_almost_equal(
+            H1_estimated, tilde_H1_espected)
+
+        # Test if true channel and estimated channel are similar. Since the
+        # channel estimation error is higher at the first and last
+        # subcarriers we will test only the inner 200 subcarriers
+        error = np.abs(H1 - tilde_H1_espected)
         ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error/2.,
