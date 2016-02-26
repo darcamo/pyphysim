@@ -642,6 +642,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
             root_seq=root_seq6, n_cs=4)
 
     def test_size(self):
+        # Without cover code
         self.assertEqual(self.dmrs_seq1.size, 12)
         self.assertEqual(self.dmrs_seq2.size, 12)
         self.assertEqual(self.dmrs_seq3.size, 24)
@@ -649,7 +650,28 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.dmrs_seq5.size, 48)
         self.assertEqual(self.dmrs_seq6.size, 48)
 
+        # With cover code
+        root_seq1 = RootSequence(root_index=15, size=12)
+        cover_code1 = np.array([1, 1])
+        dmrs_seq1 = DmrsUeSequence(
+            root_seq=root_seq1, n_cs=3, cover_code=cover_code1)
+
+        root_seq2 = RootSequence(root_index=23, size=12)
+        cover_code2 = np.array([1, -1])
+        dmrs_seq2 = DmrsUeSequence(
+            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+
+        root_seq5 = RootSequence(root_index=15, size=48)
+        cover_code5 = np.array([1, -1, 1, -1])
+        dmrs_seq5 = DmrsUeSequence(
+            root_seq=root_seq5, n_cs=3, cover_code=cover_code5)
+
+        self.assertEqual(dmrs_seq1.size, 12)
+        self.assertEqual(dmrs_seq2.size, 12)
+        self.assertEqual(dmrs_seq5.size, 48)
+
     def test_seq_array(self):
+        # xxxxxxxxxx Test withoyut cover code xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_dmrs1 = get_dmrs_seq(RootSequence(15, 12).seq_array(), 3)
         expected_dmrs2 = get_dmrs_seq(RootSequence(23, 12).seq_array(), 4)
         expected_dmrs3 = get_dmrs_seq(RootSequence(15, 24).seq_array(), 3)
@@ -669,6 +691,86 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
             expected_dmrs5, self.dmrs_seq5.seq_array())
         np.testing.assert_array_almost_equal(
             expected_dmrs6, self.dmrs_seq6.seq_array())
+
+        self.assertIsNone(self.dmrs_seq1.cover_code)
+        self.assertIsNone(self.dmrs_seq2.cover_code)
+        self.assertIsNone(self.dmrs_seq3.cover_code)
+        self.assertIsNone(self.dmrs_seq4.cover_code)
+        self.assertIsNone(self.dmrs_seq5.cover_code)
+        self.assertIsNone(self.dmrs_seq6.cover_code)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Test with cover code xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        root_seq1 = RootSequence(root_index=15, size=12)
+        cover_code1 = np.array([1, 1])
+        dmrs_seq1 = DmrsUeSequence(
+            root_seq=root_seq1, n_cs=3, cover_code=cover_code1)
+
+        root_seq2 = RootSequence(root_index=23, size=12)
+        cover_code2 = np.array([1, -1])
+        dmrs_seq2 = DmrsUeSequence(
+            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+
+        root_seq3 = RootSequence(root_index=15, size=24)
+        cover_code3 = np.array([-1, 1])
+        dmrs_seq3 = DmrsUeSequence(
+            root_seq=root_seq3, n_cs=3, cover_code=cover_code3)
+
+        root_seq4 = RootSequence(root_index=23, size=24)
+        cover_code4 = np.array([-1, -1])
+        dmrs_seq4 = DmrsUeSequence(
+            root_seq=root_seq4, n_cs=4, cover_code=cover_code4)
+
+        root_seq5 = RootSequence(root_index=15, size=48)
+        cover_code5 = np.array([1, -1, 1, -1])
+        dmrs_seq5 = DmrsUeSequence(
+            root_seq=root_seq5, n_cs=3, cover_code=cover_code5)
+
+        # Test that OCC was set
+        np.testing.assert_array_equal(np.array([1, 1]), dmrs_seq1.cover_code)
+        np.testing.assert_array_equal(np.array([1, -1]), dmrs_seq2.cover_code)
+        np.testing.assert_array_equal(np.array([-1, 1]), dmrs_seq3.cover_code)
+        np.testing.assert_array_equal(np.array([-1, -1]), dmrs_seq4.cover_code)
+        np.testing.assert_array_equal(np.array([1, -1, 1, -1]),
+                                      dmrs_seq5.cover_code)
+
+        # Test getting the full sequence with cover code using
+        # `seq_array()` method
+        expected_dmrs1_occ = np.vstack([expected_dmrs1, expected_dmrs1])
+        expected_dmrs2_occ = np.vstack([expected_dmrs2, -expected_dmrs2])
+        expected_dmrs3_occ = np.vstack([-expected_dmrs3, expected_dmrs3])
+        expected_dmrs4_occ = np.vstack([-expected_dmrs4, -expected_dmrs4])
+        expected_dmrs5_occ = np.vstack([expected_dmrs5, -expected_dmrs5,
+                                        expected_dmrs5, -expected_dmrs5])
+
+        np.testing.assert_array_almost_equal(
+            expected_dmrs1_occ, dmrs_seq1.seq_array())
+        np.testing.assert_array_almost_equal(
+            expected_dmrs2_occ, dmrs_seq2.seq_array())
+        np.testing.assert_array_almost_equal(
+            expected_dmrs3_occ, dmrs_seq3.seq_array())
+        np.testing.assert_array_almost_equal(
+            expected_dmrs4_occ, dmrs_seq4.seq_array())
+        np.testing.assert_array_almost_equal(
+            expected_dmrs5_occ, dmrs_seq5.seq_array())
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_repr(self):
+        root_seq1 = RootSequence(root_index=15, size=12)
+        dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1, n_cs=3)
+
+        root_seq2 = RootSequence(root_index=23, size=12)
+        cover_code2 = np.array([1, -1])
+        dmrs_seq2 = DmrsUeSequence(
+            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+
+        self.assertEqual(
+            "<DmrsUeSequence(root_index=15, n_cs=3, cover_code=None)>",
+            repr(dmrs_seq1))
+        self.assertEqual(
+            "<DmrsUeSequence(root_index=23, n_cs=4, cover_code=[ 1 -1])>",
+            repr(dmrs_seq2))
+
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
