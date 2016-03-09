@@ -206,6 +206,10 @@ class MuChannel(object):
         """
         return self._su_siso_channels[0, 0].num_taps_with_padding
 
+    @property
+    def pathloss_matrix(self):
+        return self._pathloss_matrix
+
     def set_pathloss(self, pathloss_matrix=None):
         """
         Set the path loss (IN LINEAR SCALE) from each transmitter to each
@@ -232,6 +236,9 @@ class MuChannel(object):
         elements in `pathloss_matrix`.
         """
         num_rx, num_tx = self._su_siso_channels.shape
+
+        # Set in an attribute for easy retriaval later
+        self._pathloss_matrix = np.copy(pathloss_matrix)
 
         for rx in range(num_rx):
             for tx in range(num_tx):
