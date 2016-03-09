@@ -250,17 +250,18 @@ class PathLossBase(object):
         """
         PL = self._calc_deterministic_path_loss_dB(d, **kargs)
         if self.use_shadow_bool is True:  # pragma: no cover
+            # Shadowing modeled by a Gaussian Distribution (in dB)
             if isinstance(d, Iterable):
                 # If 'd' is a numpy array (or something similar such as a
                 # list), shadow must be a numpy array with the same shape
-                shadow = conversion.dB2Linear(
-                    np.random.standard_normal(
-                            np.size(d)) * self.sigma_shadow)
+                shadow = np.random.standard_normal(
+                    np.size(d)) * self.sigma_shadow
                 shadow.shape = np.shape(d)
             else:
                 # If 'd' is not an array but add a scalar shadowing
-                shadow = conversion.dB2Linear(
-                    np.random.standard_normal() * self.sigma_shadow)
+                shadow =np.random.standard_normal() * self.sigma_shadow
+            # Sum the deterministic pathloss value (in dB) with the
+            # shadowing (in dB)
             PL += shadow
 
         # The calculated path loss (in dB) must be positive. If it is not
