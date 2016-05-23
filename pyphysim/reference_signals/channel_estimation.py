@@ -48,7 +48,10 @@ class CazacBasedChannelEstimator(object):
         # If ue_ref_seq is not an instance of UeSequence (or a subclass)
         # assume it is a numpy array.
         if isinstance(ue_ref_seq, UeSequence):
+            self._normalized_ref_seq = ue_ref_seq.normalized
             ue_ref_seq = ue_ref_seq.seq_array()
+        else:
+            self._normalized_ref_seq = False
 
         self._ue_ref_sequence = ue_ref_seq
         self._size_multiplier = size_multiplier
@@ -117,6 +120,9 @@ class CazacBasedChannelEstimator(object):
         Nsc = r.size
         tilde_H = np.fft.fft(tilde_h, self._size_multiplier * Nsc)
 
+        if self._normalized_ref_seq is True:
+            tilde_H *= Nsc
+
         return tilde_H
 
 
@@ -143,6 +149,7 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
             reference_seq, size_multiplier=1)
 
         self._cover_code = cover_code
+        self._normalized_ref_seq = ue_ref_seq.normalized
 
     @property
     def cover_code(self):

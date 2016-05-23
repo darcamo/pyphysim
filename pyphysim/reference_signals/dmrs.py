@@ -57,8 +57,10 @@ class DmrsUeSequence(UeSequence):
         (without the cover code) is `seq`, than the actual DMRS sequence
         with cover code will be a 2D numpy array equivalent with
         `seq_occ[0]==seq` and `seq_occ[1]==-seq`.
+    normalize : bool
+        True if the reference signal should be normalized. False otherwise.
     """
-    def __init__(self, root_seq, n_cs, cover_code=None):
+    def __init__(self, root_seq, n_cs, cover_code=None, normalize=False):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_dmrs_seq(root_seq_array, n_cs)
 
@@ -72,7 +74,7 @@ class DmrsUeSequence(UeSequence):
             user_seq_array = user_seq_array * cover_code[:, np.newaxis]
 
         super(DmrsUeSequence, self).__init__(
-            root_seq, n_cs, user_seq_array)
+            root_seq, n_cs, user_seq_array, normalize=normalize)
 
     @property
     def cover_code(self):

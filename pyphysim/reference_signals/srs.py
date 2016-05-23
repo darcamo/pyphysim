@@ -58,11 +58,34 @@ class UeSequence(object):
         The shift index of the user. This can be an integer from 1 to 8.
     user_seq_array : np.ndarray
         The user sequence.
+    normalize : bool
+        True if the reference signal should be normalized. False otherwise.
     """
-    def __init__(self, root_seq, n_cs, user_seq_array):
-        self._user_seq_array = user_seq_array
+    def __init__(self, root_seq, n_cs, user_seq_array, normalize=False):
         self._n_cs = n_cs
         self._root_index = root_seq.index
+        self._normalized = normalize
+
+        if normalize is True:
+            ndim = user_seq_array.ndim
+            if ndim == 1:
+                # No cover code -> user_seq_array is a 1D array
+                norm_factor = np.linalg.norm(user_seq_array)
+            else:
+                # Case with Cover code -> user_seq_array first dimension is
+                # the cover code dimension, while the second dimension is
+                # the sequence elements dimension
+                norm_factor = np.linalg.norm(user_seq_array[0])
+            self._user_seq_array = \
+                user_seq_array / norm_factor
+        else:
+            self._user_seq_array = user_seq_array
+
+    @property
+    def normalized(self):
+        """True if the reference signal is normalized.
+        """
+        return self._normalized
 
     @property
     def size(self):
@@ -213,8 +236,11 @@ class SrsUeSequence(UeSequence):
         class.
     n_cs : int
         The shift index of the user. This can be an integer from 0 to 7.
+    normalize : bool
+        True if the reference signal should be normalized. False otherwise.
     """
-    def __init__(self, root_seq, n_cs):
+    def __init__(self, root_seq, n_cs, normalize=False):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_srs_seq(root_seq_array, n_cs)
-        super(SrsUeSequence, self).__init__(root_seq, n_cs, user_seq_array)
+        super(SrsUeSequence, self).__init__(
+            root_seq, n_cs, user_seq_array, normalize=normalize)

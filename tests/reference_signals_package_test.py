@@ -24,6 +24,7 @@ except NameError:  # pragma: no cover
 import unittest
 import doctest
 import numpy as np
+import math
 
 import pyphysim.reference_signals
 from pyphysim.reference_signals.srs import SrsUeSequence
@@ -334,11 +335,12 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         Nzc = 139
 
         user1_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 1)
+            RootSequence(root_index=25, size=size, Nzc=Nzc), 1, normalize=True)
         user2_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 4)
+            RootSequence(root_index=25, size=size, Nzc=Nzc), 4, normalize=True)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
+        ue2_channel_estimator = CazacBasedChannelEstimator(user2_seq)
 
         speed_terminal = 3/3.6               # Speed in m/s
         fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
@@ -379,8 +381,9 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         Y2 = H2[comb_indexes] * r2
         Y = Y1 + Y2
 
+        # xxxxxxxxxx USER 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Calculate expected estimated channel for user 1
-        y1 = np.fft.ifft(np.conj(r1) * Y, size)
+        y1 = np.fft.ifft(r1.size * np.conj(r1) * Y, size)
         tilde_h1 = y1[0:16]
         tilde_H1 = np.fft.fft(tilde_h1, Nsc)
 
@@ -388,6 +391,13 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             ue1_channel_estimator.estimate_channel_freq_domain(Y, 15),
             tilde_H1)
+
+        # Check that the estimated channel and the True channel have similar norms
+        self.assertAlmostEqual(
+            np.linalg.norm(
+                ue1_channel_estimator.estimate_channel_freq_domain(Y, 15)),
+            np.linalg.norm(H1),
+            delta=0.5)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -398,6 +408,36 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(error/2.,
                                        np.zeros(error.size),
                                        decimal=2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+                # xxxxxxxxxx USER 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Calculate expected estimated channel for user 2
+        y2 = np.fft.ifft(r2.size * np.conj(r2) * Y, size)
+        tilde_h2 = y2[0:16]
+        tilde_H2 = np.fft.fft(tilde_h2, Nsc)
+
+        # Test the CazacBasedChannelEstimator estimation
+        np.testing.assert_array_almost_equal(
+            ue2_channel_estimator.estimate_channel_freq_domain(Y, 15),
+            tilde_H2)
+
+        # Check that the estimated channel and the True channel have similar norms
+        self.assertAlmostEqual(
+            np.linalg.norm(
+                ue2_channel_estimator.estimate_channel_freq_domain(Y, 15)),
+            np.linalg.norm(H2),
+            delta=0.5)
+
+        # Test if true channel and estimated channel are similar. Since the
+        # channel estimation error is higher at the first and last
+        # subcarriers we will test only the inner 200 subcarriers
+        error = np.abs(H2[50:-50] - tilde_H2[50:-50])
+        ":type: np.ndarray"
+
+        np.testing.assert_almost_equal(error/2.,
+                                       np.zeros(error.size),
+                                       decimal=2)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_estimate_channel_without_comb_pattern(self):
         Nsc = 300   # 300 subcarriers
@@ -476,9 +516,9 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         size = Nsc
 
         user1_seq = DmrsUeSequence(
-            RootSequence(root_index=17, size=size), 1)
+            RootSequence(root_index=17, size=size), 1, normalize=True)
         user2_seq = DmrsUeSequence(
-            RootSequence(root_index=17, size=size), 4)
+            RootSequence(root_index=17, size=size), 4, normalize=True)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
                                                            size_multiplier=1)
@@ -522,7 +562,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         Y = Y1 + Y2
 
         # Calculate expected estimated channel for user 1
-        y1 = np.fft.ifft(np.conj(r1) * Y, size)
+        y1 = np.fft.ifft(r1.size * np.conj(r1) * Y, size)
         tilde_h1 = y1[0:4]
         tilde_H1 = np.fft.fft(tilde_h1, Nsc)
 
@@ -547,9 +587,9 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         Nzc = 139
 
         user1_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 1)
+            RootSequence(root_index=25, size=size, Nzc=Nzc), 1, normalize=True)
         user2_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 4)
+            RootSequence(root_index=25, size=size, Nzc=Nzc), 4, normalize=True)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
 
@@ -594,7 +634,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         Y = Y1 + Y2
 
         # Calculate expected estimated channel for user 1
-        y1 = np.fft.ifft(np.conj(r1[:, np.newaxis]) * Y, size, axis=0)
+        y1 = np.fft.ifft(r1.size * np.conj(r1[:, np.newaxis]) * Y, size, axis=0)
         tilde_h1_espected = y1[0:16]
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=0)
 
@@ -788,7 +828,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         """Called before each test."""
         root_seq1 = RootSequence(root_index=15, size=12)
         self.dmrs_seq1 = DmrsUeSequence(
-            root_seq=root_seq1, n_cs=3)
+            root_seq=root_seq1, n_cs=3, normalize=True)
         root_seq2 = RootSequence(root_index=23, size=12)
         self.dmrs_seq2 = DmrsUeSequence(
             root_seq=root_seq2, n_cs=4)
@@ -798,7 +838,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
             root_seq=root_seq3, n_cs=3)
         root_seq4 = RootSequence(root_index=23, size=24)
         self.dmrs_seq4 = DmrsUeSequence(
-            root_seq=root_seq4, n_cs=4)
+            root_seq=root_seq4, n_cs=4, normalize=True)
 
         root_seq5 = RootSequence(root_index=15, size=48)
         self.dmrs_seq5 = DmrsUeSequence(
@@ -839,9 +879,11 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
     def test_seq_array(self):
         # xxxxxxxxxx Test withoyut cover code xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_dmrs1 = get_dmrs_seq(RootSequence(15, 12).seq_array(), 3)
+        expected_dmrs1 /= math.sqrt(expected_dmrs1.size)
         expected_dmrs2 = get_dmrs_seq(RootSequence(23, 12).seq_array(), 4)
         expected_dmrs3 = get_dmrs_seq(RootSequence(15, 24).seq_array(), 3)
         expected_dmrs4 = get_dmrs_seq(RootSequence(23, 24).seq_array(), 4)
+        expected_dmrs4 /= math.sqrt(expected_dmrs4.size)
         expected_dmrs5 = get_dmrs_seq(RootSequence(15, 48).seq_array(), 3)
         expected_dmrs6 = get_dmrs_seq(RootSequence(23, 48).seq_array(), 4)
 
@@ -870,7 +912,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         root_seq1 = RootSequence(root_index=15, size=12)
         cover_code1 = np.array([1, 1])
         dmrs_seq1 = DmrsUeSequence(
-            root_seq=root_seq1, n_cs=3, cover_code=cover_code1)
+            root_seq=root_seq1, n_cs=3, cover_code=cover_code1, normalize=True)
 
         root_seq2 = RootSequence(root_index=23, size=12)
         cover_code2 = np.array([1, -1])
@@ -885,7 +927,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         root_seq4 = RootSequence(root_index=23, size=24)
         cover_code4 = np.array([-1, -1])
         dmrs_seq4 = DmrsUeSequence(
-            root_seq=root_seq4, n_cs=4, cover_code=cover_code4)
+            root_seq=root_seq4, n_cs=4, cover_code=cover_code4, normalize=True)
 
         root_seq5 = RootSequence(root_index=15, size=48)
         cover_code5 = np.array([1, -1, 1, -1])
