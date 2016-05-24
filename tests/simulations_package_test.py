@@ -731,7 +731,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Now lets fix the third, fourth and fifth parameters. This should
         # get me a single index.
         index1 = self.sim_params.get_pack_indexes(
-            {'third': 5, 'fourth': 'B', 'fifth': 'Z'})
+            {'third': 5, 'fourth': 'B', 'fifth': 'Z'})[0]
         # Now we use the index to get an element in the unpacked_list and
         # check if the values are the ones that we have fixed.
         self.assertEqual(unpacked_list[index1]['third'], 5)
@@ -739,7 +739,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(unpacked_list[index1]['fifth'], 'Z')
 
         index2 = self.sim_params.get_pack_indexes(
-            {'third': 5, 'fourth': 'B', 'fifth': 'X'})
+            {'third': 5, 'fourth': 'B', 'fifth': 'X'})[0]
         # Now we use the index to get an element in the unpacked_list and
         # check if the values are the ones that we have fixed.
         self.assertEqual(unpacked_list[index2]['third'], 5)
@@ -747,7 +747,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(unpacked_list[index2]['fifth'], 'X')
 
         index3 = self.sim_params.get_pack_indexes(
-            {'third': 2, 'fourth': 'A', 'fifth': 'Z'})
+            {'third': 2, 'fourth': 'A', 'fifth': 'Z'})[0]
         # Now we use the index to get an element in the unpacked_list and
         # check if the values are the ones that we have fixed.
         self.assertEqual(unpacked_list[index3]['third'], 2)
@@ -1198,7 +1198,7 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
 
             try:
                 r1index = results1.params.get_pack_indexes(
-                    {'SNR': snr, 'extra': extra})
+                    {'SNR': snr, 'extra': extra})[0]
                 count += 1.
                 expected_lala_results[index] \
                     += results1['lala'][r1index].get_result()
@@ -1207,7 +1207,7 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
 
             try:
                 r3index = results3.params.get_pack_indexes(
-                    {'SNR': snr, 'extra': extra})
+                    {'SNR': snr, 'extra': extra})[0]
                 count += 1.
                 expected_lala_results[index] \
                     += results3['lala'][r3index].get_result()

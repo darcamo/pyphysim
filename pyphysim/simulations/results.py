@@ -89,14 +89,14 @@ def combine_simulation_results(simresults1, simresults2):
             try:
                 index1 = simresults1.params.get_pack_indexes(
                         fixed_parameters)
-                result_object.merge(result_list1[index1])
+                result_object.merge(result_list1[index1[0]])
             except ValueError:
                 pass
 
             try:
                 index2 = simresults2.params.get_pack_indexes(
                         fixed_parameters)
-                result_object.merge(result_list2[index2])
+                result_object.merge(result_list2[index2[0]])
             except ValueError:
                 pass
 
