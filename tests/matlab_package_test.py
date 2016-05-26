@@ -39,7 +39,6 @@ class MATLABDoctestsTestCase(unittest.TestCase):
         doctest.testmod(python2MATLAB)
 
 
-# TODO: finish implementation
 class MATLABFunctionsTestCase(unittest.TestCase):
     def test_mmat(self):
         # Test 1D numpy array

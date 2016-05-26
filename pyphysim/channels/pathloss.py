@@ -1620,5 +1620,5 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         d : float | np.ndarray
             Distance (in Km).
         """
-        # TODO: implement-me
-        raise NotImplementedError("Implement-me")  # pragma: no cover
+        raise NotImplementedError("which_distance_dB is not available for "
+                                  "this path loss model")  # pragma: no cover

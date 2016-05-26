@@ -13,6 +13,7 @@ defined here.
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
+from numpy.core.umath import NZERO
 
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
@@ -32,7 +33,7 @@ from pyphysim.reference_signals.channel_estimation import \
     CazacBasedChannelEstimator, CazacBasedWithOCCChannelEstimator
 from pyphysim.reference_signals.dmrs import DmrsUeSequence
 from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
-    get_extended_ZF
+    get_extended_ZF, get_shifted_root_seq
 from pyphysim.reference_signals.srs import get_srs_seq
 from pyphysim.reference_signals.dmrs import get_dmrs_seq
 from pyphysim.channels.fading import TdlChannel
@@ -69,7 +70,6 @@ class SrsDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Zadoff-Chu Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# TODO: finish implementation
 class ZadoffChuFunctionsTestCase(unittest.TestCase):
     """
     Module to test the Zadoff-Chu related functions in the Zadoff-Chu
@@ -80,12 +80,33 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
         pass
 
     def test_calcBaseZC(self):
-        # TODO: Implement-me
-        pass
+        Nzc = 63
+        n = np.r_[0:Nzc]
 
-    def test_getShiftedZF(self):
-        # TODO: Implement-me
-        pass
+        zf1 = calcBaseZC(Nzc=Nzc, u=0, q=0)
+        self.assertEqual(zf1.size, 63)
+        np.testing.assert_array_almost_equal(zf1, 1.0)
+
+        zf2 = calcBaseZC(Nzc=Nzc, u=25, q=0)
+        self.assertEqual(zf1.size, 63)
+
+        expected_zf2 = np.exp(-1j*25*np.pi*n*(n+1)/Nzc)
+        np.testing.assert_array_almost_equal(zf2, expected_zf2)
+
+    def test_get_shifted_root_seq(self):
+        Nzc = 63
+        n = np.r_[0:Nzc]
+        u = 25
+        n_cs = 4
+        denominator = 8
+
+        zf1 = calcBaseZC(Nzc=Nzc, u=u, q=0)
+        zf1_shifted = get_shifted_root_seq(
+            zf1, n_cs=n_cs, denominator=denominator)
+        expected_shifted_zf1 = zf1 * np.exp(1j*n*2*np.pi*n_cs/denominator)
+
+        self.assertEqual(zf1_shifted.size, Nzc)
+        np.testing.assert_almost_equal(zf1_shifted, expected_shifted_zf1)
 
     def test_get_extended_ZF(self):
         a = zadoffchu.calcBaseZC(139, u=20)
