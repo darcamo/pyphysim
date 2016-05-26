@@ -202,6 +202,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # Try to initialize the IASolverBaseClass object with some
         # parameter which is not a MultiUserChannelMatrix object
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             IASolverBaseClassConcret(3)
 
     def test_get_cost(self):

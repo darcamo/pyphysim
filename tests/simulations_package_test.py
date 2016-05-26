@@ -822,6 +822,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Now test converting from json
         decoded_params = SimulationParameters.from_json(encoded_params)
+        ":type: SimulationParameters"
         self.assertTrue(self.sim_params == decoded_params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -2686,7 +2687,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         try:
             from ipyparallel import Client
-            cl = Client(profile="tests", timeout=1.0)
+            cl = Client(profile=b"tests", timeout=1.0)
 
             dview = cl.direct_view()
             # Reset the engines so that we don't have variables there from
@@ -2788,7 +2789,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         try:
             from ipyparallel import Client
-            cl = Client(profile="tests")
+            cl = Client(profile=b"tests")
 
             dview = cl.direct_view()
             # Reset the engines so that we don't have variables there from

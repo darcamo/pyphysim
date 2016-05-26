@@ -342,6 +342,7 @@ def randn_c(*args):
     dtype('complex128')
 
     """
+    # noinspection PyArgumentList
     return (1.0 / math.sqrt(2.0)) * (
         np.random.randn(*args) + (1j * np.random.randn(*args)))
 
@@ -372,8 +373,10 @@ def randn_c_RS(RS, *args):  # pragma: no cover
 
     """
     if RS is None:
+        # noinspection PyArgumentList
         return randn_c(*args)
     else:
+        # noinspection PyArgumentList
         return (1.0 / math.sqrt(2.0)) * (
             RS.randn(*args) + (1j * RS.randn(*args)))
 

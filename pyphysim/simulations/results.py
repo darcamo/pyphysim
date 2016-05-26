@@ -1392,7 +1392,7 @@ class SimulationResults(JsonSerializable):
         """
         try:
             # This is for python 2
-            # noinspection PyUnresolvedReferences
+            # noinspection PyUnresolvedReferences,PyCompatibility
             iterator = self._results.itervalues()
         except AttributeError:
             # This is for python 3

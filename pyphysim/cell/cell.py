@@ -2098,16 +2098,16 @@ class Cluster(shapes.Shape):
 
         Parameters
         ----------
-        cell_ids : int | list[int]
+        cell_ids : int | list[int] | np.ndarray
             IDs of the cells in the Cluster for which users will be
             added. The first cell has an ID equal to 1 and `cell_ids` may
             be an iterable with the IDs of several cells. If not provided,
             all cells will be assumed.
-        num_users : int
+        num_users : int | list[int] | np.ndarray
             Number of users to be added to each cell.
-        user_color : str | list[str]
+        user_color : str | list[str], optional
             Color of the user's marker.
-        min_dist_ratio : float
+        min_dist_ratio : float, optional
             Minimum allowed (relative) distance between the cell center and
             the generated random user. See Cell.add_random_user method for
             details.
@@ -2154,11 +2154,11 @@ class Cluster(shapes.Shape):
 
         Parameters
         ----------
-        cell_ids : int | list[int]
+        cell_ids : int | list[int] | np.ndarray
             IDs of the cells in the Cluster for which users will be
             added. The first cell has an ID equal to 1 and `cell_ids` may
             be an iterable with the IDs of several cells.
-        angles : float | list[float]
+        angles : float | list[float] | np.ndarray
             Angles (in degrees)
         ratios : float | list[float]
             Ratios (from 0 to 1)

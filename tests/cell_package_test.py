@@ -750,6 +750,7 @@ class CellWrapTestCase(unittest.TestCase):
 
     def test_init(self):
         with self.assertRaises(AssertionError):
+            # noinspection PyTypeChecker
             cell.CellWrap(pos=0, wrapped_cell='should_be_cell_object')
 
     def test_pos(self):
@@ -1197,7 +1198,7 @@ class ClusterTestCase(unittest.TestCase):
         # cell_id. We also set a different color for the users in each
         # cell.
         self.C1.add_border_users(cell_ids,
-                                 [angles, angles, angles],
+                                 angles,
                                  0.9,
                                  ['g', 'b', 'k'])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -124,6 +124,7 @@ def _simulate_do_what_i_mean_single_runner(runner,
             # simulation in parallel
             from ipyparallel import Client
             # cl = Client(profile="ssh")
+            # noinspection PyTypeChecker
             cl = Client(profile="default", timeout=2.0)
 
             if folder is not None:

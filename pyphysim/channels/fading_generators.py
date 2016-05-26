@@ -292,7 +292,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         The sample interval (in seconds).
     L : int
         The number of rays for the Jakes model.
-    shape : int | tuple[int]
+    shape : int | tuple[int], optional
         The shape of the sample generator. Each time the
         `generate_jakes_samples` method is called it will generate samples
         with this shape. If not provided, then 1 will be assumed. This

@@ -918,7 +918,7 @@ class EnhancedBD(BDWithExtIntBase):
 
         Parameters
         ----------
-        metric : str
+        metric : str | None
             The metric name. Must be one of the available metrics: {None,
             'capacity', 'effective_throughput'}.
         metric_func_extra_args_dict : dict

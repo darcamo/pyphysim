@@ -197,7 +197,7 @@ class ClosedFormIASolver(IASolverBaseClass):
         ----------
         Ns : int | np.ndarray
             Number of streams of each user.
-        P : np.ndarray
+        P : np.ndarray | List[float] | float, optional
             Power of each user. If not provided, a value of 1 will be used
             for each user.
         """
@@ -787,7 +787,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         ----------
         Ns : int | np.ndarray
             Number of streams of each user.
-        P : np.ndarray, optional
+        P : np.ndarray | List[float] | float, optional
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
@@ -1905,7 +1905,7 @@ class GreedStreamIASolver(object):
         ----------
         Ns : int | np.ndarray
             Number of streams of each user.
-        P : np.ndarray
+        P : np.ndarray | List[float] | float, optional
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 
@@ -2145,7 +2145,7 @@ class BruteForceStreamIASolver(object):
         Ns : int | np.ndarray
             MAXIMUM number of streams of each user. All possible values
             from 1 to Ns (or Ns[k], if Ns is an array) will tried.
-        P : np.ndarray
+        P : np.ndarray | List[float] | float, optional
             Power of each user. If not provided, a value of 1 will be used
             for each user.
 

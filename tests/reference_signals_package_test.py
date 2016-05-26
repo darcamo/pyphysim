@@ -716,6 +716,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         # Calculate expected estimated channel for user 1
         cover_code1 = cover_codes[0]
         Y_with_cover_code = (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+        ":type: np.ndarray"
         r1_no_cover_code = r1[0] * cover_code1[0]
 
         y1 = np.fft.ifft(np.conj(r1_no_cover_code) * Y_with_cover_code, size)
@@ -795,6 +796,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         # Calculate expected estimated channel for user 1
         cover_code1 = cover_codes[0]
         Y_with_cover_code = (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+        ":type: np.ndarray"
         r1_no_cover_code = r1[0] * cover_code1[0]
 
         y1 = np.fft.ifft(

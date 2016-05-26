@@ -210,6 +210,7 @@ class BPSKTestCase(unittest.TestCase):
 
         # Test if an exception is raised for invalid arguments
         with self.assertRaises(ValueError):
+            # noinspection PyTypeChecker
             self.bpsk_obj.modulate(2)
 
 
