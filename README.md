@@ -1,3 +1,5 @@
+![Testing](https://travis-ci.org/darcamo/pyphysim.svg?branch=master) [![Coverage Status](https://coveralls.io/repos/github/darcamo/pyphysim/badge.svg?branch=master)](https://coveralls.io/github/darcamo/pyphysim?branch=master)
+
 PyPhysim
 ========
 

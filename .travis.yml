@@ -1,0 +1,37 @@
+language: python
+python:
+  # - "2.7"
+  # - "3.4"
+  - "3.5"
+  
+notifications:
+  email: false
+
+# Setup anaconda
+before_install:
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda  
+# command to install dependencies
+install:
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  # Replace dep1 dep2 ... with your dependencies
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose Cython pyzmq pandas h5py ipyparallel
+  - source activate test-environment
+  # Install packages not available in conda using pip
+  - pip install configobj
+  - pip install python-coveralls
+  - pip install .
+# command to run tests
+script:
+  - nosetests --with-coverage --cover-package=pyphysim tests/
+
+
+# Calculate coverage
+after_success:
+  - coveralls

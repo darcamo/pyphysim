@@ -8,7 +8,7 @@ matplotlib
 # Optional packages
 pyzmq
 pandas
-h5py
+# h5py
 ipyparallel
 zmq
 ipywidgets
