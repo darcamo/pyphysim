@@ -8,7 +8,6 @@ from .zadoffchu import calcBaseZC, get_extended_ZF
 
 __all__ = ['RootSequence']
 
-
 # List of prime numbers lower than 282.
 _SMALL_PRIME_LIST = np.array(
     [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
@@ -143,7 +142,7 @@ class RootSequence(object):
     """
     n_sc_PRB = 12  # Number of subcarriers in a PRB in LTE
 
-    def __init__(self, root_index: int, size: int=None, Nzc: int=None):
+    def __init__(self, root_index: int, size: int = None, Nzc: int = None):
         if size is None and Nzc is None:
             raise AttributeError("Either 'size' or 'Nzc' (or both) must "
                                  "be provided.")
@@ -175,11 +174,11 @@ class RootSequence(object):
         else:  # size must be either n_sc_PRB or 2*n_sc_PRB
             if size == self.n_sc_PRB:
                 self._seq_array = np.exp(
-                    1j * (np.pi/4.0) *
+                    1j * (np.pi / 4.0) *
                     ROOT_TABLE1['{0}'.format(root_index)])
-            elif size == 2*self.n_sc_PRB:
+            elif size == 2 * self.n_sc_PRB:
                 self._seq_array = np.exp(
-                    1j * (np.pi/4.0) *
+                    1j * (np.pi / 4.0) *
                     ROOT_TABLE2['{0}'.format(root_index)])
             else:
                 raise AttributeError("Invalid root sequence size")
@@ -366,11 +365,11 @@ class RootSequence(object):
         if self._extended_seq_array is None:
             return ("<SrsRootSequence("
                     "root_index={0},Nzc={1})>").format(
-                        self._root_index,
-                        self._seq_array.size)
+                self._root_index,
+                self._seq_array.size)
         else:
             return ("<SrsRootSequence("
                     "root_index={0},size={2},Nzc={1})>").format(
-                        self._root_index, self._seq_array.size,
-                        self._extended_seq_array.size)
+                self._root_index, self._seq_array.size,
+                self._extended_seq_array.size)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

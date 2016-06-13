@@ -11,13 +11,14 @@ from setuptools import setup, find_packages
 import os
 
 # xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-#from distutils.extension import Extension
+# from distutils.extension import Extension
 from Cython.Distutils import build_ext, Extension
 import numpy
 
 misc_c = Extension(name="misc_c", sources=["pyphysim/util/misc_c.pyx"],
                    include_dirs=[numpy.get_include()])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxx Get the project version xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def get_version():
@@ -32,7 +33,7 @@ def get_version():
 # within directory (except the excluded ones). Using find_packages instead
 # of writing the name of the packages directly guarantees that we won't
 # forget a package which is added in the future.
-#packages = find_packages(where='pyphysim', exclude=[])
+# packages = find_packages(where='pyphysim', exclude=[])
 packages = find_packages(where='.', exclude=['tests', 'apps'])
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -61,7 +62,8 @@ setup(
     url="http://code.google.com/p/py-physim/",
     download_url='fillmein',
     keywords='phy QAM PSK QPSK BPSK Modulation Monte Carlo',
-    description="Implementation of a digital communication (physical layer) in python.",
+    description=("Implementation of a digital communication (physical layer) "
+                 "in python."),
     long_description=read("README.md"),
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
@@ -83,7 +85,7 @@ setup(
     packages=packages,
     package_data={'': ["README", "LICENSE.txt"],
                   'tests': ["README"]},
-    #setup_requires=['nose>=1.0'],
+    # setup_requires=['nose>=1.0'],
 
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ext_modules=[misc_c],

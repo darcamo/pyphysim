@@ -171,8 +171,7 @@ class PathLossBase(object):
             "**extra_args" (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
-        self._plot_deterministic_path_loss_in_dB_impl(
-                d, ax, extra_args, 'Km')
+        self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args, 'Km')
 
     def _plot_deterministic_path_loss_in_dB_impl(
             self, d, ax=None, extra_args=None,
@@ -259,7 +258,7 @@ class PathLossBase(object):
                 shadow.shape = np.shape(d)
             else:
                 # If 'd' is not an array but add a scalar shadowing
-                shadow =np.random.standard_normal() * self.sigma_shadow
+                shadow = np.random.standard_normal() * self.sigma_shadow
             # Sum the deterministic pathloss value (in dB) with the
             # shadowing (in dB)
             PL += shadow
@@ -612,7 +611,7 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float | np.ndarray
+        d : float | np.ndarray | list[float]
             Distance (in Km)
         kargs : dict
             Additional keywords that might be necessary in a subclass.
@@ -631,7 +630,7 @@ class PathLossOutdoorBase(PathLossBase):
 
         Parameters
         ----------
-        d : float | np.ndarray
+        d : float | np.ndarray | list[float]
             Distance (in Km)
         kargs : dict
             Additional keywords that might be necessary in a subclass.
@@ -1577,7 +1576,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
         Returns
         -------
-        PL : float
+        PL : float | np.ndarray
             Path loss in dB.
         """
         if isinstance(d, Iterable):

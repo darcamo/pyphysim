@@ -285,7 +285,7 @@ class Shape(Coordinate):
         return vertex_positions
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def is_point_inside_shape(self, point : complex) -> bool:
+    def is_point_inside_shape(self, point: complex) -> bool:
         """
         Test is a point is inside the shape.
 

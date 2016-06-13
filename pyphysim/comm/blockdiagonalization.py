@@ -483,7 +483,7 @@ class BlockDiagonalizer(object):
         # Scale the power of this modulation assuring the power restriction
         # is not violated in any of the base stations.
         Ms_good = self._perform_normalized_waterfilling_power_scaling(
-                Ms_bad, Sigma)
+            Ms_bad, Sigma)
 
         # Finally calculates the Block diagonal channel
         newH = np.dot(mtChannel, Ms_good)

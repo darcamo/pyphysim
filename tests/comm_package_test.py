@@ -18,7 +18,7 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:               # pragma: no cover
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -30,16 +30,17 @@ from scipy.linalg import block_diag
 from pyphysim.comm import blockdiagonalization, waterfilling
 from pyphysim.modulators import fundamental
 from pyphysim.channels import multiuser
-from pyphysim.util.misc import calc_whitening_matrix, randn_c, calc_shannon_sum_capacity
+from pyphysim.util.misc import calc_whitening_matrix, randn_c, \
+    calc_shannon_sum_capacity
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.subspace.projections import calcProjectionMatrix
-
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
 class CommDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
+
     def test_blockdiagonalization(self, ):
         """Run doctests in the blockdiagonalization module."""
         doctest.testmod(blockdiagonalization)
@@ -56,6 +57,7 @@ class WaterfillingTestCase(unittest.TestCase):
     """Unittests for the waterfilling module.
 
     """
+
     def test_doWF(self):
         """
         - `vtChannels`: Numpy array with the channel POWER gains (power of the
@@ -104,6 +106,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
     module.
 
     """
+
     def setUp(self):
         """Called before each test."""
         self.Pu = 5.  # Power for each user
@@ -334,15 +337,15 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         W0 = W_bd[0:2, 0:2]
         newH0 = newH[0:2, 0:2]
         np.testing.assert_array_almost_equal(np.dot(W0, newH0),
-                                             np.eye(self.iNt/3))
+                                             np.eye(self.iNt / 3))
         W1 = W_bd[2:4, 2:4]
         newH1 = newH[2:4, 2:4]
         np.testing.assert_array_almost_equal(np.dot(W1, newH1),
-                                             np.eye(self.iNt/3))
+                                             np.eye(self.iNt / 3))
         W2 = W_bd[4:, 4:]
         newH2 = newH[4:, 4:]
         np.testing.assert_array_almost_equal(np.dot(W2, newH2),
-                                             np.eye(self.iNt/3))
+                                             np.eye(self.iNt / 3))
 
 
 # TODO: finish implementation
@@ -414,7 +417,7 @@ class WhiteningBDTestCase(unittest.TestCase):
         # xxxxx First we test without ext. int. handling xxxxxxxxxxxxxxxxxx
         (Ms_all, Wk_all, Ns_all) \
             = whiteningBD_obj.block_diagonalize_no_waterfilling(
-                multiUserChannel)
+            multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -696,7 +699,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         enhancedBD_obj.set_ext_int_handling_metric(None)
         (Ms_all, Wk_all, Ns_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
-                multiUserChannel)
+            multiUserChannel)
         Ms1 = Ms_all[0]
         Ms2 = Ms_all[1]
 
@@ -732,6 +735,7 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
+        # noinspection PyPep8
         se = (
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs[0]),
@@ -750,7 +754,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         (MsPk_naive_all, Wk_naive_all, Ns_naive_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
-                multiUserChannel)
+            multiUserChannel)
         MsPk_naive_1 = MsPk_naive_all[0]
         MsPk_naive_2 = MsPk_naive_all[1]
 
@@ -814,7 +818,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
-                multiUserChannel)
+            multiUserChannel)
         MsPk_fixed_1 = MsPk_fixed_all[0]
         MsPk_fixed_2 = MsPk_fixed_all[1]
 
@@ -868,7 +872,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         enhancedBD_obj.set_ext_int_handling_metric('capacity')
         (MsPk_all, Wk_cap_all, Ns_cap_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
-                multiUserChannel)
+            multiUserChannel)
         MsPk_cap_1 = MsPk_all[0]
         MsPk_cap_2 = MsPk_all[1]
 
@@ -901,6 +905,7 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
+        # noinspection PyPep8
         se2 = (
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs2[0]),
@@ -920,7 +925,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         (MsPk_effec_all, Wk_effec_all, Ns_effec_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
-                multiUserChannel)
+            multiUserChannel)
         MsPk_effec_1 = MsPk_effec_all[0]
         MsPk_effec_2 = MsPk_effec_all[1]
 
@@ -957,6 +962,7 @@ class EnhancedBDTestCase(unittest.TestCase):
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
+        # noinspection PyPep8
         se3 = (
             np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
                 linear2dB(sinrs3[0]),

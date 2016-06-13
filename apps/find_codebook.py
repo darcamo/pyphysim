@@ -450,6 +450,7 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     # Only save if it is better then the previous results
     if previous_best_dist < best_dist:
         print("Saving new results")
+        # noinspection PyTypeChecker
         save_results(best_dist, best_codebook, best_principal_angles, filename)
     else:
         print("Keeping previous results")

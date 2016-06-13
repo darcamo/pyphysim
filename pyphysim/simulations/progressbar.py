@@ -682,7 +682,7 @@ class ProgressbarText(ProgressbarTextBase):
             output.
         """
         ProgressbarTextBase.__init__(
-                self, finalcount, progresschar, message, output)
+            self, finalcount, progresschar, message, output)
 
         # stores how many characters where already printed in a previous
         # call to the `progress` function
@@ -1814,8 +1814,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
                 # Try to read a message. If this fail we will get a
                 # zmq.ZMQError exception and then pending_messages will be
                 # set to False so that we exit the while loop.
-                message = self._zmq_pull_socket.recv_string(
-                        flags=zmq.NOBLOCK)
+                message = self._zmq_pull_socket.recv_string(flags=zmq.NOBLOCK)
 
                 # If we are here that means that a new message was
                 # successfully received from the client.  Let's call the

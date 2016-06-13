@@ -65,8 +65,7 @@ class TdlChannelProfile(object):
 
         aux = (np.sum(self._tap_powers_linear * self._tap_delays ** 2) /
                np.sum(self._tap_powers_linear))
-        self._rms_delay_spread = math.sqrt(
-                aux - self._mean_excess_delay ** 2)
+        self._rms_delay_spread = math.sqrt(aux - self._mean_excess_delay ** 2)
 
         # Sampling interval when the channel profile is discretized. You
         # can call the
@@ -235,8 +234,7 @@ class TdlChannelProfile(object):
         name = "{0} (discretized)".format(self.name)
         powers, delays = self._calc_discretized_tap_powers_and_delays(Ts)
 
-        discretized_channel_profile = TdlChannelProfile(
-                powers, delays, name)
+        discretized_channel_profile = TdlChannelProfile(powers, delays, name)
         discretized_channel_profile._Ts = Ts
 
         return discretized_channel_profile
@@ -871,8 +869,11 @@ class TdlChannel(object):
         including possible zero padding) for `num_samples` channel
         realizations.
 
-        The generated impulse response is saved in the
-        `_last_impulse_response` attribute.
+        NOTE: This method is automatically called in the `corrupt_data` and
+        `corrupt_data_in_freq_domain` methods and you don't need to call it
+        befortransmitting data. After one of them has been called the
+        generated impulse response can ge get with the
+        `get_last_impulse_response` method.
 
         The number of discretized taps of the generated impulse response will
         depend on the channel delay profile (the tap_delays passed during

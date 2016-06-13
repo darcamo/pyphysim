@@ -96,7 +96,7 @@ class FadingSampleGenerator(object):
 
     Parameters
     ----------
-    shape : tuple[int] | int
+    shape : tuple[int] | int, optional
         The shape of the sample generator. Each time
         `generate_more_samples(num_samples)` method is called it will
         generate samples with this shape as the first dimensions.

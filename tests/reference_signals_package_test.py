@@ -51,6 +51,7 @@ class SrsDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the simulations
     package.
     """
+
     def test_srs_module(self):
         """Run reference_signals module doctests"""
         doctest.testmod(pyphysim.reference_signals.srs)
@@ -67,6 +68,7 @@ class SrsDoctestsTestCase(unittest.TestCase):
         """Run reference_signals module doctests"""
         doctest.testmod(pyphysim.reference_signals.zadoffchu)
 
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Zadoff-Chu Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -75,6 +77,7 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
     Module to test the Zadoff-Chu related functions in the Zadoff-Chu
     module.
     """
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -85,12 +88,12 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
 
         zf1 = calcBaseZC(Nzc=Nzc, u=0, q=0)
         self.assertEqual(zf1.size, 63)
-        np.testing.assert_array_almost_equal(zf1, 1.0)
+        np.testing.assert_array_almost_equal(zf1, np.ones(63))
 
         zf2 = calcBaseZC(Nzc=Nzc, u=25, q=0)
         self.assertEqual(zf1.size, 63)
 
-        expected_zf2 = np.exp(-1j*25*np.pi*n*(n+1)/Nzc)
+        expected_zf2 = np.exp(-1j * 25 * np.pi * n * (n + 1) / Nzc)
         np.testing.assert_array_almost_equal(zf2, expected_zf2)
 
     def test_get_shifted_root_seq(self):
@@ -103,7 +106,8 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
         zf1 = calcBaseZC(Nzc=Nzc, u=u, q=0)
         zf1_shifted = get_shifted_root_seq(
             zf1, n_cs=n_cs, denominator=denominator)
-        expected_shifted_zf1 = zf1 * np.exp(1j*n*2*np.pi*n_cs/denominator)
+        expected_shifted_zf1 = zf1 * np.exp(
+            1j * n * 2 * np.pi * n_cs / denominator)
 
         self.assertEqual(zf1_shifted.size, Nzc)
         np.testing.assert_almost_equal(zf1_shifted, expected_shifted_zf1)
@@ -195,17 +199,17 @@ class RootSequenceTestCase(unittest.TestCase):
     def test_seq_array(self):
         # xxxxxxxxxx Small Root Sequences xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Line 15 of the first table
-        expected_small_root_seq1 = np.exp(1j * (np.pi/4.0) * np.array(
+        expected_small_root_seq1 = np.exp(1j * (np.pi / 4.0) * np.array(
             [3, -1, 1, -3, -1, -1, 1, 1, 3, 1, -1, -3]))
         # Line 23 of the first table
-        expected_small_root_seq2 = np.exp(1j * (np.pi/4.0) * np.array(
+        expected_small_root_seq2 = np.exp(1j * (np.pi / 4.0) * np.array(
             [1, 1, -1, -3, -1, -3, 1, -1, 1, 3, -1, 1]))
         # Line 15 of the second table
-        expected_small_root_seq3 = np.exp(1j * (np.pi/4.0) * np.array(
+        expected_small_root_seq3 = np.exp(1j * (np.pi / 4.0) * np.array(
             [-1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3,
              1, 3, 1, -1, -3, -3, -1, -1, -3, -3, -3, -1]))
         # Line 23 of the second table
-        expected_small_root_seq4 = np.exp(1j * (np.pi/4.0) * np.array(
+        expected_small_root_seq4 = np.exp(1j * (np.pi / 4.0) * np.array(
             [-1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3,
              -1, 3, -1, 3, 3, -3, 3, 1, -1, 3, 3]))
 
@@ -228,12 +232,14 @@ class RootSequenceTestCase(unittest.TestCase):
             self.root_seq_no_ext2.seq_array(), expected_root__no_ext2)
 
         expected_root_seq1 = calcBaseZC(149, 25)
-        expected_root_seq1 = np.hstack([expected_root_seq1, expected_root_seq1[0:1]])
+        expected_root_seq1 = np.hstack([expected_root_seq1,
+                                        expected_root_seq1[0:1]])
         np.testing.assert_array_almost_equal(
             self.root_seq1.seq_array(), expected_root_seq1)
 
         expected_root_seq2 = calcBaseZC(139, 12)
-        expected_root_seq2 = np.hstack([expected_root_seq2, expected_root_seq2[0:11]])
+        expected_root_seq2 = np.hstack([expected_root_seq2,
+                                        expected_root_seq2[0:11]])
         np.testing.assert_array_almost_equal(
             self.root_seq2.seq_array(), expected_root_seq2)
 
@@ -250,7 +256,8 @@ class RootSequenceTestCase(unittest.TestCase):
             self.root_seq4.seq_array(), expected_root_seq4)
 
         expected_root_seq5 = calcBaseZC(31, 6)
-        expected_root_seq5 = np.hstack([expected_root_seq5, expected_root_seq5[0:1]])
+        expected_root_seq5 = np.hstack([expected_root_seq5,
+                                        expected_root_seq5[0:1]])
         np.testing.assert_array_almost_equal(
             self.root_seq5.seq_array(), expected_root_seq5)
 
@@ -317,27 +324,34 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         expected_user_seq_no_ext2 = get_srs_seq(calcBaseZC(31, 6), 1)
         np.testing.assert_array_almost_equal(expected_user_seq_no_ext2,
                                              self.user_seq_no_ext2.seq_array())
-        expected_user_seq_no_ext2_other_shift = get_srs_seq(calcBaseZC(31, 6), 3)
+        expected_user_seq_no_ext2_other_shift = get_srs_seq(calcBaseZC(31, 6),
+                                                            3)
         np.testing.assert_array_almost_equal(
             expected_user_seq_no_ext2_other_shift,
             self.user_seq_no_ext2_other.seq_array())
 
-        expected_user_seq1 = get_srs_seq(get_extended_ZF(calcBaseZC(139, 25), 150), 7)
+        expected_user_seq1 = get_srs_seq(get_extended_ZF(
+            calcBaseZC(139, 25), 150), 7)
         np.testing.assert_array_almost_equal(self.user_seq1.seq_array(),
                                              expected_user_seq1)
-        expected_user_seq2 = get_srs_seq(get_extended_ZF(calcBaseZC(139, 12), 150), 4)
+        expected_user_seq2 = get_srs_seq(get_extended_ZF(
+            calcBaseZC(139, 12), 150), 4)
         np.testing.assert_array_almost_equal(self.user_seq2.seq_array(),
                                              expected_user_seq2)
-        expected_user_seq3 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 25), 64), 1)
+        expected_user_seq3 = get_srs_seq(get_extended_ZF(
+            calcBaseZC(31, 25), 64), 1)
         np.testing.assert_array_almost_equal(self.user_seq3.seq_array(),
                                              expected_user_seq3)
-        expected_user_seq4 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 64), 2)
+        expected_user_seq4 = get_srs_seq(get_extended_ZF(
+            calcBaseZC(31, 6), 64), 2)
         np.testing.assert_array_almost_equal(self.user_seq4.seq_array(),
                                              expected_user_seq4)
-        expected_user_seq5 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 32), 3)
+        expected_user_seq5 = get_srs_seq(get_extended_ZF(
+            calcBaseZC(31, 6), 32), 3)
         np.testing.assert_array_almost_equal(self.user_seq5.seq_array(),
                                              expected_user_seq5)
-        expected_user_seq6 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 256), 5)
+        expected_user_seq6 = get_srs_seq(get_extended_ZF(
+            calcBaseZC(31, 6), 256), 5)
         np.testing.assert_array_almost_equal(self.user_seq6.seq_array(),
                                              expected_user_seq6)
 
@@ -351,7 +365,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         pass
 
     def test_estimate_channel_with_srs(self):
-        Nsc = 300                            # 300 subcarriers
+        Nsc = 300  # 300 subcarriers
         size = Nsc // 2
         Nzc = 139
 
@@ -363,13 +377,13 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
         ue2_channel_estimator = CazacBasedChannelEstimator(user2_seq)
 
-        speed_terminal = 3/3.6               # Speed in m/s
-        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
-        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
-        wave_length = 3e8/fcDbl              # Carrier wave length
-        Fd = speed_terminal / wave_length    # Doppler Frequency
-        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
-        L = 16                               # Number of jakes taps
+        speed_terminal = 3 / 3.6  # Speed in m/s
+        fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3  # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8 / fcDbl  # Carrier wave length
+        Fd = speed_terminal / wave_length  # Doppler Frequency
+        Ts = 1. / (Nsc * subcarrier_bandwidth)  # Sampling interval
+        L = 16  # Number of jakes taps
 
         jakes1 = JakesSampleGenerator(Fd, Ts, L)
         jakes2 = JakesSampleGenerator(Fd, Ts, L)
@@ -413,7 +427,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
             ue1_channel_estimator.estimate_channel_freq_domain(Y, 15),
             tilde_H1)
 
-        # Check that the estimated channel and the True channel have similar norms
+        # Check that the estimated channel and the True channel have similar
+        # norms
         self.assertAlmostEqual(
             np.linalg.norm(
                 ue1_channel_estimator.estimate_channel_freq_domain(Y, 15)),
@@ -426,12 +441,12 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(error/2.,
+        np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
                                        decimal=2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-                # xxxxxxxxxx USER 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxx USER 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Calculate expected estimated channel for user 2
         y2 = np.fft.ifft(r2.size * np.conj(r2) * Y, size)
         tilde_h2 = y2[0:16]
@@ -442,7 +457,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
             ue2_channel_estimator.estimate_channel_freq_domain(Y, 15),
             tilde_H2)
 
-        # Check that the estimated channel and the True channel have similar norms
+        # Check that the estimated channel and the True channel have similar
+        # norms
         self.assertAlmostEqual(
             np.linalg.norm(
                 ue2_channel_estimator.estimate_channel_freq_domain(Y, 15)),
@@ -455,13 +471,13 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H2[50:-50] - tilde_H2[50:-50])
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(error/2.,
+        np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
                                        decimal=2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_estimate_channel_without_comb_pattern(self):
-        Nsc = 300   # 300 subcarriers
+        Nsc = 300  # 300 subcarriers
         size = Nsc  # The size is also 300, since there is no comb pattern
         Nzc = 139
 
@@ -474,13 +490,13 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
                                                            size_multiplier=1)
 
-        speed_terminal = 3/3.6               # Speed in m/s
-        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
-        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
-        wave_length = 3e8/fcDbl              # Carrier wave length
-        Fd = speed_terminal / wave_length    # Doppler Frequency
-        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
-        L = 16                               # Number of jakes taps
+        speed_terminal = 3 / 3.6  # Speed in m/s
+        fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3  # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8 / fcDbl  # Carrier wave length
+        Fd = speed_terminal / wave_length  # Doppler Frequency
+        Ts = 1. / (Nsc * subcarrier_bandwidth)  # Sampling interval
+        L = 16  # Number of jakes taps
 
         jakes1 = JakesSampleGenerator(Fd, Ts, L)
         jakes2 = JakesSampleGenerator(Fd, Ts, L)
@@ -528,7 +544,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(error/2.,
+        np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
                                        decimal=2)
 
@@ -544,13 +560,13 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
                                                            size_multiplier=1)
 
-        speed_terminal = 3/3.6               # Speed in m/s
-        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
-        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
-        wave_length = 3e8/fcDbl              # Carrier wave length
-        Fd = speed_terminal / wave_length    # Doppler Frequency
-        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
-        L = 16                               # Number of jakes taps
+        speed_terminal = 3 / 3.6  # Speed in m/s
+        fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3  # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8 / fcDbl  # Carrier wave length
+        Fd = speed_terminal / wave_length  # Doppler Frequency
+        Ts = 1. / (Nsc * subcarrier_bandwidth)  # Sampling interval
+        L = 16  # Number of jakes taps
 
         jakes1 = JakesSampleGenerator(Fd, Ts, L)
         jakes2 = JakesSampleGenerator(Fd, Ts, L)
@@ -599,11 +615,10 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         np.testing.assert_almost_equal(
-            error/2., np.zeros(error.size), decimal=2)
-
+            error / 2., np.zeros(error.size), decimal=2)
 
     def test_estimate_channel_multiple_rx(self):
-        Nsc = 300                            # 300 subcarriers
+        Nsc = 300  # 300 subcarriers
         size = Nsc // 2
         Nzc = 139
 
@@ -614,13 +629,13 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
 
-        speed_terminal = 3/3.6               # Speed in m/s
-        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
-        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
-        wave_length = 3e8/fcDbl              # Carrier wave length
-        Fd = speed_terminal / wave_length    # Doppler Frequency
-        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
-        L = 16                               # Number of jakes taps
+        speed_terminal = 3 / 3.6  # Speed in m/s
+        fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3  # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8 / fcDbl  # Carrier wave length
+        Fd = speed_terminal / wave_length  # Doppler Frequency
+        Ts = 1. / (Nsc * subcarrier_bandwidth)  # Sampling interval
+        L = 16  # Number of jakes taps
 
         # Create the fading generators and set multiple receive antennas
         jakes1 = JakesSampleGenerator(Fd, Ts, L, shape=(3, 1))
@@ -660,7 +675,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=0)
 
         # Test the CazacBasedChannelEstimator estimation
-        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T, 15)
+        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T,
+                                                                          15)
         np.testing.assert_array_almost_equal(
             H1_estimated, tilde_H1_espected.T)
 
@@ -670,7 +686,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H1[50:-50, :] - tilde_H1_espected[50:-50, :])
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(error/2.,
+        np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.shape),
                                        decimal=2)
 
@@ -696,13 +712,13 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 
         ue1_channel_estimator = CazacBasedWithOCCChannelEstimator(user1_seq)
 
-        speed_terminal = 3/3.6               # Speed in m/s
-        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
-        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
-        wave_length = 3e8/fcDbl              # Carrier wave length
-        Fd = speed_terminal / wave_length    # Doppler Frequency
-        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
-        L = 16                               # Number of jakes taps
+        speed_terminal = 3 / 3.6  # Speed in m/s
+        fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3  # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8 / fcDbl  # Carrier wave length
+        Fd = speed_terminal / wave_length  # Doppler Frequency
+        Ts = 1. / (Nsc * subcarrier_bandwidth)  # Sampling interval
+        L = 16  # Number of jakes taps
 
         jakes1 = JakesSampleGenerator(Fd, Ts, L)
         jakes2 = JakesSampleGenerator(Fd, Ts, L)
@@ -736,7 +752,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 
         # Calculate expected estimated channel for user 1
         cover_code1 = cover_codes[0]
-        Y_with_cover_code = (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+        Y_with_cover_code = \
+            (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
         ":type: np.ndarray"
         r1_no_cover_code = r1[0] * cover_code1[0]
 
@@ -756,8 +773,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         np.testing.assert_almost_equal(
-            error/2., np.zeros(error.size), decimal=2)
-
+            error / 2., np.zeros(error.size), decimal=2)
 
     def test_estimate_channel_multiple_rx(self):
         Nsc = 24
@@ -775,13 +791,13 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 
         ue1_channel_estimator = CazacBasedWithOCCChannelEstimator(user1_seq)
 
-        speed_terminal = 3/3.6               # Speed in m/s
-        fcDbl = 2.6e9                        # Central carrier frequency (in Hz)
-        subcarrier_bandwidth = 15e3          # Subcarrier bandwidth (in Hz)
-        wave_length = 3e8/fcDbl              # Carrier wave length
-        Fd = speed_terminal / wave_length    # Doppler Frequency
-        Ts = 1./(Nsc * subcarrier_bandwidth) # Sampling interval
-        L = 16                               # Number of jakes taps
+        speed_terminal = 3 / 3.6  # Speed in m/s
+        fcDbl = 2.6e9  # Central carrier frequency (in Hz)
+        subcarrier_bandwidth = 15e3  # Subcarrier bandwidth (in Hz)
+        wave_length = 3e8 / fcDbl  # Carrier wave length
+        Fd = speed_terminal / wave_length  # Doppler Frequency
+        Ts = 1. / (Nsc * subcarrier_bandwidth)  # Sampling interval
+        L = 16  # Number of jakes taps
 
         # Create the fading generators and set multiple receive antennas
         jakes1 = JakesSampleGenerator(Fd, Ts, L, shape=(3, 1))
@@ -816,7 +832,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 
         # Calculate expected estimated channel for user 1
         cover_code1 = cover_codes[0]
-        Y_with_cover_code = (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+        Y_with_cover_code = \
+            (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
         ":type: np.ndarray"
         r1_no_cover_code = r1[0] * cover_code1[0]
 
@@ -838,7 +855,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H1 - tilde_H1_espected)
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(error/2.,
+        np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.shape),
                                        decimal=2)
 
@@ -1001,7 +1018,6 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(
             "<DmrsUeSequence(root_index=23, n_cs=4, cover_code=[ 1 -1])>",
             repr(dmrs_seq2))
-
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

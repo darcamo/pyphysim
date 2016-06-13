@@ -102,6 +102,7 @@ class AntGainBS3GPP25996(AntGainBase):
             raise ValueError("Invalid number of sectors: {0}".format(
                 number_of_sectors))
 
+    # noinspection PyPep8
     def get_antenna_gain(self, angle):
         """
         Get the antenna gain for the given angle.

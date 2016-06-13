@@ -124,6 +124,17 @@ class JsonSerializable(object):
         """
         raise NotImplementedError("Implement in a subclass")
 
+    def to_dict(self):
+        """
+        Convert the object to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            The dictionary representation of the object.
+        """
+        return self._to_dict()
+
     @staticmethod
     def _from_dict(d):
         """
@@ -140,6 +151,23 @@ class JsonSerializable(object):
             The converted object.
         """
         raise NotImplementedError("Implement in a subclass")
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Convert from a dictionary to an object.
+
+        Parameters
+        ----------
+        d : dict
+            The dictionary representing the Result.
+
+        Returns
+        -------
+        Result
+            The converted object.
+        """
+        return cls._from_dict(d)
 
     def to_json(self):
         """

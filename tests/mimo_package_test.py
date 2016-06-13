@@ -18,7 +18,7 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:               # pragma: no cover
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -39,6 +39,7 @@ class MimoDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the mimo module.
     """
+
     def test_mimo(self, ):
         """Run doctests in the mimo module."""
         doctest.testmod(mimo)
@@ -48,6 +49,7 @@ class MimoDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx MIMO Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Function defined here for test purposes
+# noinspection PyPep8
 def calc_Bl(channel, W, l, noise_var=0.0):
     """
     Calculate the Bl matrix corresponding to the interference plus noise
@@ -114,9 +116,9 @@ def calc_SINRs(channel, W, G_H, noise_var):
     sinrs = np.empty(Ns, dtype=float)
     for l in range(Ns):
         Bl = calc_Bl(channel, W, l, noise_var)
-        num = np.linalg.norm((G_H[l].dot(channel).dot(W[:, l])))**2
+        num = np.linalg.norm((G_H[l].dot(channel).dot(W[:, l]))) ** 2
         den = np.abs(G_H[l].dot(Bl).dot(G_H[l].conj()))
-        sinrs[l] = num/den
+        sinrs[l] = num / den
 
     return sinrs
 
@@ -124,6 +126,7 @@ def calc_SINRs(channel, W, G_H, noise_var):
 class BlastTestCase(unittest.TestCase):
     """Unittests for the Blast class in the mimo module.
     """
+
     def setUp(self):
         """Called before each test."""
         self.blast_object = Blast()
@@ -416,7 +419,7 @@ class MRCTestCase(unittest.TestCase):
         channel = randn_c(4)  # 4 receive antennas
         self.mrc_object.set_channel_matrix(channel)
         encoded_data2 = self.mrc_object.encode(data)
-        received_data4 = np.dot(channel[:,np.newaxis], encoded_data2)
+        received_data4 = np.dot(channel[:, np.newaxis], encoded_data2)
         decoded_data4 = self.mrc_object.decode(received_data4)
         np.testing.assert_array_almost_equal(decoded_data4, data)
 
@@ -453,7 +456,7 @@ class SVDMimoTestCase(unittest.TestCase):
         # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
-        data = np.r_[0:15*Nt]
+        data = np.r_[0:15 * Nt]
         data_aux = data.reshape(Nt, -1)
         channel = randn_c(Nr, Nt)
         self.svdmimo_object.set_channel_matrix(channel)
@@ -472,7 +475,7 @@ class SVDMimoTestCase(unittest.TestCase):
         # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 4
         Nr = 4
-        data = np.r_[0:15*Nt]
+        data = np.r_[0:15 * Nt]
         data_aux = data.reshape(Nt, -1)
         channel = randn_c(Nr, Nt)
         self.svdmimo_object.set_channel_matrix(channel)
@@ -491,16 +494,16 @@ class SVDMimoTestCase(unittest.TestCase):
         # xxxxx Test if an exception is raised for wrong size xxxxxxxxxxxxx
         # The exception is raised if the input array size is not a multiple
         # of the number of transmit antennas
-        data2 = np.r_[0:15*Nt+1]
+        data2 = np.r_[0:15 * Nt + 1]
         with self.assertRaises(ValueError):
             self.svdmimo_object.encode(data2)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
         # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
-        data = np.r_[0:15*Nt]
+        data = np.r_[0:15 * Nt]
         channel = randn_c(Nr, Nt)
         self.svdmimo_object.set_channel_matrix(channel)
 
@@ -543,7 +546,7 @@ class GMDMimoTestCase(unittest.TestCase):
         # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
-        data = np.r_[0:15*Nt]
+        data = np.r_[0:15 * Nt]
 
         channel = randn_c(Nr, Nt)
         self.gmdmimo_object.set_channel_matrix(channel)
@@ -564,16 +567,16 @@ class GMDMimoTestCase(unittest.TestCase):
         # xxxxx Test if an exception is raised for wrong size xxxxxxxxxxxxx
         # The exception is raised if the input array size is not a multiple
         # of the number of transmit antennas
-        data2 = np.r_[0:15*Nt+1]
+        data2 = np.r_[0:15 * Nt + 1]
         with self.assertRaises(ValueError):
             self.gmdmimo_object.encode(data2)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_decode(self):
         # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
-        data = np.r_[0:15*Nt]
+        data = np.r_[0:15 * Nt]
         channel = randn_c(Nr, Nt)
         self.gmdmimo_object.set_channel_matrix(channel)
 
@@ -674,15 +677,16 @@ class AlamoutiTestCase(unittest.TestCase):
         # G_H = self.alamouti_object._calc_receive_filter(channel, noise_var)
 
         expected_sinrs = linear2dB(
-            (np.linalg.norm(channel, 'fro')**2)/noise_var)
+            (np.linalg.norm(channel, 'fro') ** 2) / noise_var)
 
         # Calculate the SINR using method in the Alamouti class. Note that
         # we only need to pass the noise variance, since the mimo object
         # knows the channel.
         sinrs = self.alamouti_object.calc_SINRs(noise_var)
         np.testing.assert_array_almost_equal(sinrs, expected_sinrs, 2)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

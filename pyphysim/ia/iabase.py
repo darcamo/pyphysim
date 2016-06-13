@@ -448,8 +448,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
                 if np.all(value > 0.0):
                     self._P = np.array(value)
                 else:
-                    raise ValueError(
-                            "P cannot be negative or equal to zero.")
+                    raise ValueError("P cannot be negative or equal to zero.")
 
     @property
     def Ns(self):

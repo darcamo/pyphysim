@@ -87,15 +87,13 @@ def combine_simulation_results(simresults1, simresults2):
             fixed_parameters = unpack.parameters
 
             try:
-                index1 = simresults1.params.get_pack_indexes(
-                        fixed_parameters)
+                index1 = simresults1.params.get_pack_indexes(fixed_parameters)
                 result_object.merge(result_list1[index1[0]])
             except ValueError:
                 pass
 
             try:
-                index2 = simresults2.params.get_pack_indexes(
-                        fixed_parameters)
+                index2 = simresults2.params.get_pack_indexes(fixed_parameters)
                 result_object.merge(result_list2[index2[0]])
             except ValueError:
                 pass
@@ -684,6 +682,7 @@ class Result(JsonSerializable):
         n = self.num_updates
         return calc_confidence_interval(mean, std, n, P)
 
+    # Overwrite version in  JsonSerializable
     def _to_dict(self):
         """
         Convert the Result object to a dictionary representation.
@@ -720,7 +719,9 @@ class Result(JsonSerializable):
         Result
             The converted object.
         """
-        if isinstance(d['value'], Iterable) and d['update_type_code'] == Result.CHOICETYPE:
+        if isinstance(d['value'], Iterable) and \
+           d['update_type_code'] == Result.CHOICETYPE:
+
             values = d['value']
 
             r = Result(name=d['name'], update_type_code=d['update_type_code'],
@@ -1645,8 +1646,9 @@ class SimulationResults(JsonSerializable):
             The SimulationResults object loaded from the file `filename`.
         """
         ext = os.path.splitext(filename)[-1]
-        ext_to_load_func_mapping = {'.pickle': SimulationResults._load_from_pickle_file,
-                                    '.json': SimulationResults._load_from_json_file}
+        ext_to_load_func_mapping = {
+            '.pickle': SimulationResults._load_from_pickle_file,
+            '.json': SimulationResults._load_from_json_file}
         load_func = ext_to_load_func_mapping[ext]
 
         return load_func(filename)

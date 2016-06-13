@@ -18,7 +18,7 @@ import os
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:               # pragma: no cover
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -36,6 +36,7 @@ from pyphysim.channels import fading, fading_generators
 class MimoDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
+
     def test_modulators(self):
         """Run doctests in the modulators module."""
         doctest.testmod(fundamental)
@@ -150,7 +151,7 @@ class PSKTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(se2, expected_se2)
 
     def test_modulate_and_demodulate(self):
-        awgn_noise = randn_c(20,) * 1e-2
+        awgn_noise = randn_c(20, ) * 1e-2
 
         input_data = np.random.random_integers(0, 4 - 1, 20)
         modulated_data = self.psk_obj.modulate(input_data)
@@ -160,7 +161,8 @@ class PSKTestCase(unittest.TestCase):
 
         input_data2 = np.random.random_integers(0, 8 - 1, 20)
         modulated_data2 = self.psk_obj2.modulate(input_data2)
-        demodulated_data2 = self.psk_obj2.demodulate(modulated_data2 + awgn_noise)
+        demodulated_data2 = self.psk_obj2.demodulate(
+            modulated_data2 + awgn_noise)
         np.testing.assert_array_equal(input_data2, demodulated_data2)
 
         # Test if an exception is raised for invalid arguments
@@ -203,7 +205,7 @@ class BPSKTestCase(unittest.TestCase):
         input_data = np.random.random_integers(0, 1, 20)
         modulated_data = self.bpsk_obj.modulate(input_data)
 
-        awgn_noise = randn_c(20,) * 1e-2
+        awgn_noise = randn_c(20, ) * 1e-2
 
         demodulated_data = self.bpsk_obj.demodulate(modulated_data + awgn_noise)
         np.testing.assert_array_equal(input_data, demodulated_data)
@@ -330,7 +332,7 @@ class QAMTestCase(unittest.TestCase):
             theoretical_ber3)
 
     def test_modulate_and_demodulate(self):
-        awgn_noise = randn_c(20,) * 1e-2
+        awgn_noise = randn_c(20, ) * 1e-2
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         input_data = np.random.random_integers(0, 4 - 1, 20)
@@ -341,13 +343,15 @@ class QAMTestCase(unittest.TestCase):
         # xxxxxxxxxx Test for 16-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         input_data2 = np.random.random_integers(0, 16 - 1, 20)
         modulated_data2 = self.qam_obj2.modulate(input_data2)
-        demodulated_data2 = self.qam_obj2.demodulate(modulated_data2 + awgn_noise)
+        demodulated_data2 = self.qam_obj2.demodulate(
+            modulated_data2 + awgn_noise)
         np.testing.assert_array_equal(input_data2, demodulated_data2)
 
         # xxxxxxxxxx Test for 64-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         input_data3 = np.random.random_integers(0, 64 - 1, 20)
         modulated_data3 = self.qam_obj3.modulate(input_data3)
-        demodulated_data3 = self.qam_obj3.demodulate(modulated_data3 + awgn_noise)
+        demodulated_data3 = self.qam_obj3.demodulate(
+            modulated_data3 + awgn_noise)
         np.testing.assert_array_equal(input_data3, demodulated_data3)
 
         # Test if an exception is raised for invalid arguments
@@ -366,6 +370,7 @@ class QAMTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class OfdmTestCase(unittest.TestCase):
     """Unittests for the OFDM class in the ofdm module."""
+
     def setUp(self):
         """Called before each test."""
         self.ofdm_object = OFDM(64, 16, 52)
@@ -480,11 +485,12 @@ class OfdmTestCase(unittest.TestCase):
         output = self.ofdm_object._prepare_decoded_signal(input2)
         np.testing.assert_array_equal(output, input1)
 
+    # noinspection PyPep8
     def test_calculate_power_scale(self):
         expected_power_scale = float(self.ofdm_object.fft_size) \
-                               * (float(self.ofdm_object.fft_size)
-                                  / (self.ofdm_object.num_used_subcarriers
-                                     + self.ofdm_object.cp_size))
+                               * (float(self.ofdm_object.fft_size) /
+                                  (self.ofdm_object.num_used_subcarriers +
+                                   self.ofdm_object.cp_size))
 
         self.assertAlmostEqual(expected_power_scale,
                                self.ofdm_object._calculate_power_scale())
@@ -532,7 +538,8 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 4, 52)
 
-        #input_ifft2 = self.ofdm_object._prepare_input_signal(input_signal[0:52])
+        # input_ifft2 =
+        #     self.ofdm_object._prepare_input_signal(input_signal[0:52])
         power_scale2 = self.ofdm_object._calculate_power_scale()
         expected_data_no_power_scale2 = np.hstack([
             np.fft.ifft(input_ifft[0, :]),
@@ -583,7 +590,7 @@ class OfdmTestCase(unittest.TestCase):
 
         # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
-        input_signal3 = np.r_[1:110]+1j * np.r_[1:110]
+        input_signal3 = np.r_[1:110] + 1j * np.r_[1:110]
         ":type: np.ndarray"
 
         self.ofdm_object.set_parameters(64, 16, 52)
@@ -613,7 +620,7 @@ class OfdmOneTapEqualizerTestCase(unittest.TestCase):
         qam_obj = fundamental.QAM(4)
 
         # Input data
-        data = np.random.randint(0, 4, size=2*num_of_subcarriers)
+        data = np.random.randint(0, 4, size=2 * num_of_subcarriers)
 
         # Modulate with QAM
         symbols = qam_obj.modulate(data)
@@ -624,8 +631,8 @@ class OfdmOneTapEqualizerTestCase(unittest.TestCase):
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Calculate the actual bandwidth that we will use
         bandwidth = 55e3 * num_of_subcarriers
-        Fd = 50     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        Fd = 50  # Doppler frequency (in Hz)
+        Ts = 1. / bandwidth  # Sampling interval (in seconds)
         NRays = 16  # Number of rays for the Jakes model
 
         jakes = fading_generators.JakesSampleGenerator(
@@ -709,8 +716,9 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     plt.ylabel('power spectral density')
     plt.title('Transmit spectrum OFDM (based on 802.11a)')
     plt.show()
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

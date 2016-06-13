@@ -27,7 +27,6 @@ import bokeh.models.widgets as bw
 from bokeh.io import gridplot
 
 
-
 # matplotlib.interactive(True)
 
 
@@ -42,9 +41,9 @@ def plot_true_and_estimated_channel(
 
     ax = f.add_subplot(2, 1, 2)
     ax.set_title(title)
-    ax.plot(np.abs(estimated_channel[:,antenna]), 'r')
+    ax.plot(np.abs(estimated_channel[:, antenna]), 'r')
     ax.hold(True)
-    ax.plot(np.abs(true_channel[:,antenna]))
+    ax.plot(np.abs(true_channel[:, antenna]))
     ax.legend(['Estimated', 'True'])
 
     return f
@@ -59,11 +58,11 @@ def plot_true_and_estimated_channel_with_bokeh(
     data = {
         'index': np.r_[0:num_subcarriers],
         'channel_time': np.abs(true_channel_time),
-        'channel': np.abs(true_channel[:,antenna]),
-        'estimated_channel':np.abs(estimated_channel[:,antenna]),
-        'error':linear2dB(
-            np.abs(true_channel[:,antenna] - estimated_channel[:,antenna]) / \
-            np.abs(true_channel[:,antenna]))}
+        'channel': np.abs(true_channel[:, antenna]),
+        'estimated_channel': np.abs(estimated_channel[:, antenna]),
+        'error': linear2dB(
+            np.abs(true_channel[:, antenna] - estimated_channel[:, antenna]) / \
+            np.abs(true_channel[:, antenna]))}
     source00 = bp.ColumnDataSource(data=data)
 
     # Specify the tools by name. This does not allow us to set parameters
@@ -73,7 +72,7 @@ def plot_true_and_estimated_channel_with_bokeh(
     # 'estimated'
     hover_tool = HoverTool(
         names=['estimated'],
-        tooltips = [('True Channel', ''), ('Error (in dB)', '@error')])
+        tooltips=[('True Channel', ''), ('Error (in dB)', '@error')])
     # p1 = bp.figure(tools=TOOLS, width=600, height=200)
     # p1.circle('index', 'channel_time', source=source00)
     # p1.title = title
@@ -86,13 +85,14 @@ def plot_true_and_estimated_channel_with_bokeh(
     # attribute for the hover tool and tell it to only show for the
     # estimated channel curve.
     p2.line('index', 'estimated_channel', source=source00, color='red',
-           name='estimated', legend='Estimated Channel')
+            name='estimated', legend='Estimated Channel')
 
     p2.title = title
 
     # p = bp.vplot(p1, p2)
     # return p
     return p2
+
 
 def plot_true_and_estimated_channel_with_bokeh_all_antennas(
         true_channel, estimated_channel, title=''):
@@ -118,58 +118,74 @@ def plot_true_and_estimated_channel_with_bokeh_all_antennas(
     return vbox
 
 
-def estimate_channels_remove_only_direct(Y1, Y2, Y3, r1, r2, r3, Nsc, comb_indexes):
+def estimate_channels_remove_only_direct(Y1, Y2, Y3, r1, r2, r3, Nsc,
+                                         comb_indexes):
     # xxxxxxxxxx AN 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    tilde_y11 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y11[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y11 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
+    tilde_y11[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH11_eq_est = np.fft.fft(tilde_y11, n=Nsc, axis=0)
 
     Y1_no_dir = Y1 - (uH11_eq_est[comb_indexes] * r1[:, np.newaxis])
 
     # UE 2 to AN 1
-    tilde_y12 = np.fft.ifft(Y1_no_dir * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y12[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y12 = np.fft.ifft(Y1_no_dir * r2[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y12[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH12_eq_est = np.fft.fft(tilde_y12, n=Nsc, axis=0)
 
     # UE 3 to AN 1
-    tilde_y13 = np.fft.ifft(Y1_no_dir * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y13[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y13 = np.fft.ifft(Y1_no_dir * r3[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y13[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH13_eq_est = np.fft.fft(tilde_y13, n=Nsc, axis=0)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx AN 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # UE 2 to AN 2
-    tilde_y22 = np.fft.ifft(Y2 * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y22[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y22 = np.fft.ifft(Y2 * r2[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
+    tilde_y22[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH22_eq_est = np.fft.fft(tilde_y22, n=Nsc, axis=0)
     Y2_no_dir = Y2 - (uH22_eq_est[comb_indexes] * r2[:, np.newaxis])
 
     # UE 1 to AN 2
-    tilde_y21 = np.fft.ifft(Y2_no_dir * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y21[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y21 = np.fft.ifft(Y2_no_dir * r1[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y21[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH21_eq_est = np.fft.fft(tilde_y21, n=Nsc, axis=0)
 
     # UE 3 to AN 2
-    tilde_y23 = np.fft.ifft(Y2_no_dir * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y23[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y23 = np.fft.ifft(Y2_no_dir * r3[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y23[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH23_eq_est = np.fft.fft(tilde_y23, n=Nsc, axis=0)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx AN 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # UE 3 to AN 3
-    tilde_y33 = np.fft.ifft(Y3 * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y33[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y33 = np.fft.ifft(Y3 * r3[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
+    tilde_y33[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH33_eq_est = np.fft.fft(tilde_y33, n=Nsc, axis=0)
     Y3_no_dir = Y3 - (uH33_eq_est[comb_indexes] * r3[:, np.newaxis])
 
     # UE 1 to AN 3
-    tilde_y31 = np.fft.ifft(Y3_no_dir * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y31[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y31 = np.fft.ifft(Y3_no_dir * r1[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y31[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH31_eq_est = np.fft.fft(tilde_y31, n=Nsc, axis=0)
 
     # UE 2 to AN 3
-    tilde_y32 = np.fft.ifft(Y3_no_dir * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y32[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y32 = np.fft.ifft(Y3_no_dir * r2[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y32[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH32_eq_est = np.fft.fft(tilde_y32, n=Nsc, axis=0)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -180,29 +196,36 @@ def estimate_channels_remove_only_direct(Y1, Y2, Y3, r1, r2, r3, Nsc, comb_index
 def estimate_channels_remove_direct_and_perform_SIC(
         Y1, Y2, Y3, r1, r2, r3, Nsc, comb_indexes):
     # xxxxxxxxxx AN 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    tilde_y11 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y11[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y11 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
+    tilde_y11[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH11_eq_est = np.fft.fft(tilde_y11, n=Nsc, axis=0)
 
     Y1_no_dir = Y1 - (uH11_eq_est[comb_indexes] * r1[:, np.newaxis])
 
     # UE 2 to AN 1
-    tilde_y12 = np.fft.ifft(Y1_no_dir * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y12[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y12 = np.fft.ifft(Y1_no_dir * r2[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y12[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH12_eq_est = np.fft.fft(tilde_y12, n=Nsc, axis=0)
 
     # UE 3 to AN 1
-    tilde_y13 = np.fft.ifft(Y1_no_dir * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y13[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y13 = np.fft.ifft(Y1_no_dir * r3[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y13[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH13_eq_est = np.fft.fft(tilde_y13, n=Nsc, axis=0)
 
     # Perform SIC for the weakest interfering link
     if np.linalg.norm(uH12_eq_est) > np.linalg.norm(uH13_eq_est):
         # H12 is stronger than H13. Let' remove interference from UE 2 and
         # estimate again for UE 3
-        Y1_SIC = Y1_no_dir  - (uH12_eq_est[comb_indexes] * r2[:, np.newaxis])
-        tilde_y13 = np.fft.ifft(Y1_SIC * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-        tilde_y13[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+        Y1_SIC = Y1_no_dir - (uH12_eq_est[comb_indexes] * r2[:, np.newaxis])
+        tilde_y13 = np.fft.ifft(Y1_SIC * r3[:, np.newaxis].conj(), n=Nsc // 2,
+                                axis=0)
+        tilde_y13[11:,
+        :] = 0  # Only keep the first 11 time samples for each antenna
         uH13_eq_est = np.fft.fft(tilde_y13, n=Nsc, axis=0)
         pass
     else:
@@ -210,7 +233,7 @@ def estimate_channels_remove_direct_and_perform_SIC(
         # estimate again for UE 2
         Y1_SIC = Y1_no_dir - (uH13_eq_est[comb_indexes] * r3[:, np.newaxis])
         tilde_y12 = np.fft.ifft(Y1_SIC * r2[:, np.newaxis].conj(),
-                                n=Nsc//2,
+                                n=Nsc // 2,
                                 axis=0)
         # Only keep the first 11 time samples for each antenna
         tilde_y12[11:, :] = 0
@@ -219,61 +242,79 @@ def estimate_channels_remove_direct_and_perform_SIC(
 
     # xxxxxxxxxx AN 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # UE 2 to AN 2
-    tilde_y22 = np.fft.ifft(Y2 * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y22[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y22 = np.fft.ifft(Y2 * r2[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
+    tilde_y22[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH22_eq_est = np.fft.fft(tilde_y22, n=Nsc, axis=0)
     Y2_no_dir = Y2 - (uH22_eq_est[comb_indexes] * r2[:, np.newaxis])
 
     # UE 1 to AN 2
-    tilde_y21 = np.fft.ifft(Y2_no_dir * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y21[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y21 = np.fft.ifft(Y2_no_dir * r1[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y21[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH21_eq_est = np.fft.fft(tilde_y21, n=Nsc, axis=0)
 
     # UE 3 to AN 2
-    tilde_y23 = np.fft.ifft(Y2_no_dir * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y23[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y23 = np.fft.ifft(Y2_no_dir * r3[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y23[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH23_eq_est = np.fft.fft(tilde_y23, n=Nsc, axis=0)
 
     # Perform SIC for the weakest interfering link
     if np.linalg.norm(uH21_eq_est) > np.linalg.norm(uH23_eq_est):
-        Y2_SIC = Y2_no_dir  - (uH21_eq_est[comb_indexes] * r1[:, np.newaxis])
-        tilde_y23 = np.fft.ifft(Y2_SIC * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-        tilde_y23[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+        Y2_SIC = Y2_no_dir - (uH21_eq_est[comb_indexes] * r1[:, np.newaxis])
+        tilde_y23 = np.fft.ifft(Y2_SIC * r3[:, np.newaxis].conj(), n=Nsc // 2,
+                                axis=0)
+        tilde_y23[11:,
+        :] = 0  # Only keep the first 11 time samples for each antenna
         uH23_eq_est = np.fft.fft(tilde_y23, n=Nsc, axis=0)
     else:
-        Y2_SIC = Y2_no_dir  - (uH23_eq_est[comb_indexes] * r3[:, np.newaxis])
-        tilde_y21 = np.fft.ifft(Y2_SIC * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-        tilde_y21[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+        Y2_SIC = Y2_no_dir - (uH23_eq_est[comb_indexes] * r3[:, np.newaxis])
+        tilde_y21 = np.fft.ifft(Y2_SIC * r1[:, np.newaxis].conj(), n=Nsc // 2,
+                                axis=0)
+        tilde_y21[11:,
+        :] = 0  # Only keep the first 11 time samples for each antenna
         uH21_eq_est = np.fft.fft(tilde_y21, n=Nsc, axis=0)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx AN 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # UE 3 to AN 3
-    tilde_y33 = np.fft.ifft(Y3 * r3[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y33[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y33 = np.fft.ifft(Y3 * r3[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
+    tilde_y33[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH33_eq_est = np.fft.fft(tilde_y33, n=Nsc, axis=0)
     Y3_no_dir = Y3 - (uH33_eq_est[comb_indexes] * r3[:, np.newaxis])
 
     # UE 1 to AN 3
-    tilde_y31 = np.fft.ifft(Y3_no_dir * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y31[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y31 = np.fft.ifft(Y3_no_dir * r1[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y31[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH31_eq_est = np.fft.fft(tilde_y31, n=Nsc, axis=0)
 
     # UE 2 to AN 3
-    tilde_y32 = np.fft.ifft(Y3_no_dir * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-    tilde_y32[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+    tilde_y32 = np.fft.ifft(Y3_no_dir * r2[:, np.newaxis].conj(), n=Nsc // 2,
+                            axis=0)
+    tilde_y32[11:,
+    :] = 0  # Only keep the first 11 time samples for each antenna
     uH32_eq_est = np.fft.fft(tilde_y32, n=Nsc, axis=0)
 
     # Perform SIC for the weakest interfering link
     if np.linalg.norm(uH31_eq_est) > np.linalg.norm(uH32_eq_est):
-        Y3_SIC = Y3_no_dir  - (uH31_eq_est[comb_indexes] * r1[:, np.newaxis])
-        tilde_y32 = np.fft.ifft(Y3_SIC * r2[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-        tilde_y32[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+        Y3_SIC = Y3_no_dir - (uH31_eq_est[comb_indexes] * r1[:, np.newaxis])
+        tilde_y32 = np.fft.ifft(Y3_SIC * r2[:, np.newaxis].conj(), n=Nsc // 2,
+                                axis=0)
+        tilde_y32[11:,
+        :] = 0  # Only keep the first 11 time samples for each antenna
         uH32_eq_est = np.fft.fft(tilde_y32, n=Nsc, axis=0)
     else:
-        Y3_SIC = Y3_no_dir  - (uH32_eq_est[comb_indexes] * r2[:, np.newaxis])
-        tilde_y31 = np.fft.ifft(Y3_SIC * r1[:, np.newaxis].conj(), n=Nsc//2, axis=0)
-        tilde_y31[11:, :] = 0  # Only keep the first 11 time samples for each antenna
+        Y3_SIC = Y3_no_dir - (uH32_eq_est[comb_indexes] * r2[:, np.newaxis])
+        tilde_y31 = np.fft.ifft(Y3_SIC * r1[:, np.newaxis].conj(), n=Nsc // 2,
+                                axis=0)
+        tilde_y31[11:,
+        :] = 0  # Only keep the first 11 time samples for each antenna
         uH31_eq_est = np.fft.fft(tilde_y31, n=Nsc, axis=0)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -367,10 +408,12 @@ def main():
                 num_samples)
 
             impulse_responses[ueIdx, anIdx] \
-                = tdlchannels_all_links[ueIdx, anIdx].get_last_impulse_response()
+                = tdlchannels_all_links[
+                ueIdx, anIdx].get_last_impulse_response()
 
             freq_responses[ueIdx, anIdx] = \
-                impulse_responses[ueIdx, anIdx].get_freq_response(Nsc)[:, :, :, 0]
+                impulse_responses[ueIdx, anIdx].get_freq_response(Nsc)[:, :, :,
+                0]
 
     # xxxxxxxxxx Channels in downlink direction xxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Dimension: `Nsc x numUeAnt x numAnAnt`
@@ -401,9 +444,9 @@ def main():
     # int_g = math.sqrt(int_path_loss)  # Gain of interfering links
     # dir_d = 1.0                   #  Gain of direct links
 
-    pl = np.array([[  2.21e-08,   2.14e-09,   1.88e-08],
-                   [  3.45e-10,   2.17e-08,   4.53e-10],
-                   [  4.38e-10,   8.04e-10,   4.75e-08]])
+    pl = np.array([[2.21e-08, 2.14e-09, 1.88e-08],
+                   [3.45e-10, 2.17e-08, 4.53e-10],
+                   [4.38e-10, 8.04e-10, 4.75e-08]])
     # pl = np.array([[  1,   0.1,   0.1],
     #                [  0.1,   1,   0.1],
     #                [  0.1,   0.1,   1]])
@@ -456,25 +499,45 @@ def main():
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     (uH11_eq_est, uH12_eq_est, uH13_eq_est, uH21_eq_est, uH22_eq_est,
      uH23_eq_est, uH31_eq_est, uH32_eq_est, uH33_eq_est
-    ) = estimate_channels_remove_only_direct(Y1, Y2, Y3, r1, r2, r3, Nsc, comb_indexes)
+     ) = estimate_channels_remove_only_direct(Y1, Y2, Y3, r1, r2, r3, Nsc,
+                                              comb_indexes)
 
-    (uH11_eq_est_SIC, uH12_eq_est_SIC, uH13_eq_est_SIC, uH21_eq_est_SIC, uH22_eq_est_SIC,
+    (uH11_eq_est_SIC, uH12_eq_est_SIC, uH13_eq_est_SIC, uH21_eq_est_SIC,
+     uH22_eq_est_SIC,
      uH23_eq_est_SIC, uH31_eq_est_SIC, uH32_eq_est_SIC, uH33_eq_est_SIC
-    ) = estimate_channels_remove_direct_and_perform_SIC(
+     ) = estimate_channels_remove_direct_and_perform_SIC(
         Y1, Y2, Y3, r1, r2, r3, Nsc, comb_indexes)
 
     # Compute the MSE reduction due to SIC
-    improve11 = compute_channel_estimation_error_dB(uH11_eq, uH11_eq_est) - compute_channel_estimation_error_dB(uH11_eq, uH11_eq_est_SIC)
-    improve12 = compute_channel_estimation_error_dB(uH12_eq, uH12_eq_est) - compute_channel_estimation_error_dB(uH12_eq, uH12_eq_est_SIC)
-    improve13 = compute_channel_estimation_error_dB(uH13_eq, uH13_eq_est) - compute_channel_estimation_error_dB(uH13_eq, uH13_eq_est_SIC)
+    improve11 = compute_channel_estimation_error_dB(uH11_eq,
+                                                    uH11_eq_est) - compute_channel_estimation_error_dB(
+        uH11_eq, uH11_eq_est_SIC)
+    improve12 = compute_channel_estimation_error_dB(uH12_eq,
+                                                    uH12_eq_est) - compute_channel_estimation_error_dB(
+        uH12_eq, uH12_eq_est_SIC)
+    improve13 = compute_channel_estimation_error_dB(uH13_eq,
+                                                    uH13_eq_est) - compute_channel_estimation_error_dB(
+        uH13_eq, uH13_eq_est_SIC)
 
-    improve21 = compute_channel_estimation_error_dB(uH21_eq, uH21_eq_est) - compute_channel_estimation_error_dB(uH21_eq, uH21_eq_est_SIC)
-    improve22 = compute_channel_estimation_error_dB(uH22_eq, uH22_eq_est) - compute_channel_estimation_error_dB(uH22_eq, uH22_eq_est_SIC)
-    improve23 = compute_channel_estimation_error_dB(uH23_eq, uH23_eq_est) - compute_channel_estimation_error_dB(uH23_eq, uH23_eq_est_SIC)
+    improve21 = compute_channel_estimation_error_dB(uH21_eq,
+                                                    uH21_eq_est) - compute_channel_estimation_error_dB(
+        uH21_eq, uH21_eq_est_SIC)
+    improve22 = compute_channel_estimation_error_dB(uH22_eq,
+                                                    uH22_eq_est) - compute_channel_estimation_error_dB(
+        uH22_eq, uH22_eq_est_SIC)
+    improve23 = compute_channel_estimation_error_dB(uH23_eq,
+                                                    uH23_eq_est) - compute_channel_estimation_error_dB(
+        uH23_eq, uH23_eq_est_SIC)
 
-    improve31 = compute_channel_estimation_error_dB(uH31_eq, uH31_eq_est) - compute_channel_estimation_error_dB(uH31_eq, uH31_eq_est_SIC)
-    improve32 = compute_channel_estimation_error_dB(uH32_eq, uH32_eq_est) - compute_channel_estimation_error_dB(uH32_eq, uH32_eq_est_SIC)
-    improve33 = compute_channel_estimation_error_dB(uH33_eq, uH33_eq_est) - compute_channel_estimation_error_dB(uH33_eq, uH33_eq_est_SIC)
+    improve31 = compute_channel_estimation_error_dB(uH31_eq,
+                                                    uH31_eq_est) - compute_channel_estimation_error_dB(
+        uH31_eq, uH31_eq_est_SIC)
+    improve32 = compute_channel_estimation_error_dB(uH32_eq,
+                                                    uH32_eq_est) - compute_channel_estimation_error_dB(
+        uH32_eq, uH32_eq_est_SIC)
+    improve33 = compute_channel_estimation_error_dB(uH33_eq,
+                                                    uH33_eq_est) - compute_channel_estimation_error_dB(
+        uH33_eq, uH33_eq_est_SIC)
     print(improve11)
     print(improve12)
     print(improve13)
@@ -529,7 +592,6 @@ def main():
     tab2 = bw.Panel(child=p2, title="UE2 to AN3")
     tab3 = bw.Panel(child=p3, title="UE3 to AN3")
     tabs_an3 = bw.Tabs(tabs=[tab1, tab2, tab3])
-
 
     # Put each AN tab as a panel of an "ANs tab" and show it
     tabs1 = bw.Panel(child=tabs_an1, title="AN1")

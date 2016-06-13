@@ -60,17 +60,17 @@ def combine_simulation_parameters(params1, params2):
     if set(params1.unpacked_parameters) != set(
             params2.unpacked_parameters):
         raise RuntimeError(
-                'Both SimulationParameters objects must have'
-                ' the same unpacked parameters (only the values'
-                ' should can be different).')
+            'Both SimulationParameters objects must have'
+            ' the same unpacked parameters (only the values'
+            ' should can be different).')
 
     fixed_parameters = params1.fixed_parameters
     for key in fixed_parameters:
         if params1[key] != params2[key]:
             raise RuntimeError(
-                    'The fixed parameters in both '
-                    'SimulationParameters objects must have the'
-                    ' same value.')
+                'The fixed parameters in both '
+                'SimulationParameters objects must have the'
+                ' same value.')
 
     union = SimulationParameters()
 

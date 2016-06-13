@@ -13,10 +13,11 @@ defined here.
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
+
 try:
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
     sys.path.append(parent_dir)
-except NameError:               # pragma: no cover
+except NameError:  # pragma: no cover
     sys.path.append('../')
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -32,7 +33,8 @@ from pyphysim.channels import noise, fading_generators, fading, singleuser, \
     multiuser, pathloss, antennagain
 from pyphysim.comm import blockdiagonalization
 from pyphysim.ia.algorithms import ClosedFormIASolver
-from pyphysim.util.conversion import single_matrix_to_matrix_of_matrices, dB2Linear
+from pyphysim.util.conversion import single_matrix_to_matrix_of_matrices, \
+    dB2Linear
 from pyphysim.util.misc import randn_c, least_right_singular_vectors
 
 
@@ -109,22 +111,22 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         self.assertAlmostEqual(noise_power_dBm, -101, places=0)
 
     def test_generate_jakes_samples(self):
-        Fd = 5     # Doppler frequency (in Hz)
+        Fd = 5  # Doppler frequency (in Hz)
         Ts = 1e-3  # Sampling interval (in seconds)
-        N = 1000   # Number of samples
+        N = 1000  # Number of samples
         NRays = 8  # Number of rays for the Jakes model
 
         # Test generating channel samples for a SISO scenario
-        new_current_time, h = fading_generators.generate_jakes_samples(Fd, Ts, N, NRays)
+        new_current_time, h = fading_generators.generate_jakes_samples(
+            Fd, Ts, N, NRays)
         self.assertEqual(h.size, 1000)
         self.assertEqual(h.shape, (1000,))
-        self.assertAlmostEqual(new_current_time, 1000*Ts)
+        self.assertAlmostEqual(new_current_time, 1000 * Ts)
 
         new_current_time, h2 = fading_generators.generate_jakes_samples(
-            Fd, Ts, N, NRays, shape=(4, 3), current_time=3752*Ts)
-        self.assertAlmostEqual(new_current_time, 4752*Ts)
+            Fd, Ts, N, NRays, shape=(4, 3), current_time=3752 * Ts)
+        self.assertAlmostEqual(new_current_time, 4752 * Ts)
         self.assertEqual(h2.shape, (4, 3, N))
-
 
     def test_calc_stream_reduction_matrix(self):
         Re_k = randn_c(3, 2)
@@ -205,12 +207,13 @@ class RayleighSampleGeneratorTestCase(unittest.TestCase):
 class JakesSampleGeneratorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
-        Fd = 5     # Doppler frequency (in Hz)
+        Fd = 5  # Doppler frequency (in Hz)
         Ts = 1e-3  # Sampling interval (in seconds)
         NRays = 8  # Number of rays for the Jakes model
 
         self.obj1 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays)
-        self.obj2 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays, shape=(3, 2))
+        self.obj2 = fading_generators.JakesSampleGenerator(Fd, Ts, NRays,
+                                                           shape=(3, 2))
         self.Ts = Ts
         self.NRays = NRays
         self.Fd = Fd
@@ -224,7 +227,8 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         # generator. The last dimension is set to 1 to allow broadcast with
         # the time dimension later.
         np.testing.assert_array_equal(self.obj1._phi_l.shape, [self.NRays, 1])
-        np.testing.assert_array_equal(self.obj2._psi_l.shape, [self.NRays, 3, 2, 1])
+        np.testing.assert_array_equal(self.obj2._psi_l.shape,
+                                      [self.NRays, 3, 2, 1])
 
     def test_properties(self):
         # Try to change Jakes parameters that phi and psi depend on
@@ -235,21 +239,26 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.obj1.shape = 3
         self.obj2.shape = (4, 3)
 
-        np.testing.assert_array_equal(self.obj1._phi_l.shape, [self.NRays, 3, 1])
-        np.testing.assert_array_equal(self.obj2._psi_l.shape, [self.NRays, 4, 3, 1])
+        np.testing.assert_array_equal(self.obj1._phi_l.shape,
+                                      [self.NRays, 3, 1])
+        np.testing.assert_array_equal(self.obj2._psi_l.shape,
+                                      [self.NRays, 4, 3, 1])
 
         # Try to set some attributes that are not allowed
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.obj1.L = 16
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.obj1.Ts = 5e-4
         with self.assertRaises(AttributeError):
+            # noinspection PyPropertyAccess
             self.obj1.Fd = 50
 
     def test_generate_more_samples(self):
         sample1_obj1 = self.obj1.get_samples()
         sample1_obj2 = self.obj2.get_samples()
-        self.assertEqual(sample1_obj1.shape, (1, ))
+        self.assertEqual(sample1_obj1.shape, (1,))
         self.assertEqual(sample1_obj2.shape, (3, 2, 1))
 
         # When we create the object it will generate one sample. Therefore,
@@ -260,8 +269,8 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         # Generate 100 samples
         self.obj1.generate_more_samples(100)
         self.obj2.generate_more_samples(100)
-        self.assertAlmostEqual(self.obj1._current_time, 101*self.Ts)
-        self.assertAlmostEqual(self.obj2._current_time, 101*self.Ts)
+        self.assertAlmostEqual(self.obj1._current_time, 101 * self.Ts)
+        self.assertAlmostEqual(self.obj2._current_time, 101 * self.Ts)
 
     def test_skip_samples_for_next_generation(self):
         # Obj2 is a copy of self.obj1 and will generate the same samples
@@ -368,17 +377,18 @@ class TdlChannelProfileTestCase(unittest.TestCase):
                       -22.1, -22.6, -23.5, -24.3]))
         np.testing.assert_array_almost_equal(
             tu.tap_delays,
-            np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349,
-                      1533, 1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9)
-
+            np.array(
+                [0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349,
+                 1533, 1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]) * 1e-9)
 
         np.testing.assert_array_almost_equal(
             ra.tap_powers_dB,
-            np.array([-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]))
+            np.array([-5.2, -6.4, -8.4, -9.3, -10.0,
+                      -13.1, -15.3, -18.5, -20.4, -22.4]))
         np.testing.assert_array_almost_equal(
             ra.tap_delays,
-            np.array([0., 42., 101., 129., 149., 245., 312., 410., 469., 528]) * 1e-9)
-
+            np.array([0., 42., 101., 129., 149., 245.,
+                      312., 410., 469., 528]) * 1e-9)
 
         np.testing.assert_array_almost_equal(
             ht.tap_powers_dB,
@@ -390,10 +400,11 @@ class TdlChannelProfileTestCase(unittest.TestCase):
             np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941.,
                       15000., 16172., 16492., 16876., 16882., 16978., 17615.,
                       17827., 17849., 18016.]) * 1e-9)
+
     def test_discretize(self):
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -415,7 +426,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         tap_powers_linear = tu.tap_powers_linear
         # The TDL class will normalized the tap powers so that the channel
         # has unit power.
-        tap_powers_linear = tap_powers_linear/np.sum(tap_powers_linear)
+        tap_powers_linear = tap_powers_linear / np.sum(tap_powers_linear)
 
         expected_discretized_tap_powers_linear = np.zeros(15)
 
@@ -441,12 +452,14 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         expected_discretized_tap_powers_linear[14] += tap_powers_linear[19]
 
         # Check if the discretized tap powers are correct
-        np.testing.assert_array_almost_equal(expected_discretized_tap_powers_linear,
-                                             tu_discretized.tap_powers_linear)
+        np.testing.assert_array_almost_equal(
+            expected_discretized_tap_powers_linear,
+            tu_discretized.tap_powers_linear)
         # Check if the discretized tap delays are correct. Note that they
         # are integers.
         np.testing.assert_array_equal(
-            np.array([0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]),
+            np.array(
+                [0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]),
             tu_discretized.tap_delays)
 
         # Check if the Ts property is properly set
@@ -532,7 +545,6 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
                          (num_taps_with_padding, num_samples))
         self.assertEqual(self.impulse_response.tap_values_sparse.shape,
                          (num_taps, num_samples))
-
 
         np.testing.assert_array_equal(
             self.impulse_response.tap_indexes_sparse,
@@ -656,7 +668,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fading.TdlImpulseResponse.concatenate_samples(
                 [self.impulse_response, impulse_response3])
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_plot_impulse_response(self):
         # self.impulse_response.plot_impulse_response()
@@ -672,7 +684,7 @@ class TdlChannelTestCase(unittest.TestCase):
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -680,8 +692,8 @@ class TdlChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        self.Fd = 5     # Doppler frequency (in Hz)
-        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.Fd = 5  # Doppler frequency (in Hz)
+        self.Ts = 1. / bandwidth  # Sampling interval (in seconds)
         self.NRays = 16  # Number of rays for the Jakes model
 
         # xxxxxxxxxx Create the TDL SISO channel for testing xxxxxxxxxxxxxx
@@ -743,7 +755,7 @@ class TdlChannelTestCase(unittest.TestCase):
         tdlchannel3 = fading.TdlChannel(
             self.jakes,
             tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
-            tap_delays=10*fading.COST259_TUx.tap_delays)
+            tap_delays=10 * fading.COST259_TUx.tap_delays)
 
         self.assertEqual(tdlchannel3.num_taps, 20)
         self.assertEqual(tdlchannel3.num_taps_with_padding, 658)
@@ -756,7 +768,7 @@ class TdlChannelTestCase(unittest.TestCase):
             fading.TdlChannel(
                 self.jakes,
                 tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
-                tap_delays=10*fading.COST259_TUx.tap_delays,
+                tap_delays=10 * fading.COST259_TUx.tap_delays,
                 Ts=0.002)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -769,7 +781,7 @@ class TdlChannelTestCase(unittest.TestCase):
             fading.TdlChannel(
                 self.jakes,
                 channel_profile=tu_discretized)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_num_taps_with_and_without_padding(self):
         self.assertEqual(self.tdlchannel.num_taps_with_padding, 67)
@@ -786,7 +798,8 @@ class TdlChannelTestCase(unittest.TestCase):
         self.assertEqual(self.tdlchannel.num_rx_antennas, -1)
 
         self.assertEqual(last_impulse_response.num_samples, 20)
-        self.assertEqual(last_impulse_response.tap_values_sparse.shape, (15, 20))
+        self.assertEqual(last_impulse_response.tap_values_sparse.shape,
+                         (15, 20))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now test with a different shape
@@ -826,8 +839,8 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        signal = np.random.standard_normal(num_samples) + \
-                 1j * np.random.standard_normal(num_samples)
+        signal = (np.random.standard_normal(num_samples) +
+                  1j * np.random.standard_normal(num_samples))
         received_signal = self.tdlchannel.corrupt_data(signal)
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
@@ -843,25 +856,31 @@ class TdlChannelTestCase(unittest.TestCase):
         # Including zero padding, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
         channel_memory = 66
-        expected_received_signal = np.zeros(channel_memory + num_samples, dtype=complex)
+        expected_received_signal = np.zeros(channel_memory + num_samples,
+                                            dtype=complex)
 
         # Let's compute the expected received signal
-        tap_values_sparse = last_impulse_response.tap_values_sparse
-        expected_received_signal[0:0+num_samples] += signal * tap_values_sparse[0]
-        expected_received_signal[7:7+num_samples] += signal * tap_values_sparse[1]
-        expected_received_signal[16:16+num_samples] += signal * tap_values_sparse[2]
-        expected_received_signal[21:21+num_samples] += signal * tap_values_sparse[3]
-        expected_received_signal[27:27+num_samples] += signal * tap_values_sparse[4]
-        expected_received_signal[38:38+num_samples] += signal * tap_values_sparse[5]
-        expected_received_signal[40:40+num_samples] += signal * tap_values_sparse[6]
-        expected_received_signal[41:41+num_samples] += signal * tap_values_sparse[7]
-        expected_received_signal[47:47+num_samples] += signal * tap_values_sparse[8]
-        expected_received_signal[50:50+num_samples] += signal * tap_values_sparse[9]
-        expected_received_signal[56:56+num_samples] += signal * tap_values_sparse[10]
-        expected_received_signal[58:58+num_samples] += signal * tap_values_sparse[11]
-        expected_received_signal[60:60+num_samples] += signal * tap_values_sparse[12]
-        expected_received_signal[63:63+num_samples] += signal * tap_values_sparse[13]
-        expected_received_signal[66:66+num_samples] += signal * tap_values_sparse[14]
+        taps_sparse = last_impulse_response.tap_values_sparse
+        expected_received_signal[0:0 + num_samples] += signal * taps_sparse[0]
+        expected_received_signal[7:7 + num_samples] += signal * taps_sparse[1]
+        expected_received_signal[16:16 + num_samples] += signal * taps_sparse[2]
+        expected_received_signal[21:21 + num_samples] += signal * taps_sparse[3]
+        expected_received_signal[27:27 + num_samples] += signal * taps_sparse[4]
+        expected_received_signal[38:38 + num_samples] += signal * taps_sparse[5]
+        expected_received_signal[40:40 + num_samples] += signal * taps_sparse[6]
+        expected_received_signal[41:41 + num_samples] += signal * taps_sparse[7]
+        expected_received_signal[47:47 + num_samples] += signal * taps_sparse[8]
+        expected_received_signal[50:50 + num_samples] += signal * taps_sparse[9]
+        expected_received_signal[56:56 + num_samples] += signal * taps_sparse[
+            10]
+        expected_received_signal[58:58 + num_samples] += signal * taps_sparse[
+            11]
+        expected_received_signal[60:60 + num_samples] += signal * taps_sparse[
+            12]
+        expected_received_signal[63:63 + num_samples] += signal * taps_sparse[
+            13]
+        expected_received_signal[66:66 + num_samples] += signal * taps_sparse[
+            14]
 
         # Check if the received signal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
@@ -912,26 +931,26 @@ class TdlChannelTestCase(unittest.TestCase):
                                              decimal=8)
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[fft_size:2*fft_size],
+            received_signal[fft_size:2 * fft_size],
             freq_response_all[:, fft_size],
             decimal=8)
 
         # Third OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[2*fft_size:3*fft_size],
-            freq_response_all[:, 2*fft_size],
+            received_signal[2 * fft_size:3 * fft_size],
+            freq_response_all[:, 2 * fft_size],
             decimal=8)
 
         # Fourth OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[3*fft_size:4*fft_size],
-            freq_response_all[:, 3*fft_size],
+            received_signal[3 * fft_size:4 * fft_size],
+            freq_response_all[:, 3 * fft_size],
             decimal=8)
 
         # Fifth OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[4*fft_size:5*fft_size],
-            freq_response_all[:, 4*fft_size],
+            received_signal[4 * fft_size:5 * fft_size],
+            freq_response_all[:, 4 * fft_size],
             decimal=8)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -948,16 +967,16 @@ class TdlChannelTestCase(unittest.TestCase):
             freq_response_all[:, 0 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 1],
-            freq_response_all[:, 1*fft_size])
+            freq_response_all[:, 1 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 2],
-            freq_response_all[:, 2*fft_size])
+            freq_response_all[:, 2 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 3],
-            freq_response_all[:, 3*fft_size])
+            freq_response_all[:, 3 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 4],
-            freq_response_all[:, 4*fft_size])
+            freq_response_all[:, 4 * fft_size])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_corrupt_data_in_freq_domain2(self):
@@ -992,7 +1011,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        tdlchannel2._generate_impulse_response(2*num_samples)
+        tdlchannel2._generate_impulse_response(2 * num_samples)
         impulse_response_all = tdlchannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
@@ -1012,21 +1031,21 @@ class TdlChannelTestCase(unittest.TestCase):
 
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[block_size:2*block_size],
+            received_signal[block_size:2 * block_size],
             freq_response_all[subcarrier_indexes, fft_size],
             decimal=8)
 
         # Third OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[2*block_size:3*block_size],
-            freq_response_all[subcarrier_indexes, 2*fft_size],
+            received_signal[2 * block_size:3 * block_size],
+            freq_response_all[subcarrier_indexes, 2 * fft_size],
             decimal=8)
 
         # Remaining OFDM symbols (from 4 to 10)
         for i in range(3, 10):
             np.testing.assert_array_almost_equal(
-                received_signal[i*block_size:(i+1)*block_size],
-                freq_response_all[subcarrier_indexes, i*fft_size],
+                received_signal[i * block_size:(i + 1) * block_size],
+                freq_response_all[subcarrier_indexes, i * fft_size],
                 decimal=8)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1043,7 +1062,7 @@ class TdlChannelTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 freq_response[:, i],
                 freq_response_all[:, i * fft_size])
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 class TdlMIMOChannelTestCase(unittest.TestCase):
@@ -1051,7 +1070,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -1059,8 +1078,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        self.Fd = 5     # Doppler frequency (in Hz)
-        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.Fd = 5  # Doppler frequency (in Hz)
+        self.Ts = 1. / bandwidth  # Sampling interval (in seconds)
         self.NRays = 16  # Number of rays for the Jakes model
 
         # xxxxxxxxxx Create the TDL MIMO channel for testing xxxxxxxxxxxxxx
@@ -1142,7 +1161,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         tdlmimochannel_flat = fading.TdlMimoChannel(
             jakes, channel_profile=fading.COST259_TUx)
         num_samples = 3
-        signal = np.random.randn(2, num_samples) + 1j * np.random.randn(2, num_samples)
+        signal = (np.random.randn(2, num_samples) +
+                  1j * np.random.randn(2, num_samples))
 
         received_signal_flat = tdlmimochannel_flat.corrupt_data(signal)
 
@@ -1154,7 +1174,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         h0 = last_impulse_response.tap_values[0, :, :, 0]
         h1 = last_impulse_response.tap_values[0, :, :, 1]
         h2 = last_impulse_response.tap_values[0, :, :, 2]
-        expected_received_signal_flat = np.zeros((3, num_samples), dtype=complex)
+        expected_received_signal_flat = np.zeros((3, num_samples),
+                                                 dtype=complex)
         expected_received_signal_flat[:, 0] = h0.dot(signal[:, 0])
         expected_received_signal_flat[:, 1] = h1.dot(signal[:, 1])
         expected_received_signal_flat[:, 2] = h2.dot(signal[:, 2])
@@ -1168,7 +1189,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        signal = np.random.randn(2, num_samples) + 1j * np.random.randn(2, num_samples)
+        signal = (np.random.randn(2, num_samples) +
+                  1j * np.random.randn(2, num_samples))
         received_signal = self.tdlmimochannel.corrupt_data(signal)
         last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
 
@@ -1184,8 +1206,9 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Including zero padding, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
         channel_memory = 66
-        self.assertEqual(received_signal.shape, (self.tdlmimochannel.num_rx_antennas,
-                                                 num_samples + channel_memory))
+        self.assertEqual(received_signal.shape,
+                         (self.tdlmimochannel.num_rx_antennas,
+                          num_samples + channel_memory))
 
         expected_received_signal = np.zeros(
             (self.tdlmimochannel.num_rx_antennas,
@@ -1195,49 +1218,49 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Let's compute the expected received signal
         tap_values_sparse = last_impulse_response.tap_values_sparse
 
-        expected_received_signal[:, 0:0+num_samples] += (
+        expected_received_signal[:, 0:0 + num_samples] += (
             signal[0] * tap_values_sparse[0, :, 0, :] +
             signal[1] * tap_values_sparse[0, :, 1, :])
-        expected_received_signal[:, 7:7+num_samples] += (
+        expected_received_signal[:, 7:7 + num_samples] += (
             signal[0] * tap_values_sparse[1, :, 0, :] +
             signal[1] * tap_values_sparse[1, :, 1, :])
-        expected_received_signal[:, 16:16+num_samples] += (
+        expected_received_signal[:, 16:16 + num_samples] += (
             signal[0] * tap_values_sparse[2, :, 0, :] +
             signal[1] * tap_values_sparse[2, :, 1, :])
-        expected_received_signal[:, 21:21+num_samples] += (
+        expected_received_signal[:, 21:21 + num_samples] += (
             signal[0] * tap_values_sparse[3, :, 0, :] +
             signal[1] * tap_values_sparse[3, :, 1, :])
-        expected_received_signal[:, 27:27+num_samples] += (
+        expected_received_signal[:, 27:27 + num_samples] += (
             signal[0] * tap_values_sparse[4, :, 0, :] +
             signal[1] * tap_values_sparse[4, :, 1, :])
-        expected_received_signal[:, 38:38+num_samples] += (
+        expected_received_signal[:, 38:38 + num_samples] += (
             signal[0] * tap_values_sparse[5, :, 0, :] +
             signal[1] * tap_values_sparse[5, :, 1, :])
-        expected_received_signal[:, 40:40+num_samples] += (
+        expected_received_signal[:, 40:40 + num_samples] += (
             signal[0] * tap_values_sparse[6, :, 0, :] +
             signal[1] * tap_values_sparse[6, :, 1, :])
-        expected_received_signal[:, 41:41+num_samples] += (
+        expected_received_signal[:, 41:41 + num_samples] += (
             signal[0] * tap_values_sparse[7, :, 0, :] +
             signal[1] * tap_values_sparse[7, :, 1, :])
-        expected_received_signal[:, 47:47+num_samples] += (
+        expected_received_signal[:, 47:47 + num_samples] += (
             signal[0] * tap_values_sparse[8, :, 0, :] +
             signal[1] * tap_values_sparse[8, :, 1, :])
-        expected_received_signal[:, 50:50+num_samples] += (
+        expected_received_signal[:, 50:50 + num_samples] += (
             signal[0] * tap_values_sparse[9, :, 0, :] +
             signal[1] * tap_values_sparse[9, :, 1, :])
-        expected_received_signal[:, 56:56+num_samples] += (
+        expected_received_signal[:, 56:56 + num_samples] += (
             signal[0] * tap_values_sparse[10, :, 0, :] +
             signal[1] * tap_values_sparse[10, :, 1, :])
-        expected_received_signal[:, 58:58+num_samples] += (
+        expected_received_signal[:, 58:58 + num_samples] += (
             signal[0] * tap_values_sparse[11, :, 0, :] +
             signal[1] * tap_values_sparse[11, :, 1, :])
-        expected_received_signal[:, 60:60+num_samples] += (
+        expected_received_signal[:, 60:60 + num_samples] += (
             signal[0] * tap_values_sparse[12, :, 0, :] +
             signal[1] * tap_values_sparse[12, :, 1, :])
-        expected_received_signal[:, 63:63+num_samples] += (
+        expected_received_signal[:, 63:63 + num_samples] += (
             signal[0] * tap_values_sparse[13, :, 0, :] +
             signal[1] * tap_values_sparse[13, :, 1, :])
-        expected_received_signal[:, 66:66+num_samples] += (
+        expected_received_signal[:, 66:66 + num_samples] += (
             signal[0] * tap_values_sparse[14, :, 0, :] +
             signal[1] * tap_values_sparse[14, :, 1, :])
 
@@ -1254,7 +1277,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # we have the same fading.
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -1262,8 +1285,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        Fd = 0     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        Fd = 0  # Doppler frequency (in Hz)
+        Ts = 1. / bandwidth  # Sampling interval (in seconds)
         NRays = 16  # Number of rays for the Jakes model
 
         # xxxxxxxxxx Create the TDL MIMO channel for testing xxxxxxxxxxxxxx
@@ -1301,50 +1324,50 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Let's compute the expected received signal
         tap_values_sparse = last_impulse_response.tap_values_sparse
 
-        expected_received_signal_uplink[:, 0:0+num_samples] += (
+        expected_received_signal_uplink[:, 0:0 + num_samples] += (
             signal_uplink[0] * tap_values_sparse[0, 0, :, :] +
             signal_uplink[1] * tap_values_sparse[0, 1, :, :] +
             signal_uplink[2] * tap_values_sparse[0, 2, :, :])
-        expected_received_signal_uplink[:, 7:7+num_samples] += (
+        expected_received_signal_uplink[:, 7:7 + num_samples] += (
             signal[0] * tap_values_sparse[1, 0, :, :] +
             signal[1] * tap_values_sparse[1, 1, :, :])
-        expected_received_signal_uplink[:, 16:16+num_samples] += (
+        expected_received_signal_uplink[:, 16:16 + num_samples] += (
             signal[0] * tap_values_sparse[2, 0, :, :] +
             signal[1] * tap_values_sparse[2, 1, :, :])
-        expected_received_signal_uplink[:, 21:21+num_samples] += (
+        expected_received_signal_uplink[:, 21:21 + num_samples] += (
             signal[0] * tap_values_sparse[3, 0, :, :] +
             signal[1] * tap_values_sparse[3, 1, :, :])
-        expected_received_signal_uplink[:, 27:27+num_samples] += (
+        expected_received_signal_uplink[:, 27:27 + num_samples] += (
             signal[0] * tap_values_sparse[4, 0, :, :] +
             signal[1] * tap_values_sparse[4, 1, :, :])
-        expected_received_signal_uplink[:, 38:38+num_samples] += (
+        expected_received_signal_uplink[:, 38:38 + num_samples] += (
             signal[0] * tap_values_sparse[5, 0, :, :] +
             signal[1] * tap_values_sparse[5, 1, :, :])
-        expected_received_signal_uplink[:, 40:40+num_samples] += (
+        expected_received_signal_uplink[:, 40:40 + num_samples] += (
             signal[0] * tap_values_sparse[6, 0, :, :] +
             signal[1] * tap_values_sparse[6, 1, :, :])
-        expected_received_signal_uplink[:, 41:41+num_samples] += (
+        expected_received_signal_uplink[:, 41:41 + num_samples] += (
             signal[0] * tap_values_sparse[7, 0, :, :] +
             signal[1] * tap_values_sparse[7, 1, :, :])
-        expected_received_signal_uplink[:, 47:47+num_samples] += (
+        expected_received_signal_uplink[:, 47:47 + num_samples] += (
             signal[0] * tap_values_sparse[8, 0, :, :] +
             signal[1] * tap_values_sparse[8, 1, :, :])
-        expected_received_signal_uplink[:, 50:50+num_samples] += (
+        expected_received_signal_uplink[:, 50:50 + num_samples] += (
             signal[0] * tap_values_sparse[9, 0, :, :] +
             signal[1] * tap_values_sparse[9, 1, :, :])
-        expected_received_signal_uplink[:, 56:56+num_samples] += (
+        expected_received_signal_uplink[:, 56:56 + num_samples] += (
             signal[0] * tap_values_sparse[10, 0, :, :] +
             signal[1] * tap_values_sparse[10, 1, :, :])
-        expected_received_signal_uplink[:, 58:58+num_samples] += (
+        expected_received_signal_uplink[:, 58:58 + num_samples] += (
             signal[0] * tap_values_sparse[11, 0, :] +
             signal[1] * tap_values_sparse[11, 1, :])
-        expected_received_signal_uplink[:, 60:60+num_samples] += (
+        expected_received_signal_uplink[:, 60:60 + num_samples] += (
             signal[0] * tap_values_sparse[12, 0, :, :] +
             signal[1] * tap_values_sparse[12, 1, :, :])
-        expected_received_signal_uplink[:, 63:63+num_samples] += (
+        expected_received_signal_uplink[:, 63:63 + num_samples] += (
             signal[0] * tap_values_sparse[13, 0, :, :] +
             signal[1] * tap_values_sparse[13, 1, :, :])
-        expected_received_signal_uplink[:, 66:66+num_samples] += (
+        expected_received_signal_uplink[:, 66:66 + num_samples] += (
             signal[0] * tap_values_sparse[14, 0, :, :] +
             signal[1] * tap_values_sparse[14, 1, :, :])
 
@@ -1360,19 +1383,21 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # with only 1 row. Both cases should yield the same solution.
 
         # xxxxx Test sending single impulse in flat fading channel xxxxxxxx
-        jakes = fading_generators.JakesSampleGenerator(shape=(3, 1), Fd=0, Ts=2e-7)
+        jakes = fading_generators.JakesSampleGenerator(
+            shape=(3, 1), Fd=0, Ts=2e-7)
 
         tdlmimochannel_flat = fading.TdlMimoChannel(
             jakes, channel_profile=fading.COST259_TUx)
         num_samples = 20
-        signal1 = np.random.standard_normal(num_samples) + \
-                  1j * np.random.standard_normal(num_samples)
+        signal1 = (np.random.standard_normal(num_samples) +
+                   1j * np.random.standard_normal(num_samples))
         signal2 = signal1[np.newaxis, :]
 
         received_signal_flat1 = tdlmimochannel_flat.corrupt_data(signal1)
         received_signal_flat2 = tdlmimochannel_flat.corrupt_data(signal2)
 
-        np.testing.assert_array_almost_equal(received_signal_flat1, received_signal_flat2)
+        np.testing.assert_array_almost_equal(received_signal_flat1,
+                                             received_signal_flat2)
 
     def test_corrupt_data_in_freq_domain(self):
         fft_size = 16
@@ -1384,11 +1409,11 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             self.Fd, self.Ts, self.NRays, shape=(3, 2))
 
         # Note that tdlmimochannel will modify the jakes1 object
-        tdlmimochannel1 = fading.TdlMimoChannel(fading_generator=jakes1,
-                                        channel_profile=fading.COST259_TUx)
+        tdlmimochannel1 = fading.TdlMimoChannel(
+            fading_generator=jakes1, channel_profile=fading.COST259_TUx)
 
-        # we want tdlmimochannel2 to be a copy of tdlmimochannel1 and generate the
-        # same samples
+        # we want tdlmimochannel2 to be a copy of tdlmimochannel1 and
+        # generate the same samples
         tdlmimochannel2 = copy(tdlmimochannel1)
         # After the copy it will use the same fading_generator
         # object. Let's copy the fading_generator and replace the one in
@@ -1439,26 +1464,25 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
 
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[0, fft_size:2*fft_size],
+            received_signal[0, fft_size:2 * fft_size],
             freq_response00[:, fft_size] + freq_response01[:, fft_size])
         np.testing.assert_array_almost_equal(
-            received_signal[1, fft_size:2*fft_size],
+            received_signal[1, fft_size:2 * fft_size],
             freq_response10[:, fft_size] + freq_response11[:, fft_size])
         np.testing.assert_array_almost_equal(
-            received_signal[2, fft_size:2*fft_size],
+            received_signal[2, fft_size:2 * fft_size],
             freq_response20[:, fft_size] + freq_response21[:, fft_size])
-
 
         # Third OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[0, 2*fft_size:3*fft_size],
-            freq_response00[:, 2*fft_size] + freq_response01[:, 2*fft_size])
+            received_signal[0, 2 * fft_size:3 * fft_size],
+            freq_response00[:, 2 * fft_size] + freq_response01[:, 2 * fft_size])
         np.testing.assert_array_almost_equal(
-            received_signal[1, 2*fft_size:3*fft_size],
-            freq_response10[:, 2*fft_size] + freq_response11[:, 2*fft_size])
+            received_signal[1, 2 * fft_size:3 * fft_size],
+            freq_response10[:, 2 * fft_size] + freq_response11[:, 2 * fft_size])
         np.testing.assert_array_almost_equal(
-            received_signal[2, 2*fft_size:3*fft_size],
-            freq_response20[:, 2*fft_size] + freq_response21[:, 2*fft_size])
+            received_signal[2, 2 * fft_size:3 * fft_size],
+            freq_response20[:, 2 * fft_size] + freq_response21[:, 2 * fft_size])
         # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test impulse response after transmission xxxxxxxxxxxxx
@@ -1475,14 +1499,14 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             freq_response_all[:, :, :, 0 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, :, :, 1],
-            freq_response_all[:, :, :, 1*fft_size])
+            freq_response_all[:, :, :, 1 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, :, :, 2],
-            freq_response_all[:, :, :, 2*fft_size])
+            freq_response_all[:, :, :, 2 * fft_size])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test corrupt signal with wrong number of elements xxxxxxxxx
-        signal2 = np.ones((2, num_samples-1))
+        signal2 = np.ones((2, num_samples - 1))
         with self.assertRaises(ValueError):
             tdlmimochannel1.corrupt_data_in_freq_domain(signal2, fft_size)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1495,7 +1519,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # we have the same fading.
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -1503,8 +1527,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        Fd = 0     # Doppler frequency (in Hz)
-        Ts = 1./bandwidth  # Sampling interval (in seconds)
+        Fd = 0  # Doppler frequency (in Hz)
+        Ts = 1. / bandwidth  # Sampling interval (in seconds)
         NRays = 16  # Number of rays for the Jakes model
 
         # xxxxxxxxxx Create the TDL MIMO channel for testing xxxxxxxxxxxxxx
@@ -1523,7 +1547,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         received_signal_uplink = tdlmimochannel.corrupt_data_in_freq_domain(
             signal_uplink, fft_size)
 
-        self.assertEqual(received_signal_uplink.shape, (num_tx_ant, num_samples))
+        self.assertEqual(received_signal_uplink.shape,
+                         (num_tx_ant, num_samples))
 
         last_impulse_response = tdlmimochannel.get_last_impulse_response()
         freq_response_all = last_impulse_response.get_freq_response(fft_size)
@@ -1550,26 +1575,32 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             signal_uplink[2, 0:fft_size] * freq_response21[:, 0])
         # xxxxxxxxxx Second OFDM symbol
         # First antenna
-        expected_received_signal_uplink[0, fft_size:2*fft_size] = (
-            signal_uplink[0, fft_size:2*fft_size] * freq_response00[:, 1] +
-            signal_uplink[1, fft_size:2*fft_size] * freq_response10[:, 1] +
-            signal_uplink[2, fft_size:2*fft_size] * freq_response20[:, 1])
+        expected_received_signal_uplink[0, fft_size:2 * fft_size] = (
+            signal_uplink[0, fft_size:2 * fft_size] * freq_response00[:, 1] +
+            signal_uplink[1, fft_size:2 * fft_size] * freq_response10[:, 1] +
+            signal_uplink[2, fft_size:2 * fft_size] * freq_response20[:, 1])
         # Second antenna
-        expected_received_signal_uplink[1, fft_size:2*fft_size] = (
-            signal_uplink[0, fft_size:2*fft_size] * freq_response01[:, 1] +
-            signal_uplink[1, fft_size:2*fft_size] * freq_response11[:, 1] +
-            signal_uplink[2, fft_size:2*fft_size] * freq_response21[:, 1])
+        expected_received_signal_uplink[1, fft_size:2 * fft_size] = (
+            signal_uplink[0, fft_size:2 * fft_size] * freq_response01[:, 1] +
+            signal_uplink[1, fft_size:2 * fft_size] * freq_response11[:, 1] +
+            signal_uplink[2, fft_size:2 * fft_size] * freq_response21[:, 1])
         # xxxxxxxxxx ThirdOFDM symbol
         # First antenna
-        expected_received_signal_uplink[0, 2*fft_size:3*fft_size] = (
-            signal_uplink[0, 2*fft_size:3*fft_size] * freq_response00[:, 2] +
-            signal_uplink[1, 2*fft_size:3*fft_size] * freq_response10[:, 2] +
-            signal_uplink[2, 2*fft_size:3*fft_size] * freq_response20[:, 2])
+        expected_received_signal_uplink[0, 2 * fft_size:3 * fft_size] = (
+            signal_uplink[0, 2 * fft_size:3 * fft_size] *
+            freq_response00[:, 2] +
+            signal_uplink[1, 2 * fft_size:3 * fft_size] *
+            freq_response10[:, 2] +
+            signal_uplink[2, 2 * fft_size:3 * fft_size] *
+            freq_response20[:, 2])
         # Second antenna
-        expected_received_signal_uplink[1, 2*fft_size:3*fft_size] = (
-            signal_uplink[0, 2*fft_size:3*fft_size] * freq_response01[:, 2] +
-            signal_uplink[1, 2*fft_size:3*fft_size] * freq_response11[:, 2] +
-            signal_uplink[2, 2*fft_size:3*fft_size] * freq_response21[:, 2])
+        expected_received_signal_uplink[1, 2 * fft_size:3 * fft_size] = (
+            signal_uplink[0, 2 * fft_size:3 * fft_size] *
+            freq_response01[:, 2] +
+            signal_uplink[1, 2 * fft_size:3 * fft_size] *
+            freq_response11[:, 2] +
+            signal_uplink[2, 2 * fft_size:3 * fft_size] *
+            freq_response21[:, 2])
 
         # Test if expected signal and received signal are equal
         np.testing.assert_array_almost_equal(expected_received_signal_uplink,
@@ -1635,8 +1666,8 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             fading_generator=jakes1,
             channel_profile=fading.COST259_TUx)
 
-        # we want tdlmimochannel2 to be a copy of tdlmimochannel1 and generate the
-        # same samples
+        # we want tdlmimochannel2 to be a copy of tdlmimochannel1 and
+        # generate the same samples
         tdlmimochannel2 = copy(tdlmimochannel1)
         # After the copy it will use the same fading_generator
         # object. Let's copy the fading_generator and replace the one in
@@ -1650,7 +1681,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        tdlmimochannel2._generate_impulse_response(2*num_samples)
+        tdlmimochannel2._generate_impulse_response(2 * num_samples)
         impulse_response_all = tdlmimochannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
@@ -1674,44 +1705,47 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # Receiver 0
         np.testing.assert_array_almost_equal(
             received_signal[0, 0:block_size],
-            freq_response00[subcarrier_indexes, 0] + freq_response01[subcarrier_indexes, 0])
+            (freq_response00[subcarrier_indexes, 0] +
+             freq_response01[subcarrier_indexes, 0]))
         # Receiver 1
         np.testing.assert_array_almost_equal(
             received_signal[1, 0:block_size],
-            freq_response10[subcarrier_indexes, 0] + freq_response11[subcarrier_indexes, 0])
+            (freq_response10[subcarrier_indexes, 0] +
+             freq_response11[subcarrier_indexes, 0]))
         # Receiver 2
         np.testing.assert_array_almost_equal(
             received_signal[2, 0:block_size],
-            freq_response20[subcarrier_indexes, 0] + freq_response21[subcarrier_indexes, 0])
+            (freq_response20[subcarrier_indexes, 0] +
+             freq_response21[subcarrier_indexes, 0]))
 
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[0, 1*block_size:2*block_size],
-            (freq_response00[subcarrier_indexes, 1*fft_size] +
-             freq_response01[subcarrier_indexes, 1*fft_size]))
+            received_signal[0, 1 * block_size:2 * block_size],
+            (freq_response00[subcarrier_indexes, 1 * fft_size] +
+             freq_response01[subcarrier_indexes, 1 * fft_size]))
         np.testing.assert_array_almost_equal(
-            received_signal[1, 1*block_size:2*block_size],
-            (freq_response10[subcarrier_indexes, 1*fft_size] +
-             freq_response11[subcarrier_indexes, 1*fft_size]))
+            received_signal[1, 1 * block_size:2 * block_size],
+            (freq_response10[subcarrier_indexes, 1 * fft_size] +
+             freq_response11[subcarrier_indexes, 1 * fft_size]))
         np.testing.assert_array_almost_equal(
-            received_signal[2, 1*block_size:2*block_size],
-            (freq_response20[subcarrier_indexes, 1*fft_size] +
-             freq_response21[subcarrier_indexes, 1*fft_size]))
+            received_signal[2, 1 * block_size:2 * block_size],
+            (freq_response20[subcarrier_indexes, 1 * fft_size] +
+             freq_response21[subcarrier_indexes, 1 * fft_size]))
 
         # Remaining OFDM symbols (from 2 to 10)
         for i in range(2, 10):
             np.testing.assert_array_almost_equal(
-                received_signal[0, i*block_size:(i+1)*block_size],
-                (freq_response00[subcarrier_indexes, i*fft_size] +
-                 freq_response01[subcarrier_indexes, i*fft_size]))
+                received_signal[0, i * block_size:(i + 1) * block_size],
+                (freq_response00[subcarrier_indexes, i * fft_size] +
+                 freq_response01[subcarrier_indexes, i * fft_size]))
             np.testing.assert_array_almost_equal(
-                received_signal[1, i*block_size:(i+1)*block_size],
-                (freq_response10[subcarrier_indexes, i*fft_size] +
-                 freq_response11[subcarrier_indexes, i*fft_size]))
+                received_signal[1, i * block_size:(i + 1) * block_size],
+                (freq_response10[subcarrier_indexes, i * fft_size] +
+                 freq_response11[subcarrier_indexes, i * fft_size]))
             np.testing.assert_array_almost_equal(
-                received_signal[2, i*block_size:(i+1)*block_size],
-                (freq_response20[subcarrier_indexes, i*fft_size] +
-                 freq_response21[subcarrier_indexes, i*fft_size]))
+                received_signal[2, i * block_size:(i + 1) * block_size],
+                (freq_response20[subcarrier_indexes, i * fft_size] +
+                 freq_response21[subcarrier_indexes, i * fft_size]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test impulse response after transmission xxxxxxxxxxxxx
@@ -1729,7 +1763,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
                     np.testing.assert_array_almost_equal(
                         freq_response[:, rx_idx, tx_idx, i],
                         freq_response_all[:, rx_idx, tx_idx, i * fft_size])
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1740,7 +1774,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -1748,8 +1782,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        self.Fd = 5     # Doppler frequency (in Hz)
-        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.Fd = 5  # Doppler frequency (in Hz)
+        self.Ts = 1. / bandwidth  # Sampling interval (in seconds)
         self.NRays = 16  # Number of rays for the Jakes model
 
         # Create the jakes object that will be passed to TdlChannel
@@ -1811,10 +1845,12 @@ class SuSisoChannelTestCase(unittest.TestCase):
 
         # Now set to some positive value between 0 and 1
         self.susisochannel.set_pathloss(0.003)
-        self.assertAlmostEqual(self.susisochannel._pathloss_value, 0.003, delta=1e-20)
+        self.assertAlmostEqual(
+            self.susisochannel._pathloss_value, 0.003, delta=1e-20)
 
         self.susisochannel.set_pathloss(1e-12)
-        self.assertAlmostEqual(self.susisochannel._pathloss_value, 1e-12, delta=1e-20)
+        self.assertAlmostEqual(
+            self.susisochannel._pathloss_value, 1e-12, delta=1e-20)
 
     def test_corrupt_data(self):
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
@@ -1847,8 +1883,8 @@ class SuSisoChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Test sending a vector with 10 samples xxxxxxxxxxxxxxxx
         num_samples = 10
-        signal = np.random.standard_normal(num_samples) + \
-                 1j * np.random.standard_normal(num_samples)
+        signal = (np.random.standard_normal(num_samples) +
+                  1j * np.random.standard_normal(num_samples))
         received_signal = self.susisochannel.corrupt_data(signal)
         last_impulse_response = self.susisochannel.get_last_impulse_response()
 
@@ -1864,25 +1900,31 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # Including zero padding, the impulse response has 67 taps. That
         # means the channel memory is equal to 66
         channel_memory = 66
-        expected_received_signal = np.zeros(channel_memory + num_samples, dtype=complex)
+        expected_received_signal = np.zeros(channel_memory + num_samples,
+                                            dtype=complex)
 
         # Let's compute the expected received signal
-        tap_values_sparse = last_impulse_response.tap_values_sparse
-        expected_received_signal[0:0+num_samples] += signal * tap_values_sparse[0]
-        expected_received_signal[7:7+num_samples] += signal * tap_values_sparse[1]
-        expected_received_signal[16:16+num_samples] += signal * tap_values_sparse[2]
-        expected_received_signal[21:21+num_samples] += signal * tap_values_sparse[3]
-        expected_received_signal[27:27+num_samples] += signal * tap_values_sparse[4]
-        expected_received_signal[38:38+num_samples] += signal * tap_values_sparse[5]
-        expected_received_signal[40:40+num_samples] += signal * tap_values_sparse[6]
-        expected_received_signal[41:41+num_samples] += signal * tap_values_sparse[7]
-        expected_received_signal[47:47+num_samples] += signal * tap_values_sparse[8]
-        expected_received_signal[50:50+num_samples] += signal * tap_values_sparse[9]
-        expected_received_signal[56:56+num_samples] += signal * tap_values_sparse[10]
-        expected_received_signal[58:58+num_samples] += signal * tap_values_sparse[11]
-        expected_received_signal[60:60+num_samples] += signal * tap_values_sparse[12]
-        expected_received_signal[63:63+num_samples] += signal * tap_values_sparse[13]
-        expected_received_signal[66:66+num_samples] += signal * tap_values_sparse[14]
+        taps_sparse = last_impulse_response.tap_values_sparse
+        expected_received_signal[0:0 + num_samples] += signal * taps_sparse[0]
+        expected_received_signal[7:7 + num_samples] += signal * taps_sparse[1]
+        expected_received_signal[16:16 + num_samples] += signal * taps_sparse[2]
+        expected_received_signal[21:21 + num_samples] += signal * taps_sparse[3]
+        expected_received_signal[27:27 + num_samples] += signal * taps_sparse[4]
+        expected_received_signal[38:38 + num_samples] += signal * taps_sparse[5]
+        expected_received_signal[40:40 + num_samples] += signal * taps_sparse[6]
+        expected_received_signal[41:41 + num_samples] += signal * taps_sparse[7]
+        expected_received_signal[47:47 + num_samples] += signal * taps_sparse[8]
+        expected_received_signal[50:50 + num_samples] += signal * taps_sparse[9]
+        expected_received_signal[56:56 + num_samples] += signal * taps_sparse[
+            10]
+        expected_received_signal[58:58 + num_samples] += signal * taps_sparse[
+            11]
+        expected_received_signal[60:60 + num_samples] += signal * taps_sparse[
+            12]
+        expected_received_signal[63:63 + num_samples] += signal * taps_sparse[
+            13]
+        expected_received_signal[66:66 + num_samples] += signal * taps_sparse[
+            14]
 
         # Check if the received signal is correct
         np.testing.assert_array_almost_equal(expected_received_signal,
@@ -1943,26 +1985,26 @@ class SuSisoChannelTestCase(unittest.TestCase):
             decimal=7)
         # Second OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[fft_size:2*fft_size],
+            received_signal[fft_size:2 * fft_size],
             freq_response_all[:, fft_size],
             decimal=8)
 
         # Third OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[2*fft_size:3*fft_size],
-            freq_response_all[:, 2*fft_size],
+            received_signal[2 * fft_size:3 * fft_size],
+            freq_response_all[:, 2 * fft_size],
             decimal=8)
 
         # Fourth OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[3*fft_size:4*fft_size],
-            freq_response_all[:, 3*fft_size],
+            received_signal[3 * fft_size:4 * fft_size],
+            freq_response_all[:, 3 * fft_size],
             decimal=8)
 
         # Fifth OFDM symbol
         np.testing.assert_array_almost_equal(
-            received_signal[4*fft_size:5*fft_size],
-            freq_response_all[:, 4*fft_size],
+            received_signal[4 * fft_size:5 * fft_size],
+            freq_response_all[:, 4 * fft_size],
             decimal=8)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1979,16 +2021,16 @@ class SuSisoChannelTestCase(unittest.TestCase):
             freq_response_all[:, 0 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 1],
-            freq_response_all[:, 1*fft_size])
+            freq_response_all[:, 1 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 2],
-            freq_response_all[:, 2*fft_size])
+            freq_response_all[:, 2 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 3],
-            freq_response_all[:, 3*fft_size])
+            freq_response_all[:, 3 * fft_size])
         np.testing.assert_array_almost_equal(
             freq_response[:, 4],
-            freq_response_all[:, 4*fft_size])
+            freq_response_all[:, 4 * fft_size])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -1997,7 +2039,7 @@ class SuMimoChannelTestCase(unittest.TestCase):
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
-        max_num_of_subcarriers = math.floor(maxSystemBand/15e3)
+        max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
         # Find the maximum FFT size we can use which is below than or equal
         # to maxNumOfSubcarriersInt
         max_num_of_subcarriers = int(
@@ -2005,16 +2047,17 @@ class SuMimoChannelTestCase(unittest.TestCase):
         # Calculate the actual bandwidth that we will use
         bandwidth = 15e3 * max_num_of_subcarriers
 
-        self.Fd = 5     # Doppler frequency (in Hz)
-        self.Ts = 1./bandwidth  # Sampling interval (in seconds)
+        self.Fd = 5  # Doppler frequency (in Hz)
+        self.Ts = 1. / bandwidth  # Sampling interval (in seconds)
         self.NRays = 16  # Number of rays for the Jakes model
 
         # Create the jakes object that will be passed to TdlChannel
         self.jakes = fading_generators.JakesSampleGenerator(
             self.Fd, self.Ts, self.NRays, shape=None)
 
-        self.sumimochannel = singleuser.SuMimoChannel(num_antennas=3,
-            fading_generator=self.jakes, channel_profile=fading.COST259_TUx)
+        self.sumimochannel = singleuser.SuMimoChannel(
+            num_antennas=3, fading_generator=self.jakes,
+            channel_profile=fading.COST259_TUx)
 
     def test_constructor(self):
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2025,10 +2068,10 @@ class SuMimoChannelTestCase(unittest.TestCase):
         self.assertEqual(flat_rayleight_suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
             flat_rayleight_suchannel.channel_profile.tap_powers_linear,
-            1.0)
+            np.array([1.0]))
         np.testing.assert_array_almost_equal(
             flat_rayleight_suchannel.channel_profile.tap_delays,
-            0.0)
+            np.array([0.0]))
         self.assertAlmostEqual(flat_rayleight_suchannel.channel_profile.Ts, 1)
 
         self.assertEqual(flat_rayleight_suchannel.num_tx_antennas, 3)
@@ -2047,10 +2090,10 @@ class SuMimoChannelTestCase(unittest.TestCase):
         self.assertEqual(suchannel.num_taps, 1)
         np.testing.assert_array_almost_equal(
             suchannel.channel_profile.tap_powers_linear,
-            1.0)
+            np.array([1.0]))
         np.testing.assert_array_almost_equal(
             suchannel.channel_profile.tap_delays,
-            0.0)
+            np.array([0.0]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Frequency Selective channel xxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2101,15 +2144,15 @@ class MuSisoChannelTestCase(unittest.TestCase):
                 suchannel = musisochannel._su_siso_channels[rx, tx]
                 suchannel2 = musisochannel2._su_siso_channels[rx, tx]
                 np.testing.assert_array_almost_equal(
-                    suchannel.channel_profile.tap_delays, 0)
+                    suchannel.channel_profile.tap_delays, np.array([0]))
                 np.testing.assert_array_almost_equal(
-                    suchannel.channel_profile.tap_powers_dB, 0)
+                    suchannel.channel_profile.tap_powers_dB, np.array([0]))
                 self.assertEqual(suchannel.channel_profile.Ts, 1)
 
                 np.testing.assert_array_almost_equal(
-                    suchannel2.channel_profile.tap_delays, 0)
+                    suchannel2.channel_profile.tap_delays, np.array([0]))
                 np.testing.assert_array_almost_equal(
-                    suchannel2.channel_profile.tap_powers_dB, 0)
+                    suchannel2.channel_profile.tap_powers_dB, np.array([0]))
                 self.assertEqual(suchannel2.channel_profile.Ts, 0.001)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2274,9 +2317,9 @@ class MuSisoChannelTestCase(unittest.TestCase):
         expected_received_data1 = np.zeros(
             num_samples + channel_memory, dtype=complex)
         for i in range(musisochannel.num_taps_with_padding):
-            expected_received_data0[i:i+num_samples] += (
+            expected_received_data0[i:i + num_samples] += (
                 data1[0] * h00[i] + data1[1] * h01[i])
-            expected_received_data1[i:i+num_samples] += (
+            expected_received_data1[i:i + num_samples] += (
                 data1[0] * h10[i] + data1[1] * h11[i])
 
         np.testing.assert_array_almost_equal(expected_received_data0,
@@ -2315,10 +2358,10 @@ class MuSisoChannelTestCase(unittest.TestCase):
         expected_received_data1 = np.zeros(
             num_samples + channel_memory, dtype=complex)
         for i in range(musisochannel.num_taps_with_padding):
-            expected_received_data0[i:i+num_samples] += (
+            expected_received_data0[i:i + num_samples] += (
                 data1[0] * h00[i] +
                 data1[1] * h01[i])
-            expected_received_data1[i:i+num_samples] += (
+            expected_received_data1[i:i + num_samples] += (
                 data1[0] * h10[i] +
                 data1[1] * h11[i])
 
@@ -2351,10 +2394,10 @@ class MuSisoChannelTestCase(unittest.TestCase):
         expected_received_data1 = np.zeros(
             num_samples + channel_memory, dtype=complex)
         for i in range(musisochannel.num_taps_with_padding):
-            expected_received_data0[i:i+num_samples] += (
+            expected_received_data0[i:i + num_samples] += (
                 data1[0] * h00[i] +
                 data1[1] * h10[i])
-            expected_received_data1[i:i+num_samples] += (
+            expected_received_data1[i:i + num_samples] += (
                 data1[0] * h01[i] +
                 data1[1] * h11[i])
 
@@ -2492,7 +2535,6 @@ class MuSisoChannelTestCase(unittest.TestCase):
                                              output[0])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
     def test_corrupt_data_in_freq_domain(self):
         Ts = 3.25e-8
         # Create a jakes fading generator
@@ -2524,14 +2566,17 @@ class MuSisoChannelTestCase(unittest.TestCase):
         freq_response01 = impulse_response01.get_freq_response(fft_size)
 
         # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
-        expected_ofdm_symb1 = data[0, 0:fft_size] * freq_response00[:, 0] + \
-                              data[1, 0:fft_size] * freq_response01[:, 0]
-        expected_ofdm_symb2 = data[0, fft_size:2*fft_size] * freq_response00[:, 1] +\
-                              data[1, fft_size:2*fft_size] * freq_response01[:, 1]
-        expected_ofdm_symb3 = data[0, 2*fft_size:3*fft_size] * freq_response00[:, 2] +\
-                              data[1, 2*fft_size:3*fft_size] * freq_response01[:, 2]
-        expected_ofdm_symb4 = data[0, 3*fft_size:4*fft_size] * freq_response00[:, 3] +\
-                              data[1, 3*fft_size:4*fft_size] * freq_response01[:, 3]
+        expected_ofdm_symb1 = (data[0, 0:fft_size] * freq_response00[:, 0] +
+                               data[1, 0:fft_size] * freq_response01[:, 0])
+        expected_ofdm_symb2 = (
+            data[0, fft_size:2 * fft_size] * freq_response00[:, 1] +
+            data[1, fft_size:2 * fft_size] * freq_response01[:, 1])
+        expected_ofdm_symb3 = (
+            data[0, 2 * fft_size:3 * fft_size] * freq_response00[:, 2] +
+            data[1, 2 * fft_size:3 * fft_size] * freq_response01[:, 2])
+        expected_ofdm_symb4 = (
+            data[0, 3 * fft_size:4 * fft_size] * freq_response00[:, 3] +
+            data[1, 3 * fft_size:4 * fft_size] * freq_response01[:, 3])
 
         np.testing.assert_array_almost_equal(
             output[0],
@@ -2557,14 +2602,17 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
 
-        expected_ofdm_symb1 = data[0, 0:fft_size] * freq_response00[:, 0] + \
-                              data[1, 0:fft_size] * freq_response10[:, 0]
-        expected_ofdm_symb2 = data[0, fft_size:2*fft_size] * freq_response00[:, 1] +\
-                              data[1, fft_size:2*fft_size] * freq_response10[:, 1]
-        expected_ofdm_symb3 = data[0, 2*fft_size:3*fft_size] * freq_response00[:, 2] +\
-                              data[1, 2*fft_size:3*fft_size] * freq_response10[:, 2]
-        expected_ofdm_symb4 = data[0, 3*fft_size:4*fft_size] * freq_response00[:, 3] +\
-                              data[1, 3*fft_size:4*fft_size] * freq_response10[:, 3]
+        expected_ofdm_symb1 = (data[0, 0:fft_size] * freq_response00[:, 0] +
+                               data[1, 0:fft_size] * freq_response10[:, 0])
+        expected_ofdm_symb2 = (
+            data[0, fft_size:2 * fft_size] * freq_response00[:, 1] +
+            data[1, fft_size:2 * fft_size] * freq_response10[:, 1])
+        expected_ofdm_symb3 = (
+            data[0, 2 * fft_size:3 * fft_size] * freq_response00[:, 2] +
+            data[1, 2 * fft_size:3 * fft_size] * freq_response10[:, 2])
+        expected_ofdm_symb4 = (
+            data[0, 3 * fft_size:4 * fft_size] * freq_response00[:, 3] +
+            data[1, 3 * fft_size:4 * fft_size] * freq_response10[:, 3])
 
         np.testing.assert_array_almost_equal(
             output[0],
@@ -2621,20 +2669,20 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
                                data[1, 0:block_size] *
                                freq_response01[subcarrier_indexes, 0])
-        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+        expected_ofdm_symb2 = (data[0, block_size:2 * block_size] *
                                freq_response00[subcarrier_indexes, 1] +
 
-                               data[1, block_size:2*block_size] *
+                               data[1, block_size:2 * block_size] *
                                freq_response01[subcarrier_indexes, 1])
-        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+        expected_ofdm_symb3 = (data[0, 2 * block_size:3 * block_size] *
                                freq_response00[subcarrier_indexes, 2] +
 
-                               data[1, 2*block_size:3*block_size] *
+                               data[1, 2 * block_size:3 * block_size] *
                                freq_response01[subcarrier_indexes, 2])
-        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+        expected_ofdm_symb4 = (data[0, 3 * block_size:4 * block_size] *
                                freq_response00[subcarrier_indexes, 3] +
 
-                               data[1, 3*block_size:4*block_size] *
+                               data[1, 3 * block_size:4 * block_size] *
                                freq_response01[subcarrier_indexes, 3])
 
         np.testing.assert_array_almost_equal(
@@ -2649,20 +2697,20 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
                                data[1, 0:block_size] *
                                freq_response11[subcarrier_indexes, 0])
-        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+        expected_ofdm_symb2 = (data[0, block_size:2 * block_size] *
                                freq_response10[subcarrier_indexes, 1] +
 
-                               data[1, block_size:2*block_size] *
+                               data[1, block_size:2 * block_size] *
                                freq_response11[subcarrier_indexes, 1])
-        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+        expected_ofdm_symb3 = (data[0, 2 * block_size:3 * block_size] *
                                freq_response10[subcarrier_indexes, 2] +
 
-                               data[1, 2*block_size:3*block_size] *
+                               data[1, 2 * block_size:3 * block_size] *
                                freq_response11[subcarrier_indexes, 2])
-        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+        expected_ofdm_symb4 = (data[0, 3 * block_size:4 * block_size] *
                                freq_response10[subcarrier_indexes, 3] +
 
-                               data[1, 3*block_size:4*block_size] *
+                               data[1, 3 * block_size:4 * block_size] *
                                freq_response11[subcarrier_indexes, 3])
 
         np.testing.assert_array_almost_equal(
@@ -2698,20 +2746,20 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
                                data[1, 0:block_size] *
                                freq_response10[subcarrier_indexes, 0])
-        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+        expected_ofdm_symb2 = (data[0, block_size:2 * block_size] *
                                freq_response00[subcarrier_indexes, 1] +
 
-                               data[1, block_size:2*block_size] *
+                               data[1, block_size:2 * block_size] *
                                freq_response10[subcarrier_indexes, 1])
-        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+        expected_ofdm_symb3 = (data[0, 2 * block_size:3 * block_size] *
                                freq_response00[subcarrier_indexes, 2] +
 
-                               data[1, 2*block_size:3*block_size] *
+                               data[1, 2 * block_size:3 * block_size] *
                                freq_response10[subcarrier_indexes, 2])
-        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+        expected_ofdm_symb4 = (data[0, 3 * block_size:4 * block_size] *
                                freq_response00[subcarrier_indexes, 3] +
 
-                               data[1, 3*block_size:4*block_size] *
+                               data[1, 3 * block_size:4 * block_size] *
                                freq_response10[subcarrier_indexes, 3])
 
         np.testing.assert_array_almost_equal(
@@ -2726,20 +2774,20 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
                                data[1, 0:block_size] *
                                freq_response11[subcarrier_indexes, 0])
-        expected_ofdm_symb2 = (data[0, block_size:2*block_size] *
+        expected_ofdm_symb2 = (data[0, block_size:2 * block_size] *
                                freq_response01[subcarrier_indexes, 1] +
 
-                               data[1, block_size:2*block_size] *
+                               data[1, block_size:2 * block_size] *
                                freq_response11[subcarrier_indexes, 1])
-        expected_ofdm_symb3 = (data[0, 2*block_size:3*block_size] *
+        expected_ofdm_symb3 = (data[0, 2 * block_size:3 * block_size] *
                                freq_response01[subcarrier_indexes, 2] +
 
-                               data[1, 2*block_size:3*block_size] *
+                               data[1, 2 * block_size:3 * block_size] *
                                freq_response11[subcarrier_indexes, 2])
-        expected_ofdm_symb4 = (data[0, 3*block_size:4*block_size] *
+        expected_ofdm_symb4 = (data[0, 3 * block_size:4 * block_size] *
                                freq_response01[subcarrier_indexes, 3] +
 
-                               data[1, 3*block_size:4*block_size] *
+                               data[1, 3 * block_size:4 * block_size] *
                                freq_response11[subcarrier_indexes, 3])
 
         np.testing.assert_array_almost_equal(
@@ -2760,7 +2808,9 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # and 3.
         channel_profile = fading.COST259_TUx
         musisochannel = multiuser.MuChannel(
-            N=(num_rx, num_tx), fading_generator=jakes, channel_profile=channel_profile)
+            N=(num_rx, num_tx),
+            fading_generator=jakes,
+            channel_profile=channel_profile)
 
         fft_size = 64
         num_samples = 4 * fft_size
@@ -2785,14 +2835,22 @@ class MuSisoChannelTestCase(unittest.TestCase):
         freq_response1 = impulse_response1.get_freq_response(fft_size)
 
         # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
-        expected_ofdm_symb1_rx1 = data[0, 0:fft_size] * freq_response0[:, 0]
-        expected_ofdm_symb1_rx2 = data[0, 0:fft_size] * freq_response1[:, 0]
-        expected_ofdm_symb2_rx1 = data[0, fft_size:2*fft_size] * freq_response0[:, 1]
-        expected_ofdm_symb2_rx2 = data[0, fft_size:2*fft_size] * freq_response1[:, 1]
-        expected_ofdm_symb3_rx1 = data[0, 2*fft_size:3*fft_size] * freq_response0[:, 2]
-        expected_ofdm_symb3_rx2 = data[0, 2*fft_size:3*fft_size] * freq_response1[:, 2]
-        expected_ofdm_symb4_rx1 = data[0, 3*fft_size:4*fft_size] * freq_response0[:, 3]
-        expected_ofdm_symb4_rx2 = data[0, 3*fft_size:4*fft_size] * freq_response1[:, 3]
+        expected_ofdm_symb1_rx1 = (data[0, 0:fft_size] *
+                                   freq_response0[:, 0])
+        expected_ofdm_symb1_rx2 = (data[0, 0:fft_size] *
+                                   freq_response1[:, 0])
+        expected_ofdm_symb2_rx1 = (data[0, fft_size:2 * fft_size] *
+                                   freq_response0[:, 1])
+        expected_ofdm_symb2_rx2 = (data[0, fft_size:2 * fft_size] *
+                                   freq_response1[:, 1])
+        expected_ofdm_symb3_rx1 = (data[0, 2 * fft_size:3 * fft_size] *
+                                   freq_response0[:, 2])
+        expected_ofdm_symb3_rx2 = (data[0, 2 * fft_size:3 * fft_size] *
+                                   freq_response1[:, 2])
+        expected_ofdm_symb4_rx1 = (data[0, 3 * fft_size:4 * fft_size] *
+                                   freq_response0[:, 3])
+        expected_ofdm_symb4_rx2 = (data[0, 3 * fft_size:4 * fft_size] *
+                                   freq_response1[:, 3])
 
         # Test received signal at first receiver
         np.testing.assert_array_almost_equal(
@@ -2829,14 +2887,22 @@ class MuSisoChannelTestCase(unittest.TestCase):
         freq_response1 = impulse_response1.get_freq_response(fft_size)
 
         # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
-        expected_ofdm_symb1_rx1 = data2[0:fft_size] * freq_response0[:, 0]
-        expected_ofdm_symb1_rx2 = data2[0:fft_size] * freq_response1[:, 0]
-        expected_ofdm_symb2_rx1 = data2[fft_size:2*fft_size] * freq_response0[:, 1]
-        expected_ofdm_symb2_rx2 = data2[fft_size:2*fft_size] * freq_response1[:, 1]
-        expected_ofdm_symb3_rx1 = data2[2*fft_size:3*fft_size] * freq_response0[:, 2]
-        expected_ofdm_symb3_rx2 = data2[2*fft_size:3*fft_size] * freq_response1[:, 2]
-        expected_ofdm_symb4_rx1 = data2[3*fft_size:4*fft_size] * freq_response0[:, 3]
-        expected_ofdm_symb4_rx2 = data2[3*fft_size:4*fft_size] * freq_response1[:, 3]
+        expected_ofdm_symb1_rx1 = (data2[0:fft_size] *
+                                   freq_response0[:, 0])
+        expected_ofdm_symb1_rx2 = (data2[0:fft_size] *
+                                   freq_response1[:, 0])
+        expected_ofdm_symb2_rx1 = (data2[fft_size:2 * fft_size] *
+                                   freq_response0[:, 1])
+        expected_ofdm_symb2_rx2 = (data2[fft_size:2 * fft_size] *
+                                   freq_response1[:, 1])
+        expected_ofdm_symb3_rx1 = (data2[2 * fft_size:3 * fft_size] *
+                                   freq_response0[:, 2])
+        expected_ofdm_symb3_rx2 = (data2[2 * fft_size:3 * fft_size] *
+                                   freq_response1[:, 2])
+        expected_ofdm_symb4_rx1 = (data2[3 * fft_size:4 * fft_size] *
+                                   freq_response0[:, 3])
+        expected_ofdm_symb4_rx2 = (data2[3 * fft_size:4 * fft_size] *
+                                   freq_response1[:, 3])
 
         # Test received signal at first receiver
         np.testing.assert_array_almost_equal(
@@ -2874,14 +2940,18 @@ class MuSisoChannelTestCase(unittest.TestCase):
         freq_response1 = impulse_response1.get_freq_response(fft_size)
 
         # xxxxxxxxxx Expected received signal at first receiver xxxxxxxxxxx
-        expected_ofdm_symb1_rx = (data[0, 0:fft_size] * freq_response0[:, 0] +
-                                  data[1, 0:fft_size] * freq_response1[:, 0])
-        expected_ofdm_symb2_rx = (data[0, fft_size:2*fft_size] * freq_response0[:, 1] +
-                                  data[1, fft_size:2*fft_size] * freq_response1[:, 1])
-        expected_ofdm_symb3_rx = (data[0, 2*fft_size:3*fft_size] * freq_response0[:, 2] +
-                                  data[1, 2*fft_size:3*fft_size] * freq_response1[:, 2])
-        expected_ofdm_symb4_rx = (data[0, 3*fft_size:4*fft_size] * freq_response0[:, 3] +
-                                  data[1, 3*fft_size:4*fft_size] * freq_response1[:, 3])
+        expected_ofdm_symb1_rx = (
+            data[0, 0:fft_size] * freq_response0[:, 0] +
+            data[1, 0:fft_size] * freq_response1[:, 0])
+        expected_ofdm_symb2_rx = (
+            data[0, fft_size:2 * fft_size] * freq_response0[:, 1] +
+            data[1, fft_size:2 * fft_size] * freq_response1[:, 1])
+        expected_ofdm_symb3_rx = (
+            data[0, 2 * fft_size:3 * fft_size] * freq_response0[:, 2] +
+            data[1, 2 * fft_size:3 * fft_size] * freq_response1[:, 2])
+        expected_ofdm_symb4_rx = (
+            data[0, 3 * fft_size:4 * fft_size] * freq_response0[:, 3] +
+            data[1, 3 * fft_size:4 * fft_size] * freq_response1[:, 3])
 
         # Test received signal at the receiver
         np.testing.assert_array_almost_equal(
@@ -2905,8 +2975,8 @@ class MuMimoChannelTestCase(unittest.TestCase):
 
     def test_constructor(self):
         N = 4
-        num_rx_antennas=3
-        num_tx_antennas=2
+        num_rx_antennas = 3
+        num_tx_antennas = 2
 
         mumimochannel = multiuser.MuMimoChannel(
             N, num_rx_antennas, num_tx_antennas)
@@ -2924,7 +2994,8 @@ class MuMimoChannelTestCase(unittest.TestCase):
 
     def test_corrupt_data(self):
         num_samples = 10
-        data1 = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
+        data1 = np.random.randint(0, 10,
+                                  (self.N, self.num_tx_antennas, num_samples))
 
         output1 = self.mumimochannel.corrupt_data(data1)
         impulse_response00 = self.mumimochannel.get_last_impulse_response(0, 0)
@@ -2940,13 +3011,15 @@ class MuMimoChannelTestCase(unittest.TestCase):
         h11 = impulse_response11.tap_values[0]
 
         expected_output1 = np.empty(self.N, dtype=object)
-        expected_output1[0] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
-        expected_output1[1] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        expected_output1[0] = np.zeros((self.num_rx_antennas, num_samples),
+                                       dtype=complex)
+        expected_output1[1] = np.zeros((self.num_rx_antennas, num_samples),
+                                       dtype=complex)
         for i in range(num_samples):
-            expected_output1[0][:, i] = h00[:,:,i].dot(data1[0,:,i]) + \
-                                        h01[:,:,i].dot(data1[1,:,i])
-            expected_output1[1][:, i] = h10[:,:,i].dot(data1[0,:,i]) + \
-                                        h11[:,:,i].dot(data1[1,:,i])
+            expected_output1[0][:, i] = (h00[:, :, i].dot(data1[0, :, i]) +
+                                         h01[:, :, i].dot(data1[1, :, i]))
+            expected_output1[1][:, i] = (h10[:, :, i].dot(data1[0, :, i]) +
+                                         h11[:, :, i].dot(data1[1, :, i]))
 
         np.testing.assert_array_almost_equal(expected_output1[0], output1[0])
         np.testing.assert_array_almost_equal(expected_output1[1], output1[1])
@@ -2955,8 +3028,10 @@ class MuMimoChannelTestCase(unittest.TestCase):
         # First let's switch directions
         self.mumimochannel.switched_direction = True
 
-        # In the reverse direction we have self.num_rx_antennas TRANSMIT antennas
-        data2 = np.random.randint(0, 10, (self.N, self.num_rx_antennas, num_samples))
+        # In the reverse direction we have self.num_rx_antennas TRANSMIT
+        # antennas
+        data2 = np.random.randint(0, 10,
+                                  (self.N, self.num_rx_antennas, num_samples))
 
         # Now let's transmit in the other direction
         output2 = self.mumimochannel.corrupt_data(data2)
@@ -2973,13 +3048,15 @@ class MuMimoChannelTestCase(unittest.TestCase):
         h11 = impulse_response11.tap_values[0].T
 
         expected_output2 = np.empty(self.N, dtype=object)
-        expected_output2[0] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
-        expected_output2[1] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
+        expected_output2[0] = np.zeros((self.num_tx_antennas, num_samples),
+                                       dtype=complex)
+        expected_output2[1] = np.zeros((self.num_tx_antennas, num_samples),
+                                       dtype=complex)
         for i in range(num_samples):
-            expected_output2[0][:, i] = h00[i,:,:].dot(data2[0,:,i]) + \
-                                        h10[i,:,:].dot(data2[1,:,i])
-            expected_output2[1][:, i] = h01[i,:,:].dot(data2[0,:,i]) + \
-                                        h11[i,:,:].dot(data2[1,:,i])
+            expected_output2[0][:, i] = (h00[i, :, :].dot(data2[0, :, i]) +
+                                         h10[i, :, :].dot(data2[1, :, i]))
+            expected_output2[1][:, i] = (h01[i, :, :].dot(data2[0, :, i]) +
+                                         h11[i, :, :].dot(data2[1, :, i]))
 
         np.testing.assert_array_almost_equal(expected_output2[0], output2[0])
         np.testing.assert_array_almost_equal(expected_output2[1], output2[1])
@@ -3004,7 +3081,8 @@ class MuMimoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Generate data for 2 transmitters
         # data = np.ones((2, num_samples))
-        data = np.random.randint(0, 10, (self.N, self.num_tx_antennas, num_samples))
+        data = np.random.randint(0, 10,
+                                 (self.N, self.num_tx_antennas, num_samples))
 
         # Pass data through he channel
         output = mumimochannel.corrupt_data_in_freq_domain(data, fft_size)
@@ -3023,19 +3101,21 @@ class MuMimoChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Expected received signal xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_output = np.empty(self.N, dtype=object)
-        expected_output[0] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
-        expected_output[1] = np.zeros((self.num_rx_antennas, num_samples), dtype=complex)
+        expected_output[0] = np.zeros((self.num_rx_antennas, num_samples),
+                                      dtype=complex)
+        expected_output[1] = np.zeros((self.num_rx_antennas, num_samples),
+                                      dtype=complex)
 
         for b in range(num_blocks):
-            start_idx = b*fft_size
+            start_idx = b * fft_size
             # end_idx = (b+1)*fft_size
             for k in range(fft_size):
-                expected_output[0][:, start_idx+k] = (
-                    freq_response00[k, :, :, b].dot(data[0, :, start_idx+k]) +
-                    freq_response01[k, :, :, b].dot(data[1, :, start_idx+k]))
-                expected_output[1][:, start_idx+k] = (
-                    freq_response10[k, :, :, b].dot(data[0, :, start_idx+k]) +
-                    freq_response11[k, :, :, b].dot(data[1, :, start_idx+k]))
+                expected_output[0][:, start_idx + k] = (
+                    freq_response00[k, :, :, b].dot(data[0, :, start_idx + k]) +
+                    freq_response01[k, :, :, b].dot(data[1, :, start_idx + k]))
+                expected_output[1][:, start_idx + k] = (
+                    freq_response10[k, :, :, b].dot(data[0, :, start_idx + k]) +
+                    freq_response11[k, :, :, b].dot(data[1, :, start_idx + k]))
 
         # Test if the output and the expected output are equal
         np.testing.assert_array_almost_equal(expected_output[0], output[0])
@@ -3046,7 +3126,8 @@ class MuMimoChannelTestCase(unittest.TestCase):
         mumimochannel.switched_direction = True
 
         # Pass data through he channel
-        data2 = np.random.randint(0, 10, (self.N, self.num_rx_antennas, num_samples))
+        data2 = np.random.randint(0, 10,
+                                  (self.N, self.num_rx_antennas, num_samples))
         output2 = mumimochannel.corrupt_data_in_freq_domain(data2, fft_size)
         # Since we switched directions, the number of "receive" antennas is
         # equal to the number of transmit antennas in the original
@@ -3066,18 +3147,24 @@ class MuMimoChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Expected received signal xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_output2 = np.empty(self.N, dtype=object)
-        expected_output2[0] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
-        expected_output2[1] = np.zeros((self.num_tx_antennas, num_samples), dtype=complex)
+        expected_output2[0] = np.zeros((self.num_tx_antennas, num_samples),
+                                       dtype=complex)
+        expected_output2[1] = np.zeros((self.num_tx_antennas, num_samples),
+                                       dtype=complex)
         for b in range(num_blocks):
-            start_idx = b*fft_size
+            start_idx = b * fft_size
             # end_idx = (b+1)*fft_size
             for k in range(fft_size):
-                expected_output2[0][:, start_idx+k] = (
-                    freq_response00[k, :, :, b].T.dot(data2[0, :, start_idx+k]) +
-                    freq_response10[k, :, :, b].T.dot(data2[1, :, start_idx+k]))
-                expected_output2[1][:, start_idx+k] = (
-                    freq_response01[k, :, :, b].T.dot(data2[0, :, start_idx+k]) +
-                    freq_response11[k, :, :, b].T.dot(data2[1, :, start_idx+k]))
+                expected_output2[0][:, start_idx + k] = (
+                    freq_response00[k, :, :, b].T.dot(
+                        data2[0, :, start_idx + k]) +
+                    freq_response10[k, :, :, b].T.dot(
+                        data2[1, :, start_idx + k]))
+                expected_output2[1][:, start_idx + k] = (
+                    freq_response01[k, :, :, b].T.dot(
+                        data2[0, :, start_idx + k]) +
+                    freq_response11[k, :, :, b].T.dot(
+                        data2[1, :, start_idx + k]))
 
         # Test if the output2 and the expected output2 are equal
         np.testing.assert_array_almost_equal(expected_output2[0], output2[0])
@@ -3085,6 +3172,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# noinspection PyMethodMayBeStatic
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -3115,8 +3203,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         Nt = np.array([2, 3, 5])
         small_matrix = np.arange(1, 10)
         small_matrix.shape = (3, 3)
-        big_matrix \
-            = multiuser.MultiUserChannelMatrix._from_small_matrix_to_big_matrix(
+        big_matrix = \
+            multiuser.MultiUserChannelMatrix._from_small_matrix_to_big_matrix(
                 small_matrix, Nr, Nt, K)
 
         expected_big_matrix = np.array(
@@ -3344,7 +3432,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 np.testing.assert_array_equal(
                     self.multiH.get_Hkl(row, col),
                     self.multiH.big_H[
-                        cumNr[row]:cumNr[row + 1], cumNt[col]:cumNt[col + 1]])
+                        cumNr[row]:cumNr[row + 1],
+                        cumNt[col]:cumNt[col + 1]
+                    ])
 
     def test_corrupt_data(self):
         NSymbs = 20
@@ -3523,9 +3613,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F_all_k[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
-            F_all_k[k] = (F_all_k[k]
-                          / np.linalg.norm(F_all_k[k], 'fro')
-                          * np.sqrt(P[k]))
+            F_all_k[k] = (F_all_k[k] /
+                          np.linalg.norm(F_all_k[k], 'fro') *
+                          np.sqrt(P[k]))
 
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
@@ -3535,10 +3625,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         H02_F2 = np.dot(
             self.multiH.get_Hkl(k, 2),
             F_all_k[2])
-        expected_Q0 = np.dot(H01_F1,
-                             H01_F1.transpose().conjugate()) + \
-            np.dot(H02_F2,
-                   H02_F2.transpose().conjugate())
+        expected_Q0 = (np.dot(H01_F1,
+                              H01_F1.transpose().conjugate()) +
+                       np.dot(H02_F2,
+                              H02_F2.transpose().conjugate()))
 
         Qk = self.multiH.calc_Q(k, F_all_k)
         # Test if Qk is equal to the expected output
@@ -3561,10 +3651,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         H12_F2 = np.dot(
             self.multiH.get_Hkl(k, 2),
             F_all_k[2])
-        expected_Q1 = np.dot(H10_F0,
-                             H10_F0.transpose().conjugate()) + \
-            np.dot(H12_F2,
-                   H12_F2.transpose().conjugate())
+        expected_Q1 = (np.dot(H10_F0,
+                              H10_F0.transpose().conjugate()) +
+                       np.dot(H12_F2,
+                              H12_F2.transpose().conjugate()))
 
         self.multiH.noise_var = 0.0
         Qk = self.multiH.calc_Q(k, F_all_k)
@@ -3590,10 +3680,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_Hkl(k, 1),
             F_all_k[1]
         )
-        expected_Q2 = np.dot(H20_F0,
-                             H20_F0.transpose().conjugate()) + \
-            np.dot(H21_F1,
-                   H21_F1.transpose().conjugate())
+        expected_Q2 = (np.dot(H20_F0,
+                              H20_F0.transpose().conjugate()) +
+                       np.dot(H21_F1,
+                              H21_F1.transpose().conjugate()))
 
         # Calculate Qk without noise
         Qk = self.multiH._calc_Q_impl(k, F_all_k)
@@ -3624,9 +3714,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         F_all_k = np.empty(K, dtype=np.ndarray)
         for k in range(K):
             F_all_k[k] = randn_c(np.sum(Nt), Ns[k]) * np.sqrt(P[k])
-            F_all_k[k] = (F_all_k[k]
-                          / np.linalg.norm(F_all_k[k], 'fro')
-                          * np.sqrt(P[k]))
+            F_all_k[k] = (F_all_k[k] /
+                          np.linalg.norm(F_all_k[k], 'fro') *
+                          np.sqrt(P[k]))
 
         # xxxxx Calculate the expected Q[0] after one step xxxxxxxxxxxxxxxx
         k = 0
@@ -3638,10 +3728,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_Hk(k),
             F_all_k[2]
         )
-        expected_Q0 = np.dot(H0_F1,
-                             H0_F1.transpose().conjugate()) + \
-            np.dot(H0_F2,
-                   H0_F2.transpose().conjugate())
+        expected_Q0 = (np.dot(H0_F1,
+                              H0_F1.transpose().conjugate()) +
+                       np.dot(H0_F2,
+                              H0_F2.transpose().conjugate()))
 
         # Test if Qk (without noise) is equal to the expected output
         Qk = self.multiH._calc_JP_Q_impl(k, F_all_k)
@@ -3664,10 +3754,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_Hk(k),
             F_all_k[2]
         )
-        expected_Q1 = np.dot(H1_F0,
-                             H1_F0.transpose().conjugate()) + \
-            np.dot(H1_F2,
-                   H1_F2.transpose().conjugate())
+        expected_Q1 = (np.dot(H1_F0,
+                              H1_F0.transpose().conjugate()) +
+                       np.dot(H1_F2,
+                              H1_F2.transpose().conjugate()))
 
         # Test if Qk (without noise) is equal to the expected output
         Qk = self.multiH._calc_JP_Q_impl(k, F_all_k)
@@ -3690,10 +3780,10 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_Hk(k),
             F_all_k[1]
         )
-        expected_Q2 = np.dot(H2_F0,
-                             H2_F0.transpose().conjugate()) + \
-            np.dot(H2_F1,
-                   H2_F1.transpose().conjugate())
+        expected_Q2 = (np.dot(H2_F0,
+                              H2_F0.transpose().conjugate()) +
+                       np.dot(H2_F1,
+                              H2_F1.transpose().conjugate()))
 
         # Test if Qk (without noise) is equal to the expected output
         Qk = self.multiH._calc_JP_Q_impl(k, F_all_k)
@@ -3730,11 +3820,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             HkkFk = np.dot(Hkk, Fk)
             # The _calc_Q_impl method does not include the noise, while the
             # calc_Q method does.
-            expected_first_part = (self.multiH._calc_Q_impl(k, F)
-                                   + np.dot(HkkFk, HkkFk.conjugate().T))
+            expected_first_part = (self.multiH._calc_Q_impl(k, F) +
+                                   np.dot(HkkFk, HkkFk.conjugate().T))
             expected_first_part_with_noise = (
-                self.multiH.calc_Q(k, F)
-                + np.dot(HkkFk, HkkFk.conjugate().T))
+                self.multiH.calc_Q(k, F) +
+                np.dot(HkkFk, HkkFk.conjugate().T))
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -3759,14 +3849,17 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             F[k] = randn_c(Nt[k], Ns[k]) * np.sqrt(P[k])
             F[k] = F[k] / np.linalg.norm(F[k], 'fro') * np.sqrt(P[k])
 
+        # noinspection PyPep8
         for k in range(K):
             # First part in the equation of Bkl (the double summation)
             expected_first_part = 0.0
+            ":type: np.ndarray"
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
             for j in range(K):
                 aux = 0.0
+                ":type: np.ndarray"
                 Hkj = self.multiH.get_Hkl(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
@@ -3778,8 +3871,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expected_first_part += aux
 
-            expected_first_part_with_noise = (expected_first_part
-                                              + np.eye(Nr[k]) * noise_power)
+            expected_first_part_with_noise = (expected_first_part +
+                                              np.eye(Nr[k]) * noise_power)
+            ":type: np.ndarray"
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -3808,6 +3902,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             Hkk = self.multiH.get_Hkl(k, k)
             Hkk_H = Hkk.transpose().conjugate()
+            # noinspection PyPep8
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
@@ -3838,6 +3933,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             Hkk = self.multiH.get_Hkl(k, k)
             Hkk_H = Hkk.transpose().conjugate()
+            # noinspection PyPep8
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
@@ -3868,6 +3964,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             Hkk = self.multiH.get_Hkl(k, k)
             Hkk_H = Hkk.transpose().conjugate()
+            # noinspection PyPep8
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
@@ -3899,8 +3996,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         for k in range(K):
             # We only have the stream 0
-            expected_Bk0 = (self.multiH.calc_Q(k, F)
-                            + (noise_power * np.eye(Nr[k])))
+            expected_Bk0 = (self.multiH.calc_Q(k, F) +
+                            (noise_power * np.eye(Nr[k])))
             Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(
                 F, k, N0_or_Rek=noise_power)[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
@@ -3947,8 +4044,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                     np.dot(aux, aux.transpose().conjugate()) / np.dot(
                         Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
 
-                np.testing.assert_array_almost_equal(expectedSINRkl,
-                                                     SINR_k_all_l[l])
+                self.assertAlmostEqual(expectedSINRkl, SINR_k_all_l[l])
 
         # xxxxxxxxxx Repeat the tests, but now using an IA solution xxxxxxx
         iasolver = ClosedFormIASolver(multiUserChannel)
@@ -4071,11 +4167,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hk = self.multiH.get_Hk(k)
             Fk = F[k]
             HkFk = np.dot(Hk, Fk)
-            expected_first_part = (self.multiH._calc_JP_Q_impl(k, F)
-                                   + np.dot(HkFk, HkFk.conjugate().T))
+            expected_first_part = (self.multiH._calc_JP_Q_impl(k, F) +
+                                   np.dot(HkFk, HkFk.conjugate().T))
             expected_first_part_with_noise = (
-                self.multiH.calc_JP_Q(k, F)
-                + np.dot(HkFk, HkFk.conjugate().T))
+                self.multiH.calc_JP_Q(k, F) +
+                np.dot(HkFk, HkFk.conjugate().T))
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -4102,9 +4198,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         F = single_matrix_to_matrix_of_matrices(Ms_good, None, Ns)
 
+        # noinspection PyPep8
         for k in range(K):
             # First part in the equation of Bkl (the double summation)
             expected_first_part = 0.0
+            ":type: np.ndarray"
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
@@ -4112,6 +4210,8 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hk_H = Hk.conjugate().transpose()
             for j in range(K):
                 aux = 0.0
+                ":type: np.ndarray"
+
                 # Calculates individually for each stream
                 for d in range(Ns[k]):
                     Vjd = F[j][:, d:d + 1]
@@ -4120,8 +4220,9 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
                 expected_first_part += aux
 
-            expected_first_part_with_noise = (expected_first_part
-                                              + np.eye(Nr[k]) * noise_power)
+            expected_first_part_with_noise = (expected_first_part +
+                                              np.eye(Nr[k]) * noise_power)
+            ":type: np.ndarray"
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -4153,6 +4254,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             Hk = self.multiH.get_Hk(k)
             Hk_H = Hk.transpose().conjugate()
+            # noinspection PyPep8
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
@@ -4184,6 +4286,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             Hk = self.multiH.get_Hk(k)
             Hk_H = Hk.transpose().conjugate()
+            # noinspection PyPep8
             for l in range(Ns[k]):
                 # Calculate the second part in Equation (28). The second part
                 # is different for each value of l and is given by
@@ -4376,6 +4479,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# noinspection PyPep8
 class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -4429,8 +4533,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Test the properties
         np.testing.assert_array_equal(self.multiH.Nr, self.Nr)
         np.testing.assert_array_equal(self.multiH.Nt, self.Nt)
-        np.testing.assert_array_equal(self.multiH.K, self.K)
-        np.testing.assert_array_equal(self.multiH.extIntK, len(self.NtE))
+        self.assertEqual(self.multiH.K, self.K)
+        self.assertEqual(self.multiH.extIntK, len(self.NtE))
         np.testing.assert_array_equal(self.multiH.extIntNt, self.NtE)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -4442,8 +4546,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Test the properties
         np.testing.assert_array_equal(self.multiH.Nr, self.Nr)
         np.testing.assert_array_equal(self.multiH.Nt, self.Nt)
-        np.testing.assert_array_equal(self.multiH.K, self.K)
-        np.testing.assert_array_equal(self.multiH.extIntK, 1)
+        self.assertEqual(self.multiH.K, self.K)
+        self.assertEqual(self.multiH.extIntK, 1)
         np.testing.assert_array_equal(self.multiH.extIntNt, np.sum(self.NtE))
 
         # We won't test the channels here because the code for setting
@@ -4456,8 +4560,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Test the properties
         np.testing.assert_array_equal(self.multiH.Nr, self.Nr)
         np.testing.assert_array_equal(self.multiH.Nt, self.Nt)
-        np.testing.assert_array_equal(self.multiH.K, self.K)
-        np.testing.assert_array_equal(self.multiH.extIntK, len(self.NtE))
+        self.assertEqual(self.multiH.K, self.K)
+        self.assertEqual(self.multiH.extIntK, len(self.NtE))
         np.testing.assert_array_equal(self.multiH.extIntNt, self.NtE)
 
         # Now test when the number of transmit/receive antennas is the same
@@ -4550,7 +4654,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             for c in range(ncols):
                 np.testing.assert_array_almost_equal(expected_H[r, c],
                                                      self.multiH.H[r, c])
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_corrupt_data(self):
         Nt = np.array([2, 2])
@@ -4603,13 +4707,13 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # received_data2_expected for now has only the included the user's
         # signal. Lets add the external interference source's signal.
         received_data2_expected[0] = (
-            received_data2_expected[0]
-            + np.dot(self.multiH.get_Hkl(0, 2), input_data_extint2[0])
-            + np.dot(self.multiH.get_Hkl(0, 3), input_data_extint2[1]))
+            received_data2_expected[0] +
+            np.dot(self.multiH.get_Hkl(0, 2), input_data_extint2[0]) +
+            np.dot(self.multiH.get_Hkl(0, 3), input_data_extint2[1]))
         received_data2_expected[1] = (
-            received_data2_expected[1]
-            + np.dot(self.multiH.get_Hkl(1, 2), input_data_extint2[0])
-            + np.dot(self.multiH.get_Hkl(1, 3), input_data_extint2[1]))
+            received_data2_expected[1] +
+            np.dot(self.multiH.get_Hkl(1, 2), input_data_extint2[0]) +
+            np.dot(self.multiH.get_Hkl(1, 3), input_data_extint2[1]))
 
         # Now lets test if the received_data2 is correct
         self.assertEqual(received_data2_expected.shape, received_data2.shape)
@@ -4846,7 +4950,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             # # External interference part
             # np.dot(R0_e0, R0_e0.conjugate().T) +
             # np.dot(R0_e1, R0_e1.conjugate().T)
-            )
+        )
 
         # test without noise
         self.multiH.noise_var = None
@@ -4889,7 +4993,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H10_F0.transpose().conjugate()) +
             np.dot(H12_F2,
                    H12_F2.transpose().conjugate())
-            )
+        )
 
         # test without noise
         self.multiH.noise_var = None
@@ -4932,7 +5036,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H20_F0.transpose().conjugate()) +
             np.dot(H21_F1,
                    H21_F1.transpose().conjugate())
-            )
+        )
 
         # Test without noise
         self.multiH.noise_var = None
@@ -5038,7 +5142,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H1_F0.transpose().conjugate()) +
             np.dot(H1_F2,
                    H1_F2.transpose().conjugate())
-            )
+        )
 
         # Test without noise
         self.multiH.noise_var = None
@@ -5077,7 +5181,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                    H2_F0.transpose().conjugate()) +
             np.dot(H2_F1,
                    H2_F1.transpose().conjugate())
-            )
+        )
 
         # Test without noise
         self.multiH.noise_var = None
@@ -5174,11 +5278,13 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         for k in range(K):
             # First part in the equation of Bkl (the double summation)
             expected_first_part = 0.0
+            ":type: np.ndarray"
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
             for j in range(K):
                 aux = 0.0
+                ":type: np.ndarray"
                 Hkj = self.multiH.get_Hkl(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
@@ -5272,8 +5378,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                         Ukl_H, np.dot(Bkl_all_l[l], Ukl))
                 )
 
-                np.testing.assert_array_almost_equal(expectedSINRkl,
-                                                     SINR_k_all_l[l])
+                self.assertAlmostEqual(expectedSINRkl,
+                                       SINR_k_all_l[l])
 
         # xxxxxxxxxx Repeat the tests, but now using an IA solution xxxxxxx
         multiUserChannel.noise_var = 0.0
@@ -5310,6 +5416,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
 
+    # noinspection PyTypeChecker
     def test_calc_SINR(self):
         multiUserChannel = multiuser.MultiUserChannelMatrixExtInt()
         K = 3
@@ -5436,8 +5543,8 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
             # Without noise
             self.multiH.noise_var = None
-            expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=0.0)
-                                   + np.dot(HkFk, HkFk.conjugate().T))
+            expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=0.0) +
+                                   np.dot(HkFk, HkFk.conjugate().T))
             # With noise
             self.multiH.noise_var = noise_power
             expected_first_part_with_noise = self.multiH.calc_JP_Q(
@@ -5450,10 +5557,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                     F, k, np.zeros([Nr[0], Nr[1]])))
 
             # Test with noise
+            # noinspection PyTypeChecker
             np.testing.assert_array_almost_equal(
                 expected_first_part_with_noise,
                 self.multiH._calc_JP_Bkl_cov_matrix_first_part(
-                    F, k, noise_power*np.eye(Nr[k])))
+                    F, k, noise_power * np.eye(Nr[k])))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test with external interference xxxxxxxxxxxxxxxxxxxxxx
@@ -5471,14 +5579,14 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 
             # without noise
             self.multiH.noise_var = None
-            expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=Pe)
-                                   + np.dot(HkFk, HkFk.conjugate().T))
+            expected_first_part = (self.multiH.calc_JP_Q(k, F, pe=Pe) +
+                                   np.dot(HkFk, HkFk.conjugate().T))
 
             # with noise
             self.multiH.noise_var = noise_power
             expected_first_part_with_noise = (
-                self.multiH.calc_JP_Q(k, F, pe=Pe)
-                + np.dot(HkFk, HkFk.conjugate().T))
+                self.multiH.calc_JP_Q(k, F, pe=Pe) +
+                np.dot(HkFk, HkFk.conjugate().T))
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -5490,7 +5598,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 expected_first_part_with_noise,
                 self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, Re[k]))
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_calc_JP_Bkl_cov_matrix_second_part(self):
         K = 3
@@ -5777,6 +5885,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         d = 1.2
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        ":type: np.ndarray"
 
         self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                expected_pl_in_dB)
@@ -5788,6 +5897,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.n = n
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        ":type: np.ndarray"
         self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                expected_pl_in_dB)
         self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
@@ -5798,6 +5908,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.fc = fc
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        ":type: np.ndarray"
         self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                expected_pl_in_dB)
         self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
@@ -5808,6 +5919,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         d = np.array([1.2, 1.4, 1.6])
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        ":type: np.ndarray"
 
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss_dB([1.2, 1.4, 1.6]),
@@ -5824,6 +5936,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.fc = fc
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
+        ":type: np.ndarray"
 
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss_dB([1.2, 1.4, 1.6]),
@@ -5845,6 +5958,8 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # test calc_path_loss (linear scale)
         expected_pl_linear = dB2Linear(-expected_pl_in_dB)
+        ":type: np.ndarray"
+
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss([1.2, 1.4, 1.6]),
             expected_pl_linear)
@@ -5984,6 +6099,7 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         d = np.array([10., 50., 100., 1000.])
         expected_pl_dB_NLOS \
             = A * np.log10(d) + B + C * math.log10(fc_GHz / 5) + X
+        ":type: np.ndarray"
         np.testing.assert_array_almost_equal(
             self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=num_walls),
             expected_pl_dB_NLOS)
@@ -5998,7 +6114,7 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         # Simple test
         d = 10
         expected_pl_dB_LOS \
-            = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
+            = A * math.log10(d) + B + C * math.log10(fc_GHz / 5)
         self.assertAlmostEqual(
             self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
             expected_pl_dB_LOS)
@@ -6007,7 +6123,7 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         fc_GHz = 1.1
         self.pl.fc = 1.1e3
         expected_pl_dB_LOS \
-            = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
+            = A * math.log10(d) + B + C * math.log10(fc_GHz / 5)
         self.assertAlmostEqual(
             self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
             expected_pl_dB_LOS)
@@ -6016,6 +6132,7 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         d = np.array([10., 50., 100., 1000.])
         expected_pl_dB_LOS \
             = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
+        ":type: np.ndarray"
         np.testing.assert_array_almost_equal(
             self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
             expected_pl_dB_LOS)
@@ -6229,10 +6346,10 @@ class AntGainOmniTestCase(unittest.TestCase):
         self.assertAlmostEqual(C.get_antenna_gain(angle4), dB2Linear(3.0))
 
 
-
 class AntGain3GPP25996TestCase(unittest.TestCase):
+    # noinspection PyPep8
     def test_get_antenna_gain(self):
-        #\(-\min\left[ 12\left( \frac{\theta}{\theta_{3dB}} \right)^2, A_m \right]\), where \(-180 \geq \theta \geq 180\)
+        # \(-\min\left[ 12\left( \frac{\theta}{\theta_{3dB}} \right)^2, A_m \right]\), where \(-180 \geq \theta \geq 180\)
         # xxxxxxxxxx Test for 3-Sector cells xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         A = antennagain.AntGainBS3GPP25996()
         antenna_gain = A.ant_gain
@@ -6242,11 +6359,11 @@ class AntGain3GPP25996TestCase(unittest.TestCase):
         angle4 = -68
         angle5 = -90
         angle6 = -95
-        expected_gain1 = antenna_gain * dB2Linear(-12 * (angle1/70.) ** 2)
-        expected_gain2 = antenna_gain * dB2Linear(-12 * (angle2/70.) ** 2)
+        expected_gain1 = antenna_gain * dB2Linear(-12 * (angle1 / 70.) ** 2)
+        expected_gain2 = antenna_gain * dB2Linear(-12 * (angle2 / 70.) ** 2)
         expected_gain3 = antenna_gain * dB2Linear(-20)
-        expected_gain4 = antenna_gain * dB2Linear(-12 * (angle4/70.) ** 2)
-        expected_gain5 = antenna_gain * dB2Linear(-12 * (angle5/70.) ** 2)
+        expected_gain4 = antenna_gain * dB2Linear(-12 * (angle4 / 70.) ** 2)
+        expected_gain5 = antenna_gain * dB2Linear(-12 * (angle5 / 70.) ** 2)
         expected_gain6 = antenna_gain * dB2Linear(-20)
         self.assertAlmostEqual(A.get_antenna_gain(angle1), expected_gain1)
         self.assertAlmostEqual(A.get_antenna_gain(angle2), expected_gain2)
@@ -6268,8 +6385,8 @@ class AntGain3GPP25996TestCase(unittest.TestCase):
         # xxxxxxxxxx Test for 6-sector cells xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         B = antennagain.AntGainBS3GPP25996(number_of_sectors=6)
         antenna_gain = B.ant_gain
-        expected_gain1 = antenna_gain * dB2Linear(-12 * (angle1/35.) ** 2)
-        expected_gain2 = antenna_gain * dB2Linear(-12 * (angle2/35.) ** 2)
+        expected_gain1 = antenna_gain * dB2Linear(-12 * (angle1 / 35.) ** 2)
+        expected_gain2 = antenna_gain * dB2Linear(-12 * (angle2 / 35.) ** 2)
         expected_gain3 = antenna_gain * dB2Linear(-23)
         expected_gain4 = antenna_gain * dB2Linear(-23)
         expected_gain5 = antenna_gain * dB2Linear(-23)
@@ -6285,7 +6402,7 @@ class AntGain3GPP25996TestCase(unittest.TestCase):
         # xxxxx Different number of sectors raise an exception xxxxxxxxxxxx
         with self.assertRaises(ValueError):
             antennagain.AntGainBS3GPP25996(number_of_sectors=9)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

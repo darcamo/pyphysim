@@ -13,6 +13,7 @@ of them.
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
 import os
+
 try:
     current_dir = os.path.abspath(os.path.dirname(__file__))
     parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
@@ -34,6 +35,7 @@ import json
 try:
     # noinspection PyUnresolvedReferences
     from ipyparallel import CompositeError
+
     _IPYTHON_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _IPYTHON_AVAILABLE = False
@@ -41,6 +43,7 @@ except ImportError:  # pragma: no cover
 try:  # pragma: nocover
     # noinspection PyUnresolvedReferences
     from pandas import DataFrame
+
     _PANDAS_AVAILABLE = True
 except ImportError:  # pragma: nocover
     _PANDAS_AVAILABLE = False
@@ -83,6 +86,7 @@ class SimulationsDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the simulations
     package.
     """
+
     def test_configobjvalidation(self):
         """Run configobjvalidation doctests"""
         doctest.testmod(configobjvalidation)
@@ -124,6 +128,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     Unit-tests for the module functions in the in the configobjvalidation
     module.
     """
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -352,6 +357,7 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
     """
     Unit-tests for the functions in the parameters module.
     """
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -434,6 +440,7 @@ class SimulationParametersTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationParameters class in the parameters module.
     """
+
     def setUp(self):
         params_dict = {'first': 10, 'second': 20}
         self.sim_params = SimulationParameters.create(params_dict)
@@ -781,13 +788,14 @@ class SimulationParametersTestCase(unittest.TestCase):
         sim_params_unpacked_list = self.sim_params.get_unpacked_params_list()
 
         for sim_params_elem in sim_params_unpacked_list:
-        # sim_params_elem = sim_params_unpacked_list[0]
+            # sim_params_elem = sim_params_unpacked_list[0]
             out_elem = sim_params_elem._to_dict()
             self.assertIsInstance(out_elem, dict)
             self.assertEqual(out_elem['parameters'], sim_params_elem.parameters)
             self.assertEqual(out_elem['unpacked_parameters_set'],
                              sim_params_elem._unpacked_parameters_set)
-            self.assertEqual(out_elem['unpack_index'], sim_params_elem._unpack_index)
+            self.assertEqual(out_elem['unpack_index'],
+                             sim_params_elem._unpack_index)
             self.assertEqual(out_elem['original_sim_params'],
                              sim_params_elem._original_sim_params._to_dict())
 
@@ -1413,8 +1421,8 @@ class ResultTestCase(unittest.TestCase):
 
         result1_other = Result.create("name", Result.SUMTYPE, 11)
         expected_result_sum1 = result_sum_before1 + result1_other._result_sum
-        expected_result_sqr_sum1 = (result_sum_sqr_before1
-                                    + result1_other._result_squared_sum)
+        expected_result_sqr_sum1 = (result_sum_sqr_before1 +
+                                    result1_other._result_squared_sum)
 
         self.result1.merge(result1_other)
         self.assertEqual(self.result1.name, "name")
@@ -1434,8 +1442,8 @@ class ResultTestCase(unittest.TestCase):
         result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50)
         result2_other.update(12, 18)
         expected_result_sum2 = result_sum_before2 + result2_other._result_sum
-        expected_result_sqr_sum2 = (result_sum_sqr_before2
-                                    + result2_other._result_squared_sum)
+        expected_result_sqr_sum2 = (result_sum_sqr_before2 +
+                                    result2_other._result_squared_sum)
 
         self.result2.merge(result2_other)
         self.assertEqual(self.result2.name, "name2")
@@ -1539,7 +1547,7 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result4._value_list, [2, 0, 3, 0, 3])
         self.assertEqual(result4._total_list, [])
         np.testing.assert_array_almost_equal(result4.get_result(),
-                                             np.array([2, 0, 1, 2])/5.)
+                                             np.array([2, 0, 1, 2]) / 5.)
 
     def test_get_result_mean_and_var(self):
         # Test for Result.SUMTYPE
@@ -1691,10 +1699,10 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(4)
 
         # xxxxxxxxxx Test converting to a dictionary xxxxxxxxxxxxxxxxxxxxxx
-        result1_dict = self.result1._to_dict()
-        result2_dict = self.result2._to_dict()
-        result3_dict = self.result3._to_dict()
-        result4_dict = self.result4._to_dict()
+        result1_dict = self.result1.to_dict()
+        result2_dict = self.result2.to_dict()
+        result3_dict = self.result3.to_dict()
+        result4_dict = self.result4.to_dict()
 
         self.assertIsInstance(result1_dict, dict)
         self.assertIsInstance(result2_dict, dict)
@@ -1707,10 +1715,10 @@ class ResultTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test converting from a dictionary xxxxxxxxxxxxxxxxxxxx
-        result1 = Result._from_dict(result1_dict)
-        result2 = Result._from_dict(result2_dict)
-        result3 = Result._from_dict(result3_dict)
-        result4 = Result._from_dict(result4_dict)
+        result1 = Result.from_dict(result1_dict)
+        result2 = Result.from_dict(result2_dict)
+        result3 = Result.from_dict(result3_dict)
+        result4 = Result.from_dict(result4_dict)
 
         self.assertEqual(self.result1, result1)
         self.assertEqual(self.result2, result2)
@@ -1762,10 +1770,12 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result4, result4)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
 class SimulationResultsTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationResults class in the results module.
     """
+
     def setUp(self):
         # First SimulationResults object
         self.simresults = SimulationResults()
@@ -2110,14 +2120,14 @@ class SimulationResultsTestCase(unittest.TestCase):
                          simresults2['lulu'][0].type_code)
 
         self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
-                               simresults2['lala'][0].get_result(),)
+                               simresults2['lala'][0].get_result(), )
         self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
-                               simresults2['lele'][0].get_result(),)
+                               simresults2['lele'][0].get_result(), )
         np.testing.assert_array_almost_equal(
             self.simresults['lulu'][0].get_result(),
-            simresults2['lulu'][0].get_result(),)
+            simresults2['lulu'][0].get_result(), )
         self.assertAlmostEqual(self.simresults['name'][0].get_result(),
-                               simresults2['name'][0].get_result(),)
+                               simresults2['name'][0].get_result(), )
 
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
@@ -2149,14 +2159,14 @@ class SimulationResultsTestCase(unittest.TestCase):
                          simresults3['lulu'][0].type_code)
 
         self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
-                               simresults3['lala'][0].get_result(),)
+                               simresults3['lala'][0].get_result(), )
         self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
-                               simresults3['lele'][0].get_result(),)
+                               simresults3['lele'][0].get_result(), )
         np.testing.assert_array_almost_equal(
             self.simresults['lulu'][0].get_result(),
-            simresults3['lulu'][0].get_result(),)
+            simresults3['lulu'][0].get_result(), )
         self.assertAlmostEqual(self.simresults['name'][0].get_result(),
-                               simresults3['name'][0].get_result(),)
+                               simresults3['name'][0].get_result(), )
 
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
@@ -2169,7 +2179,6 @@ class SimulationResultsTestCase(unittest.TestCase):
         # Delete the where the results were saved
         delete_file_if_possible(filename_json)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
     # def test_save_to_and_load_from_hdf5_file(self):
     #     base_filename = 'results_({age})_({temperature})_({factor})'
@@ -2311,9 +2320,9 @@ class SimulationResultsTestCase(unittest.TestCase):
             SNR = p['SNR']
             bias = p['bias']
             sim_results.append_result(Result.create(
-                'res1', Result.SUMTYPE, extra*SNR+bias))
+                'res1', Result.SUMTYPE, extra * SNR + bias))
             sim_results.append_result(Result.create(
-                'res2', Result.SUMTYPE, bias*SNR+extra))
+                'res2', Result.SUMTYPE, bias * SNR + extra))
         sim_results.set_parameters(params)
 
         # Now lets convert this SimulationResults object to a pandas
@@ -2340,8 +2349,8 @@ class SimulationResultsTestCase(unittest.TestCase):
             extra = p['extra']
             SNR = p['SNR']
             bias = p['bias']
-            expected_res1 = extra*SNR+bias
-            expected_res2 = bias*SNR+extra
+            expected_res1 = extra * SNR + bias
+            expected_res2 = bias * SNR + extra
             self.assertAlmostEqual(expected_res1, df.res1[index])
             self.assertAlmostEqual(expected_res2, df.res2[index])
 
@@ -2512,6 +2521,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationRunner class in the runner module.
     """
+
     def setUp(self):
         self.runner = SimulationRunner(read_command_line_args=False)
 
@@ -2744,7 +2754,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
             results_extra_2, expected_results_extra_2)
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
-        sim_results = SimulationResults.load_from_file(sim_runner.results_filename)
+        sim_results = SimulationResults.load_from_file(
+            sim_runner.results_filename)
         self.assertEqual(sim_results, sim_runner.results)
         _delete_pickle_files()
         _delete_progressbar_output_files()
@@ -2806,7 +2817,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
             if len(lview) == 0:  # pragma: no cover
                 self.skipTest("At least one IPython engine must be running.")
         except IOError:  # pragma: no cover
-            self.skipTest("The IPython engines were not found. ('tests' profile)")
+            self.skipTest("The IPython engines were not found. ('tests' "
+                          "profile)")
         #
         #
         # This test is intended to clarify some special care that must be
@@ -3459,11 +3471,11 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         # self.proxybar2 is called their "_progress_func" variable points
         # to the "_connect_and_update_progress" method
         self.assertTrue(
-            self.proxybar1._progress_func
-            == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+            self.proxybar1._progress_func ==
+            progressbar.ProgressbarZMQClient._connect_and_update_progress)
         self.assertTrue(
-            self.proxybar2._progress_func
-            == progressbar.ProgressbarZMQClient._connect_and_update_progress)
+            self.proxybar2._progress_func ==
+            progressbar.ProgressbarZMQClient._connect_and_update_progress)
 
     def test_update_progress(self):
         try:

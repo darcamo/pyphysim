@@ -305,11 +305,11 @@ class MuChannel(object):
 
         Parameters
         ----------
-        signal : np.ndarray
-            Signal to be transmitted through the channel. This should be
-            a 2D numpy array (1D array if there is only one
-            transmitter), where each row corresponds to the transmit
-            data of one transmitter.
+        signal : np.ndarray | list[np.ndarray]
+            Signal to be transmitted through the channel. This should be a 2D
+            numpy array where each row corresponds to the transmit data of
+            one transmitter. If can also be a list of numpy arrays or,
+            if there is only one transmitter, a single 1D numpy array.
         fft_size : int
             The size of the Fourier transform to get the frequency
             response.
@@ -1326,8 +1326,9 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         ----------
         k : int
             The user index.
-        F_all_users : list[np.ndarray]
-            The precoders of all users.
+        F_all_users : list[np.ndarray] | np.ndarray
+            The precoders of all users. It can be a list of numpy arrays or a
+            numpy array of numpy arrays.
 
         Returns
         -------
@@ -1396,9 +1397,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : list[np.ndarray]
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). It can be a list of numpy arrays or a
+            numpy array of numpy arrays.
         k : int
             Index of the desired user.
         N0_or_Rek : float | np.ndarray
@@ -1562,7 +1564,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
         F_all_users : list[np.ndarray]
             The precoder of all users (already taking into account the
             transmit power).
-        Rek : np.ndarray
+        Rek : np.ndarray | float
             Covariance matrix of the external interference (if there is
             any) plus noise.
 
@@ -1604,9 +1606,10 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
 
         Parameters
         ----------
-        F_all_users : list[np.ndarray]
+        F_all_users : list[np.ndarray] | np.ndarray
             The precoder of all users (already taking into account the
-            transmit power).
+            transmit power). It can be a list of numpy arrays or a numpy
+            array of numpy arrays.
         k : int
             Index of the desired user.
         noise_power : float
@@ -2607,7 +2610,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             arrays or a list of numpy arrays.
         k : int
             Index of the desired user.
-        Rek : np.ndarray
+        Rek : np.ndarray | float
             Covariance matrix of the external interference plus noise.
 
         Returns

@@ -99,7 +99,7 @@ class CazacBasedChannelEstimator(object):
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.
-            tilde_h = y[0:num_taps_to_keep+1]
+            tilde_h = y[0:num_taps_to_keep + 1]
         elif received_signal.ndim == 2:
             # Case with multiple receive antennas
             y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal,
@@ -107,7 +107,7 @@ class CazacBasedChannelEstimator(object):
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.
-            tilde_h = y[:, 0:num_taps_to_keep+1]
+            tilde_h = y[:, 0:num_taps_to_keep + 1]
         else:
             raise ValueError(  # pragma: no cover
                 "received_signal must have either one dimension ("
@@ -185,12 +185,12 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         freq_response : np.ndarray
             The channel frequency response.
         """
-        if received_signal.ndim==2:
+        if received_signal.ndim == 2:
             # Apply the cover code
             received_signal_mean = np.mean(
                 received_signal * self.cover_code[:, np.newaxis],
                 axis=0)
-        elif received_signal.ndim==3:
+        elif received_signal.ndim == 3:
             received_signal_mean = np.mean(
                 received_signal * self.cover_code[:, np.newaxis, np.newaxis],
                 axis=0)

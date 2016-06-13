@@ -515,8 +515,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             # The second variable returned by least_right_singular_vectors
             # has the corresponds to the most significant singular
             # vectors.
-            _, V1, _ = least_right_singular_vectors(
-                    Hkk, self.Nr[k] - Ns[k])
+            _, V1, _ = least_right_singular_vectors(Hkk, self.Nr[k] - Ns[k])
             self._F[k] = V1 / np.linalg.norm(V1, 'fro')
 
         # Method called before the _updateW method
@@ -2196,8 +2195,7 @@ class BruteForceStreamIASolver(object):
             self._iasolver.clear()
             self._runned_iterations += \
                 self._iasolver.solve(np.array(comb), P)
-            self._every_sum_capacity.append(
-                    self._iasolver.calc_sum_capacity())
+            self._every_sum_capacity.append(self._iasolver.calc_sum_capacity())
 
             # If the current solution is better then the best one, store it
             # as the new best solution.

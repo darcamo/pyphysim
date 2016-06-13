@@ -35,6 +35,7 @@ class UtilDoctestsTestCase(unittest.TestCase):
     package.
 
     """
+
     def test_misc(self):
         """Run misc doctests"""
         doctest.testmod(misc)
@@ -277,7 +278,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxx Test if R is an upper triangular matrix xxxxxxxxxxxxxx
         # Furthermore, all diagonal elements must be the geometric mean of
         # the singular values of 'A'
-        lambda_bar = np.prod(S)**(1./4.)
+        lambda_bar = np.prod(S) ** (1. / 4.)
         np.testing.assert_almost_equal(R.diagonal(), lambda_bar)
 
         for i in range(4):
@@ -452,13 +453,13 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # returned right singular vectors for the 0 valued singular vectors
         # will be all zeros. We test this here to make sure the installed
         # version of numpy was compiled with lapack to avoid this bug.
-        M = 8                           # Number of rows
-        N = 12                          # Number of columns
+        M = 8  # Number of rows
+        N = 12  # Number of columns
         [_, _, V_H] = np.linalg.svd(
             np.random.randn(M, N) + 1j * np.random.randn(M, N),
             full_matrices=True)
         # Test if all the last N - M rows are equal to zero (the bug) or not.
-        self.assertNotAlmostEqual(np.linalg.norm(V_H[M-N:]), 0.0)
+        self.assertNotAlmostEqual(np.linalg.norm(V_H[M - N:]), 0.0)
 
     def test_calc_unorm_autocorr(self):
         x = np.array([4., 2, 1, 3, 7, 3, 8])
@@ -790,7 +791,7 @@ class NumpyOrSetEncoderTestCase(unittest.TestCase):
         decoded_s1 = json.loads(encoded_s1)
         self.assertEqual(s1, decoded_s1)
 
-        s2 = self.b[1,0]
+        s2 = self.b[1, 0]
         encoded_s2 = json.dumps(s2, cls=serialize.NumpyOrSetEncoder)
         self.assertIsInstance(encoded_s2, str)
         decoded_s2 = json.loads(encoded_s2)
@@ -805,7 +806,6 @@ class NumpyOrSetEncoderTestCase(unittest.TestCase):
                                object_hook=serialize.json_numpy_or_set_obj_hook)
         self.assertSetEqual(c, decoded_c)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 
 # xxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
