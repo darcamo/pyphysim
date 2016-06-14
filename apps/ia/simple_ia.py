@@ -23,7 +23,7 @@ from pyphysim.simulations.progressbar import ProgressbarText
 import pyphysim.channels.multiuser
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-#calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
+# calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
 
 
 def calc_capacity(sinr):

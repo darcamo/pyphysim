@@ -1458,14 +1458,14 @@ class SimulationResults(JsonSerializable):
             list[dict]
                 List of dictionary representations of the Result objects.
             """
-            out = [r._to_dict() for r in result_list]
+            out = [r.to_dict() for r in result_list]
             return out
         # -----------------------------------------------------------------
 
         results = {n: list_of_results_to_list_of_dicts(v)
                    for n, v in self._results.items()}
 
-        d = {'params': self._params._to_dict(),
+        d = {'params': self._params.to_dict(),
              'runned_reps': self.runned_reps,
              'original_filename': self.original_filename,
              'results': results}
@@ -1502,14 +1502,14 @@ class SimulationResults(JsonSerializable):
             list[Result]
                 List of Result objects.
             """
-            out = [Result._from_dict(r) for r in result_list]
+            out = [Result.from_dict(r) for r in result_list]
             return out
 
         results = {n: list_of_dicts_to_list_of_results(v)
                    for n, v in d['results'].items()}
 
         simresults = SimulationResults()
-        simresults._params = SimulationParameters._from_dict(d['params'])
+        simresults._params = SimulationParameters.from_dict(d['params'])
         simresults.runned_reps = d['runned_reps']
         simresults.original_filename = d['original_filename']
         simresults._results = results

@@ -33,6 +33,7 @@ from pyphysim.channels import fading, fading_generators
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
+# noinspection PyMethodMayBeStatic
 class MimoDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
@@ -608,6 +609,7 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# noinspection PyMethodMayBeStatic
 class OfdmOneTapEqualizerTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

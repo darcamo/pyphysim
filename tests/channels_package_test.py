@@ -38,6 +38,7 @@ from pyphysim.util.conversion import single_matrix_to_matrix_of_matrices, \
 from pyphysim.util.misc import randn_c, least_right_singular_vectors
 
 
+# noinspection PyMethodMayBeStatic
 class ChannelsDoctestsTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -64,6 +65,7 @@ class ChannelsDoctestsTestCase(unittest.TestCase):
         doctest.testmod(multiuser)
 
 
+# noinspection PyMethodMayBeStatic
 class ModuleFunctionsTestCase(unittest.TestCase):
     def test_calc_thermal_noise_power(self):
         T = 23  # Temperature in degrees
@@ -1065,6 +1067,7 @@ class TdlChannelTestCase(unittest.TestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# noinspection PyMethodMayBeStatic
 class TdlMIMOChannelTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

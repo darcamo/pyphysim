@@ -29,6 +29,7 @@ import numpy as np
 from pyphysim.extra.MATLAB import python2MATLAB
 
 
+# noinspection PyMethodMayBeStatic
 class MATLABDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the MATLAB
     package.
@@ -39,6 +40,7 @@ class MATLABDoctestsTestCase(unittest.TestCase):
         doctest.testmod(python2MATLAB)
 
 
+# noinspection PyMethodMayBeStatic
 class MATLABFunctionsTestCase(unittest.TestCase):
     def test_mmat(self):
         # Test 1D numpy array

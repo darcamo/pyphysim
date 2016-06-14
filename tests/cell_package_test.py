@@ -374,6 +374,7 @@ class CircleTestCase(unittest.TestCase):
         self.assertFalse(self.C1.is_point_inside_shape(point2))
 
 
+# noinspection PyMethodMayBeStatic
 class ShapesModuleMethodsTestCase(unittest.TestCase):
     def test_from_complex_array_to_real_matrix(self, ):
         A = np.random.random_sample(10) + 1j * np.random.random_sample(10)
@@ -822,6 +823,7 @@ class CellWrapTestCase(unittest.TestCase):
 
 
 # TODO: Extend the tests to consider the case of the Cell3Sec class.
+# noinspection PyMethodMayBeStatic
 class ClusterTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

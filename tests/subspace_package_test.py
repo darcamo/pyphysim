@@ -28,6 +28,7 @@ from pyphysim.subspace import metrics, projections
 from pyphysim.util.misc import randn_c
 
 
+# noinspection PyMethodMayBeStatic
 class SubspaceDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the subspace package.

@@ -18,7 +18,8 @@ from pyphysim.util.conversion import linear2dB
 
 # noinspection PyPackageRequirements
 import bokeh.plotting as bp
-# from bokeh.plotting import figure, output_server, show, ColumnDataSource, gridplot
+# from bokeh.plotting import figure, output_server, show, ColumnDataSource, \
+# gridplot
 # noinspection PyPackageRequirements
 from bokeh.models import HoverTool
 # noinspection PyPackageRequirements
@@ -429,9 +430,9 @@ def main():
 
     # xxxxxxxxxx Principal dimension in downlink direction xxxxxxxxxxxxxxxx
     sc_idx = 124  # Index of the subcarrier we are interested in
-    [dU11, dS11, dV11_H] = np.linalg.svd(dH11[sc_idx])
-    [dU22, dS22, dV22_H] = np.linalg.svd(dH22[sc_idx])
-    [dU33, dS33, dV33_H] = np.linalg.svd(dH33[sc_idx])
+    [dU11, _, _] = np.linalg.svd(dH11[sc_idx])
+    [dU22, _, _] = np.linalg.svd(dH22[sc_idx])
+    [dU33, _, _] = np.linalg.svd(dH33[sc_idx])
 
     # xxxxxxxxxx Users precoders xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Users' precoders are the main column of the U matrix

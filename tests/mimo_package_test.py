@@ -35,6 +35,7 @@ from pyphysim.util.conversion import linear2dB
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
+# noinspection PyMethodMayBeStatic
 class MimoDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the mimo module.

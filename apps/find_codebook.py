@@ -14,7 +14,6 @@ except NameError:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from configobj import ConfigObj
-#from exceptions import IOError
 from itertools import combinations
 from optparse import OptionParser
 from time import time
@@ -23,7 +22,8 @@ import multiprocessing
 import numpy as np
 import scipy.io
 
-from pyphysim.subspace.metrics import calc_chordal_distance_from_principal_angles, calc_principal_angles
+from pyphysim.subspace.metrics import \
+    calc_chordal_distance_from_principal_angles, calc_principal_angles
 from pyphysim.simulations.progressbar import DummyProgressbar, \
     ProgressbarMultiProcessServer
 

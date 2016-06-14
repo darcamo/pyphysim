@@ -30,6 +30,7 @@ import json
 from pyphysim.util import misc, conversion, serialize
 
 
+# noinspection PyMethodMayBeStatic
 class UtilDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the util
     package.
@@ -48,6 +49,7 @@ class UtilDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Conversion Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyMethodMayBeStatic
 class ConversionTestCase(unittest.TestCase):
     def test_single_matrix_to_matrix_of_matrices(self):
         nrows = np.array([2, 4, 6])
@@ -242,6 +244,7 @@ class ConversionTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx misc Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyMethodMayBeStatic
 class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
 

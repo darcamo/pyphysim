@@ -37,6 +37,7 @@ from pyphysim.subspace.projections import calcProjectionMatrix
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
+# noinspection PyMethodMayBeStatic
 class CommDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
@@ -349,6 +350,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
 
 # TODO: finish implementation
+# noinspection PyMethodMayBeStatic
 class BDWithExtIntBaseTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -520,6 +522,7 @@ class WhiteningBDTestCase(unittest.TestCase):
 
 
 # TODO: finish implementation
+# noinspection PyMethodMayBeStatic
 class EnhancedBDTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

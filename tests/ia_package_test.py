@@ -158,6 +158,7 @@ class CustomTestCase(unittest.TestCase):
 
 
 # UPDATE THIS CLASS if another module is added to the ia package
+# noinspection PyMethodMayBeStatic
 class IaDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the ia package. """
 
@@ -1310,6 +1311,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
         pass
 
 
+# noinspection PyMethodMayBeStatic
 class AlternatingMinIASolverTestCase(CustomTestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
 
@@ -1804,6 +1806,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         self.assertAlmostEqual(self.iasolver.runned_iterations, 0.0)
 
 
+# noinspection PyMethodMayBeStatic
 class MaxSinrIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""
@@ -2561,6 +2564,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver.solve(Ns=1)
 
 
+# noinspection PyMethodMayBeStatic
 class MMSEIASolverTestCase(CustomTestCase):
     def setUp(self):
         """Called before each test."""

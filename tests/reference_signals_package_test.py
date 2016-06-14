@@ -46,6 +46,7 @@ from pyphysim.reference_signals import zadoffchu
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyMethodMayBeStatic
 class SrsDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the simulations
@@ -359,6 +360,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Channel Estimation Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyMethodMayBeStatic
 class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""
@@ -691,6 +693,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
                                        decimal=2)
 
 
+# noinspection PyMethodMayBeStatic
 class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
     def setUp(self):
         """Called before each test."""

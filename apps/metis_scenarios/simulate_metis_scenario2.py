@@ -25,8 +25,8 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 # import matplotlib as mpl
 
-from apps.metis_scenarios.simulate_metis_scenario import calc_room_positions_square, \
-    get_ap_positions, calc_num_walls, plot_all_rooms
+from apps.metis_scenarios.simulate_metis_scenario import \
+    calc_room_positions_square, get_ap_positions, calc_num_walls, plot_all_rooms
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.cell import shapes
 from pyphysim.channels import pathloss

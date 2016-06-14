@@ -81,6 +81,7 @@ def delete_file_if_possible(filename):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Doctests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# noinspection PyMethodMayBeStatic
 class SimulationsDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the simulations
@@ -1771,6 +1772,7 @@ class ResultTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
+# noinspection PyMethodMayBeStatic
 class SimulationResultsTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationResults class in the results module.
