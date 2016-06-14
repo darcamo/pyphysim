@@ -404,7 +404,7 @@ def main():
                 tap_powers_dB=COST259_TUx.tap_powers_dB,
                 tap_delays=COST259_TUx.tap_delays)
 
-            tdlchannels_all_links[ueIdx, anIdx]._generate_impulse_response(
+            tdlchannels_all_links[ueIdx, anIdx].generate_impulse_response(
                 num_samples)
 
             impulse_responses[ueIdx, anIdx] \

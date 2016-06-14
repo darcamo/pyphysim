@@ -757,7 +757,7 @@ class TdlChannel(object):
         self._set_fading_generator_shape(shape)
 
         # Last generated impulse response. This will be set when the
-        # _generate_impulse_response method is called
+        # generate_impulse_response method is called
         self._last_impulse_response = None
 
         # If set to True then the channel direction (downlink/uplink) will
@@ -863,7 +863,7 @@ class TdlChannel(object):
         # tap_delays correspond to integers
         return self._channel_profile.num_taps_with_padding
 
-    def _generate_impulse_response(self, num_samples=1):
+    def generate_impulse_response(self, num_samples=1):
         """
         Generate a new impulse response of all discretized taps (not
         including possible zero padding) for `num_samples` channel
@@ -1021,7 +1021,7 @@ class TdlChannel(object):
 
         # Generate an impulse response with `num_symbols` samples that we
         # will use to corrupt the data.
-        self._generate_impulse_response(num_symbols)
+        self.generate_impulse_response(num_symbols)
 
         # Get the channel memory (number of extra received symbols).
         channel_memory = self.num_taps_with_padding - 1
@@ -1164,7 +1164,7 @@ class TdlChannel(object):
             # Generate next impulse response: the one we will use to
             # transmit the current block (the channel is static during
             # transmission of a single block)
-            self._generate_impulse_response(1)
+            self.generate_impulse_response(1)
             impulse_responses.append(self.get_last_impulse_response())
 
             if len(self._fading_generator.shape) == 1:

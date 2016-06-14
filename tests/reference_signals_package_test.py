@@ -393,8 +393,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
         # Generate channel that would corrupt the transmit signal.
-        tdlchannel1._generate_impulse_response(1)
-        tdlchannel2._generate_impulse_response(1)
+        tdlchannel1.generate_impulse_response(1)
+        tdlchannel2.generate_impulse_response(1)
 
         # Get the generated impulse response
         impulse_response1 = tdlchannel1.get_last_impulse_response()
@@ -506,8 +506,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
         # Generate channel that would corrupt the transmit signal.
-        tdlchannel1._generate_impulse_response(1)
-        tdlchannel2._generate_impulse_response(1)
+        tdlchannel1.generate_impulse_response(1)
+        tdlchannel2.generate_impulse_response(1)
 
         # Get the generated impulse response
         impulse_response1 = tdlchannel1.get_last_impulse_response()
@@ -576,8 +576,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
         # Generate channel that would corrupt the transmit signal.
-        tdlchannel1._generate_impulse_response(1)
-        tdlchannel2._generate_impulse_response(1)
+        tdlchannel1.generate_impulse_response(1)
+        tdlchannel2.generate_impulse_response(1)
 
         # Get the generated impulse response
         impulse_response1 = tdlchannel1.get_last_impulse_response()
@@ -646,8 +646,8 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
         # Generate channel that would corrupt the transmit signal.
-        tdlchannel1._generate_impulse_response(1)
-        tdlchannel2._generate_impulse_response(1)
+        tdlchannel1.generate_impulse_response(1)
+        tdlchannel2.generate_impulse_response(1)
 
         # Get the generated impulse response
         impulse_response1 = tdlchannel1.get_last_impulse_response()
@@ -728,8 +728,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
         # Generate channel that would corrupt the transmit signal.
-        tdlchannel1._generate_impulse_response(1)
-        tdlchannel2._generate_impulse_response(1)
+        tdlchannel1.generate_impulse_response(1)
+        tdlchannel2.generate_impulse_response(1)
 
         # Get the generated impulse response
         impulse_response1 = tdlchannel1.get_last_impulse_response()
@@ -808,8 +808,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         tdlchannel2 = TdlChannel(jakes2, channel_profile=COST259_TUx)
 
         # Generate channel that would corrupt the transmit signal.
-        tdlchannel1._generate_impulse_response(1)
-        tdlchannel2._generate_impulse_response(1)
+        tdlchannel1.generate_impulse_response(1)
+        tdlchannel2.generate_impulse_response(1)
 
         # Get the generated impulse response
         impulse_response1 = tdlchannel1.get_last_impulse_response()

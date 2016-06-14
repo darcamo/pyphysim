@@ -789,7 +789,7 @@ class TdlChannelTestCase(unittest.TestCase):
 
     def test_generate_and_get_last_impulse_response(self):
         self.assertIsNone(self.tdlchannel.get_last_impulse_response())
-        self.tdlchannel._generate_impulse_response(num_samples=20)
+        self.tdlchannel.generate_impulse_response(num_samples=20)
         last_impulse_response = self.tdlchannel.get_last_impulse_response()
 
         # This is a SISO channel and therefore number of transmit and
@@ -809,7 +809,7 @@ class TdlChannelTestCase(unittest.TestCase):
         Ts = 3.255e-08
         jakes = fading_generators.JakesSampleGenerator(shape=(4, 3), Ts=Ts)
         tdlchannel = fading.TdlChannel(jakes, fading.COST259_TUx)
-        tdlchannel._generate_impulse_response(10)
+        tdlchannel.generate_impulse_response(10)
         last_impulse_response = tdlchannel.get_last_impulse_response()
 
         # This is a MIMO channel. Let's check the number of transmit and
@@ -914,7 +914,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        tdlchannel2._generate_impulse_response(num_samples)
+        tdlchannel2.generate_impulse_response(num_samples)
         impulse_response_all = tdlchannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
@@ -1011,7 +1011,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        tdlchannel2._generate_impulse_response(2 * num_samples)
+        tdlchannel2.generate_impulse_response(2 * num_samples)
         impulse_response_all = tdlchannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
@@ -1117,7 +1117,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # TdlMimoChannel object.
         tdlchannel_jakes = fading.TdlChannel(
             fading_generators.JakesSampleGenerator())
-        tdlchannel_jakes._generate_impulse_response()
+        tdlchannel_jakes.generate_impulse_response()
         # Set the number of Tx and Rx antennas
         tdlchannel_jakes.set_num_antennas(4, 3)
         self.assertEqual(tdlchannel_jakes.num_rx_antennas, 4)
@@ -1131,7 +1131,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
 
     def test_generate_and_get_last_impulse_response(self):
         self.assertIsNone(self.tdlmimochannel.get_last_impulse_response())
-        self.tdlmimochannel._generate_impulse_response(num_samples=20)
+        self.tdlmimochannel.generate_impulse_response(num_samples=20)
         last_impulse_response = self.tdlmimochannel.get_last_impulse_response()
 
         self.assertEqual(last_impulse_response.num_samples, 20)
@@ -1146,7 +1146,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         Ts = 3.255e-08
         jakes = fading_generators.JakesSampleGenerator(shape=(4, 3), Ts=Ts)
         tdlmimochannel = fading.TdlMimoChannel(jakes, fading.COST259_TUx)
-        tdlmimochannel._generate_impulse_response(10)
+        tdlmimochannel.generate_impulse_response(10)
         last_impulse_response = tdlmimochannel.get_last_impulse_response()
         self.assertEqual(last_impulse_response.num_samples, 10)
         self.assertEqual(last_impulse_response.tap_values_sparse.shape,
@@ -1429,7 +1429,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         self.assertEqual(received_signal.shape, (3, num_samples))
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        tdlmimochannel2._generate_impulse_response(num_samples)
+        tdlmimochannel2.generate_impulse_response(num_samples)
         impulse_response_all = tdlmimochannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
@@ -1681,7 +1681,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        tdlmimochannel2._generate_impulse_response(2 * num_samples)
+        tdlmimochannel2.generate_impulse_response(2 * num_samples)
         impulse_response_all = tdlmimochannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
@@ -1967,7 +1967,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Compute frequency response for all samples xxxxxxxxxxx
-        susisochannel2._tdlchannel._generate_impulse_response(num_samples)
+        susisochannel2._tdlchannel.generate_impulse_response(num_samples)
         impulse_response_all = susisochannel2.get_last_impulse_response()
         # Note that here we have the frequency response for `num_samples`
         # samples. But the `corrupt_data_in_freq_domain` method only use
