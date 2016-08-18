@@ -167,10 +167,10 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
             The received reference signal after being transmitted through
             the channel (in the frequency domain). This can be either a 2D
             or a 3D numpy array. The first dimension corresponds to the
-            cover codes and the last dimension (second for 2D abd third for
+            cover codes and the last dimension (second for 2D and third for
             3D numpy array) corresponds to the received sequece
             elements. If it is a 3D numpy array the second dimension
-            corresponds to is assumed to be "receive antennas".
+            corresponds to "receive antennas".
             The number of elements in the received signal (per antenna) is
             equal to the channel size (number of subcarriers) divided by
             `size_multiplier`.

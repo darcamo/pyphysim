@@ -308,7 +308,7 @@ class MuChannel(object):
         signal : np.ndarray | list[np.ndarray]
             Signal to be transmitted through the channel. This should be a 2D
             numpy array where each row corresponds to the transmit data of
-            one transmitter. If can also be a list of numpy arrays or,
+            one transmitter. It can also be a list of numpy arrays or,
             if there is only one transmitter, a single 1D numpy array.
         fft_size : int
             The size of the Fourier transform to get the frequency
