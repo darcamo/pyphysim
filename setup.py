@@ -59,7 +59,7 @@ setup(
     author="Darlan Cavalcante Moreira",
     author_email="darcamo@gmail.com",
     license="GNU General Public License (GPL)",
-    url="http://code.google.com/p/py-physim/",
+    url="https://github.com/darcamo/pyphysim",
     download_url='fillmein',
     keywords='phy QAM PSK QPSK BPSK Modulation Monte Carlo',
     description=("Implementation of a digital communication (physical layer) "
