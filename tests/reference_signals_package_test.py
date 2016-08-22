@@ -342,6 +342,16 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.user_seq5.size, 32)
         self.assertEqual(self.user_seq6.size, 256)
 
+    def test_shape(self):
+        self.assertEqual(self.user_seq_no_ext1.shape, (139,))
+        self.assertEqual(self.user_seq_no_ext2.shape, (31,))
+        self.assertEqual(self.user_seq1.shape, (150,))
+        self.assertEqual(self.user_seq2.shape, (150,))
+        self.assertEqual(self.user_seq3.shape, (64,))
+        self.assertEqual(self.user_seq4.shape, (64,))
+        self.assertEqual(self.user_seq5.shape, (32,))
+        self.assertEqual(self.user_seq6.shape, (256,))
+
     def test_seq_array(self):
         # calcBaseZC, get_srs_seq, get_extended_ZF
 
@@ -951,6 +961,35 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(dmrs_seq1.size, 12)
         self.assertEqual(dmrs_seq2.size, 12)
         self.assertEqual(dmrs_seq5.size, 48)
+
+    def test_shape(self):
+        # Without cover code
+        self.assertEqual(self.dmrs_seq1.shape, (12,))
+        self.assertEqual(self.dmrs_seq2.shape, (12,))
+        self.assertEqual(self.dmrs_seq3.shape, (24,))
+        self.assertEqual(self.dmrs_seq4.shape, (24,))
+        self.assertEqual(self.dmrs_seq5.shape, (48,))
+        self.assertEqual(self.dmrs_seq6.shape, (48,))
+
+        # With cover code
+        root_seq1 = RootSequence(root_index=15, size=12)
+        cover_code1 = np.array([1, 1])
+        dmrs_seq1 = DmrsUeSequence(
+            root_seq=root_seq1, n_cs=3, cover_code=cover_code1)
+
+        root_seq2 = RootSequence(root_index=23, size=12)
+        cover_code2 = np.array([1, -1])
+        dmrs_seq2 = DmrsUeSequence(
+            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+
+        root_seq5 = RootSequence(root_index=15, size=48)
+        cover_code5 = np.array([1, -1, 1, -1])
+        dmrs_seq5 = DmrsUeSequence(
+            root_seq=root_seq5, n_cs=3, cover_code=cover_code5)
+
+        self.assertEqual(dmrs_seq1.shape, (2, 12))
+        self.assertEqual(dmrs_seq2.shape, (2, 12))
+        self.assertEqual(dmrs_seq5.shape, (4, 48))
 
     def test_seq_array(self):
         # xxxxxxxxxx Test withoyut cover code xxxxxxxxxxxxxxxxxxxxxxxxxxxxx

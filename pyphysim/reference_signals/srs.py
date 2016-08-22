@@ -108,7 +108,19 @@ class UeSequence(object):
         >>> user_seq2.size
         150
         """
-        return self._user_seq_array.size
+        return self.seq_array().size
+
+    @property
+    def shape(self):
+        """
+        Return the shape of the reference signal sequence.
+
+        Returns
+        -------
+        Tuple[int]
+            The shape of the reference signal sequence.
+        """
+        return self.seq_array().shape
 
     def seq_array(self):
         """
