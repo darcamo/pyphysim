@@ -330,6 +330,20 @@ class RootSequence(object):
         """
         return self.seq_array() * other
 
+    def __getitem__(self, val):
+        """
+        Index the sequence.
+
+        This will simply return the same indexing of the underlying numpy
+        array.
+
+        Parameters
+        ----------
+        val : any
+            Anything accepted as indexing by numpy arrays.
+        """
+        return self.seq_array()[val]
+
     def conjugate(self):  # pragma: no cover
         """
         Return the conjugate of the root sequence as a numpy array.

@@ -271,6 +271,32 @@ class RootSequenceTestCase(unittest.TestCase):
             self.root_seq6.seq_array(), expected_root_seq6)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def test_getitem(self):
+        seq_no_ext1_seq_array = self.root_seq_no_ext1.seq_array()
+        seq1_seq_array = self.root_seq1.seq_array()
+        seq2_seq_array = self.root_seq2.seq_array()
+
+        np.testing.assert_almost_equal(self.root_seq_no_ext1[4],
+                                       seq_no_ext1_seq_array[4])
+        np.testing.assert_almost_equal(self.root_seq_no_ext1[3:15],
+                                       seq_no_ext1_seq_array[3:15])
+        np.testing.assert_almost_equal(self.root_seq_no_ext1[3:40:2],
+                                       seq_no_ext1_seq_array[3:40:2])
+
+        np.testing.assert_almost_equal(self.root_seq1[4],
+                                       seq1_seq_array[4])
+        np.testing.assert_almost_equal(self.root_seq1[3:15],
+                                       seq1_seq_array[3:15])
+        np.testing.assert_almost_equal(self.root_seq1[3:40:2],
+                                       seq1_seq_array[3:40:2])
+
+        np.testing.assert_almost_equal(self.root_seq2[4],
+                                       seq2_seq_array[4])
+        np.testing.assert_almost_equal(self.root_seq2[3:15],
+                                       seq2_seq_array[3:15])
+        np.testing.assert_almost_equal(self.root_seq2[3:40:2],
+                                       seq2_seq_array[3:40:2])
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -355,6 +381,13 @@ class SrsUeSequenceTestCase(unittest.TestCase):
             calcBaseZC(31, 6), 256), 5)
         np.testing.assert_array_almost_equal(self.user_seq6.seq_array(),
                                              expected_user_seq6)
+
+    def test_getitem(self):
+        seqs = [self.user_seq1, self.user_seq2, self.user_seq3]
+        for seq in seqs:
+            np.testing.assert_almost_equal(seq[4], seq.seq_array()[4])
+            np.testing.assert_almost_equal(seq[3:15], seq.seq_array()[3:15])
+            np.testing.assert_almost_equal(seq[3:40:2], seq.seq_array()[3:40:2])
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1005,6 +1038,23 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             expected_dmrs5_occ, dmrs_seq5.seq_array())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_getitem(self):
+        seqs = [self.dmrs_seq1, self.dmrs_seq2, self.dmrs_seq3, self.dmrs_seq4]
+        for seq in seqs:
+            np.testing.assert_almost_equal(seq[4], seq.seq_array()[4])
+            np.testing.assert_almost_equal(seq[3:15], seq.seq_array()[3:15])
+            np.testing.assert_almost_equal(seq[3:40:2], seq.seq_array()[3:40:2])
+
+        # Now let's test with a DMRS sequence with cover codes. The first
+        # dimension of the underlying numpy array is the cover code index
+        root_seq = RootSequence(root_index=23, size=12)
+        cover_code = np.array([1, -1])
+        dmrs_seq = DmrsUeSequence(
+            root_seq=root_seq, n_cs=4, cover_code=cover_code)
+        np.testing.assert_almost_equal(dmrs_seq[0, 4], dmrs_seq.seq_array()[0, 4])
+        np.testing.assert_almost_equal(dmrs_seq[1 ,0:8:2], dmrs_seq.seq_array()[1, 0:8:2])
+
 
     def test_repr(self):
         root_seq1 = RootSequence(root_index=15, size=12)

@@ -121,6 +121,20 @@ class UeSequence(object):
         """
         return self._user_seq_array
 
+    def __getitem__(self, val):
+        """
+        Index the sequence.
+
+        This will simply return the same indexing of the underlying numpy
+        array.
+
+        Parameters
+        ----------
+        val : any
+            Anything accepted as indexing by numpy arrays.
+        """
+        return self.seq_array()[val]
+
     def __repr__(self):  # pragma: no cover
         """
         Get the representation of the object.
