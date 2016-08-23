@@ -100,6 +100,20 @@ class MuChannel(object):
 
         self._pathloss_matrix = None
 
+    def __repr__(self):
+        """
+        String representation the object.
+
+        Returns
+        -------
+        str
+            The string representation of the object.
+        """
+        return "{0}(shape={1}, switched={2})".format(
+            self.__class__.__name__,
+            "{0}x{1}".format(*self._su_siso_channels.shape),
+            self.switched_direction)
+
     @property
     def switched_direction(self):
         """

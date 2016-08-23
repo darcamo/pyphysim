@@ -2129,6 +2129,15 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
         # self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
 
+    def test_repr(self):
+        self.assertEqual(repr(self.musisochannel), "MuChannel(shape=2x2, switched=False)")
+        self.musisochannel.switched_direction = True
+        self.assertEqual(repr(self.musisochannel), "MuChannel(shape=2x2, switched=True)")
+
+        self.assertEqual(repr(self.musisochannel2), "MuChannel(shape=3x3, switched=False)")
+        self.musisochannel2.switched_direction = True
+        self.assertEqual(repr(self.musisochannel2), "MuChannel(shape=3x3, switched=True)")
+
     def test_constructor(self):
         N = 4
         # We are only providing the N parameters. That means each link will
@@ -2975,6 +2984,19 @@ class MuMimoChannelTestCase(unittest.TestCase):
             N=self.N,
             num_rx_antennas=self.num_rx_antennas,
             num_tx_antennas=self.num_tx_antennas)
+
+    def test_repr(self):
+        self.assertEqual(repr(self.mumimochannel), "MuMimoChannel(shape=2x2, switched=False)")
+        self.mumimochannel.switched_direction = True
+        self.assertEqual(repr(self.mumimochannel), "MuMimoChannel(shape=2x2, switched=True)")
+
+        mumimochannel2 = multiuser.MuMimoChannel(
+            N=4,
+            num_rx_antennas=3,
+            num_tx_antennas=5)
+        self.assertEqual(repr(mumimochannel2), "MuMimoChannel(shape=4x4, switched=False)")
+        mumimochannel2.switched_direction = True
+        self.assertEqual(repr(mumimochannel2), "MuMimoChannel(shape=4x4, switched=True)")
 
     def test_constructor(self):
         N = 4
