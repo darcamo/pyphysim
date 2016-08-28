@@ -222,6 +222,16 @@ class MuChannel(object):
 
     @property
     def pathloss_matrix(self):
+        """
+        Get the matrix with the pathloss from each transmitter to each
+        receiver.
+
+        Returns
+        -------
+        np.ndarray
+            The pathloss matrix, if it was set, or None if there is no
+            pathloss.
+        """
         return self._pathloss_matrix
 
     def set_pathloss(self, pathloss_matrix=None):

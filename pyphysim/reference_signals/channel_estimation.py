@@ -61,8 +61,7 @@ class CazacBasedChannelEstimator(object):
         """Get the sequence of the UE."""
         return self._ue_ref_sequence
 
-    def estimate_channel_freq_domain(self, received_signal,
-                                     num_taps_to_keep):
+    def estimate_channel_freq_domain(self, received_signal, num_taps_to_keep):
         """
         Estimate the channel based on the received signal.
 
@@ -157,7 +156,8 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         return self._cover_code
 
     def estimate_channel_freq_domain(self, received_signal,
-                                     num_taps_to_keep):
+                                     num_taps_to_keep,
+                                     extra_dimension=True):
         """
         Estimate the channel based on the received signal with cover codes.
 
@@ -165,38 +165,78 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         ----------
         received_signal : np.ndarray
             The received reference signal after being transmitted through
-            the channel (in the frequency domain). This can be either a 2D
-            or a 3D numpy array. The first dimension corresponds to the
-            cover codes and the last dimension (second for 2D and third for
-            3D numpy array) corresponds to the received sequece
-            elements. If it is a 3D numpy array the second dimension
-            corresponds to "receive antennas".
-            The number of elements in the received signal (per antenna) is
-            equal to the channel size (number of subcarriers) divided by
-            `size_multiplier`.
+            the channel (in the frequency domain).
+
+            Dimension: Depend if there are multiple receive antennas and if
+            `extra_dimension` is True or False. Let "Nr" be the number of
+            receive antennas, "Ne" be the number of reference signal elements
+            (reference signal size without cover code) and "Nc" be the cover
+            code size. The dimension of `received_signal` must match the table
+            below.
+
+                              | extra_dimension: True   extra_dimension: False
+            ----------------- + ---------------------   ----------------------
+            Single Antenna    | Nc x Ne           (2D)   Ne * Nc          (1D)
+            Multiple Antennas | Nr x Nc x Ne      (3D)   Nr x (Ne * Nc)   (2D)
+
         num_taps_to_keep : int
             Number of taps (in delay domain) to keep. All taps from 0 to
             `num_taps_to_keep`-1 will be kept and all other taps will be
             zeroed before applying the FFT to get the channel response in
             the frequency domain.
+        extra_dimension : bool
+            If True then the should be an extra dimension in
+            `received_signal` corresponding to the cover code dimension. If
+            False then the cover code is included in the dimension of the
+            reference signal elements.
 
         Returns
         -------
         freq_response : np.ndarray
             The channel frequency response.
         """
-        if received_signal.ndim == 2:
-            # Apply the cover code
-            received_signal_mean = np.mean(
-                received_signal * self.cover_code[:, np.newaxis],
-                axis=0)
-        elif received_signal.ndim == 3:
-            received_signal_mean = np.mean(
-                received_signal * self.cover_code[:, np.newaxis, np.newaxis],
-                axis=0)
-        else:
-            raise RuntimeError('Invalid dimension for received_signal')
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxx Add the extra dimension if it does not exist xxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Create a view for the received signals. If extra_dimension is
+        # false we will reshape this view to add a dimension for the cover
+        # code
+        r = received_signal.view()
+        if extra_dimension is False:
+            # Let's reorganize the received signal so that we have the
+            # extra dimension
+            if received_signal.ndim == 1:
+                # Case with a single antenna. Cover code dimension will be
+                # the first dimension.
+                r.shape = (self.cover_code.size, -1)
 
+            elif received_signal.ndim == 2:
+                # Case with multiple antennas. Cover code dimension will be
+                # the second dimension.
+                num_antennas = r.shape[0]
+                r.shape = (num_antennas, self.cover_code.size, -1)
+            else:
+                raise RuntimeError(
+                    'Invalid dimension for received_signal: {0}'.format(r.ndim))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxx Average over the cover code dimension xxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Now we can consider the case with the extra cover_code dimension
+        if r.ndim == 2:
+            # Apply the cover code
+            r_mean = np.mean(r * self.cover_code[:, np.newaxis],
+                             axis=0)
+        elif r.ndim == 3:
+            r_mean = np.mean(r * self.cover_code[np.newaxis, :, np.newaxis],
+                             axis=1)
+
+        else:
+            raise RuntimeError('Invalid dimension for received_signal: {0}'.format(r.ndim))
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxx Perform the estimation xxxxxxxxxxxxxxxxxxxxxxxxxx
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Call the estimate_channel_freq_domain from the base class
         return super(CazacBasedWithOCCChannelEstimator, self).\
-            estimate_channel_freq_domain(received_signal_mean, num_taps_to_keep)
+            estimate_channel_freq_domain(r_mean, num_taps_to_keep)

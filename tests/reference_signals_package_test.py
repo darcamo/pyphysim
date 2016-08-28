@@ -809,7 +809,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedWithOCCChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y, 3),
+            ue1_channel_estimator.estimate_channel_freq_domain(
+                Y, 3, extra_dimension=True),
             tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
@@ -824,6 +825,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
     def test_estimate_channel_multiple_rx(self):
         Nsc = 24
         size = Nsc
+        Nr = 3  # Number of receive antennas
+        num_taps_to_keep = 15
 
         cover_codes = [np.array([-1, 1]), np.array([1, 1])]
         user1_seq = DmrsUeSequence(
@@ -846,8 +849,8 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         L = 16  # Number of jakes taps
 
         # Create the fading generators and set multiple receive antennas
-        jakes1 = JakesSampleGenerator(Fd, Ts, L, shape=(3, 1))
-        jakes2 = JakesSampleGenerator(Fd, Ts, L, shape=(3, 1))
+        jakes1 = JakesSampleGenerator(Fd, Ts, L, shape=(Nr, 1))
+        jakes2 = JakesSampleGenerator(Fd, Ts, L, shape=(Nr, 1))
 
         # Create a TDL channel object for each user
         tdlchannel1 = TdlChannel(jakes1, channel_profile=COST259_TUx)
@@ -872,26 +875,29 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         r2 = user2_seq.seq_array()
 
         # Received signal (in frequency domain) of user 1
-        Y1 = H1[np.newaxis] * r1[:, np.newaxis]
-        Y2 = H2[np.newaxis] * r2[:, np.newaxis]
-        Y = Y1 + Y2
+        Y1 = H1[:, np.newaxis, :] * r1[np.newaxis, :, :]
+        Y2 = H2[:, np.newaxis, :] * r2[np.newaxis, :, :]
+        Y = Y1 + Y2  # Dimension: `Nr x cover_code_size x num_elements`
 
         # Calculate expected estimated channel for user 1
         cover_code1 = cover_codes[0]
         Y_with_cover_code = \
-            (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
+            (cover_code1[0] * Y[:,0,:] + cover_code1[1] * Y[:,1,:]) / 2.0
         ":type: np.ndarray"
+
         r1_no_cover_code = r1[0] * cover_code1[0]
 
         y1 = np.fft.ifft(
             np.conj(r1_no_cover_code[np.newaxis]) * Y_with_cover_code,
             size,
             axis=1)
-        tilde_h1_espected = y1[:, 0:16]
+        tilde_h1_espected = y1[:, 0:(num_taps_to_keep+1)]
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=1)
 
         # Test the CazacBasedWithOCCChannelEstimator estimation
-        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y, 15)
+
+        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(
+            Y, num_taps_to_keep, extra_dimension=True)
         np.testing.assert_array_almost_equal(
             H1_estimated, tilde_H1_espected)
 
