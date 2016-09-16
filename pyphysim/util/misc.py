@@ -718,26 +718,28 @@ def calc_autocorr(x):
 # noinspection PyPep8
 def update_inv_sum_diag(invA, diagonal):
     """
-    Calculates the inverse of a matrix `(A + D)`, where `D` is a diagonal
-    matrix, given the inverse of `A` and the diagonal of `D`.
+    Calculates the inverse of a matrix :math:`(A + D)`, where :math:`D` is a diagonal
+    matrix, given the inverse of :math`A` and the diagonal of :math:`D`.
 
     This calculation is performed using the Sherman-Morrison formula, given
     my
-          :math:`(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \\over 1 + v^T A^{-1}u},`
-    where `u` and `v` are vectors.
+
+    .. math::
+       (A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \\over 1 + v^T A^{-1}u},
+
+    where :math:`u` and :math:`v` are vectors.
 
     Parameters
     ----------
     invA : np.ndarray
         A 2D numpy array.
     diagonal : np.ndarray
-        A 1D numpy array with the elements in the diagonal of `D`.
+        A 1D numpy array with the elements in the diagonal of :math:`D`.
 
     Returns
     -------
     new_inv : np.ndarray
-        The inverse of A+D.
-
+        The inverse of :math:`A+D`.
     """
     #$$(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u}$$
 
@@ -1010,7 +1012,8 @@ def replace_dict_values(name, dictionary, filename_mode=False):
 
     This function is very similar to what you can get in regular python
     with the code
-    >> name.format(**dictionary)
+
+    >>> name.format(**dictionary)
 
     The only deference is that some small changes are performed in the
     dictionary prior to this. More specifically, modifications such as
@@ -1076,9 +1079,9 @@ def equal_dicts(a, b, ignore_keys):
 
 def calc_decorrelation_matrix(cov_matrix):
     """
-    Calculates the decorrelation matrix that can be applied to a data
-    vector whose covariance matrix is `cov_matrix` so that the new vector
-    covariance matrix is a diagonal matrix.
+    Calculates the decorrelation matrix that can be applied to a data vector
+    whose covariance matrix is ``cov_matrix`` so that the new vector covariance
+    matrix is a diagonal matrix.
 
     Parameters
     ----------
@@ -1090,17 +1093,8 @@ def calc_decorrelation_matrix(cov_matrix):
     Returns
     -------
     np.ndarray
-        The decorrelation matrix :math:`\\mtW_D`. If the original data is a
-        vector $\vtX$ it can be decorrelated with :math:`\\mtW_D^T \\vtX`.
-
-    Notes
-    -----
-    The returned matrix will make the covariance of the filtered data a
-    diagonal matrix, but not a identity matrix. If you want the
-    covariance matrix of the filtered data to be an identity matrix what
-    you want to calculate is the "whitening matrix" and not simply a
-    "decorrelation matrix". See the `calc_whitening_matrix` function for
-    that.
+        The decorrelation matrix :math:`\\mtW_D`. If the original data is a vector
+        :math:`\\vtX` it can be decorrelated with :math:`\\mtW_D^T \\vtX`.
 
     See
     ---
@@ -1114,7 +1108,7 @@ def calc_decorrelation_matrix(cov_matrix):
 def calc_whitening_matrix(cov_matrix):
     """
     Calculates the whitening matrix that can be applied to a data vector
-    whose covariance matrix is `cov_matrix` so that the new vector
+    whose covariance matrix is ``cov_matrix`` so that the new vector
     covariance matrix is an identity matrix
 
     Parameters
@@ -1137,7 +1131,7 @@ def calc_whitening_matrix(cov_matrix):
     filtered data an identity matrix. If you only need the the covariance
     matrix of the filtered data to be a diagonal matrix (not necessarily an
     identity matrix) what you want to calculate is the "decorrelation
-    matrix". See the `calc_decorrelation_matrix` function for that.
+    matrix". See the :func:`calc_decorrelation_matrix` function for that.
 
     See
     ---

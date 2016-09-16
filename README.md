@@ -1,4 +1,6 @@
-![Testing](https://travis-ci.org/darcamo/pyphysim.svg?branch=master) [![Coverage Status](https://coveralls.io/repos/github/darcamo/pyphysim/badge.svg?branch=master)](https://coveralls.io/github/darcamo/pyphysim?branch=master)
+![Testing](https://travis-ci.org/darcamo/pyphysim.svg?branch=master) 
+[![Coverage Status](https://coveralls.io/repos/github/darcamo/pyphysim/badge.svg?branch=master)](https://coveralls.io/github/darcamo/pyphysim?branch=master) 
+[![Documentation Status](https://readthedocs.org/projects/pyphysim/badge/?version=latest)](http://pyphysim.readthedocs.io/en/latest/?badge=latest)
 
 PyPhysim
 ========

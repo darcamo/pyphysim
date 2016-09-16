@@ -23,16 +23,6 @@ Packages in PyPhysim
 A summary of the available packages in PyPhysim is shown below.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
-   cell
-   comm
-   channels
-   ia
-   MATLAB
-   mimo
-   extra
-   subspace
-   util
-   simulations
-   reference_signals
+   ../pyphysim

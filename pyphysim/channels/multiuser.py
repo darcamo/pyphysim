@@ -576,23 +576,22 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     4x2. Likewise, the channel matrix would look similar to the block
     structure below.
 
-    .. aafig::
-                +-----+---------+---------------+
-                |2 x 2|  2 x 3  |     2 x 5     |
-                |     |         |               |
-                +-----+---------+---------------+
-                |4 x 2|  4 x 3  |     4 x 5     |
-                |     |         |               |
-                |     |         |               |
-                |     |         |               |
-                +-----+---------+---------------+
-                |6 x 2|  6 x 3  |     6 x 5     |
-                |     |         |               |
-                |     |         |               |
-                |     |         |               |
-                |     |         |               |
-                |     |         |               |
-                +-----+---------+---------------+
+      +-----+---------+---------------+
+      |2 x 2|  2 x 3  |     2 x 5     |
+      |     |         |               |
+      +-----+---------+---------------+
+      |4 x 2|  4 x 3  |     4 x 5     |
+      |     |         |               |
+      |     |         |               |
+      |     |         |               |
+      +-----+---------+---------------+
+      |6 x 2|  6 x 3  |     6 x 5     |
+      |     |         |               |
+      |     |         |               |
+      |     |         |               |
+      |     |         |               |
+      |     |         |               |
+      +-----+---------+---------------+
 
     It is possible to initialize the channel matrix randomly by calling the
     `randomize` method, or from a given matrix by calling the
@@ -1990,24 +1989,22 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     complete channel matrix would look similar to the block structure
     below.
 
-    .. aafig::
-                                                 Ext. Int.
-                +-----+---------+---------------+-----+
-                |2 x 2|  2 x 3  |     2 x 5     |2 x 2|
-                |     |         |               |     |
-                +-----+---------+---------------+-----+
-                |4 x 2|  4 x 3  |     4 x 5     |4 x 2|
-                |     |         |               |     |
-                |     |         |               |     |
-                |     |         |               |     |
-                +-----+---------+---------------+-----+
-                |6 x 2|  6 x 3  |     6 x 5     |6 x 2|
-                |     |         |               |     |
-                |     |         |               |     |
-                |     |         |               |     |
-                |     |         |               |     |
-                |     |         |               |     |
-                +-----+---------+---------------+-----+
+      +-----+---------+---------------+-----+
+      |2 x 2|  2 x 3  |     2 x 5     |2 x 2|
+      |     |         |               |     |
+      +-----+---------+---------------+-----+
+      |4 x 2|  4 x 3  |     4 x 5     |4 x 2|
+      |     |         |               |     |
+      |     |         |               |     |
+      |     |         |               |     |
+      +-----+---------+---------------+-----+
+      |6 x 2|  6 x 3  |     6 x 5     |6 x 2|
+      |     |         |               |     |
+      |     |         |               |     |
+      |     |         |               |     |
+      |     |         |               |     |
+      |     |         |               |     |
+      +-----+---------+---------------+-----+
 
     The methods from the MultiUserChannelMatrix class that makes sense were
     reimplemented here to include information regarding the external

@@ -6,7 +6,7 @@ Module implementing validation functions to define "specs" for configobj
 validation.
 
 This module is not intended to be used directly. The functions defined here
-are used in the "simulations" module.
+are used in the other modules in the :mod:`pyphysim.simulations` package.
 """
 
 import numpy as np
@@ -120,9 +120,9 @@ def real_numpy_array_check(value, min=None, max=None):
     will have the same effect as a space). However, if you separate with
     spaces the values should be in brackets, while if you separate with
     commands there should be no brackets.
-    .. code::
-        SNR = 0,5,10:20
-        SNR = [0 5 10:20]
+
+    >>> SNR = 0,5,10:20
+    >>> SNR = [0 5 10:20]
     """
     if isinstance(value, str):
         # Remove '[' and ']' if they exist.
@@ -209,9 +209,9 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
     will have the same effect as a space). However, if you separate with
     spaces the values should be in brackets, while if you separate with
     commands there should be no brackets.
-    .. code::
-        SNR = 0,5,10:20
-        SNR = [0 5 10:20]
+
+    >>> SNR = 0,5,10:20
+    >>> SNR = [0 5 10:20]
     """
     try:
         value = validate.is_float(value, min, max)
@@ -256,9 +256,9 @@ def integer_numpy_array_check(value, min=None, max=None):
     will have the same effect as a space). However, if you separate with
     spaces the values should be brackets, while if you separate with
     commands there should be no brackets.
-    .. code::
-        max_iter = 5,10:20
-        max_iter = [0 5 10:20]
+
+    >>> max_iter = 5,10:20
+    >>> max_iter = [0 5 10:20]
     """
     if isinstance(value, str):
         # Remove '[' and ']' if they exist.
@@ -345,9 +345,9 @@ def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
     will have the same effect as a space). However, if you separate with
     spaces the values should be brackets, while if you separate with
     commands there should be no brackets.
-    .. code::
-        max_iter = 5,10:20
-        max_iter = [0 5 10:20]
+
+    >>> max_iter = 5,10:20
+    >>> max_iter = [0 5 10:20]
     """
     try:
         value = validate.is_integer(value, min, max)

@@ -761,7 +761,7 @@ class SimulationParameters(JsonSerializable):
         Load the SimulationParameters from a config file using the
         configobj module.
 
-        If the config file has a parameter called `unpacked_parameters`,
+        If the config file has a parameter called ``unpacked_parameters``,
         which should be a list of strings with the names of other
         parameters, then these parameters will be set to be unpacked.
 
@@ -782,11 +782,13 @@ class SimulationParameters(JsonSerializable):
         Notes
         -----
         Besides the usual checks that the configobj validation has such as
-        `integer`, `string`, `option`, etc., you can also use
+        ``integer``, ``string``, ``option``, etc., you can also use
         `real_numpy_array` for numpy float arrays. Note that when this
         validation function is used you can set the array in the config
         file in several ways such as
+
             SNR=0,5,10,15:20
+
         for instance.
         """
         if spec is None:

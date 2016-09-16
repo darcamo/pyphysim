@@ -32,7 +32,7 @@ can visualize the profile data with the runsnakerun program. That is
 Here is an image (from http://www.vrplumber.com/programming/runsnakerun/)
 showing runsnakerun in action.
 
-.. image:: _images/runsnakerun_screenshot-2.0.png
+.. image:: ../_images/runsnakerun_screenshot-2.0.png
    :scale: 80%
    
 .. _runsnakerun: http://www.vrplumber.com/programming/runsnakerun/

@@ -1212,17 +1212,16 @@ class Cluster(shapes.Shape):
     where i and j are integer numbers. The allowed values in the Cluster
     class are summarized below with the corresponding values of i and j.
 
-    .. aafig::
-        +-----+----+
-        | i,j |  N |
-        +-----+----+
-        | 1,0 | 01 |
-        | 1,1 | 03 |
-        | 2,0 | 04 |
-        | 2,1 | 07 |
-        | 3,1 | 13 |
-        | 3,2 | 19 |
-        +-----+----+
+    ====  ===
+    i, j   N
+    ====  ===
+    1,0   01
+    1,1   03
+    2,0   04
+    2,1   07
+    3,1   13
+    3,2   19
+    ====  ===
 
     Parameters
     ----------
@@ -1577,17 +1576,16 @@ class Cluster(shapes.Shape):
         the cluster. This static function returns the values "i" and "j"
         for a given "N". The values are summarized below.
 
-        .. aafig::
-            +-----+----+
-            | i,j |  N |
-            +-----+----+
-            | 1,0 | 01 |
-            | 1,1 | 03 |
-            | 2,0 | 04 |
-            | 2,1 | 07 |
-            | 3,1 | 13 |
-            | 3,2 | 19 |
-            +-----+----+
+        ====  ===
+        i, j   N
+        ====  ===
+        1,0   01
+        1,1   03
+        2,0   04
+        2,1   07
+        3,1   13
+        3,2   19
+        ====  ===
 
         Parameters
         ----------
@@ -2464,17 +2462,16 @@ class Grid(object):
     where i and j are integer numbers. The values allowed in the Cluster
     are summarized below with the corresponding values of i and j.
 
-    .. aafig::
-       +-----+----+
-       | i,j |  N |
-       +-----+----+
-       | 1,0 | 01 |
-       | 1,1 | 03 |
-       | 2,0 | 04 |
-       | 2,1 | 07 |
-       | 3,1 | 13 |
-       | 3,2 | 19 |
-       +-----+----+
+    ====  ===
+    i, j   N
+    ====  ===
+    1,0   01
+    1,1   03
+    2,0   04
+    2,1   07
+    3,1   13
+    3,2   19
+    ====  ===
     """
     # Available colors for the clusters. These colors must be understood by
     # the plot library

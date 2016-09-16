@@ -20,8 +20,8 @@ class TdlChannelProfile(object):
     can be accessed through the `tap_powers_*` and `tap_delays` properties.
 
     Some profiles are defined as objects of this class, such as
-    COST259_TUx, COST259_RAx and COST259_HTx. These can be used when
-    instantiating a `TdlChannel` object.
+    ``COST259_TUx``, ``COST259_RAx`` and ``COST259_HTx``. These can be used when
+    instantiating a :class:`TdlChannel` object.
 
     Note that the tap powers and delays are not necessarily `discretized`
     to some sampling interval.
@@ -39,10 +39,8 @@ class TdlChannelProfile(object):
 
     Examples
     --------
-    >>> jakes_generator = \
-            fading_generators.JakesSampleGenerator(Ts=3.25e-8)
-    >>> tdlchannel = TdlChannel(jakes_generator, \
-                                channel_profile=COST259_TUx)
+    >>> jakes_generator = fading_generators.JakesSampleGenerator(Ts=3.25e-8)
+    >>> tdlchannel = TdlChannel(jakes_generator, channel_profile=COST259_TUx)
     """
 
     def __init__(self, tap_powers_dB=None, tap_delays=None, name='custom'):
@@ -77,7 +75,8 @@ class TdlChannelProfile(object):
         """
         The mean excess delay is the first moment of the power delay profile
         and is defined to be
-            math:`\\overline{\\tau} = \\frac{\\sum_k P(\\tau_k)\\tau_k}{\\sum_k P(\\tau_k)}`
+
+        .. math:: \\overline{\\tau} = \\frac{\\sum_k P(\\tau_k)\\tau_k}{\\sum_k P(\\tau_k)}
 
         Returns
         -------
@@ -93,11 +92,14 @@ class TdlChannelProfile(object):
         """
         The RMS delay spread is the square root of the second central moment of
         the power delay profile. It is defined to be
-            math:`\\sigma_t = \\sqrt{\\overline{t^2} - \\overline{\\tau}^2}`
-        where
-            math:`\overline{\tau^2}=\frac{\sum_k P(\tau_k)\tau_k^2}{\sum_k P(\tau_k)}`
 
-         Typically, when the symbol time period is greater than 10 times
+        .. math:: \\sigma_t = \\sqrt{\\overline{t^2} - \\overline{\\tau}^2}
+
+        where
+
+        .. math:: \\overline{\\tau^2}=\\frac{\\sum_k P(\\tau_k)\\tau_k^2}{\\sum_k P(\\tau_k)}
+
+        Typically, when the symbol time period is greater than 10 times
         the RMS delay spread, no ISI equalizer is needed in the receiver.
 
         Returns
@@ -112,7 +114,8 @@ class TdlChannelProfile(object):
 
     @property
     def name(self):
-        """Get the profile name.
+        """
+        Get the profile name.
 
         Returns
         -------
@@ -123,7 +126,8 @@ class TdlChannelProfile(object):
 
     @property
     def tap_powers_dB(self):
-        """Get the tap powers (in dB).
+        """
+        Get the tap powers (in dB).
 
         Returns
         -------
@@ -134,7 +138,8 @@ class TdlChannelProfile(object):
 
     @property
     def tap_powers_linear(self):
-        """Get the tap powers (in linear scale).
+        """
+        Get the tap powers (in linear scale).
 
         Returns
         -------
@@ -144,7 +149,8 @@ class TdlChannelProfile(object):
 
     @property
     def tap_delays(self):
-        """Get the tap delays.
+        """
+        Get the tap delays.
 
         Returns
         -------
@@ -155,7 +161,8 @@ class TdlChannelProfile(object):
 
     @property
     def num_taps(self):
-        """Get the number of taps in the profile.
+        """
+        Get the number of taps in the profile.
 
         Returns
         -------

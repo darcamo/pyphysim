@@ -725,14 +725,14 @@ class QAM(Modulator):
         As an example, for the 16-QAM modulation the indexes can be
         organized (row order) in the matrix below
 
-        .. aafig::
-                  00     01     11     10
-               +------+------+------+------+
-            00 | 0000 | 0001 | 0011 | 0010 |
-            01 | 0100 | 0101 | 0111 | 0110 |
-            11 | 1100 | 1101 | 1111 | 1110 |
-            10 | 1000 | 1001 | 1011 | 1010 |
-               +------+------+------+------+
+        ====  ======  ======  ======  ======
+         /      00      01      11      10
+        ====  ======  ======  ======  ======
+         00    0000    0001    0011    0010
+         01    0100    0101    0111    0110
+         11    1100    1101    1111    1110
+         10    1000    1001    1011    1010
+        ====  ======  ======  ======  ======
 
         This is equivalent to concatenate a Gray mapping for the row with a
         Gray mapping for the column, and the corresponding indexes are

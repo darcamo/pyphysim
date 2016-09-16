@@ -149,9 +149,9 @@ class ProgressBarBase(object):
 
     Notes
     -----
-    Derived classes should implement `_update_iteration` and
-    `_display_current_progress`. Optionally derived class might also
-    `implement _perform_initialization` and `_perform_finalizations`
+    Derived classes should implement :func:`_update_iteration` and
+    :func:`_display_current_progress`. Optionally derived class might also
+    implement :func:`_perform_initialization` and :func:`_perform_finalizations`
     """
     def __init__(self, finalcount):
         """
@@ -643,17 +643,17 @@ class ProgressbarText(ProgressbarTextBase):
 
     Examples
     --------
-    >> pb = ProgressbarText(100, 'o', "Hello Simulation")
-    >> pb.progress(20)
+    >>> pb = ProgressbarText(100, 'o', "Hello Simulation")
+    >>> pb.progress(20)
     ---------------- Hello Simulation ---------------1
         1    2    3    4    5    6    7    8    9    0
     ----0----0----0----0----0----0----0----0----0----0
     oooooooooo
-    >> pb.progress(40)
+    >>> pb.progress(40)
     oooooooooooooooooooo
-    >> pb.progress(50)
+    >>> pb.progress(50)
     ooooooooooooooooooooooooo
-    >> pb.progress(100)
+    >>> pb.progress(100)
     oooooooooooooooooooooooooooooooooooooooooooooooooo
     """
     def __init__(self,
@@ -709,7 +709,7 @@ class ProgressbarText(ProgressbarTextBase):
         Notes
         -----
         This method is only a helper method called in the
-        `_write_initialization` method.
+        `_perform_initialization` method.
         """
         if len(self._message) != 0:
             message = self._message
@@ -733,7 +733,7 @@ class ProgressbarText(ProgressbarTextBase):
         Notes
         -----
         This method is only a helper method called in the
-        `_write_initialization` method.
+        `_perform_initialization` method.
         """
         steps = self.width // 10  # This division must be exact
 

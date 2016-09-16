@@ -4,11 +4,12 @@
 """
 Implement classes for several Path loss models.
 
-The base class PathLossBase implements the code common to every path loss
-model and only two methods need to be implemented in subclasses:
-**which_distance_dB** and **_calc_deterministic_path_loss_dB**. However,
-instead of inheriting directly from :class:`PathLossBase`, inherit from
-either :class:`PathLossIndoorBase` or :class:`PathLossOutdoorBase`.
+The :class:`PathLossBase` class implements the common code to every path loss model and
+only two methods need to be implemented in subclasses: the
+:meth:`PathLossBase.which_distance_dB` and the
+:meth:`PathLossBase._calc_deterministic_path_loss_dB` methods. However, instead
+of inheriting directly from :class:`PathLossBase`, inherit from either
+:class:`PathLossIndoorBase` or :class:`PathLossOutdoorBase`.
 
 The most common usage of a path loss class is to instantiate an object of
 the desired path loss model and then call the **calc_path_loss_dB** or the
@@ -168,7 +169,7 @@ class PathLossBase(object):
             new figure (and ax) will be created.
         extra_args : dict
             Extra arguments that will be passed to the ax.plot command as
-            "**extra_args" (see Matplotlib documentation).
+            ``**extra_args`` (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args, 'Km')
@@ -188,7 +189,7 @@ class PathLossBase(object):
             new figure (and ax) will be created.
         extra_args : dict
             Extra arguments that will be passed to the ax.plot command as
-            "**extra_args" (see Matplotlib documentation).
+            ``**extra_args`` (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
         # First we disable the shadowing if it is set
@@ -429,7 +430,7 @@ class PathLossIndoorBase(PathLossBase):
             new figure (and ax) will be created.
         extra_args : dict
             Extra arguments that will be passed to the ax.plot command as
-            "**extra_args" (see Matplotlib documentation).
+            ``**extra_args`` (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args,
@@ -585,7 +586,7 @@ class PathLossOutdoorBase(PathLossBase):
     def plot_deterministic_path_loss_in_dB(
             self, d, ax=None, extra_args=None):  # pragma: no cover
         """
-        Plot the path loss (in dB) for the distance values in `d` (in Km).
+        Plot the path loss (in dB) for the distance values in ``d`` (in Km).
 
         Parameters
         ----------
@@ -596,7 +597,7 @@ class PathLossOutdoorBase(PathLossBase):
             new figure (and ax) will be created.
         extra_args : dict
             Extra arguments that will be passed to the ax.plot command as
-            "**extra_args" (see Matplotlib documentation).
+            ``**extra_args`` (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args,

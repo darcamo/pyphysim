@@ -9,6 +9,11 @@ matplotlib
 pyzmq
 pandas
 # h5py
+ipython
 ipyparallel
-zmq
 ipywidgets
+
+# Documentation
+sphinx
+numpydoc
+sphinx_rtd_theme

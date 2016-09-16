@@ -168,16 +168,18 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
             the channel (in the frequency domain).
 
             Dimension: Depend if there are multiple receive antennas and if
-            `extra_dimension` is True or False. Let "Nr" be the number of
-            receive antennas, "Ne" be the number of reference signal elements
-            (reference signal size without cover code) and "Nc" be the cover
-            code size. The dimension of `received_signal` must match the table
-            below.
+            :attr:`extra_dimension` is True or False. Let :math:`Nr` be the
+            number of receive antennas, :math:`Ne` be the number of reference
+            signal elements (reference signal size without cover code) and
+            :math:`Nc` be the cover code size. The dimension of
+            :attr:`received_signal` must match the table below.
 
-                              | extra_dimension: True   extra_dimension: False
-            ----------------- + ---------------------   ----------------------
-            Single Antenna    | Nc x Ne           (2D)   Ne * Nc          (1D)
-            Multiple Antennas | Nr x Nc x Ne      (3D)   Nr x (Ne * Nc)   (2D)
+            =================  =======================  ======================
+                   /            extra_dimension: True   extra_dimension: False
+            =================  =======================  ======================
+            Single Antenna      Nc x Ne           (2D)   Ne * Nc          (1D)
+            Multiple Antennas   Nr x Nc x Ne      (3D)   Nr x (Ne * Nc)   (2D)
+            =================  =======================  ======================
 
         num_taps_to_keep : int
             Number of taps (in delay domain) to keep. All taps from 0 to

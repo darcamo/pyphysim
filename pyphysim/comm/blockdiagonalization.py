@@ -254,13 +254,13 @@ class BlockDiagonalizer(object):
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
         """
         Calculates the modulation matrix "M" that block diagonalizes the
-        channel `mtChannel`, but without any king of power scaling.
+        channel :attr:`mtChannel`, but without any king of power scaling.
 
         The "modulation matrix" is a matrix that changes the channel to a
         block diagonal structure and it is the first part in the Block
         Diagonalization algorithm. The returned modulation matrix is
         equivalent to Equation (12) of [1]_ but without the power scaling
-        matrix $\\Lambda$. Therefore, for the complete BD algorithm it is
+        matrix :math:`\\Lambda`. Therefore, for the complete BD algorithm it is
         still necessary to perform this power scaling in the output of
         _calc_BD_matrix_no_power_scaling.
 
@@ -289,6 +289,11 @@ class BlockDiagonalizer(object):
         multiple base stations jointly transmitting to multiple users then
         the power of each base station must be distributed only into the
         dimensions corresponding to that base station.
+
+        .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
+           "Zero-Forcing Methods for Downlink Spatial Multiplexing
+           in Multiuser MIMO Channels," IEEE Transactions on Signal
+           Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
         """
         iNr = mtChannel.shape[0]
         msg = ("`block_diagonalize`: Number of rows of the channel must be"

@@ -41,7 +41,6 @@ For the quality of PyPhysim as a package, see the cheesecake_index tool.
  - http://pycheesecake.org/
  - http://infinitemonkeycorps.net/docs/pph/
 
-.. todo:: Run pylint on the files in PyPhysim.
 
 Notes
 ~~~~~
