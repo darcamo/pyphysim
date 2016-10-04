@@ -44,9 +44,9 @@ SimulationParameters object) to :meth:`._run_simulation` from where
 If you want/need to save the simulation parameters for future reference,
 however, then you should store all the simulation parameters in the
 `self.params` attribute. This will allow you to call the method
-:meth:`.SimulationParameters.save_to_file` to save everything into a
+:meth:`.SimulationParameters.save_to_pickled_file` to save everything into a
 file. The simulation parameters can be recovered latter from this file by
-calling the static method :meth:`SimulationParameters.load_from_pickled_file`.
+calling the static method :meth:`.SimulationParameters.load_from_pickled_file`.
 
 
 Simulation Results
@@ -54,26 +54,26 @@ Simulation Results
 
 In the implementation of the :meth:`._run_simulation` method in a subclass
 of SimulationRunner it is necessary to create an object of the
-SimulationResults class, add each desided result to it (using the
-:meth:`.add_result` method of the :class:`SimulationResults` class) and
+:class:`.SimulationResults` class, add each desided result to it (using the
+:meth:`.add_result` method of the :class:`.SimulationResults` class) and
 then return this object at the end of :meth:`._run_simulation`. Note that
-each result added to this :class:`SimulationResults` object must itself be
-an object of the :class:`Result` class.
+each result added to this :class:`.SimulationResults` object must itself be
+an object of the :class:`.Result` class.
 
 After each run of the :meth:`._run_simulation` method the returned
-:class:`SimulationResults` object is merged with the `self.results`
+:class:`.SimulationResults` object is merged with the `self.results`
 attribute from where the simulation results can be retreived after the
 simulation finishes. Note that the way the results from each
 :meth:`._run_simulation` run are merged together depend on the
-`update_type` attribute of the :class:`Result` object.
+`update_type` attribute of the :class:`.Result` object.
 
 Since you will have the complete simulation results in the self.results
 object you can easily save them to a file calling its
-:class:`SimulationResults.save_to_file` method.
+:meth:`.SimulationResults.save_to_file` method.
 
 .. note::
 
-   Call the :meth:`SimulationResults.set_parameters` method to set the
+   Call the :meth:`.SimulationResults.set_parameters` method to set the
    simulation parameters in the self.results object before calling its
    save_to_file method. This way you will have information about which
    simulation parameters were used to generate the results.
@@ -101,23 +101,23 @@ Basically, after each iteration of the :meth:`._run_simulation` method the
 iterations of :meth:`._run_simulation` will be performed until
 :meth:`._keep_going` returns False or rep_max iterations are
 performed. When the :meth:`._keep_going` method is called it receives a
-SimulationResults object with the cumulated results from all iterations so
+:class:`.SimulationResults` object with the cumulated results from all iterations so
 far, which it can then use to decide it the iterations should continue or
 not.
 
 The other optional methods provide hooks to run code at specific points of
 the :meth:`.simulate` method. They are described briefly below:
 
- - :meth:`SimulationRunner._on_simulate_start`:
+ - :meth:`.SimulationRunner._on_simulate_start`:
          This method is called once at the beginning of the simulate
          method.
- - :meth:`SimulationRunner_on_simulate_finish`:
+ - :meth:`.SimulationRunner._on_simulate_finish`:
          This method is called once at the end of the simulate method.
- - :meth:`SimulationRunner_on_simulate_current_params_start`:
+ - :meth:`.SimulationRunner._on_simulate_current_params_start`:
          This method is called once for each combination of simulation
          parameters before any iteration of _run_simulation is
          performed.
- - :meth:`SimulationRunner_on_simulate_current_params_finish`:
+ - :meth:`.SimulationRunner._on_simulate_current_params_finish`:
          This method is called once for each combination of simulation
          parameters after all iteration of _run_simulation are
          performed.
@@ -128,8 +128,8 @@ At last, for a working example of a simulator, see the
 Example of Implementation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the documentation of the :class:`SimulationRunner` class for a pseudo
-implementation of a subclass of the :class:`SimulationRunner`.
+See the documentation of the :class:`.SimulationRunner` class for a pseudo
+implementation of a subclass of the :class:`.SimulationRunner`.
 
 
 Running Simulations in Parallel

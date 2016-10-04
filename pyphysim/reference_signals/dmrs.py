@@ -34,7 +34,7 @@ def get_dmrs_seq(root_seq, n_cs):
 
     See Also
     --------
-    get_shifted_root_seq, get_srs_seq
+    .zadoffchu.get_shifted_root_seq, .srs.get_srs_seq
     """
     return get_shifted_root_seq(root_seq, n_cs, 12)
 

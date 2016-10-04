@@ -946,8 +946,8 @@ class SimulationResults(JsonSerializable):
 
     See Also
     --------
-    SimulationRunner : Base class to implement Monte Carlo simulations.
-    SimulationParameters : Class to store the simulation parameters.
+    .runner.SimulationRunner : Base class to implement Monte Carlo simulations.
+    .parameters.SimulationParameters : Class to store the simulation parameters.
     Result : Class to store a single simulation result.
 
     """

@@ -10,7 +10,7 @@ In general, the :mod:`.simulations` module provides a basic framework
 for implementing Monte Carlo Simulations and implementing a new simulator
 with PyPhysim starts by subclassing
 :class:`.SimulationRunner` and implementing the
-:meth:`SimulationRunner._run_simulation` method with the code to simulate a
+:meth:`.SimulationRunner._run_simulation` method with the code to simulate a
 single iteration for that specific simulator.
 
 
@@ -18,10 +18,10 @@ A few other classes in the simulations module complete the framework by
 handling simulation parameters and simulation results. The classes in the
 framwork consist of
 
-- :class:`.simulations.SimulationRunner`
-- :class:`.simulations.SimulationParameters`
-- :class:`.simulations.SimulationResults`
-- :class:`.simulations.Result`
+- :class:`.SimulationRunner`
+- :class:`.SimulationParameters`
+- :class:`.SimulationResults`
+- :class:`.Result`
 
 For a description of how to implement Monte Carlo simulations using the
 clases defined in the :mod:`.simulations` module see
@@ -34,7 +34,7 @@ Getting simulation Parameters from a file
 Python has the `ConfigParser library
 <http://docs.python.org/2/library/configparser.html#module-ConfigParser>`_
 (renamed to configparser in Python 3) to parse configuration
-parameters. You can use it in the :meth:`__init__` method of your simulator
+parameters. You can use it in the `__init__` method of your simulator
 class (the simulatro main class that inherits from
 :class:`.SimulationRunner`) to read the simulation parameters from a file.
 

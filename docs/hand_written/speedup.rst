@@ -92,18 +92,18 @@ compile the Cython extensions implement in PyPhysim. Simple call the command
 to compile all the Cython extensions.
 
 In order to describe how the Cython extensions are implemented in PyPhysim
-lets use the :func:`.count_bits` function in the :mod:`util.misc` module as
+lets use the `count_bits` function in the :mod:`.util.misc` module as
 an example. We want to make it faster by re-implementing it in Cython.
 
-First the :func:`.count_bits` function was implemented in pure python in
-:mod:`util.misc` and properly tested in the util_package_test.py file along
-the other functions in :mod:`util.misc`.
+First the `.count_bits` function was implemented in pure python in
+:mod:`.util.misc` and properly tested in the util_package_test.py file along
+the other functions in :mod:`.util.misc`.
 
 After that the file `misc_c.pyx` was created, which contains the
-implementation of :func:`.count_bits` in Cython. Note that the name is
-equal to the name of the module where the :func:`.count_bits` function
+implementation of `.count_bits` in Cython. Note that the name is
+equal to the name of the module where the `.count_bits` function
 originally lives with an added `_c` and the `pyx` extension. The
-re-implementation in Cython of any function in :mod:`util.misc` should be in
+re-implementation in Cython of any function in :mod:`.util.misc` should be in
 `misc_c.pyx`.
 
 Then setup.py should be modified to create an extension from the
@@ -118,9 +118,9 @@ Then setup.py should be modified to create an extension from the
 and adding "misc_c" to the 'ext_modules' list (an argument of the setup
 function in the setup.py file).
 
-At last, we add code to the :mod:`util.misc` module to use the functions
+At last, we add code to the :mod:`.util.misc` module to use the functions
 defined in `misc_c.pyx` so that for someone using importing the
-:mod:`util.misc` module it is transparent if the functions are implemented
+:mod:`.util.misc` module it is transparent if the functions are implemented
 there (in python) or in `misc_c.pyx`. This can be easily done by putting
 the code below at the end of the `misc.py` file.
 
@@ -136,7 +136,7 @@ the code below at the end of the `misc.py` file.
    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 The idea is that the user should never import the compiled Cython
-extension, but only :mod:`util.misc`. The code above is enough to replace
+extension, but only :mod:`.util.misc`. The code above is enough to replace
 any functions defined in misc.py by the equivalent function defined in
 misc_c.pyx whenever the Cython extension is compiled, or use the native
 python version when the Cython extension is not compiled.
