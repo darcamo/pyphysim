@@ -234,8 +234,8 @@ class RootSequence(object):
         size : int
             The size of the extended Zadoff-Chu sequence.
 
-        Example
-        -------
+        Examples
+        --------
         >>> seq1 = RootSequence(root_index=25, Nzc=139)
         >>> seq1.size
         139

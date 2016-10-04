@@ -983,8 +983,8 @@ class TdlChannel(object):
             The signal to be transmitted. This should be 1D for SISO
             systems (or SIMO systems) and 2D for MIMO systems.
 
-        Return
-        ------
+        Returns
+        -------
         np.ndarray
             Either the same signal of signal with an added dimension.
         """

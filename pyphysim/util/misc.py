@@ -1096,8 +1096,8 @@ def calc_decorrelation_matrix(cov_matrix):
         The decorrelation matrix :math:`\\mtW_D`. If the original data is a vector
         :math:`\\vtX` it can be decorrelated with :math:`\\mtW_D^T \\vtX`.
 
-    See
-    ---
+    See also
+    --------
     calc_whitening_matrix
     """
     _, V = np.linalg.eig(cov_matrix)
@@ -1133,8 +1133,8 @@ def calc_whitening_matrix(cov_matrix):
     identity matrix) what you want to calculate is the "decorrelation
     matrix". See the :func:`calc_decorrelation_matrix` function for that.
 
-    See
-    ---
+    See also
+    --------
     calc_decorrelation_matrix
     """
     L, V = np.linalg.eig(cov_matrix)

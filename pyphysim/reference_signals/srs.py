@@ -97,8 +97,8 @@ class UeSequence(object):
         size : int
             The size of the user's reference signal sequence.
 
-        Example
-        -------
+        Examples
+        --------
         >>> root_seq1 = RootSequence(root_index=25, Nzc=139)
         >>> user_seq1 = SrsUeSequence(root_seq1, 3)
         >>> user_seq1.size

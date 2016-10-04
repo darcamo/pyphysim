@@ -90,8 +90,8 @@ def get_extended_ZF(root_seq, size):
     output : np.ndarray
         The extended root sequence.
 
-    Example
-    -------
+    Examples
+    --------
     >>> root_seq = np.array([1, 2, 3, 4, 5])
     >>> get_extended_ZF(root_seq, 8)
     array([1, 2, 3, 4, 5, 1, 2, 3])
