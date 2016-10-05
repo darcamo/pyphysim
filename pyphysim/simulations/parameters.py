@@ -142,9 +142,8 @@ class SimulationParameters(JsonSerializable):
 
     See also
     --------
-    SimulationResults : Class to store simulation results.
-    SimulationRunner : Base class to implement Monte Carlo simulations.
-
+    .SimulationResults : Class to store simulation results.
+    .SimulationRunner : Base class to implement Monte Carlo simulations.
     """
     def __init__(self):
         # Dictionary that will store the parameters. The key is the
@@ -307,7 +306,7 @@ class SimulationParameters(JsonSerializable):
         The parameter `name` must be already added to the
         SimulationParameters object and be an iterable.
 
-        This is used in the SimulationRunner class.
+        This is used in the :class:`.SimulationRunner` class.
 
         Parameters
         ----------
@@ -423,16 +422,16 @@ class SimulationParameters(JsonSerializable):
         Notes
         -----
         The main usage for comparing if two SimulationParameters objects
-        are equal is when loading partial results in the SimulationRunner
+        are equal is when loading partial results in the :class:`.SimulationRunner`
         class, where we need to assure we are not combining results for
-        different simulation parameters. The SimulationRunner class must
+        different simulation parameters. The :class:`.SimulationRunner` class must
         check if the loaded results parameters match the current parameters
         to be simulated and thus require the "==" operator (or the "!="
         operator) to be implemented.
 
         However, it makes sense to ignore a parameter called 'rep_max',
         since it is not a parameter related to a 'scenario'. It is used in
-        the SimulationRunner class to indicate the maximum number of
+        the :class:`.SimulationRunner` class to indicate the maximum number of
         iterations to perform and there is no problem when its value is
         different.
         """
@@ -557,7 +556,7 @@ class SimulationParameters(JsonSerializable):
         >>> len(params.get_unpacked_params_list())
         6
 
-        Likewise, in the simulation the SimulationRunner object will return
+        Likewise, in the simulation the :class:`.SimulationRunner` object will return
         a list of results in the order corresponding to the order of the
         list of parameters. The get_pack_indexes is used to get the index
         of the results corresponding to a specific configuration of

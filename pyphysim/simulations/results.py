@@ -661,7 +661,7 @@ class Result(JsonSerializable):
             The desired confidence (probability in %) that true value is
             inside the calculated interval. The possible values are
             described in the documentation of the
-            `util.misc.calc_confidence_interval` function`
+            :func:`.calc_confidence_interval` function`
 
         Returns
         -------
@@ -670,7 +670,7 @@ class Result(JsonSerializable):
 
         See also
         --------
-        util.misc.calc_confidence_interval
+        .calc_confidence_interval
         """
         if self._update_type_code == Result.MISCTYPE:
             message = ("Calling get_confidence_interval is not valid for "
@@ -879,7 +879,7 @@ class Result(JsonSerializable):
 class SimulationResults(JsonSerializable):
     """Store results from simulations.
 
-    This class is used in the SimulationRunner class in order to store
+    This class is used in the :class:`.SimulationRunner` class in order to store
     results from a simulation. It is able to combine the results from
     multiple iterations (of the :meth:`.SimulationRunner._run_simulation`
     method in the :class:`SimulationRunner` class) as well as append
@@ -1332,7 +1332,7 @@ class SimulationResults(JsonSerializable):
 
         See also
         --------
-        util.misc.calc_confidence_interval
+        .calc_confidence_interval
         """
         if fixed_params is None:
             fixed_params = {}

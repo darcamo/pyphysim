@@ -26,7 +26,8 @@ from ..channels import multiuser as muchannels
 
 __all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
            'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver',
-           'GreedStreamIASolver', 'BruteForceStreamIASolver']
+           'GreedStreamIASolver', 'BruteForceStreamIASolver',
+           'IterativeIASolverBaseClass']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -611,7 +612,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
     def _solve_init(self, Ns, P):
         """
-        Code run in the `solve` method before the loop that run the `step`
+        Code run in the `solve` method before the loop that run the :meth:`_step`
         method.
 
         The implementation here simple initializes the precoder variable
@@ -771,12 +772,12 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
     def solve(self, Ns, P=None):
         """
-        Find the IA solution by performing the `step` method several times.
+        Find the IA solution by performing the :meth:`_step` method several times.
 
-        The number of times the `step` method is run is controlled by the
+        The number of times the :meth:`_step` method is run is controlled by the
         max_iterations member variable.
 
-        Before calling the `step` method for the first time the
+        Before calling the :meth:`_step` method for the first time the
         `_solve_init` method is called to perform any required
         initializations. Since iterative IA algorithms usually starts with
         a random precoder then the `_solve_init` implementation in
@@ -950,8 +951,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         See also
         --------
-        updateC, updateF, updateW
-
+        _updateC, _updateF, _updateW
         """
         # Note that before the `_step` method is called the first time, the
         # _solve_init method must be called. It will initialize the
@@ -990,11 +990,11 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`step` method.
+        This method is called in the :meth:`_step` method.
 
         See also
         --------
-        step
+        _step
         """
         # $$\sum_{l \neq k} \mtH_{k,l} \mtF_l \mtF_l^H \mtH_{k,l}^H$$
 
@@ -1024,11 +1024,11 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`step` method.
+        This method is called in the :meth:`_step` method.
 
         See also
         --------
-        step
+        _step
         """
         # $\sum_{k \neq l} \mtH_{k,l}^H (\mtI - \mtC_k \mtC_k^H)\mtH_{k,l}$
 
@@ -1077,11 +1077,11 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`step` method.
+        This method is called in the :meth:`_step` method.
 
         See also
         --------
-        step
+        _step
         """
         self._clear_receive_filter()
 
@@ -1186,11 +1186,11 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`_step` method.
+        This method is called in the :meth:`IterativeIASolverBaseClass._step` method.
 
         See also
         --------
-        _step
+        IterativeIASolverBaseClass._step
 
         """
         self._clear_precoder_filter()
@@ -1202,11 +1202,11 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`_step` method.
+        This method is called in the :meth:`IterativeIASolverBaseClass._step` method.
 
         See also
         --------
-        _step
+        IterativeIASolverBaseClass._step
         """
         self._clear_receive_filter()
         self._W = self._calc_Uk_all_k()
@@ -1312,10 +1312,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         -------
         second_part : np.ndarray
             Second part in equation (28) of [Cadambe2008]_.
-
-        See also
-        --------
-        _calc_Bkl_cov_matrix_second_part
         """
         # $$\frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger}$$
         P = self.P
@@ -1348,11 +1344,6 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
             Covariance matrix of all streams of user k. Each element of the
             returned 1D numpy array is a 2D numpy complex array
             corresponding to the covariance matrix of one stream of user k.
-
-        See also
-        --------
-        calc_Bkl_cov_matrix_all_l
-
         """
         # $$\mtB^{[kl]} = \sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star l}^{[j]} \mtV_{\star l}^{[j]\dagger} \mtH^{[kj]\dagger} - \frac{P^{[k]}}{d^{[k]}} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk]\dagger} + \mtI_{N^{[k]}}$$
         Bkl_all_l_rev = np.empty(self._Ns[k], dtype=np.ndarray)
@@ -1398,9 +1389,9 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     @classmethod
     def _calc_Uk(cls, Hkk, Vk, Bkl_all_l):
         """
-        Similar to the :meth:`calc_Ukl` method, but while :meth:`calc_Ukl`
+        Similar to the :meth:`_calc_Ukl` method, but while :meth:`_calc_Ukl`
         calculates the receive filter (a vector) only for the :math:`l`-th
-        stream :meth:`calc_Uk` calculates a receive filter (a matrix) for all
+        stream :meth:`_calc_Uk` calculates a receive filter (a matrix) for all
         streams.
 
         Parameters
@@ -1469,11 +1460,11 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`_step` method.
+        This method is called in the :meth:`IterativeIASolverBaseClass._step` method.
 
         See also
         --------
-        _step
+        IterativeIASolverBaseClass._step
         """
         self._clear_precoder_filter()
         self._F = self._calc_Uk_all_k_rev()
@@ -1484,11 +1475,11 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Notes
         -----
-        This method is called in the :meth:`_step` method.
+        This method is called in the :meth:`IterativeIASolverBaseClass._step` method.
 
         See also
         --------
-        _step
+        IterativeIASolverBaseClass._step
         """
         self._clear_receive_filter()
         self._W = self._calc_Uk_all_k()
@@ -1530,8 +1521,8 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 
     def _solve_init(self, Ns, P):
         """
-        Code run in the `solve` method before the loop that run the `step`
-        method.
+        Code run in the `solve` method before the loop that run the
+        :meth:`IterativeIASolverBaseClass._step` method.
 
         The implementation here simple initializes the precoder variable
         and then calculates the initial receive filter.

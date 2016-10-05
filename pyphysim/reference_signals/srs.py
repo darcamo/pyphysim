@@ -33,7 +33,7 @@ def get_srs_seq(root_seq, n_cs):
 
     See Also
     --------
-    get_shifted_root_seq, get_dmrs_seq
+    .get_shifted_root_seq, .dmrs.get_dmrs_seq
     """
     return get_shifted_root_seq(root_seq, n_cs, 8)
 

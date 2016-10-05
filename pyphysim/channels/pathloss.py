@@ -52,12 +52,12 @@ class PathLossBase(object):
     :meth:`which_distance_dB` and the
     :meth:`_calc_deterministic_path_loss_dB` functions.
 
-    If the :attr:`use_shadow_bool` attribute is set to True then calling
+    If the `use_shadow_bool` attribute is set to True then calling
     :meth:`calc_path_loss_dB` or :meth:`calc_path_loss` will take the
-    shadowing specified in the :attr:`sigma_shadow` attribute into
+    shadowing specified in the `sigma_shadow` attribute into
     account. However, shadowing is not taken into account in the
     :meth:`which_distance_dB` and :meth:`which_distance` functions,
-    regardless of the value of the :attr:`use_shadow_bool` variable.
+    regardless of the value of the `use_shadow_bool` variable.
 
     Attributes
     ----------
@@ -80,8 +80,8 @@ class PathLossBase(object):
     _TYPE = 'base'
 
     def __init__(self):
-        self.sigma_shadow = 8  # Shadow standard deviation
-        self.use_shadow_bool = False
+        self.sigma_shadow = 8  # Shadowing standard deviation
+        self.use_shadow_bool = False  # True if shadowing should be used
 
         # If this is True, then any negative path loss (in dB) that appears
         # because a distance is too small will considered as 0dB. If this
@@ -343,12 +343,12 @@ class PathLossIndoorBase(PathLossBase):
     :meth:`which_distance_dB` and the
     :meth:`_calc_deterministic_path_loss_dB` functions.
 
-    If the :attr:`use_shadow_bool` is set to True then calling
+    If the `use_shadow_bool` is set to True then calling
     :meth:`calc_path_loss_dB` or :meth:`calc_path_loss` will take the
-    shadowing specified in the :attr:`sigma_shadow` variable into
+    shadowing specified in the `sigma_shadow` variable into
     account. However, shadowing is not taken into account in the
     :meth:`which_distance_dB` and :meth:`which_distance` functions,
-    regardless of the value of the :attr:`use_shadow_bool` variable.
+    regardless of the value of the `use_shadow_bool` variable.
     """
     _TYPE = 'indoor'
 
@@ -504,19 +504,19 @@ class PathLossOutdoorBase(PathLossBase):
     The common interface for the path loss classes is provided by the
     :meth:`calc_path_loss_dB` or the :meth:`calc_path_loss` methods to
     actually calculate the path loss for a given distance, as well as the
-    :meth:`which_distance_dB` or :meth:`which_distance` methods to
+    :meth:`.which_distance_dB` or :meth:`PathLossBase.which_distance` methods to
     determine the distance that yields the given path loss.
 
     Each subclass of PathLossBase NEED TO IMPLEMENT only the
     :meth:`which_distance_dB` and the
     :meth:`_calc_deterministic_path_loss_dB` functions.
 
-    If the :attr:`use_shadow_bool` is set to True then calling
+    If the `use_shadow_bool` is set to True then calling
     :meth:`calc_path_loss_dB` or :meth:`calc_path_loss` will take the
-    shadowing specified in the :attr:`sigma_shadow` variable into
+    shadowing specified in the `sigma_shadow` variable into
     account. However, shadowing is not taken into account in the
-    :meth:`which_distance_dB` and :meth:`which_distance` functions,
-    regardless of the value of the :attr:`use_shadow_bool` variable.
+    :meth:`which_distance_dB` and :meth:`PathLossBase.which_distance` functions,
+    regardless of the value of the `use_shadow_bool` variable.
     """
     _TYPE = 'outdoor'
 
@@ -797,10 +797,12 @@ class PathLossFreeSpace(PathLossGeneral):
     Class to calculate the Path Loss in the free space.
 
     The common interface for the path loss classes is provided by the
-    :meth:`calc_path_loss_dB` or the :meth:`calc_path_loss` methods to
-    actually calculate the path loss for a given distance, as well as the
-    :meth:`which_distance_dB` or :meth:`which_distance` methods to
-    determine the distance that yields the given path loss.
+    :meth:`PathLossOutdoorBase.calc_path_loss_dB` or the
+    :meth:`PathLossOutdoorBase.calc_path_loss` methods to actually calculate
+    the path loss for a given distance, as well as the
+    :meth:`PathLossGeneral.which_distance_dB` or
+    :meth:`PathLossBase.which_distance` methods to determine the distance that
+    yields the given path loss.
 
     For the path loss in free space you also need to set the `n` variable,
     corresponding to the path loss coefficient, and the `fc` variable,
@@ -812,8 +814,8 @@ class PathLossFreeSpace(PathLossGeneral):
     .. math::
        PL = 10 n ( \\log_{10}(d)+\\log_{10}(fc * 1e6) - 4.3779113907)
 
-    Likewise, the :meth:`which_distance_dB` function calculates the value
-    of
+    Likewise, the :meth:`PathLossGeneral.which_distance_dB` function calculates
+    the value of
 
     .. math::
        10^{(PL/(10n) - \\log_{10}(fc) + 4.377911390697565)}

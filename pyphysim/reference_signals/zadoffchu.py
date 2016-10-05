@@ -7,7 +7,7 @@ Module containing Zadoff-chu related functions.
 
 import numpy as np
 
-__all__ = ['calcBaseZC', 'get_extended_ZF']
+__all__ = ['get_shifted_root_seq', 'calcBaseZC', 'get_extended_ZF']
 
 
 def calcBaseZC(Nzc, u, q=0):

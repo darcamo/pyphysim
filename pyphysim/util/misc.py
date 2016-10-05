@@ -1010,16 +1010,24 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     """
     Perform the replacements in `name` with the value of dictionary[name].
 
-    This function is very similar to what you can get in regular python
-    with the code
+    See the usage example below:
 
-    >>> name.format(**dictionary)
+    >>> name = "results_snr_{snr}_param_a_{param_a}"
+    >>> replacements = {'snr': np.array([0,5,10,15,20]), 'param_a': 'something'}
+    >>> replace_dict_values(name, replacements)
+    'results_snr_[0:5:20]_param_a_something'
 
-    The only deference is that some small changes are performed in the
-    dictionary prior to this. More specifically, modifications such as
-    chancing a numpy array to a more compact representation (when
-    possible). This is done by converting the numpy arrays with the
-    get_mixed_range_representation function.
+    Note that some small changes are performed in the dictionary prior to the
+    replacement. More specifically, modifications such as changing a numpy
+    array to a more compact representation (when possible). This is done by
+    converting the numpy arrays with the get_mixed_range_representation
+    function.
+
+    If the string is going to be used as a filename, pass True to
+    `filename_mode` as in the example below
+
+    >>> replace_dict_values(name, replacements, True)
+    'results_snr_[0_(5)_20]_param_a_something'
 
     Parameters
     ----------

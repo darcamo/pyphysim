@@ -22,7 +22,8 @@ import math
 
 from ..cell import shapes
 
-__all__ = ['Node', 'CellBase', 'Cell', 'Cell3Sec', 'Cluster', 'Grid']
+__all__ = ['Node', 'AccessPoint', 'CellBase', 'Cell', 'Cell3Sec',
+           'CellSquare', 'CellWrap', 'Cluster', 'Grid']
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -137,7 +138,6 @@ class AccessPoint(Node):
 
         # List to store the users associated with this access point
         self._users = []
-        ":type: list"
 
         # ID of the access point
         self.id = ap_id

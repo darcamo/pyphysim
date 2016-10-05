@@ -7,7 +7,7 @@
 
 There are two ways to use this module. You can either use the
 :class:`BlockDiagonalizer` class, or you can use the
-:meth:`block_diagonalize` and the :meth:`calc_receive_filter` functions
+:func:`block_diagonalize` and the :func:`calc_receive_filter` functions
 (which use the BlockDiagonalizer class in their implementation).
 
 """
@@ -33,7 +33,7 @@ __all__ = ['block_diagonalize', 'calc_receive_filter', 'BlockDiagonalizer',
 # xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def block_diagonalize(mtChannel, num_users, iPu, noise_var):
-    """Performs the block diagonalization of :attr:`mtChannel`.
+    """Performs the block diagonalization of `mtChannel`.
 
     Parameters
     ----------
@@ -254,7 +254,7 @@ class BlockDiagonalizer(object):
     def _calc_BD_matrix_no_power_scaling(self, mtChannel):
         """
         Calculates the modulation matrix "M" that block diagonalizes the
-        channel :attr:`mtChannel`, but without any king of power scaling.
+        channel `mtChannel`, but without any king of power scaling.
 
         The "modulation matrix" is a matrix that changes the channel to a
         block diagonal structure and it is the first part in the Block
@@ -907,7 +907,7 @@ class EnhancedBD(BDWithExtIntBase):
 
         - If `metric` is 'capacity', then the metric used to decide how
           many streams to sacrifice will be the sum capacity. The function
-          :meth:`calc_shannon_sum_capacity` will be used to calculate the
+          :func:`.calc_shannon_sum_capacity` will be used to calculate the
           sum capacity metric, and since it only uses the SINR values, no
           extra arguments are required in the metric_func_extra_args_dict
           dictionary.
@@ -915,7 +915,7 @@ class EnhancedBD(BDWithExtIntBase):
         - If `metric` is 'effective_throughput' then the metric used to
           decide how many streams to sacrifice will be the effective
           throughput that can be obtained. The function
-          :meth:`._calc_effective_throughput` will be used to calculate the
+          `_calc_effective_throughput` will be used to calculate the
           effective throughput. Since it requires the a modulator and a
           packet length you should set the metric_func_extra_args_dict so
           that it has the keys 'modulator' and 'packet_length' with the

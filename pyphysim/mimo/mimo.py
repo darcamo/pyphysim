@@ -16,7 +16,7 @@ import warnings
 from pyphysim.util.misc import gmd
 from pyphysim.util.conversion import linear2dB
 
-__all__ = ['MimoBase', 'Blast', 'Alamouti',
+__all__ = ['MimoBase', 'MisoBase', 'Blast', 'Alamouti',
            'MRT', 'MRC', 'SVDMimo', 'GMDMimo']
 
 
@@ -382,11 +382,11 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
 
     All subclasses must implement at least the following methods:
 
-    - :meth:`encode`:
+    - :meth:`MimoBase.encode`:
       The encode method must perform everything executed at the transmitter
       for that specific MIMO scheme. This also include the power division
       among the transmit antennas.
-    - :meth:`decode`:
+    - :meth:`MimoBase.decode`:
       Analogous to the encode method, the decode method must perform
       everything performed at the receiver.
 
@@ -785,7 +785,7 @@ class MRC(Blast):
     MIMO class for the MRC scheme.
 
     The receive filter used will depend on the noise variance (see the
-    :meth:`set_noise_var` method). If the noise variance is positive the
+    :meth:`.set_noise_var` method). If the noise variance is positive the
     MMSE filter will be used, otherwise noise variance will be ignored and
     the Zero-Forcing filter will be used.
 

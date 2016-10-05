@@ -240,9 +240,9 @@ class SimulationRunner(object):
 
     See Also
     --------
-    SimulationResults : Class to store simulation results.
-    SimulationParameters : Class to store the simulation parameters.
-    Result : Class to store a single simulation result.
+    .SimulationResults : Class to store simulation results.
+    .SimulationParameters : Class to store the simulation parameters.
+    .Result : Class to store a single simulation result.
     """
     def __init__(self, default_config_file=None, config_spec=None,
                  read_command_line_args=True, save_parsed_file=False):
@@ -583,7 +583,7 @@ class SimulationRunner(object):
         """
         Perform the _run_simulation method and track its execution time.
         This time will be added as a Result to the returned
-        SimulationResults object from _run_simulation.
+        :class:`.SimulationResults` object from _run_simulation.
 
         Parameters
         ----------
@@ -614,7 +614,7 @@ class SimulationRunner(object):
         This function must be implemented in a subclass. It should take the
         needed parameters from the params class attribute (which was filled
         in the constructor of the derived class) and return the results as
-        a SimulationResults object.
+        a :class:`.SimulationResults` object.
 
         Note that _run_simulation will be called self.rep_max times (or
         less if an early stop criteria is reached, which requires
@@ -647,7 +647,7 @@ class SimulationRunner(object):
 
         This function may be reimplemented in the derived class if a stop
         condition besides the number of iterations is desired. The idea is
-        that _run_simulation returns a SimulationResults object, which is
+        that _run_simulation returns a :class:`.SimulationResults` object, which is
         then passed to _keep_going, which is then in charge of deciding if
         the simulation should stop or not.
 

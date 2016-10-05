@@ -6,8 +6,8 @@ Module containing function related to serialization.
 """
 
 
-import numpy as np
 import json
+import numpy as np
 
 
 class NumpyOrSetEncoder(json.JSONEncoder):

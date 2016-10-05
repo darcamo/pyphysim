@@ -168,11 +168,11 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
             the channel (in the frequency domain).
 
             Dimension: Depend if there are multiple receive antennas and if
-            :attr:`extra_dimension` is True or False. Let :math:`Nr` be the
+            `extra_dimension` is True or False. Let :math:`Nr` be the
             number of receive antennas, :math:`Ne` be the number of reference
             signal elements (reference signal size without cover code) and
             :math:`Nc` be the cover code size. The dimension of
-            :attr:`received_signal` must match the table below.
+            `received_signal` must match the table below.
 
             =================  =======================  ======================
                    /            extra_dimension: True   extra_dimension: False

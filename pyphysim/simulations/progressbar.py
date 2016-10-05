@@ -46,8 +46,11 @@ from ..util.misc import pretty_time
 
 __all__ = ['DummyProgressbar', 'ProgressBarBase', 'ProgressbarText',
            'ProgressbarText2', 'ProgressbarText3',
-           'ProgressbarMultiProcessServer', 'ProgressbarZMQServer',
-           'ProgressBarIPython', 'center_message']
+           'ProgressbarMultiProcessServer', 'ProgressbarMultiProcessClient',
+           'ProgressbarZMQServer',
+           'ProgressBarIPython', 'center_message',
+           'ProgressbarTextBase', 'ProgressbarDistributedServerBase',
+           'ProgressbarDistributedClientBase']
 
 
 # If this function is ever used outside this file, then move it to the

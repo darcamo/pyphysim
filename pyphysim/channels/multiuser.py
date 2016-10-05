@@ -1854,7 +1854,7 @@ class MultiUserChannelMatrix(object):  # pylint: disable=R0902
     @staticmethod
     def _calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l):
         """
-        Implementation of the :meth:`_calc_JP_SINR_k method`.
+        Implementation of the :meth:`_calc_JP_SINR_k` method.
 
         Parameters
         ----------
@@ -2159,8 +2159,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         See also
         --------
-        get_Hkl,
-        get_Hk,
+        .get_Hkl,
+        .get_Hk,
         get_Hk_with_ext_int
 
         Examples
@@ -2211,8 +2211,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         See also
         --------
-        get_Hkl,
-        get_Hk,
+        .get_Hkl,
+        .get_Hk,
         get_Hk_without_ext_int
 
         Examples
