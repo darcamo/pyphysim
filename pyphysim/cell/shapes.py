@@ -449,6 +449,7 @@ class Shape(Coordinate):
             from_complex_array_to_real_matrix(self.vertices),
             True,
             facecolor='none',  # No face
+            edgecolor="black",
             alpha=1)
 
         ax.add_patch(polygon_edges)
