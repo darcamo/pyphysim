@@ -57,6 +57,7 @@ class Node(shapes.Coordinate):
         shapes.Coordinate.__init__(self, pos)
         self.plot_marker = plot_marker
         self.marker_color = marker_color
+        self.marker_size = 6  # Changing this value will affect only the plot
 
         # ID of the cell where the user is located
         self.cell_id = cell_id
@@ -102,7 +103,9 @@ class Node(shapes.Coordinate):
                 self.pos.imag,
                 marker=self.plot_marker,
                 markerfacecolor=self.marker_color,
-                markeredgecolor=self.marker_color)
+                markeredgecolor=self.marker_color,
+                markersize=self.marker_size
+        )
 
         if stand_alone_plot is True:
             ax.plot()
