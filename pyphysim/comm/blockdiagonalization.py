@@ -216,10 +216,10 @@ class BlockDiagonalizer(object):
     modulation matrix) is really block diagonalized.
 
     >>> print(np.round(newH + 1e-10 + 1e-10j, 4))
-    [[ 0.0916+0.0135j -1.7449-0.4328j  0.0000+0.j      0.0000+0.j    ]
-     [-0.0114-0.146j   0.0213-1.1366j  0.0000+0.j      0.0000+0.j    ]
-     [ 0.0000+0.j      0.0000+0.j      0.0868+0.1565j -0.3673+0.2289j]
-     [ 0.0000+0.j      0.0000+0.j     -0.0396+0.0407j  1.0240+0.8997j]]
+    [[ 0.0916+0.0135j -1.7449-0.4328j  0.    +0.j      0.    +0.j    ]
+     [-0.0114-0.146j   0.0213-1.1366j  0.    +0.j      0.    +0.j    ]
+     [ 0.    +0.j      0.    +0.j      0.0868+0.1565j -0.3673+0.2289j]
+     [ 0.    +0.j      0.    +0.j     -0.0396+0.0407j  1.024 +0.8997j]]
 
     Notice how the power restriction of each BS is respected (although only
     one BS will transmit with its maximum power).
@@ -624,13 +624,13 @@ class BlockDiagonalizer(object):
         >>> channel = np.vstack([np.ones([2, 6]), 2 * np.ones([2, 6]),\
                                  3 * np.ones([2, 6])])
         >>> BD._get_sub_channel(channel, [0,2])
-        array([[ 1.,  1.,  1.,  1.,  1.,  1.],
-               [ 1.,  1.,  1.,  1.,  1.,  1.],
-               [ 3.,  3.,  3.,  3.,  3.,  3.],
-               [ 3.,  3.,  3.,  3.,  3.,  3.]])
+        array([[1., 1., 1., 1., 1., 1.],
+               [1., 1., 1., 1., 1., 1.],
+               [3., 3., 3., 3., 3., 3.],
+               [3., 3., 3., 3., 3., 3.]])
         >>> BD._get_sub_channel(channel, 0)
-        array([[ 1.,  1.,  1.,  1.,  1.,  1.],
-               [ 1.,  1.,  1.,  1.,  1.,  1.]])
+        array([[1., 1., 1., 1., 1., 1.],
+               [1., 1., 1., 1., 1., 1.]])
 
         """
         nrows = mt_channel.shape[0]

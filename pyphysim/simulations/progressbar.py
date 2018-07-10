@@ -646,17 +646,17 @@ class ProgressbarText(ProgressbarTextBase):
 
     Examples
     --------
-    >>> pb = ProgressbarText(100, 'o', "Hello Simulation")
-    >>> pb.progress(20)
+    >> pb = ProgressbarText(100, 'o', "Hello Simulation")
+    >> pb.progress(20)
     ---------------- Hello Simulation ---------------1
         1    2    3    4    5    6    7    8    9    0
     ----0----0----0----0----0----0----0----0----0----0
     oooooooooo
-    >>> pb.progress(40)
+    >> pb.progress(40)
     oooooooooooooooooooo
-    >>> pb.progress(50)
+    >> pb.progress(50)
     ooooooooooooooooooooooooo
-    >>> pb.progress(100)
+    >> pb.progress(100)
     oooooooooooooooooooooooooooooooooooooooooooooooooo
     """
     def __init__(self,

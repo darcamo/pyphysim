@@ -1608,7 +1608,7 @@ class ResultTestCase(unittest.TestCase):
             self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
         self.assertEqual(self.result4.__repr__(),
-                         "Result -> name4: [ 0.   0.   0.5  0.5  0.   0. ]")
+                         "Result -> name4: [0.  0.  0.5 0.5 0.  0. ]")
 
     def test_equal_and_not_equal_operators(self):
         self.result1.update(10)

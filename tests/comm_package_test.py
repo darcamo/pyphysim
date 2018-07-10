@@ -337,16 +337,17 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # Retest for each individual user
         W0 = W_bd[0:2, 0:2]
         newH0 = newH[0:2, 0:2]
+
         np.testing.assert_array_almost_equal(np.dot(W0, newH0),
-                                             np.eye(self.iNt / 3))
+                                             np.eye(self.iNt // 3))
         W1 = W_bd[2:4, 2:4]
         newH1 = newH[2:4, 2:4]
         np.testing.assert_array_almost_equal(np.dot(W1, newH1),
-                                             np.eye(self.iNt / 3))
+                                             np.eye(self.iNt // 3))
         W2 = W_bd[4:, 4:]
         newH2 = newH[4:, 4:]
         np.testing.assert_array_almost_equal(np.dot(W2, newH2),
-                                             np.eye(self.iNt / 3))
+                                             np.eye(self.iNt // 3))
 
 
 # TODO: finish implementation
