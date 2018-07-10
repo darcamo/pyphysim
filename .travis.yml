@@ -2,8 +2,8 @@ language: python
 python:
   # - "2.7"
   # - "3.4"
-  - "3.5"
-  
+  - "3.6"
+
 notifications:
   email: false
 
@@ -14,7 +14,7 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda  
+  - conda update -q conda
 # command to install dependencies
 install:
   # Useful for debugging any issues with conda
