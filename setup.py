@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # - Run the command "python setup.py nosetests" to run the tests.
 # - Run the command "python setup.py build_exe" to create the executables
@@ -13,10 +12,13 @@ import os
 # xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # from distutils.extension import Extension
 from Cython.Distutils import build_ext, Extension
+from Cython.Build import cythonize
 import numpy
 
-misc_c = Extension(name="misc_c", sources=["pyphysim/util/misc_c.pyx"],
+misc_c = Extension(name="misc_c",
+                   sources=["pyphysim/util/misc_c.pyx"],
                    include_dirs=[numpy.get_include()])
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -26,6 +28,8 @@ def get_version():
     """
     import pyphysim
     return pyphysim.__version__
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx Get a listof the packages in the project xxxxxxxxxxxxxxxxxxxxx
@@ -35,6 +39,7 @@ def get_version():
 # forget a package which is added in the future.
 # packages = find_packages(where='pyphysim', exclude=[])
 packages = find_packages(where='.', exclude=['tests', 'apps'])
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -44,8 +49,9 @@ packages = find_packages(where='.', exclude=['tests', 'apps'])
 # easier to type in the README file than to put a raw string in below ...
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Setup Configuration xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -72,25 +78,29 @@ setup(
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License (GPL)",
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering",
     ],
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Scripts for the regular build
-    scripts=["bin/run_python_coverage.sh",
-             "bin/py-physim",
-             "bin/count_lines_of_code.sh"],
-
+    scripts=[
+        "bin/run_python_coverage.sh", "bin/py-physim",
+        "bin/count_lines_of_code.sh"
+    ],
     packages=packages,
-    package_data={'': ["README", "LICENSE.txt"],
-                  'tests': ["README"]},
+    package_data={
+        '': ["README", "LICENSE.txt"],
+        'tests': ["README"]
+    },
     # setup_requires=['nose>=1.0'],
-
+    install_requires=["numpy", "scipy", "matplotlib", "cython"],
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    ext_modules=[misc_c],
-    cmdclass={'build_ext': build_ext}, requires=[
+    ext_modules=cythonize([misc_c]),
+    cmdclass={'build_ext': build_ext},
+    requires=[
         'numpy', 'scipy', 'configobj', 'validate', 'matplotlib', 'h5py',
-        'IPython', 'Cython'],
+        'IPython', 'Cython'
+    ],
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 )

@@ -1,7 +1,5 @@
 language: python
 python:
-  # - "2.7"
-  # - "3.4"
   - "3.6"
 
 notifications:
@@ -21,7 +19,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose Cython pyzmq pandas h5py ipyparallel
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose Cython pyzmq pandas h5py ipyparallel
   - source activate test-environment
   # Install packages not available in conda using pip
   - pip install configobj

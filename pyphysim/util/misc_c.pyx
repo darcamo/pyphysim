@@ -95,26 +95,3 @@ def count_bits(n):
 
     return np.reshape(num_bits_flat, n.shape)
 
-# np.import_array()
-
-# def prod2(a, b):
-#     #generate a new output array of the correct shape by broadcasting input arrays together
-#     out = np.empty(np.broadcast(a, b).shape, np.float)
-
-#     #generate the iterator over the input and output arrays, does the same thing as
-#     # PyArray_MultiIterNew
-
-#     cdef np.broadcast it = np.broadcast(a, b, out)
-
-#     while np.PyArray_MultiIter_NOTDONE(it):
-
-#             #PyArray_MultiIter_DATA is used to access the pointers the iterator points to
-#             aval = (<double*>np.PyArray_MultiIter_DATA(it, 0))[0]
-#             bval = (<double*>np.PyArray_MultiIter_DATA(it, 1))[0]
-
-#             (<double*>np.PyArray_MultiIter_DATA(it, 2))[0] = aval * bval
-
-#             #PyArray_MultiIter_NEXT is used to advance the iterator
-#             np.PyArray_MultiIter_NEXT(it)
-
-#     return out
