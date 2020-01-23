@@ -1,7 +1,7 @@
 # Required packages
 Cython
-numpy>=1.10
-scipy>=0.16
+numpy
+scipy
 configobj
 matplotlib
 
