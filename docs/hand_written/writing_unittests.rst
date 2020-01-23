@@ -48,6 +48,6 @@ Notes
 If you use pylint, this is the .pylintrc file I use (although I don't
 struggle to fix every pylint warning)
 
-.. include:: //home/darlan/.pylintrc
-   :literal:
+.. literalinclude:: sample_dotpylintrc
+
 
