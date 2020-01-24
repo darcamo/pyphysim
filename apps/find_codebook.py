@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module to find good codebooks"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -31,7 +30,7 @@ from pyphysim.util.misc import pretty_time
 
 
 # noinspection PyShadowingNames
-class CodebookFinder(object):
+class CodebookFinder:
     """Class to find good codebooks using random search.
     """
     (COMPLEX, REAL, COMPLEX_QEGT) = range(3)
@@ -79,7 +78,8 @@ class CodebookFinder(object):
         self.progressbar = DummyProgressbar()
 
     def __repr__(self):
-        return "CodebookFinder: {0} {1} precoders in G({2},{3}) with minimum distance {4:.4f}".format(self._K, self.type, self._Nt, self._Ns, self._min_dist)
+        return "CodebookFinder: {0} {1} precoders in G({2},{3}) with minimum distance {4:.4f}".format(
+            self._K, self.type, self._Nt, self._Ns, self._min_dist)
 
     def _generate_complex_random_codebook(self, K, Nt, Ns):
         """Generates a complex random codebook.
@@ -97,8 +97,8 @@ class CodebookFinder(object):
         -------
         np.ndarray
         """
-        C = (1. / math.sqrt(2.0)) * (
-            self._rs.randn(K, Nt, Ns) + (1j * self._rs.randn(K, Nt, Ns)))
+        C = (1. / math.sqrt(2.0)) * (self._rs.randn(K, Nt, Ns) +
+                                     (1j * self._rs.randn(K, Nt, Ns)))
         ":type: np.ndarray"
         for k in range(0, K):
             C[k, :, :] /= np.linalg.norm(C[k, :, :], 'fro')
@@ -155,7 +155,7 @@ class CodebookFinder(object):
             CodebookFinder.COMPLEX: "Complex",
             CodebookFinder.COMPLEX_QEGT: "Complex QEG",
             CodebookFinder.REAL: "Real",
-            }
+        }
         return types[codebook_type]
 
     @staticmethod
@@ -186,7 +186,7 @@ class CodebookFinder(object):
         # ordem) vc tera (ncols**2-ncols)/2 possibilidades. Isso Equivale a pegar
         # uma matriz matrix.ncols() x matrix.ncols() e contar todos os elementos
         # abaixo (ou acima) da diagonal.
-        num_possibilidades = (K ** 2 - K) / 2
+        num_possibilidades = (K**2 - K) / 2
         dists = np.empty(num_possibilidades)
         principal_angles = []
         index = 0
@@ -200,7 +200,7 @@ class CodebookFinder(object):
             index += 1
 
         min_index = dists.argmin()  # Index of the minimum distance (in the
-                                    # flattened array)
+        # flattened array)
         min_dist = dists.flatten()[min_index]  # Same as dists.min()
         ":type: float"
         principal_angles = np.array(principal_angles[min_index])
@@ -218,9 +218,12 @@ class CodebookFinder(object):
         # The function used to create a random codebook depends on the
         # self._codebook_type variable
         gen_functions = {
-            CodebookFinder.REAL: CodebookFinder._generate_real_random_codebook,
-            CodebookFinder.COMPLEX: CodebookFinder._generate_complex_random_codebook,
-            CodebookFinder.COMPLEX_QEGT: CodebookFinder._generate_complex_qegt_random_codebook
+            CodebookFinder.REAL:
+                CodebookFinder._generate_real_random_codebook,
+            CodebookFinder.COMPLEX:
+                CodebookFinder._generate_complex_random_codebook,
+            CodebookFinder.COMPLEX_QEGT:
+                CodebookFinder._generate_complex_qegt_random_codebook
         }
 
         # Simulation
@@ -228,10 +231,12 @@ class CodebookFinder(object):
             self.progressbar.progress(rep)
             # Call the appropriated codebook generating function and passes
             # the K, Nt, and Ns arguments to it.
-            C = gen_functions[self._codebook_type](self, self._K, self._Nt, self._Ns)
+            C = gen_functions[self._codebook_type](self, self._K, self._Nt,
+                                                   self._Ns)
             # C = generate_complex_random_codebook(self._K, self._Nt, self._Ns)
             # C = generate_real_random_codebook(self._K, self._Nt, self._Ns)
-            (min_dist, principal_angles) = CodebookFinder.calc_min_chordal_dist(C)
+            (min_dist,
+             principal_angles) = CodebookFinder.calc_min_chordal_dist(C)
             if min_dist > self._min_dist:
                 # Yes! We found a better codebook. Let's save the data
                 self._min_dist = min_dist
@@ -257,11 +262,18 @@ class CodebookFinder(object):
     def type(self):
         """Return a string with the type representation of the codebook."""
         return CodebookFinder.type_to_string(self._codebook_type)
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def find_codebook(Nt, Ns, K, rep_max, prng_seed=None,
-                  codebook_type=CodebookFinder.COMPLEX, progressbar=None):
+def find_codebook(Nt,
+                  Ns,
+                  K,
+                  rep_max,
+                  prng_seed=None,
+                  codebook_type=CodebookFinder.COMPLEX,
+                  progressbar=None):
     """
     Create a CodebookFinder object, use it to find a codebook and return the
     codebook found.
@@ -291,8 +303,9 @@ def find_codebook(Nt, Ns, K, rep_max, prng_seed=None,
 
     cb.find_codebook(rep_max)
     return cb.codebook
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # # xxxxxxxxxx Functions that perform a complete simulation xxxxxxxxxxxxxxxxx
@@ -346,16 +359,17 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
 
     def save_results(best_dist, best_codebook, best_principal_angles, filename):
         # Save matlab version
-        scipy.io.savemat(
-            filename,
-            {'codebook': best_codebook, 'shape': best_codebook.shape},
-            oned_as='row')
+        scipy.io.savemat(filename, {
+            'codebook': best_codebook,
+            'shape': best_codebook.shape
+        },
+                         oned_as='row')
         # Save Python Version.
-        np.savez(
-            filename + ".npz",
-            best_codebook=best_codebook,
-            best_dist=best_dist.item(),
-            best_principal_angles=best_principal_angles)
+        np.savez(filename + ".npz",
+                 best_codebook=best_codebook,
+                 best_dist=best_dist.item(),
+                 best_principal_angles=best_principal_angles)
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # get number of cpus -> multiprocessing.cpu_count()
@@ -397,9 +411,12 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
             codebook_type,
             # Register a progressbar proxy for the process to be tracked by
             # the ProgressbarMultiProcessText processbar
-            pb.register_client_and_get_proxy_progressbar(rep_max)]
+            pb.register_client_and_get_proxy_progressbar(rep_max)
+        ]
 
-        procs.append(multiprocessing.Process(target=find_codebook_wrapper, args=[queue, proc_args]))
+        procs.append(
+            multiprocessing.Process(target=find_codebook_wrapper,
+                                    args=[queue, proc_args]))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Start all processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -430,7 +447,8 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     best_index = min_dists.argmax()
 
     best_codebook = codebooks[best_index]
-    (best_dist, best_principal_angles) = CodebookFinder.calc_min_chordal_dist(best_codebook)
+    (best_dist, best_principal_angles
+    ) = CodebookFinder.calc_min_chordal_dist(best_codebook)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print("Maximum minimum distance found: {0}".format(best_dist))
@@ -461,7 +479,6 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 if __name__ == '__main__':
     # xxxxx Add parent folder to the path xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # import os
@@ -490,7 +507,10 @@ if __name__ == '__main__':
 
     # xxxxx Get configuration filename from command line xxxxxxxxxxxxxxxxxx
     comm_line_parser = OptionParser()
-    comm_line_parser.add_option("-c", "--config_file", help="Specify the configuration file", default="find_codebook_config.txt")
+    comm_line_parser.add_option("-c",
+                                "--config_file",
+                                help="Specify the configuration file",
+                                default="find_codebook_config.txt")
     (command_line_options, args) = comm_line_parser.parse_args()
 
     config_file_name = command_line_options.config_file

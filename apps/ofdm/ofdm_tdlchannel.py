@@ -8,9 +8,7 @@ from pyphysim.modulators.ofdm import OfdmOneTapEqualizer
 from pyphysim.channels.singleuser import SuChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.channels.fading import COST259_TUx
-
 """Simulate an OFDM transmission through a Tapped Delay Line channel. """
-
 
 if __name__ == '__main__':
 
@@ -35,7 +33,8 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx QPSK and OFDM Modulators xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     qpsk_obj = QPSK()
-    ofdm_obj = OFDM(fft_size=fft_size, cp_size=cp_size,
+    ofdm_obj = OFDM(fft_size=fft_size,
+                    cp_size=cp_size,
                     num_used_subcarriers=num_used_subcarriers)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -63,8 +62,8 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Equalization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     equalizer = OfdmOneTapEqualizer(ofdm_obj)
-    equalized_ofdm_received_data = equalizer.equalize_data(ofdm_received_data,
-                                                           impulse_response)
+    equalized_ofdm_received_data = equalizer.equalize_data(
+        ofdm_received_data, impulse_response)
     equalized_ofdm_received_data = equalized_ofdm_received_data[:num_symbols]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

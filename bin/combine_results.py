@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Script that reads two files with saved SimulationResults and combine
 them into a new SimulationResults which is saved to a new file.
@@ -28,11 +27,10 @@ def main():
                         help="The name of the first SimulationResults file.")
     parser.add_argument('second',
                         help="The name of the second SimulationResults file.")
-    parser.add_argument(
-        'output',
-        help=("The name that will be used to save the combined "
-              "SimulationResults file."),
-        nargs='?')
+    parser.add_argument('output',
+                        help=("The name that will be used to save the combined "
+                              "SimulationResults file."),
+                        nargs='?')
 
     args = parser.parse_args()
 

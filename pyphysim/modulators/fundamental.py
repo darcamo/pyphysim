@@ -4,7 +4,6 @@
 # http://www.doughellmann.com/PyMOTW/struct/
 # import struct
 # import binascii
-
 """
 Module with class for some fundamental modulators, such as PSK and M-QAM.
 
@@ -33,7 +32,7 @@ __all__ = ['Modulator', 'PSK', 'QPSK', 'BPSK', 'QAM']
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxx Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class Modulator(object):
+class Modulator:
     """
     Base class for digital modulators.
 
@@ -241,8 +240,7 @@ class Modulator(object):
         reshaped_received_data = receivedData.flatten()
 
         constellation = np.reshape(self.symbols, [self.symbols.size, 1])
-        output = np.abs(constellation -
-                        reshaped_received_data).argmin(axis=0)
+        output = np.abs(constellation - reshaped_received_data).argmin(axis=0)
         output.shape = shape
 
         return output
@@ -333,7 +331,7 @@ class Modulator(object):
         calcTheoreticalSpectralEfficiency
         """
         BER = self.calcTheoreticalBER(SNR)
-        PER = 1 - ((1 - BER) ** packet_length)
+        PER = 1 - ((1 - BER)**packet_length)
         return PER
 
     def calcTheoreticalSpectralEfficiency(self, SNR, packet_length=None):
@@ -377,6 +375,7 @@ class Modulator(object):
             se = self.K * (1 - self.calcTheoreticalPER(SNR, packet_length))
         return se
 
+
 # xxxxx End of Modulator Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -386,6 +385,7 @@ class Modulator(object):
 class PSK(Modulator):
     """PSK Class
     """
+
     def __init__(self, M, phaseOffset=0):
         """Initializes the PSK object.
 
@@ -400,7 +400,7 @@ class PSK(Modulator):
         """
         Modulator.__init__(self)
         # Check if M is a power of 2
-        assert 2 ** math.log(M, 2) == M
+        assert 2**math.log(M, 2) == M
 
         # Generates the constellation
         symbols = self._createConstellation(M, phaseOffset)
@@ -449,8 +449,7 @@ class PSK(Modulator):
             A phase offset (in radians) to be applied to the PSK
             constellation.
         """
-        self.setConstellation(
-            self._createConstellation(self._M, phaseOffset))
+        self.setConstellation(self._createConstellation(self._M, phaseOffset))
 
     # noinspection PyPep8
     def calcTheoreticalSER(self, SNR):
@@ -518,6 +517,8 @@ class QPSK(PSK):  # pragma: no cover
             String representation of the object.
         """
         return "QPSK object"
+
+
 # xxxxx End of QPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -527,6 +528,7 @@ class QPSK(PSK):  # pragma: no cover
 class BPSK(Modulator):
     """BPSK Class
     """
+
     def __init__(self):
         Modulator.__init__(self)
         # The number "1" will be mapped to "-1" and the number "0" will be
@@ -639,6 +641,7 @@ class BPSK(Modulator):
         # noinspection PyUnresolvedReferences
         return (receivedData < 0).astype(int)
 
+
 # xxxxx End of BPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -666,7 +669,7 @@ class QAM(Modulator):
 
         # Check if M is an even power of 2
         power = math.log(M, 2)
-        if (power % 2 != 0) or (2 ** power != M):
+        if (power % 2 != 0) or (2**power != M):
             raise ValueError("M must be a square power of 2")
 
         symbols = self._createConstellation(M)
@@ -763,11 +766,11 @@ class QAM(Modulator):
         rows = np.tile(row, (1, L))
         # Shift the first part by half the number of bits and sum with the
         # second part to form each element in the index matrix
-        index_matrix = (rows << (level2bits(L ** 2) // 2)) + columns
+        index_matrix = (rows << (level2bits(L**2) // 2)) + columns
 
         # Return the indexes as a vector (row order, which is the default
         # in numpy)
-        return np.reshape(index_matrix, L ** 2)
+        return np.reshape(index_matrix, L**2)
 
     # noinspection PyPep8
     def _calcTheoreticalSingleCarrierErrorRate(self, SNR):
@@ -821,7 +824,7 @@ class QAM(Modulator):
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
         # The SER is then given by
         # $ser = 1 - (1 - Psc)^2$
-        ser = 1 - (1 - Psc) ** 2
+        ser = 1 - (1 - Psc)**2
         return ser
 
     def calcTheoreticalBER(self, SNR):
@@ -847,4 +850,6 @@ class QAM(Modulator):
         Psc = self._calcTheoreticalSingleCarrierErrorRate(SNR)
         ber = (2. * Psc) / k
         return ber
+
+
 # xxxxx End of QAM Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 # pylint: disable=E1103
 import scipy.constants
 from ..util.conversion import linear2dBm

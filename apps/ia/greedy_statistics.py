@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=C0325
-
 """
 Script to read the result files created by the simulate_greedy_ia.py
 simulator and create a table with the stream statistics.
 """
-
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys
@@ -98,7 +96,7 @@ def get_pretty_statistic_table(statistics, Ns=None, multiply=100):
     all_ranges = map(my_range, Ns)
     all_combinations = itertools.product(*all_ranges)
 
-    statistic_table = zip(all_combinations, np.round(statistics*multiply, 2))
+    statistic_table = zip(all_combinations, np.round(statistics * multiply, 2))
 
     return statistic_table
 
@@ -121,25 +119,33 @@ if __name__ == '__main__':
     results = get_result_from_file()
 
     greedy_nopl_stream_statistics = results.get_result_values_list(
-        'stream_statistics', fixed_params={
+        'stream_statistics',
+        fixed_params={
             'initialize_with': 'random',
             'stream_sel_method': 'greedy',
-            'scenario': 'NoPathLoss'})
+            'scenario': 'NoPathLoss'
+        })
     greedy_withpl_stream_statistics = results.get_result_values_list(
-        'stream_statistics', fixed_params={
+        'stream_statistics',
+        fixed_params={
             'initialize_with': 'random',
             'stream_sel_method': 'greedy',
-            'scenario': 'Random'})
+            'scenario': 'Random'
+        })
     brute_force_nopl_stream_statistics = results.get_result_values_list(
-        'stream_statistics', fixed_params={
+        'stream_statistics',
+        fixed_params={
             'initialize_with': 'random',
             'stream_sel_method': 'brute',
-            'scenario': 'NoPathLoss'})
+            'scenario': 'NoPathLoss'
+        })
     brute_force_withpl_stream_statistics = results.get_result_values_list(
-        'stream_statistics', fixed_params={
+        'stream_statistics',
+        fixed_params={
             'initialize_with': 'random',
             'stream_sel_method': 'brute',
-            'scenario': 'Random'})
+            'scenario': 'Random'
+        })
 
     SNR = results.params['SNR']
 

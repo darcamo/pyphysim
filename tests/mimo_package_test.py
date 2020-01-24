@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101,E0611
-
 """
 Tests for the modules in the mimo package.
 
@@ -41,7 +40,7 @@ class MimoDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the mimo module.
     """
 
-    def test_mimo(self, ):
+    def test_mimo(self,):
         """Run doctests in the mimo module."""
         doctest.testmod(mimo)
 
@@ -82,8 +81,8 @@ def calc_Bl(channel, W, l, noise_var=0.0):
     idx = np.array([i for i in range(Ns) if i != l])
 
     if Ns > 1:
-        Bl = channel.dot(
-            W[:, idx].dot(W[:, idx].conj().T)).dot(channel.conj().T) + N
+        Bl = channel.dot(W[:, idx].dot(W[:, idx].conj().T)).dot(
+            channel.conj().T) + N
     else:
         # If there is only one stream then we don't have interference from
         # other streams and the interference plus noise covariance matrix
@@ -117,7 +116,7 @@ def calc_SINRs(channel, W, G_H, noise_var):
     sinrs = np.empty(Ns, dtype=float)
     for l in range(Ns):
         Bl = calc_Bl(channel, W, l, noise_var)
-        num = np.linalg.norm((G_H[l].dot(channel).dot(W[:, l]))) ** 2
+        num = np.linalg.norm((G_H[l].dot(channel).dot(W[:, l])))**2
         den = np.abs(G_H[l].dot(Bl).dot(G_H[l].conj()))
         sinrs[l] = num / den
 
@@ -167,9 +166,8 @@ class BlastTestCase(unittest.TestCase):
         # Test if the data is encoded correctly
         data = np.r_[0:15]
         expected_encoded_data = data.reshape(3, 5, order='F') / np.sqrt(3)
-        np.testing.assert_array_almost_equal(
-            self.blast_object.encode(data),
-            expected_encoded_data)
+        np.testing.assert_array_almost_equal(self.blast_object.encode(data),
+                                             expected_encoded_data)
 
     def test_set_noise_var(self):
         self.blast_object.set_noise_var(0.001)
@@ -236,6 +234,7 @@ class BlastTestCase(unittest.TestCase):
 
 
 class MRTTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.mrt_object = MRT()
@@ -380,6 +379,7 @@ class MRTTestCase(unittest.TestCase):
 
 
 class MRCTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.mrc_object = MRC()
@@ -449,6 +449,7 @@ class MRCTestCase(unittest.TestCase):
 
 
 class SVDMimoTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.svdmimo_object = SVDMimo()
@@ -469,8 +470,8 @@ class SVDMimoTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data_aux)
-        np.testing.assert_array_almost_equal(
-            expected_encoded_data, encoded_data)
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx test the case with Ntx=4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -488,8 +489,8 @@ class SVDMimoTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data_aux)
-        np.testing.assert_array_almost_equal(
-            expected_encoded_data, encoded_data)
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test if an exception is raised for wrong size xxxxxxxxxxxxx
@@ -539,6 +540,7 @@ class SVDMimoTestCase(unittest.TestCase):
 
 
 class GMDMimoTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.gmdmimo_object = GMDMimo()
@@ -561,8 +563,8 @@ class GMDMimoTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data.reshape(Nr, -1))
-        np.testing.assert_array_almost_equal(
-            expected_encoded_data, encoded_data)
+        np.testing.assert_array_almost_equal(expected_encoded_data,
+                                             encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test if an exception is raised for wrong size xxxxxxxxxxxxx
@@ -643,17 +645,19 @@ class AlamoutiTestCase(unittest.TestCase):
         ":type: np.ndarray"
 
         expected_encoded_data = np.array(
-            [[0 + 0j, -1 + 1j, 2 + 2j, -3 + 3j, 4 + 4j, -5 + 5j, 6 + 6j,
-              -7 + 7j, 8 + 8j, -9 + 9j, 10 + 10j, -11 + 11j, 12 + 12j,
-              -13 + 13j, 14 + 14j, -15 + 15j],
-             [1 + 1j, 0 - 0j, 3 + 3j, 2 - 2j, 5 + 5j, 4 - 4j, 7 + 7j,
-              6 - 6j, 9 + 9j, 8 - 8j, 11 + 11j, 10 - 10j, 13 + 13j, 12 - 12j,
-              15 + 15j, 14 - 14j]]
-        ) / np.sqrt(2)
+            [[
+                0 + 0j, -1 + 1j, 2 + 2j, -3 + 3j, 4 + 4j, -5 + 5j, 6 + 6j,
+                -7 + 7j, 8 + 8j, -9 + 9j, 10 + 10j, -11 + 11j, 12 + 12j,
+                -13 + 13j, 14 + 14j, -15 + 15j
+            ],
+             [
+                 1 + 1j, 0 - 0j, 3 + 3j, 2 - 2j, 5 + 5j, 4 - 4j, 7 + 7j, 6 - 6j,
+                 9 + 9j, 8 - 8j, 11 + 11j, 10 - 10j, 13 + 13j, 12 - 12j,
+                 15 + 15j, 14 - 14j
+             ]]) / np.sqrt(2)
 
-        np.testing.assert_array_almost_equal(
-            self.alamouti_object.encode(data),
-            expected_encoded_data)
+        np.testing.assert_array_almost_equal(self.alamouti_object.encode(data),
+                                             expected_encoded_data)
 
     def test_decode(self):
         data = np.r_[0:16] + np.r_[0:16] * 1j
@@ -678,7 +682,7 @@ class AlamoutiTestCase(unittest.TestCase):
         # G_H = self.alamouti_object._calc_receive_filter(channel, noise_var)
 
         expected_sinrs = linear2dB(
-            (np.linalg.norm(channel, 'fro') ** 2) / noise_var)
+            (np.linalg.norm(channel, 'fro')**2) / noise_var)
 
         # Calculate the SINR using method in the Alamouti class. Note that
         # we only need to pass the noise variance, since the mimo object
@@ -688,7 +692,6 @@ class AlamoutiTestCase(unittest.TestCase):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

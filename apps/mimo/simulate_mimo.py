@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing simulation runners for the several MIMO schemes
 algorithms in the comm.mimo module.
@@ -51,16 +50,17 @@ class MIMOSimulationRunner(SimulationRunner):
         If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, MimoSchemeClass, config_filename, spec,
+    def __init__(self,
+                 MimoSchemeClass,
+                 config_filename,
+                 spec,
                  read_command_line_args=True):
-        SimulationRunner.__init__(
-            self, read_command_line_args=read_command_line_args)
+        SimulationRunner.__init__(self,
+                                  read_command_line_args=read_command_line_args)
 
         # Read the simulation configuration from the file. What is read and
         self.params = SimulationParameters.load_from_config_file(
-            config_filename,
-            spec,
-            save_parsed_file=True)
+            config_filename, spec, save_parsed_file=True)
 
         # Set the max_bit_errors and rep_max attributes
         self.max_bit_errors = self.params['max_bit_errors']
@@ -68,10 +68,12 @@ class MIMOSimulationRunner(SimulationRunner):
 
         # Create the modulator object
         M = self.params['M']
-        modulator_options = {'PSK': fundamental.PSK,
-                             'QPSK': fundamental.QPSK,
-                             'QAM': fundamental.QAM,
-                             'BPSK': fundamental.BPSK}
+        modulator_options = {
+            'PSK': fundamental.PSK,
+            'QPSK': fundamental.QPSK,
+            'QAM': fundamental.QAM,
+            'BPSK': fundamental.BPSK
+        }
 
         modulator_string = self.params['modulator']
         if modulator_string == 'BPSK' or modulator_string == 'QPSK':
@@ -131,21 +133,20 @@ class MIMOSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        symbolErrorsResult = Result.create(
-            "symbol_errors", Result.SUMTYPE, symbolErrors)
+        symbolErrorsResult = Result.create("symbol_errors", Result.SUMTYPE,
+                                           symbolErrors)
 
-        numSymbolsResult = Result.create(
-            "num_symbols", Result.SUMTYPE, numSymbols)
+        numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
+                                         numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors",
-                                        Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
         berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits)
 
-        serResult = Result.create(
-            "ser", Result.RATIOTYPE, symbolErrors, numSymbols)
+        serResult = Result.create("ser", Result.RATIOTYPE, symbolErrors,
+                                  numSymbols)
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
@@ -472,8 +473,7 @@ def simulate_alamouti(config_file_name='mimo_alamouti_config_file.txt'):
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
-        runner,
-        'alamouti_results_{M}-{modulator}_Nr_{Nr}_receive_antennas')
+        runner, 'alamouti_results_{M}-{modulator}_Nr_{Nr}_receive_antennas')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -506,8 +506,7 @@ def simulate_mrc(config_file_name='mimo_mrc_config_file.txt'):
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
-        runner,
-        'mrc_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+        runner, 'mrc_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -523,8 +522,7 @@ def simulate_mrt(config_file_name='mimo_mrt_config_file.txt'):
 
     # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results, filename = simulate_general(
-        runner,
-        'mrt_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
+        runner, 'mrt_results_{M}-{modulator}_Nr_{Nr}_Nt_{Nt}_receive_antennas')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     return results, filename
@@ -584,13 +582,17 @@ def get_ebn0_vec(results):
         M = results.params['M']
         K = np.round(np.log2(M))
 
-    ebn0 = SNR + linear2dB(1./K)
+    ebn0 = SNR + linear2dB(1. / K)
 
     return ebn0
 
 
-def plot_ber(
-        results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+def plot_ber(results,
+             ax=None,
+             name=None,
+             block=True,
+             X_axis='SNR',
+             plot_args=None):
     """
     Plot the BER in `results`.
 
@@ -660,8 +662,12 @@ def plot_ber(
         return ax
 
 
-def plot_ser(
-        results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+def plot_ser(results,
+             ax=None,
+             name=None,
+             block=True,
+             X_axis='SNR',
+             plot_args=None):
     """
     Plot the SER in `results`.
 
@@ -726,8 +732,12 @@ def plot_ser(
         return ax
 
 
-def plot_ber_and_ser(
-        results, ax=None, name=None, block=True, X_axis='SNR', plot_args=None):
+def plot_ber_and_ser(results,
+                     ax=None,
+                     name=None,
+                     block=True,
+                     X_axis='SNR',
+                     plot_args=None):
     """
     Plot the BER and the SER.
 
@@ -776,31 +786,49 @@ if __name__ == '__main__':
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     results1, filename1 = simulate_alamouti()
-    plot_ber(
-        results1, ax=ax, name='Alamouti',
-        block=False, X_axis=X_axis, plot_args={'color': 'green'})
+    plot_ber(results1,
+             ax=ax,
+             name='Alamouti',
+             block=False,
+             X_axis=X_axis,
+             plot_args={'color': 'green'})
 
     results2, filename2 = simulate_blast()
-    plot_ber(
-        results2, ax=ax, name='BLAST',
-        block=False, X_axis=X_axis, plot_args={'color': 'blue'})
+    plot_ber(results2,
+             ax=ax,
+             name='BLAST',
+             block=False,
+             X_axis=X_axis,
+             plot_args={'color': 'blue'})
 
     results3, filename3 = simulate_mrc()
-    plot_ber(
-        results3, ax=ax, name='MRC',
-        block=False, X_axis=X_axis, plot_args={'color': 'red'})
+    plot_ber(results3,
+             ax=ax,
+             name='MRC',
+             block=False,
+             X_axis=X_axis,
+             plot_args={'color': 'red'})
 
     results4, filename4 = simulate_mrt()
-    plot_ber(
-        results4, ax=ax, name='MRT',
-        block=False, X_axis=X_axis, plot_args={'color': 'magenta'})
+    plot_ber(results4,
+             ax=ax,
+             name='MRT',
+             block=False,
+             X_axis=X_axis,
+             plot_args={'color': 'magenta'})
 
     results5, filename5 = simulate_svdmimo()
-    plot_ber(
-        results5, ax=ax, name='SVD MIMO',
-        block=False, X_axis=X_axis, plot_args={'color': 'cyan'})
+    plot_ber(results5,
+             ax=ax,
+             name='SVD MIMO',
+             block=False,
+             X_axis=X_axis,
+             plot_args={'color': 'cyan'})
 
     results7, filename7 = simulate_gmdmimo()
-    plot_ber(
-        results7, ax=ax, name='GMD MIMO',
-        block=True, X_axis=X_axis, plot_args={'color': 'pink'})
+    plot_ber(results7,
+             ax=ax,
+             name='GMD MIMO',
+             block=True,
+             X_axis=X_axis,
+             plot_args={'color': 'pink'})

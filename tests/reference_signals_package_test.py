@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101
-
 """
 Tests for the modules in the reference_signals package.
 
@@ -105,8 +104,9 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
         denominator = 8
 
         zf1 = calcBaseZC(Nzc=Nzc, u=u, q=0)
-        zf1_shifted = get_shifted_root_seq(
-            zf1, n_cs=n_cs, denominator=denominator)
+        zf1_shifted = get_shifted_root_seq(zf1,
+                                           n_cs=n_cs,
+                                           denominator=denominator)
         expected_shifted_zf1 = zf1 * np.exp(
             1j * n * 2 * np.pi * n_cs / denominator)
 
@@ -147,6 +147,7 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Root Sequence Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class RootSequenceTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
@@ -200,19 +201,23 @@ class RootSequenceTestCase(unittest.TestCase):
     def test_seq_array(self):
         # xxxxxxxxxx Small Root Sequences xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Line 15 of the first table
-        expected_small_root_seq1 = np.exp(1j * (np.pi / 4.0) * np.array(
-            [3, -1, 1, -3, -1, -1, 1, 1, 3, 1, -1, -3]))
+        expected_small_root_seq1 = np.exp(
+            1j * (np.pi / 4.0) *
+            np.array([3, -1, 1, -3, -1, -1, 1, 1, 3, 1, -1, -3]))
         # Line 23 of the first table
-        expected_small_root_seq2 = np.exp(1j * (np.pi / 4.0) * np.array(
-            [1, 1, -1, -3, -1, -3, 1, -1, 1, 3, -1, 1]))
+        expected_small_root_seq2 = np.exp(
+            1j * (np.pi / 4.0) *
+            np.array([1, 1, -1, -3, -1, -3, 1, -1, 1, 3, -1, 1]))
         # Line 15 of the second table
-        expected_small_root_seq3 = np.exp(1j * (np.pi / 4.0) * np.array(
-            [-1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3,
-             1, 3, 1, -1, -3, -3, -1, -1, -3, -3, -3, -1]))
+        expected_small_root_seq3 = np.exp(1j * (np.pi / 4.0) * np.array([
+            -1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3, 1, 3, 1, -1, -3, -3, -1,
+            -1, -3, -3, -3, -1
+        ]))
         # Line 23 of the second table
-        expected_small_root_seq4 = np.exp(1j * (np.pi / 4.0) * np.array(
-            [-1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3,
-             -1, 3, -1, 3, 3, -3, 3, 1, -1, 3, 3]))
+        expected_small_root_seq4 = np.exp(1j * (np.pi / 4.0) * np.array([
+            -1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3, -1, 3, -1, 3, 3, -3, 3,
+            1, -1, 3, 3
+        ]))
 
         np.testing.assert_array_almost_equal(self.small_root_seq1.seq_array(),
                                              expected_small_root_seq1)
@@ -226,49 +231,50 @@ class RootSequenceTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Zadoff-Chu Sequences xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_root__no_ext1 = calcBaseZC(139, 25)
-        np.testing.assert_array_almost_equal(
-            self.root_seq_no_ext1.seq_array(), expected_root__no_ext1)
+        np.testing.assert_array_almost_equal(self.root_seq_no_ext1.seq_array(),
+                                             expected_root__no_ext1)
         expected_root__no_ext2 = calcBaseZC(31, 6)
-        np.testing.assert_array_almost_equal(
-            self.root_seq_no_ext2.seq_array(), expected_root__no_ext2)
+        np.testing.assert_array_almost_equal(self.root_seq_no_ext2.seq_array(),
+                                             expected_root__no_ext2)
 
         expected_root_seq1 = calcBaseZC(149, 25)
-        expected_root_seq1 = np.hstack([expected_root_seq1,
-                                        expected_root_seq1[0:1]])
-        np.testing.assert_array_almost_equal(
-            self.root_seq1.seq_array(), expected_root_seq1)
+        expected_root_seq1 = np.hstack(
+            [expected_root_seq1, expected_root_seq1[0:1]])
+        np.testing.assert_array_almost_equal(self.root_seq1.seq_array(),
+                                             expected_root_seq1)
 
         expected_root_seq2 = calcBaseZC(139, 12)
-        expected_root_seq2 = np.hstack([expected_root_seq2,
-                                        expected_root_seq2[0:11]])
-        np.testing.assert_array_almost_equal(
-            self.root_seq2.seq_array(), expected_root_seq2)
+        expected_root_seq2 = np.hstack(
+            [expected_root_seq2, expected_root_seq2[0:11]])
+        np.testing.assert_array_almost_equal(self.root_seq2.seq_array(),
+                                             expected_root_seq2)
 
         expected_root_seq3 = calcBaseZC(31, 25)
         expected_root_seq3 = np.hstack(
             [expected_root_seq3, expected_root_seq3, expected_root_seq3[0:2]])
-        np.testing.assert_array_almost_equal(
-            self.root_seq3.seq_array(), expected_root_seq3)
+        np.testing.assert_array_almost_equal(self.root_seq3.seq_array(),
+                                             expected_root_seq3)
 
         expected_root_seq4 = calcBaseZC(61, 6)
         expected_root_seq4 = np.hstack(
             [expected_root_seq4, expected_root_seq4[0:3]])
-        np.testing.assert_array_almost_equal(
-            self.root_seq4.seq_array(), expected_root_seq4)
+        np.testing.assert_array_almost_equal(self.root_seq4.seq_array(),
+                                             expected_root_seq4)
 
         expected_root_seq5 = calcBaseZC(31, 6)
-        expected_root_seq5 = np.hstack([expected_root_seq5,
-                                        expected_root_seq5[0:1]])
-        np.testing.assert_array_almost_equal(
-            self.root_seq5.seq_array(), expected_root_seq5)
+        expected_root_seq5 = np.hstack(
+            [expected_root_seq5, expected_root_seq5[0:1]])
+        np.testing.assert_array_almost_equal(self.root_seq5.seq_array(),
+                                             expected_root_seq5)
 
         expected_root_seq6 = calcBaseZC(31, 6)
-        expected_root_seq6 = np.hstack(
-            [expected_root_seq6, expected_root_seq6, expected_root_seq6,
-             expected_root_seq6, expected_root_seq6, expected_root_seq6,
-             expected_root_seq6, expected_root_seq6, expected_root_seq6[0:8]])
-        np.testing.assert_array_almost_equal(
-            self.root_seq6.seq_array(), expected_root_seq6)
+        expected_root_seq6 = np.hstack([
+            expected_root_seq6, expected_root_seq6, expected_root_seq6,
+            expected_root_seq6, expected_root_seq6, expected_root_seq6,
+            expected_root_seq6, expected_root_seq6, expected_root_seq6[0:8]
+        ])
+        np.testing.assert_array_almost_equal(self.root_seq6.seq_array(),
+                                             expected_root_seq6)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_getitem(self):
@@ -283,15 +289,13 @@ class RootSequenceTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(self.root_seq_no_ext1[3:40:2],
                                        seq_no_ext1_seq_array[3:40:2])
 
-        np.testing.assert_almost_equal(self.root_seq1[4],
-                                       seq1_seq_array[4])
+        np.testing.assert_almost_equal(self.root_seq1[4], seq1_seq_array[4])
         np.testing.assert_almost_equal(self.root_seq1[3:15],
                                        seq1_seq_array[3:15])
         np.testing.assert_almost_equal(self.root_seq1[3:40:2],
                                        seq1_seq_array[3:40:2])
 
-        np.testing.assert_almost_equal(self.root_seq2[4],
-                                       seq2_seq_array[4])
+        np.testing.assert_almost_equal(self.root_seq2[4], seq2_seq_array[4])
         np.testing.assert_almost_equal(self.root_seq2[3:15],
                                        seq2_seq_array[3:15])
         np.testing.assert_almost_equal(self.root_seq2[3:40:2],
@@ -302,17 +306,16 @@ class RootSequenceTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx SRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SrsUeSequenceTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
-        self.user_seq_no_ext1 = SrsUeSequence(
-            root_seq=root_seq_no_ext1, n_cs=3)
+        self.user_seq_no_ext1 = SrsUeSequence(root_seq=root_seq_no_ext1, n_cs=3)
 
         root_seq_no_ext2 = RootSequence(root_index=6, Nzc=31)
-        self.user_seq_no_ext2 = SrsUeSequence(
-            root_seq=root_seq_no_ext2, n_cs=1)
-        self.user_seq_no_ext2_other = SrsUeSequence(
-            root_seq=root_seq_no_ext2, n_cs=3)
+        self.user_seq_no_ext2 = SrsUeSequence(root_seq=root_seq_no_ext2, n_cs=1)
+        self.user_seq_no_ext2_other = SrsUeSequence(root_seq=root_seq_no_ext2,
+                                                    n_cs=3)
 
         root_seq1 = RootSequence(root_index=25, size=150, Nzc=139)
         self.user_seq1 = SrsUeSequence(root_seq=root_seq1, n_cs=7)
@@ -361,34 +364,34 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         expected_user_seq_no_ext2 = get_srs_seq(calcBaseZC(31, 6), 1)
         np.testing.assert_array_almost_equal(expected_user_seq_no_ext2,
                                              self.user_seq_no_ext2.seq_array())
-        expected_user_seq_no_ext2_other_shift = get_srs_seq(calcBaseZC(31, 6),
-                                                            3)
+        expected_user_seq_no_ext2_other_shift = get_srs_seq(
+            calcBaseZC(31, 6), 3)
         np.testing.assert_array_almost_equal(
             expected_user_seq_no_ext2_other_shift,
             self.user_seq_no_ext2_other.seq_array())
 
-        expected_user_seq1 = get_srs_seq(get_extended_ZF(
-            calcBaseZC(139, 25), 150), 7)
+        expected_user_seq1 = get_srs_seq(
+            get_extended_ZF(calcBaseZC(139, 25), 150), 7)
         np.testing.assert_array_almost_equal(self.user_seq1.seq_array(),
                                              expected_user_seq1)
-        expected_user_seq2 = get_srs_seq(get_extended_ZF(
-            calcBaseZC(139, 12), 150), 4)
+        expected_user_seq2 = get_srs_seq(
+            get_extended_ZF(calcBaseZC(139, 12), 150), 4)
         np.testing.assert_array_almost_equal(self.user_seq2.seq_array(),
                                              expected_user_seq2)
-        expected_user_seq3 = get_srs_seq(get_extended_ZF(
-            calcBaseZC(31, 25), 64), 1)
+        expected_user_seq3 = get_srs_seq(
+            get_extended_ZF(calcBaseZC(31, 25), 64), 1)
         np.testing.assert_array_almost_equal(self.user_seq3.seq_array(),
                                              expected_user_seq3)
-        expected_user_seq4 = get_srs_seq(get_extended_ZF(
-            calcBaseZC(31, 6), 64), 2)
+        expected_user_seq4 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 64),
+                                         2)
         np.testing.assert_array_almost_equal(self.user_seq4.seq_array(),
                                              expected_user_seq4)
-        expected_user_seq5 = get_srs_seq(get_extended_ZF(
-            calcBaseZC(31, 6), 32), 3)
+        expected_user_seq5 = get_srs_seq(get_extended_ZF(calcBaseZC(31, 6), 32),
+                                         3)
         np.testing.assert_array_almost_equal(self.user_seq5.seq_array(),
                                              expected_user_seq5)
-        expected_user_seq6 = get_srs_seq(get_extended_ZF(
-            calcBaseZC(31, 6), 256), 5)
+        expected_user_seq6 = get_srs_seq(
+            get_extended_ZF(calcBaseZC(31, 6), 256), 5)
         np.testing.assert_array_almost_equal(self.user_seq6.seq_array(),
                                              expected_user_seq6)
 
@@ -405,6 +408,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # noinspection PyMethodMayBeStatic
 class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -414,10 +418,16 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         size = Nsc // 2
         Nzc = 139
 
-        user1_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 1, normalize=True)
-        user2_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 4, normalize=True)
+        user1_seq = SrsUeSequence(RootSequence(root_index=25,
+                                               size=size,
+                                               Nzc=Nzc),
+                                  1,
+                                  normalize=True)
+        user2_seq = SrsUeSequence(RootSequence(root_index=25,
+                                               size=size,
+                                               Nzc=Nzc),
+                                  4,
+                                  normalize=True)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
         ue2_channel_estimator = CazacBasedChannelEstimator(user2_seq)
@@ -469,16 +479,14 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15),
-            tilde_H1)
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15), tilde_H1)
 
         # Check that the estimated channel and the True channel have similar
         # norms
-        self.assertAlmostEqual(
-            np.linalg.norm(
-                ue1_channel_estimator.estimate_channel_freq_domain(Y, 15)),
-            np.linalg.norm(H1),
-            delta=0.5)
+        self.assertAlmostEqual(np.linalg.norm(
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15)),
+                               np.linalg.norm(H1),
+                               delta=0.5)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -499,16 +507,14 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue2_channel_estimator.estimate_channel_freq_domain(Y, 15),
-            tilde_H2)
+            ue2_channel_estimator.estimate_channel_freq_domain(Y, 15), tilde_H2)
 
         # Check that the estimated channel and the True channel have similar
         # norms
-        self.assertAlmostEqual(
-            np.linalg.norm(
-                ue2_channel_estimator.estimate_channel_freq_domain(Y, 15)),
-            np.linalg.norm(H2),
-            delta=0.5)
+        self.assertAlmostEqual(np.linalg.norm(
+            ue2_channel_estimator.estimate_channel_freq_domain(Y, 15)),
+                               np.linalg.norm(H2),
+                               delta=0.5)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -580,8 +586,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15),
-            tilde_H1)
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 15), tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -597,10 +602,12 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         Nsc = 24
         size = Nsc
 
-        user1_seq = DmrsUeSequence(
-            RootSequence(root_index=17, size=size), 1, normalize=True)
-        user2_seq = DmrsUeSequence(
-            RootSequence(root_index=17, size=size), 4, normalize=True)
+        user1_seq = DmrsUeSequence(RootSequence(root_index=17, size=size),
+                                   1,
+                                   normalize=True)
+        user2_seq = DmrsUeSequence(RootSequence(root_index=17, size=size),
+                                   4,
+                                   normalize=True)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq,
                                                            size_multiplier=1)
@@ -650,8 +657,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
         # Test the CazacBasedChannelEstimator estimation
         np.testing.assert_array_almost_equal(
-            ue1_channel_estimator.estimate_channel_freq_domain(Y, 3),
-            tilde_H1)
+            ue1_channel_estimator.estimate_channel_freq_domain(Y, 3), tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -659,18 +665,25 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H1[5:-5] - tilde_H1[5:-5])
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(
-            error / 2., np.zeros(error.size), decimal=2)
+        np.testing.assert_almost_equal(error / 2.,
+                                       np.zeros(error.size),
+                                       decimal=2)
 
     def test_estimate_channel_multiple_rx(self):
         Nsc = 300  # 300 subcarriers
         size = Nsc // 2
         Nzc = 139
 
-        user1_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 1, normalize=True)
-        user2_seq = SrsUeSequence(
-            RootSequence(root_index=25, size=size, Nzc=Nzc), 4, normalize=True)
+        user1_seq = SrsUeSequence(RootSequence(root_index=25,
+                                               size=size,
+                                               Nzc=Nzc),
+                                  1,
+                                  normalize=True)
+        user2_seq = SrsUeSequence(RootSequence(root_index=25,
+                                               size=size,
+                                               Nzc=Nzc),
+                                  4,
+                                  normalize=True)
 
         ue1_channel_estimator = CazacBasedChannelEstimator(user1_seq)
 
@@ -720,10 +733,9 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=0)
 
         # Test the CazacBasedChannelEstimator estimation
-        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(Y.T,
-                                                                          15)
-        np.testing.assert_array_almost_equal(
-            H1_estimated, tilde_H1_espected.T)
+        H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(
+            Y.T, 15)
+        np.testing.assert_array_almost_equal(H1_estimated, tilde_H1_espected.T)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -738,6 +750,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -747,14 +760,14 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         size = Nsc
 
         cover_codes = [np.array([-1, 1]), np.array([1, 1])]
-        user1_seq = DmrsUeSequence(
-            root_seq=RootSequence(root_index=17, size=size),
-            n_cs=1,
-            cover_code=cover_codes[0])
-        user2_seq = DmrsUeSequence(
-            root_seq=RootSequence(root_index=17, size=size),
-            n_cs=4,
-            cover_code=cover_codes[1])
+        user1_seq = DmrsUeSequence(root_seq=RootSequence(root_index=17,
+                                                         size=size),
+                                   n_cs=1,
+                                   cover_code=cover_codes[0])
+        user2_seq = DmrsUeSequence(root_seq=RootSequence(root_index=17,
+                                                         size=size),
+                                   n_cs=4,
+                                   cover_code=cover_codes[1])
 
         ue1_channel_estimator = CazacBasedWithOCCChannelEstimator(user1_seq)
 
@@ -810,8 +823,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         # Test the CazacBasedWithOCCChannelEstimator estimation
         np.testing.assert_array_almost_equal(
             ue1_channel_estimator.estimate_channel_freq_domain(
-                Y, 3, extra_dimension=True),
-            tilde_H1)
+                Y, 3, extra_dimension=True), tilde_H1)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -819,8 +831,9 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         error = np.abs(H1 - tilde_H1)
         ":type: np.ndarray"
 
-        np.testing.assert_almost_equal(
-            error / 2., np.zeros(error.size), decimal=2)
+        np.testing.assert_almost_equal(error / 2.,
+                                       np.zeros(error.size),
+                                       decimal=2)
 
     def test_estimate_channel_multiple_rx(self):
         Nsc = 24
@@ -829,14 +842,12 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         num_taps_to_keep = 15
 
         cover_codes = [np.array([-1, 1]), np.array([1, 1])]
-        user1_seq = DmrsUeSequence(
-            RootSequence(root_index=25, size=size),
-            1,
-            cover_code=cover_codes[0])
-        user2_seq = DmrsUeSequence(
-            RootSequence(root_index=25, size=size),
-            4,
-            cover_code=cover_codes[0])
+        user1_seq = DmrsUeSequence(RootSequence(root_index=25, size=size),
+                                   1,
+                                   cover_code=cover_codes[0])
+        user2_seq = DmrsUeSequence(RootSequence(root_index=25, size=size),
+                                   4,
+                                   cover_code=cover_codes[0])
 
         ue1_channel_estimator = CazacBasedWithOCCChannelEstimator(user1_seq)
 
@@ -887,19 +898,18 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 
         r1_no_cover_code = r1[0] * cover_code1[0]
 
-        y1 = np.fft.ifft(
-            np.conj(r1_no_cover_code[np.newaxis]) * Y_with_cover_code,
-            size,
-            axis=1)
-        tilde_h1_espected = y1[:, 0:(num_taps_to_keep+1)]
+        y1 = np.fft.ifft(np.conj(r1_no_cover_code[np.newaxis]) *
+                         Y_with_cover_code,
+                         size,
+                         axis=1)
+        tilde_h1_espected = y1[:, 0:(num_taps_to_keep + 1)]
         tilde_H1_espected = np.fft.fft(tilde_h1_espected, Nsc, axis=1)
 
         # Test the CazacBasedWithOCCChannelEstimator estimation
 
         H1_estimated = ue1_channel_estimator.estimate_channel_freq_domain(
             Y, num_taps_to_keep, extra_dimension=True)
-        np.testing.assert_array_almost_equal(
-            H1_estimated, tilde_H1_espected)
+        np.testing.assert_array_almost_equal(H1_estimated, tilde_H1_espected)
 
         # Test if true channel and estimated channel are similar. Since the
         # channel estimation error is higher at the first and last
@@ -916,28 +926,27 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx DMRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class DmrsUeSequenceTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         root_seq1 = RootSequence(root_index=15, size=12)
-        self.dmrs_seq1 = DmrsUeSequence(
-            root_seq=root_seq1, n_cs=3, normalize=True)
+        self.dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1,
+                                        n_cs=3,
+                                        normalize=True)
         root_seq2 = RootSequence(root_index=23, size=12)
-        self.dmrs_seq2 = DmrsUeSequence(
-            root_seq=root_seq2, n_cs=4)
+        self.dmrs_seq2 = DmrsUeSequence(root_seq=root_seq2, n_cs=4)
 
         root_seq3 = RootSequence(root_index=15, size=24)
-        self.dmrs_seq3 = DmrsUeSequence(
-            root_seq=root_seq3, n_cs=3)
+        self.dmrs_seq3 = DmrsUeSequence(root_seq=root_seq3, n_cs=3)
         root_seq4 = RootSequence(root_index=23, size=24)
-        self.dmrs_seq4 = DmrsUeSequence(
-            root_seq=root_seq4, n_cs=4, normalize=True)
+        self.dmrs_seq4 = DmrsUeSequence(root_seq=root_seq4,
+                                        n_cs=4,
+                                        normalize=True)
 
         root_seq5 = RootSequence(root_index=15, size=48)
-        self.dmrs_seq5 = DmrsUeSequence(
-            root_seq=root_seq5, n_cs=3)
+        self.dmrs_seq5 = DmrsUeSequence(root_seq=root_seq5, n_cs=3)
         root_seq6 = RootSequence(root_index=23, size=48)
-        self.dmrs_seq6 = DmrsUeSequence(
-            root_seq=root_seq6, n_cs=4)
+        self.dmrs_seq6 = DmrsUeSequence(root_seq=root_seq6, n_cs=4)
 
     def test_size(self):
         # Without cover code
@@ -951,18 +960,21 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         # With cover code
         root_seq1 = RootSequence(root_index=15, size=12)
         cover_code1 = np.array([1, 1])
-        dmrs_seq1 = DmrsUeSequence(
-            root_seq=root_seq1, n_cs=3, cover_code=cover_code1)
+        dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1,
+                                   n_cs=3,
+                                   cover_code=cover_code1)
 
         root_seq2 = RootSequence(root_index=23, size=12)
         cover_code2 = np.array([1, -1])
-        dmrs_seq2 = DmrsUeSequence(
-            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+        dmrs_seq2 = DmrsUeSequence(root_seq=root_seq2,
+                                   n_cs=4,
+                                   cover_code=cover_code2)
 
         root_seq5 = RootSequence(root_index=15, size=48)
         cover_code5 = np.array([1, -1, 1, -1])
-        dmrs_seq5 = DmrsUeSequence(
-            root_seq=root_seq5, n_cs=3, cover_code=cover_code5)
+        dmrs_seq5 = DmrsUeSequence(root_seq=root_seq5,
+                                   n_cs=3,
+                                   cover_code=cover_code5)
 
         self.assertEqual(dmrs_seq1.size, 12)
         self.assertEqual(dmrs_seq2.size, 12)
@@ -980,18 +992,21 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         # With cover code
         root_seq1 = RootSequence(root_index=15, size=12)
         cover_code1 = np.array([1, 1])
-        dmrs_seq1 = DmrsUeSequence(
-            root_seq=root_seq1, n_cs=3, cover_code=cover_code1)
+        dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1,
+                                   n_cs=3,
+                                   cover_code=cover_code1)
 
         root_seq2 = RootSequence(root_index=23, size=12)
         cover_code2 = np.array([1, -1])
-        dmrs_seq2 = DmrsUeSequence(
-            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+        dmrs_seq2 = DmrsUeSequence(root_seq=root_seq2,
+                                   n_cs=4,
+                                   cover_code=cover_code2)
 
         root_seq5 = RootSequence(root_index=15, size=48)
         cover_code5 = np.array([1, -1, 1, -1])
-        dmrs_seq5 = DmrsUeSequence(
-            root_seq=root_seq5, n_cs=3, cover_code=cover_code5)
+        dmrs_seq5 = DmrsUeSequence(root_seq=root_seq5,
+                                   n_cs=3,
+                                   cover_code=cover_code5)
 
         self.assertEqual(dmrs_seq1.shape, (2, 12))
         self.assertEqual(dmrs_seq2.shape, (2, 12))
@@ -1008,18 +1023,18 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         expected_dmrs5 = get_dmrs_seq(RootSequence(15, 48).seq_array(), 3)
         expected_dmrs6 = get_dmrs_seq(RootSequence(23, 48).seq_array(), 4)
 
-        np.testing.assert_array_almost_equal(
-            expected_dmrs1, self.dmrs_seq1.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs2, self.dmrs_seq2.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs3, self.dmrs_seq3.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs4, self.dmrs_seq4.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs5, self.dmrs_seq5.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs6, self.dmrs_seq6.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs1,
+                                             self.dmrs_seq1.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs2,
+                                             self.dmrs_seq2.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs3,
+                                             self.dmrs_seq3.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs4,
+                                             self.dmrs_seq4.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs5,
+                                             self.dmrs_seq5.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs6,
+                                             self.dmrs_seq6.seq_array())
 
         self.assertIsNone(self.dmrs_seq1.cover_code)
         self.assertIsNone(self.dmrs_seq2.cover_code)
@@ -1032,28 +1047,35 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         # xxxxxxxxxx Test with cover code xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         root_seq1 = RootSequence(root_index=15, size=12)
         cover_code1 = np.array([1, 1])
-        dmrs_seq1 = DmrsUeSequence(
-            root_seq=root_seq1, n_cs=3, cover_code=cover_code1, normalize=True)
+        dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1,
+                                   n_cs=3,
+                                   cover_code=cover_code1,
+                                   normalize=True)
 
         root_seq2 = RootSequence(root_index=23, size=12)
         cover_code2 = np.array([1, -1])
-        dmrs_seq2 = DmrsUeSequence(
-            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+        dmrs_seq2 = DmrsUeSequence(root_seq=root_seq2,
+                                   n_cs=4,
+                                   cover_code=cover_code2)
 
         root_seq3 = RootSequence(root_index=15, size=24)
         cover_code3 = np.array([-1, 1])
-        dmrs_seq3 = DmrsUeSequence(
-            root_seq=root_seq3, n_cs=3, cover_code=cover_code3)
+        dmrs_seq3 = DmrsUeSequence(root_seq=root_seq3,
+                                   n_cs=3,
+                                   cover_code=cover_code3)
 
         root_seq4 = RootSequence(root_index=23, size=24)
         cover_code4 = np.array([-1, -1])
-        dmrs_seq4 = DmrsUeSequence(
-            root_seq=root_seq4, n_cs=4, cover_code=cover_code4, normalize=True)
+        dmrs_seq4 = DmrsUeSequence(root_seq=root_seq4,
+                                   n_cs=4,
+                                   cover_code=cover_code4,
+                                   normalize=True)
 
         root_seq5 = RootSequence(root_index=15, size=48)
         cover_code5 = np.array([1, -1, 1, -1])
-        dmrs_seq5 = DmrsUeSequence(
-            root_seq=root_seq5, n_cs=3, cover_code=cover_code5)
+        dmrs_seq5 = DmrsUeSequence(root_seq=root_seq5,
+                                   n_cs=3,
+                                   cover_code=cover_code5)
 
         # Test that OCC was set
         np.testing.assert_array_equal(np.array([1, 1]), dmrs_seq1.cover_code)
@@ -1069,19 +1091,19 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         expected_dmrs2_occ = np.vstack([expected_dmrs2, -expected_dmrs2])
         expected_dmrs3_occ = np.vstack([-expected_dmrs3, expected_dmrs3])
         expected_dmrs4_occ = np.vstack([-expected_dmrs4, -expected_dmrs4])
-        expected_dmrs5_occ = np.vstack([expected_dmrs5, -expected_dmrs5,
-                                        expected_dmrs5, -expected_dmrs5])
+        expected_dmrs5_occ = np.vstack(
+            [expected_dmrs5, -expected_dmrs5, expected_dmrs5, -expected_dmrs5])
 
-        np.testing.assert_array_almost_equal(
-            expected_dmrs1_occ, dmrs_seq1.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs2_occ, dmrs_seq2.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs3_occ, dmrs_seq3.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs4_occ, dmrs_seq4.seq_array())
-        np.testing.assert_array_almost_equal(
-            expected_dmrs5_occ, dmrs_seq5.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs1_occ,
+                                             dmrs_seq1.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs2_occ,
+                                             dmrs_seq2.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs3_occ,
+                                             dmrs_seq3.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs4_occ,
+                                             dmrs_seq4.seq_array())
+        np.testing.assert_array_almost_equal(expected_dmrs5_occ,
+                                             dmrs_seq5.seq_array())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_getitem(self):
@@ -1095,11 +1117,13 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         # dimension of the underlying numpy array is the cover code index
         root_seq = RootSequence(root_index=23, size=12)
         cover_code = np.array([1, -1])
-        dmrs_seq = DmrsUeSequence(
-            root_seq=root_seq, n_cs=4, cover_code=cover_code)
-        np.testing.assert_almost_equal(dmrs_seq[0, 4], dmrs_seq.seq_array()[0, 4])
-        np.testing.assert_almost_equal(dmrs_seq[1 ,0:8:2], dmrs_seq.seq_array()[1, 0:8:2])
-
+        dmrs_seq = DmrsUeSequence(root_seq=root_seq,
+                                  n_cs=4,
+                                  cover_code=cover_code)
+        np.testing.assert_almost_equal(dmrs_seq[0, 4],
+                                       dmrs_seq.seq_array()[0, 4])
+        np.testing.assert_almost_equal(dmrs_seq[1, 0:8:2],
+                                       dmrs_seq.seq_array()[1, 0:8:2])
 
     def test_repr(self):
         root_seq1 = RootSequence(root_index=15, size=12)
@@ -1107,8 +1131,9 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
 
         root_seq2 = RootSequence(root_index=23, size=12)
         cover_code2 = np.array([1, -1])
-        dmrs_seq2 = DmrsUeSequence(
-            root_seq=root_seq2, n_cs=4, cover_code=cover_code2)
+        dmrs_seq2 = DmrsUeSequence(root_seq=root_seq2,
+                                   n_cs=4,
+                                   cover_code=cover_code2)
 
         self.assertEqual(
             "<DmrsUeSequence(root_index=15, n_cs=3, cover_code=None)>",

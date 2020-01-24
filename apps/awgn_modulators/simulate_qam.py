@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Perform the simulation of the transmission of QAM symbols through an
 awgn channel.
@@ -30,7 +29,7 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
 
     """
 
-    def __init__(self, ):
+    def __init__(self,):
         VerySimplePskSimulationRunner.__init__(self)
         M = 16
 
@@ -40,6 +39,7 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
         self.modulator = fundamental.QAM(M)
         self.progressbar_message = "{0}-QAM".format(M) + \
                                    " Simulation - SNR: {SNR}"
+
 
 if __name__ == '__main__':
     # noinspection PyPackageRequirements

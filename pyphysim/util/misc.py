@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing useful general functions that don't belong to another
 module.
@@ -73,13 +72,13 @@ def gmd(U, S, V_H, tol=0.0):
         R[0, 0] = d[0]
 
     z = np.zeros([p - 1])  # Vector
-    large = 1              # index of the largest diagonal element
-    small = p - 1          # index of the smallest diagonal element
-    perm = np.r_[0:p]      # perm (i) = location in d of i-th largest entry
-    invperm = np.r_[0:p]   # maps diagonal entries to perm
+    large = 1  # index of the largest diagonal element
+    small = p - 1  # index of the smallest diagonal element
+    perm = np.r_[0:p]  # perm (i) = location in d of i-th largest entry
+    invperm = np.r_[0:p]  # maps diagonal entries to perm
 
     # Geometric Mean of the 'p' largest singular values
-    sigma_bar = np.prod(S[0:p]) ** (1. / p)
+    sigma_bar = np.prod(S[0:p])**(1. / p)
 
     for k in range(p - 1):
         flag = 0
@@ -116,15 +115,14 @@ def gmd(U, S, V_H, tol=0.0):
         # Deltas
         delta1 = d[k]
         delta2 = d[k1]
-        sq_delta1 = delta1 ** 2
-        sq_delta2 = delta2 ** 2
+        sq_delta1 = delta1**2
+        sq_delta2 = delta2**2
         if flag:
             c = 1
             s = 0
         else:
-            c = math.sqrt(
-                (sigma_bar ** 2 - sq_delta2) / (sq_delta1 - sq_delta2))
-            s = math.sqrt(1 - c ** 2)
+            c = math.sqrt((sigma_bar**2 - sq_delta2) / (sq_delta1 - sq_delta2))
+            s = math.sqrt(1 - c**2)
 
         d[k1] = delta1 * delta2 / sigma_bar  # = y in paper
         z[k] = s * c * (sq_delta2 - sq_delta1) / sigma_bar  # = x in paper
@@ -343,8 +341,8 @@ def randn_c(*args):
 
     """
     # noinspection PyArgumentList
-    return (1.0 / math.sqrt(2.0)) * (
-        np.random.randn(*args) + (1j * np.random.randn(*args)))
+    return (1.0 / math.sqrt(2.0)) * (np.random.randn(*args) +
+                                     (1j * np.random.randn(*args)))
 
 
 def randn_c_RS(RS, *args):  # pragma: no cover
@@ -377,8 +375,8 @@ def randn_c_RS(RS, *args):  # pragma: no cover
         return randn_c(*args)
     else:
         # noinspection PyArgumentList
-        return (1.0 / math.sqrt(2.0)) * (
-            RS.randn(*args) + (1j * RS.randn(*args)))
+        return (1.0 / math.sqrt(2.0)) * (RS.randn(*args) +
+                                         (1j * RS.randn(*args)))
 
 
 def level2bits(n):
@@ -473,7 +471,6 @@ def _count_bits_single_element(n):  # pragma: no cover
 
 # Make count_bits an ufunc
 count_bits = np.vectorize(_count_bits_single_element)
-
 
 # count_bits = np.frompyfunc(_count_bits_single_element, 1, 1,
 #                            doc=_count_bits_single_element.__doc__)
@@ -741,6 +738,7 @@ def update_inv_sum_diag(invA, diagonal):
     new_inv : np.ndarray
         The inverse of :math:`A+D`.
     """
+
     #$$(A+uv^T)^{-1} = A^{-1} - {A^{-1}uv^T A^{-1} \over 1 + v^T A^{-1}u}$$
 
     # This function updates the inverse as the equation above when the
@@ -750,8 +748,8 @@ def update_inv_sum_diag(invA, diagonal):
     # pylint: disable=C0111
     def calc_update_term(inv_matrix, p_index, p_indexed_element,
                          p_diagonal_element):
-        term1 = (p_diagonal_element * np.outer(inv_matrix[:, p_index],
-                                               inv_matrix[p_index, :]))
+        term1 = (p_diagonal_element *
+                 np.outer(inv_matrix[:, p_index], inv_matrix[p_index, :]))
         return term1 / (1 + p_diagonal_element * p_indexed_element)
 
     new_inv = invA.copy()
@@ -799,17 +797,19 @@ def calc_confidence_interval(mean, std, n, P=95):
     # Dictionary that maps a desired "confidence" to the corresponding
     # critical value. See https://en.wikipedia.org/wiki/Student%27s_
     # t-distribution
-    table_of_values = {50: 0.674,
-                       60: 0.842,
-                       70: 1.036,
-                       80: 1.282,
-                       90: 1.645,
-                       95: 1.960,
-                       98: 2.326,
-                       99: 2.576,
-                       99.5: 2.807,
-                       99.8: 3.090,
-                       99.9: 3.291}
+    table_of_values = {
+        50: 0.674,
+        60: 0.842,
+        70: 1.036,
+        80: 1.282,
+        90: 1.645,
+        95: 1.960,
+        98: 2.326,
+        99: 2.576,
+        99.5: 2.807,
+        99.8: 3.090,
+        99.9: 3.291
+    }
 
     # Critical value used in the calculation of the confidence interval
     C = table_of_values[P]
@@ -997,8 +997,7 @@ def get_mixed_range_representation(array, filename_mode=False):
 
     out = []
     for pair in output_expressions:
-        value = get_range_representation(array[pair[0]:pair[1]],
-                                         filename_mode)
+        value = get_range_representation(array[pair[0]:pair[1]], filename_mode)
         if value != '':
             out.append(value)
 
@@ -1058,8 +1057,7 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     new_dict = {}
     for n, v in dictionary.items():
         if isinstance(v, np.ndarray):
-            v = "[{0}]".format(
-                    get_mixed_range_representation(v, filename_mode))
+            v = "[{0}]".format(get_mixed_range_representation(v, filename_mode))
         new_dict[n] = v
 
     return name.format(**new_dict)
@@ -1146,10 +1144,7 @@ def calc_whitening_matrix(cov_matrix):
     calc_decorrelation_matrix
     """
     L, V = np.linalg.eig(cov_matrix)
-    W = np.dot(
-        V,
-        np.diag(1. / (L ** 0.5))
-    )
+    W = np.dot(V, np.diag(1. / (L**0.5)))
     return W
 
 
@@ -1186,7 +1181,6 @@ def calc_shannon_sum_capacity(sinrs):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxx Load Cython reimplementation of functions here xxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1198,7 +1192,6 @@ try:
 except ImportError:  # pragma: no cover
     pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 if __name__ == '__main__':  # pragma: nocover
     import doctest

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module containing the simulation runner."""
 
 from time import time
@@ -22,8 +21,7 @@ from ..util.misc import pretty_time
 from .progressbar import ProgressbarText, ProgressbarText2, \
     ProgressbarText3, ProgressbarZMQServer, ProgressBarIPython
 
-__all__ = ["get_partial_results_filename", "SimulationRunner",
-           "SkipThisOne"]
+__all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -54,21 +52,23 @@ def get_common_parser():
 
         help_msg = ('An index for the parameters variations. If provided, '
                     'only that variation will be simulated.')
-        group.add_argument('-i',       # short version to specify the opt
-                           '--index',  # Long version to specify the option
-                           help=help_msg,
-                           metavar='VARIATION INDEX',
-                           type=int,
-                           nargs='?')
+        group.add_argument(
+            '-i',  # short version to specify the opt
+            '--index',  # Long version to specify the option
+            help=help_msg,
+            metavar='VARIATION INDEX',
+            type=int,
+            nargs='?')
 
         help_msg = 'Name of the file with the simulation parameters'
-        group.add_argument('-c',        # short version to specify the opt
-                           '--config',  # Long version to specify the opt
-                           help=help_msg,
-                           metavar='CONFIG FILENAME',
-                           # default=default_config_file,
-                           type=str,
-                           nargs='?')
+        group.add_argument(
+            '-c',  # short version to specify the opt
+            '--config',  # Long version to specify the opt
+            help=help_msg,
+            metavar='CONFIG FILENAME',
+            # default=default_config_file,
+            type=str,
+            nargs='?')
 
         help_msg = ('Instead of running the simulation, return the '
                     'number of variations.')
@@ -84,7 +84,9 @@ def get_common_parser():
 
     return get_common_parser.parser
 
+
 get_common_parser.parser = None
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -120,12 +122,11 @@ def get_partial_results_filename(results_base_filename,
     unpack_index_str = str(current_params.unpack_index).zfill(num_digits)
 
     partial_results_filename = '{0}_unpack_{1}.pickle'.format(
-        results_base_filename,
-        unpack_index_str)
+        results_base_filename, unpack_index_str)
 
     if partial_results_folder is not None:
-        partial_results_filename = os.path.join(
-            partial_results_folder, partial_results_filename)
+        partial_results_filename = os.path.join(partial_results_folder,
+                                                partial_results_filename)
 
     return partial_results_filename
 
@@ -174,7 +175,7 @@ class SkipThisOne(Exception):
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # pylint: disable=R0921,R0902
-class SimulationRunner(object):
+class SimulationRunner:
     """
     Base class to run Monte Carlo simulations.
 
@@ -244,8 +245,12 @@ class SimulationRunner(object):
     .SimulationParameters : Class to store the simulation parameters.
     .Result : Class to store a single simulation result.
     """
-    def __init__(self, default_config_file=None, config_spec=None,
-                 read_command_line_args=True, save_parsed_file=False):
+
+    def __init__(self,
+                 default_config_file=None,
+                 config_spec=None,
+                 read_command_line_args=True,
+                 save_parsed_file=False):
         self.rep_max = 1
         # Number of iterations performed by simulation when it finished
         self._runned_reps = []
@@ -448,8 +453,8 @@ class SimulationRunner(object):
 
         return results_filename
 
-    def _get_progress_output_sink(
-            self, param_variation_index):  # pragma: no cover
+    def _get_progress_output_sink(self,
+                                  param_variation_index):  # pragma: no cover
         """
         Get the output sink for the progressbars.
 
@@ -475,9 +480,7 @@ class SimulationRunner(object):
             num_digits = len(str(total_unpacks))
             unpack_index_str = str(param_variation_index).zfill(num_digits)
             filename = '{0}_progress_{1}_of_{2}.txt'.format(
-                self.results_base_filename,
-                unpack_index_str,
-                total_unpacks)
+                self.results_base_filename, unpack_index_str, total_unpacks)
             out = open(filename, 'w')
 
         return out
@@ -508,8 +511,7 @@ class SimulationRunner(object):
             pass
 
     def __save_partial_results(self, current_rep, current_params,
-                               current_sim_results,
-                               partial_results_filename):
+                               current_sim_results, partial_results_filename):
         """
         Save the partial simulation results to a file.
 
@@ -600,8 +602,7 @@ class SimulationRunner(object):
         tic = time()
         current_sim_results = self._run_simulation(current_parameters)
         toc = time()
-        elapsed_time_result = Result.create('elapsed_time',
-                                            Result.SUMTYPE,
+        elapsed_time_result = Result.create('elapsed_time', Result.SUMTYPE,
                                             toc - tic)
         current_sim_results.add_result(elapsed_time_result)
 
@@ -640,8 +641,7 @@ class SimulationRunner(object):
                                   "in a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
-    def _keep_going(self,
-                    current_params, current_sim_results, current_rep):
+    def _keep_going(self, current_params, current_sim_results, current_rep):
         """
         Check if the simulation should continue or stop.
 
@@ -678,7 +678,7 @@ class SimulationRunner(object):
         return True
 
     def _get_serial_update_progress_function(
-            self, current_params):  # pragma: no cover
+        self, current_params):  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -742,7 +742,9 @@ class SimulationRunner(object):
         if self.update_progress_function_style == 'text1':  # pragma: no cover
             # We will use the ProgressbarText class
             # noinspection PyArgumentList
-            self._pbar = ProgressbarText(self.rep_max, '*', message,
+            self._pbar = ProgressbarText(self.rep_max,
+                                         '*',
+                                         message,
                                          output=output_progress_sink,
                                          **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
@@ -750,7 +752,9 @@ class SimulationRunner(object):
         elif self.update_progress_function_style == 'text2':
             # We will use the ProgressbarText2 class
             # noinspection PyArgumentList
-            self._pbar = ProgressbarText2(self.rep_max, '*', message,
+            self._pbar = ProgressbarText2(self.rep_max,
+                                          '*',
+                                          message,
                                           output=output_progress_sink,
                                           **self.progressbar_extra_args)
             update_progress_func = self._pbar.progress
@@ -773,6 +777,7 @@ class SimulationRunner(object):
                 self.rep_max, self.progressbar_message)  # pragma: no cover
 
         return update_progress_func
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_parallel_update_progress_function(self):  # pragma: no cover
@@ -821,20 +826,17 @@ class SimulationRunner(object):
                     filename = '{0}_progress.txt'.format(
                         self._results_base_filename)
 
-                self._pbar = ProgressbarZMQServer(
-                    message=message,
-                    sleep_time=sleep_time,
-                    filename=filename,
-                    **self.progressbar_extra_args)
+                self._pbar = ProgressbarZMQServer(message=message,
+                                                  sleep_time=sleep_time,
+                                                  filename=filename,
+                                                  **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient
             # class, but it behaves like a function.
             proxybar = \
                 self._pbar.register_client_and_get_proxy_progressbar(
                     self.rep_max)
-            proxybar_data = [proxybar.client_id,
-                             proxybar.ip,
-                             proxybar.port]
+            proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
         else:
             return None
 
@@ -903,9 +905,9 @@ class SimulationRunner(object):
 
     # noinspection PyUnboundLocalVariable
     def _simulate_for_current_params_common(
-            self,
-            current_params,
-            update_progress_func=lambda value: None):  # pragma: no cover
+        self,
+        current_params,
+        update_progress_func=lambda value: None):  # pragma: no cover
         """
         Parameters
         ----------
@@ -932,8 +934,7 @@ class SimulationRunner(object):
             # Name of the file where the partial results will be saved
             if self._results_base_filename is not None:
                 partial_results_filename = get_partial_results_filename(
-                    self.results_base_filename,
-                    current_params,
+                    self.results_base_filename, current_params,
                     self.partial_results_folder)
             else:
                 # If __results_base_filename is None there is also no
@@ -947,8 +948,8 @@ class SimulationRunner(object):
             # execute the except block instead.
             current_sim_results = SimulationResults.load_from_file(
                 partial_results_filename)
-            num_skipped_reps_result = Result.create(
-                "num_skipped_reps", Result.SUMTYPE, 0)
+            num_skipped_reps_result = Result.create("num_skipped_reps",
+                                                    Result.SUMTYPE, 0)
             current_sim_results.add_result(num_skipped_reps_result)
 
             # Note that at this point we have successfully loaded the
@@ -960,9 +961,8 @@ class SimulationRunner(object):
             # NOTE: If the type of this exception is changed in the
             # future make sure it is not caught in the except block.
             if not current_params == current_sim_results.params:
-                err_msg = (
-                    "Partial results loaded from file does not match"
-                    " current parameters. \nfile: {0}")
+                err_msg = ("Partial results loaded from file does not match"
+                           " current parameters. \nfile: {0}")
                 raise ValueError(err_msg.format(partial_results_filename))
 
             # The current_rep will be set to the value or run
@@ -992,8 +992,7 @@ class SimulationRunner(object):
         # from file and they already achieve the stop criteria then the
         # while loop below will not run.
         while (self._keep_going(current_params, current_sim_results,
-                                current_rep) and
-                current_rep < self.rep_max):
+                                current_rep) and current_rep < self.rep_max):
             # xxxxxxxxxx Run one repetition of the simulation xxxxxxxxxxxxx
             try:
                 # Run one repetition of the `_run_simulation` and merge the
@@ -1023,8 +1022,7 @@ class SimulationRunner(object):
             # minutes
             if ((toc - last_tic > 300 or current_rep % 500 == 0) and
                     self._results_base_filename is not None):
-                self.__save_partial_results(current_rep,
-                                            current_params,
+                self.__save_partial_results(current_rep, current_params,
                                             current_sim_results,
                                             partial_results_filename)
                 last_tic = time()
@@ -1043,8 +1041,7 @@ class SimulationRunner(object):
         # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
         # Save partial results for current parameters after all repetitions
         if self._results_base_filename is not None:
-            self.__save_partial_results(current_rep,
-                                        current_params,
+            self.__save_partial_results(current_rep, current_params,
                                         current_sim_results,
                                         partial_results_filename)
         else:
@@ -1055,8 +1052,7 @@ class SimulationRunner(object):
         # iterations run as well as the SimulationResults object.
         return current_rep, current_sim_results, partial_results_filename
 
-    def _simulate_for_current_params_serial(self,
-                                            current_params,
+    def _simulate_for_current_params_serial(self, current_params,
                                             var_print_iter):
         """
         Simulate (serial) for the current parameters.
@@ -1084,10 +1080,10 @@ class SimulationRunner(object):
     # simulate_in_parallel method is tested). Because of that we add the
     # pragma line here.
     @staticmethod
-    def _simulate_for_current_params_parallel(
-            obj,
-            current_params,
-            proxybar_data=None):  # pragma: no cover
+    def _simulate_for_current_params_parallel(obj,
+                                              current_params,
+                                              proxybar_data=None
+                                             ):  # pragma: no cover
         """
         Simulate (parallel) for the current parameters.
 
@@ -1115,6 +1111,7 @@ class SimulationRunner(object):
 
         # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
         if proxybar_data is None:
+
             def update_progress_func(_):
                 pass
         else:
@@ -1125,8 +1122,8 @@ class SimulationRunner(object):
 
         # pylint: disable= W0212
         # noinspection PyProtectedMember
-        return obj._simulate_for_current_params_common(
-            current_params, update_progress_func)
+        return obj._simulate_for_current_params_common(current_params,
+                                                       update_progress_func)
 
     def __get_print_variation_iterator(self, num_variations, start=0):
         """
@@ -1158,10 +1155,9 @@ class SimulationRunner(object):
             for _ in itertools.repeat(''):
                 yield 0
         else:  # pragma: no cover
-            variation_pbar = ProgressbarText3(
-                num_variations,
-                progresschar='-',
-                message="Current Variation:")
+            variation_pbar = ProgressbarText3(num_variations,
+                                              progresschar='-',
+                                              message="Current Variation:")
 
             for i in range(start, num_variations):
                 variation_pbar.progress(i + 1)
@@ -1239,12 +1235,10 @@ class SimulationRunner(object):
         # However, this will only be printed if
         # self.progress_output_type is equal to 'screen'
         if param_variation_index is None:
-            var_print_iter = self.__get_print_variation_iterator(
-                num_variations)
+            var_print_iter = self.__get_print_variation_iterator(num_variations)
         else:
             var_print_iter = self.__get_print_variation_iterator(
-                num_variations,
-                start=param_variation_index)
+                num_variations, start=param_variation_index)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Here we can either simulate for a single combination of
@@ -1259,8 +1253,8 @@ class SimulationRunner(object):
 
             if 0 <= param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
-                self._simulate_for_current_params_serial(current_params,
-                                                         var_print_iter)
+                self._simulate_for_current_params_serial(
+                    current_params, var_print_iter)
 
         # If param_variation_index is None we will run for all parameters
         # combinations
@@ -1514,4 +1508,6 @@ class SimulationRunner(object):
         are only used inside _run_simulation.
         """
         pass
+
+
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

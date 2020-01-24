@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Simulator for the SINRs and capacity of a dense indoor scenario.
 
@@ -32,7 +31,6 @@ from pyphysim.cell import shapes
 from pyphysim.channels import pathloss
 from pyphysim.channels.noise import calc_thermal_noise_power_dBm
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -61,8 +59,8 @@ def find_ap_assoc_best_channel(pl_all_plus_wl):
     return ap_assoc
 
 
-def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
-        ap_assoc, transmitting_aps, Pt, noise_var):
+def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps, ap_assoc, transmitting_aps,
+                                  Pt, noise_var):
     """
     Perform the simulation for a given AP association.
 
@@ -106,23 +104,24 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps,
             Pt * pl_plus_wl_tx_aps[current_ap_users_idx][:, mask_i_aps],
             axis=-1)
 
-        sinr_array[current_ap_users_idx] = (desired_power
-                                            / (undesired_power + noise_var))
+        sinr_array[current_ap_users_idx] = (desired_power /
+                                            (undesired_power + noise_var))
 
         # The capacity (actually, the spectral efficiency since we didn't
         # multiply by the bandwidth) is calculated from the SINR. However,
         # if there is more then one user associated with the current AP we
         # assume bandwidth will be equally divided among all of them.
         capacity[current_ap_users_idx] = (
-            np.log2(1 + sinr_array[current_ap_users_idx])
-            / len(current_ap_users_idx))
+            np.log2(1 + sinr_array[current_ap_users_idx]) /
+            len(current_ap_users_idx))
 
     return linear2dB(sinr_array), capacity
 
 
-def perform_simulation(scenario_params,  # pylint: disable=R0914
-                       power_params,
-                       plot_results_bool=True):
+def perform_simulation(
+    scenario_params,  # pylint: disable=R0914
+    power_params,
+    plot_results_bool=True):
     """
     Run the simulation.
 
@@ -152,7 +151,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     # Square of 12 x 12 square rooms
     num_rooms_per_side = scenario_params['num_rooms_per_side']
     # Total number of rooms in the grid
-    num_rooms = num_rooms_per_side ** 2
+    num_rooms = num_rooms_per_side**2
 
     # 1 means 1 ap every room. 2 means 1 ap every 2 rooms and so on. Valid
     # values are: 1, 2, 4 and 9.
@@ -181,12 +180,9 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
 
     # xxxxxxxxxx Add users in random positions in the 2D grid xxxxxxxxxxxxx
     num_users = 100  # We will create this many users in the 2D grid
-    users_positions = (
-        num_rooms_per_side * side_length * (
-            np.random.random_sample(num_users) +
-            1j * np.random.random_sample(num_users) -
-            0.5 - 0.5j)
-    )
+    users_positions = (num_rooms_per_side * side_length *
+                       (np.random.random_sample(num_users) +
+                        1j * np.random.random_sample(num_users) - 0.5 - 0.5j))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx AP Allocation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -197,9 +193,8 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
 
     # xxxxxxxxxx Calculate distances: each user to each AP xxxxxxxxxxxxxxxx
     # Dimension: (num_users, num_APs)
-    dists_m = np.abs(
-        users_positions[:, np.newaxis]
-        - ap_positions[np.newaxis, :])
+    dists_m = np.abs(users_positions[:, np.newaxis] -
+                     ap_positions[np.newaxis, :])
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -207,15 +202,12 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # INPUTS
     # Find in which room each user is
-    users_rooms = np.argmin(
-        np.abs(room_positions.reshape([-1, 1])
-               - users_positions[np.newaxis, :]),
-        axis=0
-        )
+    users_rooms = np.argmin(np.abs(
+        room_positions.reshape([-1, 1]) - users_positions[np.newaxis, :]),
+                            axis=0)
 
     # Number of walls from each room to each other room
-    num_walls_all_rooms = calc_num_walls(side_length,
-                                         room_positions,
+    num_walls_all_rooms = calc_num_walls(side_length, room_positions,
                                          ap_positions)
     # Number of walls from each room that has at least one user to each
     # room with an AP
@@ -225,8 +217,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
     # transmitting AP or not, since we still have to perform the AP
     # association)
     pl_all = pl_metis_ps7_obj.calc_path_loss(
-        dists_m,
-        num_walls=num_walls_rooms_with_users)
+        dists_m, num_walls=num_walls_rooms_with_users)
 
     # Calculate wall losses from each user to each AP (no matter if it will
     # be a transmitting AP or not, since we still have to perform the AP
@@ -256,8 +247,8 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
 
     # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
     # Take the path loss plus wall losses only for the transmitting aps
-    pl_all_plus_wall_losses_tx_aps = pl_all_plus_wl.take(
-        transmitting_aps, axis=1)
+    pl_all_plus_wall_losses_tx_aps = pl_all_plus_wl.take(transmitting_aps,
+                                                         axis=1)
     ":type: np.ndarray"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -279,10 +270,9 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
                    sinr_array_pl_metis_ps7_dB.max()))
 
         print(("\nMin/Mean/Max Capacity value (METIS PS7):"
-               "\n    {0}\n    {1}\n    {2}").format(
-                   capacity_metis_ps7.min(),
-                   capacity_metis_ps7.mean(),
-                   capacity_metis_ps7.max()))
+               "\n    {0}\n    {1}\n    {2}").format(capacity_metis_ps7.min(),
+                                                     capacity_metis_ps7.mean(),
+                                                     capacity_metis_ps7.max()))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxx Plot the results xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -296,9 +286,11 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
         users_per_ap[transmitting_aps_mask] = users_count
 
         # xxxxxxxxxx Plot all rooms and users xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        all_rooms = [shapes.Rectangle(pos - side_length/2. - side_length*1j/2.,
-                                      pos + side_length/2. + side_length*1j/2.)
-                     for pos in room_positions.flatten()]
+        all_rooms = [
+            shapes.Rectangle(pos - side_length / 2. - side_length * 1j / 2.,
+                             pos + side_length / 2. + side_length * 1j / 2.)
+            for pos in room_positions.flatten()
+        ]
 
         # Plot all Rooms and save the axis where they were plotted
         plt.figure(figsize=(10, 10))
@@ -319,10 +311,12 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
         plt.setp(ax2.get_yticklabels(), visible=False)
         ax2.set_ylim([0, 10])
         ax2.set_xlim([0, 10])
-        details = ax2.text(
-            5, 5, 'Details',
-            verticalalignment='center', horizontalalignment='center',
-            family='monospace')
+        details = ax2.text(5,
+                           5,
+                           'Details',
+                           verticalalignment='center',
+                           horizontalalignment='center',
+                           family='monospace')
 
         # Set the an array with colors for the access points. Transmitting APs
         # will be blue, while inactive APs will be gray
@@ -334,22 +328,34 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
         # border. We set the size ('s' keyword) to 50 to make it larger. The
         # colors are set according to the ap_colors array.
         # Note that we set a 5 points tolerance for the pick event.
-        aps_plt = ax1.scatter(ap_positions.real, ap_positions.imag,
-                              marker='^', c=ap_colors, linewidths=0.1, s=50,
+        aps_plt = ax1.scatter(ap_positions.real,
+                              ap_positions.imag,
+                              marker='^',
+                              c=ap_colors,
+                              linewidths=0.1,
+                              s=50,
                               picker=3)
 
         # Plot the users
         # Note that we set a 5 points tolerance for the pick event.
-        users_plt = ax1.scatter(users_positions.real, users_positions.imag,
-                                marker='*', c='r', linewidth=0.1, s=50,
+        users_plt = ax1.scatter(users_positions.real,
+                                users_positions.imag,
+                                marker='*',
+                                c='r',
+                                linewidth=0.1,
+                                s=50,
                                 picker=3)
 
         # xxxxxxxxxx Define a function to call for the pick_event Circle used
         # to select an AP. We will set its visibility to False here. When an AP
         # is selected, we move this circle to its position and set its
         # visibility to True.
-        selected_ap_circle = ax1.plot([0], [0], 'o', ms=12, alpha=0.4,
-                                      color='yellow', visible=False)[0]
+        selected_ap_circle = ax1.plot([0], [0],
+                                      'o',
+                                      ms=12,
+                                      alpha=0.4,
+                                      color='yellow',
+                                      visible=False)[0]
 
         # Define the callback function for the pick event
         def on_pick(event):
@@ -377,8 +383,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
                     # Text information for the selected AP
                     text = "AP {0} with {1} user(s)\nTotal throughput: {2:7.4f}"
                     text = text.format(
-                        ind,
-                        users_per_ap[ind],
+                        ind, users_per_ap[ind],
                         np.sum(capacity_metis_ps7[ap_assoc == ind]))
 
                     # Change the colors of the users associated with the
@@ -388,8 +393,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
             elif event.artist == users_plt:
                 # Text information for the selected user
                 text = "User {0}\n    SINR: {1:7.4f}\nCapacity: {2:7.4f}".format(
-                    ind,
-                    sinr_array_pl_metis_ps7_dB[ind],
+                    ind, sinr_array_pl_metis_ps7_dB[ind],
                     capacity_metis_ps7[ind])
 
                 # If there other users are associated with the same AP of the
@@ -416,6 +420,7 @@ def perform_simulation(scenario_params,  # pylint: disable=R0914
             # noinspection PyUnboundLocalVariable
             details.set_text(text)
             ax1.figure.canvas.draw()
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Connect the on_pick function with the pick event
@@ -435,7 +440,8 @@ if __name__ == '__main__':
         'side_length': 10.,  # 10 meters side length
         'single_wall_loss_dB': 5.,
         'num_rooms_per_side': 12,
-        'ap_decimation': 2}
+        'ap_decimation': 2
+    }
 
     power_params = {
         'Pt_dBm': 20.,  # 20 dBm transmit power
@@ -443,5 +449,7 @@ if __name__ == '__main__':
         'noise_power_dBm': calc_thermal_noise_power_dBm(25, 5e6)
     }
 
-    out = perform_simulation(scenario_params, power_params, plot_results_bool=True)
+    out = perform_simulation(scenario_params,
+                             power_params,
+                             plot_results_bool=True)
     sinr_array_pl_metis_ps7_dB, capacity_metis_ps7 = out

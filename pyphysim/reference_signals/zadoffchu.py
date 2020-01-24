@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing Zadoff-chu related functions.
 """
@@ -113,6 +112,7 @@ def get_extended_ZF(root_seq, size):
         output = np.hstack([root_seq, root_seq[0:size - root_seq_size]])
 
     return output
+
 
 # if __name__ == '__main__':
 #     np.set_printoptions(precision=4)

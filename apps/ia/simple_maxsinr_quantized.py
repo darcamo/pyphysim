@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """module docstring"""
 
 from __future__ import division
@@ -95,10 +94,8 @@ def calc_angle_dist(vec, codeword):
         The distance between `vec` and `codeword`. This is basically the
         square of the sine between the two input vectors.
     """
-    cos_sq = (
-        np.abs(
-            vec.conj().dot(codeword) / (np.linalg.norm(vec) * np.linalg.norm(codeword))
-        )) ** 2
+    cos_sq = (np.abs(vec.conj().dot(codeword) /
+                     (np.linalg.norm(vec) * np.linalg.norm(codeword))))**2
     sin_sq = 1 - cos_sq
 
     return sin_sq
@@ -161,8 +158,8 @@ def my_quant_func(true_matrix, Nr, Nt, K, codebook):
 
     for k1 in range(K):
         for k2 in range(K):
-            rx_start, rx_end = Nridx[k1], Nridx[k1+1]
-            tx_start, tx_end = Ntidx[k2], Ntidx[k2+1]
+            rx_start, rx_end = Nridx[k1], Nridx[k1 + 1]
+            tx_start, tx_end = Ntidx[k2], Ntidx[k2 + 1]
 
             quantize_channel[rx_start:rx_end, tx_start:tx_end] \
                 = quant_small_matrix(
@@ -184,7 +181,6 @@ if __name__ == '__main__1':
 
     Hquant = my_quant_func(H, Nr, Nt, K, C)
 
-
 if __name__ == '__main__':
     SNR = 15.0
     noise_var = 1 / dB2Linear(SNR)
@@ -197,14 +193,17 @@ if __name__ == '__main__':
     Nt = np.ones(K, dtype=int) * 2
     Ns = np.ones(K, dtype=int) * 1
     multi_user_channel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
-    multi_user_channel_quant = pyphysim.channels.multiuser.MultiUserChannelMatrix()
+    multi_user_channel_quant = pyphysim.channels.multiuser.MultiUserChannelMatrix(
+    )
     multi_user_channel.noise_var = noise_var
     multi_user_channel_quant.noise_var = noise_var
 
     ia_solver = algorithms.MaxSinrIASolver(multi_user_channel_quant)
     ia_solver.max_iterations = 120
 
-    pb = ProgressbarText2(rep_max, '*', message="SNR {0} - {{elapsed_time}}".format(SNR))
+    pb = ProgressbarText2(rep_max,
+                          '*',
+                          message="SNR {0} - {{elapsed_time}}".format(SNR))
 
     symbolErrors = 0
     bitErrors = 0
@@ -240,7 +239,8 @@ if __name__ == '__main__':
         big_matrix_quant = my_quant_func(big_matrix, Nr, Nt, K, codebook)
 
         multi_user_channel.init_from_channel_matrix(big_matrix, Nr, Nt, K)
-        multi_user_channel_quant.init_from_channel_matrix(big_matrix_quant, Nr, Nt, K)
+        multi_user_channel_quant.init_from_channel_matrix(
+            big_matrix_quant, Nr, Nt, K)
 
         #ia_solver.randomizeF(Ns)
         ia_solver.solve(Ns)
@@ -257,8 +257,8 @@ if __name__ == '__main__':
         # xxxxx Perform the Interference Cancellation xxxxxxxxxxxxxxxxxxxxx
         # dot2 = lambda w, r: np.dot(w.transpose().conjugate(), r)
         # This will cancel the interference
-        received_data_no_interference = map(np.dot,
-                                            ia_solver.W_H, received_data)
+        received_data_no_interference = map(np.dot, ia_solver.W_H,
+                                            received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -283,10 +283,9 @@ if __name__ == '__main__':
     print("BER: {0}".format(BER))
 
     SINRs = multi_user_channel.calc_SINR(ia_solver.F, ia_solver.W)
-    sum_capacity = np.sum(np.log2(1+np.hstack(SINRs)))
+    sum_capacity = np.sum(np.log2(1 + np.hstack(SINRs)))
 
     print("Sum Capacity: {0}".format(sum_capacity))
-
 
     # # SINR_0 = ia_solver._calc_SINR_k(0)
     # # SINR_1 = ia_solver._calc_SINR_k(1)

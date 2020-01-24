@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Plot the Power Spectral Density of OFDM modulated data"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -20,7 +19,6 @@ import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
 from pyphysim.modulators.ofdm import OFDM
-
 
 if __name__ == '__main__':
     # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
@@ -46,8 +44,7 @@ if __name__ == '__main__':
     plt.plot(
         W,
         # 10 * np.log10(np.fft.fftshift(Pxx))
-        10 * np.log10(Pxx)
-    )
+        10 * np.log10(Pxx))
     plt.xlabel('frequency, MHz')
     plt.ylabel('power spectral density')
     plt.title('Transmit spectrum OFDM (based on 802.11a)')

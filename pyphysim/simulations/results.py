@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module containing simulation result classes."""
 
 from __future__ import division
@@ -213,7 +212,10 @@ class Result(JsonSerializable):
         CHOICETYPE: "CHOICETYPE",
     }
 
-    def __init__(self, name, update_type_code, accumulate_values=False,
+    def __init__(self,
+                 name,
+                 update_type_code,
+                 accumulate_values=False,
                  choice_num=None):
         """
         Constructor for the result object.
@@ -287,9 +289,10 @@ class Result(JsonSerializable):
         # equality comparison. The value of '_value' is important, but it
         # is not included in 'attributes' because it will be explicitly
         # tested later
-        attributes = ['name', '_update_type_code', '_total',
-                      '_accumulate_values_bool', '_value_list',
-                      '_total_list', '_result_squared_sum', '_result_sum']
+        attributes = [
+            'name', '_update_type_code', '_total', '_accumulate_values_bool',
+            '_value_list', '_total_list', '_result_squared_sum', '_result_sum'
+        ]
         if self is other:  # pragma: no cover
             return True
 
@@ -392,7 +395,9 @@ class Result(JsonSerializable):
                 raise RuntimeError(
                     "When creating a new Result of CHOICETYPE you must "
                     "provide the 'total' as well as the 'value.")
-            result = Result(name, update_type, accumulate_values,
+            result = Result(name,
+                            update_type,
+                            accumulate_values,
                             choice_num=total)
             result.update(value)
         else:
@@ -434,11 +439,9 @@ class Result(JsonSerializable):
                 return "Result -> {0}: {1}/{2} -> {3}".format(
                     self.name, v, t, v / t)
             else:
-                return "Result -> {0}: {1}/{2} -> NaN".format(
-                    self.name, v, t)
+                return "Result -> {0}: {1}/{2} -> NaN".format(self.name, v, t)
         else:
-            return "Result -> {0}: {1}".format(
-                self.name, self.get_result())
+            return "Result -> {0}: {1}".format(self.name, self.get_result())
 
     def update(self, value, total=None):
         """
@@ -526,13 +529,16 @@ class Result(JsonSerializable):
             """Update the Result object when its type is CHOICETYPE."""
             # The provided 'p_value' is used as an index to increase the
             # choice in self._value, which is stored as a numpy array.
-            assert isinstance(p_value, (int, np.int, np.int32, np.int64)), (
-                "Value for the CHOICETYPE must be an integer.")
+            assert isinstance(
+                p_value,
+                (int, np.int, np.int32,
+                 np.int64)), ("Value for the CHOICETYPE must be an integer.")
 
             self._value[p_value] += 1
             self._total += 1
             if self._accumulate_values_bool is True:
                 self._value_list.append(p_value)
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Now we fill the dictionary with the functions
@@ -540,14 +546,15 @@ class Result(JsonSerializable):
             Result.RATIOTYPE: __update_RATIOTYPE_value,
             Result.MISCTYPE: __update_by_replacing_current_value,
             Result.SUMTYPE: __update_SUMTYPE_value,
-            Result.CHOICETYPE: __update_CHOICETYPE_value}
+            Result.CHOICETYPE: __update_CHOICETYPE_value
+        }
 
         # Call the appropriated update method. If self._update_type_code
         #  does not contain a key in the possible_updates dictionary (
         # that is, a valid update type), then the function
         # __default_update is called.
-        possible_updates.get(self._update_type_code,
-                             __default_update)(value, total)
+        possible_updates.get(self._update_type_code, __default_update)(value,
+                                                                       total)
 
     def merge(self, other):
         """
@@ -558,7 +565,7 @@ class Result(JsonSerializable):
         other : Result
             Another Result object.
         """
-        assert(isinstance(other, self.__class__))
+        assert (isinstance(other, self.__class__))
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
@@ -692,16 +699,18 @@ class Result(JsonSerializable):
         dict
             The dictionary representation of the object.
         """
-        d = {'name': self.name,
-             'update_type_code': self._update_type_code,
-             'value': self._value,
-             'total': self._total,
-             'result_sum': self._result_sum,
-             'result_squared_sum': self._result_squared_sum,
-             'num_updates': self.num_updates,
-             'accumulate_values_bool': self._accumulate_values_bool,
-             'value_list': self._value_list,
-             'total_list': self._total_list}
+        d = {
+            'name': self.name,
+            'update_type_code': self._update_type_code,
+            'value': self._value,
+            'total': self._total,
+            'result_sum': self._result_sum,
+            'result_squared_sum': self._result_squared_sum,
+            'num_updates': self.num_updates,
+            'accumulate_values_bool': self._accumulate_values_bool,
+            'value_list': self._value_list,
+            'total_list': self._total_list
+        }
         return d
 
     @staticmethod
@@ -724,7 +733,8 @@ class Result(JsonSerializable):
 
             values = d['value']
 
-            r = Result(name=d['name'], update_type_code=d['update_type_code'],
+            r = Result(name=d['name'],
+                       update_type_code=d['update_type_code'],
                        accumulate_values=d['accumulate_values_bool'],
                        choice_num=len(values))
 
@@ -733,8 +743,10 @@ class Result(JsonSerializable):
                     r.update(i)
 
         else:
-            r = Result.create(name=d['name'], update_type=d['update_type_code'],
-                              value=d['value'], total=d['total'],
+            r = Result.create(name=d['name'],
+                              update_type=d['update_type_code'],
+                              value=d['value'],
+                              total=d['total'],
                               accumulate_values=d['accumulate_values_bool'])
             r._value_list = d['value_list']
             r._total_list = d['total_list']
@@ -870,6 +882,7 @@ class Result(JsonSerializable):
     #         results_list.append(r)
     #     return results_list
 
+
 # xxxxxxxxxx Result - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -951,6 +964,7 @@ class SimulationResults(JsonSerializable):
     Result : Class to store a single simulation result.
 
     """
+
     def __init__(self):
         self._results = dict()
 
@@ -997,11 +1011,10 @@ class SimulationResults(JsonSerializable):
         if not isinstance(other, self.__class__):
             return False
 
-        aux = equal_dicts(self.__dict__,
-                          other.__dict__,
-                          ignore_keys=['elapsed_time',
-                                       '_results',
-                                       'original_filename'])
+        aux = equal_dicts(
+            self.__dict__,
+            other.__dict__,
+            ignore_keys=['elapsed_time', '_results', 'original_filename'])
 
         if aux is False:
             return False
@@ -1010,9 +1023,11 @@ class SimulationResults(JsonSerializable):
         if self._results.keys() != other._results.keys():
             return False
 
-        return all(
-            [self[k] == other[k] for k in self._results.keys()
-             if k != 'elapsed_time'])
+        return all([
+            self[k] == other[k]
+            for k in self._results.keys()
+            if k != 'elapsed_time'
+        ])
 
     def __ne__(self, other):
         """
@@ -1290,8 +1305,11 @@ class SimulationResults(JsonSerializable):
         # If the dictionary is not empty
         if fixed_params:
             indexes = self.params.get_pack_indexes(fixed_params)
-            out = [v.get_result() for i, v in enumerate(self[result_name])
-                   if i in indexes]
+            out = [
+                v.get_result()
+                for i, v in enumerate(self[result_name])
+                if i in indexes
+            ]
         else:
             # If fixed_params is an empty dictionary (default value) then
             # we return the full list of results
@@ -1344,8 +1362,11 @@ class SimulationResults(JsonSerializable):
             if not isinstance(indexes, Iterable):
                 indexes = [indexes]
 
-            out = [v.get_confidence_interval(P) for i, v
-                   in enumerate(self[result_name]) if i in indexes]
+            out = [
+                v.get_confidence_interval(P)
+                for i, v in enumerate(self[result_name])
+                if i in indexes
+            ]
         else:
             # If fixed_params is an empty dictionary (default value) then
             # we return the full list of results
@@ -1442,6 +1463,7 @@ class SimulationResults(JsonSerializable):
         dict
             The dictionary representation of the SimulationResults object.
         """
+
         # -----------------------------------------------------------------
         def list_of_results_to_list_of_dicts(result_list):
             """
@@ -1460,15 +1482,20 @@ class SimulationResults(JsonSerializable):
             """
             out = [r.to_dict() for r in result_list]
             return out
+
         # -----------------------------------------------------------------
 
-        results = {n: list_of_results_to_list_of_dicts(v)
-                   for n, v in self._results.items()}
+        results = {
+            n: list_of_results_to_list_of_dicts(v)
+            for n, v in self._results.items()
+        }
 
-        d = {'params': self._params.to_dict(),
-             'runned_reps': self.runned_reps,
-             'original_filename': self.original_filename,
-             'results': results}
+        d = {
+            'params': self._params.to_dict(),
+            'runned_reps': self.runned_reps,
+            'original_filename': self.original_filename,
+            'results': results
+        }
 
         return d
 
@@ -1487,6 +1514,7 @@ class SimulationResults(JsonSerializable):
         Result
             The converted object.
         """
+
         def list_of_dicts_to_list_of_results(result_list):
             """
             Convert a list of dictionary representations of Result objects to a
@@ -1505,8 +1533,10 @@ class SimulationResults(JsonSerializable):
             out = [Result.from_dict(r) for r in result_list]
             return out
 
-        results = {n: list_of_dicts_to_list_of_results(v)
-                   for n, v in d['results'].items()}
+        results = {
+            n: list_of_dicts_to_list_of_results(v)
+            for n, v in d['results'].items()
+        }
 
         simresults = SimulationResults()
         simresults._params = SimulationParameters.from_dict(d['params'])
@@ -1587,8 +1617,10 @@ class SimulationResults(JsonSerializable):
         filename = self.get_filename_with_replaced_params(filename)
 
         # xxxxxxxxxx Finally save to the appropriated file xxxxxxxxxxxxxxxx
-        ext_to_save_func_mapping = {'.pickle': self._save_to_pickle,
-                                    '.json': self._save_to_json}
+        ext_to_save_func_mapping = {
+            '.pickle': self._save_to_pickle,
+            '.json': self._save_to_json
+        }
         save_func = ext_to_save_func_mapping[ext]
 
         # Save the SimulationResults to the file with the desired format
@@ -1648,7 +1680,8 @@ class SimulationResults(JsonSerializable):
         ext = os.path.splitext(filename)[-1]
         ext_to_load_func_mapping = {
             '.pickle': SimulationResults._load_from_pickle_file,
-            '.json': SimulationResults._load_from_json_file}
+            '.json': SimulationResults._load_from_json_file
+        }
         load_func = ext_to_load_func_mapping[ext]
 
         return load_func(filename)
@@ -1840,5 +1873,6 @@ class SimulationResults(JsonSerializable):
 
         df = DataFrame(data)
         return df
+
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable-all
-
 """
 This module contains useful functions to create pgfplots code (latex
 code using the pgfplots package) from python data.
@@ -27,8 +26,7 @@ One example of tex code for a plot using pgfplots is show below
 """
 
 
-def generate_pgfplots_plotline(
-        x, y, errors=None, options=None, legend=None):
+def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
     """
     This function generates the code corresponding to the "addplot" command
     in a pgfplots plot for the coordinates given in `x` and `y`.
@@ -65,8 +63,8 @@ def generate_pgfplots_plotline(
     else:
         error_points = zip(itertools.repeat(0.0, num_points), errors / 2.0)
         points_and_errors_list = [
-            "{0} +- {1}".format(a, b) for a, b in zip(points,
-                                                      error_points)]
+            "{0} +- {1}".format(a, b) for a, b in zip(points, error_points)
+        ]
         points_string = "\n".join(points_and_errors_list)
         plot_line = ("plot[error bars/.cd, y dir = both, y explicit]\n"
                      "coordinates{{{0}}};").format(points_string)

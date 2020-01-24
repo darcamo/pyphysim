@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """module docstring"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -22,7 +21,6 @@ from pyphysim.ia import algorithms
 from pyphysim.util.conversion import dB2Linear
 from pyphysim.channels.multiuser import MultiUserChannelMatrix
 from pyphysim.modulators.fundamental import PSK
-
 
 if __name__ == '__main__':
     K = 3
@@ -82,13 +80,13 @@ if __name__ == '__main__':
     #     print
 
     print("Sum Capacity (Alt Min): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver.calc_SINR())))))
+        np.sum(np.log2(np.hstack(1.0 + ia_solver.calc_SINR())))))
     print("Sum Capacity (Alt Min): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver4.calc_SINR())))))
+        np.sum(np.log2(np.hstack(1.0 + ia_solver4.calc_SINR())))))
     print("Sum Capacity (MMSE): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver2.calc_SINR())))))
+        np.sum(np.log2(np.hstack(1.0 + ia_solver2.calc_SINR())))))
     print("Sum Capacity (Max SINR): {0}".format(
-        np.sum(np.log2(np.hstack(1.0+ia_solver3.calc_SINR())))))
+        np.sum(np.log2(np.hstack(1.0 + ia_solver3.calc_SINR())))))
 
     # print linear2dB(np.hstack(ia_solver.calc_SINR()))
     # print linear2dB(np.hstack(ia_solver2.calc_SINR()))

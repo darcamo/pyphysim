@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Draw the waterfilling solution using TiKz.
 
@@ -46,7 +45,8 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
 
     # Draw Parameters
     maxYcoord = 3  # Maximum coordinate for the Y axis. Note that the axis
-                   # itself will expand two millimeters
+
+    # itself will expand two millimeters
 
     # ----- Auxiliary function definition ---------------------------------
     def pointsToString(points):
@@ -64,8 +64,8 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
         """
         pointsString = ""
         for index in range(0, numChannels):
-            pointsString += (
-                "{num}/{value},".format(num=index, value=points[index]))
+            pointsString += ("{num}/{value},".format(num=index,
+                                                     value=points[index]))
 
         # The last element must not have a comma at the end
         # index = numChannels-1
@@ -74,6 +74,7 @@ def genLatexCode(vtChannels, waterLevel, noiseVar=1.0, channelLength=0.8):
 
         # Remove the last ',' character
         return pointsString.rstrip(',')
+
     # ----- End of auxiliary function -------------------------------------
 
     # Code
@@ -196,7 +197,6 @@ def _test_drawwf():
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__':  # pragma: no cover
     _test_drawwf()
-
 
 if __name__ == '__main__1':  # pragma: no cover
     # vtChannels = np.abs(randn_c(4,1))

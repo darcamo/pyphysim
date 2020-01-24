@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import numpy as np
 from ..util.conversion import dB2Linear
 
-
 # See http://www.qtc.jp/3GPP/Specs/25996-a00.pdf
 
-class AntGainBase(object):  # pragma: no cover
+
+class AntGainBase:  # pragma: no cover
     """Base class for antenna models.
     """
 
-    def __init__(self, ):
+    def __init__(self,):
         pass
 
     def get_antenna_gain(self, angle):
@@ -42,6 +41,7 @@ class AntGainOmni(AntGainBase):
     ant_gain : float, optional
         The antenna gain (in dBi). If not provided then 0dBi will be assumed.
     """
+
     def __init__(self, ant_gain=None):
         super(AntGainOmni, self).__init__()
         if ant_gain is None:
@@ -88,19 +88,20 @@ class AntGainBS3GPP25996(AntGainBase):
     number_of_sectors : int
         The number of sectors of the base station. It can be either 3 or 6.
     """
+
     def __init__(self, number_of_sectors=3):
         super(AntGainBS3GPP25996, self).__init__()
         if number_of_sectors == 3:
-            self.theta_3db = 70.            # Defined in the norm
-            self.Am = 20.                   # Maximum attenuation in dB
+            self.theta_3db = 70.  # Defined in the norm
+            self.Am = 20.  # Maximum attenuation in dB
             self.ant_gain = dB2Linear(14.)  # Antenna gain (in dBi)
         elif number_of_sectors == 6:
-            self.theta_3db = 35.            # Defined in the norm
-            self.Am = 23.                   # Maximum attenuation in dB
+            self.theta_3db = 35.  # Defined in the norm
+            self.Am = 23.  # Maximum attenuation in dB
             self.ant_gain = dB2Linear(17.)  # Antenna gain (in dBi)
         else:
-            raise ValueError("Invalid number of sectors: {0}".format(
-                number_of_sectors))
+            raise ValueError(
+                "Invalid number of sectors: {0}".format(number_of_sectors))
 
     # noinspection PyPep8
     def get_antenna_gain(self, angle):

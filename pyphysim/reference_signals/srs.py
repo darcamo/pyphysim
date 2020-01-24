@@ -41,7 +41,7 @@ def get_srs_seq(root_seq, n_cs):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class UeSequence(object):
+class UeSequence:
     """
     Reference signal sequence of a single user.
 
@@ -61,6 +61,7 @@ class UeSequence(object):
     normalize : bool
         True if the reference signal should be normalized. False otherwise.
     """
+
     def __init__(self, root_seq, n_cs, user_seq_array, normalize=False):
         self._n_cs = n_cs
         self._root_index = root_seq.index
@@ -156,8 +157,9 @@ class UeSequence(object):
         str
             The representation of the object.
         """
-        return "<{0}(root_index={1}, n_cs={2})>".format(
-            self.__class__.__name__, self._root_index, self._n_cs)
+        return "<{0}(root_index={1}, n_cs={2})>".format(self.__class__.__name__,
+                                                        self._root_index,
+                                                        self._n_cs)
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the
@@ -247,6 +249,7 @@ class UeSequence(object):
         """
 
         return self.seq_array().conj()
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -265,8 +268,11 @@ class SrsUeSequence(UeSequence):
     normalize : bool
         True if the reference signal should be normalized. False otherwise.
     """
+
     def __init__(self, root_seq, n_cs, normalize=False):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_srs_seq(root_seq_array, n_cs)
-        super(SrsUeSequence, self).__init__(
-            root_seq, n_cs, user_seq_array, normalize=normalize)
+        super(SrsUeSequence, self).__init__(root_seq,
+                                            n_cs,
+                                            user_seq_array,
+                                            normalize=normalize)

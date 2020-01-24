@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module implementing helper functions for simulators."""
 
 import sys
@@ -50,8 +49,7 @@ def simulate_do_what_i_mean(runner_or_list_of_runners,
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def _add_folder_to_ipython_engines_path(
-        client, folder):  # pragma: no cover
+def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
     """
     Add a folder to sys.path of each ipython engine.
 
@@ -152,9 +150,8 @@ def _simulate_do_what_i_mean_single_runner(runner,
             runner.simulate()
 
 
-def _simulate_do_what_i_mean_multiple_runners(
-        list_of_runners,
-        folder=None):  # pragma: no cover
+def _simulate_do_what_i_mean_multiple_runners(list_of_runners,
+                                              folder=None):  # pragma: no cover
     """
     This will either call the `simulate` method or the
     `simulate_in_parallel` method as appropriated.
@@ -192,12 +189,10 @@ def _simulate_do_what_i_mean_multiple_runners(
         filename = 'multiple_runners_progress.txt'
 
     # xxxxxxxxxx Create the shared progressbar object xxxxxxxxxxxxxxxxx
-    pbar = ProgressbarZMQServer(
-        progresschar='*',
-        message="Elapsed Time: {elapsed_time}",
-        sleep_time=1,
-        filename=filename
-    )
+    pbar = ProgressbarZMQServer(progresschar='*',
+                                message="Elapsed Time: {elapsed_time}",
+                                sleep_time=1,
+                                filename=filename)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Start the simulation for each runner xxxxxxxxxxxxxxxxx
@@ -205,18 +200,16 @@ def _simulate_do_what_i_mean_multiple_runners(
     for runner in list_of_runners:
         runner._pbar = pbar  # pylint: disable= W0212
         if add_folder_to_path is True:
-            _simulate_do_what_i_mean_single_runner(runner,
-                                                   folder,
-                                                   block=False)
+            _simulate_do_what_i_mean_single_runner(runner, folder, block=False)
             add_folder_to_path = False
         else:
-            _simulate_do_what_i_mean_single_runner(runner,
-                                                   None,
-                                                   block=False)
+            _simulate_do_what_i_mean_single_runner(runner, None, block=False)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Wait for the simulation of each runner to finish xxxxxxxxxx
     for runner in list_of_runners:
         runner.wait_parallel_simulation()
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
 # xxxxxxxxxx Module Functions - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

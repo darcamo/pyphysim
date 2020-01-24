@@ -9,8 +9,14 @@ from ..util.misc import randn_c
 
 
 # noinspection PyPep8
-def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
-                           current_time=0, phi_l=None, psi_l=None):
+def generate_jakes_samples(Fd,
+                           Ts=1e-3,
+                           NSamples=100,
+                           L=8,
+                           shape=None,
+                           current_time=0,
+                           phi_l=None,
+                           psi_l=None):
     """
     Generates channel samples according to the Jakes model.
 
@@ -82,15 +88,13 @@ def generate_jakes_samples(Fd, Ts=1e-3, NSamples=100, L=8, shape=None,
     # is called again.
     new_current_time = t[-1] + Ts
 
-    h = (math.sqrt(1.0 / L) *
-         np.sum(np.exp(1j * (2 * np.pi * Fd
-                             * np.cos(phi_l) * t + psi_l)),
-                axis=0))
+    h = (math.sqrt(1.0 / L) * np.sum(
+        np.exp(1j * (2 * np.pi * Fd * np.cos(phi_l) * t + psi_l)), axis=0))
 
     return new_current_time, h
 
 
-class FadingSampleGenerator(object):
+class FadingSampleGenerator:
     """
     Base class for fading generators.
 
@@ -101,6 +105,7 @@ class FadingSampleGenerator(object):
         `generate_more_samples(num_samples)` method is called it will
         generate samples with this shape as the first dimensions.
     """
+
     def __init__(self, shape=None):
         self._shape = shape
 
@@ -122,9 +127,8 @@ class FadingSampleGenerator(object):
         -------
         tuple[int] | None
         """
-        if self._shape is not None and not isinstance(self._shape,
-                                                      Iterable):
-            shape = (self._shape, )
+        if self._shape is not None and not isinstance(self._shape, Iterable):
+            shape = (self._shape,)
         else:
             shape = self._shape
 
@@ -170,8 +174,7 @@ class FadingSampleGenerator(object):
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def skip_samples_for_next_generation(
-            self, num_samples):  # pragma: no cover
+    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -238,8 +241,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             shape.append(num_samples)
             self._samples = randn_c(*shape)
 
-    def skip_samples_for_next_generation(self,
-                                         num_samples):  # pragma: no cover
+    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -495,10 +497,9 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         # Finally calculate the channel samples
         # noinspection PyTypeChecker
-        h = (math.sqrt(1.0 / self.L) *
-             np.sum(np.exp(1j * (2 * np.pi * self.Fd *
-                                 np.cos(self._phi_l) * t + self._psi_l)),
-                    axis=0))
+        h = (math.sqrt(1.0 / self.L) * np.sum(np.exp(
+            1j * (2 * np.pi * self.Fd * np.cos(self._phi_l) * t + self._psi_l)),
+                                              axis=0))
         self._samples = h
 
     def skip_samples_for_next_generation(self, num_samples):
@@ -529,5 +530,4 @@ class JakesSampleGenerator(FadingSampleGenerator):
             Another JakesSampleGenerator object with the same configuration
             of this object.
         """
-        return JakesSampleGenerator(
-            self._Fd, self._Ts, self._L, self._shape)
+        return JakesSampleGenerator(self._Fd, self._Ts, self._L, self._shape)

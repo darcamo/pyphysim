@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101,E0611
-
 """
 Tests for the modules in the mimo package.
 
@@ -42,7 +41,7 @@ class MimoDoctestsTestCase(unittest.TestCase):
         """Run doctests in the modulators module."""
         doctest.testmod(fundamental)
 
-    def test_ofdm(self, ):
+    def test_ofdm(self,):
         """Run doctests in the ofdm module."""
         doctest.testmod(ofdm)
 
@@ -51,6 +50,7 @@ class MimoDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class PSKTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.psk_obj = fundamental.PSK(4)
@@ -67,18 +67,21 @@ class PSKTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.psk_obj2.K, 3)
         np.testing.assert_array_almost_equal(
             self.psk_obj2.symbols,
-            np.array([1. + 0.j, 0.70710678 + 0.70710678j,
-                      -0.70710678 + 0.70710678j, 0. + 1.j,
-                      0.70710678 - 0.70710678j, 0. - 1.j,
-                      -1. + 0.j, -0.70710678 - 0.70710678j]))
+            np.array([
+                1. + 0.j, 0.70710678 + 0.70710678j, -0.70710678 + 0.70710678j,
+                0. + 1.j, 0.70710678 - 0.70710678j, 0. - 1.j, -1. + 0.j,
+                -0.70710678 - 0.70710678j
+            ]))
 
     def test_set_phase_offset(self):
         self.psk_obj.setPhaseOffset(np.pi / 4.)
 
         np.testing.assert_array_almost_equal(
             self.psk_obj.symbols,
-            np.array([0.70710678 + 0.70710678j, -0.70710678 + 0.70710678j,
-                      -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j]))
+            np.array([
+                0.70710678 + 0.70710678j, -0.70710678 + 0.70710678j,
+                -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j
+            ]))
 
     def test_calc_theoretical_SER_and_BER(self):
         SNR_values = np.array([-5, 0, 5, 10])
@@ -87,24 +90,20 @@ class PSKTestCase(unittest.TestCase):
         theoretical_ser = np.array(
             [0.57388349, 0.31731051, 0.07535798, 0.0015654])
         np.testing.assert_array_almost_equal(
-            self.psk_obj.calcTheoreticalSER(SNR_values),
-            theoretical_ser)
+            self.psk_obj.calcTheoreticalSER(SNR_values), theoretical_ser)
 
         # self.psk_obj.calcTheoreticalBER
         np.testing.assert_array_almost_equal(
-            self.psk_obj.calcTheoreticalBER(SNR_values),
-            theoretical_ser / 2.)
+            self.psk_obj.calcTheoreticalBER(SNR_values), theoretical_ser / 2.)
 
         # xxxxxxxxxx Test for the 8 PSK xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         theoretical_ser2 = np.array(
             [0.76087121, 0.58837243, 0.33584978, 0.08700502])
         np.testing.assert_array_almost_equal(
-            self.psk_obj2.calcTheoreticalSER(SNR_values),
-            theoretical_ser2)
+            self.psk_obj2.calcTheoreticalSER(SNR_values), theoretical_ser2)
 
         np.testing.assert_array_almost_equal(
-            self.psk_obj2.calcTheoreticalBER(SNR_values),
-            theoretical_ser2 / 3.)
+            self.psk_obj2.calcTheoreticalBER(SNR_values), theoretical_ser2 / 3.)
 
     # The calcTheoreticalPER method is defined in the Modulators class, but
     # can only be tested in a subclass, since it depends on the
@@ -117,10 +116,10 @@ class PSKTestCase(unittest.TestCase):
         # 3.96924840e-06, respectively
         BER = self.psk_obj.calcTheoreticalBER(SNRs)
 
-        expected_PER1 = (1 - BER) ** L1
+        expected_PER1 = (1 - BER)**L1
         expected_PER1 = 1 - expected_PER1
 
-        expected_PER2 = (1 - BER) ** L2
+        expected_PER2 = (1 - BER)**L2
         expected_PER2 = 1 - expected_PER2
 
         PER1 = self.psk_obj.calcTheoreticalPER(SNRs, L1)
@@ -152,7 +151,7 @@ class PSKTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(se2, expected_se2)
 
     def test_modulate_and_demodulate(self):
-        awgn_noise = randn_c(20, ) * 1e-2
+        awgn_noise = randn_c(20,) * 1e-2
 
         input_data = np.random.random_integers(0, 4 - 1, 20)
         modulated_data = self.psk_obj.modulate(input_data)
@@ -162,8 +161,8 @@ class PSKTestCase(unittest.TestCase):
 
         input_data2 = np.random.random_integers(0, 8 - 1, 20)
         modulated_data2 = self.psk_obj2.modulate(input_data2)
-        demodulated_data2 = self.psk_obj2.demodulate(
-            modulated_data2 + awgn_noise)
+        demodulated_data2 = self.psk_obj2.demodulate(modulated_data2 +
+                                                     awgn_noise)
         np.testing.assert_array_equal(input_data2, demodulated_data2)
 
         # Test if an exception is raised for invalid arguments
@@ -175,6 +174,7 @@ class PSKTestCase(unittest.TestCase):
 
 
 class BPSKTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.bpsk_obj = fundamental.BPSK()
@@ -191,22 +191,20 @@ class BPSKTestCase(unittest.TestCase):
     def test_calc_theoretical_SER_and_BER(self):
         SNR_values = np.array([-5, 0, 5, 10])
 
-        theoretical_ser = np.array([2.13228018e-01, 7.86496035e-02,
-                                    5.95386715e-03, 3.87210822e-06])
+        theoretical_ser = np.array(
+            [2.13228018e-01, 7.86496035e-02, 5.95386715e-03, 3.87210822e-06])
         np.testing.assert_array_almost_equal(
-            self.bpsk_obj.calcTheoreticalSER(SNR_values),
-            theoretical_ser)
+            self.bpsk_obj.calcTheoreticalSER(SNR_values), theoretical_ser)
 
         # The SER and the BER are equal for BPSK modulation
         np.testing.assert_array_almost_equal(
-            self.bpsk_obj.calcTheoreticalBER(SNR_values),
-            theoretical_ser)
+            self.bpsk_obj.calcTheoreticalBER(SNR_values), theoretical_ser)
 
     def test_modulate_and_demodulate(self):
         input_data = np.random.random_integers(0, 1, 20)
         modulated_data = self.bpsk_obj.modulate(input_data)
 
-        awgn_noise = randn_c(20, ) * 1e-2
+        awgn_noise = randn_c(20,) * 1e-2
 
         demodulated_data = self.bpsk_obj.demodulate(modulated_data + awgn_noise)
         np.testing.assert_array_equal(input_data, demodulated_data)
@@ -218,6 +216,7 @@ class BPSKTestCase(unittest.TestCase):
 
 
 class QAMTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.qam_obj = fundamental.QAM(4)
@@ -235,105 +234,108 @@ class QAMTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.qam_obj.K, 2)
         np.testing.assert_array_almost_equal(
             self.qam_obj.symbols,
-            np.array([-0.70710678 + 0.70710678j, 0.70710678 + 0.70710678j,
-                      -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j]))
+            np.array([
+                -0.70710678 + 0.70710678j, 0.70710678 + 0.70710678j,
+                -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j
+            ]))
 
         self.assertEqual(self.qam_obj2.M, 16)
         self.assertAlmostEqual(self.qam_obj2.K, 4)
         np.testing.assert_array_almost_equal(
             self.qam_obj2.symbols,
-            np.array([-0.94868330 + 0.9486833j, -0.31622777 + 0.9486833j,
-                      0.94868330 + 0.9486833j, 0.31622777 + 0.9486833j,
-                      -0.94868330 + 0.31622777j, -0.31622777 + 0.31622777j,
-                      0.94868330 + 0.31622777j, 0.31622777 + 0.31622777j,
-                      -0.94868330 - 0.9486833j, -0.31622777 - 0.9486833j,
-                      0.94868330 - 0.9486833j, 0.31622777 - 0.9486833j,
-                      -0.94868330 - 0.31622777j, -0.31622777 - 0.31622777j,
-                      0.94868330 - 0.31622777j, 0.31622777 - 0.31622777j]))
+            np.array([
+                -0.94868330 + 0.9486833j, -0.31622777 + 0.9486833j,
+                0.94868330 + 0.9486833j, 0.31622777 + 0.9486833j,
+                -0.94868330 + 0.31622777j, -0.31622777 + 0.31622777j,
+                0.94868330 + 0.31622777j, 0.31622777 + 0.31622777j,
+                -0.94868330 - 0.9486833j, -0.31622777 - 0.9486833j,
+                0.94868330 - 0.9486833j, 0.31622777 - 0.9486833j,
+                -0.94868330 - 0.31622777j, -0.31622777 - 0.31622777j,
+                0.94868330 - 0.31622777j, 0.31622777 - 0.31622777j
+            ]))
 
         self.assertEqual(self.qam_obj3.M, 64)
         self.assertAlmostEqual(self.qam_obj3.K, 6)
         np.testing.assert_array_almost_equal(
             self.qam_obj3.symbols,
-            np.array([-1.08012345 + 1.08012345j, -0.77151675 + 1.08012345j,
-                      -0.15430335 + 1.08012345j, -0.46291005 + 1.08012345j,
-                      0.77151675 + 1.08012345j, 1.08012345 + 1.08012345j,
-                      0.46291005 + 1.08012345j, 0.15430335 + 1.08012345j,
-                      -1.08012345 + 0.77151675j, -0.77151675 + 0.77151675j,
-                      -0.15430335 + 0.77151675j, -0.46291005 + 0.77151675j,
-                      0.77151675 + 0.77151675j, 1.08012345 + 0.77151675j,
-                      0.46291005 + 0.77151675j, 0.15430335 + 0.77151675j,
-                      -1.08012345 + 0.15430335j, -0.77151675 + 0.15430335j,
-                      -0.15430335 + 0.15430335j, -0.46291005 + 0.15430335j,
-                      0.77151675 + 0.15430335j, 1.08012345 + 0.15430335j,
-                      0.46291005 + 0.15430335j, 0.15430335 + 0.15430335j,
-                      -1.08012345 + 0.46291005j, -0.77151675 + 0.46291005j,
-                      -0.15430335 + 0.46291005j, -0.46291005 + 0.46291005j,
-                      0.77151675 + 0.46291005j, 1.08012345 + 0.46291005j,
-                      0.46291005 + 0.46291005j, 0.15430335 + 0.46291005j,
-                      -1.08012345 - 0.77151675j, -0.77151675 - 0.77151675j,
-                      -0.15430335 - 0.77151675j, -0.46291005 - 0.77151675j,
-                      0.77151675 - 0.77151675j, 1.08012345 - 0.77151675j,
-                      0.46291005 - 0.77151675j, 0.15430335 - 0.77151675j,
-                      -1.08012345 - 1.08012345j, -0.77151675 - 1.08012345j,
-                      -0.15430335 - 1.08012345j, -0.46291005 - 1.08012345j,
-                      0.77151675 - 1.08012345j, 1.08012345 - 1.08012345j,
-                      0.46291005 - 1.08012345j, 0.15430335 - 1.08012345j,
-                      -1.08012345 - 0.46291005j, -0.77151675 - 0.46291005j,
-                      -0.15430335 - 0.46291005j, -0.46291005 - 0.46291005j,
-                      0.77151675 - 0.46291005j, 1.08012345 - 0.46291005j,
-                      0.46291005 - 0.46291005j, 0.15430335 - 0.46291005j,
-                      -1.08012345 - 0.15430335j, -0.77151675 - 0.15430335j,
-                      -0.15430335 - 0.15430335j, -0.46291005 - 0.15430335j,
-                      0.77151675 - 0.15430335j, 1.08012345 - 0.15430335j,
-                      0.46291005 - 0.15430335j, 0.15430335 - 0.15430335j]))
+            np.array([
+                -1.08012345 + 1.08012345j, -0.77151675 + 1.08012345j,
+                -0.15430335 + 1.08012345j, -0.46291005 + 1.08012345j,
+                0.77151675 + 1.08012345j, 1.08012345 + 1.08012345j,
+                0.46291005 + 1.08012345j, 0.15430335 + 1.08012345j,
+                -1.08012345 + 0.77151675j, -0.77151675 + 0.77151675j,
+                -0.15430335 + 0.77151675j, -0.46291005 + 0.77151675j,
+                0.77151675 + 0.77151675j, 1.08012345 + 0.77151675j,
+                0.46291005 + 0.77151675j, 0.15430335 + 0.77151675j,
+                -1.08012345 + 0.15430335j, -0.77151675 + 0.15430335j,
+                -0.15430335 + 0.15430335j, -0.46291005 + 0.15430335j,
+                0.77151675 + 0.15430335j, 1.08012345 + 0.15430335j,
+                0.46291005 + 0.15430335j, 0.15430335 + 0.15430335j,
+                -1.08012345 + 0.46291005j, -0.77151675 + 0.46291005j,
+                -0.15430335 + 0.46291005j, -0.46291005 + 0.46291005j,
+                0.77151675 + 0.46291005j, 1.08012345 + 0.46291005j,
+                0.46291005 + 0.46291005j, 0.15430335 + 0.46291005j,
+                -1.08012345 - 0.77151675j, -0.77151675 - 0.77151675j,
+                -0.15430335 - 0.77151675j, -0.46291005 - 0.77151675j,
+                0.77151675 - 0.77151675j, 1.08012345 - 0.77151675j,
+                0.46291005 - 0.77151675j, 0.15430335 - 0.77151675j,
+                -1.08012345 - 1.08012345j, -0.77151675 - 1.08012345j,
+                -0.15430335 - 1.08012345j, -0.46291005 - 1.08012345j,
+                0.77151675 - 1.08012345j, 1.08012345 - 1.08012345j,
+                0.46291005 - 1.08012345j, 0.15430335 - 1.08012345j,
+                -1.08012345 - 0.46291005j, -0.77151675 - 0.46291005j,
+                -0.15430335 - 0.46291005j, -0.46291005 - 0.46291005j,
+                0.77151675 - 0.46291005j, 1.08012345 - 0.46291005j,
+                0.46291005 - 0.46291005j, 0.15430335 - 0.46291005j,
+                -1.08012345 - 0.15430335j, -0.77151675 - 0.15430335j,
+                -0.15430335 - 0.15430335j, -0.46291005 - 0.15430335j,
+                0.77151675 - 0.15430335j, 1.08012345 - 0.15430335j,
+                0.46291005 - 0.15430335j, 0.15430335 - 0.15430335j
+            ]))
 
     def test_calc_theoretical_SER_and_BER(self):
         SNR_values = np.array([0, 5, 10, 15, 20])
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        theoretical_ser = np.array([2.92139018e-01, 7.39382701e-02,
-                                    1.56478964e-03, 1.87220798e-08, 0])
+        theoretical_ser = np.array(
+            [2.92139018e-01, 7.39382701e-02, 1.56478964e-03, 1.87220798e-08, 0])
         np.testing.assert_array_almost_equal(
-            self.qam_obj.calcTheoreticalSER(SNR_values),
-            theoretical_ser)
+            self.qam_obj.calcTheoreticalSER(SNR_values), theoretical_ser)
 
-        theoretical_ber = np.array([1.58655254e-01, 3.76789881e-02,
-                                    7.82701129e-04, 9.36103999e-09,
-                                    7.61985302e-24])
+        theoretical_ber = np.array([
+            1.58655254e-01, 3.76789881e-02, 7.82701129e-04, 9.36103999e-09,
+            7.61985302e-24
+        ])
         np.testing.assert_array_almost_equal(
-            self.qam_obj.calcTheoreticalBER(SNR_values),
-            theoretical_ber)
+            self.qam_obj.calcTheoreticalBER(SNR_values), theoretical_ber)
 
         # xxxxxxxxxx Test for 16-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        theoretical_ser2 = np.array([7.40960364e-01, 5.37385132e-01,
-                                     2.22030850e-01, 1.77818422e-02,
-                                     1.16162909e-05])
+        theoretical_ser2 = np.array([
+            7.40960364e-01, 5.37385132e-01, 2.22030850e-01, 1.77818422e-02,
+            1.16162909e-05
+        ])
         np.testing.assert_array_almost_equal(
-            self.qam_obj2.calcTheoreticalSER(SNR_values),
-            theoretical_ser2)
+            self.qam_obj2.calcTheoreticalSER(SNR_values), theoretical_ser2)
 
-        theoretical_ber2 = np.array([2.45520317e-01, 1.59921014e-01,
-                                     5.89872026e-02, 4.46540036e-03,
-                                     2.90408116e-06])
+        theoretical_ber2 = np.array([
+            2.45520317e-01, 1.59921014e-01, 5.89872026e-02, 4.46540036e-03,
+            2.90408116e-06
+        ])
         np.testing.assert_array_almost_equal(
-            self.qam_obj2.calcTheoreticalBER(SNR_values),
-            theoretical_ber2)
+            self.qam_obj2.calcTheoreticalBER(SNR_values), theoretical_ber2)
         # xxxxxxxxxx Test for 64-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        theoretical_ser3 = np.array([0.92374224, 0.84846895, 0.67382633,
-                                     0.3476243, 0.05027041])
+        theoretical_ser3 = np.array(
+            [0.92374224, 0.84846895, 0.67382633, 0.3476243, 0.05027041])
         np.testing.assert_array_almost_equal(
-            self.qam_obj3.calcTheoreticalSER(SNR_values),
-            theoretical_ser3)
+            self.qam_obj3.calcTheoreticalSER(SNR_values), theoretical_ser3)
 
-        theoretical_ber3 = np.array([0.24128398, 0.2035767, 0.14296128,
-                                     0.06410074, 0.00848643])
+        theoretical_ber3 = np.array(
+            [0.24128398, 0.2035767, 0.14296128, 0.06410074, 0.00848643])
         np.testing.assert_array_almost_equal(
-            self.qam_obj3.calcTheoreticalBER(SNR_values),
-            theoretical_ber3)
+            self.qam_obj3.calcTheoreticalBER(SNR_values), theoretical_ber3)
 
     def test_modulate_and_demodulate(self):
-        awgn_noise = randn_c(20, ) * 1e-2
+        awgn_noise = randn_c(20,) * 1e-2
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         input_data = np.random.random_integers(0, 4 - 1, 20)
@@ -344,15 +346,15 @@ class QAMTestCase(unittest.TestCase):
         # xxxxxxxxxx Test for 16-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         input_data2 = np.random.random_integers(0, 16 - 1, 20)
         modulated_data2 = self.qam_obj2.modulate(input_data2)
-        demodulated_data2 = self.qam_obj2.demodulate(
-            modulated_data2 + awgn_noise)
+        demodulated_data2 = self.qam_obj2.demodulate(modulated_data2 +
+                                                     awgn_noise)
         np.testing.assert_array_equal(input_data2, demodulated_data2)
 
         # xxxxxxxxxx Test for 64-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         input_data3 = np.random.random_integers(0, 64 - 1, 20)
         modulated_data3 = self.qam_obj3.modulate(input_data3)
-        demodulated_data3 = self.qam_obj3.demodulate(
-            modulated_data3 + awgn_noise)
+        demodulated_data3 = self.qam_obj3.demodulate(modulated_data3 +
+                                                     awgn_noise)
         np.testing.assert_array_equal(input_data3, demodulated_data3)
 
         # Test if an exception is raised for invalid arguments
@@ -411,7 +413,7 @@ class OfdmTestCase(unittest.TestCase):
         self.ofdm_object.set_parameters(64, 16)
         self.assertEqual(self.ofdm_object.num_used_subcarriers, 64)
 
-    def test_prepare_input_signal(self, ):
+    def test_prepare_input_signal(self,):
         # 52 elements -> exactly the number of used subcarriers in the OFDM
         # object
         input_signal = np.r_[1:53]
@@ -419,40 +421,100 @@ class OfdmTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Lets first test the case where we use exactly 52 subcarriers from
         # the 64 available subcarriers. That is, no zeropadding is needed.
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
-            input_signal.size)
+        (zeropad,
+         num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
         self.assertEqual(zeropad, 0)
         self.assertEqual(num_ofdm_symbols, 1)
 
-        expected_data = np.array(
-            [[0., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38.,
-              39., 40., 41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51.,
-              52., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4.,
-              5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.,
-              19., 20., 21., 22., 23., 24., 25., 26.]])
+        expected_data = np.array([[
+            0., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39.,
+            40., 41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51., 52., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7.,
+            8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21.,
+            22., 23., 24., 25., 26.
+        ]])
         np.testing.assert_array_equal(
-            self.ofdm_object._prepare_input_signal(input_signal),
-            expected_data)
+            self.ofdm_object._prepare_input_signal(input_signal), expected_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Now lets change the number of used subcarriers and repeat the
         # tests so that the case when zeropad is performed is also tested.
         self.ofdm_object.num_used_subcarriers = 60
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
-            input_signal.size)
+        (zeropad,
+         num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
         # We used 60 subcarriers, but we have 52 elements -> We need to add
         # 8 zeros at the end of the input data
         self.assertEqual(zeropad, 8)
         # But we still have only one OFDM symbol
         self.assertEqual(num_ofdm_symbols, 1)
 
-        expected_data2 = np.array(
-            [[0., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40., 41., 42.,
-              43., 44., 45., 46., 47., 48., 49., 50., 51., 52., 0., 0., 0.,
-              0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7., 8.,
-              9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21.,
-              22., 23., 24., 25., 26., 27., 28., 29., 30., ]])
+        expected_data2 = np.array([[
+            0.,
+            31.,
+            32.,
+            33.,
+            34.,
+            35.,
+            36.,
+            37.,
+            38.,
+            39.,
+            40.,
+            41.,
+            42.,
+            43.,
+            44.,
+            45.,
+            46.,
+            47.,
+            48.,
+            49.,
+            50.,
+            51.,
+            52.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            2.,
+            3.,
+            4.,
+            5.,
+            6.,
+            7.,
+            8.,
+            9.,
+            10.,
+            11.,
+            12.,
+            13.,
+            14.,
+            15.,
+            16.,
+            17.,
+            18.,
+            19.,
+            20.,
+            21.,
+            22.,
+            23.,
+            24.,
+            25.,
+            26.,
+            27.,
+            28.,
+            29.,
+            30.,
+        ]])
         np.testing.assert_array_equal(
             self.ofdm_object._prepare_input_signal(input_signal),
             expected_data2)
@@ -462,20 +524,21 @@ class OfdmTestCase(unittest.TestCase):
         # Now lets test the case when we use all subcarriers (but still
         # with zeropadding)
         self.ofdm_object.num_used_subcarriers = 64
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
-            input_signal.size)
+        (zeropad,
+         num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
         self.assertEqual(zeropad, 12)
 
         # But we still have only one OFDM symbol
         self.assertEqual(num_ofdm_symbols, 1)
 
         # Notice that in this case the DC subcarrier is used
-        expected_data3 = np.array(
-            [[33., 34., 35., 36., 37., 38., 39., 40., 41., 42., 43., 44., 45.,
-              46., 47., 48., 49., 50., 51., 52., 0., 0., 0., 0., 0., 0., 0.,
-              0., 0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11.,
-              12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.,
-              25., 26., 27., 28., 29., 30., 31., 32.]])
+        expected_data3 = np.array([[
+            33., 34., 35., 36., 37., 38., 39., 40., 41., 42., 43., 44., 45.,
+            46., 47., 48., 49., 50., 51., 52., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.,
+            13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 25.,
+            26., 27., 28., 29., 30., 31., 32.
+        ]])
         np.testing.assert_array_equal(
             self.ofdm_object._prepare_input_signal(input_signal),
             expected_data3)
@@ -508,8 +571,8 @@ class OfdmTestCase(unittest.TestCase):
 
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         self.ofdm_object.set_parameters(64, 0, 52)
-        (zeropad, num_ofdm_symbols) = self.ofdm_object._calc_zeropad(
-            input_signal.size)
+        (zeropad,
+         num_ofdm_symbols) = self.ofdm_object._calc_zeropad(input_signal.size)
 
         self.assertEqual(zeropad, 0)
 
@@ -529,8 +592,7 @@ class OfdmTestCase(unittest.TestCase):
 
         # Let's test each OFDM symbol individually
         np.testing.assert_array_almost_equal(
-            self.ofdm_object.modulate(input_signal[0:52]),
-            expected_data[0:64])
+            self.ofdm_object.modulate(input_signal[0:52]), expected_data[0:64])
 
         np.testing.assert_array_almost_equal(
             self.ofdm_object.modulate(input_signal[52:]), expected_data[64:])
@@ -566,10 +628,7 @@ class OfdmTestCase(unittest.TestCase):
         demodulated_symbols = self.ofdm_object.demodulate(
             modulated_ofdm_symbols)
 
-        np.testing.assert_array_equal(
-            demodulated_symbols.round(),
-            input_signal
-        )
+        np.testing.assert_array_equal(demodulated_symbols.round(), input_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
@@ -583,10 +642,8 @@ class OfdmTestCase(unittest.TestCase):
         demodulated_symbols2 = self.ofdm_object.demodulate(
             modulated_ofdm_symbols2)
 
-        np.testing.assert_array_equal(
-            demodulated_symbols2.round(),
-            input_signal2
-        )
+        np.testing.assert_array_equal(demodulated_symbols2.round(),
+                                      input_signal2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test the case with zeropadding xxxxxxxxxxxxxxxxxxx
@@ -602,15 +659,14 @@ class OfdmTestCase(unittest.TestCase):
         # OFDM will not remove the zeropadding therefore we need to do it
         # manually
         demodulated_symbols3 = demodulated_symbols3[0:109]
-        np.testing.assert_array_equal(
-            demodulated_symbols3.round(),
-            input_signal3
-        )
+        np.testing.assert_array_equal(demodulated_symbols3.round(),
+                                      input_signal3)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # noinspection PyMethodMayBeStatic
 class OfdmOneTapEqualizerTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -637,11 +693,14 @@ class OfdmOneTapEqualizerTestCase(unittest.TestCase):
         Ts = 1. / bandwidth  # Sampling interval (in seconds)
         NRays = 16  # Number of rays for the Jakes model
 
-        jakes = fading_generators.JakesSampleGenerator(
-            Fd, Ts, NRays, shape=None)
+        jakes = fading_generators.JakesSampleGenerator(Fd,
+                                                       Ts,
+                                                       NRays,
+                                                       shape=None)
 
         tdlchannel = fading.TdlChannel(
-            jakes, tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
+            jakes,
+            tap_powers_dB=fading.COST259_TUx.tap_powers_dB,
             tap_delays=fading.COST259_TUx.tap_delays)
 
         channel_memory = tdlchannel.num_taps_with_padding - 1
@@ -710,10 +769,7 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     fsMHz = 20e6
     Pxx, W = plt.psd(output, NFFT=fft_size, Fs=fsMHz)
     # [Pxx,W] = pwelch(output,[],[],4096,20);
-    plt.plot(
-        W,
-        10 * np.log10(Pxx)
-    )
+    plt.plot(W, 10 * np.log10(Pxx))
     plt.xlabel('frequency, MHz')
     plt.ylabel('power spectral density')
     plt.title('Transmit spectrum OFDM (based on 802.11a)')
@@ -721,7 +777,6 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == "__main__":

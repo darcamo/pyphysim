@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Script that reads a SimulationResults file and save the corresponding
 partial results.
@@ -50,12 +49,10 @@ def main():
     all_results_names = results.get_result_names()
 
     for i, p in enumerate(results.params.get_unpacked_params_list()):
-        partial_filename = get_partial_results_filename(
-            original_filename, p, folder)
+        partial_filename = get_partial_results_filename(original_filename, p,
+                                                        folder)
         partial_filename_with_replacements = replace_dict_values(
-            partial_filename,
-            results.params.parameters,
-            filename_mode=True)
+            partial_filename, results.params.parameters, filename_mode=True)
 
         if partial_filename_with_replacements == name:
             raise RuntimeError('invalid name')

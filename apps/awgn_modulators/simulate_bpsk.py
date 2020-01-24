@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Perform the simulation of the transmission of BPSK symbols through an
 awgn channel.

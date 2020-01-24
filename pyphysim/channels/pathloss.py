@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Implement classes for several Path loss models.
 
@@ -14,8 +13,6 @@ of inheriting directly from :class:`PathLossBase`, inherit from either
 The most common usage of a path loss class is to instantiate an object of
 the desired path loss model and then call the **calc_path_loss_dB** or the
 **calc_path_loss** methods to actually calculate the path loss.
-
-.. TODO:: Verify the equations in the docstrings
 """
 
 try:
@@ -33,12 +30,14 @@ from collections import Iterable
 
 from pyphysim.util import conversion
 
-__all__ = ['PathLossBase', 'PathLossIndoorBase', 'PathLossOutdoorBase',
-           'PathLossGeneral', 'PathLossFreeSpace', 'PathLoss3GPP1',
-           'PathLossMetisPS7', 'PathLossOkomuraHata']
+__all__ = [
+    'PathLossBase', 'PathLossIndoorBase', 'PathLossOutdoorBase',
+    'PathLossGeneral', 'PathLossFreeSpace', 'PathLoss3GPP1',
+    'PathLossMetisPS7', 'PathLossOkomuraHata'
+]
 
 
-class PathLossBase(object):
+class PathLossBase:
     """
     Base class for the different Path Loss models.
 
@@ -121,8 +120,7 @@ class PathLossBase(object):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(
-            self, d, **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.
@@ -153,10 +151,14 @@ class PathLossBase(object):
         msg = ('_calc_deterministic_path_loss_dB must be reimplemented in '
                'the {0} class')
         raise NotImplementedError(msg.format(self.__class__.__name__))
+
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(
-            self, d, ax=None, extra_args=None):  # pragma: no cover
+    def plot_deterministic_path_loss_in_dB(self,
+                                           d,
+                                           ax=None,
+                                           extra_args=None
+                                           ):  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in `d` (in Km).
 
@@ -175,8 +177,11 @@ class PathLossBase(object):
         self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args, 'Km')
 
     def _plot_deterministic_path_loss_in_dB_impl(
-            self, d, ax=None, extra_args=None,
-            distance_unit='Km'):  # pragma: no cover
+        self,
+        d,
+        ax=None,
+        extra_args=None,
+        distance_unit='Km'):  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in `d` (in Km).
 
@@ -383,8 +388,7 @@ class PathLossIndoorBase(PathLossBase):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self,
-                                         d, **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in meters)
         without including the shadowing.
@@ -413,10 +417,14 @@ class PathLossIndoorBase(PathLossBase):
         msg = ('_calc_deterministic_path_loss_dB must be reimplemented in '
                'the {0} class')
         raise NotImplementedError(msg.format(self.__class__.__name__))
+
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(
-            self, d, ax=None, extra_args=None):  # pragma: no cover
+    def plot_deterministic_path_loss_in_dB(self,
+                                           d,
+                                           ax=None,
+                                           extra_args=None
+                                           ):  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in `d` (in
         meters).
@@ -455,8 +463,7 @@ class PathLossIndoorBase(PathLossBase):
         PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
-        return super(PathLossIndoorBase, self).calc_path_loss_dB(d,
-                                                                 **kargs)
+        return super(PathLossIndoorBase, self).calc_path_loss_dB(d, **kargs)
 
     def calc_path_loss(self, d, **kargs):  # pragma: no cover
         """
@@ -551,8 +558,7 @@ class PathLossOutdoorBase(PathLossBase):
         raise NotImplementedError(msg.format(self.__class__.__name__))
 
     @abstractmethod
-    def _calc_deterministic_path_loss_dB(self, d,
-                                         **kargs):  # pragma: no cover
+    def _calc_deterministic_path_loss_dB(self, d, **kargs):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in Km)
         without including the shadowing.
@@ -581,10 +587,14 @@ class PathLossOutdoorBase(PathLossBase):
         msg = ('_calc_deterministic_path_loss_dB must be reimplemented in '
                'the {0} class')
         raise NotImplementedError(msg.format(self.__class__.__name__))
+
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(
-            self, d, ax=None, extra_args=None):  # pragma: no cover
+    def plot_deterministic_path_loss_in_dB(self,
+                                           d,
+                                           ax=None,
+                                           extra_args=None
+                                           ):  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in ``d`` (in Km).
 
@@ -600,8 +610,7 @@ class PathLossOutdoorBase(PathLossBase):
             ``**extra_args`` (see Matplotlib documentation).
             Ex: {'label': 'curve name', 'linewidth': 2}
         """
-        self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args,
-                                                      'Km')
+        self._plot_deterministic_path_loss_in_dB_impl(d, ax, extra_args, 'Km')
 
     def calc_path_loss_dB(self, d, **kargs):
         """
@@ -665,6 +674,7 @@ class PathLossGeneral(PathLossOutdoorBase):
     C : float
         The constant `C` in the path loss formula.
     """
+
     # $PL = 10n\log_{10}(d) + C$
 
     def __init__(self, n, C):
@@ -758,7 +768,7 @@ class PathLossGeneral(PathLossOutdoorBase):
         d : float | np.ndarray
             Distance (in Km).
         """
-        d = 10. ** ((PL - self._C) / (10. * self._n))
+        d = 10.**((PL - self._C) / (10. * self._n))
         return d
 
     def _calc_deterministic_path_loss_dB(self, d, **kargs):
@@ -843,7 +853,6 @@ class PathLossFreeSpace(PathLossGeneral):
     >>> pl.which_distance_dB(90)
     0.8388202017414481
     """
-
     def __init__(self, n=2, fc=900):
         """
         Initializes the PathLossFreeSpace object
@@ -979,7 +988,6 @@ class PathLoss3GPP1(PathLossGeneral):
     >>> pl.which_distance_dB(130)
     1.1233935211892188
     """
-
     def __init__(self):
         # super(PathLossFreeSpace, self).__init__()
         PathLossGeneral.__init__(self, n=3.76, C=128.1)
@@ -1006,7 +1014,6 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
     This model is an indoor-2-indoor model.
     """
-
     def __init__(self, fc=900):
         """
         Initializes the PathLossFreeSpace object
@@ -1088,8 +1095,12 @@ class PathLossMetisPS7(PathLossIndoorBase):
             if num_walls == 0:
                 values = {'A': '18.7', 'B': '46.8', 'C': '20', 'X': '0'}
             elif num_walls > 0:
-                values = {'A': '36.8', 'B': '43.8', 'C': '20',
-                          'X': str(5 * num_walls - 1)}
+                values = {
+                    'A': '36.8',
+                    'B': '43.8',
+                    'C': '20',
+                    'X': str(5 * num_walls - 1)
+                }
             else:
                 raise ValueError("num_walls cannot be negative")
 
@@ -1169,8 +1180,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
                 pl_dB = self._calc_PS7_path_loss_dB_LOS_same_floor(d)
             elif num_walls > 0:
                 # Calculate the path loss for PS7 without LOS
-                pl_dB = self._calc_PS7_path_loss_dB_NLOS_same_floor(d,
-                                                                    num_walls)
+                pl_dB = self._calc_PS7_path_loss_dB_NLOS_same_floor(
+                    d, num_walls)
             else:
                 raise ValueError("num_walls cannot be negative")
 
@@ -1284,7 +1295,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
     def which_distance_dB(self, PL):  # pragma: nocover
         pass
 
-    def _calc_deterministic_path_loss_dB(self, d,
+    def _calc_deterministic_path_loss_dB(self,
+                                         d,
                                          num_walls=0):  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in meters)
@@ -1395,6 +1407,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
                    " between 150 and 1500 (values in MHz).")
             raise RuntimeError(msg)
         self._fc = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx hbs property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1426,6 +1439,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
                    "model must be between 30 and 200 (values in meters).")
             raise RuntimeError(msg)
         self._hbs = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx hms property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1457,6 +1471,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
                    "model must be between 1 and 10 (values in meters).")
             raise RuntimeError(msg)
         self._hms = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx area_type property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1479,6 +1494,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         if value not in ['open', 'suburban', 'medium city', 'large city']:
             raise RuntimeError('Invalid area type: {0}'.format(value))
         self._area_type = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _calc_mobile_antenna_height_correction_factor(self):
@@ -1515,8 +1531,8 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
             # Suburban and rural areas (f in MHz
             # $a(h_{ms}) = (1.1 \log(f) - 0.7) h_{ms} - 1.56 \log(f) + 0.8$
-            a = ((1.1 * math.log10(self.fc) - 0.7) *
-                 self.hms - 1.56 * math.log10(self.fc) + 0.8)
+            a = ((1.1 * math.log10(self.fc) - 0.7) * self.hms -
+                 1.56 * math.log10(self.fc) + 0.8)
         elif self.area_type == 'large city':
             # Note: The category of "large city" used by Hata implies
             # building heights greater than 15m.
@@ -1550,8 +1566,8 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         elif self.area_type == 'open':
             # Value for 'open' areas
             # $K = 4.78 (\log(f))^2 - 18.33 \log(f) + 40.94$
-            K = (4.78 * (math.log10(self.fc)**2) - 18.33 * math.log10(self.fc) +
-                 40.94)
+            K = (4.78 * (math.log10(self.fc)**2) -
+                 18.33 * math.log10(self.fc) + 40.94)
         elif self.area_type == 'suburban':
             # Value for 'suburban' areas
             # $K = 2 [\log(f/28)^2] + 5.4$
@@ -1601,8 +1617,8 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         # Calculates the "'suburban'/'open area'" correction factor.
         K = self._calc_K()
 
-        L = (69.55 + 26.16 * log10(self.fc) - 13.82 * log10(self.hbs)
-             - a + (44.9 - 6.55 * log10(self.hbs)) * log10(d) - K)
+        L = (69.55 + 26.16 * log10(self.fc) - 13.82 * log10(self.hbs) - a +
+             (44.9 - 6.55 * log10(self.hbs)) * log10(d) - K)
         return L
 
     def which_distance_dB(self, PL):

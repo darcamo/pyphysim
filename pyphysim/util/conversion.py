@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module containing function related to several conversions, such as
 linear to dB, binary to gray code, as well as the inverse of them.
 """
@@ -9,13 +8,14 @@ from typing import Union
 import numpy as np
 from .misc import xor
 
-__all__ = ['single_matrix_to_matrix_of_matrices', 'dB2Linear', 'linear2dB',
-           'dBm2Linear', 'linear2dBm', 'binary2gray', 'gray2binary',
-           'SNR_dB_to_EbN0_dB', 'EbN0_dB_to_SNR_dB']
+__all__ = [
+    'single_matrix_to_matrix_of_matrices', 'dB2Linear', 'linear2dB',
+    'dBm2Linear', 'linear2dBm', 'binary2gray', 'gray2binary',
+    'SNR_dB_to_EbN0_dB', 'EbN0_dB_to_SNR_dB'
+]
 
 
-def single_matrix_to_matrix_of_matrices(
-        single_matrix, nrows=None, ncols=None):
+def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
     """
     Converts a single numpy array to a numpy array of numpy arrays.
 
@@ -112,9 +112,8 @@ def single_matrix_to_matrix_of_matrices(
 
         for rx in np.arange(K):
             for tx in np.arange(K):
-                output[rx, tx] = single_matrix[
-                    cumNrows[rx]:cumNrows[rx + 1],
-                    cumNcols[tx]:cumNcols[tx + 1]]
+                output[rx, tx] = single_matrix[cumNrows[rx]:cumNrows[rx + 1],
+                                               cumNcols[tx]:cumNcols[tx + 1]]
         return output
     else:
         # When ncols is None, we are either in the 1D Array of 1D arrays

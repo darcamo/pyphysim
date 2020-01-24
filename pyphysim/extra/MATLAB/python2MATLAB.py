@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module with functions to easily moving data from python to MATLAB."""
 
 import numpy as np
@@ -47,6 +46,7 @@ def to_mat_str(x, format_string='+.12e'):
 +7.000000000000e+00, +8.000000000000e+00, +9.000000000000e+00]
 
     """
+
     # noinspection PyShadowingNames
     def convert_row_or_col(numpy_array, format_string, separator=', '):
         """Convert a one-dimensional numpy array to its MATLAB
@@ -66,8 +66,8 @@ def to_mat_str(x, format_string='+.12e'):
         # +.12e
         output = []
         if numpy_array.dtype == 'complex':
-            format_string = "{{0:{0}}}{{1:{0}}}j".format(format_string,
-                                                         format_string)
+            format_string = "{{0:{0}}}{{1:{0}}}j".format(
+                format_string, format_string)
             for i in numpy_array:
                 output.append(format_string.format(i.real, i.imag))
         else:
@@ -84,9 +84,10 @@ def to_mat_str(x, format_string='+.12e'):
     if x.ndim == 2:
         if x.shape[1] == 1:
             # This is a Column vector
-            output = '[{0}]'.format(convert_row_or_col(np.reshape(x, x.size),
-                                                       format_string,
-                                                       separator='; '))
+            output = '[{0}]'.format(
+                convert_row_or_col(np.reshape(x, x.size),
+                                   format_string,
+                                   separator='; '))
         else:
             # This is not a column vector
             output = []

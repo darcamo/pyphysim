@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module related to subspace projection."""
 
 import numpy as np
 
 
-class Projection(object):
+class Projection:
     """
     Class to calculate the projection, orthogonal projection and
     reflection of a given matrix in a Subspace `S` spanned by the

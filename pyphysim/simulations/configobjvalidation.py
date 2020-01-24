@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module implementing validation functions to define "specs" for configobj
 validation.
@@ -12,10 +11,10 @@ are used in the other modules in the :mod:`pyphysim.simulations` package.
 import numpy as np
 import validate
 
-__all__ = ["real_numpy_array_check",
-           "real_scalar_or_real_numpy_array_check",
-           "integer_numpy_array_check",
-           "integer_scalar_or_integer_numpy_array_check"]
+__all__ = [
+    "real_numpy_array_check", "real_scalar_or_real_numpy_array_check",
+    "integer_numpy_array_check", "integer_scalar_or_integer_numpy_array_check"
+]
 
 
 def _parse_range_expr(value, converter=float):

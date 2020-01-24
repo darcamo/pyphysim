@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101
-
 """
 Tests for the modules in the MATLAB package.
 
@@ -35,6 +34,7 @@ class MATLABDoctestsTestCase(unittest.TestCase):
     package.
 
     """
+
     def test_python2MATLAB(self):
         """Run python2MATLAB doctests"""
         doctest.testmod(python2MATLAB)
@@ -42,33 +42,32 @@ class MATLABDoctestsTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class MATLABFunctionsTestCase(unittest.TestCase):
+
     def test_mmat(self):
         # Test 1D numpy array
         a = np.arange(10) + (10 - np.arange(10)) * 1j
 
         conv_a = python2MATLAB.to_mat_str(a)
-        expected_conv_a = (
-            '[+0.000000000000e+00+1.000000000000e+01j, '
-            '+1.000000000000e+00+9.000000000000e+00j, '
-            '+2.000000000000e+00+8.000000000000e+00j, '
-            '+3.000000000000e+00+7.000000000000e+00j, '
-            '+4.000000000000e+00+6.000000000000e+00j, '
-            '+5.000000000000e+00+5.000000000000e+00j, '
-            '+6.000000000000e+00+4.000000000000e+00j, '
-            '+7.000000000000e+00+3.000000000000e+00j, '
-            '+8.000000000000e+00+2.000000000000e+00j, '
-            '+9.000000000000e+00+1.000000000000e+00j]')
+        expected_conv_a = ('[+0.000000000000e+00+1.000000000000e+01j, '
+                           '+1.000000000000e+00+9.000000000000e+00j, '
+                           '+2.000000000000e+00+8.000000000000e+00j, '
+                           '+3.000000000000e+00+7.000000000000e+00j, '
+                           '+4.000000000000e+00+6.000000000000e+00j, '
+                           '+5.000000000000e+00+5.000000000000e+00j, '
+                           '+6.000000000000e+00+4.000000000000e+00j, '
+                           '+7.000000000000e+00+3.000000000000e+00j, '
+                           '+8.000000000000e+00+2.000000000000e+00j, '
+                           '+9.000000000000e+00+1.000000000000e+00j]')
         self.assertEqual(conv_a, expected_conv_a)
 
         # Test a 2D numpy array with a single column (a column vector)
         b = np.arange(1, 5) - np.arange(1, 5) * 1j
         b.shape = (4, 1)
         conv_b = python2MATLAB.to_mat_str(b)
-        expected_conv_b = (
-            '[+1.000000000000e+00-1.000000000000e+00j; '
-            '+2.000000000000e+00-2.000000000000e+00j; '
-            '+3.000000000000e+00-3.000000000000e+00j; '
-            '+4.000000000000e+00-4.000000000000e+00j]')
+        expected_conv_b = ('[+1.000000000000e+00-1.000000000000e+00j; '
+                           '+2.000000000000e+00-2.000000000000e+00j; '
+                           '+3.000000000000e+00-3.000000000000e+00j; '
+                           '+4.000000000000e+00-4.000000000000e+00j]')
         self.assertEqual(conv_b, expected_conv_b)
 
         # Test a 2D real numpy array

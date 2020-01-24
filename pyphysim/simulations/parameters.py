@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module containing simulation parameter classes."""
 
 from collections import Iterable, OrderedDict
 import itertools
 import copy
 import numpy as np
+
+# TODO: Change configobj to yaml + voluptuous (for validation)
+# https://pypi.org/project/voluptuous/
 
 try:
     # noinspection PyUnresolvedReferences
@@ -57,20 +59,17 @@ def combine_simulation_parameters(params1, params2):
         raise RuntimeError('Both SimulationParameters objects must have'
                            ' the same parameters.')
 
-    if set(params1.unpacked_parameters) != set(
-            params2.unpacked_parameters):
-        raise RuntimeError(
-            'Both SimulationParameters objects must have'
-            ' the same unpacked parameters (only the values'
-            ' should can be different).')
+    if set(params1.unpacked_parameters) != set(params2.unpacked_parameters):
+        raise RuntimeError('Both SimulationParameters objects must have'
+                           ' the same unpacked parameters (only the values'
+                           ' should can be different).')
 
     fixed_parameters = params1.fixed_parameters
     for key in fixed_parameters:
         if params1[key] != params2[key]:
-            raise RuntimeError(
-                'The fixed parameters in both '
-                'SimulationParameters objects must have the'
-                ' same value.')
+            raise RuntimeError('The fixed parameters in both '
+                               'SimulationParameters objects must have the'
+                               ' same value.')
 
     union = SimulationParameters()
 
@@ -145,6 +144,7 @@ class SimulationParameters(JsonSerializable):
     .SimulationResults : Class to store simulation results.
     .SimulationRunner : Base class to implement Monte Carlo simulations.
     """
+
     def __init__(self):
         # Dictionary that will store the parameters. The key is the
         # parameter name and the value is the parameter value.
@@ -200,8 +200,10 @@ class SimulationParameters(JsonSerializable):
         list[str]
             List with the names of the fixed parameter.
         """
-        fixed_params = [name for name in self.parameters.keys()
-                        if name not in self._unpacked_parameters_set]
+        fixed_params = [
+            name for name in self.parameters.keys()
+            if name not in self._unpacked_parameters_set
+        ]
         return fixed_params
 
     @staticmethod
@@ -327,8 +329,7 @@ class SimulationParameters(JsonSerializable):
                 else:
                     self._unpacked_parameters_set.remove(name)
             else:
-                raise ValueError(
-                    "Parameter {0} is not iterable".format(name))
+                raise ValueError("Parameter {0} is not iterable".format(name))
         else:
             raise ValueError("Unknown parameter: `{0}`".format(name))
 
@@ -358,6 +359,7 @@ class SimulationParameters(JsonSerializable):
         str
             The object representation as a string.
         """
+
         def modify_name(p_name):
             """
             Add an * in p_name if it is set to be unpacked
@@ -370,6 +372,7 @@ class SimulationParameters(JsonSerializable):
             if p_name in self._unpacked_parameters_set:
                 p_name += '*'
             return p_name
+
         repr_list = []
         for name, value in self.parameters.items():
             repr_list.append("'{0}': {1}".format(modify_name(name), value))
@@ -513,8 +516,8 @@ class SimulationParameters(JsonSerializable):
         else:
             # Generator for the lengths of the parameters set to be
             # unpacked
-            gen_values = (len(self.parameters[i]) for
-                          i in self._unpacked_parameters_set)
+            gen_values = (
+                len(self.parameters[i]) for i in self._unpacked_parameters_set)
             # Just multiply all the lengths
             import operator
             import functools
@@ -585,8 +588,8 @@ class SimulationParameters(JsonSerializable):
             fixed_params_dict = {}
 
         # Get the only parameter that was not fixed
-        varying_param = list(
-            self._unpacked_parameters_set - set(fixed_params_dict.keys()))
+        varying_param = list(self._unpacked_parameters_set -
+                             set(fixed_params_dict.keys()))
 
         # List to store the indexes (as strings) of the fixed parameters,
         # as well as ":" for the varying parameter,
@@ -608,12 +611,11 @@ class SimulationParameters(JsonSerializable):
         # order to get the linear indexes.
 
         # Get the lengths of the parameters marked to be unpacked
-        dimensions = [
-            len(self.parameters[i]) for i in self.unpacked_parameters]
+        dimensions = [len(self.parameters[i]) for i in self.unpacked_parameters]
         aux = np.arange(0, self.get_num_unpacked_variations())
         aux.shape = dimensions
-        indexes = eval(
-            "aux" + "[{0}]".format(",".join(param_indexes))).flatten()
+        indexes = eval("aux" +
+                       "[{0}]".format(",".join(param_indexes))).flatten()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # if indexes.size == 1:
         #     indexes = indexes[0]
@@ -716,9 +718,10 @@ class SimulationParameters(JsonSerializable):
         # variable) as well as the original SimulationParameters object
         # from where it came from (stored in the _original_sim_params
         # variable).
-        sim_params_list = [SimulationParameters._create(v, i, self)
-                           for i, v in
-                           enumerate(all_possible_dicts_list)]
+        sim_params_list = [
+            SimulationParameters._create(v, i, self)
+            for i, v in enumerate(all_possible_dicts_list)
+        ]
         return sim_params_list
 
     def save_to_pickled_file(self, filename):
@@ -814,21 +817,24 @@ class SimulationParameters(JsonSerializable):
 
             for s in config.sections:
                 add_params(simulation_params, config[s])
+
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        conf_file_parser = ConfigObj(
-            filename,
-            list_values=True,
-            configspec=spec)
+        conf_file_parser = ConfigObj(filename,
+                                     list_values=True,
+                                     configspec=spec)
 
         # Dictionary with custom validation functions. Here we add a
         # validation function for numpy float arrays.
         fdict = {
-            'real_numpy_array': real_numpy_array_check,
-            'integer_numpy_array': integer_numpy_array_check,
+            'real_numpy_array':
+                real_numpy_array_check,
+            'integer_numpy_array':
+                integer_numpy_array_check,
             'integer_scalar_or_integer_numpy_array_check':
-            integer_scalar_or_integer_numpy_array_check,
+                integer_scalar_or_integer_numpy_array_check,
             'real_scalar_or_real_numpy_array_check':
-            real_scalar_or_real_numpy_array_check}
+                real_scalar_or_real_numpy_array_check
+        }
         validator = Validator(fdict)
 
         # The 'copy' argument indicates that if we save the ConfigObj
@@ -864,15 +870,13 @@ class SimulationParameters(JsonSerializable):
                 # add_params(params, conf_file_parser)
                 # pprint(params.parameters)
                 # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                msg = (
-                    "Error loading file {0}. Parameter '{1}' in section "
-                    "'{2}' must be provided.")
-                raise Exception(msg.format(filename, first_error[1],
-                                           first_error[0][0]))
+                msg = ("Error loading file {0}. Parameter '{1}' in section "
+                       "'{2}' must be provided.")
+                raise Exception(
+                    msg.format(filename, first_error[1], first_error[0][0]))
             else:
-                msg = (
-                    "Error loading file {0}. Parameter '{1}' in section "
-                    "'{2}' is invalid. {3}")
+                msg = ("Error loading file {0}. Parameter '{1}' in section "
+                       "'{2}' is invalid. {3}")
                 raise Exception(
                     msg.format(filename, first_error[1], first_error[0][0],
                                str(first_error[2]).capitalize()))
@@ -919,10 +923,12 @@ class SimulationParameters(JsonSerializable):
         if original_sim_params is not None:
             original_sim_params = original_sim_params._to_dict()
 
-        out = {'parameters': self.parameters,
-               'unpacked_parameters_set': self._unpacked_parameters_set,
-               'unpack_index': self.unpack_index,
-               'original_sim_params': original_sim_params}
+        out = {
+            'parameters': self.parameters,
+            'unpacked_parameters_set': self._unpacked_parameters_set,
+            'unpack_index': self.unpack_index,
+            'original_sim_params': original_sim_params
+        }
         return out
 
     @staticmethod
@@ -993,8 +999,8 @@ class SimulationParameters(JsonSerializable):
         # Store the _unpacked_parameters_set as an attribute of the group.
         # Note that we need to convert _unpacked_parameters_set to a list,
         # since a set has no native HDF5 equivalent.
-        group.attrs.create('_unpacked_parameters_set', data=list(
-            self._unpacked_parameters_set))
+        group.attrs.create('_unpacked_parameters_set',
+                           data=list(self._unpacked_parameters_set))
 
         # Save the _unpack_index member variable as an attribute of the
         # group.
@@ -1142,5 +1148,6 @@ An HDF5 group
         return simparams
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Simple script to simulate a CoMP transmission which consists of a
 simple block diagonalization of the channel.
@@ -29,7 +28,6 @@ from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
 from pyphysim.channels import pathloss
 import pyphysim.channels.multiuser
-
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -61,7 +59,7 @@ Pe_dBm = -10000  # transmit power (in dBm) of the ext. interference
 ext_int_rank = 1  # Rank of the external interference
 
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-rep_max = 20000   # Maximum number of repetitions for each
+rep_max = 20000  # Maximum number of repetitions for each
 
 pbar = progressbar.ProgressbarText(
     rep_max, message="Simulating for SNR: {0}".format(SNR_dB))
@@ -94,7 +92,6 @@ cluster0.delete_all_users()
 cluster0.add_border_users(cell_ids, angles, 0.7)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Simulation loop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -102,8 +99,8 @@ dists = cluster0.calc_dist_all_users_to_each_cell()
 pathloss = path_loss_obj.calc_path_loss(dists)
 distance_users_to_cluster_center = np.array(
     [cluster0.calc_dist(i) for i in cluster0.get_all_users()])
-pathlossInt = path_loss_obj.calc_path_loss(
-    cluster0.external_radius - distance_users_to_cluster_center)
+pathlossInt = path_loss_obj.calc_path_loss(cluster0.external_radius -
+                                           distance_users_to_cluster_center)
 pathlossInt.shape = (num_cells, 1)
 
 num_symbol_errors = 0.
@@ -130,8 +127,7 @@ for rep in range(rep_max):
         num_cells,
         transmit_power,
         # noise_var
-        1e-50
-    )
+        1e-50)
 
     # Prepare the transmit data.
     precoded_data = np.dot(Ms, symbols)

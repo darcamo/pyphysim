@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Perform the simulation of the Block Diagonalization (BD) algorithm
 (several variations of the BD algorithm).
@@ -81,12 +80,11 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         # xxxxxxxxxx Initialize parameters configuration xxxxxxxxxxxxxxxxxx
         # Among other things, this will create the self.params object with
         # the simulation parameters read from the config file.
-        SimulationRunner.__init__(
-            self,
-            default_config_file=default_config_file,
-            config_spec=spec,
-            read_command_line_args=read_command_line_args,
-            save_parsed_file=save_parsed_file)
+        SimulationRunner.__init__(self,
+                                  default_config_file=default_config_file,
+                                  config_spec=spec,
+                                  read_command_line_args=read_command_line_args,
+                                  save_parsed_file=save_parsed_file)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -110,10 +108,12 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         # xxxxxxxxxx Creates the modulator object xxxxxxxxxxxxxxxxxxxxxxxxx
         M = self.params['M']
-        modulator_options = {'PSK': fundamental.PSK,
-                             'QPSK': fundamental.QPSK,
-                             'QAM': fundamental.QAM,
-                             'BPSK': fundamental.BPSK}
+        modulator_options = {
+            'PSK': fundamental.PSK,
+            'QPSK': fundamental.QPSK,
+            'QAM': fundamental.QAM,
+            'BPSK': fundamental.BPSK
+        }
         self.modulator = modulator_options[self.params['modulator']](M)
         ":type: fundamental.PSK | fundamental.QPSK | fundamental.QAM | fundamental.BPSK"
 
@@ -169,8 +169,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         elif scenario == 'Random':
             self._create_random_users_scenario(current_params)
         else:
-            raise RuntimeError(
-                "Invalid scenario: {0}".format(scenario))
+            raise RuntimeError("Invalid scenario: {0}".format(scenario))
 
     def _create_random_users_scenario(self, current_params):
         """Run this method to set variables specific to the 'RandomUsers'
@@ -254,79 +253,72 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         # calculation is performed here in the
         # _on_simulate_current_params_start.
         transmit_power = BDSimulationRunner._calc_transmit_power(
-            current_params['SNR'],
-            current_params['N0'],
-            current_params['cell_radius'],
-            self.path_loss_obj)
+            current_params['SNR'], current_params['N0'],
+            current_params['cell_radius'], self.path_loss_obj)
 
         # External interference power
         self.pe = dBm2Linear(current_params['Pe_dBm'])
 
         # xxxxx Create the BD object with the None metric xxxxxxxxxxxxxxxxx
         self.bd_obj_None = EnhancedBD(current_params['num_cells'],
-                                      transmit_power,
-                                      self.noise_var,
-                                      self.pe)
+                                      transmit_power, self.noise_var, self.pe)
         self.bd_obj_None.set_ext_int_handling_metric(
-            "None",
-            {'modulator': self.modulator,
-             'packet_length': current_params['packet_length'],
-             'num_streams': 1})
+            "None", {
+                'modulator': self.modulator,
+                'packet_length': current_params['packet_length'],
+                'num_streams': 1
+            })
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with the Naive metric xxxxxxxxxxxxxxxx
         self.bd_obj_naive = EnhancedBD(current_params['num_cells'],
-                                       transmit_power,
-                                       self.noise_var,
-                                       self.pe)
+                                       transmit_power, self.noise_var, self.pe)
         self.bd_obj_naive.set_ext_int_handling_metric(
-            "naive",
-            {'modulator': self.modulator,
-             'packet_length': current_params['packet_length'],
-             'num_streams': 1})
+            "naive", {
+                'modulator': self.modulator,
+                'packet_length': current_params['packet_length'],
+                'num_streams': 1
+            })
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with the fixed metric xxxxxxxxxxxxxxxx
         self.bd_obj_fixed = EnhancedBD(current_params['num_cells'],
-                                       transmit_power,
-                                       self.noise_var,
-                                       self.pe)
+                                       transmit_power, self.noise_var, self.pe)
         self.bd_obj_fixed.set_ext_int_handling_metric(
-            "fixed",
-            {'modulator': self.modulator,
-             'packet_length': current_params['packet_length'],
-             'num_streams': 1})
+            "fixed", {
+                'modulator': self.modulator,
+                'packet_length': current_params['packet_length'],
+                'num_streams': 1
+            })
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with the capacity metric xxxxxxxxxxxxx
         self.bd_obj_capacity = EnhancedBD(current_params['num_cells'],
-                                          transmit_power,
-                                          self.noise_var,
+                                          transmit_power, self.noise_var,
                                           self.pe)
         self.bd_obj_capacity.set_ext_int_handling_metric(
-            "capacity",
-            {'modulator': self.modulator,
-             'packet_length': current_params['packet_length'],
-             'num_streams': 1})
+            "capacity", {
+                'modulator': self.modulator,
+                'packet_length': current_params['packet_length'],
+                'num_streams': 1
+            })
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xx Create the BD object with the effective_throughput metric xxxx
-        self.bd_obj_effec_throughput = EnhancedBD(
-            current_params['num_cells'],
-            transmit_power,
-            self.noise_var,
-            self.pe)
+        self.bd_obj_effec_throughput = EnhancedBD(current_params['num_cells'],
+                                                  transmit_power,
+                                                  self.noise_var, self.pe)
         self.bd_obj_effec_throughput.set_ext_int_handling_metric(
-            "effective_throughput",
-            {'modulator': self.modulator,
-             'packet_length': current_params['packet_length'],
-             'num_streams': 1})
+            "effective_throughput", {
+                'modulator': self.modulator,
+                'packet_length': current_params['packet_length'],
+                'num_streams': 1
+            })
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Create the BD object with whitening xxxxxxxxxxxxxxxxxxxxxxx
         self.bd_obj_whitening = WhiteningBD(current_params['num_cells'],
-                                            transmit_power,
-                                            self.noise_var,
+                                            transmit_power, self.noise_var,
                                             self.pe)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -410,93 +402,59 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         # Since we will use the same data for the external interference no
         # matter which metric is used, lets create that data here.
-        external_int_data_all_metrics = (
-            np.sqrt(self.pe) *
-            misc.randn_c_RS(
-                self.ext_data_RS,
-                current_parameters['ext_int_rank'],
-                current_parameters['NSymbs']))
+        external_int_data_all_metrics = (np.sqrt(self.pe) * misc.randn_c_RS(
+            self.ext_data_RS, current_parameters['ext_int_rank'],
+            current_parameters['NSymbs']))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxx Run the Simulation and get the results for each metric xxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # None metric
-        (ber_result_None,
-         ser_result_None,
-         per_result_None,
+        (ber_result_None, ser_result_None, per_result_None,
          spec_effic_result_None,
          sinr_result_None) = self.__simulate_for_one_metric(
-            Ns_all_users_None,
-            external_int_data_all_metrics,
-            MsPk_all_users_None,
-            Wk_all_users_None,
-            'None',
-            current_parameters)
+             Ns_all_users_None, external_int_data_all_metrics,
+             MsPk_all_users_None, Wk_all_users_None, 'None', current_parameters)
 
         # naive metric
-        (ber_result_naive,
-         ser_result_naive,
-         per_result_naive,
+        (ber_result_naive, ser_result_naive, per_result_naive,
          spec_effic_result_naive,
          sinr_result_naive) = self.__simulate_for_one_metric(
-            Ns_all_users_naive,
-            external_int_data_all_metrics,
-            MsPk_all_users_naive,
-            Wk_all_users_naive,
-            'naive',
-            current_parameters)
+             Ns_all_users_naive, external_int_data_all_metrics,
+             MsPk_all_users_naive, Wk_all_users_naive, 'naive',
+             current_parameters)
 
         # fixed metric
-        (ber_result_fixed,
-         ser_result_fixed,
-         per_result_fixed,
+        (ber_result_fixed, ser_result_fixed, per_result_fixed,
          spec_effic_result_fixed,
          sinr_result_fixed) = self.__simulate_for_one_metric(
-            Ns_all_users_fixed,
-            external_int_data_all_metrics,
-            MsPk_all_users_fixed,
-            Wk_all_users_fixed,
-            'fixed',
-            current_parameters)
+             Ns_all_users_fixed, external_int_data_all_metrics,
+             MsPk_all_users_fixed, Wk_all_users_fixed, 'fixed',
+             current_parameters)
 
         # capacity metric
-        (ber_result_capacity,
-         ser_result_capacity,
-         per_result_capacity,
+        (ber_result_capacity, ser_result_capacity, per_result_capacity,
          spec_effic_result_capacity,
          sinr_result_capacity) = self.__simulate_for_one_metric(
-            Ns_all_users_capacity,
-            external_int_data_all_metrics,
-            MsPk_all_users_capacity,
-            Wk_all_users_capacity,
-            'capacity',
-            current_parameters)
+             Ns_all_users_capacity, external_int_data_all_metrics,
+             MsPk_all_users_capacity, Wk_all_users_capacity, 'capacity',
+             current_parameters)
 
         # effective throughput metric
-        (ber_result_effec_throughput,
-         ser_result_effec_throughput,
-         per_result_effec_throughput,
-         spec_effic_result_effec_throughput,
+        (ber_result_effec_throughput, ser_result_effec_throughput,
+         per_result_effec_throughput, spec_effic_result_effec_throughput,
          sinr_result_effec_throughput) = self.__simulate_for_one_metric(
-            Ns_all_users_effec_throughput,
-            external_int_data_all_metrics,
-            MsPk_all_users_effec_throughput,
-            Wk_all_users_effec_throughput,
-            'effec_throughput',
-            current_parameters)
+             Ns_all_users_effec_throughput, external_int_data_all_metrics,
+             MsPk_all_users_effec_throughput, Wk_all_users_effec_throughput,
+             'effec_throughput', current_parameters)
 
         # Whitening BD
-        (ber_result_Whitening,
-         ser_result_Whitening,
-         per_result_Whitening,
+        (ber_result_Whitening, ser_result_Whitening, per_result_Whitening,
          spec_effic_result_Whitening,
          sinr_result_Whitening) = self.__simulate_for_one_metric(
-            Ns_all_users_Whitening,
-            external_int_data_all_metrics,
-            Ms_all_users_Whitening,
-            Wk_all_users_Whitening,
-            'Whitening',
-            current_parameters)
+             Ns_all_users_Whitening, external_int_data_all_metrics,
+             Ms_all_users_Whitening, Wk_all_users_Whitening, 'Whitening',
+             current_parameters)
 
         simResults = SimulationResults()
         # Add the 'None' results
@@ -544,12 +502,9 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         return simResults
 
-    def __simulate_for_one_metric(self,
-                                  Ns_all_users,
-                                  external_int_data_all_metrics,
-                                  MsPk_all_users,
-                                  Wk_all_users,
-                                  metric_name,
+    def __simulate_for_one_metric(self, Ns_all_users,
+                                  external_int_data_all_metrics, MsPk_all_users,
+                                  Wk_all_users, metric_name,
                                   current_parameters):
         """
         This method is only called inside the _run_simulation method.
@@ -583,29 +538,25 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         Ns_total = np.sum(Ns_all_users)
         self.data_RS = np.random.RandomState(self.data_gen_seed)
         input_data = self.data_RS.randint(
-            0,
-            current_parameters['M'],
+            0, current_parameters['M'],
             [Ns_total, current_parameters['NSymbs']])
         symbols = self.modulator.modulate(input_data)
 
         # Prepare the transmit data. That is, the precoded_data as well as
         # the external interference sources' data.
-        precoded_data = np.dot(np.hstack(MsPk_all_users),
-                               symbols)
+        precoded_data = np.dot(np.hstack(MsPk_all_users), symbols)
 
         # external_int_data_all_metrics = (
         #     np.sqrt(self.pe)
         #     * misc.randn_c_RS(
         #         self.ext_data_RS, self.ext_int_rank, self.NSymbs))
 
-        all_data = np.vstack([precoded_data,
-                              external_int_data_all_metrics])
+        all_data = np.vstack([precoded_data, external_int_data_all_metrics])
 
         # xxxxxxxxxx Pass the precoded data through the channel xxxxxxxxxxx
         self.multiuser_channel.set_noise_seed(self.noise_seed)
         received_signal = self.multiuser_channel.corrupt_concatenated_data(
-            all_data
-        )
+            all_data)
 
         # xxxxxxxxxx Filter the received data xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # noinspection PyArgumentList
@@ -630,7 +581,7 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
 
         # xxxxxxxxxx Calculates the Package Error Rate xxxxxxxxxxxxxxxxxxxx
         ber = num_bit_errors / num_bits
-        per = 1. - ((1. - ber) ** current_parameters['packet_length'])
+        per = 1. - ((1. - ber)**current_parameters['packet_length'])
         num_packages = num_bits / current_parameters['packet_length']
         num_package_errors = per * num_packages
 
@@ -652,48 +603,35 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         Uk_all_users = np.empty(Wk_all_users.size, dtype=np.ndarray)
         for ii in range(Wk_all_users.size):
             Uk_all_users[ii] = Wk_all_users[ii].conjugate().T
-        SINR_all_k = self.multiuser_channel.calc_JP_SINR(MsPk_all_users,
-                                                         Uk_all_users)
+        SINR_all_k = self.multiuser_channel.calc_JP_SINR(
+            MsPk_all_users, Uk_all_users)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # None metric
-        ber_result = Result.create(
-            'ber_{0}'.format(metric_name),
-            Result.RATIOTYPE,
-            num_bit_errors,
-            num_bits)
-        ser_result = Result.create(
-            'ser_{0}'.format(metric_name),
-            Result.RATIOTYPE,
-            num_symbol_errors,
-            num_symbols)
+        ber_result = Result.create('ber_{0}'.format(metric_name),
+                                   Result.RATIOTYPE, num_bit_errors, num_bits)
+        ser_result = Result.create('ser_{0}'.format(metric_name),
+                                   Result.RATIOTYPE, num_symbol_errors,
+                                   num_symbols)
 
-        per_result = Result.create(
-            'per_{0}'.format(metric_name),
-            Result.RATIOTYPE,
-            num_package_errors,
-            num_packages)
+        per_result = Result.create('per_{0}'.format(metric_name),
+                                   Result.RATIOTYPE, num_package_errors,
+                                   num_packages)
 
-        spec_effic_result = Result.create(
-            'spec_effic_{0}'.format(metric_name),
-            Result.RATIOTYPE,
-            effective_spec_effic,
-            1)
+        spec_effic_result = Result.create('spec_effic_{0}'.format(metric_name),
+                                          Result.RATIOTYPE,
+                                          effective_spec_effic, 1)
 
-        sinr_result = Result(
-            'sinr_{0}'.format(metric_name),
-            Result.RATIOTYPE,
-            accumulate_values=True)
+        sinr_result = Result('sinr_{0}'.format(metric_name),
+                             Result.RATIOTYPE,
+                             accumulate_values=True)
 
         for k in range(Wk_all_users.size):
             sinr_k = SINR_all_k[k]
             for value in sinr_k:
                 sinr_result.update(value, 1)
 
-        return (ber_result,
-                ser_result,
-                per_result,
-                spec_effic_result,
+        return (ber_result, ser_result, per_result, spec_effic_result,
                 sinr_result)
 
     # def _keep_going(self, current_sim_results, current_rep):
@@ -733,6 +671,8 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         snr = dB2Linear(SNR_dB)
         pt = snr * dBm2Linear(N0_dBm) / path_loss_border
         return pt
+
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -774,36 +714,41 @@ def plot_spectral_efficience_all_metrics(results, Pe_dBm, ax=None):
     else:
         fig = ax.get_figure()
 
-    result_indexes = params.get_pack_indexes(
-        {'Pe_dBm': Pe_dBm})
+    result_indexes = params.get_pack_indexes({'Pe_dBm': Pe_dBm})
 
     # xxxxx Plot The Spectral Efficiency with no stream reduction xxxxxxxxx
-    ax.plot(SNR, spec_effic_None[result_indexes],
-            'g-o', label='No Stream Reduction')
+    ax.plot(SNR,
+            spec_effic_None[result_indexes],
+            'g-o',
+            label='No Stream Reduction')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot The Spectral Efficiency with capacity metric xxxxxxxxxxxxx
-    ax.plot(SNR, spec_effic_capacity[result_indexes],
-            'b-s', label='Capacity Metric')
+    ax.plot(SNR,
+            spec_effic_capacity[result_indexes],
+            'b-s',
+            label='Capacity Metric')
 
     # xxxxx Plot the Spec. Effic. with effective_throughput metric xxxxxxxx
-    ax.plot(SNR, spec_effic_effective_throughput[result_indexes],
-            'k-*', label='Effective Throughput Metric')
+    ax.plot(SNR,
+            spec_effic_effective_throughput[result_indexes],
+            'k-*',
+            label='Effective Throughput Metric')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot the Spec. Effic. with naive metric xxxxxxxxxxxxxxxxxxxxxxx
-    ax.plot(SNR, spec_effic_naive[result_indexes],
-            'm--', label='Naive Case')
+    ax.plot(SNR, spec_effic_naive[result_indexes], 'm--', label='Naive Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot the Spec. Effic. with fixed metric xxxxxxxxxxxxxxxxxxxxxxx
-    ax.plot(SNR, spec_effic_fixed[result_indexes],
-            'r-^', label='Fixed Case')
+    ax.plot(SNR, spec_effic_fixed[result_indexes], 'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
-    ax.plot(SNR, spec_effic_Whitening[result_indexes],
-            'c-D', label='Whitening BD')
+    ax.plot(SNR,
+            spec_effic_Whitening[result_indexes],
+            'c-D',
+            label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     ax.set_xlabel('SNR (dB)')
@@ -849,36 +794,35 @@ def plot_per_all_metrics(results, Pe_dBm, ax=None):
     else:
         fig = ax.get_figure()
 
-    result_indexes = params.get_pack_indexes(
-        {'Pe_dBm': Pe_dBm})
+    result_indexes = params.get_pack_indexes({'Pe_dBm': Pe_dBm})
 
     # xxxxx Plot The Spectral Efficiency with no stream reduction xxxxxxxxx
-    ax.plot(SNR, per_None[result_indexes],
-            'g-o', label='No Stream Reduction')
+    ax.plot(SNR, per_None[result_indexes], 'g-o', label='No Stream Reduction')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot The Spectral Efficiency with capacity metric xxxxxxxxxxxxx
-    ax.plot(SNR, per_capacity[result_indexes],
-            'b-s', label='Capacity Metric')
+    ax.plot(SNR, per_capacity[result_indexes], 'b-s', label='Capacity Metric')
 
     # xxxxx Plot the Spec. Effic. with effective_throughput metric xxxxxxxx
-    ax.plot(SNR, per_effective_throughput[result_indexes],
-            'k-*', label='Effective Throughput Metric')
+    ax.plot(SNR,
+            per_effective_throughput[result_indexes],
+            'k-*',
+            label='Effective Throughput Metric')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot the Spec. Effic. with naive metric xxxxxxxxxxxxxxxxxxxxxxx
-    ax.plot(SNR, per_naive[result_indexes],
-            'm--', label='Naive Case')
+    ax.plot(SNR, per_naive[result_indexes], 'm--', label='Naive Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot the Spec. Effic. with fixed metric xxxxxxxxxxxxxxxxxxxxxxx
-    ax.plot(SNR, per_fixed[result_indexes],
-            'r-^', label='Fixed Case')
+    ax.plot(SNR, per_fixed[result_indexes], 'r-^', label='Fixed Case')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Plot the Spec. Effic. with whitening BD xxxxxxxxxxxxxxxxxxxxxxx
-    ax.plot(SNR, per_effective_whitening[result_indexes],
-            'c-D', label='Whitening BD')
+    ax.plot(SNR,
+            per_effective_whitening[result_indexes],
+            'c-D',
+            label='Whitening BD')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     ax.set_xlabel('SNR (dB)')
@@ -908,9 +852,8 @@ if __name__ == '__main__':
     simulate_do_what_i_mean(runner, pyphysim_dir)
 
     if runner.command_line_args.index is None:
-        print ("Runned iterations: {0}".format(runner.runned_reps))
-        print ("Elapsed Time: {0}".format(runner.elapsed_time))
-
+        print("Runned iterations: {0}".format(runner.runned_reps))
+        print("Elapsed Time: {0}".format(runner.elapsed_time))
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 if __name__ == '__main__1':
@@ -928,8 +871,8 @@ if __name__ == '__main__1':
     # xxxxxxxx Load the results from the file xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     results_filename = 'bd_results_{Nr}x{Nt}_ext_int_rank_{ext_int_rank}'
     results_filename.format(**params.parameters)
-    results = SimulationResults.load_from_file(
-        '{0}{1}'.format(results_filename, '.pickle'))
+    results = SimulationResults.load_from_file('{0}{1}'.format(
+        results_filename, '.pickle'))
 
     SNR = results.params['SNR']
     if _MATPLOTLIB_AVAILABLE is True and SNR.size > 1:
@@ -944,8 +887,10 @@ if __name__ == '__main__1':
 
         per_all_fig = plot_per_all_metrics(results, Pe_dBm)
         # per_all_fig.tight_layout()
-        per_all_fig.subplots_adjust(
-            bottom=0.08, right=0.98, top=0.95, left=0.07)
+        per_all_fig.subplots_adjust(bottom=0.08,
+                                    right=0.98,
+                                    top=0.95,
+                                    left=0.07)
         per_all_fig.savefig('{0}_Pe_{1}_per_all.pdf'.format(
             results_filename, Pe_dBm))
 

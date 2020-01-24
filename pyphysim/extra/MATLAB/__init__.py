@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Package with MATLAB related functions.
 
 Examples: conversions for the print output from python to MATLAB and

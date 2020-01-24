@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=R0914
-
 """Module implementing the block diagonalization algorithm.
 
 There are two ways to use this module. You can either use the
@@ -25,15 +24,18 @@ from ..subspace.projections import calcProjectionMatrix
 from ..modulators.fundamental import Modulator
 from ..channels.multiuser import MultiUserChannelMatrixExtInt
 
-__all__ = ['block_diagonalize', 'calc_receive_filter', 'BlockDiagonalizer',
-           'BDWithExtIntBase', 'WhiteningBD', 'EnhancedBD']
+__all__ = [
+    'block_diagonalize', 'calc_receive_filter', 'BlockDiagonalizer',
+    'BDWithExtIntBase', 'WhiteningBD', 'EnhancedBD'
+]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 def block_diagonalize(mtChannel, num_users, iPu, noise_var):
-    """Performs the block diagonalization of `mtChannel`.
+    """
+    Performs the block diagonalization of `mtChannel`.
 
     Parameters
     ----------
@@ -56,16 +58,10 @@ def block_diagonalize(mtChannel, num_users, iPu, noise_var):
 
     Notes
     -----
-    The block diagonalization algorithm is described in [1]_, where
-    different power allocations are illustrated. The
-    :class:`BlockDiagonalizer` class implement two power allocation
-    methods, a global power allocation, and a 'per transmitter' power
-    allocation.
-
-    .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
-       "Zero-Forcing Methods for Downlink Spatial Multiplexing
-       in Multiuser MIMO Channels," IEEE Transactions on Signal
-       Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
+    The block diagonalization algorithm is described in [Spencer2004]_, where
+    different power allocations are illustrated. The :class:`BlockDiagonalizer`
+    class implement two power allocation methods, a global power allocation,
+    and a 'per transmitter' power allocation.
     """
     BD = BlockDiagonalizer(num_users, iPu, noise_var)
     results_tuple = BD.block_diagonalize(mtChannel)
@@ -153,7 +149,7 @@ def _calc_effective_throughput(sinrs, modulator, packet_length):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Classes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class BlockDiagonalizer(object):
+class BlockDiagonalizer:
     """
     Class to perform the block diagonalization algorithm in a joint
     transmission scenario.
@@ -232,18 +228,11 @@ class BlockDiagonalizer(object):
 
     Notes
     -----
-    The block diagonalization algorithm is described in [1]_, where
-    different power allocations are illustrated. The
-    :class:`BlockDiagonalizer` class implement two power allocation
-    methods, a global power allocation, and a 'per transmitter' power
-    allocation.
-
-    .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
-       "Zero-Forcing Methods for Downlink Spatial Multiplexing
-       in Multiuser MIMO Channels," IEEE Transactions on Signal
-       Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
+    The block diagonalization algorithm is described in [Spencer2004]_, where
+    different power allocations are illustrated. The :class:`BlockDiagonalizer`
+    class implement two power allocation methods, a global power allocation,
+    and a 'per transmitter' power allocation.
     """
-
     def __init__(self, num_users, iPu, noise_var):
         self.num_users = num_users
         self.iPu = iPu
@@ -256,12 +245,12 @@ class BlockDiagonalizer(object):
         Calculates the modulation matrix "M" that block diagonalizes the
         channel `mtChannel`, but without any king of power scaling.
 
-        The "modulation matrix" is a matrix that changes the channel to a
-        block diagonal structure and it is the first part in the Block
-        Diagonalization algorithm. The returned modulation matrix is
-        equivalent to Equation (12) of [1]_ but without the power scaling
-        matrix :math:`\\Lambda`. Therefore, for the complete BD algorithm it is
-        still necessary to perform this power scaling in the output of
+        The "modulation matrix" is a matrix that changes the channel to a block
+        diagonal structure and it is the first part in the Block
+        Diagonalization algorithm. The returned modulation matrix is equivalent
+        to Equation (12) of [Spencer2004]_ but without the power scaling matrix
+        :math:`\\Lambda`. Therefore, for the complete BD algorithm it is still
+        necessary to perform this power scaling in the output of
         _calc_BD_matrix_no_power_scaling.
 
         Parameters
@@ -289,11 +278,6 @@ class BlockDiagonalizer(object):
         multiple base stations jointly transmitting to multiple users then
         the power of each base station must be distributed only into the
         dimensions corresponding to that base station.
-
-        .. [1] Q. H. Spencer, A. L. Swindlehurst, and M. Haardt,
-           "Zero-Forcing Methods for Downlink Spatial Multiplexing
-           in Multiuser MIMO Channels," IEEE Transactions on Signal
-           Processing, vol. 52, no. 2, pp. 461-471, Feb. 2004.
         """
         iNr = mtChannel.shape[0]
         msg = ("`block_diagonalize`: Number of rows of the channel must be"
@@ -321,9 +305,8 @@ class BlockDiagonalizer(object):
             # total number of receive antennas minus the rank of
             # tilde_H_cur_user
             nStreams = iNr - np.linalg.matrix_rank(tilde_H_cur_user)
-            tilde_V0 = least_right_singular_vectors(
-                tilde_H_cur_user,
-                nStreams)[0]
+            tilde_V0 = least_right_singular_vectors(tilde_H_cur_user,
+                                                    nStreams)[0]
 
             # The equivalent channel of the current user corresponds to
             # $\mtH_j \tilde{\mtV}_j^{(0)}$
@@ -377,20 +360,16 @@ class BlockDiagonalizer(object):
         # (but considering a global power constraint, each element (power)
         # in Sigma comes from all APs)
         total_power = self.num_users * self.iPu
-        vtOptP = waterfilling.doWF(Sigma ** 2,
-                                   total_power,
-                                   self.noise_var)[0]
+        vtOptP = waterfilling.doWF(Sigma**2, total_power, self.noise_var)[0]
         # print "Darlan"
         # print vtOptP
         # print "Cav"
 
-        Ms_good = np.dot(Ms_bad,
-                         np.diag(np.sqrt(vtOptP)))
+        Ms_good = np.dot(Ms_bad, np.diag(np.sqrt(vtOptP)))
 
         return Ms_good
 
-    def _perform_normalized_waterfilling_power_scaling(
-            self, Ms_bad, Sigma):
+    def _perform_normalized_waterfilling_power_scaling(self, Ms_bad, Sigma):
         """Perform the power scaling based on the water-filling
         algorithm for all the parallel channel gains in `Sigma`,
         but normalize the result by the power of the base station
@@ -540,8 +519,8 @@ class BlockDiagonalizer(object):
             user_matrix = Ms_bad[:, user * iNtU:user * iNtU + iNtU]
             # The power is actually the square of cur_sqrt_P
             cur_sqrt_P = np.linalg.norm(user_matrix, 'fro')
-            Ms_good[:, user * iNtU:user * iNtU + iNtU] = (
-                user_matrix * np.sqrt(self.iPu) / cur_sqrt_P)
+            Ms_good[:, user * iNtU:user * iNtU +
+                    iNtU] = (user_matrix * np.sqrt(self.iPu) / cur_sqrt_P)
 
         # Ms_good = self._perform_normalized_power_scaling(Ms_bad,
         #                                                  Sigma)
@@ -643,8 +622,7 @@ class BlockDiagonalizer(object):
                 vtIndexes.extend(range(iNrU * index, (index + 1) * iNrU))
         else:
             assert isinstance(desired_users, int)
-            vtIndexes = range(iNrU * desired_users,
-                              (desired_users + 1) * iNrU)
+            vtIndexes = range(iNrU * desired_users, (desired_users + 1) * iNrU)
         return mt_channel[vtIndexes, :]
 
 
@@ -695,8 +673,9 @@ class BDWithExtIntBase(BlockDiagonalizer):
         """
         K = mu_channel.K
         R_all_k = mu_channel.calc_cov_matrix_extint_plus_noise(self.pe)
-        W_all_k = [calc_whitening_matrix(R_all_k[k]).conjugate().T
-                   for k in range(K)]
+        W_all_k = [
+            calc_whitening_matrix(R_all_k[k]).conjugate().T for k in range(K)
+        ]
         return W_all_k
 
 
@@ -716,13 +695,11 @@ class WhiteningBD(BDWithExtIntBase):
     pe : float
         Power of the external interference source (in linear scale)
     """
-
     def __init__(self, num_users, iPu, noise_var, pe):
         BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
 
     @staticmethod
-    def _calc_receive_filter_with_whitening(
-            newH, whitening_filter, Nr, Nt):
+    def _calc_receive_filter_with_whitening(newH, whitening_filter, Nr, Nt):
         """
         Calculates the Zero-Forcing receive filter of all users.
 
@@ -844,7 +821,6 @@ class EnhancedBD(BDWithExtIntBase):
     See the :class:`BlockDiagonalizer` class for details about the block
     diagonalization process.
     """
-
     def __init__(self, num_users, iPu, noise_var, pe):
         BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
 
@@ -860,7 +836,8 @@ class EnhancedBD(BDWithExtIntBase):
         # it is called.
         self._metric_func_extra_args = {}
 
-    def set_ext_int_handling_metric(self, metric,
+    def set_ext_int_handling_metric(self,
+                                    metric,
                                     metric_func_extra_args_dict=None):
         """
         Set the metric used to decide how many streams to sacrifice for
@@ -973,8 +950,10 @@ class EnhancedBD(BDWithExtIntBase):
             # Set self._metric_func_extra_args as a dictionary containing
             # the 'num_stream' key (and value) in
             # metric_func_extra_args_dict
-            self._metric_func_extra_args = {k: metric_func_extra_args_dict[k]
-                                            for k in ('num_streams',)}
+            self._metric_func_extra_args = {
+                k: metric_func_extra_args_dict[k]
+                for k in ('num_streams', )
+            }
             self._metric_func_extra_args = metric_func_extra_args_dict
 
         elif metric == 'fixed':
@@ -989,8 +968,10 @@ class EnhancedBD(BDWithExtIntBase):
             # Set self._metric_func_extra_args as a dictionary containing
             # the 'num_stream' key (and value) in
             # metric_func_extra_args_dict
-            self._metric_func_extra_args = {k: metric_func_extra_args_dict[k]
-                                            for k in ('num_streams',)}
+            self._metric_func_extra_args = {
+                k: metric_func_extra_args_dict[k]
+                for k in ('num_streams', )
+            }
 
         elif metric == 'effective_throughput':
             self._metric_func_name = 'effective_throughput'
@@ -1007,7 +988,8 @@ class EnhancedBD(BDWithExtIntBase):
             # metric_func_extra_args_dict
             self._metric_func_extra_args = {
                 k: metric_func_extra_args_dict[k]
-                for k in ('modulator', 'packet_length')}
+                for k in ('modulator', 'packet_length')
+            }
         else:
             msg = ("The `metric` attribute can only be one of "
                    "{None, 'capacity', 'effective_throughput'}")
@@ -1062,9 +1044,7 @@ class EnhancedBD(BDWithExtIntBase):
             # Calculate the equivalent channel including the stream
             # reduction
             # Heq_k_red = np.dot(Heq_k, P)
-            W = np.dot(
-                np.linalg.pinv(np.dot(overbar_P, Heq_k_P)),
-                overbar_P)
+            W = np.dot(np.linalg.pinv(np.dot(overbar_P, Heq_k_P)), overbar_P)
 
         return W
 
@@ -1092,18 +1072,17 @@ class EnhancedBD(BDWithExtIntBase):
 
         """
         mtP = np.dot(Wk, Heq_k_red)
-        desired_power = np.abs(np.diagonal(mtP)) ** 2
+        desired_power = np.abs(np.diagonal(mtP))**2
         # noinspection PyTypeChecker
         internal_interference = np.sum(
-            np.abs((mtP - np.diagflat(np.diagonal(mtP)))) ** 2, 1)
+            np.abs((mtP - np.diagflat(np.diagonal(mtP))))**2, 1)
 
         Wk_H = Wk.transpose().conjugate()
 
         # Note that the noise is already accounted in the covariance matrix
         # Re_k
         external_interference_plus_noise = np.diagonal(
-            np.dot(Wk, np.dot(Re_k, Wk_H))
-        ).real
+            np.dot(Wk, np.dot(Re_k, Wk_H))).real
 
         sinr = desired_power / (internal_interference +
                                 np.abs(external_interference_plus_noise))
@@ -1364,7 +1343,7 @@ class EnhancedBD(BDWithExtIntBase):
                     # Use use the '**' magic to pass the values in the
                     # self._metric_func_extra_args dictionary as the
                     # arguments of the metric function.
-                    ** self._metric_func_extra_args)
+                    **self._metric_func_extra_args)
 
             # The index with the highest metric value. This is equivalent
             # to the number of transmit streams which yields the highest
@@ -1416,8 +1395,8 @@ class EnhancedBD(BDWithExtIntBase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxx Case where the naive stream reduction is performed xxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if (self._metric_func_name == "naive" or
-           self._metric_func_name == "fixed"):
+        if (self._metric_func_name == "naive"
+                or self._metric_func_name == "fixed"):
 
             return self._perform_BD_no_waterfilling_fixed_or_naive_reduction(
                 mu_channel)

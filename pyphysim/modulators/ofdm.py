@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module implementing OFDM modulation and demodulation.
 """
@@ -13,7 +12,7 @@ from ..channels import fading
 __all__ = ['OFDM', 'OfdmOneTapEqualizer']
 
 
-class OFDM(object):
+class OFDM:
     """
     OFDM class.
     """
@@ -110,8 +109,8 @@ class OFDM(object):
             subcarriers. Num_ofdm_symbols is the number of OFDM symbols
             required to transmit `input_data_size` symbols.
         """
-        num_ofdm_symbols = (int(np.ceil(float(input_data_size) /
-                                        self.num_used_subcarriers)))
+        num_ofdm_symbols = (int(
+            np.ceil(float(input_data_size) / self.num_used_subcarriers)))
         zeropad = (self.num_used_subcarriers * num_ofdm_symbols -
                    input_data_size)
         return zeropad, num_ofdm_symbols
@@ -141,8 +140,7 @@ class OFDM(object):
         array([ 0,  1,  2,  3,  4,  5,  6,  7, \
                 -8, -7, -6, -5, -4, -3, -2, -1])
         """
-        indexes_regular_order = (np.arange(self.fft_size) -
-                                 self.fft_size // 2)
+        indexes_regular_order = (np.arange(self.fft_size) - self.fft_size // 2)
         return np.fft.fftshift(indexes_regular_order)
 
     def _get_used_subcarrier_numbers(self):
@@ -214,9 +212,8 @@ class OFDM(object):
         numbers = self._get_used_subcarrier_numbers()
         half_used = self.num_used_subcarriers // 2
 
-        indexes_proper = np.hstack([
-            self.fft_size + numbers[half_used:],
-            numbers[0:half_used]])
+        indexes_proper = np.hstack(
+            [self.fft_size + numbers[half_used:], numbers[0:half_used]])
         return indexes_proper
 
     def _prepare_input_signal(self, input_signal):
@@ -261,16 +258,16 @@ class OFDM(object):
         num_ofdm_symbols = self._calc_zeropad(num_symbs)[1]
 
         # Finally add the zeros to the input data
-        input_signal = np.hstack(
-            [input_signal, np.zeros(
-                self.num_used_subcarriers * num_ofdm_symbols - num_symbs)])
+        input_signal = np.hstack([
+            input_signal,
+            np.zeros(self.num_used_subcarriers * num_ofdm_symbols - num_symbs)
+        ])
 
         # Change the shape of the input data. Each row will be modulated as
         # one OFDM symbol.
         input_signal.shape = (num_ofdm_symbols, self.num_used_subcarriers)
 
-        input_ifft = np.zeros([num_ofdm_symbols, self.fft_size],
-                              dtype=complex)
+        input_ifft = np.zeros([num_ofdm_symbols, self.fft_size], dtype=complex)
         input_ifft[:, self.get_used_subcarrier_indexes()] \
             = input_signal[:, :]
 
@@ -310,8 +307,7 @@ class OFDM(object):
         _prepare_input_signal
 
         """
-        return decoded_signal[
-            :, self.get_used_subcarrier_indexes()].flatten()
+        return decoded_signal[:, self.get_used_subcarrier_indexes()].flatten()
 
     def _add_CP(self, input_data):
         """
@@ -358,8 +354,7 @@ class OFDM(object):
         """
         num_ofdm_symbols = (received_data.size //
                             (self.fft_size + self.cp_size))
-        received_data.shape = (num_ofdm_symbols,
-                               self.fft_size + self.cp_size)
+        received_data.shape = (num_ofdm_symbols, self.fft_size + self.cp_size)
         received_data_no_CP = received_data[:, self.cp_size:]
 
         return received_data_no_CP
@@ -391,9 +386,6 @@ class OFDM(object):
     def modulate(self, input_signal):
         """
         Perform the OFDM modulation of the input_signal.
-
-        .. TODO:: Write here about the performed zero-padding as well as CP
-           addition.
 
         Parameters
         ----------
@@ -432,9 +424,6 @@ class OFDM(object):
         """
         Perform the OFDM demodulation of the received_signal.
 
-        .. TODO:: Write here about the zero-padding (which is not
-           removed) as well as CP removal.
-
         Parameters
         ----------
         received_signal : np.ndarray
@@ -469,7 +458,7 @@ class OFDM(object):
         return decoded_symbols
 
 
-class OfdmOneTapEqualizer(object):
+class OfdmOneTapEqualizer:
     """
     The OfdmOneTapEqualizer class performs the one-tap equalization often
     required in OFDM transmissions to compensate the effect of the channel

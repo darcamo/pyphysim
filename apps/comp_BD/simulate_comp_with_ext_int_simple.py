@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Simple script to simulate a CoMP transmission with the possible stream
 reduction
@@ -30,7 +29,6 @@ from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
 from pyphysim.channels import pathloss
 import pyphysim.channels.multiuser
-
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -69,13 +67,12 @@ ext_int_rank = 1  # Rank of the external interference
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-rep_max = 10000   # Maximum number of repetitions for each
+rep_max = 10000  # Maximum number of repetitions for each
 
 pbar = progressbar.ProgressbarText(
     rep_max,
     message="Simulating for SNR: {0}, Pe_dBm: {1}".format(SNR_dB, Pe_dBm))
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Dependent parameters (don't change these) xxxxxxxxxxxxxxxxxxxx
@@ -102,14 +99,12 @@ cluster0 = cell_grid._clusters[0]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 # xxxxxxxxxx Create the scenario xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 cell_ids = np.arange(1, num_cells + 1)
 angles = np.array([210, -30, 90])
 cluster0.delete_all_users()
 cluster0.add_border_users(cell_ids, angles, 0.7)
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Simulation loop xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -118,8 +113,8 @@ dists = cluster0.calc_dist_all_users_to_each_cell()
 pathloss = path_loss_obj.calc_path_loss(dists)
 distance_users_to_cluster_center = np.array(
     [cluster0.calc_dist(i) for i in cluster0.get_all_users()])
-pathlossInt = path_loss_obj.calc_path_loss(
-    cluster0.external_radius - distance_users_to_cluster_center)
+pathlossInt = path_loss_obj.calc_path_loss(cluster0.external_radius -
+                                           distance_users_to_cluster_center)
 pathlossInt.shape = (num_cells, 1)
 
 num_symbol_errors = 0.
@@ -133,12 +128,13 @@ for rep in range(rep_max):
     multiuser_channel.noise_var = noise_var
 
     # Create the comp_obj
-    comp_obj = blockdiagonalization.EnhancedBD(
-        num_cells, transmit_power, noise_var, pe)
+    comp_obj = blockdiagonalization.EnhancedBD(num_cells, transmit_power,
+                                               noise_var, pe)
     # comp_obj.set_ext_int_handling_metric('capacity')
-    comp_obj.set_ext_int_handling_metric('effective_throughput',
-                                         {'modulator': modulator,
-                                          'packet_length': packet_length})
+    comp_obj.set_ext_int_handling_metric('effective_throughput', {
+        'modulator': modulator,
+        'packet_length': packet_length
+    })
 
     (MsPk_all_users,
      Wk_all_users,
@@ -181,7 +177,7 @@ print("num_symbol_errors: {0}".format(num_symbol_errors))
 print("num_symbols: {0}".format(num_symbols))
 SER = float(num_symbol_errors) / float(num_symbols)
 BER = float(num_bit_errors) / float(num_bits)
-PER = 1 - ((1 - BER) ** packet_length)
+PER = 1 - ((1 - BER)**packet_length)
 # Spectral efficiency
 SE = modulator.K * (1 - PER)
 

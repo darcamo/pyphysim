@@ -19,7 +19,6 @@ from validate import Validator
 
 from pyphysim.simulations.configobjvalidation import real_numpy_array_check
 
-
 if __name__ == '__main__':
     config_file_name = 'psk_simulation_config.txt'
 
@@ -41,10 +40,9 @@ if __name__ == '__main__':
     unpacked_parameters=string_list(default=list('SNR'))
     """.split("\n")
 
-    conf_file_parser = ConfigObj(
-        config_file_name,
-        list_values=True,
-        configspec=spec)
+    conf_file_parser = ConfigObj(config_file_name,
+                                 list_values=True,
+                                 configspec=spec)
 
     #conf_file_parser.write()
 
@@ -55,7 +53,9 @@ if __name__ == '__main__':
     # The 'copy' argument indicates that if we save the ConfigObj object to
     # a file after validating, the default values will also be written to
     # the file.
-    result = conf_file_parser.validate(validator, preserve_errors=True, copy=True)
+    result = conf_file_parser.validate(validator,
+                                       preserve_errors=True,
+                                       copy=True)
 
     # Note that if there was no parsing errors, then "result" will be True.
     # It there was an error, then result will be a dictionary with each
@@ -79,10 +79,12 @@ if __name__ == '__main__':
         if first_error[2] is False:
             raise Exception(
                 "Parameter '{0}' in section '{1}' must be provided.".format(
-                    first_error[1],
-                    first_error[0][0]))
+                    first_error[1], first_error[0][0]))
         else:
-            raise Exception("Parameter '{0}' in section '{1}' is invalid. {2}".format(first_error[1], first_error[0][0], first_error[2].message.capitalize()))
+            raise Exception(
+                "Parameter '{0}' in section '{1}' is invalid. {2}".format(
+                    first_error[1], first_error[0][0],
+                    first_error[2].message.capitalize()))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print('Filename: {0}'.format(config_file_name))

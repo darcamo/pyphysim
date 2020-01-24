@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=R0904
-
 """
 Module with implementation of Interference Alignment (IA) algorithms.
 
@@ -24,10 +23,11 @@ from ..util.misc import peig, leig, update_inv_sum_diag, \
     get_principal_component_matrix, least_right_singular_vectors
 from ..channels import multiuser as muchannels
 
-__all__ = ['AlternatingMinIASolver', 'MaxSinrIASolver',
-           'MinLeakageIASolver', 'ClosedFormIASolver', 'MMSEIASolver',
-           'GreedStreamIASolver', 'BruteForceStreamIASolver',
-           'IterativeIASolverBaseClass']
+__all__ = [
+    'AlternatingMinIASolver', 'MaxSinrIASolver', 'MinLeakageIASolver',
+    'ClosedFormIASolver', 'MMSEIASolver', 'GreedStreamIASolver',
+    'BruteForceStreamIASolver', 'IterativeIASolverBaseClass'
+]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -83,8 +83,7 @@ class ClosedFormIASolver(IASolverBaseClass):
         H21 = self._get_channel(1, 0)
 
         E = (np.linalg.solve(H31, H32)).dot(
-            (np.linalg.solve(H12, H13)).dot(
-                np.linalg.solve(H23, H21)))
+            (np.linalg.solve(H12, H13)).dot(np.linalg.solve(H23, H21)))
 
         return E
 
@@ -114,8 +113,7 @@ class ClosedFormIASolver(IASolverBaseClass):
 
         all_subsets = []
 
-        for comb_index in itertools.combinations(range(num_eigenvectors),
-                                                 Ns):
+        for comb_index in itertools.combinations(range(num_eigenvectors), Ns):
             all_subsets.append(eigenvectors[:, comb_index])
 
         return all_subsets
@@ -173,19 +171,16 @@ class ClosedFormIASolver(IASolverBaseClass):
         self._W = np.zeros(3, dtype=np.ndarray)
 
         A0 = np.dot(self._get_channel(0, 1), self.F[1])
-        self._W[0] = leig(
-            np.dot(A0, A0.transpose().conjugate()),
-            self.Ns[0])[0]
+        self._W[0] = leig(np.dot(A0,
+                                 A0.transpose().conjugate()), self.Ns[0])[0]
 
         A1 = np.dot(self._get_channel(1, 0), self.F[0])
-        self._W[1] = leig(
-            np.dot(A1, A1.transpose().conjugate()),
-            self.Ns[1])[0]
+        self._W[1] = leig(np.dot(A1,
+                                 A1.transpose().conjugate()), self.Ns[1])[0]
 
         A2 = np.dot(self._get_channel(2, 0), self.F[0])
-        self._W[2] = leig(
-            np.dot(A2, A2.transpose().conjugate()),
-            self.Ns[2])[0]
+        self._W[2] = leig(np.dot(A2,
+                                 A2.transpose().conjugate()), self.Ns[2])[0]
 
     # noinspection PyUnboundLocalVariable
     def solve(self, Ns, P=None):
@@ -324,8 +319,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         # performed with the Closed Form algorithm, while if it is
         # 'alt_min' the initialization is performed with the Alternating
         # Minimizations algorithm.
-        self._closed_form_ia_solver = ClosedFormIASolver(
-            multiUserChannel, use_best_init=True)
+        self._closed_form_ia_solver = ClosedFormIASolver(multiUserChannel,
+                                                         use_best_init=True)
 
         # If self is of the class AlternatingMinIASolver, then the
         # initialization with the Alternating Minimizations algorithm makes
@@ -333,8 +328,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         if isinstance(self, AlternatingMinIASolver):
             self._alt_min_ia_solver = None
         else:
-            self._alt_min_ia_solver = AlternatingMinIASolver(
-                multiUserChannel)
+            self._alt_min_ia_solver = AlternatingMinIASolver(multiUserChannel)
 
         # Can be: 'random', 'closed_form', 'alt_min', or 'fix'
         #
@@ -381,6 +375,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         else:
             msg = "unknown initialization option: '{0}'".format(value)
             raise RuntimeError(msg)
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     @property
@@ -452,7 +447,9 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
         self._runned_iterations = 0
         # randomizeF in the base class will set `self._P` to `P`
         super(IterativeIASolverBaseClass, self).randomizeF(Ns, P)
+
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _before_initialize_W_func(self):
@@ -635,7 +632,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
             'alt_min': self._initialize_F_and_W_from_alt_min,
             'closed_form': self._initialize_F_and_W_from_closed_form,
             'fix': self._dont_initialize_F_and_only_and_find_W,
-            'svd': self._initialize_F_with_svd_and_find_W}
+            'svd': self._initialize_F_with_svd_and_find_W
+        }
 
         initialzie_func = options[self.initialize_with]
         initialzie_func(Ns, P)
@@ -672,8 +670,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                     # values. Basically, any singular value (and
                     # corresponding dimension) lower then
                     # max_sing_value/1e4 will be discarded.
-                    n = np.count_nonzero(
-                        np.greater(S, max_sing_value / 1.0e4))
+                    n = np.count_nonzero(np.greater(S, max_sing_value / 1.0e4))
 
                     # Store the number of significative singular values for
                     # that user
@@ -688,8 +685,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
                     if self._full_F[k] is not None:
                         # Original norm of the _full_F[k] precoder
-                        original_norm = np.linalg.norm(self._full_F[k],
-                                                       'fro')
+                        original_norm = np.linalg.norm(self._full_F[k], 'fro')
                         new_full_F = get_principal_component_matrix(
                             self._full_F[k], n)
                         # Restore the original norm
@@ -831,8 +827,8 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
 
             # Stop the iteration earlier if the precoder does not change
             # too much
-            if self._is_diff_significant(
-                    old_F, self._F, self.relative_factor) is False:
+            if self._is_diff_significant(old_F, self._F,
+                                         self.relative_factor) is False:
                 break  # pragma: no cover
             else:
                 old_F = self._F
@@ -886,7 +882,8 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
     def __init__(self, multiUserChannel):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
-        self._C = []    # Basis of the interference subspace for each user
+        self._C = []  # Basis of the interference subspace for each user
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Overwrite the set property for 'initialize_with' to remove the
@@ -920,17 +917,11 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         for kl in all_kl_indexes:
             (k, l) = kl
-            Hkl_Fl = np.dot(
-                self._get_channel(k, l),
-                self.full_F[l])
+            Hkl_Fl = np.dot(self._get_channel(k, l), self.full_F[l])
             Cost += np.linalg.norm(
                 Hkl_Fl -
-                np.dot(
-                    np.dot(
-                        self._C[k],
-                        self._C[k].transpose().conjugate()),
-                    Hkl_Fl
-                ), 'fro') ** 2
+                np.dot(np.dot(self._C[k], self._C[k].transpose().conjugate()),
+                       Hkl_Fl), 'fro')**2
 
         return Cost
 
@@ -1042,7 +1033,9 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
 
         def calc_Y(Nr, C):
             return (np.eye(Nr, dtype=complex) -
-                    np.dot(C, C.conjugate().transpose()))
+                    np.dot(C,
+                           C.conjugate().transpose()))
+
         Y = list(map(calc_Y, self.Nr, self._C))
 
         newF = np.zeros(self.K, dtype=np.ndarray)
@@ -1057,9 +1050,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
             (l, k) = lk
             lH = self._get_channel(k, l)
             newF[l] = newF[l] + np.dot(
-                np.dot(lH.conjugate().transpose(),
-                       Y[k]),
-                lH)
+                np.dot(lH.conjugate().transpose(), Y[k]), lH)
 
         # Every element in newF is a matrix. We want to replace each
         # element by the least dominant eigenvectors of that element.
@@ -1091,8 +1082,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
         newW_H = np.zeros(self.K, dtype=np.ndarray)
         for k in np.arange(self.K):
             tildeHi = np.hstack(
-                [np.dot(self._get_channel(k, k), self._F[k]),
-                 self._C[k]])
+                [np.dot(self._get_channel(k, k), self._F[k]), self._C[k]])
             newW_H[k] = np.linalg.inv(tildeHi)
             # We only want the first Ns[k] lines
             newW_H[k] = newW_H[k][0:self.Ns[k]]
@@ -1113,7 +1103,6 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
     multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
     """
-
     def __init__(self, multiUserChannel):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
@@ -1139,9 +1128,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         for k in range(self.K):
             Qk = self.calc_Q(k)
             Wk = self._W[k]
-            aux = np.dot(
-                np.dot(Wk.transpose().conjugate(), Qk),
-                Wk)
+            aux = np.dot(np.dot(Wk.transpose().conjugate(), Qk), Wk)
             cost = cost + np.trace(np.abs(aux))
         return cost
 
@@ -1232,17 +1219,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
     ----------
     multiUserChannel : muchannels.MultiUserChannelMatrix
         The multiuser channel.
-
-    Notes
-    -----
-
-    .. [Cadambe2008] K. Gomadam, V. R. Cadambe, and S. A. Jafar,
-       "Approaching the Capacity of Wireless Networks through Distributed
-       Interference Alignment," in IEEE GLOBECOM 2008 - 2008 IEEE Global
-       Telecommunications Conference, 2008, pp. 1-6.
-
     """
-
     def __init__(self, multiUserChannel):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
@@ -1283,11 +1260,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
             Vj_H = Vj.conjugate().transpose()
             first_part += (float(P[j]) / self._Ns[j]) * np.dot(
-                Hkj,
-                np.dot(
-                    np.dot(Vj,
-                           Vj_H),
-                    Hkj_H))
+                Hkj, np.dot(np.dot(Vj, Vj_H), Hkj_H))
 
         return first_part
 
@@ -1321,9 +1294,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         Vkl = self._W[k][:, l:l + 1]
         Vkl_H = Vkl.transpose().conjugate()
-        second_part = np.dot(Hkk,
-                             np.dot(np.dot(Vkl, Vkl_H),
-                                    Hkk_H))
+        second_part = np.dot(Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
 
         return second_part * (float(P[k]) / self._Ns[k])
 
@@ -1351,8 +1322,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
 
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part_rev(k, l)
-            Bkl_all_l_rev[l] = first_part - second_part + (
-                self.noise_var * np.eye(self.Nt[k]))
+            Bkl_all_l_rev[l] = first_part - second_part + (self.noise_var *
+                                                           np.eye(self.Nt[k]))
 
         return Bkl_all_l_rev
 
@@ -1414,8 +1385,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         num_Rx = Bkl_all_l[0].shape[0]
         Uk = np.zeros([num_Rx, num_streams], dtype=complex)
         for l in range(num_streams):
-            Uk[:, l] = MaxSinrIASolver._calc_Ukl(
-                Hkk, Vk, Bkl_all_l[l], l)[:, 0]
+            Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], l)[:,
+                                                                           0]
 
         return Uk / np.linalg.norm(Uk, 'fro')
 
@@ -1513,7 +1484,6 @@ class MMSEIASolver(IterativeIASolverBaseClass):
     .. [Peters2011] S. W. Peters and R. W. Heath, "Cooperative Algorithms
        for MIMO Interference Channels," vol. 60, no. 1, pp. 206-218, 2011.
     """
-
     def __init__(self, multiUserChannel):
         IterativeIASolverBaseClass.__init__(self, multiUserChannel)
 
@@ -1562,8 +1532,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             Hki = self._get_channel(k, i)
             Vi = self.full_F[i]
             aux = np.dot(Hki, Vi)
-            sum_term = sum_term + np.dot(aux,
-                                         aux.conj().T)
+            sum_term = sum_term + np.dot(aux, aux.conj().T)
 
         sum_term2 = sum_term + self.noise_var * np.eye(self.Nr[k])
         ":type: np.ndarray"
@@ -1660,15 +1629,13 @@ class MMSEIASolver(IterativeIASolverBaseClass):
         # $$\mtV_i = \left( \sum_{k=1}^K \mtH_{ki}^H \mtU_k \mtU_k^H \mtH_{ki} + \mu_i \mtI \right)^{-1} \mtH_{ii}^H \mtU_i$$
 
         # H_{ii}^H * Ui
-        Hii_herm_U = np.dot(self._get_channel(i, i).conj().T,
-                            self.W[i])
+        Hii_herm_U = np.dot(self._get_channel(i, i).conj().T, self.W[i])
 
         # xxxxx Calculates the Summation term xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         sum_term = 0
         for k in range(self.K):
             # H_{ki}^H * Uk
-            aux = np.dot(self._get_channel(k, i).conj().T,
-                         self.W[k])
+            aux = np.dot(self._get_channel(k, i).conj().T, self.W[k])
             sum_term = sum_term + np.dot(aux, aux.conj().T)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1708,11 +1675,12 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 Function that will be optimized to find the best value of
                 local_mu.
                 """
-                Vi = self._calc_Vi_for_a_given_mu(
-                    local_sum_term, local_mu, local_Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu(local_sum_term, local_mu,
+                                                  local_Hii_herm_U)
                 norm = np.linalg.norm(Vi, 'fro')
-                cost = (norm ** 2) - local_P
+                cost = (norm**2) - local_P
                 return cost
+
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx Scale Hii_herm_U and sum_term xxxxxxxxxxxxxxxxxxxx
@@ -1738,8 +1706,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             # mu will be min_mu_i.
             if cost <= 0:
                 mu_i = min_mu_i
-                Vi = self._calc_Vi_for_a_given_mu(
-                    sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
                 self._mu[i] = mu_i
 
             else:
@@ -1748,8 +1715,10 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                     # bisection method to find the best mu value between
                     # min_mu_i and max_mu_i
                     mu_i = optimize.newton(  # pylint: disable= E1101
-                        func, min_mu_i,
-                        args=(sum_term, Hii_herm_U, self.P[i]), maxiter=200)
+                        func,
+                        min_mu_i,
+                        args=(sum_term, Hii_herm_U, self.P[i]),
+                        maxiter=200)
                 except RuntimeError:  # pragma: nocover
                     # We get a RuntimeError if the maximum number of
                     # iterations has been reached.
@@ -1762,13 +1731,11 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # but it is clearly wrong with a very high value of
                 # mu_i. In that case we will do some scaling and try again.
                 if abs(mu_i) > 1e20:
-                    mu_i = optimize.newton(
-                        func,
-                        min_mu_i,
-                        args=(sum_term * 10,
-                              Hii_herm_U * 10,
-                              self.P[i]),
-                        maxiter=200)
+                    mu_i = optimize.newton(func,
+                                           min_mu_i,
+                                           args=(sum_term * 10,
+                                                 Hii_herm_U * 10, self.P[i]),
+                                           maxiter=200)
                     mu_i /= 10.
                     cost = func(mu_i, sum_term, Hii_herm_U, self.P[i])
                     # If our new solution is still bad then we raise a
@@ -1785,8 +1752,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
                 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
                 # Now that we have the best value for mu_i, lets calculate Vi
-                Vi = self._calc_Vi_for_a_given_mu(
-                    sum_term, mu_i, Hii_herm_U)
+                Vi = self._calc_Vi_for_a_given_mu(sum_term, mu_i, Hii_herm_U)
                 # Vi = self._calc_Vi_for_a_given_mu2(
                 #     inv_sum_term, mu_i, Hii_herm_U)
 
@@ -1832,7 +1798,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx GreedStreamIASolver Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class GreedStreamIASolver(object):
+class GreedStreamIASolver:
     """
     Implements the Greed Stream Interference Alignment algorithm variation.
 
@@ -1851,7 +1817,6 @@ class GreedStreamIASolver(object):
     iasolver_obj : T <= IASolverBaseClass
         Must be an object of a derived class of IterativeIASolverBaseClass.
     """
-
     def __init__(self, iasolver_obj):
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
@@ -1930,7 +1895,8 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxx Store the current solution xxxxxxxxxxxxxxxxxxxxxxx
             self._old_F = [F.copy() for F in self._iasolver.F]
             self._old_full_F = [
-                full_F.copy() for full_F in self._iasolver.full_F]
+                full_F.copy() for full_F in self._iasolver.full_F
+            ]
             self._old_W_H = [W_H.copy() for W_H in self._iasolver.W_H]
             self._old_Ns = copy(self._iasolver.Ns)
 
@@ -1945,8 +1911,8 @@ class GreedStreamIASolver(object):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Remove the stream and find a new IA solution xxxxxxxxxx
-            self._iasolver.F[user_idx] = np.delete(
-                self._iasolver.F[user_idx], stream_idx, 1)
+            self._iasolver.F[user_idx] = np.delete(self._iasolver.F[user_idx],
+                                                   stream_idx, 1)
             self._iasolver.full_F[user_idx] = np.delete(
                 self._iasolver.full_F[user_idx], stream_idx, 1)
             self._iasolver.Ns[user_idx] -= 1
@@ -1975,8 +1941,9 @@ class GreedStreamIASolver(object):
                 self._iasolver.clear()
 
                 # Now we set the precoders
-                self._iasolver.set_precoders(
-                    F=self._old_F, full_F=self._old_full_F, P=P)
+                self._iasolver.set_precoders(F=self._old_F,
+                                             full_F=self._old_full_F,
+                                             P=P)
                 self._iasolver.set_receive_filters(W_H=self._old_W_H)
 
                 keep_going = False
@@ -2013,7 +1980,8 @@ class GreedStreamIASolver(object):
 
         # For each user we get his minimum sinr.
         min_sinrs = [
-            sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)]
+            sinrs[i][min_sinr_indexes[i]] for i in range(self._iasolver.K)
+        ]
 
         # Index of the users in ascending order of the sinrs. The fist
         # element is the index of the user with the minimum SINR.
@@ -2024,7 +1992,8 @@ class GreedStreamIASolver(object):
         valid_users_idx = \
             np.arange(self._iasolver.K)[self._iasolver.Ns > 1]
         min_sinr_user_idx = [
-            i for i in min_sinr_user_idx if i in valid_users_idx]
+            i for i in min_sinr_user_idx if i in valid_users_idx
+        ]
 
         user_idx = min_sinr_user_idx[0]
         stream_idx = min_sinr_indexes[user_idx]
@@ -2034,7 +2003,7 @@ class GreedStreamIASolver(object):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx BruteForceStreamIASolver xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class BruteForceStreamIASolver(object):
+class BruteForceStreamIASolver:
     """
     Implements the Brute Force Stream Interference Alignment algorithm
     variation.
@@ -2208,5 +2177,6 @@ class BruteForceStreamIASolver(object):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         return self._runned_iterations
+
 
 # xxxxxxxxxx End of the File xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

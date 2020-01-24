@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module implementing geometric shapes.
 
@@ -24,7 +23,7 @@ import cmath
 __all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
 
 
-class Coordinate(object):
+class Coordinate:
     """
     Base class for a coordinate in a 2D grid.
 
@@ -68,6 +67,7 @@ class Coordinate(object):
             The new coordinate position (a complex number).
         """
         self._pos = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def calc_dist(self, other):
@@ -175,10 +175,7 @@ class Shape(Coordinate):
             The string representation of the object.
         """
         return "{0}(pos={1},radius={2},rotation={3})".format(
-            self.__class__.__name__,
-            self.pos,
-            self.radius,
-            self.rotation)
+            self.__class__.__name__, self.pos, self.radius, self.rotation)
 
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
@@ -204,6 +201,7 @@ class Shape(Coordinate):
             The new radius.
         """
         self._radius = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -230,6 +228,7 @@ class Shape(Coordinate):
             The new shape rotation.
         """
         self._rotation = value
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     @abstractmethod
@@ -283,6 +282,7 @@ class Shape(Coordinate):
         vertex_positions = self.pos + Shape.calc_rotated_pos(
             vertex_positions, self.rotation)
         return vertex_positions
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def is_point_inside_shape(self, point: complex) -> bool:
@@ -299,8 +299,7 @@ class Shape(Coordinate):
         inside_or_not
             True if `point` is inside the shape, False otherwise.
         """
-        mpl_path = path.Path(from_complex_array_to_real_matrix(
-            self.vertices))
+        mpl_path = path.Path(from_complex_array_to_real_matrix(self.vertices))
 
         # This code is used with Matplotlib version 1.2 or higher.
         return mpl_path.contains_point([point.real, point.imag])
@@ -459,7 +458,8 @@ class Shape(Coordinate):
             plt.show()
 
     # noinspection PyShadowingNames
-    def _repr_some_format_(self, extension='png',
+    def _repr_some_format_(self,
+                           extension='png',
                            axis_option='equal'):  # pragma: nocover
         """
         Return the representation of the shape in the desired format.
@@ -573,9 +573,8 @@ class Hexagon(Shape):
 
         for k in range(5):
             # noinspection PyUnresolvedReferences
-            vertex_positions[k + 1] = (
-                vertex_positions[k] +
-                self._radius * np.exp(angles[k] * 1j))
+            vertex_positions[k + 1] = (vertex_positions[k] +
+                                       self._radius * np.exp(angles[k] * 1j))
 
         return vertex_positions
 
@@ -596,6 +595,7 @@ class Rectangle(Shape):
     rotation : float
         Rotation of the rectangle in degrees.
     """
+
     def __init__(self, first, second, rotation=0):
         central_pos = (first + second) / 2
         radius = np.abs(second - central_pos)
@@ -614,9 +614,10 @@ class Rectangle(Shape):
         str
             The string representation of the Rectangle object.
         """
-        return "{0}(A={1},B={2},rotation={3})".format(
-            self.__class__.__name__, self._lower_coord,
-            self._upper_coord, self.rotation)
+        return "{0}(A={1},B={2},rotation={3})".format(self.__class__.__name__,
+                                                      self._lower_coord,
+                                                      self._upper_coord,
+                                                      self.rotation)
 
     def _get_vertex_positions(self):
         """
@@ -638,7 +639,8 @@ class Rectangle(Shape):
         vertex_positions[3] = complex(A.real, B.imag)
         return vertex_positions
 
-    def _repr_some_format_(self, extension='png',
+    def _repr_some_format_(self,
+                           extension='png',
                            axis_option='tight'):  # pragma: no cover
         """
         Return the representation of the shape in the desired format.
@@ -728,10 +730,8 @@ class Circle(Shape):
         returned vertexes was arbitrarily chosen as 12.
         """
         num_vertexes = 12
-        angles = np.linspace(
-            0,
-            (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
-            num_vertexes)
+        angles = np.linspace(0, (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
+                             num_vertexes)
 
         vertex_positions = self._radius * np.exp(1j * angles)
         return vertex_positions

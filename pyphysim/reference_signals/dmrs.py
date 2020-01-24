@@ -60,6 +60,7 @@ class DmrsUeSequence(UeSequence):
     normalize : bool
         True if the reference signal should be normalized. False otherwise.
     """
+
     def __init__(self, root_seq, n_cs, cover_code=None, normalize=False):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_dmrs_seq(root_seq_array, n_cs)
@@ -73,8 +74,10 @@ class DmrsUeSequence(UeSequence):
             self._occ.flags.writeable = False
             user_seq_array = user_seq_array * cover_code[:, np.newaxis]
 
-        super(DmrsUeSequence, self).__init__(
-            root_seq, n_cs, user_seq_array, normalize=normalize)
+        super(DmrsUeSequence, self).__init__(root_seq,
+                                             n_cs,
+                                             user_seq_array,
+                                             normalize=normalize)
 
     @property
     def cover_code(self):

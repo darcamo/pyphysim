@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """module docstring"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -65,7 +64,7 @@ if __name__ == '__main__':
     P = 1.0
     initialize_with = 'alt_min'
     # ---------------------------------------------------------------------
-    noise_var = 1./dB2Linear(SNR)
+    noise_var = 1. / dB2Linear(SNR)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     multiuserchannel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
@@ -107,7 +106,8 @@ if __name__ == '__main__':
     max_sinr_runned_iterations = np.empty(rep_max, dtype=int)
     mmse_runned_iterations = np.empty(rep_max, dtype=int)
 
-    pbar = ProgressbarText(rep_max, message="Simulating for SNR: {0}".format(SNR))
+    pbar = ProgressbarText(rep_max,
+                           message="Simulating for SNR: {0}".format(SNR))
     for rep in range(rep_max):
         multiuserchannel.randomize(Nr, Nt, K)
 
@@ -122,24 +122,21 @@ if __name__ == '__main__':
         mmse_solver.calc_sum_capacity()
 
         # print "Alt Min"
-        (alt_min_SINRs[rep],
-         alt_min_capacity[rep],
+        (alt_min_SINRs[rep], alt_min_capacity[rep],
          alt_min_sum_capacity[rep]) = calc_SINRs_and_capacity(alt_min_solver)
         # print "SINRs:\n{0}".format(alt_min_SINRs[rep])
         # print "Capacity:\n{0}".format(alt_min_capacity[rep])
         # print "Sum_Capacity: {0}".format(alt_min_sum_capacity[rep])
 
         # print "\nMax SINR"
-        (max_sinr_SINRs[rep],
-         max_sinr_capacity[rep],
+        (max_sinr_SINRs[rep], max_sinr_capacity[rep],
          max_sinr_sum_capacity[rep]) = calc_SINRs_and_capacity(max_sinr_solver)
         # print "SINRs:\n{0}".format(max_sinr_SINRs[rep])
         # print "Capacity:\n{0}".format(max_sinr_capacity[rep])
         # print "Sum_Capacity: {0}".format(max_sinr_sum_capacity[rep])
 
         # print "\nMMSE"
-        (mmse_SINRs[rep],
-         mmse_capacity[rep],
+        (mmse_SINRs[rep], mmse_capacity[rep],
          mmse_sum_capacity[rep]) = calc_SINRs_and_capacity(mmse_solver)
         # print "SINRs:\n{0}".format(mmse_SINRs[rep])
         # print "Capacity:\n{0}".format(mmse_capacity[rep])
@@ -147,13 +144,14 @@ if __name__ == '__main__':
 
         pbar.progress(rep)
 
-
-    df = DataFrame({'Min. Leakage':alt_min_sum_capacity,
-                    'Max SINR': max_sinr_sum_capacity,
-                    'MMSE': mmse_sum_capacity})
+    df = DataFrame({
+        'Min. Leakage': alt_min_sum_capacity,
+        'Max SINR': max_sinr_sum_capacity,
+        'MMSE': mmse_sum_capacity
+    })
     df.to_csv(
-        'sum_capacity_{Nr}x{Nt}_{Ns}_SNR_{SNR}_{initialize_with}_init.txt'.format(
-            Nr=Nr, Ns=Ns, Nt=Nt, SNR=SNR, initialize_with=initialize_with),
+        'sum_capacity_{Nr}x{Nt}_{Ns}_SNR_{SNR}_{initialize_with}_init.txt'.
+        format(Nr=Nr, Ns=Ns, Nt=Nt, SNR=SNR, initialize_with=initialize_with),
         index_label="Index")
 
     plt.plot([sum(alt_min_capacity[a]) for a in range(50)])

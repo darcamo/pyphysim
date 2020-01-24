@@ -8,7 +8,7 @@ from . import fading_generators
 from ..util.conversion import dB2Linear, linear2dB
 
 
-class TdlChannelProfile(object):
+class TdlChannelProfile:
     """
     Channel Profile class.
 
@@ -61,9 +61,9 @@ class TdlChannelProfile(object):
             = (np.sum(self._tap_powers_linear * self._tap_delays) /
                np.sum(self._tap_powers_linear))
 
-        aux = (np.sum(self._tap_powers_linear * self._tap_delays ** 2) /
+        aux = (np.sum(self._tap_powers_linear * self._tap_delays**2) /
                np.sum(self._tap_powers_linear))
-        self._rms_delay_spread = math.sqrt(aux - self._mean_excess_delay ** 2)
+        self._rms_delay_spread = math.sqrt(aux - self._mean_excess_delay**2)
 
         # Sampling interval when the channel profile is discretized. You
         # can call the
@@ -192,7 +192,7 @@ class TdlChannelProfile(object):
             return self._tap_delays[-1] + 1
 
     @property
-    def Ts(self, ):
+    def Ts(self,):
         """
         Get the sampling interval used for discretizing this channel
         profile object.
@@ -264,9 +264,9 @@ class TdlChannelProfile(object):
             A tuple with the discretized powers and delays.
         """
         # Compute delay indices
-        delay_indexes, idx_inverse = np.unique(
-            np.round(self._tap_delays / Ts).astype(int).flatten(),
-            return_inverse=True)
+        delay_indexes, idx_inverse = np.unique(np.round(
+            self._tap_delays / Ts).astype(int).flatten(),
+                                               return_inverse=True)
 
         discretized_powers_linear = np.zeros(delay_indexes.size)
         for i, v in enumerate(self.tap_powers_linear):
@@ -300,34 +300,36 @@ class TdlChannelProfile(object):
 # Reference: 3GPP TR 25.943 version 9.0.0 Release 9
 
 # COST 259 Typical Urban
-COST259_TUx = TdlChannelProfile(np.array([
-    -5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3, -16.9, -17.1,
-    -17.4, -19, -19, -19.8, -21.5, -21.6, -22.1, -22.6, -23.5, -24.3]),
-    np.array([0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349,
-              1533, 1535, 1622, 1818, 1836, 1884, 1943, 2048, 2140]
-             ) * 1e-9,
-    'COST259_TU')
-
+COST259_TUx = TdlChannelProfile(
+    np.array([
+        -5.7, -7.6, -10.1, -10.2, -10.2, -11.5, -13.4, -16.3, -16.9, -17.1,
+        -17.4, -19, -19, -19.8, -21.5, -21.6, -22.1, -22.6, -23.5, -24.3
+    ]),
+    np.array([
+        0, 217, 512, 514, 517, 674, 882, 1230, 1287, 1311, 1349, 1533, 1535,
+        1622, 1818, 1836, 1884, 1943, 2048, 2140
+    ]) * 1e-9, 'COST259_TU')
 
 # COST 259 Rural Area
-COST259_RAx = TdlChannelProfile(np.array(
-    [-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4, -22.4]),
-    np.array(
-        [0., 42., 101., 129., 149., 245., 312., 410., 469., 528]) * 1e-9,
+COST259_RAx = TdlChannelProfile(
+    np.array([-5.2, -6.4, -8.4, -9.3, -10.0, -13.1, -15.3, -18.5, -20.4,
+              -22.4]),
+    np.array([0., 42., 101., 129., 149., 245., 312., 410., 469., 528]) * 1e-9,
     'COST259_RA')
-
 
 # COST 259 Hilly Terrain
 COST259_HTx = TdlChannelProfile(
-    np.array([-3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3,
-              -17.7, -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0,
-              -29.9, -30.0, -30.7]),
-    np.array([0., 356., 441., 528., 546., 609., 625., 842., 916., 941.,
-              15000., 16172., 16492., 16876., 16882., 16978., 17615.,
-              17827., 17849., 18016.]) * 1e-9, 'COST259_HT')
+    np.array([
+        -3.6, -8.9, -10.2, -11.5, -11.8, -12.7, -13.0, -16.2, -17.3, -17.7,
+        -17.6, -22.7, -24.1, -25.8, -25.8, -26.2, -29.0, -29.9, -30.0, -30.7
+    ]),
+    np.array([
+        0., 356., 441., 528., 546., 609., 625., 842., 916., 941., 15000.,
+        16172., 16492., 16876., 16882., 16978., 17615., 17827., 17849., 18016.
+    ]) * 1e-9, 'COST259_HT')
 
 
-class TdlImpulseResponse(object):
+class TdlImpulseResponse:
     """
     Class that represents impulse response for a TdlChannel object.
 
@@ -350,8 +352,9 @@ class TdlImpulseResponse(object):
         The channel profile that was considering to generate this impulse
         response.
     """
+
     def __init__(self, tap_values, channel_profile):
-        assert(isinstance(channel_profile, TdlChannelProfile))
+        assert (isinstance(channel_profile, TdlChannelProfile))
         if channel_profile.Ts is None:
             raise RuntimeError('Channel profile must be discretized')
 
@@ -465,7 +468,7 @@ class TdlImpulseResponse(object):
         # The first dimension has the sparse taps. This dimension will
         # change to num_taps_with_padding. Note that the last dimension in
         # this shape corresponds to the number of samples.
-        new_shape = (num_taps_with_padding, ) + orig_shape[1:]
+        new_shape = (num_taps_with_padding,) + orig_shape[1:]
 
         samples_with_zeros = np.zeros(new_shape, dtype=complex)
 
@@ -502,9 +505,7 @@ class TdlImpulseResponse(object):
         # corresponds to the second dimension is the time dimension (as the
         # channel response changes in time)
         freq_response = np.fft.fft(
-            self._get_samples_including_the_extra_zeros(),
-            fft_size,
-            axis=0)
+            self._get_samples_including_the_extra_zeros(), fft_size, axis=0)
         return freq_response
 
     def __mul__(self, value):
@@ -583,8 +584,9 @@ class TdlImpulseResponse(object):
 
         ax.set_xlim3d(0, num_taps_with_padding)
         ax.set_ylim3d(0, self.num_samples)
-        ax.set_zlim3d(np.abs(self.tap_values).min(),
-                      np.abs(self.tap_values).max())
+        ax.set_zlim3d(
+            np.abs(self.tap_values).min(),
+            np.abs(self.tap_values).max())
 
         plt.show()
 
@@ -617,8 +619,7 @@ class TdlImpulseResponse(object):
 
         ax.set_xlim3d(0, fft_size)
         ax.set_ylim3d(0, self.num_samples)
-        ax.set_zlim3d(np.abs(freq_response).min(),
-                      np.abs(freq_response).max())
+        ax.set_zlim3d(np.abs(freq_response).min(), np.abs(freq_response).max())
 
         plt.show()
 
@@ -659,8 +660,7 @@ class TdlImpulseResponse(object):
                              "same channel profile object")
 
         tap_values_sparse = np.concatenate(
-            [a.tap_values_sparse for a in list_of_impulse_responses],
-            axis=-1)
+            [a.tap_values_sparse for a in list_of_impulse_responses], axis=-1)
 
         concatenated_impulse_response = TdlImpulseResponse(
             tap_values_sparse, channel_profile1)
@@ -668,7 +668,7 @@ class TdlImpulseResponse(object):
         return concatenated_impulse_response
 
 
-class TdlChannel(object):
+class TdlChannel:
     """
     Tapped Delay Line channel model, which corresponds to a multipath
     channel.
@@ -695,16 +695,20 @@ class TdlChannel(object):
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
+
     # Note: It would be better to have only the first argument as
     # positional argument and all the others as keyword only arguments. We
     # can do this in Python3 by adding ",*," after the first positional
     # argument thus making all the other arguments keyword only. However,
     # this is not valid in Python2.
-    def __init__(self, fading_generator, channel_profile=None,
-                 tap_powers_dB=None, tap_delays=None, Ts=None):
+    def __init__(self,
+                 fading_generator,
+                 channel_profile=None,
+                 tap_powers_dB=None,
+                 tap_delays=None,
+                 Ts=None):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        if isinstance(fading_generator,
-                      fading_generators.JakesSampleGenerator):
+        if isinstance(fading_generator, fading_generators.JakesSampleGenerator):
             if Ts is None:
                 # Ts was not provided, but the fading generator has
                 # it. Let's use it then.
@@ -916,9 +920,8 @@ class TdlChannel(object):
         new_shape = [self.num_taps]
         new_shape.extend([1] * (channel_samples.ndim - 1))
 
-        samples = (channel_samples *
-                   np.sqrt(np.reshape(
-                       self._channel_profile.tap_powers_linear[:, np.newaxis],
+        samples = (channel_samples * np.sqrt(
+            np.reshape(self._channel_profile.tap_powers_linear[:, np.newaxis],
                        new_shape)))
 
         impulse_response = TdlImpulseResponse(samples, self._channel_profile)
@@ -1079,7 +1082,9 @@ class TdlChannel(object):
 
         return output
 
-    def corrupt_data_in_freq_domain(self, signal, fft_size,
+    def corrupt_data_in_freq_domain(self,
+                                    signal,
+                                    fft_size,
                                     carrier_indexes=None):
         """
         Transmit the signal through the TDL channel, but in the frequency
@@ -1225,8 +1230,8 @@ class TdlChannel(object):
             # Advance the fading generator by "fft_size - 1" to account how
             # much the channel has "changed" during the duration of the
             # current block
-            self._fading_generator.skip_samples_for_next_generation(
-                fft_size - 1)
+            self._fading_generator.skip_samples_for_next_generation(fft_size -
+                                                                    1)
 
         self._last_impulse_response = TdlImpulseResponse.concatenate_samples(
             impulse_responses)
@@ -1267,8 +1272,13 @@ class TdlMimoChannel(TdlChannel):
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, fading_generator, channel_profile=None,
-                 tap_powers_dB=None, tap_delays=None, Ts=None):
+
+    def __init__(self,
+                 fading_generator,
+                 channel_profile=None,
+                 tap_powers_dB=None,
+                 tap_delays=None,
+                 Ts=None):
         if fading_generator.shape is None or len(fading_generator.shape) != 2:
             raise RuntimeError(  # pragma: nocover
                 "The provided fading_generator for the TdlMimoChannel class"

@@ -10,7 +10,6 @@ sys.path.append('../../')
 from pyphysim.simulations.results import SimulationResults
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 if __name__ == '__main__':
     full_results_name = ("greedy_IA_stream_sel_results_[0.0_(5.0)_30.0]_"
                          "4-PSK_3x3_(3)_MaxIter_120_(['random']).pickle")
@@ -29,7 +28,7 @@ if __name__ == '__main__':
         SNR = params['SNR']
         # print('Unpacked parameters')
         print(('scenario: {0:>10} | stream_sel_method: {1:>6s} | '
-              'SNR: {2:>4}').format(scenario, stream_sel_method, SNR))
+               'SNR: {2:>4}').format(scenario, stream_sel_method, SNR))
 
         # if scenario == 'NoPathLoss' and stream_sel_method == 'brute':
         #     print "SNR {0}: Ber {1}".format(SNR, result['ber'])

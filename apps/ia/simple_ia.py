@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """module docstring"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -66,7 +65,8 @@ def main():
     mmse_capacity = np.empty(RepMax, dtype=float)
     max_sinr_capacity = np.empty(RepMax, dtype=float)
 
-    pbar = ProgressbarText(RepMax, message="Simulating for SNR: {0}".format(SNR))
+    pbar = ProgressbarText(RepMax,
+                           message="Simulating for SNR: {0}".format(SNR))
 
     for rep in range(RepMax):
         # Create the channel
@@ -100,10 +100,12 @@ def main():
         max_sinr_ia_solver.solve(Ns)
 
         mmse_sinrs[rep] = list(map(linear2dB, mmse_ia_solver.calc_SINR()))
-        max_sinr_sinrs[rep] = list(map(linear2dB, max_sinr_ia_solver.calc_SINR()))
+        max_sinr_sinrs[rep] = list(
+            map(linear2dB, max_sinr_ia_solver.calc_SINR()))
 
         mmse_capacity[rep] = np.sum(calc_capacity(mmse_ia_solver.calc_SINR()))
-        max_sinr_capacity[rep] = np.sum(calc_capacity(max_sinr_ia_solver.calc_SINR()))
+        max_sinr_capacity[rep] = np.sum(
+            calc_capacity(max_sinr_ia_solver.calc_SINR()))
 
         # print "MMSE Alt. SINRs:\n{0}".format(np.vstack(mmse_sinrs[rep]))
         # print "Max SINR Alg. SINRs:\n{0}".format(np.vstack(max_sinr_sinrs[rep]))

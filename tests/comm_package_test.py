@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101,E0611
-
 """
 Tests for the modules in the comm package.
 
@@ -42,11 +41,11 @@ class CommDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
 
-    def test_blockdiagonalization(self, ):
+    def test_blockdiagonalization(self,):
         """Run doctests in the blockdiagonalization module."""
         doctest.testmod(blockdiagonalization)
 
-    def test_waterfilling(self, ):
+    def test_waterfilling(self,):
         """Run doctests in the waterfilling module."""
         doctest.testmod(waterfilling)
 
@@ -71,18 +70,18 @@ class WaterfillingTestCase(unittest.TestCase):
         # http://jungwon.comoj.com/ucsd_ece287b_spr12/lecture_slides/lecture4.pdf
 
         # Abs of the parallel channels
-        vtChannels_abs = np.array([1.90, 1.76, 1.76, 1.35, 1.35, .733, .733,
-                                   .100])
+        vtChannels_abs = np.array(
+            [1.90, 1.76, 1.76, 1.35, 1.35, .733, .733, .100])
         # Power of the parallel channels
-        channel_power_gains = vtChannels_abs ** 2
+        channel_power_gains = vtChannels_abs**2
 
         # Total power available to be distributed
         total_power = 8.
         noise_var = 0.181
 
         # Calculates the optimum powers and water level
-        (vtOptP, mu) = waterfilling.doWF(
-            channel_power_gains, total_power, noise_var)
+        (vtOptP, mu) = waterfilling.doWF(channel_power_gains, total_power,
+                                         noise_var)
 
         # The sum of the powers in each channel must be equal to the
         # total_power
@@ -93,9 +92,10 @@ class WaterfillingTestCase(unittest.TestCase):
         self.assertAlmostEqual(mu, expected_mu)
 
         # test the powers in each channel
-        expected_vtOptP = np.array([1.24120211, 1.23290828, 1.23290828,
-                                    1.19202648, 1.19202648, 0.95446418,
-                                    0.95446418, 0.])
+        expected_vtOptP = np.array([
+            1.24120211, 1.23290828, 1.23290828, 1.19202648, 1.19202648,
+            0.95446418, 0.95446418, 0.
+        ])
         np.testing.assert_array_almost_equal(vtOptP, expected_vtOptP)
 
 
@@ -122,9 +122,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.iNt = self.iNtk * self.num_users  # Total number of Tx antennas
 
         self.BD = blockdiagonalization.BlockDiagonalizer(
-            self.num_users,
-            self.Pu,
-            self.noise_var)
+            self.num_users, self.Pu, self.noise_var)
 
     def test_calc_BD_matrix_no_power_scaling(self):
         channel = randn_c(self.iNr, self.iNt)
@@ -135,8 +133,8 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # Because Ms_bad does not have any power scaling and each column of
         # it comes is a singular vector calculated with the SVD, then the
         # square of its Frobenius norm is equal to its dimension.
-        self.assertAlmostEqual(np.linalg.norm(Ms_bad, 'fro') ** 2,
-                               Ms_bad.shape[0])
+        self.assertAlmostEqual(
+            np.linalg.norm(Ms_bad, 'fro')**2, Ms_bad.shape[0])
 
         # Now let's test if newH is really a block diagonal matrix.
         # First we create a 'mask'
@@ -169,8 +167,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 
         # The square of the Frobenius norm of Ms_good must be equal to the
         # total available power
-        self.assertAlmostEqual(np.linalg.norm(Ms_good, 'fro') ** 2,
-                               total_power)
+        self.assertAlmostEqual(np.linalg.norm(Ms_good, 'fro')**2, total_power)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Ms_good must still be able to block diagonalize the channel
@@ -198,14 +195,13 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
         # Total power restriction
         total_power = self.Pu * self.num_users
-        self.assertGreaterEqual(total_power,
-                                np.linalg.norm(Ms_good, 'fro') ** 2)
+        self.assertGreaterEqual(total_power, np.linalg.norm(Ms_good, 'fro')**2)
 
         # xxxxx Test the Individual power restriction of each user xxxxxxxx
         # accumulated number of transmit antennas
         cum_Nt = np.cumsum(
-            np.hstack([0,
-                       np.ones(self.num_users, dtype=int) * self.num_antennas]))
+            np.hstack(
+                [0, np.ones(self.num_users, dtype=int) * self.num_antennas]))
 
         individual_powers = []
         for i in range(self.num_users):
@@ -214,13 +210,12 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # while the other base stations will use less power.
             individual_powers.append(
                 np.linalg.norm(
-                    Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antennas], 'fro'
-                ) ** 2)
+                    Ms_good[:, cum_Nt[i]:cum_Nt[i] + self.num_antennas],
+                    'fro')**2)
             # 1e-12 is included to avoid false test fails due to small
             # precision errors
             tol = 1e-12
-            self.assertGreaterEqual(self.Pu + tol,
-                                    individual_powers[-1])
+            self.assertGreaterEqual(self.Pu + tol, individual_powers[-1])
 
     def test_block_diagonalize(self):
         Pu = self.Pu
@@ -229,8 +224,9 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         num_antennas = self.num_antennas
 
         channel = randn_c(self.iNr, self.iNt)
-        (newH, Ms) = blockdiagonalization.block_diagonalize(
-            channel, num_users, Pu, noise_var)
+        (newH,
+         Ms) = blockdiagonalization.block_diagonalize(channel, num_users, Pu,
+                                                      noise_var)
 
         # xxxxx Test if the channel is really block diagonal xxxxxxxxxxxxxx
         # First we build a 'mask' to filter out the elements in the block
@@ -250,8 +246,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # xxxxx Now lets test the power restriction xxxxxxxxxxxxxxxxxxxxxxx
         # Total power restriction
         total_power = num_users * Pu
-        self.assertGreaterEqual(total_power,
-                                np.linalg.norm(Ms, 'fro') ** 2)
+        self.assertGreaterEqual(total_power, np.linalg.norm(Ms, 'fro')**2)
 
         # accumulated number of receive antennas
         cum_Nt = np.cumsum(
@@ -265,10 +260,9 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(
-                np.linalg.norm(
-                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antennas], 'fro') ** 2)
-            self.assertGreaterEqual(Pu + tol,
-                                    individual_powers[-1])
+                np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antennas],
+                               'fro')**2)
+            self.assertGreaterEqual(Pu + tol, individual_powers[-1])
 
     def test_block_diagonalize_no_waterfilling(self):
         Pu = self.Pu
@@ -297,8 +291,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         tol = 1e-12  # Tolerance for the GreaterEqual test
         # Total power restriction
         total_power = num_users * Pu
-        self.assertGreaterEqual(total_power + tol,
-                                np.linalg.norm(Ms, 'fro') ** 2)
+        self.assertGreaterEqual(total_power + tol, np.linalg.norm(Ms, 'fro')**2)
 
         # accumulated number of receive antennas
         cum_Nt = np.cumsum(
@@ -311,11 +304,9 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             # channel) will employ a precoder a precoder with total power
             # of `Pu`, while the other base stations will use less power.
             individual_powers.append(
-                np.linalg.norm(
-                    Ms[:, cum_Nt[i]:cum_Nt[i] + num_antennas], 'fro'
-                ) ** 2)
-            self.assertGreaterEqual(Pu + tol,
-                                    individual_powers[-1])
+                np.linalg.norm(Ms[:, cum_Nt[i]:cum_Nt[i] + num_antennas],
+                               'fro')**2)
+            self.assertGreaterEqual(Pu + tol, individual_powers[-1])
 
     def test_calc_receive_filter(self):
         Pu = self.Pu
@@ -324,8 +315,9 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # num_antennas = self.num_antennas
         channel = randn_c(self.iNr, self.iNt)
 
-        (newH, _) = blockdiagonalization.block_diagonalize(
-            channel, num_users, Pu, noise_var)
+        (newH,
+         _) = blockdiagonalization.block_diagonalize(channel, num_users, Pu,
+                                                     noise_var)
 
         # W_bd is a block diagonal matrix, where each "small block" is the
         # receive filter of one user.
@@ -353,6 +345,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 # TODO: finish implementation
 # noinspection PyMethodMayBeStatic
 class BDWithExtIntBaseTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -383,6 +376,7 @@ class BDWithExtIntBaseTestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class WhiteningBDTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -431,12 +425,10 @@ class WhiteningBDTestCase(unittest.TestCase):
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
         tol = 1e-10
-        self.assertGreaterEqual(iPu + tol,
-                                np.linalg.norm(Ms1, 'fro') ** 2)
+        self.assertGreaterEqual(iPu + tol, np.linalg.norm(Ms1, 'fro')**2)
         # 1e-12 is included to avoid false test fails due to small
         # precision errors
-        self.assertGreaterEqual(iPu + tol,
-                                np.linalg.norm(Ms2, 'fro') ** 2)
+        self.assertGreaterEqual(iPu + tol, np.linalg.norm(Ms2, 'fro')**2)
 
         # Test if the precoder block diagonalizes the channel
         self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, Ms1), 'fro'), 0)
@@ -525,6 +517,7 @@ class WhiteningBDTestCase(unittest.TestCase):
 # TODO: finish implementation
 # noinspection PyMethodMayBeStatic
 class EnhancedBDTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -553,9 +546,10 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Test setting the metric to effective_throughput xxxxxxxxxxx
         psk_obj = fundamental.PSK(4)
-        enhancedBD_obj.set_ext_int_handling_metric('effective_throughput',
-                                                   {'modulator': psk_obj,
-                                                    'packet_length': 120})
+        enhancedBD_obj.set_ext_int_handling_metric('effective_throughput', {
+            'modulator': psk_obj,
+            'packet_length': 120
+        })
         self.assertEqual(enhancedBD_obj._metric_func,
                          blockdiagonalization._calc_effective_throughput)
         self.assertEqual(enhancedBD_obj.metric_name, "effective_throughput")
@@ -567,8 +561,7 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
         enhancedBD_obj.set_ext_int_handling_metric('capacity')
-        self.assertEqual(enhancedBD_obj._metric_func,
-                         calc_shannon_sum_capacity)
+        self.assertEqual(enhancedBD_obj._metric_func, calc_shannon_sum_capacity)
         self.assertEqual(enhancedBD_obj.metric_name, "capacity")
         # metric_func_extra_args is an empty dictionary for the capacity
         # metric
@@ -586,8 +579,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test setting the metric to naive xxxxxxxxxxxxxxxxxxxxxxxxxx
-        enhancedBD_obj.set_ext_int_handling_metric('naive',
-                                                   {'num_streams': 2})
+        enhancedBD_obj.set_ext_int_handling_metric('naive', {'num_streams': 2})
         self.assertIsNone(enhancedBD_obj._metric_func)
         self.assertEqual(enhancedBD_obj.metric_name, "naive")
 
@@ -632,13 +624,11 @@ class EnhancedBDTestCase(unittest.TestCase):
                                              np.eye(2))
         np.testing.assert_array_almost_equal(np.dot(W3, np.dot(Heq_k, P3)),
                                              np.eye(3))
-        np.testing.assert_array_almost_equal(np.dot(W_full, Heq_k),
-                                             np.eye(3))
+        np.testing.assert_array_almost_equal(np.dot(W_full, Heq_k), np.eye(3))
 
         overbar_P2 = calcProjectionMatrix(P2)
         expected_W2 = np.dot(
-            np.linalg.pinv(np.dot(overbar_P2, np.dot(Heq_k, P2))),
-            overbar_P2)
+            np.linalg.pinv(np.dot(overbar_P2, np.dot(Heq_k, P2))), overbar_P2)
         np.testing.assert_array_almost_equal(expected_W2, W2)
 
     # TODO: Implement-me
@@ -714,12 +704,10 @@ class EnhancedBDTestCase(unittest.TestCase):
         # channel) will employ a precoder with total power of `Pu`,
         # while the other base stations will use less power.
         tol = 1e-10
-        self.assertGreaterEqual(iPu + tol,
-                                np.linalg.norm(Ms1, 'fro') ** 2)
+        self.assertGreaterEqual(iPu + tol, np.linalg.norm(Ms1, 'fro')**2)
         # 1e-12 is included to avoid false test fails due to small
         # precision errors
-        self.assertGreaterEqual(iPu + tol,
-                                np.linalg.norm(Ms2, 'fro') ** 2)
+        self.assertGreaterEqual(iPu + tol, np.linalg.norm(Ms2, 'fro')**2)
 
         # Test if the precoder block diagonalizes the channel
         self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, Ms1), 'fro'), 0)
@@ -730,31 +718,23 @@ class EnhancedBDTestCase(unittest.TestCase):
         # Equivalent sinrs (in linear scale)
         sinrs = np.empty(K, dtype=np.ndarray)
         sinrs[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H1, Ms1),
-            Wk_all[0],
-            noise_plus_int_cov_matrix[0])
+            np.dot(H1, Ms1), Wk_all[0], noise_plus_int_cov_matrix[0])
         sinrs[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H2, Ms2),
-            Wk_all[1],
-            noise_plus_int_cov_matrix[1])
+            np.dot(H2, Ms2), Wk_all[1], noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
         # noinspection PyPep8
-        se = (
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs[0]),
-                packet_length))
-            +
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs[1]),
-                packet_length)))
+        se = (np.sum(
+            psk_obj.calcTheoreticalSpectralEfficiency(linear2dB(
+                sinrs[0]), packet_length)) + np.sum(
+                    psk_obj.calcTheoreticalSpectralEfficiency(
+                        linear2dB(sinrs[1]), packet_length)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now with the Naive Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
         num_streams = 1
-        enhancedBD_obj.set_ext_int_handling_metric(
-            'naive',
-            {'num_streams': num_streams})
+        enhancedBD_obj.set_ext_int_handling_metric('naive',
+                                                   {'num_streams': num_streams})
 
         (MsPk_naive_all, Wk_naive_all, Ns_naive_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
@@ -769,31 +749,25 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_2, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_1, 'fro')**2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_naive_2, 'fro')**2)
 
         # Test if MsPk really block diagonalizes the channel
         self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_naive_1), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_naive_2), 'fro'),
-            0)
+            np.linalg.norm(np.dot(H1, MsPk_naive_1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_naive_2), 'fro'),
+                               0)
         self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_naive_2), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_naive_1), 'fro'),
-            0)
+            np.linalg.norm(np.dot(H2, MsPk_naive_2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_naive_1), 'fro'),
+                               0)
 
         sinrs4 = np.empty(K, dtype=np.ndarray)
         sinrs4[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H1, MsPk_naive_1),
-            Wk_naive_all[0],
+            np.dot(H1, MsPk_naive_1), Wk_naive_all[0],
             noise_plus_int_cov_matrix[0])
         sinrs4[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H2, MsPk_naive_2),
-            Wk_naive_all[1],
+            np.dot(H2, MsPk_naive_2), Wk_naive_all[1],
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
@@ -816,9 +790,8 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Now let's test the fixed metric
         num_streams = 1
-        enhancedBD_obj.set_ext_int_handling_metric(
-            'fixed',
-            {'num_streams': num_streams})
+        enhancedBD_obj.set_ext_int_handling_metric('fixed',
+                                                   {'num_streams': num_streams})
 
         (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
@@ -833,31 +806,25 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_2, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_1, 'fro')**2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_fixed_2, 'fro')**2)
 
         # Test if MsPk really block diagonalizes the channel
         self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_fixed_1), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_fixed_2), 'fro'),
-            0)
+            np.linalg.norm(np.dot(H1, MsPk_fixed_1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_fixed_2), 'fro'),
+                               0)
         self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_fixed_2), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_fixed_1), 'fro'),
-            0)
+            np.linalg.norm(np.dot(H2, MsPk_fixed_2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_fixed_1), 'fro'),
+                               0)
 
         sinrs5 = np.empty(K, dtype=np.ndarray)
         sinrs5[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H1, MsPk_fixed_1),
-            Wk_fixed_all[0],
+            np.dot(H1, MsPk_fixed_1), Wk_fixed_all[0],
             noise_plus_int_cov_matrix[0])
         sinrs5[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H2, MsPk_fixed_2),
-            Wk_fixed_all[1],
+            np.dot(H2, MsPk_fixed_2), Wk_fixed_all[1],
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
@@ -885,47 +852,38 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_2, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_1, 'fro')**2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_2, 'fro')**2)
 
         # Test if MsPk really block diagonalizes the channel
-        self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_cap_1), 'fro'), 0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_cap_2), 'fro'), 0)
-        self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_cap_2), 'fro'), 0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'), 0)
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_cap_1), 'fro'),
+                                  0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_cap_2), 'fro'), 0)
+        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_cap_2), 'fro'),
+                                  0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'), 0)
 
         sinrs2 = np.empty(K, dtype=np.ndarray)
         sinrs2[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H1, MsPk_cap_1),
-            Wk_cap_all[0],
-            noise_plus_int_cov_matrix[0])
+            np.dot(H1, MsPk_cap_1), Wk_cap_all[0], noise_plus_int_cov_matrix[0])
         sinrs2[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H2, MsPk_cap_2),
-            Wk_cap_all[1],
-            noise_plus_int_cov_matrix[1])
+            np.dot(H2, MsPk_cap_2), Wk_cap_all[1], noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
         # noinspection PyPep8
-        se2 = (
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs2[0]),
-                packet_length))
-            +
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs2[1]),
-                packet_length)))
+        se2 = (np.sum(
+            psk_obj.calcTheoreticalSpectralEfficiency(linear2dB(
+                sinrs2[0]), packet_length)) + np.sum(
+                    psk_obj.calcTheoreticalSpectralEfficiency(
+                        linear2dB(sinrs2[1]), packet_length)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the effective_throughput metric
-        enhancedBD_obj.set_ext_int_handling_metric(
-            'effective_throughput',
-            {'modulator': psk_obj,
-             'packet_length': packet_length})
+        enhancedBD_obj.set_ext_int_handling_metric('effective_throughput', {
+            'modulator': psk_obj,
+            'packet_length': packet_length
+        })
 
         (MsPk_effec_all, Wk_effec_all, Ns_effec_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
@@ -938,43 +896,34 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Test if the square of the Frobenius norm of the precoder of each
         # user is equal to the power available to that user.
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_1, 'fro') ** 2)
-        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_2, 'fro') ** 2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_1, 'fro')**2)
+        self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_effec_2, 'fro')**2)
 
         # Test if MsPk really block diagonalizes the channel
         self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_effec_1), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H1, MsPk_effec_2), 'fro'),
-            0)
+            np.linalg.norm(np.dot(H1, MsPk_effec_1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_effec_2), 'fro'),
+                               0)
         self.assertNotAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_effec_2), 'fro'),
-            0)
-        self.assertAlmostEqual(
-            np.linalg.norm(np.dot(H2, MsPk_effec_1), 'fro'),
-            0)
+            np.linalg.norm(np.dot(H2, MsPk_effec_2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_effec_1), 'fro'),
+                               0)
 
         sinrs3 = np.empty(K, dtype=np.ndarray)
         sinrs3[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H1, MsPk_effec_1),
-            Wk_effec_all[0],
+            np.dot(H1, MsPk_effec_1), Wk_effec_all[0],
             noise_plus_int_cov_matrix[0])
         sinrs3[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H2, MsPk_effec_2),
-            Wk_effec_all[1],
+            np.dot(H2, MsPk_effec_2), Wk_effec_all[1],
             noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
         # noinspection PyPep8
-        se3 = (
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs3[0]),
-                packet_length))
-            +
-            np.sum(psk_obj.calcTheoreticalSpectralEfficiency(
-                linear2dB(sinrs3[1]),
-                packet_length)))
+        se3 = (np.sum(
+            psk_obj.calcTheoreticalSpectralEfficiency(linear2dB(
+                sinrs3[0]), packet_length)) + np.sum(
+                    psk_obj.calcTheoreticalSpectralEfficiency(
+                        linear2dB(sinrs3[1]), packet_length)))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Test if the effective_throughput obtains a better spectral

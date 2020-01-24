@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module containing single user channels. """
 
 import math
@@ -9,7 +8,7 @@ import numpy as np
 from . import fading, fading_generators
 
 
-class SuChannel(object):
+class SuChannel:
     """
     Single User channel corresponding to a Tapped Delay Line channel model,
     which corresponds to a multipath channel. You can use a single tap in
@@ -36,15 +35,19 @@ class SuChannel(object):
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, fading_generator=None, channel_profile=None,
-                 tap_powers_dB=None, tap_delays=None, Ts=None):
+
+    def __init__(self,
+                 fading_generator=None,
+                 channel_profile=None,
+                 tap_powers_dB=None,
+                 tap_delays=None,
+                 Ts=None):
         if fading_generator is None:
             fading_generator = fading_generators.RayleighSampleGenerator()
             if channel_profile is None and Ts is None:
                 Ts = 1
 
-        if (channel_profile is None and
-                tap_powers_dB is None and
+        if (channel_profile is None and tap_powers_dB is None and
                 tap_delays is None):
             # Only the fading generator was provided. Let's assume a flat
             # fading channel
@@ -56,10 +59,9 @@ class SuChannel(object):
             # More parameters were provided. We will have then a TDL
             # channel model. Let's just pass these parameters to the
             # base class.
-            self._tdlchannel = fading.TdlChannel(
-                fading_generator,
-                channel_profile, tap_powers_dB, tap_delays,
-                Ts)
+            self._tdlchannel = fading.TdlChannel(fading_generator,
+                                                 channel_profile, tap_powers_dB,
+                                                 tap_delays, Ts)
 
         # Path loss which will be multiplied by the impulse response when
         # corrupt_data is called
@@ -134,7 +136,9 @@ class SuChannel(object):
 
         return output
 
-    def corrupt_data_in_freq_domain(self, signal, fft_size,
+    def corrupt_data_in_freq_domain(self,
+                                    signal,
+                                    fft_size,
                                     carrier_indexes=None):
         """
         Transmit the signal through the TDL channel, but in the frequency
@@ -313,9 +317,13 @@ class SuMimoChannel(SuChannel):
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-    def __init__(self, num_antennas, fading_generator=None,
+
+    def __init__(self,
+                 num_antennas,
+                 fading_generator=None,
                  channel_profile=None,
-                 tap_powers_dB=None, tap_delays=None,
+                 tap_powers_dB=None,
+                 tap_delays=None,
                  Ts=None):
         # Before calling supper to initialize the base class we will set
         # the shape of the fading generator
@@ -328,6 +336,5 @@ class SuMimoChannel(SuChannel):
         fading_generator.shape = (num_antennas, num_antennas)
 
         # Initialize attributes from base class
-        super(SuMimoChannel, self).__init__(
-            fading_generator, channel_profile,
-            tap_powers_dB, tap_delays, Ts)
+        super(SuMimoChannel, self).__init__(fading_generator, channel_profile,
+                                            tap_powers_dB, tap_delays, Ts)

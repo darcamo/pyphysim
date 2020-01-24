@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing the base class for Interference Alignment (IA)
 Algorithms.
@@ -20,7 +19,7 @@ from ..util.conversion import linear2dB
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Base Class for all IA Algorithms xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-class IASolverBaseClass(object):  # pylint: disable=R0902
+class IASolverBaseClass:  # pylint: disable=R0902
     """
     Base class for all Interference Alignment Algorithms.
 
@@ -59,11 +58,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
     def __init__(self, multiUserChannel):
         # xxxxxxxxxx Private attributes xxxxxxxxxxxxxxx
-        if not isinstance(multiUserChannel,
-                          muchannels.MultiUserChannelMatrix):
-            raise ValueError(
-                "multiUserChannel must be an object of the "
-                "MultiUserChannelMatrix class (or a subclass).")
+        if not isinstance(multiUserChannel, muchannels.MultiUserChannelMatrix):
+            raise ValueError("multiUserChannel must be an object of the "
+                             "MultiUserChannelMatrix class (or a subclass).")
         # Channel of all users
         self._multiUserChannel = multiUserChannel
 
@@ -289,7 +286,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         return self._W_H
 
     @property
-    def full_W_H(self, ):
+    def full_W_H(self,):
         """
         Get method for the full_W_H property.
 
@@ -320,7 +317,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         return self._full_W_H
 
     @property
-    def full_W(self, ):
+    def full_W(self,):
         """
         Get method for the full_W property.
 
@@ -528,8 +525,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
 
         self._F = np.zeros(self.K, dtype=np.ndarray)
         for k in range(self.K):
-            self._F[k] = normalized(
-                randn_c_RS(self._rs, self.Nt[k], Ns[k]))
+            self._F[k] = normalized(randn_c_RS(self._rs, self.Nt[k], Ns[k]))
 
         # This will create a new array so that we can modify self._Ns
         # internally without changing the original Ns variable passed to
@@ -652,9 +648,7 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             # The lets make sure the receive filter norm is equal to one so
             # that we can correctly scale it to the desired power.
             assert np.linalg.norm(self._W[l], 'fro') - 1.0 < 1e-6
-            Hkl_F_rev = np.dot(
-                self._get_channel_rev(k, l),
-                self._W[l])
+            Hkl_F_rev = np.dot(self._get_channel_rev(k, l), self._W[l])
             Qk = Qk + np.dot(P[l] * Hkl_F_rev, Hkl_F_rev.conjugate().T)
 
         return Qk
@@ -745,8 +739,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             # noinspection PyUnresolvedReferences
             denominator = np.dot(denominator,
                                  denominator.transpose().conjugate())
-            noise_power = self.noise_var * np.dot(
-                Wj_H, Wj_H.transpose().conjugate())
+            noise_power = self.noise_var * np.dot(Wj_H,
+                                                  Wj_H.transpose().conjugate())
             denominator += noise_power
             denominator = np.diag(np.abs(denominator))
 
@@ -938,8 +932,8 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
         first_part = self._calc_Bkl_cov_matrix_first_part(k)
         for l in range(self._Ns[k]):
             second_part = self._calc_Bkl_cov_matrix_second_part(k, l)
-            Bkl_all_l[l] = first_part - second_part + (
-                noise_power * np.eye(self.Nr[k]))
+            Bkl_all_l[l] = first_part - second_part + (noise_power *
+                                                       np.eye(self.Nr[k]))
 
         return Bkl_all_l
 
@@ -970,12 +964,9 @@ class IASolverBaseClass(object):  # pylint: disable=R0902
             Vkl = Vk[:, l:l + 1]
             Ukl_H = Uk_H[l:l + 1, :]
             Ukl = Ukl_H.conj().T
-            aux = np.dot(Ukl_H,
-                         np.dot(Hkk, Vkl))
-            numerator = np.dot(aux,
-                               aux.transpose().conjugate())
-            denominator = np.dot(Ukl_H,
-                                 np.dot(Bkl_all_l[l], Ukl))
+            aux = np.dot(Ukl_H, np.dot(Hkk, Vkl))
+            numerator = np.dot(aux, aux.transpose().conjugate())
+            denominator = np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
             SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
             # The imaginary part should be negligible
             SINR_k[l] = np.abs(SINR_kl)

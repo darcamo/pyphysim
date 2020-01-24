@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101,E1103,W0403
-
 """
 Tests for the modules in the simulations package.
 
@@ -114,6 +113,7 @@ class SimulationsDoctestsTestCase(unittest.TestCase):
 
 
 class SimulationHelpersTestCase(unittest.TestCase):
+
     def test_get_common_parser(self):
         p = get_common_parser()
         p2 = get_common_parser()
@@ -145,22 +145,19 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         expected_parsed_expr = np.r_[10:15]
         parsed_expr = _parse_float_range_expr(expr)
 
-        np.testing.assert_array_almost_equal(expected_parsed_expr,
-                                             parsed_expr)
+        np.testing.assert_array_almost_equal(expected_parsed_expr, parsed_expr)
 
         expr = "10:2:15"
         expected_parsed_expr = np.r_[10:15:2]
         parsed_expr = _parse_float_range_expr(expr)
 
-        np.testing.assert_array_almost_equal(expected_parsed_expr,
-                                             parsed_expr)
+        np.testing.assert_array_almost_equal(expected_parsed_expr, parsed_expr)
 
         expr = "-3.4:0.5:5"
         expected_parsed_expr = np.r_[-3.4:5.0:0.5]
         parsed_expr = _parse_float_range_expr(expr)
 
-        np.testing.assert_array_almost_equal(expected_parsed_expr,
-                                             parsed_expr)
+        np.testing.assert_array_almost_equal(expected_parsed_expr, parsed_expr)
 
         # xxxxx Test invalid values xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expr = "a string"
@@ -213,8 +210,9 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         # Test when the input is a list of strings (with the numbers)
         list_of_strings = ['0', '6', '17']
-        parsed_array = real_scalar_or_real_numpy_array_check(
-            list_of_strings, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(list_of_strings,
+                                                             min=0,
+                                                             max=30)
         expected_parsed_array = np.array([0., 6., 17.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
@@ -223,34 +221,37 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # Test when the input is a string representation of a list with
         # numbers and range expressions.
         array_string = "[0 5 10:15]"
-        parsed_array = real_scalar_or_real_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string,
+                                                             min=0,
+                                                             max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = real_scalar_or_real_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string,
+                                                             min=0,
+                                                             max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = real_scalar_or_real_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string,
+                                                             min=0,
+                                                             max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = real_scalar_or_real_numpy_array_check(
-            array_string, min=0, max=30)
-        expected_parsed_array = np.array(
-            [0., 5., 10., 11., 12., 13., 14., 20.])
+        parsed_array = real_scalar_or_real_numpy_array_check(array_string,
+                                                             min=0,
+                                                             max=30)
+        expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
@@ -258,13 +259,11 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            real_scalar_or_real_numpy_array_check(
-                array_string, min=4, max=30)
+            real_scalar_or_real_numpy_array_check(array_string, min=4, max=30)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         with self.assertRaises(validate.VdtValueTooBigError):
-            real_scalar_or_real_numpy_array_check(
-                array_string, min=0, max=15)
+            real_scalar_or_real_numpy_array_check(array_string, min=0, max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Note: Since the "integer_scalar_or_integer_numpy_array_check"
@@ -285,8 +284,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             integer_scalar_or_integer_numpy_array_check(value),
             expected_parsed_value)
         self.assertTrue(
-            isinstance(integer_scalar_or_integer_numpy_array_check(value),
-                       int))
+            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
 
         value = "76"
         expected_parsed_value = 76
@@ -294,8 +292,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             integer_scalar_or_integer_numpy_array_check(value),
             expected_parsed_value)
         self.assertTrue(
-            isinstance(integer_scalar_or_integer_numpy_array_check(value),
-                       int))
+            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
 
         # Test validation against the minimum and maximum allowed value
         value = "6"
@@ -308,46 +305,48 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         array_string = "[0 5 10:15]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
+                                                                   min=0,
+                                                                   max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_equal(parsed_array,
-                                      expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
+                                                                   min=0,
+                                                                   max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_equal(parsed_array,
-                                      expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
+                                                                   min=0,
+                                                                   max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_equal(parsed_array,
-                                      expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(
-            array_string, min=0, max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
+                                                                   min=0,
+                                                                   max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
-        np.testing.assert_array_equal(parsed_array,
-                                      expected_parsed_array)
+        np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
         array_string = "[0,5,10:15,20]"
         with self.assertRaises(validate.VdtValueTooSmallError):
-            integer_scalar_or_integer_numpy_array_check(
-                array_string, min=4, max=30)
+            integer_scalar_or_integer_numpy_array_check(array_string,
+                                                        min=4,
+                                                        max=30)
 
         with self.assertRaises(validate.VdtValueTooBigError):
-            integer_scalar_or_integer_numpy_array_check(
-                array_string, min=0, max=15)
+            integer_scalar_or_integer_numpy_array_check(array_string,
+                                                        min=0,
+                                                        max=15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -364,36 +363,53 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
         pass
 
     def test_combine_simulation_parameters(self):
-        sim_params1 = SimulationParameters.create(
-            {'first': 10, 'second': 20,
-             'third': np.array([1, 3, 2, 5]), 'fourth': ['A', 'B']})
+        sim_params1 = SimulationParameters.create({
+            'first': 10,
+            'second': 20,
+            'third': np.array([1, 3, 2, 5]),
+            'fourth': ['A', 'B']
+        })
         sim_params1.set_unpack_parameter('third')
         sim_params1.set_unpack_parameter('fourth')
 
-        sim_params2 = SimulationParameters.create(
-            {'first': 10, 'second': 20, 'third': np.array([-1, 1, 3, 8])})
+        sim_params2 = SimulationParameters.create({
+            'first': 10,
+            'second': 20,
+            'third': np.array([-1, 1, 3, 8])
+        })
         sim_params2.set_unpack_parameter('third')
 
-        sim_params3 = SimulationParameters.create(
-            {'first': 10, 'third': np.array([-1, 1, 3, 8]),
-             'fourth': ['B', 'C']})
+        sim_params3 = SimulationParameters.create({
+            'first': 10,
+            'third': np.array([-1, 1, 3, 8]),
+            'fourth': ['B', 'C']
+        })
         sim_params3.set_unpack_parameter('third')
         sim_params3.set_unpack_parameter('fourth')
 
-        sim_params4 = SimulationParameters.create(
-            {'first': 10, 'second': 30,
-             'third': np.array([-1, 1, 3, 8]), 'fourth': ['B', 'C']})
+        sim_params4 = SimulationParameters.create({
+            'first': 10,
+            'second': 30,
+            'third': np.array([-1, 1, 3, 8]),
+            'fourth': ['B', 'C']
+        })
         sim_params4.set_unpack_parameter('third')
         sim_params4.set_unpack_parameter('fourth')
 
-        sim_params5 = SimulationParameters.create(
-            {'first': 10, 'second': 20,
-             'third': np.array([-1, 1, 3, 8]), 'fourth': ['B', 'C']})
+        sim_params5 = SimulationParameters.create({
+            'first': 10,
+            'second': 20,
+            'third': np.array([-1, 1, 3, 8]),
+            'fourth': ['B', 'C']
+        })
         sim_params5.set_unpack_parameter('fourth')
 
-        sim_params6 = SimulationParameters.create(
-            {'first': 10, 'second': 20,
-             'third': np.array([-1, 1, 3, 8]), 'fourth': ['B', 'C']})
+        sim_params6 = SimulationParameters.create({
+            'first': 10,
+            'second': 20,
+            'third': np.array([-1, 1, 3, 8]),
+            'fourth': ['B', 'C']
+        })
         sim_params6.set_unpack_parameter('third')
         sim_params6.set_unpack_parameter('fourth')
 
@@ -421,15 +437,12 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
         union = combine_simulation_parameters(sim_params1, sim_params6)
         self.assertEqual(union['first'], sim_params1['first'])
         self.assertEqual(union['second'], sim_params1['second'])
-        np.testing.assert_array_almost_equal(
-            union['third'],
-            np.array([-1, 1, 2, 3, 5, 8]))
-        np.testing.assert_array_equal(
-            union['fourth'],
-            np.array(['A', 'B', 'C']))
+        np.testing.assert_array_almost_equal(union['third'],
+                                             np.array([-1, 1, 2, 3, 5, 8]))
+        np.testing.assert_array_equal(union['fourth'], np.array(['A', 'B',
+                                                                 'C']))
 
-        self.assertEqual(set(union.unpacked_parameters),
-                         {'third', 'fourth'})
+        self.assertEqual(set(union.unpacked_parameters), {'third', 'fourth'})
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -455,8 +468,8 @@ class SimulationParametersTestCase(unittest.TestCase):
     def test_add(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.assertEqual(len(self.sim_params), 3)
-        np.testing.assert_array_equal(
-            self.sim_params['third'], np.array([1, 3, 2, 5]))
+        np.testing.assert_array_equal(self.sim_params['third'],
+                                      np.array([1, 3, 2, 5]))
 
     def test_unpacking_parameters(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -465,9 +478,8 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Test the correct static parameters (should be all parameters for
         # now)
-        self.assertEqual(
-            set(self.sim_params.fixed_parameters),
-            {'first', 'second', 'third', 'fourth'})
+        self.assertEqual(set(self.sim_params.fixed_parameters),
+                         {'first', 'second', 'third', 'fourth'})
 
         # Let's unpack the parameters 'third' and 'fourth'
         self.sim_params.set_unpack_parameter('third')
@@ -479,17 +491,15 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(self.sim_params.get_num_unpacked_variations(), 8)
         # We make the unpacked_parameters and the expected value sets
         # because the order does not matter
-        self.assertEqual(
-            set(self.sim_params.unpacked_parameters),
-            {'third', 'fourth'})
+        self.assertEqual(set(self.sim_params.unpacked_parameters),
+                         {'third', 'fourth'})
 
         # We may have 8 variations, but there are still only 4 parameters
         self.assertEqual(len(self.sim_params), 4)
 
         # Test the correct static parameters
-        self.assertEqual(
-            set(self.sim_params.fixed_parameters),
-            {'first', 'second'})
+        self.assertEqual(set(self.sim_params.fixed_parameters),
+                         {'first', 'second'})
 
         # Test if an exception is raised if we try to set a non iterable
         # parameter to be unpacked.
@@ -517,9 +527,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Test if we can unset a parameter that was previously set to be
         # unpacked.
         self.sim_params.set_unpack_parameter('fourth', False)
-        self.assertEqual(
-            set(self.sim_params.unpacked_parameters),
-            {'third'})
+        self.assertEqual(set(self.sim_params.unpacked_parameters), {'third'})
 
     def test_remove(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -534,9 +542,11 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Note that this parameter was marked to be unpacked
         self.sim_params.remove('third')
 
-        expected_parameters = {'first': 10,
-                               'fourth': ['A', 'B'],
-                               'fifth': ['Z', 'W', 'Y']}
+        expected_parameters = {
+            'first': 10,
+            'fourth': ['A', 'B'],
+            'fifth': ['Z', 'W', 'Y']
+        }
         expected_unpacked_parameters = {'fourth'}
         self.assertEqual(self.sim_params.parameters, expected_parameters)
         self.assertEqual(set(self.sim_params.unpacked_parameters),
@@ -612,8 +622,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # We change all values to sets to remove repeated values for
         # testing purposes.
-        self.assertEqual(set(params_dict['first']),
-                         {self.sim_params['first']})
+        self.assertEqual(set(params_dict['first']), {self.sim_params['first']})
         self.assertEqual(set(params_dict['second']),
                          {self.sim_params['second']})
         self.assertEqual(set(params_dict['third']),
@@ -738,24 +747,33 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Now lets fix the third, fourth and fifth parameters. This should
         # get me a single index.
-        index1 = self.sim_params.get_pack_indexes(
-            {'third': 5, 'fourth': 'B', 'fifth': 'Z'})[0]
+        index1 = self.sim_params.get_pack_indexes({
+            'third': 5,
+            'fourth': 'B',
+            'fifth': 'Z'
+        })[0]
         # Now we use the index to get an element in the unpacked_list and
         # check if the values are the ones that we have fixed.
         self.assertEqual(unpacked_list[index1]['third'], 5)
         self.assertEqual(unpacked_list[index1]['fourth'], 'B')
         self.assertEqual(unpacked_list[index1]['fifth'], 'Z')
 
-        index2 = self.sim_params.get_pack_indexes(
-            {'third': 5, 'fourth': 'B', 'fifth': 'X'})[0]
+        index2 = self.sim_params.get_pack_indexes({
+            'third': 5,
+            'fourth': 'B',
+            'fifth': 'X'
+        })[0]
         # Now we use the index to get an element in the unpacked_list and
         # check if the values are the ones that we have fixed.
         self.assertEqual(unpacked_list[index2]['third'], 5)
         self.assertEqual(unpacked_list[index2]['fourth'], 'B')
         self.assertEqual(unpacked_list[index2]['fifth'], 'X')
 
-        index3 = self.sim_params.get_pack_indexes(
-            {'third': 2, 'fourth': 'A', 'fifth': 'Z'})[0]
+        index3 = self.sim_params.get_pack_indexes({
+            'third': 2,
+            'fourth': 'A',
+            'fifth': 'Z'
+        })[0]
         # Now we use the index to get an element in the unpacked_list and
         # check if the values are the ones that we have fixed.
         self.assertEqual(unpacked_list[index3]['third'], 2)
@@ -912,7 +930,8 @@ class SimulationParametersTestCase(unittest.TestCase):
             'fourth': [30],
             'fifth': ['hum', 'blabla'],
             'sixth': ['a', 'b', 'c'],
-            'seventh': ['ok', 'not ok', 'maybe']})
+            'seventh': ['ok', 'not ok', 'maybe']
+        })
 
         filename = 'paramsfile.pickle'
 
@@ -1072,8 +1091,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         max_iterations=integer(min=1)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
-        params2 = SimulationParameters.load_from_config_file(
-            filename, spec)
+        params2 = SimulationParameters.load_from_config_file(filename, spec)
         self.assertEqual(len(params2), 6)
         self.assertEqual(params2['modo'], 'test')
         np.testing.assert_array_almost_equal(params2['SNR'],
@@ -1093,8 +1111,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         fid.close()
 
         with self.assertRaises(Exception):
-            SimulationParameters.load_from_config_file(
-                filename, spec)
+            SimulationParameters.load_from_config_file(filename, spec)
 
         # Now we do not provide the required parameter max_iterations
         fid = open(filename, 'w')
@@ -1103,8 +1120,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         fid.close()
 
         with self.assertRaises(Exception):
-            SimulationParameters.load_from_config_file(
-                filename, spec)
+            SimulationParameters.load_from_config_file(filename, spec)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
@@ -1116,6 +1132,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Results Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ResultsModuleFunctionsTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         pass
@@ -1207,8 +1224,10 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
             extra = variation['extra']
 
             try:
-                r1index = results1.params.get_pack_indexes(
-                    {'SNR': snr, 'extra': extra})[0]
+                r1index = results1.params.get_pack_indexes({
+                    'SNR': snr,
+                    'extra': extra
+                })[0]
                 count += 1.
                 expected_lala_results[index] \
                     += results1['lala'][r1index].get_result()
@@ -1216,8 +1235,10 @@ class ResultsModuleFunctionsTestCase(unittest.TestCase):
                 pass
 
             try:
-                r3index = results3.params.get_pack_indexes(
-                    {'SNR': snr, 'extra': extra})[0]
+                r3index = results3.params.get_pack_indexes({
+                    'SNR': snr,
+                    'extra': extra
+                })[0]
                 count += 1.
                 expected_lala_results[index] \
                     += results3['lala'][r3index].get_result()
@@ -1268,8 +1289,12 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result4.type_name, "CHOICETYPE")
 
         # Test that the possible type codes are different
-        self.assertEqual(4, len({Result.SUMTYPE, Result.RATIOTYPE,
-                                 Result.MISCTYPE, Result.CHOICETYPE}))
+        self.assertEqual(
+            4,
+            len({
+                Result.SUMTYPE, Result.RATIOTYPE, Result.MISCTYPE,
+                Result.CHOICETYPE
+            }))
 
     def test_update(self):
         # Test the update function of the SUMTYPE
@@ -1303,11 +1328,11 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(1)
         self.result4.update(0)
         self.result4.update(4)
-        np.testing.assert_array_almost_equal(
-            self.result4.get_result(), [.5, .25, 0, 0, .25, 0])
+        np.testing.assert_array_almost_equal(self.result4.get_result(),
+                                             [.5, .25, 0, 0, .25, 0])
         self.result4.update(5)
-        np.testing.assert_array_almost_equal(
-            self.result4.get_result(), [.4, .2, 0, 0, .2, .2])
+        np.testing.assert_array_almost_equal(self.result4.get_result(),
+                                             [.4, .2, 0, 0, .2, .2])
 
         # Test if an exception is raised when updating a Result of the
         # RATIOTYPE without specifying both the value and the total.
@@ -1360,16 +1385,18 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result3._value_list, [3, "some string", 2])
         self.assertEqual(result3._total_list, [])
 
-        result4 = Result(
-            'name', Result.CHOICETYPE, accumulate_values=True, choice_num=5)
+        result4 = Result('name',
+                         Result.CHOICETYPE,
+                         accumulate_values=True,
+                         choice_num=5)
         result4.update(3)
         result4.update(1)
         result4.update(0)
         result4.update(3)
         result4.update(4)
         np.testing.assert_array_almost_equal(result4._value, [1, 1, 0, 2, 1])
-        np.testing.assert_array_almost_equal(
-            result4.get_result(), [.2, .2, 0, .4, .2])
+        np.testing.assert_array_almost_equal(result4.get_result(),
+                                             [.2, .2, 0, .4, .2])
         self.assertEqual(result4._total, 5)
         self.assertEqual(result4._value_list, [3, 1, 0, 3, 4])
         self.assertEqual(result4._total_list, [])
@@ -1471,8 +1498,8 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(3)
         self.result4.merge(result4_other)
         self.assertEqual(self.result4.name, 'name4')
-        np.testing.assert_array_almost_equal(
-            self.result4._value, [1, 1, 1, 2, 0, 0])
+        np.testing.assert_array_almost_equal(self.result4._value,
+                                             [1, 1, 1, 2, 0, 0])
         self.assertEqual(self.result4._total, 5)
         np.testing.assert_array_almost_equal(self.result4.get_result(),
                                              [.2, .2, .2, .4, 0, 0])
@@ -1491,7 +1518,9 @@ class ResultTestCase(unittest.TestCase):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         result1.update(13)
         result1.update(30)
-        result1_other = Result.create("name", Result.SUMTYPE, 11,
+        result1_other = Result.create("name",
+                                      Result.SUMTYPE,
+                                      11,
                                       accumulate_values=True)
         result1_other.update(22)
         result1_other.update(4)
@@ -1505,7 +1534,10 @@ class ResultTestCase(unittest.TestCase):
         result2.update(6, 7)
         result2.update(1, 15)
 
-        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50,
+        result2_other = Result.create("name2",
+                                      Result.RATIOTYPE,
+                                      34,
+                                      50,
                                       accumulate_values=True)
         result2_other.update(12, 18)
         result2.merge(result2_other)
@@ -1537,12 +1569,18 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result3._total_list, [])
 
         # Test for the CHOICETYPE type
-        result4 = Result.create(
-            'name4', Result.CHOICETYPE, 2, 4, accumulate_values=True)
+        result4 = Result.create('name4',
+                                Result.CHOICETYPE,
+                                2,
+                                4,
+                                accumulate_values=True)
         result4.update(0)
         result4.update(3)
-        result4_other = Result.create(
-            'name4', Result.CHOICETYPE, 0, 4, accumulate_values=True)
+        result4_other = Result.create('name4',
+                                      Result.CHOICETYPE,
+                                      0,
+                                      4,
+                                      accumulate_values=True)
         result4_other.update(3)
         result4.merge(result4_other)
         self.assertEqual(result4._value_list, [2, 0, 3, 0, 3])
@@ -1555,7 +1593,9 @@ class ResultTestCase(unittest.TestCase):
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         result1.update(13)
         result1.update(30)
-        result1_other = Result.create("name", Result.SUMTYPE, 11,
+        result1_other = Result.create("name",
+                                      Result.SUMTYPE,
+                                      11,
                                       accumulate_values=True)
         result1_other.update(22)
         result1_other.update(4)
@@ -1574,7 +1614,10 @@ class ResultTestCase(unittest.TestCase):
         result2.update(6, 7)
         result2.update(1, 15)
 
-        result2_other = Result.create("name2", Result.RATIOTYPE, 34, 50,
+        result2_other = Result.create("name2",
+                                      Result.RATIOTYPE,
+                                      34,
+                                      50,
                                       accumulate_values=True)
         result2_other.update(12, 18)
         result2.merge(result2_other)
@@ -1588,10 +1631,8 @@ class ResultTestCase(unittest.TestCase):
         self.assertAlmostEqual(result2.get_result_var(), expected_var2)
 
     def test_representation(self):
-        self.assertEqual(self.result1.__repr__(),
-                         "Result -> name: Nothing yet")
-        self.assertEqual(self.result2.__repr__(),
-                         "Result -> name2: 0/0 -> NaN")
+        self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
+        self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
         self.assertEqual(self.result3.__repr__(),
                          "Result -> name3: Nothing yet")
         self.assertEqual(self.result4.__repr__(),
@@ -1604,8 +1645,7 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(2)
 
         self.assertEqual(self.result1.__repr__(), "Result -> name: 10")
-        self.assertEqual(
-            self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
+        self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
         self.assertEqual(self.result4.__repr__(),
                          "Result -> name4: [0.  0.  0.5 0.5 0.  0. ]")
@@ -1675,8 +1715,10 @@ class ResultTestCase(unittest.TestCase):
         # Calculate the expected confidence interval
         A = (np.array(result._value_list, dtype=float) /
              np.array(result._total_list, dtype=float))
-        expected_confidence_interval = misc.calc_confidence_interval(
-            A.mean(), A.std(), A.size, P=95)
+        expected_confidence_interval = misc.calc_confidence_interval(A.mean(),
+                                                                     A.std(),
+                                                                     A.size,
+                                                                     P=95)
         confidence_interval = result.get_confidence_interval(P=95)
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
@@ -1886,9 +1928,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         # self.simresults otherwise there will be a KeyError.
         self.simresults.merge_all_results(self.other_simresults)
         self.assertEqual(self.simresults['lala'][-1].get_result(), 43)
-        self.assertEqual(
-            self.simresults['lele'][-1].get_result(),
-            (11. + 4.) / (20. + 10.))
+        self.assertEqual(self.simresults['lele'][-1].get_result(),
+                         (11. + 4.) / (20. + 10.))
 
         # One update from the 'lala' result in self.simresults and other
         # from the 'lala' result in self.other_simresults
@@ -1902,9 +1943,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         # SimulationResults object.
         emptyresults = SimulationResults()
         emptyresults.merge_all_results(self.simresults)
-        self.assertEqual(
-            set(emptyresults.get_result_names()),
-            {'lala', 'lele', 'lulu'})
+        self.assertEqual(set(emptyresults.get_result_names()),
+                         {'lala', 'lele', 'lulu'})
 
         # xxxxx Test the merge with the num_skipped_reps result xxxxxxxxxxx
         simresults1 = SimulationResults()
@@ -1913,19 +1953,15 @@ class SimulationResultsTestCase(unittest.TestCase):
         simresults1.add_new_result('num_skipped_reps', Result.SUMTYPE, 3)
         simresults2.add_new_result('name1', Result.SUMTYPE, 2)
         simresults1.merge_all_results(simresults2)
-        self.assertEqual(
-            set(simresults1.get_result_names()),
-            {'name1', 'num_skipped_reps'})
-        self.assertEqual(
-            set(simresults2.get_result_names()),
-            {'name1'})
+        self.assertEqual(set(simresults1.get_result_names()),
+                         {'name1', 'num_skipped_reps'})
+        self.assertEqual(set(simresults2.get_result_names()), {'name1'})
 
         simresults3 = SimulationResults()
         simresults3.add_new_result('name1', Result.SUMTYPE, 4)
         simresults3.merge_all_results(simresults1)
-        self.assertEqual(
-            set(simresults3.get_result_names()),
-            {'name1', 'num_skipped_reps'})
+        self.assertEqual(set(simresults3.get_result_names()),
+                         {'name1', 'num_skipped_reps'})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_equal_and_not_equal_operators(self):
@@ -1941,8 +1977,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         lele_result.update(3, 10)
         lulu_result.update(3)
         lulu_result.update(1)
-        elapsed_time_result2 = Result.create(
-            'elapsed_time', Result.SUMTYPE, 20)
+        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
         simresults.add_result(lala_result)
         simresults.add_result(lele_result)
         simresults.add_result(lulu_result)
@@ -1984,28 +2019,23 @@ class SimulationResultsTestCase(unittest.TestCase):
     def test_get_result_values_list(self):
         self.simresults.append_all_results(self.other_simresults)
 
-        self.assertEqual(
-            self.simresults.get_result_values_list('lala'),
-            [13, 30])
-        self.assertEqual(
-            self.simresults.get_result_values_list('lele'),
-            [0.55, 0.4])
+        self.assertEqual(self.simresults.get_result_values_list('lala'),
+                         [13, 30])
+        self.assertEqual(self.simresults.get_result_values_list('lele'),
+                         [0.55, 0.4])
 
         lulu_list = self.simresults.get_result_values_list('lulu')
         ":type: list[np.ndarray]"
 
         np.testing.assert_array_almost_equal(
-            lulu_list[0],
-            np.array([0., 0.5, 0., 0.5, 0., 0.]))
+            lulu_list[0], np.array([0., 0.5, 0., 0.5, 0., 0.]))
         np.testing.assert_array_almost_equal(
-            lulu_list[1],
-            np.array([0.33333333, 0., 0., 0., 0., 0.66666667]))
+            lulu_list[1], np.array([0.33333333, 0., 0., 0., 0., 0.66666667]))
 
         # There is only one result for 'lili', which comes from
         # self.other_simresults.
-        self.assertEqual(
-            self.simresults.get_result_values_list('lili'),
-            ['a string'])
+        self.assertEqual(self.simresults.get_result_values_list('lili'),
+                         ['a string'])
 
     def test_get_result_values_confidence_intervals(self):
         simresults = SimulationResults()
@@ -2121,15 +2151,22 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults['lulu'][0].type_code,
                          simresults2['lulu'][0].type_code)
 
-        self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
-                               simresults2['lala'][0].get_result(), )
-        self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
-                               simresults2['lele'][0].get_result(), )
+        self.assertAlmostEqual(
+            self.simresults['lala'][0].get_result(),
+            simresults2['lala'][0].get_result(),
+        )
+        self.assertAlmostEqual(
+            self.simresults['lele'][0].get_result(),
+            simresults2['lele'][0].get_result(),
+        )
         np.testing.assert_array_almost_equal(
             self.simresults['lulu'][0].get_result(),
-            simresults2['lulu'][0].get_result(), )
-        self.assertAlmostEqual(self.simresults['name'][0].get_result(),
-                               simresults2['name'][0].get_result(), )
+            simresults2['lulu'][0].get_result(),
+        )
+        self.assertAlmostEqual(
+            self.simresults['name'][0].get_result(),
+            simresults2['name'][0].get_result(),
+        )
 
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
@@ -2160,15 +2197,22 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults['lulu'][0].type_code,
                          simresults3['lulu'][0].type_code)
 
-        self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
-                               simresults3['lala'][0].get_result(), )
-        self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
-                               simresults3['lele'][0].get_result(), )
+        self.assertAlmostEqual(
+            self.simresults['lala'][0].get_result(),
+            simresults3['lala'][0].get_result(),
+        )
+        self.assertAlmostEqual(
+            self.simresults['lele'][0].get_result(),
+            simresults3['lele'][0].get_result(),
+        )
         np.testing.assert_array_almost_equal(
             self.simresults['lulu'][0].get_result(),
-            simresults3['lulu'][0].get_result(), )
-        self.assertAlmostEqual(self.simresults['name'][0].get_result(),
-                               simresults3['name'][0].get_result(), )
+            simresults3['lulu'][0].get_result(),
+        )
+        self.assertAlmostEqual(
+            self.simresults['name'][0].get_result(),
+            simresults3['name'][0].get_result(),
+        )
 
         # test if the parameters were also saved
         self.assertEqual(self.simresults.params['age'],
@@ -2321,10 +2365,10 @@ class SimulationResultsTestCase(unittest.TestCase):
             extra = p['extra']
             SNR = p['SNR']
             bias = p['bias']
-            sim_results.append_result(Result.create(
-                'res1', Result.SUMTYPE, extra * SNR + bias))
-            sim_results.append_result(Result.create(
-                'res2', Result.SUMTYPE, bias * SNR + extra))
+            sim_results.append_result(
+                Result.create('res1', Result.SUMTYPE, extra * SNR + bias))
+            sim_results.append_result(
+                Result.create('res2', Result.SUMTYPE, bias * SNR + extra))
         sim_results.set_parameters(params)
 
         # Now lets convert this SimulationResults object to a pandas
@@ -2394,6 +2438,7 @@ def _delete_progressbar_output_files():  # pragma: no cover
 # Define a _DummyRunner class for the testing the simulate and
 # simulate_in_parallel methods in the SimulationRunner class.
 class _DummyRunner(SimulationRunner):
+
     def __init__(self):
         SimulationRunner.__init__(self, read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
@@ -2427,6 +2472,7 @@ class _DummyRunner(SimulationRunner):
 
 
 class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
+
     def __init__(self):
         SimulationRunner.__init__(self, read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
@@ -2472,6 +2518,7 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
 # SkipThisOne exception is raised in the implemented _run_simulation
 # method.
 class _DummyRunnerWithSkip(SimulationRunner):
+
     def __init__(self):
         SimulationRunner.__init__(self, read_command_line_args=False)
         # This is used only for testing purposes. You would not have this
@@ -2564,8 +2611,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # 'simulate' method of dummyrunner.
         dummyrunner.results.set_parameters(dummyrunner.params)
 
-        self.assertEqual(
-            "some_name_1.3_[2.2,4.1].pickle", dummyrunner.results_filename)
+        self.assertEqual("some_name_1.3_[2.2,4.1].pickle",
+                         dummyrunner.results_filename)
 
         # xxxxxxxxxx Test setting file name with extension xxxxxxxxxxxxxxxx
         dummyrunner2 = _DummyRunner()
@@ -2578,8 +2625,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # 'simulate' method of dummyrunner.
         dummyrunner2.results.set_parameters(dummyrunner.params)
 
-        self.assertEqual(
-            "some_name_1.3_[2.2,4.1].pickle", dummyrunner2.results_filename)
+        self.assertEqual("some_name_1.3_[2.2,4.1].pickle",
+                         dummyrunner2.results_filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_simulate(self):
@@ -2604,14 +2651,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         results_extra_1 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
-        np.testing.assert_array_almost_equal(
-            results_extra_1, expected_results_extra_1)
+        np.testing.assert_array_almost_equal(results_extra_1,
+                                             expected_results_extra_1)
 
         results_extra_2 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
-        np.testing.assert_array_almost_equal(
-            results_extra_2, expected_results_extra_2)
+        np.testing.assert_array_almost_equal(results_extra_2,
+                                             expected_results_extra_2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
@@ -2746,14 +2793,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         results_extra_1 = sim_runner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
-        np.testing.assert_array_almost_equal(
-            results_extra_1, expected_results_extra_1)
+        np.testing.assert_array_almost_equal(results_extra_1,
+                                             expected_results_extra_1)
 
         results_extra_2 = sim_runner.results.get_result_values_list(
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
-        np.testing.assert_array_almost_equal(
-            results_extra_2, expected_results_extra_2)
+        np.testing.assert_array_almost_equal(results_extra_2,
+                                             expected_results_extra_2)
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
         sim_results = SimulationResults.load_from_file(
@@ -2905,14 +2952,14 @@ class SimulationRunnerTestCase(unittest.TestCase):
         results_extra_1 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 2.2})
         expected_results_extra_1 = [3.5, 9.5, 15.5, 21.5, 27.5]
-        np.testing.assert_array_almost_equal(
-            results_extra_1, expected_results_extra_1)
+        np.testing.assert_array_almost_equal(results_extra_1,
+                                             expected_results_extra_1)
 
         results_extra_2 = dummyrunner.results.get_result_values_list(
             'lala', {'extra': 4.1})
         expected_results_extra_2 = [5.4, 11.4, 17.4, 23.4, 29.4]
-        np.testing.assert_array_almost_equal(
-            results_extra_2, expected_results_extra_2)
+        np.testing.assert_array_almost_equal(results_extra_2,
+                                             expected_results_extra_2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Test if the results were saved correctly xxxxxxxxxxxxx
@@ -3007,13 +3054,16 @@ def _get_clear_string_from_stringio_object(mystring):  # pragma: no cover
 
 
 class ProgressbarTextTestCase(unittest.TestCase):
+
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
-        self.pbar = progressbar.ProgressbarText(
-            50, '*', message, output=self.out)
+        self.pbar = progressbar.ProgressbarText(50,
+                                                '*',
+                                                message,
+                                                output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
@@ -3037,10 +3087,10 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
         self.pbar2._message = "Just a Message"
         self.pbar2._perform_initialization()
-        self.assertEqual(self.out2.getvalue(),
-                         "------------ Just a Message -----------1\n"
-                         "   1   2   3   4   5   6   7   8   9   0\n"
-                         "---0---0---0---0---0---0---0---0---0---0\n")
+        self.assertEqual(
+            self.out2.getvalue(), "------------ Just a Message -----------1\n"
+            "   1   2   3   4   5   6   7   8   9   0\n"
+            "---0---0---0---0---0---0---0---0---0---0\n")
 
     def test_progress(self):
         # Before the first time the progress method is called, the
@@ -3130,16 +3180,22 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
     def test_deleting_progress_file_after_progress_finished(self):
         out = open('test_progress_file1.txt', 'w')
-        pbar = progressbar.ProgressbarText(
-            50, '*', 'Progress message', output=out)
+        pbar = progressbar.ProgressbarText(50,
+                                           '*',
+                                           'Progress message',
+                                           output=out)
 
         out2 = open('test_progress_file2.txt', 'w')
-        pbar2 = progressbar.ProgressbarText(
-            25, 'x', 'Progress message', output=out2)
+        pbar2 = progressbar.ProgressbarText(25,
+                                            'x',
+                                            'Progress message',
+                                            output=out2)
 
         out3 = open('test_progress_file3.txt', 'w')
-        pbar3 = progressbar.ProgressbarText(
-            30, 'o', 'Progress message', output=out3)
+        pbar3 = progressbar.ProgressbarText(30,
+                                            'o',
+                                            'Progress message',
+                                            output=out3)
 
         pbar.delete_progress_file_after_completion = True
         pbar.progress(15)
@@ -3186,13 +3242,16 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
 
 class ProgressbarText2TestCase(unittest.TestCase):
+
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
-        self.pbar = progressbar.ProgressbarText2(
-            50, '*', message, output=self.out)
+        self.pbar = progressbar.ProgressbarText2(50,
+                                                 '*',
+                                                 message,
+                                                 output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
@@ -3207,8 +3266,7 @@ class ProgressbarText2TestCase(unittest.TestCase):
             '*************************                         ')
 
         self.assertEqual(
-            self.pbar._get_percentage_representation(50,
-                                                     central_message=''),
+            self.pbar._get_percentage_representation(50, central_message=''),
             '[************************                        ]')
 
         self.assertEqual(self.pbar._get_percentage_representation(30),
@@ -3245,8 +3303,7 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
         self.assertEqual(
             self.pbar2._get_percentage_representation(
-                70,
-                central_message='Progress: {percent}'),
+                70, central_message='Progress: {percent}'),
             '[*********************************Progress: 70*********'
             '                        ]')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3275,13 +3332,16 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
 
 class ProgressbarText3TestCase(unittest.TestCase):
+
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
-        self.pbar = progressbar.ProgressbarText3(
-            50, '*', message, output=self.out)
+        self.pbar = progressbar.ProgressbarText3(50,
+                                                 '*',
+                                                 message,
+                                                 output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
@@ -3307,12 +3367,14 @@ class ProgressbarText3TestCase(unittest.TestCase):
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
 
         self.mpbar = progressbar.ProgressbarMultiProcessServer(
-            message="Some message", sleep_time=0.001,
+            message="Some message",
+            sleep_time=0.001,
             filename=self.output_filename)
         self.proxybar1 = self.mpbar.register_client_and_get_proxy_progressbar(
             10)
@@ -3334,13 +3396,13 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
     def test_proxy_progressbars(self):
         # Test the information in the proxybar1
         self.assertEqual(self.proxybar1.client_id, 0)
-        self.assertTrue(self.proxybar1._client_data_list is
-                        self.mpbar._client_data_list)
+        self.assertTrue(
+            self.proxybar1._client_data_list is self.mpbar._client_data_list)
 
         # Test the information in the proxybar2
         self.assertEqual(self.proxybar2.client_id, 1)
-        self.assertTrue(self.proxybar2._client_data_list is
-                        self.mpbar._client_data_list)
+        self.assertTrue(
+            self.proxybar2._client_data_list is self.mpbar._client_data_list)
 
     # Note: This method will sleep for 0.01 seconds thus adding to the total
     # amount of time required to run all tests. Unfortunately, this is a
@@ -3416,13 +3478,16 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class ProgressbarZMQTextTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQTextTestCase.out"
 
         self.zmqbar = progressbar.ProgressbarZMQServer(
-            message="Some message", sleep_time=0.1,
-            filename=self.output_filename, port=7755)
+            message="Some message",
+            sleep_time=0.1,
+            filename=self.output_filename,
+            port=7755)
         self.proxybar1 \
             = self.zmqbar.register_client_and_get_proxy_progressbar(10)
         self.proxybar2 \
@@ -3472,12 +3537,10 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         # Before the first time the progress method in self.proxybar1 and
         # self.proxybar2 is called their "_progress_func" variable points
         # to the "_connect_and_update_progress" method
-        self.assertTrue(
-            self.proxybar1._progress_func ==
-            progressbar.ProgressbarZMQClient._connect_and_update_progress)
-        self.assertTrue(
-            self.proxybar2._progress_func ==
-            progressbar.ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(self.proxybar1._progress_func == progressbar.
+                        ProgressbarZMQClient._connect_and_update_progress)
+        self.assertTrue(self.proxybar2._progress_func == progressbar.
+                        ProgressbarZMQClient._connect_and_update_progress)
 
     def test_update_progress(self):
         try:

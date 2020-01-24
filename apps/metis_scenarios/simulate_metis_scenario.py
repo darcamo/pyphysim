@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Simulator for the SINRs of a dense indoor scenario.
 
@@ -30,7 +29,6 @@ from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 from pyphysim.channels import pathloss
 from pyphysim.channels.noise import calc_thermal_noise_power_dBm
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -52,22 +50,22 @@ def calc_room_positions_square(side_length, num_rooms):
     """
     sqrt_num_rooms = int(math.sqrt(num_rooms))
 
-    if sqrt_num_rooms ** 2 != num_rooms:
+    if sqrt_num_rooms**2 != num_rooms:
         raise ValueError("num_rooms must be a perfect square number")
 
-    int_positions = np.unravel_index(np.arange(num_rooms), (sqrt_num_rooms,
-                                                            sqrt_num_rooms))
+    int_positions = np.unravel_index(np.arange(num_rooms),
+                                     (sqrt_num_rooms, sqrt_num_rooms))
     ":type: (np.ndarray, np.ndarray)"
 
-    room_positions = (side_length * (int_positions[1] + 1j *
-                                     int_positions[0][::-1] - 0.5-0.5j))
+    room_positions = (
+        side_length *
+        (int_positions[1] + 1j * int_positions[0][::-1] - 0.5 - 0.5j))
 
     # Shift the room positions so that the origin becomes the center of all
     # rooms
     shift = side_length * (sqrt_num_rooms - 1) // 2
-    room_positions = (room_positions
-                      - shift - 1j * shift
-                      + side_length / 2. + 1j * side_length / 2.)
+    room_positions = (room_positions - shift - 1j * shift + side_length / 2. +
+                      1j * side_length / 2.)
 
     return room_positions
 
@@ -135,8 +133,8 @@ def calc_num_walls(side_length, room_positions, ap_positions):
         The number of walls from each room to access point (2D numpy array of
         ints).
     """
-    all_positions_diffs = (room_positions.reshape(-1, 1)
-                           - 1.0001*ap_positions.reshape(1, -1))
+    all_positions_diffs = (room_positions.reshape(-1, 1) -
+                           1.0001 * ap_positions.reshape(1, -1))
     ":type: np.ndarray"
 
     num_walls \
@@ -148,8 +146,8 @@ def calc_num_walls(side_length, room_positions, ap_positions):
     return num_walls
 
 
-def prepare_sinr_array_for_color_plot(
-        sinr_array, num_rooms_per_side, num_discrete_positions_per_room):
+def prepare_sinr_array_for_color_plot(sinr_array, num_rooms_per_side,
+                                      num_discrete_positions_per_room):
     """
 
     Parameters
@@ -158,10 +156,11 @@ def prepare_sinr_array_for_color_plot(
     num_rooms_per_side : TYPE
     num_discrete_positions_per_room : TYPE
     """
-    out = np.swapaxes(sinr_array, 1, 2).reshape(
-        [num_rooms_per_side * num_discrete_positions_per_room,
-         num_rooms_per_side * num_discrete_positions_per_room],
-        order='C')
+    out = np.swapaxes(sinr_array, 1, 2).reshape([
+        num_rooms_per_side * num_discrete_positions_per_room,
+        num_rooms_per_side * num_discrete_positions_per_room
+    ],
+                                                order='C')
 
     return out
 
@@ -209,9 +208,9 @@ def get_ap_positions(room_positions, decimation=1):
     return ap_positions.flatten()
 
 
-def simulate_for_a_given_ap_assoc(
-        pl : np.ndarray, ap_assoc : np.ndarray, wall_losses_dB : np.ndarray,
-        Pt : float, noise_var : float) -> np.ndarray:
+def simulate_for_a_given_ap_assoc(pl: np.ndarray, ap_assoc: np.ndarray,
+                                  wall_losses_dB: np.ndarray, Pt: float,
+                                  noise_var: float) -> np.ndarray:
     """
     Simulate and return the SINR for a given path loss and AP associations.
 
@@ -266,17 +265,18 @@ def simulate_for_a_given_ap_assoc(
         # associated with the current access point
         desired_power = Pt * wall_losses[mask, ap_idx] * pl[mask, ap_idx]
         # noinspection PyTypeChecker
-        undesired_power = np.sum(
-            Pt * wall_losses[mask][:, mask_i_aps] * pl[mask][:, mask_i_aps],
-            axis=-1)
+        undesired_power = np.sum(Pt * wall_losses[mask][:, mask_i_aps] *
+                                 pl[mask][:, mask_i_aps],
+                                 axis=-1)
 
         sinr_array[mask] = (desired_power / (undesired_power + noise_var))
 
     return linear2dB(sinr_array)
 
 
-def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
-                                    power_params):
+def perform_simulation_SINR_heatmap(
+    scenario_params,  # pylint: disable=R0914
+    power_params):
     """
     Perform the simulation.
 
@@ -301,7 +301,7 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
     # Square of 12 x 12 square rooms
     num_rooms_per_side = scenario_params['num_rooms_per_side']
     # Total number of rooms in the grid
-    num_rooms = num_rooms_per_side ** 2
+    num_rooms = num_rooms_per_side**2
 
     # 1 means 1 ap every room. 2 means 1 ap every 2 rooms and so on. Valid
     # values are: 1, 2, 4 and 9.
@@ -320,8 +320,8 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
     # xxxxxxxxxx Discretization of the possible positions xxxxxxxxxxxxxxxxx
     num_discrete_positions_per_room = 15  # Number of discrete positions
     step = 1. / num_discrete_positions_per_room
-    aux = np.linspace(
-        -(1. - step), (1. - step), num_discrete_positions_per_room)
+    aux = np.linspace(-(1. - step), (1. - step),
+                      num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
     ":type: np.ndarray"
     user_relative_positions = aux[1] + 1j * aux[0][::-1]
@@ -355,9 +355,8 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
 
     # xxxxxxxxxx Calculate distances: each user to each AP xxxxxxxxxxxxxxxx
     # Dimension: (room_row, room_c, user_row, user_col, num_APs)
-    dists_m = np.abs(
-        user_positions[:, :, :, :, np.newaxis]
-        - ap_positions.reshape([1, 1, 1, 1, -1]))
+    dists_m = np.abs(user_positions[:, :, :, :, np.newaxis] -
+                     ap_positions.reshape([1, 1, 1, 1, -1]))
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate AP association xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -387,20 +386,18 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
     # while the others are in Kms. All distances were calculates in meters
     # and, therefore, we divide the distance in by 1000 for 3GPP and free
     # space.
-    pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m/1000.)
-    pl_free_space = pl_free_space_obj.calc_path_loss(dists_m/1000.)
-    pl_nothing = np.ones(
-        [num_rooms_per_side,
-         num_rooms_per_side,
-         num_discrete_positions_per_room,
-         num_discrete_positions_per_room, num_aps],
-        dtype=float)
+    pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m / 1000.)
+    pl_free_space = pl_free_space_obj.calc_path_loss(dists_m / 1000.)
+    pl_nothing = np.ones([
+        num_rooms_per_side, num_rooms_per_side, num_discrete_positions_per_room,
+        num_discrete_positions_per_room, num_aps
+    ],
+                         dtype=float)
 
     # We need to know the number of walls the signal must pass to reach the
     # receiver to calculate the path loss for the METIS PS7 model.
-    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(
-        dists_m,
-        num_walls=num_walls_extended)
+    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(dists_m,
+                                                   num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx
@@ -417,10 +414,8 @@ def perform_simulation_SINR_heatmap(scenario_params,  # pylint: disable=R0914
         pl_metis_ps7, ap_assoc, wall_losses_dB, Pt, noise_var)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    out = (sinr_array_pl_nothing_dB,
-           sinr_array_pl_3gpp_dB,
-           sinr_array_pl_free_space_dB,
-           sinr_array_pl_metis_ps7_dB)
+    out = (sinr_array_pl_nothing_dB, sinr_array_pl_3gpp_dB,
+           sinr_array_pl_free_space_dB, sinr_array_pl_metis_ps7_dB)
     return out
 
 
@@ -429,7 +424,8 @@ if __name__ == '__main__':
         'side_length': 10.,  # 10 meters side length
         'single_wall_loss_dB': 5.,
         'num_rooms_per_side': 12,
-        'ap_decimation': 1}
+        'ap_decimation': 1
+    }
 
     power_params = {
         'Pt_dBm': 20.,  # 20 dBm transmit power
@@ -439,15 +435,14 @@ if __name__ == '__main__':
 
     out = perform_simulation_SINR_heatmap(scenario_params, power_params)
 
-    (sinr_array_pl_nothing_dB,
-     sinr_array_pl_3gpp_dB,
-     sinr_array_pl_free_space_dB,
-     sinr_array_pl_metis_ps7_dB) = out
+    (sinr_array_pl_nothing_dB, sinr_array_pl_3gpp_dB,
+     sinr_array_pl_free_space_dB, sinr_array_pl_metis_ps7_dB) = out
 
-    (num_rooms_per_side,
-     _,  # num_rooms_per_side
-     _,  # num_discrete_positions_per_room again
-     num_discrete_positions_per_room) = sinr_array_pl_nothing_dB.shape
+    (
+        num_rooms_per_side,
+        _,  # num_rooms_per_side
+        _,  # num_discrete_positions_per_room again
+        num_discrete_positions_per_room) = sinr_array_pl_nothing_dB.shape
 
     print("\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     print("SINR statistics for the 64 central rooms")
@@ -476,20 +471,16 @@ if __name__ == '__main__':
 
     # xxxxxxxxxx Prepare data to be plotted xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     sinr_array_pl_nothing_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_nothing_dB,
-        num_rooms_per_side,
+        sinr_array_pl_nothing_dB, num_rooms_per_side,
         num_discrete_positions_per_room)
     sinr_array_pl_3gpp_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_3gpp_dB,
-        num_rooms_per_side,
+        sinr_array_pl_3gpp_dB, num_rooms_per_side,
         num_discrete_positions_per_room)
     sinr_array_pl_free_space_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_free_space_dB,
-        num_rooms_per_side,
+        sinr_array_pl_free_space_dB, num_rooms_per_side,
         num_discrete_positions_per_room)
     sinr_array_pl_metis_ps7_dB2 = prepare_sinr_array_for_color_plot(
-        sinr_array_pl_metis_ps7_dB,
-        num_rooms_per_side,
+        sinr_array_pl_metis_ps7_dB, num_rooms_per_side,
         num_discrete_positions_per_room)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -497,7 +488,9 @@ if __name__ == '__main__':
     # No path loss
     fig1, ax1 = plt.subplots(figsize=(8, 6))
     im1 = ax1.imshow(sinr_array_pl_nothing_dB2,
-                     interpolation='nearest', vmax=-1.5, vmin=-5)
+                     interpolation='nearest',
+                     vmax=-1.5,
+                     vmin=-5)
     ax1.set_title('No Path Loss')
     ax1.get_xaxis().set_visible(False)
     ax1.get_yaxis().set_visible(False)
@@ -507,7 +500,9 @@ if __name__ == '__main__':
     # 3GPP path loss
     fig2, ax2 = plt.subplots(figsize=(8, 6))
     im2 = ax2.imshow(sinr_array_pl_3gpp_dB2,
-                     interpolation='nearest', vmax=30, vmin=-2.5)
+                     interpolation='nearest',
+                     vmax=30,
+                     vmin=-2.5)
     ax2.set_title('3GPP Path Loss')
     ax2.get_xaxis().set_visible(False)
     ax2.get_yaxis().set_visible(False)
@@ -516,7 +511,9 @@ if __name__ == '__main__':
     # Free Space path loss
     fig3, ax3 = plt.subplots(figsize=(8, 6))
     im3 = ax3.imshow(sinr_array_pl_free_space_dB2,
-                     interpolation='nearest', vmax=30, vmin=-2.5)
+                     interpolation='nearest',
+                     vmax=30,
+                     vmin=-2.5)
     ax3.set_title('Free Space Path Loss')
     ax3.get_xaxis().set_visible(False)
     ax3.get_yaxis().set_visible(False)
@@ -525,7 +522,9 @@ if __name__ == '__main__':
     # METIS PS7 path loss
     fig4, ax4 = plt.subplots(figsize=(8, 6))
     im4 = ax4.imshow(sinr_array_pl_metis_ps7_dB2,
-                     interpolation='nearest', vmax=30, vmin=-2.5)
+                     interpolation='nearest',
+                     vmax=30,
+                     vmin=-2.5)
     ax4.set_title('METIS PS7 Path Loss')
     ax4.get_xaxis().set_visible(False)
     ax4.get_yaxis().set_visible(False)

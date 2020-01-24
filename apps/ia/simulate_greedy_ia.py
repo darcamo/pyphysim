@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing simulation runners for the several Interference
 Alignment algorithms in the algorithms.ia module.
@@ -86,8 +85,8 @@ class IASimulationRunner(SimulationRunner):
         unpacked_parameters=string_list(default=list('SNR','stream_sel_method','scenario','initialize_with'))
         """.split("\n")
 
-        SimulationRunner.__init__(
-            self, default_config_file, spec, read_command_line_args)
+        SimulationRunner.__init__(self, default_config_file, spec,
+                                  read_command_line_args)
 
         # xxxxxxxxxx General Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Maximum number of repetitions for each unpacked parameters set
@@ -122,10 +121,12 @@ class IASimulationRunner(SimulationRunner):
 
         # xxxxxxxxxx Create the modulator object xxxxxxxxxxxxxxxxxxxxxxxxxx
         M = self.params['M']
-        modulator_options = {'PSK': fundamental.PSK,
-                             'QPSK': fundamental.QPSK,
-                             'QAM': fundamental.QAM,
-                             'BPSK': fundamental.BPSK}
+        modulator_options = {
+            'PSK': fundamental.PSK,
+            'QPSK': fundamental.QPSK,
+            'QAM': fundamental.QAM,
+            'BPSK': fundamental.BPSK
+        }
         self.modulator = modulator_options[self.params['modulator']](M)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -136,8 +137,7 @@ class IASimulationRunner(SimulationRunner):
         self.progress_output_type = 'screen'
 
         # Set the progressbar message
-        self.progressbar_message = "SNR: {{SNR}}".format(
-            self.modulator.name)
+        self.progressbar_message = "SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -247,8 +247,7 @@ class IASimulationRunner(SimulationRunner):
             # Set the path loss in the multi user channel object
             self.multiUserChannel.set_pathloss(pathloss)
         else:
-            raise RuntimeError(
-                "Invalid scenario: {0}".format(scenario))
+            raise RuntimeError("Invalid scenario: {0}".format(scenario))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _create_random_users_scenario(self, current_params):
@@ -273,8 +272,9 @@ class IASimulationRunner(SimulationRunner):
         cluster0 = self.cell_grid.get_cluster_from_index(0)
         cluster0.delete_all_users()
 
-    def _run_simulation(self,   # pylint: disable=R0914,R0915
-                        current_parameters):
+    def _run_simulation(
+        self,  # pylint: disable=R0914,R0915
+        current_parameters):
         # xxxxxxxxxx Prepare the scenario for this iteration. xxxxxxxxxxxxx
         # This will create user in random positions and calculate pathloss
         # (if the scenario includes it). After that, it will generate
@@ -294,8 +294,8 @@ class IASimulationRunner(SimulationRunner):
         if current_parameters['scenario'] == 'NoPathLoss':
             pt = self._calc_transmit_power(SNR, self.noise_var)
         elif current_parameters['scenario'] == 'Random':
-            pt = self._calc_transmit_power(
-                SNR, self.noise_var, self._path_loss_border)
+            pt = self._calc_transmit_power(SNR, self.noise_var,
+                                           self._path_loss_border)
         else:
             raise ValueError('Invalid scenario')
 
@@ -346,8 +346,8 @@ class IASimulationRunner(SimulationRunner):
         # Split the data. transmit_signal will be a list and each element
         # is a numpy array with the data of a user
         transmit_signal = np.split(modulatedData, cumNs[:-1])
-        transmit_signal_precoded = map(
-            np.dot, self.ia_solver.full_F, transmit_signal)
+        transmit_signal_precoded = map(np.dot, self.ia_solver.full_F,
+                                       transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -359,13 +359,12 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancellation xxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = map(
-            np.dot, self.ia_solver.full_W_H, received_data)
+        received_data_no_interference = map(np.dot, self.ia_solver.full_W_H,
+                                            received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = np.vstack(
-            received_data_no_interference)
+        received_data_no_interference = np.vstack(received_data_no_interference)
         demodulated_data = self.modulator.demodulate(
             received_data_no_interference)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -392,33 +391,45 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        symbolErrorsResult = Result.create(
-            "symbol_errors", Result.SUMTYPE, symbolErrors)
+        symbolErrorsResult = Result.create("symbol_errors", Result.SUMTYPE,
+                                           symbolErrors)
 
-        numSymbolsResult = Result.create(
-            "num_symbols", Result.SUMTYPE, numSymbols)
+        numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
+                                         numSymbols)
 
-        bitErrorsResult = Result.create(
-            "bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
-        berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits,
+        berResult = Result.create("ber",
+                                  Result.RATIOTYPE,
+                                  bitErrors,
+                                  numBits,
                                   accumulate_values=False)
 
-        serResult = Result.create("ser", Result.RATIOTYPE, symbolErrors,
-                                  numSymbols, accumulate_values=False)
+        serResult = Result.create("ser",
+                                  Result.RATIOTYPE,
+                                  symbolErrors,
+                                  numSymbols,
+                                  accumulate_values=False)
 
-        ia_costResult = Result.create(
-            "ia_cost", Result.RATIOTYPE, ia_cost, 1, accumulate_values=False)
+        ia_costResult = Result.create("ia_cost",
+                                      Result.RATIOTYPE,
+                                      ia_cost,
+                                      1,
+                                      accumulate_values=False)
 
-        sum_capacityResult = Result.create(
-            "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1,
-            accumulate_values=False)
+        sum_capacityResult = Result.create("sum_capacity",
+                                           Result.RATIOTYPE,
+                                           total_sum_capacity,
+                                           1,
+                                           accumulate_values=False)
 
-        ia_runned_iterationsResult = Result.create(
-            "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1,
-            accumulate_values=False)
+        ia_runned_iterationsResult = Result.create("ia_runned_iterations",
+                                                   Result.RATIOTYPE,
+                                                   ia_runned_iterations,
+                                                   1,
+                                                   accumulate_values=False)
 
         # xxxxxxxxxx chosen stream configuration index xxxxxxxxxxxxxxxxxxxx
         # Interpret Ns as a multidimensional index
@@ -427,8 +438,9 @@ class IASimulationRunner(SimulationRunner):
         stream_index = int(np.ravel_multi_index(stream_index_multi, orig_Ns))
         num_choices = int(np.prod(orig_Ns))
 
-        stream_statistics = Result.create(
-            "stream_statistics", Result.CHOICETYPE, stream_index, num_choices)
+        stream_statistics = Result.create("stream_statistics",
+                                          Result.CHOICETYPE, stream_index,
+                                          num_choices)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         simResults = SimulationResults()
@@ -565,12 +577,9 @@ def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
 
     # Get the BER and BER interval limits
     ber = simulationresults_obj.get_result_values_list(
-        'ber',
-        fixed_params=fixed_params)
+        'ber', fixed_params=fixed_params)
     ber_CF = simulationresults_obj.get_result_values_confidence_intervals(
-        'ber',
-        P=95,
-        fixed_params=fixed_params)
+        'ber', P=95, fixed_params=fixed_params)
     ber_errors = np.abs([i[1] - i[0] for i in ber_CF])
 
     ax.errorbar(SNR, ber, ber_errors, fmt=fmt, elinewidth=2.0, label=label)
@@ -586,15 +595,18 @@ def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
     SNR = np.array(simulationresults_obj.params['SNR'])
 
     sum_capacity = simulationresults_obj.get_result_values_list(
-        'sum_capacity',
-        fixed_params=fixed_params)
+        'sum_capacity', fixed_params=fixed_params)
     sum_capacity_CF \
         = simulationresults_obj.get_result_values_confidence_intervals(
             'sum_capacity', P=95, fixed_params=fixed_params)
     sum_capacity_errors = np.abs([i[1] - i[0] for i in sum_capacity_CF])
 
-    ax.errorbar(SNR, sum_capacity, sum_capacity_errors,
-                fmt=fmt, elinewidth=2.0, label=label)
+    ax.errorbar(SNR,
+                sum_capacity,
+                sum_capacity_errors,
+                fmt=fmt,
+                elinewidth=2.0,
+                label=label)
 
 
 def get_dataframe_from_results(results):
@@ -615,30 +627,27 @@ def get_dataframe_from_results(results):
 
     SNR = results.params['SNR']
 
-    brute_Random = df.loc[
-        (df['scenario'] == 'Random') & (df['stream_sel_method'] == 'brute'),
-        ['ber', 'sum_capacity']]
+    brute_Random = df.loc[(df['scenario'] == 'Random') &
+                          (df['stream_sel_method'] == 'brute'),
+                          ['ber', 'sum_capacity']]
     brute_Random.set_index(SNR, inplace=True)
     brute_Random.columns = ['ber_br_PL', 'sum_cap_br_PL']
 
-    brute_NoPathLoss = df.loc[
-        (df['scenario'] == 'NoPathLoss')
-        & (df['stream_sel_method'] == 'brute'),
-        ['ber', 'sum_capacity']]
+    brute_NoPathLoss = df.loc[(df['scenario'] == 'NoPathLoss') &
+                              (df['stream_sel_method'] == 'brute'),
+                              ['ber', 'sum_capacity']]
     brute_NoPathLoss.set_index(SNR, inplace=True)
     brute_NoPathLoss.columns = ['ber_br_NoPL', 'sum_cap_br_NoPL']
 
-    greedy_Random = df.loc[
-        (df['scenario'] == 'Random')
-        & (df['stream_sel_method'] == 'greedy'),
-        ['ber', 'sum_capacity']]
+    greedy_Random = df.loc[(df['scenario'] == 'Random') &
+                           (df['stream_sel_method'] == 'greedy'),
+                           ['ber', 'sum_capacity']]
     greedy_Random.set_index(SNR, inplace=True)
     greedy_Random.columns = ['ber_gr_PL', 'sum_cap_gr_PL']
 
-    greedy_NoPathLoss = df.loc[
-        (df['scenario'] == 'NoPathLoss') &
-        (df['stream_sel_method'] == 'greedy'),
-        ['ber', 'sum_capacity']]
+    greedy_NoPathLoss = df.loc[(df['scenario'] == 'NoPathLoss') &
+                               (df['stream_sel_method'] == 'greedy'),
+                               ['ber', 'sum_capacity']]
     greedy_NoPathLoss.set_index(SNR, inplace=True)
     greedy_NoPathLoss.columns = ['ber_gr_NoPL', 'sum_cap_gr_NoPL']
 
@@ -717,43 +726,50 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     parameters_dict = results.params.parameters
     # Fixed parameters for the Greedy stream selection algorithm in the
     # "NoPathLoss" scenario
-    greedy_nopl_fixed_params = {'max_iterations': max_iterations,
-                                'stream_sel_method': 'greedy',
-                                'initialize_with': 'random',
-                                'scenario': 'NoPathLoss'}
+    greedy_nopl_fixed_params = {
+        'max_iterations': max_iterations,
+        'stream_sel_method': 'greedy',
+        'initialize_with': 'random',
+        'scenario': 'NoPathLoss'
+    }
     # Fixed parameters for the Greedy stream selection algorithm in the
     # "Random" scenario (path loss with random positions for the users)
-    greedy_random_fixed_params = {'max_iterations': max_iterations,
-                                  'stream_sel_method': 'greedy',
-                                  'initialize_with': 'random',
-                                  'scenario': 'Random'}
+    greedy_random_fixed_params = {
+        'max_iterations': max_iterations,
+        'stream_sel_method': 'greedy',
+        'initialize_with': 'random',
+        'scenario': 'Random'
+    }
     # Fixed parameters for the Brute Force stream selection algorithm in
     # the "NoPathLoss" scenario
-    brute_nopl_fixed_params = {'max_iterations': max_iterations,
-                               'stream_sel_method': 'brute',
-                               'initialize_with': 'random',
-                               'scenario': 'NoPathLoss'}
+    brute_nopl_fixed_params = {
+        'max_iterations': max_iterations,
+        'stream_sel_method': 'brute',
+        'initialize_with': 'random',
+        'scenario': 'NoPathLoss'
+    }
     # Fixed parameters for the Brute Force stream selection algorithm in
     # the "Random" scenario (path loss with random positions for the users)
-    brute_random_fixed_params = {'max_iterations': max_iterations,
-                                 'stream_sel_method': 'brute',
-                                 'initialize_with': 'random',
-                                 'scenario': 'Random'}
+    brute_random_fixed_params = {
+        'max_iterations': max_iterations,
+        'stream_sel_method': 'brute',
+        'initialize_with': 'random',
+        'scenario': 'Random'
+    }
 
-    _plot_ber(results, greedy_nopl_fixed_params, ax,
-              'Greedy (No PL)', '-b*')
-    _plot_ber(results, greedy_random_fixed_params, ax,
-              'Greedy (With PL)', '-r*')
+    _plot_ber(results, greedy_nopl_fixed_params, ax, 'Greedy (No PL)', '-b*')
+    _plot_ber(results, greedy_random_fixed_params, ax, 'Greedy (With PL)',
+              '-r*')
 
-    _plot_sum_capacity(results, greedy_nopl_fixed_params, ax2,
-                       'Greedy (No PL)', '-b*')
+    _plot_sum_capacity(results, greedy_nopl_fixed_params, ax2, 'Greedy (No PL)',
+                       '-b*')
     _plot_sum_capacity(results, greedy_random_fixed_params, ax2,
                        'Greedy (With PL)', '-r*')
 
-    _plot_ber(results, brute_nopl_fixed_params, ax,
-              'Brute Force (No PL)', '-co')
-    _plot_ber(results, brute_random_fixed_params, ax,
-              'Brute Force (With PL)', '-mo')
+    _plot_ber(results, brute_nopl_fixed_params, ax, 'Brute Force (No PL)',
+              '-co')
+    _plot_ber(results, brute_random_fixed_params, ax, 'Brute Force (With PL)',
+              '-mo')
 
     _plot_sum_capacity(results, brute_nopl_fixed_params, ax2,
                        'Brute Force (No PL)', '-co')

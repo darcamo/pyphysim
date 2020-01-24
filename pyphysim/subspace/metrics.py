@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Implement several metrics for subspaces."""
 
 import numpy as np
@@ -8,9 +7,10 @@ import math
 
 from .projections import calcProjectionMatrix
 
-__all__ = ["calc_principal_angles",
-           "calc_chordal_distance_from_principal_angles",
-           "calc_chordal_distance", "calc_chordal_distance_2"]
+__all__ = [
+    "calc_principal_angles", "calc_chordal_distance_from_principal_angles",
+    "calc_chordal_distance", "calc_chordal_distance_2"
+]
 
 
 # TODO: I think calc_principal_angles is not correct when matrix1 e matrix2
@@ -57,8 +57,8 @@ def calc_principal_angles(matrix1, matrix2):
     #
     # See the algorithm in
     # http://sensblogs.wordpress.com/2011/09/07/matlab-codes-for-principal-angles-also-termed-as-canonical-correlation-between-any-arbitrary-subspaces-redirected-from-jen-mei-changs-dissertation/
-    S = np.linalg.svd(
-        Q1.conjugate().transpose().dot(Q2), full_matrices=False)[1]
+    S = np.linalg.svd(Q1.conjugate().transpose().dot(Q2),
+                      full_matrices=False)[1]
 
     # The singular values of S vary between 0 and 1, but due to
     # computational impressions there can be some value above 1 (by a very
@@ -106,7 +106,7 @@ def calc_chordal_distance_from_principal_angles(principalAngles):
     0.473867859572
     """
     # noinspection PyTypeChecker
-    summation = np.asscalar(np.sum(np.sin(principalAngles) ** 2))
+    summation = np.asscalar(np.sum(np.sin(principalAngles)**2))
     return math.sqrt(summation)
 
 
@@ -188,6 +188,6 @@ def calc_chordal_distance_2(matrix1, matrix2):
     >>> print(calc_chordal_distance_2(A, B))
     0.473867859572
     """
-    return (np.linalg.norm(calcProjectionMatrix(matrix1) -
-                           calcProjectionMatrix(matrix2), 'fro') /
+    return (np.linalg.norm(
+        calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') /
             math.sqrt(2))

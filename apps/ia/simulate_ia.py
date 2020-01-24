@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing simulation runners for the several Interference
 Alignment algorithms in the algorithms.ia module.
@@ -60,11 +59,12 @@ class IASimulationRunner(SimulationRunner):
         If True (default), read and parse command line arguments.
     """
 
-    def __init__(self, IaSolverClass,
-                 default_config_file, spec, read_command_line_args=True):
-        SimulationRunner.__init__(self,
-                                  default_config_file,
-                                  spec,
+    def __init__(self,
+                 IaSolverClass,
+                 default_config_file,
+                 spec,
+                 read_command_line_args=True):
+        SimulationRunner.__init__(self, default_config_file, spec,
                                   read_command_line_args)
 
         # Set the max_bit_errors and rep_max attributes
@@ -73,14 +73,17 @@ class IASimulationRunner(SimulationRunner):
 
         # Create the modulator object
         M = self.params['M']
-        modulator_options = {'PSK': fundamental.PSK,
-                             'QPSK': fundamental.QPSK,
-                             'QAM': fundamental.QAM,
-                             'BPSK': fundamental.BPSK}
+        modulator_options = {
+            'PSK': fundamental.PSK,
+            'QPSK': fundamental.QPSK,
+            'QAM': fundamental.QAM,
+            'BPSK': fundamental.BPSK
+        }
         self.modulator = modulator_options[self.params['modulator']](M)
 
         # Create the channel object
-        self.multiUserChannel = pyphysim.channels.multiuser.MultiUserChannelMatrix()
+        self.multiUserChannel = pyphysim.channels.multiuser.MultiUserChannelMatrix(
+        )
 
         # Create the IA Solver object
         self.ia_solver = IaSolverClass(self.multiUserChannel)
@@ -101,12 +104,12 @@ class IASimulationRunner(SimulationRunner):
         self.progress_output_type = 'screen'
 
         # xxxxxxxxxx Set the progressbar message xxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.progressbar_message = "SNR: {{SNR}}".format(
-            self.modulator.name)
+        self.progressbar_message = "SNR: {{SNR}}".format(self.modulator.name)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _run_simulation(self,   # pylint: disable=R0914,R0915
-                        current_parameters):
+    def _run_simulation(
+        self,  # pylint: disable=R0914,R0915
+        current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]
@@ -156,8 +159,8 @@ class IASimulationRunner(SimulationRunner):
         # Split the data. transmit_signal will be a list and each element
         # is a numpy array with the data of a user
         transmit_signal = np.split(modulatedData, cumNs[:-1])
-        transmit_signal_precoded = map(
-            np.dot, self.ia_solver.full_F, transmit_signal)
+        transmit_signal_precoded = map(np.dot, self.ia_solver.full_F,
+                                       transmit_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Pass through the channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -169,13 +172,12 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Perform the Interference Cancellation xxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = map(
-            np.dot, self.ia_solver.full_W_H, received_data)
+        received_data_no_interference = map(np.dot, self.ia_solver.full_W_H,
+                                            received_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = np.vstack(
-            received_data_no_interference)
+        received_data_no_interference = np.vstack(received_data_no_interference)
         demodulated_data = self.modulator.demodulate(
             received_data_no_interference)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -202,33 +204,45 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        symbolErrorsResult = Result.create(
-            "symbol_errors", Result.SUMTYPE, symbolErrors)
+        symbolErrorsResult = Result.create("symbol_errors", Result.SUMTYPE,
+                                           symbolErrors)
 
-        numSymbolsResult = Result.create(
-            "num_symbols", Result.SUMTYPE, numSymbols)
+        numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
+                                         numSymbols)
 
-        bitErrorsResult = Result.create(
-            "bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
-        berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits,
+        berResult = Result.create("ber",
+                                  Result.RATIOTYPE,
+                                  bitErrors,
+                                  numBits,
                                   accumulate_values=False)
 
-        serResult = Result.create("ser", Result.RATIOTYPE, symbolErrors,
-                                  numSymbols, accumulate_values=False)
+        serResult = Result.create("ser",
+                                  Result.RATIOTYPE,
+                                  symbolErrors,
+                                  numSymbols,
+                                  accumulate_values=False)
 
-        ia_costResult = Result.create(
-            "ia_cost", Result.RATIOTYPE, ia_cost, 1, accumulate_values=False)
+        ia_costResult = Result.create("ia_cost",
+                                      Result.RATIOTYPE,
+                                      ia_cost,
+                                      1,
+                                      accumulate_values=False)
 
-        sum_capacityResult = Result.create(
-            "sum_capacity", Result.RATIOTYPE, total_sum_capacity, 1,
-            accumulate_values=False)
+        sum_capacityResult = Result.create("sum_capacity",
+                                           Result.RATIOTYPE,
+                                           total_sum_capacity,
+                                           1,
+                                           accumulate_values=False)
 
-        ia_runned_iterationsResult = Result.create(
-            "ia_runned_iterations", Result.RATIOTYPE, ia_runned_iterations, 1,
-            accumulate_values=False)
+        ia_runned_iterationsResult = Result.create("ia_runned_iterations",
+                                                   Result.RATIOTYPE,
+                                                   ia_runned_iterations,
+                                                   1,
+                                                   accumulate_values=False)
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
@@ -336,10 +350,8 @@ class AlternatingSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self,
-                                    algorithms.AlternatingMinIASolver,
-                                    default_config_file,
-                                    spec,
+        IASimulationRunner.__init__(self, algorithms.AlternatingMinIASolver,
+                                    default_config_file, spec,
                                     read_command_line_args)
 
         # self.update_progress_function_style = None
@@ -383,10 +395,8 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self,
-                                    algorithms.ClosedFormIASolver,
-                                    default_config_file,
-                                    spec,
+        IASimulationRunner.__init__(self, algorithms.ClosedFormIASolver,
+                                    default_config_file, spec,
                                     read_command_line_args)
 
     # Since we create the channel object in the __init__ method of
@@ -430,10 +440,8 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self,
-                                    algorithms.MinLeakageIASolver,
-                                    default_config_file,
-                                    spec,
+        IASimulationRunner.__init__(self, algorithms.MinLeakageIASolver,
+                                    default_config_file, spec,
                                     read_command_line_args)
 
 
@@ -451,6 +459,7 @@ class MaxSINRSimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
+
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
@@ -470,10 +479,8 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self,
-                                    algorithms.MaxSinrIASolver,
-                                    default_config_file,
-                                    spec,
+        IASimulationRunner.__init__(self, algorithms.MaxSinrIASolver,
+                                    default_config_file, spec,
                                     read_command_line_args)
 
 
@@ -491,6 +498,7 @@ class MMSESimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
+
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
@@ -510,10 +518,8 @@ class MMSESimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self,
-                                    algorithms.MMSEIASolver,
-                                    default_config_file,
-                                    spec,
+        IASimulationRunner.__init__(self, algorithms.MMSEIASolver,
+                                    default_config_file, spec,
                                     read_command_line_args)
 
 
@@ -628,12 +634,9 @@ def _plot_ber(simulationresults_obj, fixed_params, ax, label, fmt):
 
     # Get the BER and BER interval limits
     ber = simulationresults_obj.get_result_values_list(
-        'ber',
-        fixed_params=fixed_params)
+        'ber', fixed_params=fixed_params)
     ber_CF = simulationresults_obj.get_result_values_confidence_intervals(
-        'ber',
-        P=95,
-        fixed_params=fixed_params)
+        'ber', P=95, fixed_params=fixed_params)
     ber_errors = np.abs([i[1] - i[0] for i in ber_CF])
 
     ax.errorbar(SNR, ber, ber_errors, fmt=fmt, elinewidth=2.0, label=label)
@@ -660,15 +663,18 @@ def _plot_sum_capacity(simulationresults_obj, fixed_params, ax, label, fmt):
     SNR = np.array(simulationresults_obj.params['SNR'])
 
     sum_capacity = simulationresults_obj.get_result_values_list(
-        'sum_capacity',
-        fixed_params=fixed_params)
+        'sum_capacity', fixed_params=fixed_params)
     sum_capacity_CF \
         = simulationresults_obj.get_result_values_confidence_intervals(
             'sum_capacity', P=95, fixed_params=fixed_params)
     sum_capacity_errors = np.abs([i[1] - i[0] for i in sum_capacity_CF])
 
-    ax.errorbar(SNR, sum_capacity, sum_capacity_errors,
-                fmt=fmt, elinewidth=2.0, label=label)
+    ax.errorbar(SNR,
+                sum_capacity,
+                sum_capacity_errors,
+                fmt=fmt,
+                elinewidth=2.0,
+                label=label)
 
 
 def main_plot(algorithms_to_simulate, index=0):  # pylint: disable=R0914,R0915
@@ -741,8 +747,8 @@ def main_plot(algorithms_to_simulate, index=0):  # pylint: disable=R0914,R0915
         parameters_dict = alt_min_results.params.parameters
         fixed_params = {'max_iterations': max_iterations}
         _plot_ber(alt_min_results, fixed_params, ax, 'Alt. Min.', '-r*')
-        _plot_sum_capacity(
-            alt_min_results, fixed_params, ax2, 'Alt. Min.', '-r*')
+        _plot_sum_capacity(alt_min_results, fixed_params, ax2, 'Alt. Min.',
+                           '-r*')
 
     if "Closed Form" in algorithms_to_simulate:
         closed_form_results = SimulationResults.load_from_file(
@@ -750,25 +756,29 @@ def main_plot(algorithms_to_simulate, index=0):  # pylint: disable=R0914,R0915
         parameters_dict = closed_form_results.params.parameters
         fixed_params = {}
         _plot_ber(closed_form_results, fixed_params, ax, 'Closed Form', '-b*')
-        _plot_sum_capacity(
-            closed_form_results, fixed_params, ax2, 'Closed Form', '-b*')
+        _plot_sum_capacity(closed_form_results, fixed_params, ax2,
+                           'Closed Form', '-b*')
 
     if "Max SINR" in algorithms_to_simulate:
         max_sinrn_results = SimulationResults.load_from_file(
             'ia_max_sinr_{0}.pickle'.format(base_name2))
         parameters_dict = max_sinrn_results.params.parameters
-        fixed_params = {'max_iterations': max_iterations,
-                        'initialize_with': initialize_with}
+        fixed_params = {
+            'max_iterations': max_iterations,
+            'initialize_with': initialize_with
+        }
         _plot_ber(max_sinrn_results, fixed_params, ax, 'Max SINR', '-g*')
-        _plot_sum_capacity(
-            max_sinrn_results, fixed_params, ax2, 'Max SINR', '-g*')
+        _plot_sum_capacity(max_sinrn_results, fixed_params, ax2, 'Max SINR',
+                           '-g*')
 
     if "MMSE" in algorithms_to_simulate:
         mmse_results = SimulationResults.load_from_file(
             'ia_mmse_{0}.pickle'.format(base_name2))
         parameters_dict = mmse_results.params.parameters
-        fixed_params = {'max_iterations': max_iterations,
-                        'initialize_with': initialize_with}
+        fixed_params = {
+            'max_iterations': max_iterations,
+            'initialize_with': initialize_with
+        }
         _plot_ber(mmse_results, fixed_params, ax, 'MMSE', '-m*')
         _plot_sum_capacity(mmse_results, fixed_params, ax2, 'MMSE', '-m*')
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -811,7 +821,6 @@ def main_plot(algorithms_to_simulate, index=0):  # pylint: disable=R0914,R0915
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Main: Simulate or plot the results xxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -834,19 +843,29 @@ if __name__ == '__main__':
     # Optional positional argument to decide if we will simulate or plot
     help_msg = ('Perform the actual simulation or plot results from a'
                 ' previous simulation. Default is "simulate".')
-    parser.add_argument('action', nargs='?',
+    parser.add_argument('action',
+                        nargs='?',
                         choices=('simulate', 'plot'),
-                        default='simulate', help=help_msg)
+                        default='simulate',
+                        help=help_msg)
 
     group = parser.add_argument_group(
         'IA Algorithms to include. Default is all of them.')
-    group.add_argument('--closed_form', action="store_true", default=False,
+    group.add_argument('--closed_form',
+                       action="store_true",
+                       default=False,
                        help="Simulate the Closed Form algorithm.")
-    group.add_argument('--alt_min', action="store_true", default=False,
+    group.add_argument('--alt_min',
+                       action="store_true",
+                       default=False,
                        help="Simulate the Alternating Min. algorithm.")
-    group.add_argument('--max_sinr', action="store_true", default=False,
+    group.add_argument('--max_sinr',
+                       action="store_true",
+                       default=False,
                        help="Simulate the Max SINR algorithm.")
-    group.add_argument('--mmse', action="store_true", default=False,
+    group.add_argument('--mmse',
+                       action="store_true",
+                       default=False,
                        help="Simulate the MMSE algorithm.")
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -875,11 +894,7 @@ if __name__ == '__main__':
         simulate_all_algorithms = False
 
     if simulate_all_algorithms is True:
-        algorithms_to_simulate = [
-            "Closed Form",
-            "Alt Min",
-            "Max SINR",
-            "MMSE"]
+        algorithms_to_simulate = ["Closed Form", "Alt Min", "Max SINR", "MMSE"]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # Decide if we are simulation or plotting results from a previous

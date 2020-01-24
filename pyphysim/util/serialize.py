@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing function related to serialization.
 """
-
 
 import json
 import numpy as np
@@ -28,6 +26,7 @@ class NumpyOrSetEncoder(json.JSONEncoder):
     --------
     json_numpy_or_set_obj_hook
     """
+
     def default(self, obj):
         """
         If input object is an ndarray it will be converted into a dict holding
@@ -43,10 +42,12 @@ class NumpyOrSetEncoder(json.JSONEncoder):
         """
         # Case for numpy arrays
         if isinstance(obj, np.ndarray):
-            return {'data': obj.tolist(),
-                    'dtype': str(obj.dtype),
-                    '_is_numpy_array': True,
-                    'shape': obj.shape}
+            return {
+                'data': obj.tolist(),
+                'dtype': str(obj.dtype),
+                '_is_numpy_array': True,
+                'shape': obj.shape
+            }
         # Case for numpy scalars
         if isinstance(obj, (np.int32, np.int64)):
             return int(obj)
@@ -55,8 +56,7 @@ class NumpyOrSetEncoder(json.JSONEncoder):
 
         # Case for built-in Python sets
         if isinstance(obj, set):
-            return {'data': list(obj),
-                    '_is_set': True}
+            return {'data': list(obj), '_is_set': True}
 
         # If it is not a numpy array we fall back to base class encoder
         return json.JSONEncoder(self, obj)
@@ -102,7 +102,7 @@ def json_numpy_or_set_obj_hook(dct):
     return dct
 
 
-class JsonSerializable(object):
+class JsonSerializable:
     """
     Base class for classes you want to be JSON serializable (convert
     to/from JSON).
@@ -113,7 +113,7 @@ class JsonSerializable(object):
     Note that a subclass must implement the `_to_dict` and `_from_dict` methods.
     """
 
-    def _to_dict(self, ):
+    def _to_dict(self,):
         """
         Convert the object to a dictionary representation.
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Implements a waterfilling method.
 
 The doWF method performs the waterfilling algorithm.
@@ -57,8 +56,8 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
 
     minMu = float(noiseVar) / (
         Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
-    Ps = (minMu - float(noiseVar) / (
-        Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+    Ps = (minMu - float(noiseVar) /
+          (Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     # Ps should be a numpy array
     assert isinstance(Ps, np.ndarray)
@@ -67,18 +66,20 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
         dRemoveChannels += 1
         minMu = float(noiseVar) / (
             Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
-        Ps = (minMu - float(noiseVar) / (
-            Es *
-            vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+        Ps = (
+            minMu - float(noiseVar) /
+            (Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
 
     # Distributes the remaining power among the all the remaining channels
     dPdiff = dPt - np.sum(Ps)
     vtOptPaux = dPdiff / (dNChannels - dRemoveChannels) + Ps
 
     # Put optimum power in the original channel order
-    vtOptP = np.zeros([vtChannels.size, ])
-    vtOptP[vtChannelsSortIndexes[
-        np.arange(0, dNChannels - dRemoveChannels)]] = vtOptPaux
+    vtOptP = np.zeros([
+        vtChannels.size,
+    ])
+    vtOptP[vtChannelsSortIndexes[np.arange(0, dNChannels -
+                                           dRemoveChannels)]] = vtOptPaux
     mu = vtOptPaux[0] + float(noiseVar) / vtChannelsSorted[0]
 
     return vtOptP, mu

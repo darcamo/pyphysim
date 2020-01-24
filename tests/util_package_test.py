@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101,E1103
-
 """
 Tests for the modules in the util package.
 
@@ -51,66 +50,56 @@ class UtilDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # noinspection PyMethodMayBeStatic
 class ConversionTestCase(unittest.TestCase):
+
     def test_single_matrix_to_matrix_of_matrices(self):
         nrows = np.array([2, 4, 6])
         ncols = np.array([2, 3, 5])
-        single_matrix = np.array(
-            [
-                [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
-                [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
-                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-                [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
-                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-                [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
-            ]
-        )
+        single_matrix = np.array([
+            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+            [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [3, 3, 4, 4, 4, 5, 5, 5, 5, 5],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+            [6, 6, 7, 7, 7, 8, 8, 8, 8, 8],
+        ])
 
         # xxxxx Convert 'single 2D array' to 2D array of 2D arrays xxxxxxxx
         matrix_of_matrices = conversion.single_matrix_to_matrix_of_matrices(
             single_matrix, nrows, ncols)
         self.assertEqual(matrix_of_matrices.shape, (3, 3))
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[0, 0],
-            np.ones([2, 2]) * 0)
+        np.testing.assert_array_equal(matrix_of_matrices[0, 0],
+                                      np.ones([2, 2]) * 0)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[0, 1],
-            np.ones([2, 3]) * 1)
+        np.testing.assert_array_equal(matrix_of_matrices[0, 1],
+                                      np.ones([2, 3]) * 1)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[0, 2],
-            np.ones([2, 5]) * 2)
+        np.testing.assert_array_equal(matrix_of_matrices[0, 2],
+                                      np.ones([2, 5]) * 2)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[1, 0],
-            np.ones([4, 2]) * 3)
+        np.testing.assert_array_equal(matrix_of_matrices[1, 0],
+                                      np.ones([4, 2]) * 3)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[1, 1],
-            np.ones([4, 3]) * 4)
+        np.testing.assert_array_equal(matrix_of_matrices[1, 1],
+                                      np.ones([4, 3]) * 4)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[1, 2],
-            np.ones([4, 5]) * 5)
+        np.testing.assert_array_equal(matrix_of_matrices[1, 2],
+                                      np.ones([4, 5]) * 5)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[2, 0],
-            np.ones([6, 2]) * 6)
+        np.testing.assert_array_equal(matrix_of_matrices[2, 0],
+                                      np.ones([6, 2]) * 6)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[2, 1],
-            np.ones([6, 3]) * 7)
+        np.testing.assert_array_equal(matrix_of_matrices[2, 1],
+                                      np.ones([6, 3]) * 7)
 
-        np.testing.assert_array_equal(
-            matrix_of_matrices[2, 2],
-            np.ones([6, 5]) * 8)
+        np.testing.assert_array_equal(matrix_of_matrices[2, 2],
+                                      np.ones([6, 5]) * 8)
 
         # xxxxx Convert 'single 2D array' to 2D array of 2D arrays xxxxxxxx
         # In this case we break the channel into packs of lines
@@ -147,11 +136,11 @@ class ConversionTestCase(unittest.TestCase):
         expected2 = np.array([[1, 1, 1], [1, 1, 1], [4, 4, 4], [4, 4, 4],
                               [4, 4, 4], [4, 4, 4], [7, 7, 7], [7, 7, 7],
                               [7, 7, 7], [7, 7, 7], [7, 7, 7], [7, 7, 7]])
-        expected3 = np.array(
-            [[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [5, 5, 5, 5, 5],
-             [5, 5, 5, 5, 5], [5, 5, 5, 5, 5], [5, 5, 5, 5, 5],
-             [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
-             [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8]])
+        expected3 = np.array([[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [5, 5, 5, 5, 5],
+                              [5, 5, 5, 5, 5], [5, 5, 5, 5, 5], [5, 5, 5, 5, 5],
+                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
+                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8,
+                                                                 8]])
         np.testing.assert_array_equal(expected1, matrix_of_matrices3[0])
         np.testing.assert_array_equal(expected2, matrix_of_matrices3[1])
         np.testing.assert_array_equal(expected3, matrix_of_matrices3[2])
@@ -167,30 +156,23 @@ class ConversionTestCase(unittest.TestCase):
             single_array, nrows)
 
         self.assertEqual(array_of_arrays.shape, (3,))
-        np.testing.assert_array_equal(array_of_arrays[0],
-                                      expected1)
+        np.testing.assert_array_equal(array_of_arrays[0], expected1)
 
-        np.testing.assert_array_equal(array_of_arrays[1],
-                                      expected2)
+        np.testing.assert_array_equal(array_of_arrays[1], expected2)
 
-        np.testing.assert_array_equal(array_of_arrays[2],
-                                      expected3)
+        np.testing.assert_array_equal(array_of_arrays[2], expected3)
 
     def test_dB2Linear(self):
-        self.assertAlmostEqual(conversion.dB2Linear(30),
-                               1000.0)
+        self.assertAlmostEqual(conversion.dB2Linear(30), 1000.0)
 
     def test_linear2dB(self):
-        self.assertAlmostEqual(conversion.linear2dB(1000),
-                               30.0)
+        self.assertAlmostEqual(conversion.linear2dB(1000), 30.0)
 
     def test_dBm2Linear(self):
-        self.assertAlmostEqual(conversion.dBm2Linear(60),
-                               1000.0)
+        self.assertAlmostEqual(conversion.dBm2Linear(60), 1000.0)
 
     def test_linear2dBm(self):
-        self.assertAlmostEqual(conversion.linear2dBm(1000),
-                               60.0)
+        self.assertAlmostEqual(conversion.linear2dBm(1000), 60.0)
 
     def test_binary2gray(self):
         np.testing.assert_array_equal(conversion.binary2gray(np.arange(0, 8)),
@@ -199,8 +181,7 @@ class ConversionTestCase(unittest.TestCase):
     def test_gray2binary(self):
         vec = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         np.testing.assert_array_equal(
-            conversion.gray2binary(conversion.binary2gray(vec)),
-            vec)
+            conversion.gray2binary(conversion.binary2gray(vec)), vec)
 
     def test_SNR_dB_to_EbN0_dB(self):
         bps_1 = 2
@@ -249,10 +230,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
 
     def test_gmd(self):
-        A = np.array([[6, 8, 0, 4],
-                      [8, 6, 7, 6],
-                      [10, 9, 7, 3],
-                      [6, 2, 9, 2]])
+        A = np.array([[6, 8, 0, 4], [8, 6, 7, 6], [10, 9, 7, 3], [6, 2, 9, 2]])
 
         [U, S, V_H] = np.linalg.svd(A)
         # Store the SVD so that we can test later that gmd did not change
@@ -281,7 +259,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxx Test if R is an upper triangular matrix xxxxxxxxxxxxxx
         # Furthermore, all diagonal elements must be the geometric mean of
         # the singular values of 'A'
-        lambda_bar = np.prod(S) ** (1. / 4.)
+        lambda_bar = np.prod(S)**(1. / 4.)
         np.testing.assert_almost_equal(R.diagonal(), lambda_bar)
 
         for i in range(4):
@@ -299,10 +277,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_peig(self):
-        A = np.array(
-            [[2 - 0j, 3 + 12j, 7 + 1j],
-             [3 - 12j, 6 + 0j, 5 + 3j],
-             [7 - 1j, 5 - 3j, 4 + 0j]])
+        A = np.array([[2 - 0j, 3 + 12j, 7 + 1j], [3 - 12j, 6 + 0j, 5 + 3j],
+                      [7 - 1j, 5 - 3j, 4 + 0j]])
 
         # Test if an exception is raised if 'n' is greater then the number
         # of columns of A
@@ -314,10 +290,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         expected_V_n3 = np.array(
             [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j, 0.69593520],
-             [0.68522942, -0.24255902 + 0.37567057j,
-              -0.02693857 + 0.57425752j],
-             [0.38918583 + 0.09728652j, 0.80863645,
-              -0.40625488 - 0.14189355j]])
+             [0.68522942, -0.24255902 + 0.37567057j, -0.02693857 + 0.57425752j],
+             [0.38918583 + 0.09728652j, 0.80863645, -0.40625488 - 0.14189355j]])
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -332,17 +306,13 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxx Test for n==1 (one column) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         [V_n1, _] = misc.peig(A, 1)
 
-        expected_V_n1 = np.array(
-            [[0.27354856 + 0.54286421j],
-             [0.68522942],
-             [0.38918583 + 0.09728652j]])
+        expected_V_n1 = np.array([[0.27354856 + 0.54286421j], [0.68522942],
+                                  [0.38918583 + 0.09728652j]])
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
 
     def test_leig(self):
-        A = np.array(
-            [[2 - 0j, 3 + 12j, 7 + 1j],
-             [3 - 12j, 6 + 0j, 5 + 3j],
-             [7 - 1j, 5 - 3j, 4 + 0j]])
+        A = np.array([[2 - 0j, 3 + 12j, 7 + 1j], [3 - 12j, 6 + 0j, 5 + 3j],
+                      [7 - 1j, 5 - 3j, 4 + 0j]])
 
         # Test if an exception is raised if 'n' is greater then the number
         # of columns of A
@@ -354,10 +324,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         expected_V_n3 = np.array(
             [[0.69593520, 0.15266747 - 0.35048035j, 0.27354856 + 0.54286421j],
-             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j,
-              0.68522942],
-             [-0.40625488 - 0.14189355j, 0.80863645,
-              0.38918583 + 0.09728652j]])
+             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j, 0.68522942],
+             [-0.40625488 - 0.14189355j, 0.80863645, 0.38918583 + 0.09728652j]])
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -372,16 +340,13 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxx Test for n==1 (one column) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         [V_n1, _] = misc.leig(A, 1)
 
-        expected_V_n1 = np.array(
-            [[0.69593520],
-             [-0.02693857 + 0.57425752j],
-             [-0.40625488 - 0.14189355j]])
+        expected_V_n1 = np.array([[0.69593520], [-0.02693857 + 0.57425752j],
+                                  [-0.40625488 - 0.14189355j]])
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
 
     def test_level2bits(self):
-        self.assertEqual(
-            list(map(misc.level2bits, range(1, 20))),
-            [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
+        self.assertEqual(list(map(misc.level2bits, range(
+            1, 20))), [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
 
         # Test if an exception is raised for a value of n lower then 1
         with self.assertRaises(ValueError):
@@ -390,9 +355,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
             misc.level2bits(-2)
 
     def test_int2bits(self):
-        self.assertEqual(
-            list(map(misc.int2bits, range(0, 19))),
-            [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
+        self.assertEqual(list(map(misc.int2bits, range(
+            0, 19))), [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
 
         # Test if an exception is raised for a negative value of n
         with self.assertRaises(ValueError):
@@ -432,22 +396,16 @@ class MiscFunctionsTestCase(unittest.TestCase):
         A = np.array([1, 2, 3, 6, 5, 4, 2, 2, 1])
         A.shape = (3, 3)
         (min_Vs, remaining_Vs, S) = misc.least_right_singular_vectors(A, 1)
-        np.testing.assert_array_almost_equal(min_Vs,
-                                             np.array([[-0.4474985],
-                                                       [0.81116484],
-                                                       [-0.3765059]]),
-                                             8)
+        np.testing.assert_array_almost_equal(
+            min_Vs, np.array([[-0.4474985], [0.81116484], [-0.3765059]]), 8)
         np.testing.assert_array_almost_equal(
             remaining_Vs,
-            np.array([[-0.62341491, -0.64116998],
-                      [0.01889071, -0.5845124],
-                      [0.78166296, -0.49723869]]),
-            8)
+            np.array([[-0.62341491, -0.64116998], [0.01889071, -0.5845124],
+                      [0.78166296, -0.49723869]]), 8)
 
-        np.testing.assert_array_almost_equal(
-            S,
-            np.array([1.88354706, 9.81370681]),
-            8)
+        np.testing.assert_array_almost_equal(S,
+                                             np.array([1.88354706, 9.81370681]),
+                                             8)
 
         # xxxxxxxxxx Test a numpy bug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # When numpy is manually installed, but without lapack, it will use
@@ -458,9 +416,9 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # version of numpy was compiled with lapack to avoid this bug.
         M = 8  # Number of rows
         N = 12  # Number of columns
-        [_, _, V_H] = np.linalg.svd(
-            np.random.randn(M, N) + 1j * np.random.randn(M, N),
-            full_matrices=True)
+        [_, _, V_H
+        ] = np.linalg.svd(np.random.randn(M, N) + 1j * np.random.randn(M, N),
+                          full_matrices=True)
         # Test if all the last N - M rows are equal to zero (the bug) or not.
         self.assertNotAlmostEqual(np.linalg.norm(V_H[M - N:]), 0.0)
 
@@ -473,8 +431,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
     def test_calc_autocorr(self):
         x = np.array([4., 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
-        expected_autocor = np.array(
-            [1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
+        expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
     def test_calc_confidence_interval(self):
@@ -629,9 +586,10 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_c = "1_(1)_6,10_(5)_40,50,100"
         self.assertEqual(expr_c, expected_expr_c)
 
-        c = np.array(
-            [1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100, 150,
-             200, 250, 300, 1000])
+        c = np.array([
+            1, 2, 3, 4, 5, 6, 10, 15, 20, 25, 30, 35, 40, 50, 100, 150, 200,
+            250, 300, 1000
+        ])
         expr_c = misc.get_mixed_range_representation(c, True)
         expected_expr_c = "1_(1)_6,10_(5)_40,50_(50)_300,1000"
         self.assertEqual(expr_c, expected_expr_c)
@@ -651,33 +609,39 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_c = "11.0,10.2:-1.2:4.2"
         self.assertEqual(expr_c, expected_expr_c)
 
-        c = np.array([11.0, 10.2, 8.4, 8.2, 8.0, 7.8, 7.6, 5, 3, 1, -1,
-                      -3, -10])
+        c = np.array(
+            [11.0, 10.2, 8.4, 8.2, 8.0, 7.8, 7.6, 5, 3, 1, -1, -3, -10])
         expr_c = misc.get_mixed_range_representation(c)
         expected_expr_c = "11.0,10.2,8.4:-0.2:7.6,5.0:-2.0:-3.0,-10.0"
         self.assertEqual(expr_c, expected_expr_c)
 
     def test_replace_dict_values(self):
         name = "something {value1} - {value2} something else {value3}"
-        dictionary = {'value1': 'bla bla',
-                      'value2': np.array([15]),
-                      'value3': 76}
+        dictionary = {
+            'value1': 'bla bla',
+            'value2': np.array([15]),
+            'value3': 76
+        }
         new_name = misc.replace_dict_values(name, dictionary)
         expected_new_name = 'something bla bla - [15] something else 76'
         self.assertEqual(new_name, expected_new_name)
 
         name = "something {value1} - {value2} something else {value3}"
-        dictionary = {'value1': 'bla bla',
-                      'value2': np.array([5, 10, 15, 20, 25, 30]),
-                      'value3': 76}
+        dictionary = {
+            'value1': 'bla bla',
+            'value2': np.array([5, 10, 15, 20, 25, 30]),
+            'value3': 76
+        }
         new_name = misc.replace_dict_values(name, dictionary, True)
         expected_new_name = 'something bla bla - [5_(5)_30] something else 76'
         self.assertEqual(new_name, expected_new_name)
 
         # Value2 is not an arithmetic progression
-        dictionary2 = {'value1': 'bla bla',
-                       'value2': np.array([5, 10, 18, 20, 25, 30]),
-                       'value3': 76}
+        dictionary2 = {
+            'value1': 'bla bla',
+            'value2': np.array([5, 10, 18, 20, 25, 30]),
+            'value3': 76
+        }
         new_name2 = misc.replace_dict_values(name, dictionary2)
         expected_new_name2 \
             = 'something bla bla - [5,10,18,20,25,30] something else 76'
@@ -685,10 +649,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         # Value3 has parts that are arithmetic progressions and others that
         # are not an arithmetic progression
-        dictionary3 = {'value1': 'bla bla',
-                       'value2': np.array([2, 5, 10, 15, 20, 25,
-                                           30, 31, 32, 50]),
-                       'value3': 76}
+        dictionary3 = {
+            'value1': 'bla bla',
+            'value2': np.array([2, 5, 10, 15, 20, 25, 30, 31, 32, 50]),
+            'value3': 76
+        }
         new_name3 = misc.replace_dict_values(name, dictionary3, True)
         expected_new_name3 \
             = 'something bla bla - [2,5_(5)_30,31,32,50] something else 76'
@@ -755,15 +720,15 @@ class MiscFunctionsTestCase(unittest.TestCase):
     def test_calc_shannon_sum_capacity(self):
         sinrs_linear = np.array([11.4, 20.3])
         expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
-        self.assertAlmostEqual(
-            expected_sum_capacity,
-            misc.calc_shannon_sum_capacity(sinrs_linear))
+        self.assertAlmostEqual(expected_sum_capacity,
+                               misc.calc_shannon_sum_capacity(sinrs_linear))
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Serialize Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class NumpyOrSetEncoderTestCase(unittest.TestCase):
+
     def setUp(self):
         """Called before each test."""
         self.a = np.arange(100)

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Module containing useful classes to implement Monte Carlo simulations.
 
@@ -24,7 +23,6 @@ from .parameters import *
 from .runner import *
 from .results import *
 
-
 # xxxxxxxxxx HDF5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # http://scipy-user.10969.n7.nabble.com/Should-I-use-pickle-for-numpy-array-td144.html
 # >>> import h5py
@@ -46,7 +44,6 @@ from .results import *
 
 # xxxxxxxxxx Quick Start Guide do h5py xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # http://www.h5py.org/docs/intro/quick.html
-
 
 # You can use the vitables program to visualize the files created with
 # pytables or hdf5

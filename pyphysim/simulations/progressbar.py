@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 # pylint: disable=E1101
-
 """
 Implement classes to represent the progress of a task.
 
@@ -44,13 +43,13 @@ except ImportError:  # pragma: no cover
 
 from ..util.misc import pretty_time
 
-__all__ = ['DummyProgressbar', 'ProgressBarBase', 'ProgressbarText',
-           'ProgressbarText2', 'ProgressbarText3',
-           'ProgressbarMultiProcessServer', 'ProgressbarMultiProcessClient',
-           'ProgressbarZMQServer',
-           'ProgressBarIPython', 'center_message',
-           'ProgressbarTextBase', 'ProgressbarDistributedServerBase',
-           'ProgressbarDistributedClientBase']
+__all__ = [
+    'DummyProgressbar', 'ProgressBarBase', 'ProgressbarText',
+    'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessServer',
+    'ProgressbarMultiProcessClient', 'ProgressbarZMQServer',
+    'ProgressBarIPython', 'center_message', 'ProgressbarTextBase',
+    'ProgressbarDistributedServerBase', 'ProgressbarDistributedClientBase'
+]
 
 
 # If this function is ever used outside this file, then move it to the
@@ -90,12 +89,10 @@ def center_message(message, length=50, fill_char=' ', left='', right=''):
     left_fill_size = fill_size // 2 + (fill_size % 2)
     right_fill_size = (fill_size // 2)
 
-    new_message = u"{0}{1} {2} {3}{4}".format(
-        left,
-        fill_char * left_fill_size,
-        message,
-        fill_char * right_fill_size,
-        right)
+    new_message = u"{0}{1} {2} {3}{4}".format(left, fill_char * left_fill_size,
+                                              message,
+                                              fill_char * right_fill_size,
+                                              right)
     return new_message
 
 
@@ -103,17 +100,17 @@ def center_message(message, length=50, fill_char=' ', left='', right=''):
 # xxxxxxxxxxxxxxx DummyProgressbar - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # noinspection PyMethodMayBeStatic
-class DummyProgressbar(object):  # pragma: no cover
-    """Dummy progress bar that don't really do anything.
+class DummyProgressbar:  # pragma: no cover
+    """
+    Dummy progress bar that don't really do anything.
 
-    The idea is that it can be used in place of the
-    :class:`ProgressbarText` class, but without actually doing anything.
+    The idea is that it can be used in place of the :class:`ProgressbarText`
+    class, but without actually doing anything.
 
     See also
     --------
     ProgressbarText
     """
-
     def __init__(self, *args, **kwargs):
         """
         Initializes the DummyProgressbar object.
@@ -135,10 +132,12 @@ class DummyProgressbar(object):  # pragma: no cover
             Ignored
         """
         pass
+
+
 # xxxxxxxxxx DummyProgressbar - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-class ProgressBarBase(object):
+class ProgressBarBase:
     """
     Base class for all ProgressBar classes.
 
@@ -468,6 +467,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         if value < 40:
             value = 40
         self._width = value - (value % 10)
+
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _get_percentage_representation(self,
@@ -523,8 +523,8 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
                     (all_full - num_hashes) + right_side)
 
         # Replace the center of prog_bar with the message
-        central_message = central_message.format(
-            percent=percent_done, elapsed_time=elapsed_time)
+        central_message = central_message.format(percent=percent_done,
+                                                 elapsed_time=elapsed_time)
         pct_place = (len(prog_bar) // 2) - (len(str(central_message)) // 2)
         prog_bar = prog_bar[0:pct_place] + central_message + prog_bar[
             pct_place + len(central_message):]
@@ -608,6 +608,8 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
     # whole progressbar
     def __str__(self):
         return str(self.prog_bar)
+
+
 # xxxxxxxxxx ProgressbarTextBase - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -646,17 +648,17 @@ class ProgressbarText(ProgressbarTextBase):
 
     Examples
     --------
-    >> pb = ProgressbarText(100, 'o', "Hello Simulation")
-    >> pb.progress(20)
+    >>> pb = ProgressbarText(100, 'o', "Hello Simulation")
+    >>> pb.progress(20)
     ---------------- Hello Simulation ---------------1
         1    2    3    4    5    6    7    8    9    0
     ----0----0----0----0----0----0----0----0----0----0
     oooooooooo
-    >> pb.progress(40)
+    >>> pb.progress(40)
     oooooooooooooooooooo
-    >> pb.progress(50)
+    >>> pb.progress(50)
     ooooooooooooooooooooooooo
-    >> pb.progress(100)
+    >>> pb.progress(100)
     oooooooooooooooooooooooooooooooooooooooooooooooooo
     """
     def __init__(self,
@@ -684,8 +686,8 @@ class ProgressbarText(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(
-            self, finalcount, progresschar, message, output)
+        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
+                                     output)
 
         # stores how many characters where already printed in a previous
         # call to the `progress` function
@@ -766,8 +768,12 @@ class ProgressbarText(ProgressbarTextBase):
 
         # Set the self.prog_bar variable simply as a string containing as
         # many self.progresschar characters as necessary.
-        self.prog_bar = self._get_percentage_representation(
-            percentage, left_side='', right_side='', central_message='')
+        self.prog_bar = self._get_percentage_representation(percentage,
+                                                            left_side='',
+                                                            right_side='',
+                                                            central_message='')
+
+
 # xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -856,8 +862,10 @@ class ProgressbarText2(ProgressbarTextBase):
         # percentage representation. The message is not included and will
         # be appended after this.
         self.prog_bar = self._get_percentage_representation(
-            percent_count, central_message='{percent}%',
-            left_side='[', right_side=']')
+            percent_count,
+            central_message='{percent}%',
+            left_side='[',
+            right_side=']')
 
         # Append the message to the self.prog_bar variable if there is one
         # (or a default message if there is no message set)..
@@ -866,6 +874,8 @@ class ProgressbarText2(ProgressbarTextBase):
             self.prog_bar += "  {0}".format(message)
         else:
             self.prog_bar += '  %d of %d complete' % (count, self.finalcount)
+
+
 # xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -951,14 +961,16 @@ class ProgressbarText3(ProgressbarTextBase):
         full_count = "{0}/{1}".format(count, self.finalcount)
 
         if len(self._message) != 0:
-            self.prog_bar = center_message(
-                "{0} {1}".format(self._message, full_count),
-                length=self.width,
-                fill_char=self.progresschar)
+            self.prog_bar = center_message("{0} {1}".format(
+                self._message, full_count),
+                                           length=self.width,
+                                           fill_char=self.progresschar)
         else:
             self.prog_bar = center_message(full_count,
                                            length=self.width,
                                            fill_char=self.progresschar)
+
+
 # xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -971,7 +983,6 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
 
     The progressbar will be rendered using IPython widgets.
     """
-
     def __init__(self, finalcount, side_message=None):
         """
         Initializes the progressbar object.
@@ -1050,6 +1061,8 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
         # If no message was provided the the text widget inside the
         # container will be invisible
         display(self.container_widget)
+
+
 # xxxxxxxxxx ProgressBarIPython - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -1057,7 +1070,7 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
 # xxxxxxxxxxxxxxx ProgressbarServerBase xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # pylint:disable=R0902
-class ProgressbarDistributedServerBase(object):
+class ProgressbarDistributedServerBase:
     """
     Base class for progressbars for distributed computations.
 
@@ -1090,7 +1103,6 @@ class ProgressbarDistributedServerBase(object):
         to a file with name `filename`. This is usually useful for
         debugging and testing purposes.
     """
-
     def __init__(self,
                  progresschar='*',
                  message='',
@@ -1411,7 +1423,7 @@ class ProgressbarDistributedServerBase(object):
     #     return toc - self._tic.value
 
 
-class ProgressbarDistributedClientBase(object):
+class ProgressbarDistributedClientBase:
     """
     Proxy progressbar that behaves like a ProgressbarText object, but is
     actually updating a shared (with other clients) progressbar.
@@ -1427,7 +1439,6 @@ class ProgressbarDistributedClientBase(object):
     client_id : int
         The client ID.
     """
-
     def __init__(self, client_id):
         """
         """
@@ -1524,7 +1535,6 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
        pb.stop_updater()
 
     """
-
     def __init__(self,
                  progresschar='*',
                  message='',
@@ -1547,9 +1557,8 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
         """
-        ProgressbarDistributedServerBase.__init__(
-            self,
-            progresschar, message, sleep_time, filename)
+        ProgressbarDistributedServerBase.__init__(self, progresschar, message,
+                                                  sleep_time, filename)
 
     def _update_client_data_list(self):
         """
@@ -1621,6 +1630,8 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
             The new amount of progress.
         """
         self._client_data_list[self.client_id] = count
+
+
 # xxxxxxxxxx ProgressbarMultiProcessServer - END xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -1668,7 +1679,6 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
     port : int
         The port to bind the socket.
     """
-
     def __init__(self,
                  progresschar='*',
                  message='',
@@ -1698,9 +1708,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         port : int
             The port to bind the socket.
         """
-        ProgressbarDistributedServerBase.__init__(
-            self,
-            progresschar, message, sleep_time, filename)
+        ProgressbarDistributedServerBase.__init__(self, progresschar, message,
+                                                  sleep_time, filename)
 
         # Create a Multiprocessing namespace
         # pylint: disable=E1101
@@ -1760,7 +1769,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
 
     # noinspection PyUnresolvedReferences
     def _update_progress(self,
-                         filename=None, start_delay=0.0):  # pragma: no cover
+                         filename=None,
+                         start_delay=0.0):  # pragma: no cover
         """
         Collects the progress from each registered proxy progressbar and
         updates the actual visible progressbar.
@@ -1954,8 +1964,8 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         """
         self._zmq_context = zmq.Context()
         self._zmq_push_socket = self._zmq_context.socket(zmq.PUSH)
-        self._zmq_push_socket.connect("tcp://{0}:{1}".format(self.ip,
-                                                             self.port))
+        self._zmq_push_socket.connect("tcp://{0}:{1}".format(
+            self.ip, self.port))
 
         # The default LINGER value for a ZMQ socket is -1, which means
         # "wait forever". That means that if the message was not received
@@ -1968,4 +1978,6 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         self._progress_func = ProgressbarZMQClient._progress
         # noinspection PyArgumentList,PyTypeChecker
         self._progress_func(self, count)
+
+
 # xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

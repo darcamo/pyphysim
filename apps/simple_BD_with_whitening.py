@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """module docstring"""
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
@@ -23,7 +22,6 @@ from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
 import pyphysim.channels.multiuser
 
-
 tic = time()
 
 K = 3
@@ -39,7 +37,7 @@ modulator = fundamental.PSK(M)
 
 # Transmission Parameters
 NSymbs = 500  # Number of symbols (per stream per user simulated at each
-              # iteration
+# iteration
 SNR_dB = 15.
 N0_dBm = -116.4  # Noise power (in dBm)
 
@@ -68,5 +66,7 @@ symbols = modulator.modulate(input_data)
 BD = blockdiagonalization.BlockDiagonalizer(K, transmit_power, noise_var)
 enhancedBD = blockdiagonalization.EnhancedBD(K, transmit_power, noise_var, pe)
 
-(newH, Ms) = BD.block_diagonalize_no_waterfilling(multiuser_channel.big_H_no_ext_int)
-(newH_ext, Ms_ext, Ns_all_users) = enhancedBD.block_diagonalize_no_waterfilling(multiuser_channel)
+(newH,
+ Ms) = BD.block_diagonalize_no_waterfilling(multiuser_channel.big_H_no_ext_int)
+(newH_ext, Ms_ext,
+ Ns_all_users) = enhancedBD.block_diagonalize_no_waterfilling(multiuser_channel)

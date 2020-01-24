@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Module with channel estimation implementations based on the reference
 signals in this package. """
 import numpy as np
@@ -8,7 +7,7 @@ from .srs import SrsUeSequence, UeSequence
 from .dmrs import DmrsUeSequence
 
 
-class CazacBasedChannelEstimator(object):
+class CazacBasedChannelEstimator:
     """
     Estimated the (uplink) channel based on CAZAC (Constant Amplitude Zero
     AutoCorrelation) reference sequences sent by one user (either SRS or
@@ -101,8 +100,7 @@ class CazacBasedChannelEstimator(object):
             tilde_h = y[0:num_taps_to_keep + 1]
         elif received_signal.ndim == 2:
             # Case with multiple receive antennas
-            y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal,
-                            r.size)
+            y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal, r.size)
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.
@@ -139,13 +137,14 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
     ue_ref_seq : DmrsUeSequence
         The reference signal sequence.
     """
+
     def __init__(self, ue_ref_seq):
         cover_code = ue_ref_seq.cover_code
         ue_ref_seq_array = ue_ref_seq.seq_array()
         reference_seq = ue_ref_seq_array[0] * cover_code[0]
 
-        super(CazacBasedWithOCCChannelEstimator, self).__init__(
-            reference_seq, size_multiplier=1)
+        super(CazacBasedWithOCCChannelEstimator,
+              self).__init__(reference_seq, size_multiplier=1)
 
         self._cover_code = cover_code
         self._normalized_ref_seq = ue_ref_seq.normalized
@@ -155,7 +154,8 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         """Get the cover code of the UE."""
         return self._cover_code
 
-    def estimate_channel_freq_domain(self, received_signal,
+    def estimate_channel_freq_domain(self,
+                                     received_signal,
                                      num_taps_to_keep,
                                      extra_dimension=True):
         """
@@ -227,14 +227,14 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         # Now we can consider the case with the extra cover_code dimension
         if r.ndim == 2:
             # Apply the cover code
-            r_mean = np.mean(r * self.cover_code[:, np.newaxis],
-                             axis=0)
+            r_mean = np.mean(r * self.cover_code[:, np.newaxis], axis=0)
         elif r.ndim == 3:
             r_mean = np.mean(r * self.cover_code[np.newaxis, :, np.newaxis],
                              axis=1)
 
         else:
-            raise RuntimeError('Invalid dimension for received_signal: {0}'.format(r.ndim))
+            raise RuntimeError(
+                'Invalid dimension for received_signal: {0}'.format(r.ndim))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxx Perform the estimation xxxxxxxxxxxxxxxxxxxxxxxxxx

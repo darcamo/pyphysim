@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Perform the simulation of the transmission of PSK symbols through an
 awgn channel.
@@ -54,7 +53,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
 
     """
 
-    def __init__(self, ):
+    def __init__(self,):
         SimulationRunner.__init__(self)
 
         SNR = np.array([0, 3, 6, 9, 12])
@@ -118,21 +117,20 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Return the simulation results xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        symbolErrorsResult = Result.create(
-            "symbol_errors", Result.SUMTYPE, symbolErrors)
+        symbolErrorsResult = Result.create("symbol_errors", Result.SUMTYPE,
+                                           symbolErrors)
 
-        numSymbolsResult = Result.create(
-            "num_symbols", Result.SUMTYPE, numSymbols)
+        numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
+                                         numSymbols)
 
-        bitErrorsResult = Result.create(
-            "bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
         berResult = Result.create("ber", Result.RATIOTYPE, bitErrors, numBits)
 
-        serResult = Result.create(
-            "ser", Result.RATIOTYPE, symbolErrors, numSymbols)
+        serResult = Result.create("ser", Result.RATIOTYPE, symbolErrors,
+                                  numSymbols)
 
         simResults = SimulationResults()
         simResults.add_result(symbolErrorsResult)
@@ -251,17 +249,15 @@ if __name__ == '__main__':
 
         ax1.semilogy(SNR_p, ber_p, '--g*', label='BER_P')
         ax1.semilogy(SNR_p, ser_p, '--b*', label='SER_P')
-        ax1.semilogy(SNR_p, theoretical_ber_p, '-g+',
-                     label='Theoretical BER_P')
-        ax1.semilogy(SNR_p, theoretical_ser_p, '-b+',
-                     label='theoretical SER_P')
+        ax1.semilogy(SNR_p, theoretical_ber_p, '-g+', label='Theoretical BER_P')
+        ax1.semilogy(SNR_p, theoretical_ser_p, '-b+', label='theoretical SER_P')
 
         modulator_obj = sim_p.params['modulator']
 
         ax1.set_xlabel('SNR')
         ax1.set_ylabel('Error')
-        ax1.set_title(
-            '{0} modulation (Parallel Simulation)'.format(modulator_obj.name))
+        ax1.set_title('{0} modulation (Parallel Simulation)'.format(
+            modulator_obj.name))
         ax1.legend()
 
         ax1.grid(True, which='both', axis='both')
@@ -274,17 +270,15 @@ if __name__ == '__main__':
         ax2 = plt.subplot(122)
         ax2.semilogy(SNR_s, ber_s, '--g*', label='BER_s')
         ax2.semilogy(SNR_s, ser_s, '--b*', label='SER_s')
-        ax2.semilogy(SNR_s, theoretical_ber_s, '-g+',
-                     label='Theoretical BER_s')
-        ax2.semilogy(SNR_s, theoretical_ser_s, '-b+',
-                     label='theoretical SER_s')
+        ax2.semilogy(SNR_s, theoretical_ber_s, '-g+', label='Theoretical BER_s')
+        ax2.semilogy(SNR_s, theoretical_ser_s, '-b+', label='theoretical SER_s')
 
         modulator_obj = sim_s.params['modulator']
 
         ax2.set_xlabel('SNR')
         ax2.set_ylabel('Error')
-        ax2.set_title(
-            '{0} modulation (Serial Simulation)'.format(modulator_obj.name))
+        ax2.set_title('{0} modulation (Serial Simulation)'.format(
+            modulator_obj.name))
         ax2.legend()
 
         ax2.grid(True, which='both', axis='both')
