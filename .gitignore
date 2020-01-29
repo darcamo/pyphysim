@@ -85,8 +85,9 @@ flycheck*
 apps/profile
 apps/texCode.pdf
 
-# Ignore folder created by pycharm
+# Ignore folder created by IDEs
 .idea
+.vscode
 
 # Ignore a folder created by IPython to save checkpoints for the notebook
 .ipynb_checkpoints

@@ -9,6 +9,13 @@
 from setuptools import setup, find_packages
 import os
 
+# TODO: Update this setup for better distribution with Cython.
+# See http://docs.cython.org/en/latest/src/userguide/source_files_and_compilation.html#distributing-cython-modules
+# See this stackoverflow question
+# https://stackoverflow.com/questions/44554882/in-a-setup-py-involving-cython-if-install-requires-then-how-can-from-library-i
+# This question about numpy.get_includes() might also help
+# https://stackoverflow.com/questions/54117786/add-numpy-get-include-argument-to-setuptools-without-preinstalled-numpy
+
 # xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # from distutils.extension import Extension
 from Cython.Distutils import build_ext, Extension
@@ -58,7 +65,7 @@ def read(fname):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 setup(
     # xxxxxxxxxx Basic Package Information xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    name="PyPhySim",
+    name="pyphysim",
     version=get_version(),
 
     # Metadata for PyPI
@@ -66,19 +73,17 @@ setup(
     author_email="darcamo@gmail.com",
     license="GNU General Public License (GPL)",
     url="https://github.com/darcamo/pyphysim",
-    download_url='fillmein',
     keywords='phy QAM PSK QPSK BPSK Modulation Monte Carlo',
     description=("Implementation of a digital communication (physical layer) "
                  "in python."),
     long_description=read("README.md"),
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
-        "Environment :: Console",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Telecommunications Industry",
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License (GPL)",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering",
     ],
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -93,7 +98,7 @@ setup(
         '': ["README", "LICENSE.txt"],
         'tests': ["README"]
     },
-    # setup_requires=['nose>=1.0'],
+    setup_requires=["cython"],
     install_requires=["numpy", "scipy", "matplotlib", "cython"],
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ext_modules=cythonize([misc_c]),
