@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#cython: language_level=3
+
 cimport numpy as np
 import numpy as np
+cimport cython
 
 """This module re-implements functions in the util.misc module,
 but using Cython for speeding up calculations. """
@@ -30,7 +33,8 @@ cdef int _count_bits_single_element(int n):
         n >>= 1
     return count
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def count_bits_1D_array(np.ndarray[np.int_t, ndim=1] n):
     """
     Count the number of bits that are set.
@@ -60,6 +64,23 @@ def count_bits_1D_array(np.ndarray[np.int_t, ndim=1] n):
     return num_bits
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def count_bits_ND_array(n):
+    cdef np.ndarray[np.int_t, ndim=1] flattened_input = n.flatten()
+
+    cdef int num_el = len(flattened_input)
+    cdef Py_ssize_t index  # Since we will use index for indexing 'n', then
+                           # using Py_ssize_t as the type for index give
+                           # faster results then using a simple int.
+    cdef np.ndarray[np.int_t, ndim=1] num_bits_flat = np.empty(num_el, dtype=np.int)
+    for index in range(num_el):
+        num_bits_flat[index] = _count_bits_single_element(
+            flattened_input[index])
+
+    return np.reshape(num_bits_flat, n.shape)
+
+
 def count_bits(n):
     """
     Count the number of bits that are set in `n`.
@@ -82,16 +103,9 @@ def count_bits(n):
         return _count_bits_single_element(n)
 
     assert n.dtype == np.int
-    cdef np.ndarray[np.int_t, ndim=1] flattened_input = n.flatten()
 
-    cdef int num_el = len(flattened_input)
-    cdef Py_ssize_t index  # Since we will use index for indexing 'n', then
-                           # using Py_ssize_t as the type for index give
-                           # faster results then using a simple int.
-    cdef np.ndarray[np.int_t, ndim=1] num_bits_flat = np.empty(num_el, dtype=np.int)
-    for index in range(num_el):
-        num_bits_flat[index] = _count_bits_single_element(
-            flattened_input[index])
+    if n.ndim == 1:
+        return count_bits_1D_array(n)
 
-    return np.reshape(num_bits_flat, n.shape)
-
+    # General case
+    return count_bits_ND_array(n)

@@ -1057,7 +1057,8 @@ def replace_dict_values(name, dictionary, filename_mode=False):
     new_dict = {}
     for n, v in dictionary.items():
         if isinstance(v, np.ndarray):
-            v = "[{0}]".format(get_mixed_range_representation(v, filename_mode))
+            v = "[{0}]".format(get_mixed_range_representation(
+                v, filename_mode))
         new_dict[n] = v
 
     return name.format(**new_dict)
@@ -1189,7 +1190,13 @@ try:
     # will replace the corresponding method defined here.
     # pylint: disable=E0611,F0401
     from ..c_extensions.misc_c import *
+    USING_CYTHON = True
 except ImportError:  # pragma: no cover
+    import warnings
+    USING_CYTHON = False
+    warnings.warn(
+        "util.misc.count_bits will be slow, since cythonized version was not used"
+    )
     pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

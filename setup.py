@@ -6,25 +6,19 @@
 # - Run the command "python setup.py build_exe" to create the executables
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-from setuptools import setup, find_packages
-import os
+from setuptools import dist
+# This will make sure that cython and numpy are installed before setup runs
+dist.Distribution().fetch_build_eggs(['Cython>=0.15.1', 'numpy>=1.10'])
 
-# TODO: Update this setup for better distribution with Cython.
-# See http://docs.cython.org/en/latest/src/userguide/source_files_and_compilation.html#distributing-cython-modules
-# See this stackoverflow question
-# https://stackoverflow.com/questions/44554882/in-a-setup-py-involving-cython-if-install-requires-then-how-can-from-library-i
-# This question about numpy.get_includes() might also help
-# https://stackoverflow.com/questions/54117786/add-numpy-get-include-argument-to-setuptools-without-preinstalled-numpy
+from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
+import os
 
 # xxxxx Cython extensions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # from distutils.extension import Extension
-from Cython.Distutils import build_ext, Extension
-from Cython.Build import cythonize
-import numpy
-
-misc_c = Extension(name="misc_c",
-                   sources=["pyphysim/util/misc_c.pyx"],
-                   include_dirs=[numpy.get_include()])
+# from Cython.Distutils import build_ext, Extension
+# from Cython.Build import cythonize
+import numpy as np
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -57,6 +51,10 @@ packages = find_packages(where='.', exclude=['tests', 'apps'])
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+
+doc_requires = ["sphinx", "sphinx_rtd_theme"]
+test_requires = ["nose"]
+extra_requires = ["pyzmq", "pandas", "ipython", "ipyparallel", "ipywidgets"]
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -95,13 +93,33 @@ setup(
     ],
     packages=packages,
     package_data={
-        '': ["README", "LICENSE.txt"],
-        'tests': ["README"]
+        '': ["README.md", "LICENSE.md"],
+        "pyphysim.util":
+        ["misc_c.pyx"]  # Makes sure that the pyx is included in sdist
     },
-    setup_requires=["cython"],
-    install_requires=["numpy", "scipy", "matplotlib", "cython"],
+    setup_requires=["cython", "numpy"],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "matplotlib",
+        "cython",
+        "configobj",
+        "h5py",
+        "IPython",
+    ],
+    # Use 'pip install pyphysim[dev]' or 'pip install -e . "[dev]"'
+    extra_require={
+        "docs": doc_requires,
+        "tests": test_requires,
+        "extra": extra_requires,
+        "dev": doc_requires + test_requires + extra_requires
+    },
     # xxxxx Cython Stuff xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    ext_modules=cythonize([misc_c]),
+    ext_modules=[
+        Extension(name="pyphysim.c_extensions.misc_c",
+                  sources=["pyphysim/util/misc_c.pyx"],
+                  include_dirs=[np.get_include()])
+    ],
     cmdclass={'build_ext': build_ext},
     requires=[
         'numpy', 'scipy', 'configobj', 'validate', 'matplotlib', 'h5py',
