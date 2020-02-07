@@ -4,25 +4,30 @@
 
 from __future__ import division
 
-import numpy as np
 import os.path
-from collections import Iterable
+from collections.abc import Iterable
+from typing import Any, Optional, List, Dict, Iterator
 
-from .parameters import SimulationParameters, combine_simulation_parameters
-from ..util.misc import calc_confidence_interval, equal_dicts, \
-    replace_dict_values
+import numpy as np
+
+from ..util.misc import (calc_confidence_interval, equal_dicts,
+                         replace_dict_values)
 from ..util.serialize import JsonSerializable
+from .parameters import SimulationParameters, combine_simulation_parameters
 
 try:
     import cPickle as pickle
 except ImportError:  # pragma: no cover
-    import pickle
+    import pickle  # type: ignore
 
 try:
     # noinspection PyUnresolvedReferences
-    from pandas import DataFrame
+    import pandas as pd
 except ImportError:  # pragma: no cover
     pass
+
+# One of SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE
+ResultType = int
 
 __all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 
@@ -30,7 +35,9 @@ __all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def combine_simulation_results(simresults1, simresults2):
+def combine_simulation_results(
+        simresults1: "SimulationResults",
+        simresults2: "SimulationResults") -> "SimulationResults":
     """
     Combine two SimulationResults objects with different parameters values.
 
@@ -213,10 +220,10 @@ class Result(JsonSerializable):
     }
 
     def __init__(self,
-                 name,
-                 update_type_code,
-                 accumulate_values=False,
-                 choice_num=None):
+                 name: str,
+                 update_type_code: ResultType,
+                 accumulate_values: bool = False,
+                 choice_num: Optional[int] = None) -> None:
         """
         Constructor for the result object.
 
@@ -240,32 +247,32 @@ class Result(JsonSerializable):
             required parameter for the CHOICETYPE type, but it is ignored
             for the other types
         """
-        self.name = name
+        self.name: str = name
         self._update_type_code = update_type_code
-        self._value = 0
-        self._total = 0
+        self._value: Any = 0
+        self._total: Any = 0
         # At each update the current result will be added to this variable
-        self._result_sum = 0.0
+        self._result_sum: float = 0.0
         # At each update the square of the current result will be added to
         # this variable.
-        self._result_squared_sum = 0.0
+        self._result_squared_sum: float = 0.0
         # Number of times the Result object was updated
-        self.num_updates = 0
+        self.num_updates: int = 0
 
         if update_type_code == Result.CHOICETYPE:
             if not isinstance(choice_num, int):
                 raise RuntimeError(
                     "'choice_num' argument for the Result object must be "
                     "an integer for the CHOICETYPE type.")
-            else:
-                self._value = np.zeros(choice_num, dtype=int)
+
+            self._value = np.zeros(choice_num, dtype=int)
 
         # Accumulation of values: This is useful for debugging/testing
-        self._accumulate_values_bool = accumulate_values
-        self._value_list = []
-        self._total_list = []
+        self._accumulate_values_bool: bool = accumulate_values
+        self._value_list: List[Any] = []
+        self._total_list: List[Any] = []
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """
         Compare two Result objects.
 
@@ -316,7 +323,7 @@ class Result(JsonSerializable):
 
         return result
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         """
         Compare two Result objects.
 
@@ -337,7 +344,7 @@ class Result(JsonSerializable):
         return not self.__eq__(other)
 
     @property
-    def accumulate_values_bool(self):
+    def accumulate_values_bool(self) -> bool:
         """
         Property to see if values are accumulated of not during a call
         to the `update` method.
@@ -345,7 +352,11 @@ class Result(JsonSerializable):
         return self._accumulate_values_bool
 
     @staticmethod
-    def create(name, update_type, value, total=0, accumulate_values=False):
+    def create(name: str,
+               update_type: ResultType,
+               value: Any,
+               total: int = 0,
+               accumulate_values: bool = False) -> "Result":
         """
         Create a Result object and update it with `value` and `total` at
         the same time.
@@ -406,7 +417,7 @@ class Result(JsonSerializable):
         return result
 
     @property
-    def type_name(self):
+    def type_name(self) -> str:
         """
         Get the Result type name.
 
@@ -419,7 +430,7 @@ class Result(JsonSerializable):
         return Result._all_types[self._update_type_code]
 
     @property
-    def type_code(self):
+    def type_code(self) -> ResultType:
         """
         Get the Result type.
 
@@ -431,19 +442,18 @@ class Result(JsonSerializable):
         """
         return self._update_type_code
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self._update_type_code == Result.RATIOTYPE:
             v = self._value
             t = self._total
             if t != 0:
                 return "Result -> {0}: {1}/{2} -> {3}".format(
                     self.name, v, t, v / t)
-            else:
-                return "Result -> {0}: {1}/{2} -> NaN".format(self.name, v, t)
-        else:
-            return "Result -> {0}: {1}".format(self.name, self.get_result())
+            return "Result -> {0}: {1}/{2} -> NaN".format(self.name, v, t)
 
-    def update(self, value, total=None):
+        return "Result -> {0}: {1}".format(self.name, self.get_result())
+
+    def update(self, value: Any, total: Optional[Any] = None) -> None:
         """
         Update the current value.
 
@@ -477,7 +487,8 @@ class Result(JsonSerializable):
         # Python does not have a switch statement. We use dictionaries as
         # the equivalent of a switch statement.
         # First we define a function for each possibility.
-        def __default_update(*_):  # "*_" denotes the two unused args here
+        def __default_update(
+                *_: Any) -> None:  # "*_" denotes the two unused args here
             """Default update method.
 
             This will only be called when the update type is not one of the
@@ -487,7 +498,7 @@ class Result(JsonSerializable):
             msg = "Can't update a Result object of type '{0}'"
             raise ValueError(msg.format(self._update_type_code))
 
-        def __update_SUMTYPE_value(p_value, _):
+        def __update_SUMTYPE_value(p_value: Any, _: Any) -> None:
             """Update the Result object when its type is SUMTYPE."""
             self._value += p_value
             self._result_sum += p_value
@@ -495,7 +506,7 @@ class Result(JsonSerializable):
             if self._accumulate_values_bool is True:
                 self._value_list.append(p_value)
 
-        def __update_RATIOTYPE_value(p_value, p_total):
+        def __update_RATIOTYPE_value(p_value: Any, p_total: Any) -> None:
             """Update the Result object when its type is RATIOTYPE.
 
             Raises
@@ -519,13 +530,13 @@ class Result(JsonSerializable):
                 self._value_list.append(p_value)
                 self._total_list.append(p_total)
 
-        def __update_by_replacing_current_value(p_value, _):
+        def __update_by_replacing_current_value(p_value: Any, _: Any) -> None:
             """Update the Result object when its type is MISCTYPE."""
             self._value = p_value
             if self._accumulate_values_bool is True:
                 self._value_list.append(p_value)
 
-        def __update_CHOICETYPE_value(p_value, _):
+        def __update_CHOICETYPE_value(p_value: Any, _: Any) -> None:
             """Update the Result object when its type is CHOICETYPE."""
             # The provided 'p_value' is used as an index to increase the
             # choice in self._value, which is stored as a numpy array.
@@ -556,7 +567,7 @@ class Result(JsonSerializable):
         possible_updates.get(self._update_type_code, __default_update)(value,
                                                                        total)
 
-    def merge(self, other):
+    def merge(self, other: "Result") -> None:
         """
         Merge the result from other with self.
 
@@ -590,7 +601,7 @@ class Result(JsonSerializable):
         self._result_sum += other._result_sum
         self._result_squared_sum += other._result_squared_sum
 
-    def get_result(self):
+    def get_result(self) -> Any:
         """
         Get the result stored in the Result object.
 
@@ -603,15 +614,16 @@ class Result(JsonSerializable):
         """
         if self.num_updates == 0:
             return "Nothing yet"
-        else:
-            if self._update_type_code == Result.RATIOTYPE:
-                return self._value / self._total
-            elif self._update_type_code == Result.CHOICETYPE:
-                return self._value / self._total
-            else:
-                return self._value
 
-    def get_result_accumulated_values(self):  # pragma: no cover
+        if self._update_type_code == Result.RATIOTYPE:
+            return self._value / self._total
+
+        if self._update_type_code == Result.CHOICETYPE:
+            return self._value / self._total
+
+        return self._value
+
+    def get_result_accumulated_values(self) -> List[Any]:  # pragma: no cover
         """
         Return the accumulated values.
 
@@ -621,7 +633,7 @@ class Result(JsonSerializable):
         """
         return self._value_list
 
-    def get_result_accumulated_totals(self):  # pragma: no cover
+    def get_result_accumulated_totals(self) -> List[Any]:  # pragma: no cover
         """
         Return the accumulated values.
 
@@ -631,7 +643,7 @@ class Result(JsonSerializable):
         """
         return self._total_list
 
-    def get_result_mean(self):
+    def get_result_mean(self) -> float:
         """Get the mean of all the updated results.
 
         Returns
@@ -643,7 +655,7 @@ class Result(JsonSerializable):
 
         return self._result_sum / self.num_updates
 
-    def get_result_var(self):
+    def get_result_var(self) -> float:
         """
         Get the variance of all updated results.
 
@@ -657,7 +669,7 @@ class Result(JsonSerializable):
         return ((self._result_squared_sum / self.num_updates) -
                 (self.get_result_mean())**2)
 
-    def get_confidence_interval(self, P=95):
+    def get_confidence_interval(self, P: float = 95.0) -> np.ndarray:
         """
         Get the confidence interval that contains the true result with a
         given probability `P`.
@@ -690,7 +702,7 @@ class Result(JsonSerializable):
         return calc_confidence_interval(mean, std, n, P)
 
     # Overwrite version in  JsonSerializable
-    def _to_dict(self):
+    def _to_dict(self) -> Dict[str, Any]:
         """
         Convert the Result object to a dictionary representation.
 
@@ -714,7 +726,7 @@ class Result(JsonSerializable):
         return d
 
     @staticmethod
-    def _from_dict(d):
+    def _from_dict(d: Dict[str, Any]) -> "Result":
         """
         Convert from a dictionary to a Result object.
 
@@ -964,9 +976,8 @@ class SimulationResults(JsonSerializable):
     Result : Class to store a single simulation result.
 
     """
-
-    def __init__(self):
-        self._results = dict()
+    def __init__(self) -> None:
+        self._results: Dict[str, Result] = dict()
 
         # This will store the simulation parameters used in the simulation
         # that resulted in the results. This should be set by calling the
@@ -975,16 +986,16 @@ class SimulationResults(JsonSerializable):
 
         # Don't change this manually. This will be set in the
         # SimulationRunner class in the end of the simulation.
-        self.runned_reps = None
+        self.runned_reps: Optional[int] = None
 
         # When the SimulationResults object is saved to a file with the
         # methods 'save_to_file' or 'save_to_hdf5_file', this variable will
         # be set to the used filename (before any string
         # replacements). This is useful when this file is loaded to recover
         # the SimulationResults object.
-        self.original_filename = None
+        self.original_filename: Optional[str] = None
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """
         Compare two SimulationResults objects.
 
@@ -997,7 +1008,7 @@ class SimulationResults(JsonSerializable):
 
         Parameters
         ----------
-        other : SimulationResults
+        other : w
             The other SimulationResults object.
 
         Returns
@@ -1024,12 +1035,11 @@ class SimulationResults(JsonSerializable):
             return False
 
         return all([
-            self[k] == other[k]
-            for k in self._results.keys()
+            self[k] == other[k] for k in self._results.keys()
             if k != 'elapsed_time'
         ])
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         """
         Compare two SimulationResults objects.
 
@@ -1050,11 +1060,11 @@ class SimulationResults(JsonSerializable):
         return not self.__eq__(other)
 
     @property
-    def params(self):
+    def params(self) -> SimulationParameters:
         """Get method for the params property."""
         return self._params
 
-    def set_parameters(self, params):
+    def set_parameters(self, params: SimulationParameters) -> None:
         """
         Set the parameters of the simulation used to generate the
         simulation results stored in the SimulationResults object.
@@ -1070,7 +1080,7 @@ class SimulationResults(JsonSerializable):
             raise ValueError('params must be a SimulationParameters object')
         self._params = params
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         String representation of the SimulationResults object.
 
@@ -1083,7 +1093,7 @@ class SimulationResults(JsonSerializable):
         repr_string = "SimulationResults: {0}".format(sorted(list_of_names))
         return repr_string
 
-    def add_result(self, result):
+    def add_result(self, result: Result) -> None:
         """
         Add a result object to the SimulationResults object.
 
@@ -1100,7 +1110,11 @@ class SimulationResults(JsonSerializable):
         # Added as a list with a single element
         self._results[result.name] = [result]
 
-    def add_new_result(self, name, update_type, value, total=0):
+    def add_new_result(self,
+                       name: str,
+                       update_type: ResultType,
+                       value: Any,
+                       total: Any = 0) -> None:
         """Create a new Result object on the fly and add it to the
         SimulationResults object.
 
@@ -1131,7 +1145,7 @@ class SimulationResults(JsonSerializable):
         result = Result.create(name, update_type, value, total)
         self.add_result(result)
 
-    def append_result(self, result):
+    def append_result(self, result: Result) -> None:
         """
         Append a result to the SimulationResults object.
 
@@ -1170,7 +1184,7 @@ class SimulationResults(JsonSerializable):
         else:
             self.add_result(result)
 
-    def append_all_results(self, other):
+    def append_all_results(self, other: "SimulationResults") -> None:
         """
         Append all the results of the other SimulationResults object
         with self.
@@ -1189,7 +1203,7 @@ class SimulationResults(JsonSerializable):
             for result in results:
                 self.append_result(result)
 
-    def merge_all_results(self, other):
+    def merge_all_results(self, other: "SimulationResults") -> None:
         """
         Merge all the results of the other SimulationResults object with the
         results in self.
@@ -1247,7 +1261,7 @@ class SimulationResults(JsonSerializable):
                 self._results['num_skipped_reps'][-1].merge(
                     other['num_skipped_reps'][-1])
 
-    def get_result_names(self):
+    def get_result_names(self) -> List[str]:
         """
         Get the names of all results stored in the SimulationResults
         object.
@@ -1257,9 +1271,12 @@ class SimulationResults(JsonSerializable):
         names : list[str]
             The names of the results stored in the SimulationResults object.
         """
-        return self._results.keys()
+        return list(self._results.keys())
 
-    def get_result_values_list(self, result_name, fixed_params=None):
+    def get_result_values_list(
+            self,
+            result_name: str,
+            fixed_params: Optional[Dict[str, Any]] = None) -> List[Any]:
         """
         Get the values for the results with name `result_name`.
 
@@ -1306,8 +1323,7 @@ class SimulationResults(JsonSerializable):
         if fixed_params:
             indexes = self.params.get_pack_indexes(fixed_params)
             out = [
-                v.get_result()
-                for i, v in enumerate(self[result_name])
+                v.get_result() for i, v in enumerate(self[result_name])
                 if i in indexes
             ]
         else:
@@ -1316,10 +1332,11 @@ class SimulationResults(JsonSerializable):
             out = [v.get_result() for v in self[result_name]]
         return out
 
-    def get_result_values_confidence_intervals(self,
-                                               result_name,
-                                               P=95,
-                                               fixed_params=None):
+    def get_result_values_confidence_intervals(
+            self,
+            result_name: str,
+            P: float = 95.0,
+            fixed_params: Optional[Dict[str, Any]] = None) -> List[np.ndarray]:
         """
         Get the values for the results with name `result_name`.
 
@@ -1364,8 +1381,7 @@ class SimulationResults(JsonSerializable):
 
             out = [
                 v.get_confidence_interval(P)
-                for i, v in enumerate(self[result_name])
-                if i in indexes
+                for i, v in enumerate(self[result_name]) if i in indexes
             ]
         else:
             # If fixed_params is an empty dictionary (default value) then
@@ -1373,7 +1389,7 @@ class SimulationResults(JsonSerializable):
             out = [i.get_confidence_interval(P) for i in self[result_name]]
         return out
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Result:
         """
         Get the value of the desired result.
 
@@ -1393,7 +1409,7 @@ class SimulationResults(JsonSerializable):
         # else:
         #     raise KeyError("Invalid key: %s" % key)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Get the number of results stored in self.
 
         Returns
@@ -1403,7 +1419,7 @@ class SimulationResults(JsonSerializable):
         """
         return len(self._results)
 
-    def __iter__(self):  # pragma: no cover
+    def __iter__(self) -> Iterator[Result]:  # pragma: no cover
         # """Get an iterator to the internal dictionary. Therefore iterating
         # through this will iterate through the dictionary keys, that is, the
         # name of the results stored in the SimulationResults object.
@@ -1412,17 +1428,9 @@ class SimulationResults(JsonSerializable):
         Get an iterator to the results stored in the SimulationResults
         object.
         """
-        try:
-            # This is for python 2
-            # noinspection PyUnresolvedReferences,PyCompatibility
-            iterator = self._results.itervalues()
-        except AttributeError:
-            # This is for python 3
-            iterator = iter(self._results.values())
+        return iter(self._results.values())
 
-        return iterator
-
-    def get_filename_with_replaced_params(self, filename):
+    def get_filename_with_replaced_params(self, filename: str) -> str:
         """
         Perform the string replacements in filename with simulation parameters.
 
@@ -1454,7 +1462,7 @@ class SimulationResults(JsonSerializable):
         return filename
 
     # noinspection PyMethodMayBeStatic
-    def _to_dict(self):
+    def _to_dict(self) -> Dict[str, Any]:
         """
         Convert the SimulationResults object to a dictionary representation.
 
@@ -1465,7 +1473,8 @@ class SimulationResults(JsonSerializable):
         """
 
         # -----------------------------------------------------------------
-        def list_of_results_to_list_of_dicts(result_list):
+        def list_of_results_to_list_of_dicts(
+                result_list: List[Result]) -> List[Dict[str, Any]]:
             """
             Convert a list of Result objects into a list of dictionary
             representations ob Result objects.
@@ -1500,7 +1509,7 @@ class SimulationResults(JsonSerializable):
         return d
 
     @staticmethod
-    def _from_dict(d):
+    def _from_dict(d: Dict[str, Any]) -> Result:
         """
         Convert from a dictionary to a SimulationResults object.
 
@@ -1514,8 +1523,8 @@ class SimulationResults(JsonSerializable):
         Result
             The converted object.
         """
-
-        def list_of_dicts_to_list_of_results(result_list):
+        def list_of_dicts_to_list_of_results(
+                result_list: Dict[str, Any]) -> List[Result]:
             """
             Convert a list of dictionary representations of Result objects to a
             list of Result objects.
@@ -1546,7 +1555,7 @@ class SimulationResults(JsonSerializable):
 
         return simresults
 
-    def _save_to_pickle(self, filename):
+    def _save_to_pickle(self, filename: str) -> None:
         """
         Save the SimulationResults object to the pickle file with name
         `filename`.
@@ -1567,7 +1576,7 @@ class SimulationResults(JsonSerializable):
             # specifying the encoding when unpickling the file.
             pickle.dump(self, output, protocol=2)
 
-    def _save_to_json(self, filename):
+    def _save_to_json(self, filename: str) -> None:
         """
         Save the SimulationResults object to the json file with name
         `filename`.
@@ -1580,7 +1589,7 @@ class SimulationResults(JsonSerializable):
         with open(filename, 'w') as output:
             output.write(self.to_json())
 
-    def save_to_file(self, filename):
+    def save_to_file(self, filename: str) -> None:
         """
         Save the SimulationResults to the file `filename`.
 
@@ -1630,7 +1639,7 @@ class SimulationResults(JsonSerializable):
         return filename
 
     @staticmethod
-    def _load_from_pickle_file(filename):
+    def _load_from_pickle_file(filename: str) -> "SimulationResults":
         with open(filename, 'rb') as inputfile:
             try:
                 obj = pickle.load(inputfile)
@@ -1656,14 +1665,14 @@ class SimulationResults(JsonSerializable):
         return obj
 
     @staticmethod
-    def _load_from_json_file(filename):
+    def _load_from_json_file(filename: str) -> "SimulationResults":
         with open(filename, 'r') as inputfile:
             json_data = inputfile.read()
         obj = SimulationResults.from_json(json_data)
         return obj
 
     @staticmethod
-    def load_from_file(filename):
+    def load_from_file(filename: str) -> "SimulationResults":
         """
         Load the SimulationResults from the file `filename`.
 
@@ -1852,7 +1861,7 @@ class SimulationResults(JsonSerializable):
     #     fid.close()
     #     return simresults
 
-    def to_dataframe(self):
+    def to_dataframe(self) -> pd.DataFrame:
         """
         Convert the SimulationResults object to a pandas DataFrame.
         """
@@ -1871,7 +1880,7 @@ class SimulationResults(JsonSerializable):
         except AttributeError:  # pragma: no cover
             pass
 
-        df = DataFrame(data)
+        df = pd.DataFrame(data)
         return df
 
 

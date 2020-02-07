@@ -23,7 +23,7 @@ except NameError:  # pragma: no cover
 try:
     import cPickle as pickle
 except ImportError as e:  # pragma: no cover
-    import pickle
+    import pickle  # type: ignore
 
 import unittest
 import doctest
@@ -52,7 +52,6 @@ class CustomTestCase(unittest.TestCase):
     set the values of the variables `_new_test`, `iasolver_state`,
     `channel_state`, `noise_state` and `iasolver`.
     """
-
     def __init__(self, methodName='runTest'):
         """Init method.
         """
@@ -92,7 +91,8 @@ class CustomTestCase(unittest.TestCase):
                 'noise_state': self.noise_state
             }
             with open(filename, 'wb') as fid:
-                pickle.dump(MMSE_test_solve_state, fid, pickle.HIGHEST_PROTOCOL)
+                pickle.dump(MMSE_test_solve_state, fid,
+                            pickle.HIGHEST_PROTOCOL)
 
     def _maybe_load_state_and_randomize_channel(  # pragma: no cover
         self,
@@ -165,7 +165,6 @@ class CustomTestCase(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class IaDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the ia package. """
-
     def test_ia(self):
         """Run doctests in the ia module."""
         doctest.testmod(pyphysim.ia)
@@ -180,7 +179,6 @@ class IASolverBaseClassConcret(IASolverBaseClass):
     """
     Concrete class derived from IASolverBaseClass for testing purposes.
     """
-
     def solve(self, Ns, P=None):
         pass  # pragma: nocover
 
@@ -192,7 +190,6 @@ class IterativeIASolverBaseClassConcrete(IterativeIASolverBaseClass):
     Concrete class derived from IterativeIASolverBaseClass for testing
     purposes.
     """
-
     def _updateW(self):
         pass
 
@@ -201,7 +198,6 @@ class IterativeIASolverBaseClassConcrete(IterativeIASolverBaseClass):
 
 
 class IASolverBaseClassTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -301,7 +297,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.assertAlmostEqual(norm(self.iasolver.full_F[2], 'fro')**2, P[2])
 
         # The shape of the precoder is the number of users
-        self.assertEqual(self.iasolver._F.shape, (K,))
+        self.assertEqual(self.iasolver._F.shape, (K, ))
 
         # The power of each user
         np.testing.assert_array_almost_equal(self.iasolver.P, P)
@@ -642,8 +638,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = self.iasolver.full_F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = np.dot(
+                    Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
@@ -669,8 +665,8 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = self.iasolver.full_F[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = np.dot(
+                    Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
                 np.testing.assert_array_almost_equal(
                     expected_second_part,
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
@@ -704,37 +700,37 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.iasolver._multiUserChannel.randomize(Nr, Nt, K)
         self.iasolver.randomizeF(Ns, P)
 
-        V0 = np.matrix(self.iasolver.full_F[0])
-        V1 = np.matrix(self.iasolver.full_F[1])
-        V2 = np.matrix(self.iasolver.full_F[2])
-        V00 = V0[:, 0]
-        V01 = V0[:, 1]
-        V10 = V1[:, 0]
-        V11 = V1[:, 1]
-        V20 = V2[:, 0]
-        V21 = V2[:, 1]
+        V0 = self.iasolver.full_F[0]
+        V1 = self.iasolver.full_F[1]
+        V2 = self.iasolver.full_F[2]
+        V00 = V0[:, 0, np.newaxis]  # Guaranteed to be column vectors
+        V01 = V0[:, 1, np.newaxis]  # Guaranteed to be column vectors
+        V10 = V1[:, 0, np.newaxis]  # Guaranteed to be column vectors
+        V11 = V1[:, 1, np.newaxis]  # Guaranteed to be column vectors
+        V20 = V2[:, 0, np.newaxis]  # Guaranteed to be column vectors
+        V21 = V2[:, 1, np.newaxis]  # Guaranteed to be column vectors
 
-        H00 = np.matrix(self.iasolver._get_channel(0, 0))
-        H01 = np.matrix(self.iasolver._get_channel(0, 1))
-        H02 = np.matrix(self.iasolver._get_channel(0, 2))
-        H10 = np.matrix(self.iasolver._get_channel(1, 0))
-        H11 = np.matrix(self.iasolver._get_channel(1, 1))
-        H12 = np.matrix(self.iasolver._get_channel(1, 2))
-        H20 = np.matrix(self.iasolver._get_channel(2, 0))
-        H21 = np.matrix(self.iasolver._get_channel(2, 1))
-        H22 = np.matrix(self.iasolver._get_channel(2, 2))
+        H00 = self.iasolver._get_channel(0, 0)
+        H01 = self.iasolver._get_channel(0, 1)
+        H02 = self.iasolver._get_channel(0, 2)
+        H10 = self.iasolver._get_channel(1, 0)
+        H11 = self.iasolver._get_channel(1, 1)
+        H12 = self.iasolver._get_channel(1, 2)
+        H20 = self.iasolver._get_channel(2, 0)
+        H21 = self.iasolver._get_channel(2, 1)
+        H22 = self.iasolver._get_channel(2, 2)
 
         # Noise matrix
         Z = np.eye(4) * noise_power
 
-        expected_first_part_user0 = (H00 * V00 * V00.H * H00.H +
-                                     H00 * V01 * V01.H * H00.H +
-                                     H01 * V10 * V10.H * H01.H +
-                                     H01 * V11 * V11.H * H01.H +
-                                     H02 * V20 * V20.H * H02.H +
-                                     H02 * V21 * V21.H * H02.H)
-        expected_second_part_user0_l0 = H00 * V00 * V00.H * H00.H
-        expected_second_part_user0_l1 = H00 * V01 * V01.H * H00.H
+        expected_first_part_user0 = (H00 @ V00 @ V00.T.conj() @ H00.T.conj() +
+                                     H00 @ V01 @ V01.T.conj() @ H00.T.conj() +
+                                     H01 @ V10 @ V10.T.conj() @ H01.T.conj() +
+                                     H01 @ V11 @ V11.T.conj() @ H01.T.conj() +
+                                     H02 @ V20 @ V20.T.conj() @ H02.T.conj() +
+                                     H02 @ V21 @ V21.T.conj() @ H02.T.conj())
+        expected_second_part_user0_l0 = H00 @ V00 @ V00.T.conj() @ H00.T.conj()
+        expected_second_part_user0_l1 = H00 @ V01 @ V01.T.conj() @ H00.T.conj()
         np.testing.assert_array_almost_equal(
             expected_first_part_user0,
             self.iasolver._calc_Bkl_cov_matrix_first_part(0))
@@ -753,14 +749,14 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_B00, B0[0])
         np.testing.assert_array_almost_equal(expected_B01, B0[1])
 
-        expected_first_part_user1 = (H10 * V00 * V00.H * H10.H +
-                                     H10 * V01 * V01.H * H10.H +
-                                     H11 * V10 * V10.H * H11.H +
-                                     H11 * V11 * V11.H * H11.H +
-                                     H12 * V20 * V20.H * H12.H +
-                                     H12 * V21 * V21.H * H12.H)
-        expected_second_part_user1_l0 = H11 * V10 * V10.H * H11.H
-        expected_second_part_user1_l1 = H11 * V11 * V11.H * H11.H
+        expected_first_part_user1 = (H10 @ V00 @ V00.T.conj() @ H10.T.conj() +
+                                     H10 @ V01 @ V01.T.conj() @ H10.T.conj() +
+                                     H11 @ V10 @ V10.T.conj() @ H11.T.conj() +
+                                     H11 @ V11 @ V11.T.conj() @ H11.T.conj() +
+                                     H12 @ V20 @ V20.T.conj() @ H12.T.conj() +
+                                     H12 @ V21 @ V21.T.conj() @ H12.T.conj())
+        expected_second_part_user1_l0 = H11 @ V10 @ V10.T.conj() @ H11.T.conj()
+        expected_second_part_user1_l1 = H11 @ V11 @ V11.T.conj() @ H11.T.conj()
         np.testing.assert_array_almost_equal(
             expected_first_part_user1,
             self.iasolver._calc_Bkl_cov_matrix_first_part(1))
@@ -780,14 +776,14 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_B10, B1[0])
         np.testing.assert_array_almost_equal(expected_B11, B1[1])
 
-        expected_first_part_user2 = (H20 * V00 * V00.H * H20.H +
-                                     H20 * V01 * V01.H * H20.H +
-                                     H21 * V10 * V10.H * H21.H +
-                                     H21 * V11 * V11.H * H21.H +
-                                     H22 * V20 * V20.H * H22.H +
-                                     H22 * V21 * V21.H * H22.H)
-        expected_second_part_user2_l0 = H22 * V20 * V20.H * H22.H
-        expected_second_part_user2_l1 = H22 * V21 * V21.H * H22.H
+        expected_first_part_user2 = (H20 @ V00 @ V00.T.conj() @ H20.T.conj() +
+                                     H20 @ V01 @ V01.T.conj() @ H20.T.conj() +
+                                     H21 @ V10 @ V10.T.conj() @ H21.T.conj() +
+                                     H21 @ V11 @ V11.T.conj() @ H21.T.conj() +
+                                     H22 @ V20 @ V20.T.conj() @ H22.T.conj() +
+                                     H22 @ V21 @ V21.T.conj() @ H22.T.conj())
+        expected_second_part_user2_l0 = H22 @ V20 @ V20.T.conj() @ H22.T.conj()
+        expected_second_part_user2_l1 = H22 @ V21 @ V21.T.conj() @ H22.T.conj()
         np.testing.assert_array_almost_equal(
             expected_first_part_user2,
             self.iasolver._calc_Bkl_cov_matrix_first_part(2))
@@ -814,7 +810,6 @@ class IASolverBaseClassTestCase(unittest.TestCase):
 
 
 class ClosedFormIASolverTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -842,14 +837,15 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             iasolver2.solve(Ns)
 
     def test_calc_E(self):
-        H31 = np.matrix(self.iasolver._get_channel(2, 0))
-        H32 = np.matrix(self.iasolver._get_channel(2, 1))
-        H12 = np.matrix(self.iasolver._get_channel(0, 1))
-        H13 = np.matrix(self.iasolver._get_channel(0, 2))
-        H23 = np.matrix(self.iasolver._get_channel(1, 2))
-        H21 = np.matrix(self.iasolver._get_channel(1, 0))
+        H31 = self.iasolver._get_channel(2, 0)
+        H32 = self.iasolver._get_channel(2, 1)
+        H12 = self.iasolver._get_channel(0, 1)
+        H13 = self.iasolver._get_channel(0, 2)
+        H23 = self.iasolver._get_channel(1, 2)
+        H21 = self.iasolver._get_channel(1, 0)
 
-        expected_E = H31.I * H32 * H12.I * H13 * H23.I * H21
+        inv = np.linalg.inv
+        expected_E = inv(H31) @ H32 @ inv(H12) @ H13 @ inv(H23) @ H21
         np.testing.assert_array_almost_equal(expected_E,
                                              self.iasolver._calc_E())
 
@@ -859,7 +855,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         E = self.iasolver._calc_E()
         all_eigenvectors = np.linalg.eig(E)[1]
         expected_all_subsets = [
-            all_eigenvectors[:, (0,)], all_eigenvectors[:, (1,)]
+            all_eigenvectors[:, (0, )], all_eigenvectors[:, (1, )]
         ]
 
         all_subsets = self.iasolver._calc_all_F_initializations(Ns)
@@ -895,18 +891,21 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         Ns = 1
         E = self.iasolver._calc_E()
         [_, eigenvectors] = np.linalg.eig(E)
-        # V1 is the expected precoder for the first user
-        V1 = np.matrix(eigenvectors[:, 0:Ns])
 
-        H32 = np.matrix(self.iasolver._get_channel(2, 1))
-        H31 = np.matrix(self.iasolver._get_channel(2, 0))
-        H23 = np.matrix(self.iasolver._get_channel(1, 2))
-        H21 = np.matrix(self.iasolver._get_channel(1, 0))
+        inv = np.linalg.inv
+
+        # V1 is the expected precoder for the first user
+        V1 = eigenvectors[:, 0:Ns]
+
+        H32 = self.iasolver._get_channel(2, 1)
+        H31 = self.iasolver._get_channel(2, 0)
+        H23 = self.iasolver._get_channel(1, 2)
+        H21 = self.iasolver._get_channel(1, 0)
 
         # Expected precoder for the second user
-        V2 = H32.I * H31 * V1
+        V2 = inv(H32) @ H31 @ V1
         # Expected precoder for the third user
-        V3 = H23.I * H21 * V1
+        V3 = inv(H23) @ H21 @ V1
 
         # Normalize the precoders
         V1 /= norm(V1, 'fro')
@@ -933,12 +932,12 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         self.assertAlmostEqual(norm(self.iasolver.full_F[1], 'fro')**2, P[1])
         self.assertAlmostEqual(norm(self.iasolver.full_F[2], 'fro')**2, P[2])
 
-        np.testing.assert_array_almost_equal(self.iasolver.full_F[0],
-                                             self.iasolver.F[0] * np.sqrt(P[0]))
-        np.testing.assert_array_almost_equal(self.iasolver.full_F[1],
-                                             self.iasolver.F[1] * np.sqrt(P[1]))
-        np.testing.assert_array_almost_equal(self.iasolver.full_F[2],
-                                             self.iasolver.F[2] * np.sqrt(P[2]))
+        np.testing.assert_array_almost_equal(
+            self.iasolver.full_F[0], self.iasolver.F[0] * np.sqrt(P[0]))
+        np.testing.assert_array_almost_equal(
+            self.iasolver.full_F[1], self.iasolver.F[1] * np.sqrt(P[1]))
+        np.testing.assert_array_almost_equal(
+            self.iasolver.full_F[2], self.iasolver.F[2] * np.sqrt(P[2]))
 
     # noinspection PyTypeChecker
     def test_updateW(self):
@@ -953,30 +952,30 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
         self.iasolver._updateF()
         self.iasolver._updateW()
-        V1 = np.matrix(self.iasolver.F[0])
-        V2 = np.matrix(self.iasolver.F[1])
-        # V3 = np.matrix(self.iasolver.F[2])
+        V1 = self.iasolver.F[0]
+        V2 = self.iasolver.F[1]
+        # V3 = self.iasolver.F[2]
 
-        full_V1 = np.matrix(self.iasolver.full_F[0])
-        full_V2 = np.matrix(self.iasolver.full_F[1])
-        full_V3 = np.matrix(self.iasolver.full_F[2])
+        full_V1 = self.iasolver.full_F[0]
+        full_V2 = self.iasolver.full_F[1]
+        full_V3 = self.iasolver.full_F[2]
 
-        H11 = np.matrix(self.iasolver._get_channel(0, 0))
-        H12 = np.matrix(self.iasolver._get_channel(0, 1))
-        H13 = np.matrix(self.iasolver._get_channel(0, 2))
-        H21 = np.matrix(self.iasolver._get_channel(1, 0))
-        H22 = np.matrix(self.iasolver._get_channel(1, 1))
-        H23 = np.matrix(self.iasolver._get_channel(1, 2))
-        H31 = np.matrix(self.iasolver._get_channel(2, 0))
-        H32 = np.matrix(self.iasolver._get_channel(2, 1))
-        H33 = np.matrix(self.iasolver._get_channel(2, 2))
+        H11 = self.iasolver._get_channel(0, 0)
+        H12 = self.iasolver._get_channel(0, 1)
+        H13 = self.iasolver._get_channel(0, 2)
+        H21 = self.iasolver._get_channel(1, 0)
+        H22 = self.iasolver._get_channel(1, 1)
+        H23 = self.iasolver._get_channel(1, 2)
+        H31 = self.iasolver._get_channel(2, 0)
+        H32 = self.iasolver._get_channel(2, 1)
+        H33 = self.iasolver._get_channel(2, 2)
 
-        U1 = H12 * V2
-        U1 = leig(U1 * U1.H, 1)[0]
-        U2 = H21 * V1
-        U2 = leig(U2 * U2.H, 1)[0]
-        U3 = H31 * V1
-        U3 = leig(U3 * U3.H, 1)[0]
+        U1 = H12 @ V2
+        U1 = leig(U1 @ U1.T.conj(), 1)[0]
+        U2 = H21 @ V1
+        U2 = leig(U2 @ U2.T.conj(), 1)[0]
+        U3 = H31 @ V1
+        U3 = leig(U3 @ U3.T.conj(), 1)[0]
 
         np.testing.assert_array_almost_equal(self.iasolver._W[0], U1)
         np.testing.assert_array_almost_equal(self.iasolver._W[1], U2)
@@ -984,24 +983,24 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
         # xxxxx Test the direct channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.assertAlmostEqual(
-            np.dot(self.iasolver.full_W_H[0], np.dot(H11, full_V1))[0, 0], 1.0)
+            (self.iasolver.full_W_H[0] @ H11 @ full_V1)[0, 0], 1.0)
         self.assertAlmostEqual(
-            np.dot(self.iasolver.full_W_H[1], np.dot(H22, full_V2))[0, 0], 1.0)
+            (self.iasolver.full_W_H[1] @ H22 @ full_V2)[0, 0], 1.0)
         self.assertAlmostEqual(
-            np.dot(self.iasolver.full_W_H[2], np.dot(H33, full_V3))[0, 0], 1.0)
+            (self.iasolver.full_W_H[2] @ H33 @ full_V3)[0, 0], 1.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Test if the interference is cancelled xxxxxxxxxxxxxxxxxxxxx
-        I1 = (np.dot(self.iasolver.W_H[0], np.dot(H12, self.iasolver.F[1])) +
-              np.dot(self.iasolver.W_H[0], np.dot(H13, self.iasolver.F[2])))
+        I1 = ((self.iasolver.W_H[0] @ H12 @ self.iasolver.F[1]) +
+              (self.iasolver.W_H[0] @ H13 @ self.iasolver.F[2]))
         np.testing.assert_array_almost_equal(I1, 0.0)
 
-        I2 = (np.dot(self.iasolver.W_H[1], np.dot(H21, self.iasolver.F[0])) +
-              np.dot(self.iasolver.W_H[1], np.dot(H23, self.iasolver.F[2])))
+        I2 = (self.iasolver.W_H[1] @ H21 @ self.iasolver.F[0] +
+              self.iasolver.W_H[1] @ H23 @ self.iasolver.F[2])
         np.testing.assert_array_almost_equal(I2, 0.0)
 
-        I3 = (np.dot(self.iasolver.W_H[2], np.dot(H31, self.iasolver.F[0])) +
-              np.dot(self.iasolver.W_H[2], np.dot(H32, self.iasolver.F[1])))
+        I3 = (self.iasolver.W_H[2] @ H31 @ self.iasolver.F[0] +
+              self.iasolver.W_H[2] @ H32 @ self.iasolver.F[1])
         np.testing.assert_array_almost_equal(I3, 0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1097,7 +1096,6 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         sum_capacity1 = np.sum(np.log2(1 + np.hstack(SINRs)))
         # Sum Capacity using the first initialization
         sum_capacity2 = np.sum(np.log2(1 + np.hstack(SINRs2)))
-
         self.assertTrue(sum_capacity1 >= sum_capacity2)
 
     def test_full_W_H_property(self):
@@ -1113,7 +1111,6 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
 
 class IterativeIASolverBaseClassTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -1133,14 +1130,17 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
         F_new[2] = F2.copy()
 
         self.assertFalse(
-            IterativeIASolverBaseClass._is_diff_significant(F_old, F_new, 1e-3))
+            IterativeIASolverBaseClass._is_diff_significant(
+                F_old, F_new, 1e-3))
         F_new[1][1, 2] += 9e-4
         F_new[2][0, 0] += 6e-4
         self.assertFalse(
-            IterativeIASolverBaseClass._is_diff_significant(F_old, F_new, 1e-3))
+            IterativeIASolverBaseClass._is_diff_significant(
+                F_old, F_new, 1e-3))
         F_new[2][2, 2] += 2e-3
         self.assertTrue(
-            IterativeIASolverBaseClass._is_diff_significant(F_old, F_new, 1e-3))
+            IterativeIASolverBaseClass._is_diff_significant(
+                F_old, F_new, 1e-3))
 
     def test_initialize_with_property(self):
         channel = channels.multiuser.MultiUserChannelMatrix()
@@ -1188,7 +1188,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # solver._F was randomly initialized
         self.assertIsNotNone(solver._F)
-        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F.shape, (3, ))
         self.assertEqual(solver._F[0].shape, (4, Ns))
         self.assertEqual(solver._F[1].shape, (4, Ns))
         self.assertEqual(solver._F[2].shape, (4, Ns))
@@ -1212,7 +1212,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # solver._F was initialized from the closed form solution
         self.assertIsNotNone(solver._F)
-        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F.shape, (3, ))
         self.assertEqual(solver._F[0].shape, (4, Ns))
         self.assertEqual(solver._F[1].shape, (4, Ns))
         self.assertEqual(solver._F[2].shape, (4, Ns))
@@ -1222,7 +1222,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # solver._W was initialized from the closed form solution
         self.assertIsNotNone(solver._W)
-        self.assertEqual(solver._W.shape, (3,))
+        self.assertEqual(solver._W.shape, (3, ))
         self.assertEqual(solver._W[0].shape, (4, Ns))
         self.assertEqual(solver._W[1].shape, (4, Ns))
         self.assertEqual(solver._W[2].shape, (4, Ns))
@@ -1242,7 +1242,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # solver._F was initialized from the closed form solution
         self.assertIsNotNone(solver._F)
-        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F.shape, (3, ))
         self.assertEqual(solver._F[0].shape, (4, Ns))
         self.assertEqual(solver._F[1].shape, (4, Ns))
         self.assertEqual(solver._F[2].shape, (4, Ns))
@@ -1252,7 +1252,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # solver._W was initialized from the closed form solution
         self.assertIsNotNone(solver._W)
-        self.assertEqual(solver._W.shape, (3,))
+        self.assertEqual(solver._W.shape, (3, ))
         self.assertEqual(solver._W[0].shape, (4, Ns))
         self.assertEqual(solver._W[1].shape, (4, Ns))
         self.assertEqual(solver._W[2].shape, (4, Ns))
@@ -1274,7 +1274,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 
         # solver._F was randomly initialized
         self.assertIsNotNone(solver._F)
-        self.assertEqual(solver._F.shape, (3,))
+        self.assertEqual(solver._F.shape, (3, ))
         self.assertEqual(solver._F[0].shape, (4, Ns))
         self.assertEqual(solver._F[1].shape, (4, Ns))
         self.assertEqual(solver._F[2].shape, (4, Ns))
@@ -1304,7 +1304,6 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class AlternatingMinIASolverTestCase(CustomTestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
-
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -1581,23 +1580,23 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         multiUserChannel.noise_var = 1e-10
         iasolver.solve(Ns, P)
 
-        full_F0 = np.matrix(iasolver.full_F[0])
-        full_F1 = np.matrix(iasolver.full_F[1])
-        full_F2 = np.matrix(iasolver.full_F[2])
+        full_F0 = iasolver.full_F[0]
+        full_F1 = iasolver.full_F[1]
+        full_F2 = iasolver.full_F[2]
 
-        full_W_H0 = np.matrix(iasolver.full_W_H[0])
-        full_W_H1 = np.matrix(iasolver.full_W_H[1])
-        full_W_H2 = np.matrix(iasolver.full_W_H[2])
+        full_W_H0 = iasolver.full_W_H[0]
+        full_W_H1 = iasolver.full_W_H[1]
+        full_W_H2 = iasolver.full_W_H[2]
 
-        H00 = np.matrix(iasolver._get_channel(0, 0))
-        H01 = np.matrix(iasolver._get_channel(0, 1))
-        H02 = np.matrix(iasolver._get_channel(0, 2))
-        H10 = np.matrix(iasolver._get_channel(1, 0))
-        H11 = np.matrix(iasolver._get_channel(1, 1))
-        H12 = np.matrix(iasolver._get_channel(1, 2))
-        H20 = np.matrix(iasolver._get_channel(2, 0))
-        H21 = np.matrix(iasolver._get_channel(2, 1))
-        H22 = np.matrix(iasolver._get_channel(2, 2))
+        H00 = iasolver._get_channel(0, 0)
+        H01 = iasolver._get_channel(0, 1)
+        H02 = iasolver._get_channel(0, 2)
+        H10 = iasolver._get_channel(1, 0)
+        H11 = iasolver._get_channel(1, 1)
+        H12 = iasolver._get_channel(1, 2)
+        H20 = iasolver._get_channel(2, 0)
+        H21 = iasolver._get_channel(2, 1)
+        H22 = iasolver._get_channel(2, 2)
 
         # Perform the actual tests
         try:
@@ -1608,37 +1607,37 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(Ns))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(Ns))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(Ns))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
-            norm_value = np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2
 
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
         except AssertionError:  # pragma: nocover
@@ -1677,58 +1676,58 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         SINRs = iasolver.calc_SINR_old()
 
         # Calculates the expected SINRs
-        F0 = np.matrix(iasolver.F[0])
-        F1 = np.matrix(iasolver.F[1])
-        F2 = np.matrix(iasolver.F[2])
+        F0 = iasolver.F[0]
+        F1 = iasolver.F[1]
+        F2 = iasolver.F[2]
 
-        W0 = np.matrix(iasolver.W[0])
-        W1 = np.matrix(iasolver.W[1])
-        W2 = np.matrix(iasolver.W[2])
-        W0_H = np.matrix(iasolver.W_H[0])
-        W1_H = np.matrix(iasolver.W_H[1])
-        W2_H = np.matrix(iasolver.W_H[2])
+        W0 = iasolver.W[0]
+        W1 = iasolver.W[1]
+        W2 = iasolver.W[2]
+        W0_H = iasolver.W_H[0]
+        W1_H = iasolver.W_H[1]
+        W2_H = iasolver.W_H[2]
 
-        H00 = np.matrix(iasolver._get_channel(0, 0))
-        H11 = np.matrix(iasolver._get_channel(1, 1))
-        H22 = np.matrix(iasolver._get_channel(2, 2))
+        H00 = iasolver._get_channel(0, 0)
+        H11 = iasolver._get_channel(1, 1)
+        H22 = iasolver._get_channel(2, 2)
 
-        H01 = np.matrix(iasolver._get_channel(0, 1))
-        H02 = np.matrix(iasolver._get_channel(0, 2))
-        H10 = np.matrix(iasolver._get_channel(1, 0))
-        H12 = np.matrix(iasolver._get_channel(1, 2))
-        H20 = np.matrix(iasolver._get_channel(2, 0))
-        H21 = np.matrix(iasolver._get_channel(2, 1))
+        H01 = iasolver._get_channel(0, 1)
+        H02 = iasolver._get_channel(0, 2)
+        H10 = iasolver._get_channel(1, 0)
+        H12 = iasolver._get_channel(1, 2)
+        H20 = iasolver._get_channel(2, 0)
+        H21 = iasolver._get_channel(2, 1)
 
         expected_SINRs = np.empty(K, dtype=np.ndarray)
 
         # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        numerator0 = W0_H * H00 * F0
-        numerator0 = numerator0 * numerator0.H
+        numerator0 = W0_H @ H00 @ F0
+        numerator0 = numerator0 @ numerator0.T.conj()
         numerator0 = np.abs(np.diag(numerator0))
 
-        denominator0 = W0_H * H01 * F1 + W0_H * H02 * F2
-        denominator0 = denominator0 * denominator0.H
+        denominator0 = W0_H @ H01 @ F1 + W0_H @ H02 @ F2
+        denominator0 = denominator0 @ denominator0.T.conj()
         denominator0 = np.abs(np.diag(denominator0))
 
         expected_SINRs[0] = numerator0 / denominator0
 
         # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        numerator1 = W1_H * H11 * F1
-        numerator1 = numerator1 * numerator1.H
+        numerator1 = W1_H @ H11 @ F1
+        numerator1 = numerator1 @ numerator1.T.conj()
         numerator1 = np.abs(np.diag(numerator1))
 
-        denominator1 = W1_H * H10 * F0 + W1_H * H12 * F2
-        denominator1 = denominator1 * denominator1.H
+        denominator1 = W1_H @ H10 @ F0 + W1_H @ H12 @ F2
+        denominator1 = denominator1 @ denominator1.T.conj()
         denominator1 = np.abs(np.diag(denominator1))
         expected_SINRs[1] = numerator1 / denominator1
 
         # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        numerator2 = W2_H * H22 * F2
-        numerator2 = numerator2 * numerator2.H
+        numerator2 = W2_H @ H22 @ F2
+        numerator2 = numerator2 @ numerator2.T.conj()
         numerator2 = np.abs(np.diag(numerator2))
 
-        denominator2 = W2_H * H20 * F0 + W2_H * H21 * F1
-        denominator2 = denominator2 * denominator2.H
+        denominator2 = W2_H @ H20 @ F0 + W2_H @ H21 @ F1
+        denominator2 = denominator2 @ denominator2.T.conj()
         denominator2 = np.abs(np.diag(denominator2))
         expected_SINRs[2] = numerator2 / denominator2
 
@@ -1744,17 +1743,17 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         expected_SINRs2 = np.empty(K, dtype=np.ndarray)
 
         # xxxxx k = 0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_term0 = W0_H * W0 * noise_var
+        noise_term0 = W0_H @ W0 * noise_var
         denominator0_with_noise = denominator0 + np.abs(np.diag(noise_term0))
         expected_SINRs2[0] = numerator0 / denominator0_with_noise
 
         # xxxxx k = 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_term1 = W1_H * W1 * noise_var
+        noise_term1 = W1_H @ W1 * noise_var
         denominator1_with_noise = denominator1 + np.abs(np.diag(noise_term1))
         expected_SINRs2[1] = numerator1 / denominator1_with_noise
 
         # xxxxx k = 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        noise_term2 = W2_H * W2 * noise_var
+        noise_term2 = W2_H @ W2 * noise_var
         denominator2_with_noise = denominator2 + np.abs(np.diag(noise_term2))
         expected_SINRs2[2] = numerator2 / denominator2_with_noise
 
@@ -1774,7 +1773,6 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
 # noinspection PyMethodMayBeStatic
 class MaxSinrIASolverTestCase(CustomTestCase):
-
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -1827,8 +1825,8 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                 # second_part = $\frac{P[k]}{Ns} \mtH^{[kk]} \mtV_{\star l}^{[k]} \mtV_{\star l}^{[k]\dagger} \mtH^{[kk] \dagger}$
                 Vkl = self.iasolver._W[k][:, l:l + 1]
                 Vkl_H = Vkl.transpose().conjugate()
-                expected_second_part = np.dot(Hkk,
-                                              np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
+                expected_second_part = np.dot(
+                    Hkk, np.dot(np.dot(Vkl, Vkl_H), Hkk_H))
                 expected_second_part = (self.P[k] / self.Ns[k]) * \
                                        expected_second_part
                 np.testing.assert_array_almost_equal(
@@ -1971,10 +1969,10 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                 Vkl = iasolver.full_F[k][:, l:l + 1]
                 aux = np.dot(Ukl_H, np.dot(Hkk, Vkl))
 
-                expectedSINRkl = np.asscalar(
+                expectedSINRkl = (
                     np.dot(aux,
                            aux.transpose().conjugate()) /
-                    np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl)))
+                    np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))).item()
 
                 self.assertAlmostEqual(expectedSINRkl, SINR_k_all_l[l])
 
@@ -2232,15 +2230,15 @@ class MaxSinrIASolverTestCase(CustomTestCase):
             self._save_state(filename='MaxSINR_test_solve_state.pickle')
             raise  # re-raises the last exception
 
-        H00 = np.matrix(iasolver._get_channel(0, 0))
-        H11 = np.matrix(iasolver._get_channel(1, 1))
-        H22 = np.matrix(iasolver._get_channel(2, 2))
-        H01 = np.matrix(iasolver._get_channel(0, 1))
-        H02 = np.matrix(iasolver._get_channel(0, 2))
-        H10 = np.matrix(iasolver._get_channel(1, 0))
-        H12 = np.matrix(iasolver._get_channel(1, 2))
-        H20 = np.matrix(iasolver._get_channel(2, 0))
-        H21 = np.matrix(iasolver._get_channel(2, 1))
+        H00 = iasolver._get_channel(0, 0)
+        H11 = iasolver._get_channel(1, 1)
+        H22 = iasolver._get_channel(2, 2)
+        H01 = iasolver._get_channel(0, 1)
+        H02 = iasolver._get_channel(0, 2)
+        H10 = iasolver._get_channel(1, 0)
+        H12 = iasolver._get_channel(1, 2)
+        H20 = iasolver._get_channel(2, 0)
+        H21 = iasolver._get_channel(2, 1)
 
         full_F0 = iasolver.full_F[0]
         full_F1 = iasolver.full_F[1]
@@ -2252,36 +2250,36 @@ class MaxSinrIASolverTestCase(CustomTestCase):
         # Perform the actual tests
         try:
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(Ns[1]))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(Ns[2]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxxxxxx
-            norm_value = np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2
             self.assertTrue(norm_value < 0.1,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.1,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.1,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.1,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.1,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2
             self.assertTrue(norm_value < 0.1,
                             msg="Norm Value: {0}".format(norm_value))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2359,7 +2357,6 @@ class MaxSinrIASolverTestCase(CustomTestCase):
 
 # TODO: Finish the implementation
 class MinLeakageIASolverTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -2378,25 +2375,27 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
-        Q0 = np.matrix(self.iasolver.calc_Q(0))
-        W0 = np.matrix(self.iasolver._W[0])
-        Q1 = np.matrix(self.iasolver.calc_Q(1))
-        W1 = np.matrix(self.iasolver._W[1])
-        Q2 = np.matrix(self.iasolver.calc_Q(2))
-        W2 = np.matrix(self.iasolver._W[2])
+        Q0 = self.iasolver.calc_Q(0)
+        W0 = self.iasolver._W[0]
+        Q1 = self.iasolver.calc_Q(1)
+        W1 = self.iasolver._W[1]
+        Q2 = self.iasolver.calc_Q(2)
+        W2 = self.iasolver._W[2]
         expected_cost = np.trace(
-            np.abs(W0.H * Q0 * W0 + W1.H * Q1 * W1 + W2.H * Q2 * W2))
+            np.abs(W0.T.conj() @ Q0 @ W0 + W1.T.conj() @ Q1 @ W1 +
+                   W2.T.conj() @ Q2 @ W2))
         self.assertAlmostEqual(expected_cost, self.iasolver.get_cost())
 
         self.iasolver._step()
-        Q0 = np.matrix(self.iasolver.calc_Q(0))
-        W0 = np.matrix(self.iasolver._W[0])
-        Q1 = np.matrix(self.iasolver.calc_Q(1))
-        W1 = np.matrix(self.iasolver._W[1])
-        Q2 = np.matrix(self.iasolver.calc_Q(2))
-        W2 = np.matrix(self.iasolver._W[2])
+        Q0 = self.iasolver.calc_Q(0)
+        W0 = self.iasolver._W[0]
+        Q1 = self.iasolver.calc_Q(1)
+        W1 = self.iasolver._W[1]
+        Q2 = self.iasolver.calc_Q(2)
+        W2 = self.iasolver._W[2]
         expected_cost2 = np.trace(
-            np.abs(W0.H * Q0 * W0 + W1.H * Q1 * W1 + W2.H * Q2 * W2))
+            np.abs(W0.T.conj() @ Q0 @ W0 + W1.T.conj() @ Q1 @ W1 +
+                   W2.T.conj() @ Q2 @ W2))
         self.assertAlmostEqual(expected_cost2, self.iasolver.get_cost())
 
         self.assertTrue(expected_cost2 < expected_cost)
@@ -2519,7 +2518,6 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class MMSEIASolverTestCase(CustomTestCase):
-
     def setUp(self):
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -2696,11 +2694,12 @@ class MMSEIASolverTestCase(CustomTestCase):
         mu = 0.135
         H_herm_U = randn_c(3, 2)
 
-        expected_vi = np.dot(np.linalg.inv(sum_term + mu * np.eye(3)), H_herm_U)
+        expected_vi = np.dot(np.linalg.inv(sum_term + mu * np.eye(3)),
+                             H_herm_U)
 
         vi = MMSEIASolver._calc_Vi_for_a_given_mu(sum_term, mu, H_herm_U)
-        vi2 = MMSEIASolver._calc_Vi_for_a_given_mu2(np.linalg.inv(sum_term), mu,
-                                                    H_herm_U)
+        vi2 = MMSEIASolver._calc_Vi_for_a_given_mu2(np.linalg.inv(sum_term),
+                                                    mu, H_herm_U)
 
         np.testing.assert_array_almost_equal(expected_vi, vi)
         np.testing.assert_array_almost_equal(expected_vi, vi2)
@@ -2903,23 +2902,23 @@ class MMSEIASolverTestCase(CustomTestCase):
 
         self.assertTrue(niter <= self.iasolver.max_iterations)
 
-        full_F0 = np.matrix(self.iasolver.full_F[0])
-        full_F1 = np.matrix(self.iasolver.full_F[1])
-        full_F2 = np.matrix(self.iasolver.full_F[2])
+        full_F0 = self.iasolver.full_F[0]
+        full_F1 = self.iasolver.full_F[1]
+        full_F2 = self.iasolver.full_F[2]
 
-        full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
-        full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
-        full_W_H2 = np.matrix(self.iasolver.full_W_H[2])
+        full_W_H0 = self.iasolver.full_W_H[0]
+        full_W_H1 = self.iasolver.full_W_H[1]
+        full_W_H2 = self.iasolver.full_W_H[2]
 
-        H00 = np.matrix(self.iasolver._get_channel(0, 0))
-        H01 = np.matrix(self.iasolver._get_channel(0, 1))
-        H02 = np.matrix(self.iasolver._get_channel(0, 2))
-        H10 = np.matrix(self.iasolver._get_channel(1, 0))
-        H11 = np.matrix(self.iasolver._get_channel(1, 1))
-        H12 = np.matrix(self.iasolver._get_channel(1, 2))
-        H20 = np.matrix(self.iasolver._get_channel(2, 0))
-        H21 = np.matrix(self.iasolver._get_channel(2, 1))
-        H22 = np.matrix(self.iasolver._get_channel(2, 2))
+        H00 = self.iasolver._get_channel(0, 0)
+        H01 = self.iasolver._get_channel(0, 1)
+        H02 = self.iasolver._get_channel(0, 2)
+        H10 = self.iasolver._get_channel(1, 0)
+        H11 = self.iasolver._get_channel(1, 1)
+        H12 = self.iasolver._get_channel(1, 2)
+        H20 = self.iasolver._get_channel(2, 0)
+        H21 = self.iasolver._get_channel(2, 1)
+        H22 = self.iasolver._get_channel(2, 2)
 
         # Perform the actual tests
         try:
@@ -2933,27 +2932,27 @@ class MMSEIASolverTestCase(CustomTestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(self.Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(self.Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(self.Ns[0]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
             self.assertTrue(
-                np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2 < 0.1)
         except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
@@ -2969,13 +2968,13 @@ class MMSEIASolverTestCase(CustomTestCase):
 
         self.assertTrue(niter <= self.iasolver.max_iterations)
 
-        full_F0 = np.matrix(self.iasolver.full_F[0])
-        full_F1 = np.matrix(self.iasolver.full_F[1])
-        full_F2 = np.matrix(self.iasolver.full_F[2])
+        full_F0 = self.iasolver.full_F[0]
+        full_F1 = self.iasolver.full_F[1]
+        full_F2 = self.iasolver.full_F[2]
 
-        full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
-        full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
-        full_W_H2 = np.matrix(self.iasolver.full_W_H[2])
+        full_W_H0 = self.iasolver.full_W_H[0]
+        full_W_H1 = self.iasolver.full_W_H[1]
+        full_W_H2 = self.iasolver.full_W_H[2]
 
         # Perform the actual tests
         try:
@@ -2989,27 +2988,27 @@ class MMSEIASolverTestCase(CustomTestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(self.Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(self.Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(self.Ns[0]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
             self.assertTrue(
-                np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2 < 0.1)
         except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
@@ -3025,13 +3024,13 @@ class MMSEIASolverTestCase(CustomTestCase):
 
         self.assertTrue(niter <= self.iasolver.max_iterations)
 
-        full_F0 = np.matrix(self.iasolver.full_F[0])
-        full_F1 = np.matrix(self.iasolver.full_F[1])
-        full_F2 = np.matrix(self.iasolver.full_F[2])
+        full_F0 = self.iasolver.full_F[0]
+        full_F1 = self.iasolver.full_F[1]
+        full_F2 = self.iasolver.full_F[2]
 
-        full_W_H0 = np.matrix(self.iasolver.full_W_H[0])
-        full_W_H1 = np.matrix(self.iasolver.full_W_H[1])
-        full_W_H2 = np.matrix(self.iasolver.full_W_H[2])
+        full_W_H0 = self.iasolver.full_W_H[0]
+        full_W_H1 = self.iasolver.full_W_H[1]
+        full_W_H2 = self.iasolver.full_W_H[2]
 
         # Perform the actual tests
         try:
@@ -3045,27 +3044,27 @@ class MMSEIASolverTestCase(CustomTestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(self.Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(self.Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(self.Ns[0]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
             self.assertTrue(
-                np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2 < 0.1)
             self.assertTrue(
-                np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2 < 0.1)
+                np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2 < 0.1)
         except AssertionError:  # pragma: nocover
             # Since this test failed, let's save its state so that we can
             # reproduce it
@@ -3118,7 +3117,6 @@ class MMSEIASolverTestCase(CustomTestCase):
 
 
 class GreedStreamIASolverTestCase(CustomTestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -3158,23 +3156,23 @@ class GreedStreamIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Solution found by the algorithm xxxxxxxxxxxxxxxxxxxxxx
-        full_F0 = np.matrix(iasolver._iasolver.full_F[0])
-        full_F1 = np.matrix(iasolver._iasolver.full_F[1])
-        full_F2 = np.matrix(iasolver._iasolver.full_F[2])
+        full_F0 = iasolver._iasolver.full_F[0]
+        full_F1 = iasolver._iasolver.full_F[1]
+        full_F2 = iasolver._iasolver.full_F[2]
 
-        full_W_H0 = np.matrix(iasolver._iasolver.full_W_H[0])
-        full_W_H1 = np.matrix(iasolver._iasolver.full_W_H[1])
-        full_W_H2 = np.matrix(iasolver._iasolver.full_W_H[2])
+        full_W_H0 = iasolver._iasolver.full_W_H[0]
+        full_W_H1 = iasolver._iasolver.full_W_H[1]
+        full_W_H2 = iasolver._iasolver.full_W_H[2]
 
-        H00 = np.matrix(iasolver._iasolver._get_channel(0, 0))
-        H01 = np.matrix(iasolver._iasolver._get_channel(0, 1))
-        H02 = np.matrix(iasolver._iasolver._get_channel(0, 2))
-        H10 = np.matrix(iasolver._iasolver._get_channel(1, 0))
-        H11 = np.matrix(iasolver._iasolver._get_channel(1, 1))
-        H12 = np.matrix(iasolver._iasolver._get_channel(1, 2))
-        H20 = np.matrix(iasolver._iasolver._get_channel(2, 0))
-        H21 = np.matrix(iasolver._iasolver._get_channel(2, 1))
-        H22 = np.matrix(iasolver._iasolver._get_channel(2, 2))
+        H00 = iasolver._iasolver._get_channel(0, 0)
+        H01 = iasolver._iasolver._get_channel(0, 1)
+        H02 = iasolver._iasolver._get_channel(0, 2)
+        H10 = iasolver._iasolver._get_channel(1, 0)
+        H11 = iasolver._iasolver._get_channel(1, 1)
+        H12 = iasolver._iasolver._get_channel(1, 2)
+        H20 = iasolver._iasolver._get_channel(2, 0)
+        H21 = iasolver._iasolver._get_channel(2, 1)
+        H22 = iasolver._iasolver._get_channel(2, 2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         try:
@@ -3191,37 +3189,37 @@ class GreedStreamIASolverTestCase(CustomTestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(final_Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(final_Ns[1]))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(final_Ns[2]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
-            norm_value = np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2
 
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
@@ -3233,7 +3231,6 @@ class GreedStreamIASolverTestCase(CustomTestCase):
 
 
 class BruteForceStreamIASolverTestCase(CustomTestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -3278,23 +3275,23 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Solution found by the algorithm xxxxxxxxxxxxxxxxxxxxxx
-        full_F0 = np.matrix(iasolver._iasolver.full_F[0])
-        full_F1 = np.matrix(iasolver._iasolver.full_F[1])
-        full_F2 = np.matrix(iasolver._iasolver.full_F[2])
+        full_F0 = iasolver._iasolver.full_F[0]
+        full_F1 = iasolver._iasolver.full_F[1]
+        full_F2 = iasolver._iasolver.full_F[2]
 
-        full_W_H0 = np.matrix(iasolver._iasolver.full_W_H[0])
-        full_W_H1 = np.matrix(iasolver._iasolver.full_W_H[1])
-        full_W_H2 = np.matrix(iasolver._iasolver.full_W_H[2])
+        full_W_H0 = iasolver._iasolver.full_W_H[0]
+        full_W_H1 = iasolver._iasolver.full_W_H[1]
+        full_W_H2 = iasolver._iasolver.full_W_H[2]
 
-        H00 = np.matrix(iasolver._iasolver._get_channel(0, 0))
-        H01 = np.matrix(iasolver._iasolver._get_channel(0, 1))
-        H02 = np.matrix(iasolver._iasolver._get_channel(0, 2))
-        H10 = np.matrix(iasolver._iasolver._get_channel(1, 0))
-        H11 = np.matrix(iasolver._iasolver._get_channel(1, 1))
-        H12 = np.matrix(iasolver._iasolver._get_channel(1, 2))
-        H20 = np.matrix(iasolver._iasolver._get_channel(2, 0))
-        H21 = np.matrix(iasolver._iasolver._get_channel(2, 1))
-        H22 = np.matrix(iasolver._iasolver._get_channel(2, 2))
+        H00 = iasolver._iasolver._get_channel(0, 0)
+        H01 = iasolver._iasolver._get_channel(0, 1)
+        H02 = iasolver._iasolver._get_channel(0, 2)
+        H10 = iasolver._iasolver._get_channel(1, 0)
+        H11 = iasolver._iasolver._get_channel(1, 1)
+        H12 = iasolver._iasolver._get_channel(1, 2)
+        H20 = iasolver._iasolver._get_channel(2, 0)
+        H21 = iasolver._iasolver._get_channel(2, 1)
+        H22 = iasolver._iasolver._get_channel(2, 2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         try:
@@ -3311,37 +3308,37 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxx Test the equivalent channel xxxxxxxxxxxxxxxxxxxxxxxxxxx
-            np.testing.assert_array_almost_equal(full_W_H0 * H00 * full_F0,
+            np.testing.assert_array_almost_equal(full_W_H0 @ H00 @ full_F0,
                                                  np.eye(final_Ns[0]))
-            np.testing.assert_array_almost_equal(full_W_H1 * H11 * full_F1,
+            np.testing.assert_array_almost_equal(full_W_H1 @ H11 @ full_F1,
                                                  np.eye(final_Ns[1]))
-            np.testing.assert_array_almost_equal(full_W_H2 * H22 * full_F2,
+            np.testing.assert_array_almost_equal(full_W_H2 @ H22 @ full_F2,
                                                  np.eye(final_Ns[2]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxx test the remaining interference xxxxxxxxxxxxxxxxxx
-            norm_value = np.linalg.norm(full_W_H0 * H01 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H01 @ full_F1, 'fro')**2
 
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H0 * H02 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H0 @ H02 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H10 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H10 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H1 * H12 * full_F2, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H1 @ H12 @ full_F2, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H20 * full_F0, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H20 @ full_F0, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
-            norm_value = np.linalg.norm(full_W_H2 * H21 * full_F1, 'fro')**2
+            norm_value = np.linalg.norm(full_W_H2 @ H21 @ full_F1, 'fro')**2
             self.assertTrue(norm_value < 0.05,
                             msg="Norm Value: {0}".format(norm_value))
 
@@ -3355,7 +3352,7 @@ class BruteForceStreamIASolverTestCase(CustomTestCase):
 
             iasolver.clear()
 
-            self.assertEqual(iasolver.stream_combinations, ())
+            self.assertEqual(iasolver.stream_combinations, [])
             self.assertEqual(iasolver.every_sum_capacity, [])
             self.assertIsNone(iasolver._best_F)
             self.assertIsNone(iasolver._best_full_F)

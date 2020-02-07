@@ -16,12 +16,29 @@ model is shown in the Figure below.
 
 import math
 from numbers import Number
+from typing import Iterable, List, Optional, Tuple, TypeVar, Union, cast
+
 import numpy as np
+
 from scipy.linalg import block_diag
-from . import fading, fading_generators
+
 from ..util.conversion import single_matrix_to_matrix_of_matrices
 from ..util.misc import randn_c_RS
 from . import singleuser
+from .fading import TdlChannelProfile, TdlImpulseResponse
+from .fading_generators import JakesSampleGenerator, RayleighSampleGenerator
+
+# Either a jakes or a Rayleigh model can be used
+FadingGenerator = Union[JakesSampleGenerator, RayleighSampleGenerator]
+
+IntOrIntArrayUnion = Union[np.ndarray, int]
+NumberOrArray = TypeVar("NumberOrArray", np.ndarray, float)
+
+# Type representing something that can be used to index a numpy array
+Indexes = Union[np.ndarray, List[int], slice]
+
+# Seed is either int or an array_like type
+Seed = Union[int, List[int], np.ndarray]
 
 
 class MuChannel:
@@ -35,7 +52,7 @@ class MuChannel:
 
     Parameters
     ----------
-    N : int | list[int,int] | tuple[int,int]
+    N : int | tuple[int,int]
         The number of transmit/receive pairs.
     fading_generator : T <= fading_generators.FadingSampleGenerator
         The instance of a fading generator in the `fading_generators`
@@ -45,7 +62,7 @@ class MuChannel:
         generator will actually be used to create similar (but independent)
         fading generators. If not provided then RayleighSampleGenerator
         will be used
-    channel_profile : fading.TdlChannelProfile
+    channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
@@ -58,29 +75,27 @@ class MuChannel:
     MuChannel
         The created object.
     """
-
     def __init__(self,
-                 N,
-                 fading_generator=None,
-                 channel_profile=None,
-                 tap_powers_dB=None,
-                 tap_delays=None,
-                 Ts=None):
+                 N: Union[int, Tuple[int, int]],
+                 fading_generator: Optional[FadingGenerator] = None,
+                 channel_profile: Optional[TdlChannelProfile] = None,
+                 tap_powers_dB: Optional[np.ndarray] = None,
+                 tap_delays: Optional[np.ndarray] = None,
+                 Ts: Optional[float] = None) -> None:
 
         if fading_generator is None:
-            from .fading_generators import RayleighSampleGenerator
             fading_generator = RayleighSampleGenerator()
 
-        if isinstance(N, tuple) or isinstance(N, list):
-            num_rx = N[0]
-            num_tx = N[1]
+        if isinstance(N, tuple):
+            num_rx, num_tx = N
         else:
             num_rx = N
             num_tx = N
 
         # Variable to store the single user channels corresponding to each
         # link.
-        self._su_siso_channels = np.empty((num_rx, num_tx), dtype=object)
+        self._su_siso_channels: np.ndarray = np.empty((num_rx, num_tx),
+                                                      dtype=object)
 
         # Create each link's channel
         for rx in range(num_rx):
@@ -103,9 +118,9 @@ class MuChannel:
                 channel_profile = self._su_siso_channels[rx, tx].\
                     channel_profile
 
-        self._pathloss_matrix = None
+        self._pathloss_matrix: Optional[np.ndarray] = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         String representation the object.
 
@@ -120,7 +135,7 @@ class MuChannel:
             self.switched_direction)
 
     @property
-    def switched_direction(self):
+    def switched_direction(self) -> bool:
         """
         Get the value of `switched_direction`.
 
@@ -129,10 +144,10 @@ class MuChannel:
         bool
             True if direction is switched and False otherwise.
         """
-        return self._su_siso_channels[0, 0].switched_direction
+        return cast(bool, self._su_siso_channels[0, 0].switched_direction)
 
     @switched_direction.setter
-    def switched_direction(self, value):
+    def switched_direction(self, value: bool) -> None:
         """
         Set the value of `switched_direction`.
 
@@ -148,7 +163,7 @@ class MuChannel:
                     switched_direction = value
 
     @property
-    def num_tx_antennas(self):
+    def num_tx_antennas(self) -> int:
         """
         Get the number of transmit antennas.
 
@@ -162,10 +177,10 @@ class MuChannel:
         for tx_idx in range(num_tx):
             num_tx_antennas[tx_idx] = \
                 self._su_siso_channels[0, tx_idx].num_tx_antennas
-        return num_tx_antennas
+        return cast(int, num_tx_antennas)
 
     @property
-    def num_rx_antennas(self):
+    def num_rx_antennas(self) -> int:
         """
         Get the number of receive antennas.
 
@@ -179,22 +194,23 @@ class MuChannel:
         for rx_idx in range(num_rx):
             num_rx_antennas[rx_idx] = \
                 self._su_siso_channels[rx_idx, 0].num_rx_antennas
-        return num_rx_antennas
+        return cast(int, num_rx_antennas)
 
     @property
-    def channel_profile(self):
+    def channel_profile(self) -> TdlChannelProfile:
         """
         Return the channel profile.
 
         Returns
         -------
-        fading.TdlChannelProfile
+        TdlChannelProfile
             The channel profile.
         """
-        return self._su_siso_channels[0, 0].channel_profile
+        return cast(TdlChannelProfile,
+                    self._su_siso_channels[0, 0].channel_profile)
 
     @property
-    def num_taps(self):
+    def num_taps(self) -> int:
         """
         Get the number of taps in the profile.
 
@@ -206,10 +222,10 @@ class MuChannel:
             The number of taps in the channel (not including any zero
             padding).
         """
-        return self._su_siso_channels[0, 0].num_taps
+        return cast(int, self._su_siso_channels[0, 0].num_taps)
 
     @property
-    def num_taps_with_padding(self):
+    def num_taps_with_padding(self) -> int:
         """
         Get the number of taps in the profile including zero-padding
         when the profile is discretized.
@@ -223,10 +239,10 @@ class MuChannel:
         int
             The number of taps in the channel (including any zero padding).
         """
-        return self._su_siso_channels[0, 0].num_taps_with_padding
+        return cast(int, self._su_siso_channels[0, 0].num_taps_with_padding)
 
     @property
-    def pathloss_matrix(self):
+    def pathloss_matrix(self) -> np.ndarray:
         """
         Get the matrix with the pathloss from each transmitter to each
         receiver.
@@ -239,7 +255,7 @@ class MuChannel:
         """
         return self._pathloss_matrix
 
-    def set_pathloss(self, pathloss_matrix=None):
+    def set_pathloss(self, pathloss_matrix: np.ndarray) -> None:
         """
         Set the path loss (IN LINEAR SCALE) from each transmitter to each
         receiver.
@@ -271,10 +287,10 @@ class MuChannel:
 
         for rx in range(num_rx):
             for tx in range(num_tx):
-                self._su_siso_channels[rx, tx].set_pathloss(pathloss_matrix[rx,
-                                                                            tx])
+                self._su_siso_channels[rx, tx].set_pathloss(
+                    pathloss_matrix[rx, tx])
 
-    def corrupt_data(self, signal):
+    def corrupt_data(self, signal: np.ndarray) -> np.ndarray:
         """
         Corrupt data passed through the TDL channels of each link.
 
@@ -315,9 +331,10 @@ class MuChannel:
         return outputs
 
     def corrupt_data_in_freq_domain(self,
-                                    signal,
-                                    fft_size,
-                                    carrier_indexes=None):
+                                    signal: np.ndarray,
+                                    fft_size: int,
+                                    carrier_indexes: Indexes = None
+                                    ) -> np.ndarray:
         """
         Corrupt data passed through the TDL channels of each link,
         but in the frequency domain..
@@ -377,7 +394,8 @@ class MuChannel:
 
         return outputs
 
-    def get_last_impulse_response(self, rx_idx, tx_idx):
+    def get_last_impulse_response(self, rx_idx: int,
+                                  tx_idx: int) -> TdlImpulseResponse:
         """
         Get the last generated impulse response.
 
@@ -394,13 +412,13 @@ class MuChannel:
 
         Returns
         -------
-        fading.TdlImpulseResponse
+        TdlImpulseResponse
             The impulse response of the channel that was used to corrupt
             the last data for the link from transmitter `tx_idx` to
             receiver `rx_idx`.
         """
-        return self._su_siso_channels[rx_idx, tx_idx].\
-            get_last_impulse_response()
+        return cast(TdlImpulseResponse, self._su_siso_channels[rx_idx, tx_idx].\
+            get_last_impulse_response())
 
 
 # class MuSisoFlatFadingChannel:
@@ -425,7 +443,6 @@ class MuChannel:
 #     def __init__(self, N, fading_generator=None):
 #         self._H = None
 #         if fading_generator is None:
-#             from .fading_generators import RayleighSampleGenerator
 #             fading_generator = RayleighSampleGenerator(shape=(N, N))
 
 #         self._fading_generator = fading_generator
@@ -513,7 +530,7 @@ class MuMimoChannel(MuChannel):
 
     Parameters
     ----------
-    N : int
+    N : int | tuple[int, int]
         The number of transmit/receive pairs.
     num_rx_antennas : int
         Number of receive antennas of each user.
@@ -527,7 +544,7 @@ class MuMimoChannel(MuChannel):
         generator will actually be used to create similar (but independent)
         fading generators. If not provided then RayleighSampleGenerator
         will be used
-    channel_profile : fading.TdlChannelProfile
+    channel_profile : TdlChannelProfile
         The channel profile, which specifies the tap powers and delays.
     tap_powers_dB : np.ndarray
         The powers of each tap (in dB). Dimension: `L x 1`
@@ -535,24 +552,22 @@ class MuMimoChannel(MuChannel):
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
     """
-
     def __init__(self,
-                 N,
-                 num_rx_antennas,
-                 num_tx_antennas,
-                 fading_generator=None,
-                 channel_profile=None,
-                 tap_powers_dB=None,
-                 tap_delays=None,
-                 Ts=None):
+                 N: Union[int, Tuple[int, int]],
+                 num_rx_antennas: int,
+                 num_tx_antennas: int,
+                 fading_generator: Optional[FadingGenerator] = None,
+                 channel_profile: Optional[TdlChannelProfile] = None,
+                 tap_powers_dB: Optional[np.ndarray] = None,
+                 tap_delays: Optional[np.ndarray] = None,
+                 Ts: Optional[float] = None) -> None:
         super(MuMimoChannel,
               self).__init__(N, fading_generator, channel_profile,
                              tap_powers_dB, tap_delays, Ts)
 
         # Number of receivers and transmitters
-        if isinstance(N, tuple) or isinstance(N, list):
-            num_rx = N[0]
-            num_tx = N[1]
+        if isinstance(N, (tuple, list)):
+            num_rx, num_tx = N
         else:
             num_rx = N
             num_tx = N
@@ -613,8 +628,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
     In order to get the channel matrix of a specific user `k` to another
     user `l`, call the `get_Hkl` method.
     """
-
-    def __init__(self):
+    def __init__(self) -> None:
         # The _big_H_no_pathloss variable is an internal variable with all
         # the channels from each transmitter to each receiver represented
         # as a single big matrix.
@@ -629,32 +643,33 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         # The _big_H_with_pathloss and _H_with_pathloss variables are
         # similar to their no_pathloss counterpart, but include the effect
         # of pathloss if it was set.
-        self._big_H_with_pathloss = None
-        self._H_with_pathloss = None
+        self._big_H_with_pathloss: Optional[np.ndarray] = None
+        self._H_with_pathloss: Optional[np.ndarray] = None
 
         self._Nr = np.array([])
         self._Nt = np.array([])
-        self._K = 0
-        self._pathloss_matrix = None
+        self._K: int = 0
+        self._pathloss_matrix: Optional[np.ndarray] = None
         # _pathloss_big_matrix should not be set directly. It is set when
         # _pathloss_matrix is set in the set_pathloss method.
-        self._pathloss_big_matrix = None
+        self._pathloss_big_matrix: Optional[np.ndarray] = None
         self._RS_channel = np.random.RandomState()
         self._RS_noise = np.random.RandomState()
 
         # Store the AWGN noise array from the last time any of the
         # corrupt*_data methods were called.
-        self._last_noise = None
+        self._last_noise: Optional[float] = None
         # Store the noise variance. If it is None, then no noise is added
         # in the "corrupt_*data" methods.
-        self._noise_var = None
+        self._noise_var: Optional[float] = None
 
         # Post processing filters (a list of 2D numpy arrays) for each user
-        self._W = None
+        self._W: Optional[List[np.ndarray]] = None
         # Same as _W, but as a single block diagonal matrix.
-        self._big_W = None
+        self._big_W: np.ndarray = None
 
-    def set_channel_seed(self, seed=None):  # pragma: no cover
+    def set_channel_seed(self, seed: Optional[Seed] = None
+                         ) -> None:  # pragma: no cover
         """
         Set the seed of the RandomState object used to generate the random
         elements of the channel (when self.randomize is called).
@@ -667,7 +682,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         """
         self._RS_channel.seed(seed=seed)
 
-    def set_noise_seed(self, seed=None):  # pragma: no cover
+    def set_noise_seed(self, seed: Optional[Seed] = None
+                       ) -> None:  # pragma: no cover
         """
         Set the seed of the RandomState object used to generate the random
         noise elements (when the corrupt data function is called).
@@ -680,7 +696,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         """
         self._RS_noise.seed(seed)
 
-    def re_seed(self):  # pragma: no cover
+    def re_seed(self) -> None:  # pragma: no cover
         """
         Re-seed the channel and noise RandomState objects randomly.
 
@@ -693,7 +709,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
     # Property to get the number of receive antennas
     @property
-    def Nr(self):
+    def Nr(self) -> np.ndarray:
         """
         Get method for the Nr property.
 
@@ -706,7 +722,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
     # Property to get the number of transmit antennas
     @property
-    def Nt(self):
+    def Nt(self) -> np.ndarray:
         """
         Get method for the Nt property.
 
@@ -719,7 +735,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
     # Property to get the number of users
     @property
-    def K(self):
+    def K(self) -> int:
         """
         Get method for the K property.
 
@@ -733,7 +749,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
     # Property to get the matrix of channel matrices (with pass loss
     # applied if any)
     @property
-    def H(self):
+    def H(self) -> np.ndarray:
         """
         Get method for the H property.
 
@@ -746,21 +762,21 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         if self._pathloss_matrix is None:
             # No path loss
             return self._H_no_pathloss
-        else:
-            if self._H_with_pathloss is None:
-                # Apply path loss. Note that the _pathloss_big_matrix
-                # matrix has the same dimension as the
-                # self._big_H_no_pathloss matrix and we are performing
-                # element-wise multiplication here.
-                # noinspection PyTypeChecker
-                self._H_with_pathloss = self._H_no_pathloss * np.sqrt(
-                    self._pathloss_matrix)
-            return self._H_with_pathloss
+
+        if self._H_with_pathloss is None:
+            # Apply path loss. Note that the _pathloss_big_matrix
+            # matrix has the same dimension as the
+            # self._big_H_no_pathloss matrix and we are performing
+            # element-wise multiplication here.
+            # noinspection PyTypeChecker
+            self._H_with_pathloss = self._H_no_pathloss * np.sqrt(
+                self._pathloss_matrix)
+        return self._H_with_pathloss
 
     # Property to get the big channel matrix (with pass loss applied if
     # any)
     @property
-    def big_H(self):
+    def big_H(self) -> np.ndarray:
         """
         Get method for the big_H property.
 
@@ -773,21 +789,21 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         if self._pathloss_matrix is None:
             # No path loss
             return self._big_H_no_pathloss
-        else:
-            if self._big_H_with_pathloss is None:
-                # Apply path loss. Note that the _pathloss_big_matrix
-                # matrix has the same dimension as the
-                # self._big_H_no_pathloss matrix and we are performing
-                # element-wise multiplication here.
-                # noinspection PyTypeChecker
-                self._big_H_with_pathloss = (self._big_H_no_pathloss *
-                                             np.sqrt(self._pathloss_big_matrix))
-            return self._big_H_with_pathloss
+
+        if self._big_H_with_pathloss is None:
+            # Apply path loss. Note that the _pathloss_big_matrix
+            # matrix has the same dimension as the
+            # self._big_H_no_pathloss matrix and we are performing
+            # element-wise multiplication here.
+            # noinspection PyTypeChecker
+            self._big_H_with_pathloss = (self._big_H_no_pathloss *
+                                         np.sqrt(self._pathloss_big_matrix))
+        return self._big_H_with_pathloss
 
     # Property to get the pathloss. Use the "set_pathloss" method to set
     # the pathloss.
     @property
-    def pathloss(self):
+    def pathloss(self) -> Optional[np.ndarray]:
         """
         Get method for the pathloss property.
 
@@ -799,7 +815,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return self._pathloss_matrix
 
     @property
-    def last_noise(self):
+    def last_noise(self) -> Optional[np.ndarray]:
         """
         Get method for the last_noise property.
 
@@ -811,7 +827,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return self._last_noise
 
     @property
-    def noise_var(self):
+    def noise_var(self) -> Optional[float]:
         """
         Get method for the noise_var property.
 
@@ -824,7 +840,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return self._noise_var
 
     @noise_var.setter
-    def noise_var(self, value):
+    def noise_var(self, value: Optional[float]) -> None:
         """
         Set method for the noise_var property.
 
@@ -840,7 +856,12 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         self._noise_var = value
 
     @staticmethod
-    def _from_small_matrix_to_big_matrix(small_matrix, Nr, Nt, Kr, Kt=None):
+    def _from_small_matrix_to_big_matrix(small_matrix: np.ndarray,
+                                         Nr: np.ndarray,
+                                         Nt: np.ndarray,
+                                         Kr: int,
+                                         Kt: Optional[int] = None
+                                         ) -> np.ndarray:
         """
         Convert from a small matrix to a big matrix by repeating elements
         according to the number of receive and transmit antennas.
@@ -901,8 +922,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
         cumNr = np.hstack([0, np.cumsum(Nr)])
         cumNt = np.hstack([0, np.cumsum(Nt)])
-        big_matrix = np.ones([int(np.sum(Nr)), int(np.sum(Nt))],
-                             dtype=small_matrix.dtype)
+        big_matrix = np.ones(
+            [int(np.sum(Nr)), int(np.sum(Nt))], dtype=small_matrix.dtype)
 
         for rx in range(Kr):
             for tx in range(Kt):
@@ -910,7 +931,9 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
                     *= small_matrix[rx, tx]
         return big_matrix
 
-    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K):
+    def init_from_channel_matrix(self, channel_matrix: np.ndarray,
+                                 Nr: IntOrIntArrayUnion,
+                                 Nt: IntOrIntArrayUnion, K: int) -> None:
         """
         Initializes the multiuser channel matrix from the given
         `channel_matrix`.
@@ -927,10 +950,6 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         K : int
             Number of transmit/receive pairs.
 
-        Returns
-        -------
-        None
-
         Raises
         ------
         ValueError
@@ -939,18 +958,21 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         """
         # If Nt or Nr (or both) is (are) int assume the same value should
         # be used for all users.
-        if isinstance(Nr, int):  # pragma: no cover
-            Nr = np.ones(K, dtype=int) * Nr
-        if isinstance(Nt, int):  # pragma: no cover
-            Nt = np.ones(K, dtype=int) * Nt
+        Nr_array = np.ones(K, dtype=int) * Nr if isinstance(Nr, int) else Nr
+        Nt_array = np.ones(K, dtype=int) * Nt if isinstance(Nt, int) else Nt
+        del Nt, Nr
+        # if isinstance(Nr, int):  # pragma: no cover
+        #     Nr = np.ones(K, dtype=int) * Nr
+        # if isinstance(Nt, int):  # pragma: no cover
+        #     Nt = np.ones(K, dtype=int) * Nt
 
-        if channel_matrix.shape != (np.sum(Nr), np.sum(Nt)):
+        if channel_matrix.shape != (np.sum(Nr_array), np.sum(Nt_array)):
             msg = ("Shape of the channel_matrix must be equal to the sum or"
                    " receive antennas of all users times the sum of the "
                    "receive antennas of all users.")
             raise ValueError(msg)
 
-        if (Nt.size != K) or (Nr.size != K):
+        if (Nt_array.size != K) or (Nr_array.size != K):
             raise ValueError(
                 "K must be equal to the number of elements in Nr and Nt")
 
@@ -961,8 +983,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         self._H_with_pathloss = None
 
         self._K = K
-        self._Nr = Nr
-        self._Nt = Nt
+        self._Nr = Nr_array
+        self._Nt = Nt_array
 
         self._big_H_no_pathloss = channel_matrix
 
@@ -970,14 +992,15 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         # Lets convert the full channel_matrix matrix to our internal
         # representation of H as a matrix of matrices.
         self._H_no_pathloss = single_matrix_to_matrix_of_matrices(
-            channel_matrix, Nr, Nt)
+            channel_matrix, Nr_array, Nt_array)
 
         # Assures that _big_H and _H will stay in sync by disallowing
         # modification of individual elements in both of them.
         self._big_H_no_pathloss.setflags(write=False)
         self._H_no_pathloss.setflags(write=False)
 
-    def randomize(self, Nr, Nt, K):
+    def randomize(self, Nr: IntOrIntArrayUnion, Nt: IntOrIntArrayUnion,
+                  K: int) -> None:
         """
         Generates a random channel matrix for all users.
 
@@ -1007,7 +1030,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         self._Nt = Nt.astype(int)
         self._K = int(K)
 
-        self._big_H_no_pathloss = randn_c_RS(self._RS_channel, np.sum(self._Nr),
+        self._big_H_no_pathloss = randn_c_RS(self._RS_channel,
+                                             np.sum(self._Nr),
                                              np.sum(self._Nt))
 
         self._H_no_pathloss = single_matrix_to_matrix_of_matrices(
@@ -1018,7 +1042,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         self._big_H_no_pathloss.setflags(write=False)
         self._H_no_pathloss.setflags(write=False)
 
-    def get_Hkl(self, k, l):
+    def get_Hkl(self, k: int, l: int) -> np.ndarray:
         """
         Get the channel matrix from user `l` to user `k`.
 
@@ -1063,7 +1087,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         channel = self.H
         return channel[k, l]
 
-    def get_Hk(self, k):
+    def get_Hk(self, k: int) -> np.ndarray:
         """
         Get the channel from all transmitters to receiver `k`.
 
@@ -1105,7 +1129,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             self.big_H, self.Nr)
         return receive_channels[k]
 
-    def set_post_filter(self, filters):
+    def set_post_filter(self, filters: np.ndarray) -> None:
         """
         Set the post-processing filters.
 
@@ -1124,7 +1148,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         self._big_W = None
 
     @property
-    def W(self):
+    def W(self) -> Optional[List[np.ndarray]]:
         """
         Post processing filters (a list of 2D numpy arrays) for each user.
 
@@ -1136,7 +1160,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return self._W
 
     @property
-    def big_W(self):
+    def big_W(self) -> np.ndarray:
         """
         Post processing filters (a block diagonal matrix) for each user.
 
@@ -1151,7 +1175,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             self._big_W = block_diag(*self.W)
         return self._big_W
 
-    def corrupt_concatenated_data(self, data):
+    def corrupt_concatenated_data(self, data: np.ndarray) -> np.ndarray:
         """
         Corrupt data passed through the channel.
 
@@ -1169,7 +1193,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
         Returns
         -------
-        output : np.ndarray
+        np.ndarray
             A bi-dimension numpy array where the number of rows corresponds
             to the sum of the number of receive antennas of all users and
             the number of columns correspond to the number of transmitted
@@ -1195,7 +1219,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
         return output
 
-    def corrupt_data(self, data):
+    def corrupt_data(self, data: np.ndarray) -> np.ndarray:
         """
         Corrupt data passed through the channel.
 
@@ -1213,7 +1237,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
         Returns
         -------
-        output : np.ndarray
+        np.ndarray
             A numpy array where each element contains the received data (a
             2D numpy array) of a user.
 
@@ -1236,7 +1260,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
         return output
 
-    def set_pathloss(self, pathloss_matrix=None):
+    def set_pathloss(self,
+                     pathloss_matrix: Optional[np.ndarray] = None) -> None:
         """
         Set the path loss (IN LINEAR SCALE) from each transmitter to each
         receiver.
@@ -1273,6 +1298,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         if pathloss_matrix is None:
             self._pathloss_big_matrix = None
         else:
+            assert (self._pathloss_matrix is not None)
             self._pathloss_big_matrix \
                 = MultiUserChannelMatrix._from_small_matrix_to_big_matrix(
                     pathloss_matrix, self._Nr, self._Nt, self._K)
@@ -1284,12 +1310,21 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             self._pathloss_big_matrix.setflags(write=False)
 
     # noinspection PyPep8
-    def _calc_Q_impl(self, k, F_all_users):
+    def _calc_Q_impl(self, k: int, F_all_users: np.ndarray) -> np.ndarray:
         """
         Calculates the interference covariance matrix (without any noise) at
         the :math:`k`-th receiver.
 
         See the documentation of the calc_Q method.
+
+        Parameters
+        ----------
+        k : int
+            Index of the desired receiver.
+        F_all_users : np.ndarray
+            The precoder of all users (already taking into account the
+            transmit power). This should be a 1D numpy array of 2D numpy
+            arrays.
 
         Returns
         -------
@@ -1306,7 +1341,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return Qk
 
     # noinspection PyPep8
-    def calc_Q(self, k, F_all_users):
+    def calc_Q(self, k: int, F_all_users: np.ndarray) -> np.ndarray:
         """
         Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver.
@@ -1346,7 +1381,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return Qk
 
     # noinspection PyPep8
-    def _calc_JP_Q_impl(self, k, F_all_users):
+    def _calc_JP_Q_impl(self, k: int, F_all_users: np.ndarray) -> np.ndarray:
         """
         Calculates the interference covariance matrix (without any noise) at
         the :math:`k`-th receiver with a joint processing scheme.
@@ -1377,7 +1412,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return Qk
 
     # noinspection PyPep8,PyPep8
-    def calc_JP_Q(self, k, F_all_users):
+    def calc_JP_Q(self, k: int, F_all_users: np.ndarray) -> np.ndarray:
         """
         Calculates the interference plus noise covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
@@ -1409,11 +1444,15 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         if self.noise_var is not None:
             Rnk = np.eye(self.Nr[k]) * self.noise_var
             return Qk + Rnk
-        else:  # pragma: no cover
-            return Qk
+
+        return Qk
 
     # noinspection PyPep8,PyPep8
-    def _calc_Bkl_cov_matrix_first_part(self, F_all_users, k, N0_or_Rek=0.0):
+    def _calc_Bkl_cov_matrix_first_part(self,
+                                        F_all_users: np.ndarray,
+                                        k: int,
+                                        N0_or_Rek: NumberOrArray = 0.0
+                                        ) -> np.ndarray:
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_.
@@ -1465,14 +1504,15 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             Vj = F_all_users[j]
             Vj_H = Vj.conjugate().transpose()
 
-            first_part = first_part + np.dot(Hkj, np.dot(
-                np.dot(Vj, Vj_H), Hkj_H))
+            first_part = first_part + np.dot(Hkj,
+                                             np.dot(np.dot(Vj, Vj_H), Hkj_H))
         first_part = first_part + Rek
 
         return first_part
 
     # noinspection PyPep8
-    def _calc_Bkl_cov_matrix_second_part(self, Fk, k, l):
+    def _calc_Bkl_cov_matrix_second_part(self, Fk: np.ndarray, k: int,
+                                         l: int) -> np.ndarray:
         """
         Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
@@ -1508,7 +1548,11 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return second_part
 
     # noinspection PyPep8
-    def _calc_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
+    def _calc_Bkl_cov_matrix_all_l(self,
+                                   F_all_users: np.ndarray,
+                                   k: int,
+                                   N0_or_Rek: NumberOrArray = 0.0
+                                   ) -> np.ndarray:
         """
         Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in [
@@ -1575,7 +1619,10 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return Bkl_all_l
 
     # noinspection PyPep8
-    def _calc_JP_Bkl_cov_matrix_first_part_impl(self, Hk, F_all_users, Rek):
+    def _calc_JP_Bkl_cov_matrix_first_part_impl(self, Hk: np.ndarray,
+                                                F_all_users: np.ndarray,
+                                                Rek: NumberOrArray
+                                                ) -> np.ndarray:
         """
         Common implementation of the _calc_JP_Bkl_cov_matrix_first_part.
 
@@ -1604,16 +1651,18 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             Vj = F_all_users[j]
             Vj_H = Vj.conjugate().transpose()
 
-            first_part = first_part + np.dot(Hk, np.dot(np.dot(Vj, Vj_H), HK_H))
+            first_part = first_part + np.dot(Hk, np.dot(
+                np.dot(Vj, Vj_H), HK_H))
         first_part += Rek
 
         return first_part
 
     # noinspection PyPep8,PyPep8
     def _calc_JP_Bkl_cov_matrix_first_part(self,
-                                           F_all_users,
-                                           k,
-                                           noise_power=0.0):
+                                           F_all_users: np.ndarray,
+                                           k: int,
+                                           noise_power: float = 0.0
+                                           ) -> np.ndarray:
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_ when joint process is employed.
@@ -1632,7 +1681,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             array of numpy arrays.
         k : int
             Index of the desired user.
-        noise_power : float
+        noise_power : float | None, optional
             The noise power.
 
         Returns
@@ -1642,9 +1691,6 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         # The first part in Bkl is given by
         # $$\sum_{j=1}^{K} \frac{P^{[j]}}{d^{[j]}} \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger} + \mtI_{N^{[k]}}$$
         # Note that here the power is already included in `Fk`.
-        if noise_power is None:
-            noise_power = 0.0
-
         Rek = (noise_power * np.eye(self.Nr[k]))
         Hk = self.get_Hk(k)
         # noinspection PyTypeChecker
@@ -1653,7 +1699,9 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
     # noinspection PyPep8
     @staticmethod
-    def _calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l):
+    def _calc_JP_Bkl_cov_matrix_second_part_impl(Hk: np.ndarray,
+                                                 Fk: np.ndarray,
+                                                 l: int) -> np.ndarray:
         """
         Common implementation of the _calc_JP_Bkl_cov_matrix_second_part
         method.
@@ -1678,7 +1726,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return second_part
 
     # noinspection PyPep8
-    def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
+    def _calc_JP_Bkl_cov_matrix_second_part(self, Fk: np.ndarray, k: int,
+                                            l: int) -> np.ndarray:
         """Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
         include the identity matrix).
@@ -1706,7 +1755,11 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
     # noinspection PyPep8
-    def _calc_JP_Bkl_cov_matrix_all_l(self, F_all_users, k, N0_or_Rek=0.0):
+    def _calc_JP_Bkl_cov_matrix_all_l(self,
+                                      F_all_users: np.ndarray,
+                                      k: int,
+                                      N0_or_Rek: NumberOrArray = 0.0
+                                      ) -> np.ndarray:
         """
         Calculates the interference-plus-noise covariance matrix for all
         streams at receiver :math:`k` according to equation (28) in [
@@ -1772,19 +1825,20 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
 
         return Bkl_all_l
 
-    def _calc_SINR_k(self, k, Fk, Uk, Bkl_all_l):
+    def _calc_SINR_k(self, k: int, Fk: np.ndarray, Uk: np.ndarray,
+                     Bkl_all_l: np.ndarray) -> np.ndarray:
         """
         Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
+        k : int
+            Index of the desired user.
         Fk : np.ndarray
             The precoder of user k.
         Uk : np.ndarray
             The receive filter of user k (before applying the conjugate
             transpose).
-        k : int
-            Index of the desired user.
         Bkl_all_l : list[np.ndarray] | np.ndarray
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
@@ -1806,13 +1860,13 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             aux = np.dot(Ukl_H, np.dot(self.get_Hkl(k, k), Fkl))
             numerator = np.dot(aux, aux.transpose().conjugate())
             denominator = np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
-            SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
+            SINR_kl = numerator.item() / denominator.item()
             # The imaginary part should be negligible
             SINR_k[l] = np.abs(SINR_kl)
 
         return SINR_k
 
-    def calc_SINR(self, F, U):
+    def calc_SINR(self, F: np.ndarray, U: np.ndarray) -> np.ndarray:
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
@@ -1844,7 +1898,8 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         return SINRs
 
     @staticmethod
-    def _calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l):
+    def _calc_JP_SINR_k_impl(Hk: np.ndarray, Fk: np.ndarray, Uk: np.ndarray,
+                             Bkl_all_l: np.ndarray) -> np.ndarray:
         """
         Implementation of the :meth:`_calc_JP_SINR_k` method.
 
@@ -1888,25 +1943,26 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
             aux = np.dot(Ukl_H, np.dot(Hk, Fkl))
             numerator = np.dot(aux, aux.transpose().conjugate())
             denominator = np.dot(Ukl_H, np.dot(Bkl_all_l[l], Ukl))
-            SINR_kl = np.asscalar(numerator) / np.asscalar(denominator)
+            SINR_kl = numerator.item() / denominator.item()
             # The imaginary part should be negligible
             SINR_k[l] = np.abs(SINR_kl)
 
         return SINR_k
 
-    def _calc_JP_SINR_k(self, k, Fk, Uk, Bkl_all_l):
+    def _calc_JP_SINR_k(self, k: int, Fk: np.ndarray, Uk: np.ndarray,
+                        Bkl_all_l: np.ndarray) -> np.ndarray:
         """
         Calculates the SINR of all streams of user 'k'.
 
         Parameters
         ----------
+        k : int
+            Index of the desired user.
         Fk : np.ndarray
             The precoder of user k.
         Uk : np.ndarray
             The receive filter of user k (before applying the conjugate
             transpose).
-        k : int
-            Index of the desired user.
         Bkl_all_l : list[np.ndarray] | np.ndarray
             A sequence (1D numpy array, a list, etc) of 2D numpy arrays
             corresponding to the Bkl matrices for all 'l's.
@@ -1919,7 +1975,7 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         Hk = self.get_Hk(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
 
-    def calc_JP_SINR(self, F, U):
+    def calc_JP_SINR(self, F: np.ndarray, U: np.ndarray) -> np.ndarray:
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
@@ -1945,8 +2001,9 @@ class MultiUserChannelMatrix:  # pylint: disable=R0902
         K = self.K
         SINRs = np.empty(K, dtype=np.ndarray)
 
+        noise_var = self.noise_var if self.noise_var is not None else 0.0
         for k in range(self.K):
-            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, self.noise_var)
+            Bkl_all_l = self._calc_JP_Bkl_cov_matrix_all_l(F, k, noise_var)
             SINRs[k] = self._calc_JP_SINR_k(k, F[k], U[k], Bkl_all_l)
         return SINRs
 
@@ -1998,23 +2055,22 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     reimplemented here to include information regarding the external
     interference.
     """
-
-    def __init__(self):
+    def __init__(self) -> None:
         MultiUserChannelMatrix.__init__(self)
-        self._extIntK = 0  # Number of external interference sources
+        self._extIntK: int = 0  # Number of external interference sources
         # Number of transmit antennas of the external interference sources.
-        self._extIntNt = 0
+        self._extIntNt: int = 0
 
     # Property to get the number of external interference sources
     @property
-    def extIntK(self):
+    def extIntK(self) -> int:
         """Get method for the extIntK property."""
         return self._extIntK
 
     # Property to get the number of transmit antennas (or the rank) of the
     # external interference sources
     @property
-    def extIntNt(self):
+    def extIntNt(self) -> int:
         """Get method for the extIntNt property."""
         return self._extIntNt
 
@@ -2023,22 +2079,22 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     # account the number of receive antennas of the external interference
     # sources.
     @property
-    def Nr(self):
+    def Nr(self) -> np.ndarray:
         """Get method for the Nr property."""
         return self._Nr[:-self._extIntK]
 
     @property
-    def Nt(self):
+    def Nt(self) -> np.ndarray:
         """Get method for the Nt property."""
         return self._Nt[:-self._extIntK]
 
     @property
-    def K(self):
+    def K(self) -> int:
         """Get method for the K property."""
         return self._K - self._extIntK
 
     @property
-    def big_H_no_ext_int(self):
+    def big_H_no_ext_int(self) -> np.ndarray:
         """
         Get method for the big_H_no_est_int property.
 
@@ -2048,29 +2104,31 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return self.big_H[:, :np.sum(self.Nt)]
 
     @property
-    def H(self):
+    def H(self) -> np.ndarray:
         """Get method for the H property."""
         # We only care about the first self.K "rows". The remaining rows
         # are the channels from all transmitters to the "external
         # interference user".
         H = self._H_no_pathloss[0:self.K]
+
         if self._pathloss_matrix is None:
             # No path loss
             return H
-        else:
-            # Apply path loss. Note that the _pathloss_big_matrix matrix
-            # has the same dimension as the self._big_H_no_pathloss matrix
-            # and we are performing element-wise multiplication here.
-            return H * np.sqrt(self._pathloss_matrix)
+
+        # Apply path loss. Note that the _pathloss_big_matrix matrix
+        # has the same dimension as the self._big_H_no_pathloss matrix
+        # and we are performing element-wise multiplication here.
+        return H * np.sqrt(self._pathloss_matrix)
 
     @property
-    def H_no_ext_int(self):
+    def H_no_ext_int(self) -> np.ndarray:
         """Get method for the H_no_ext_int property."""
         # Call H property get method of the base class
         H = MultiUserChannelMatrix.H.fget(self)
         return H[:self.K, :self.K]
 
-    def corrupt_data(self, data, ext_int_data):
+    def corrupt_data(self, data: np.ndarray,
+                     ext_int_data: np.ndarray) -> np.ndarray:
         """
         Corrupt data passed through the channel.
 
@@ -2101,7 +2159,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         input_data = np.hstack([data, ext_int_data])
         return MultiUserChannelMatrix.corrupt_data(self, input_data)
 
-    def corrupt_concatenated_data(self, data):
+    def corrupt_concatenated_data(self, data: np.ndarray) -> np.ndarray:
         """
         Corrupt data passed through the channel.
 
@@ -2130,7 +2188,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         """
         return MultiUserChannelMatrix.corrupt_concatenated_data(self, data)
 
-    def get_Hk_without_ext_int(self, k):
+    def get_Hk_without_ext_int(self, k: int) -> np.ndarray:
         """
         Get the channel from all transmitters (without including the external
         interference sources) to receiver `k`.
@@ -2180,7 +2238,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     # This is exactly the same as the
     # get_Hk_without_ext_int method from the
     # MultiUserChannelMatrix class. therefore, we don't need to test it.
-    def get_Hk_with_ext_int(self, k):
+    def get_Hk_with_ext_int(self, k: int) -> np.ndarray:
         """
         Get the channel from all transmitters (including the external
         interference sources) to receiver `k`.
@@ -2228,7 +2286,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return MultiUserChannelMatrix.get_Hk(self, k)  # pragma: no cover
 
     @staticmethod
-    def _prepare_input_parans(Nr, Nt, K, NtE):
+    def _prepare_input_parans(
+            Nr: np.ndarray, Nt: np.ndarray, K: int, NtE: Iterable[int]
+    ) -> Tuple[np.ndarray, np.ndarray, int, int, np.ndarray]:
         """
         Helper method used in the init_from_channel_matrix and randomize
         method definitions.
@@ -2258,8 +2318,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             extIntNt = np.array([NtE])
         else:
             # We have multiple external interference sources
-            extIntK = len(NtE)
             extIntNt = np.array(NtE)
+            extIntK = extIntNt.size
 
         # Number of receive antennas also including the number of receive
         # antennas of the interference users (which are zeros)
@@ -2272,7 +2332,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return full_Nr, full_Nt, full_K, extIntK, extIntNt
 
-    def init_from_channel_matrix(self, channel_matrix, Nr, Nt, K, NtE):
+    def init_from_channel_matrix(self, channel_matrix: np.ndarray,
+                                 Nr: np.ndarray, Nt: np.ndarray, K: int,
+                                 NtE: Iterable[int]) -> None:
         """
         Initializes the multiuser channel matrix from the given
         `channel_matrix`.
@@ -2311,11 +2373,11 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         self._extIntK = extIntK
         self._extIntNt = extIntNt
 
-        MultiUserChannelMatrix.init_from_channel_matrix(self, channel_matrix,
-                                                        full_Nr, full_Nt,
-                                                        full_K)
+        MultiUserChannelMatrix.init_from_channel_matrix(
+            self, channel_matrix, full_Nr, full_Nt, full_K)
 
-    def randomize(self, Nr, Nt, K, NtE):
+    def randomize(self, Nr: IntOrIntArrayUnion, Nt: IntOrIntArrayUnion, K: int,
+                  NtE: Iterable[int]) -> None:
         """
         Generates a random channel matrix for all users as well as for the
         external interference source(s).
@@ -2349,7 +2411,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         MultiUserChannelMatrix.randomize(self, full_Nr, full_Nt, full_K)
 
-    def set_pathloss(self, pathloss_matrix=None, ext_int_pathloss=None):
+    def set_pathloss(self,
+                     pathloss_matrix: Optional[np.ndarray] = None,
+                     ext_int_pathloss: Optional[np.ndarray] = None) -> None:
         """
         Set the path loss (IN LINEAR SCALE) from each transmitter to each
         receiver, as well as the path loss from the external interference
@@ -2401,7 +2465,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             self._pathloss_matrix.setflags(write=False)
             self._pathloss_big_matrix.setflags(write=False)
 
-    def calc_cov_matrix_extint_without_noise(self, pe=1):
+    def calc_cov_matrix_extint_without_noise(self,
+                                             pe: float = 1.0) -> np.ndarray:
         """
         Calculates the covariance matrix of the external interference
         without include the noise.
@@ -2427,7 +2492,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return R_all_k
 
     # noinspection PyPep8
-    def calc_cov_matrix_extint_plus_noise(self, pe=1):
+    def calc_cov_matrix_extint_plus_noise(self, pe: float = 1.0) -> np.ndarray:
         """
         Calculates the covariance matrix of the external interference plus
         noise.
@@ -2455,13 +2520,14 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             # If self.noise_var is not None then let's add the noise
             # covariance matrix
             noise_var = self.noise_var
-            for i in range(len(R_all_k)):
-                R_all_k[i] += np.eye(self.Nr[i]) * noise_var
+            for i, R_all_k_i in enumerate(R_all_k):
+                R_all_k_i += np.eye(self.Nr[i]) * noise_var
 
         return R_all_k
 
     # noinspection PyPep8,PyPep8
-    def calc_Q(self, k, F_all_users, pe=1.0):
+    def calc_Q(self, k: int, F_all_users: np.ndarray,
+               pe: float = 1.0) -> np.ndarray:
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver.
@@ -2497,7 +2563,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return Qk
 
     # noinspection PyPep8
-    def _calc_JP_Q(self, k, F_all_users):
+    def _calc_JP_Q(self, k: int, F_all_users: np.ndarray) -> np.ndarray:
         """
         Calculates the interference covariance matrix at the :math:`k`-th
         receiver with a joint processing scheme (not including the
@@ -2526,7 +2592,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return Qk
 
     # noinspection PyPep8,PyPep8
-    def calc_JP_Q(self, k, F_all_users, pe=1.0):
+    def calc_JP_Q(self, k: int, F_all_users: np.ndarray,
+                  pe: float = 1.0) -> np.ndarray:
         """
         Calculates the interference covariance matrix at the
         :math:`k`-th receiver with a joint processing scheme.
@@ -2561,7 +2628,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         return Qk
 
     # noinspection PyUnresolvedReferences
-    def calc_SINR(self, F, U, pe=1.0):
+    def calc_SINR(self, F: np.ndarray, U: np.ndarray,
+                  pe: float = 1.0) -> np.ndarray:
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
@@ -2598,7 +2666,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
     # pylint: disable=W0222
     # noinspection PyPep8
-    def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users, k, Rek):
+    def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users: np.ndarray,
+                                           k: int,
+                                           Rek: NumberOrArray) -> np.ndarray:
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_ when joint process is employed.
@@ -2634,7 +2704,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
             Hk, F_all_users, Rek)
 
     # noinspection PyPep8,PyPep8
-    def _calc_JP_Bkl_cov_matrix_second_part(self, Fk, k, l):
+    def _calc_JP_Bkl_cov_matrix_second_part(self, Fk: np.ndarray, k: int,
+                                            l: int) -> np.ndarray:
         """
         Calculates the second part in the equation of the Blk covariance
         matrix in equation (28) of [Cadambe2008]_ (note that it does not
@@ -2663,7 +2734,8 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         Hk = self.get_Hk_without_ext_int(k)
         return self._calc_JP_Bkl_cov_matrix_second_part_impl(Hk, Fk, l)
 
-    def _calc_JP_SINR_k(self, k, Fk, Uk, Bkl_all_l):
+    def _calc_JP_SINR_k(self, k: int, Fk: np.ndarray, Uk: np.ndarray,
+                        Bkl_all_l: np.ndarray) -> np.ndarray:
         """
         Calculates the SINR of all streams of user 'k'.
 
@@ -2682,14 +2754,15 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        SINR_k : np.ndarray
+        np.ndarray
             The SINR for the different streams of user k.
 
         """
         Hk = self.get_Hk_without_ext_int(k)
         return self._calc_JP_SINR_k_impl(Hk, Fk, Uk, Bkl_all_l)
 
-    def calc_JP_SINR(self, F, U, pe=1.0):
+    def calc_JP_SINR(self, F: np.ndarray, U: np.ndarray,
+                     pe: float = 1.0) -> np.ndarray:
         """
         Calculates the SINR values (in linear scale) of all streams of all
         users with the current IA solution.
@@ -2710,7 +2783,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         Returns
         -------
-        SINRs : np.ndarray
+        np.ndarray
             The SINR (in linear scale) of all streams of all users. This
             is a 1D numpy array of 1D numpy arrays (of floats).
         """

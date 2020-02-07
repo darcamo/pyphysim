@@ -15,5 +15,5 @@ ipywidgets
 
 # Documentation
 sphinx
-numpydoc
+# numpydoc
 sphinx_rtd_theme

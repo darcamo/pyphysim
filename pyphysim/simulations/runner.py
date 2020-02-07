@@ -2,24 +2,26 @@
 # -*- coding: utf-8 -*-
 """Module containing the simulation runner."""
 
-from time import time
-import sys
-import os
-import itertools
 import argparse
+import itertools
+import os
+import sys
+from time import time
 
-try:
-    # noinspection PyUnresolvedReferences
-    from ipyparallel import LoadBalancedView, DirectView
-except ImportError:  # pragma: no cover
-    pass
-
-from .parameters import SimulationParameters
-from .results import SimulationResults, Result
+from pyphysim.simulations.progressbar import ProgressbarZMQClient
 
 from ..util.misc import pretty_time
-from .progressbar import ProgressbarText, ProgressbarText2, \
-    ProgressbarText3, ProgressbarZMQServer, ProgressBarIPython
+from .parameters import SimulationParameters
+from .progressbar import (ProgressBarIPython, ProgressbarText,
+                          ProgressbarText2, ProgressbarText3,
+                          ProgressbarZMQServer)
+from .results import Result, SimulationResults
+
+# try:
+#     # noinspection PyUnresolvedReferences
+#     from ipyparallel import LoadBalancedView, DirectView
+# except ImportError:  # pragma: no cover
+#     pass
 
 __all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
 
@@ -148,7 +150,6 @@ class SkipThisOne(Exception):
         The message with more information on why the exception was
         raised.
     """
-
     def __init__(self, msg):
         """
         Parameters
@@ -157,6 +158,7 @@ class SkipThisOne(Exception):
             The message with more information on why the exception was
             raised.
         """
+        super().__init__()
         self.msg = msg
 
     def __str__(self):  # pragma: nocover
@@ -174,7 +176,7 @@ class SkipThisOne(Exception):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx SimulationRunner - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# pylint: disable=R0921,R0902
+# pylint: disable=R0902
 class SimulationRunner:
     """
     Base class to run Monte Carlo simulations.
@@ -245,7 +247,6 @@ class SimulationRunner:
     .SimulationParameters : Class to store the simulation parameters.
     .Result : Class to store a single simulation result.
     """
-
     def __init__(self,
                  default_config_file=None,
                  config_spec=None,
@@ -678,7 +679,7 @@ class SimulationRunner:
         return True
 
     def _get_serial_update_progress_function(
-        self, current_params):  # pragma: no cover
+            self, current_params):  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -826,10 +827,11 @@ class SimulationRunner:
                     filename = '{0}_progress.txt'.format(
                         self._results_base_filename)
 
-                self._pbar = ProgressbarZMQServer(message=message,
-                                                  sleep_time=sleep_time,
-                                                  filename=filename,
-                                                  **self.progressbar_extra_args)
+                self._pbar = ProgressbarZMQServer(
+                    message=message,
+                    sleep_time=sleep_time,
+                    filename=filename,
+                    **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient
             # class, but it behaves like a function.
@@ -905,9 +907,8 @@ class SimulationRunner:
 
     # noinspection PyUnboundLocalVariable
     def _simulate_for_current_params_common(
-        self,
-        current_params,
-        update_progress_func=lambda value: None):  # pragma: no cover
+            self, current_params,
+            update_progress_func=lambda value: None):  # pragma: no cover
         """
         Parameters
         ----------
@@ -1020,8 +1021,8 @@ class SimulationRunner:
             toc = time()
             # Save partial results each 500 iterations as well as each 5
             # minutes
-            if ((toc - last_tic > 300 or current_rep % 500 == 0) and
-                    self._results_base_filename is not None):
+            if ((toc - last_tic > 300 or current_rep % 500 == 0)
+                    and self._results_base_filename is not None):
                 self.__save_partial_results(current_rep, current_params,
                                             current_sim_results,
                                             partial_results_filename)
@@ -1072,18 +1073,16 @@ class SimulationRunner:
         update_progress_func = self._get_serial_update_progress_function(
             current_params)
 
-        return self._simulate_for_current_params_common(current_params,
-                                                        update_progress_func)
+        return self._simulate_for_current_params_common(
+            current_params, update_progress_func)
 
     # This method is run in another process. Therefore, the python coverage
     # program cannot see that it is actually used (it is used when the
     # simulate_in_parallel method is tested). Because of that we add the
     # pragma line here.
     @staticmethod
-    def _simulate_for_current_params_parallel(obj,
-                                              current_params,
-                                              proxybar_data=None
-                                             ):  # pragma: no cover
+    def _simulate_for_current_params_parallel(
+            obj, current_params, proxybar_data=None):  # pragma: no cover
         """
         Simulate (parallel) for the current parameters.
 
@@ -1107,8 +1106,6 @@ class SimulationRunner:
             SimulationResults object, and the name of the file storing
             partial results.
         """
-        from pyphysim.simulations.progressbar import ProgressbarZMQClient
-
         # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
         if proxybar_data is None:
 
@@ -1149,9 +1146,9 @@ class SimulationRunner:
         iterator
             An iterator that can be called to print the current variation.
         """
-        if (self.update_progress_function_style is None or
-                self.progress_output_type != 'screen' or
-                self.update_progress_function_style == 'ipython'):
+        if (self.update_progress_function_style is None
+                or self.progress_output_type != 'screen'
+                or self.update_progress_function_style == 'ipython'):
             for _ in itertools.repeat(''):
                 yield 0
         else:  # pragma: no cover
@@ -1235,7 +1232,8 @@ class SimulationRunner:
         # However, this will only be printed if
         # self.progress_output_type is equal to 'screen'
         if param_variation_index is None:
-            var_print_iter = self.__get_print_variation_iterator(num_variations)
+            var_print_iter = self.__get_print_variation_iterator(
+                num_variations)
         else:
             var_print_iter = self.__get_print_variation_iterator(
                 num_variations, start=param_variation_index)
@@ -1301,7 +1299,8 @@ class SimulationRunner:
 
     # The unittests for this method only run if an ipython cluster is
     # started with a profile called "tests".
-    def simulate_in_parallel(self, view, wait=True):  # pragma: no cover
+    def simulate_in_parallel(self, view,
+                             wait: bool = True):  # pragma: no cover
         """
         Same as the simulate method, but the different parameters
         configurations are simulated in parallel.
@@ -1454,15 +1453,12 @@ class SimulationRunner:
         simulate method.
 
         """
-        pass
 
     # noinspection PyMethodMayBeStatic
     def _on_simulate_finish(self):
         """This method is called only once at the end of the simulate method.
 
         """
-        pass
-
     def _on_simulate_current_params_start(self, current_params):
         """
         This method is called once for each simulation parameters
@@ -1483,7 +1479,6 @@ class SimulationRunner:
         modified these changes WILL NOT be carried back to the original
         process.
         """
-        pass
 
     # noinspection PyMethodMayBeStatic
     def _on_simulate_current_params_finish(self, current_params,
@@ -1507,7 +1502,6 @@ class SimulationRunner:
         performed in parallel, it should only modify member variables that
         are only used inside _run_simulation.
         """
-        pass
 
 
 # xxxxxxxxxx SimulationRunner - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

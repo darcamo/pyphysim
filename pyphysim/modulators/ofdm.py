@@ -4,8 +4,10 @@
 Module implementing OFDM modulation and demodulation.
 """
 
-import numpy as np
 import math
+from typing import Optional, Tuple
+
+import numpy as np
 
 from ..channels import fading
 
@@ -16,7 +18,10 @@ class OFDM:
     """
     OFDM class.
     """
-    def __init__(self, fft_size, cp_size, num_used_subcarriers=None):
+    def __init__(self,
+                 fft_size: int,
+                 cp_size: int,
+                 num_used_subcarriers: Optional[int] = None) -> None:
         """
         Initialize the OFDM object.
 
@@ -39,13 +44,16 @@ class OFDM:
         ------
         ValueError
             If the any of the parameters are invalid."""
-        self.fft_size = 0
-        self.cp_size = 0
-        self.num_used_subcarriers = 0
+        self.fft_size: int = 0
+        self.cp_size: int = 0
+        self.num_used_subcarriers: int = 0
 
         self.set_parameters(fft_size, cp_size, num_used_subcarriers)
 
-    def set_parameters(self, fft_size, cp_size, num_used_subcarriers=None):
+    def set_parameters(self,
+                       fft_size: int,
+                       cp_size: int,
+                       num_used_subcarriers: Optional[int] = None) -> None:
         """
         Set the OFDM parameters.
 
@@ -86,7 +94,7 @@ class OFDM:
         self.cp_size = cp_size
         self.num_used_subcarriers = num_used_subcarriers
 
-    def _calc_zeropad(self, input_data_size):
+    def _calc_zeropad(self, input_data_size: int) -> Tuple[int, int]:
         """
         Calculates the number of zeros that must be added to the input data
         to make it a multiple of the OFDM size.
@@ -115,7 +123,7 @@ class OFDM:
                    input_data_size)
         return zeropad, num_ofdm_symbols
 
-    def _get_subcarrier_numbers(self):
+    def _get_subcarrier_numbers(self) -> np.ndarray:
         """
         Get the indexes of all subcarriers, including the negative, the DC
         and the positive subcarriers.
@@ -143,7 +151,7 @@ class OFDM:
         indexes_regular_order = (np.arange(self.fft_size) - self.fft_size // 2)
         return np.fft.fftshift(indexes_regular_order)
 
-    def _get_used_subcarrier_numbers(self):
+    def _get_used_subcarrier_numbers(self) -> np.ndarray:
         """
         Get the subcarrier indexes of the actually used subcarriers.
 
@@ -178,7 +186,7 @@ class OFDM:
         indexes = np.hstack([first_half, second_half])
         return indexes
 
-    def get_used_subcarrier_indexes(self):
+    def get_used_subcarrier_indexes(self) -> np.ndarray:
         """
         Get the subcarrier indexes of the subcarriers actually used in a
         way suitable for python indexing (going from 0 to fft_size-1).
@@ -216,7 +224,7 @@ class OFDM:
             [self.fft_size + numbers[half_used:], numbers[0:half_used]])
         return indexes_proper
 
-    def _prepare_input_signal(self, input_signal):
+    def _prepare_input_signal(self, input_signal: np.ndarray) -> np.ndarray:
         """
         Prepare the input signal to be passed to the IFFT in the modulate
         function.
@@ -273,7 +281,8 @@ class OFDM:
 
         return input_ifft
 
-    def _prepare_decoded_signal(self, decoded_signal):
+    def _prepare_decoded_signal(self,
+                                decoded_signal: np.ndarray) -> np.ndarray:
         """
         Prepare the decoded signal that was processed by the FFT in the
         demodulate function.
@@ -309,7 +318,7 @@ class OFDM:
         """
         return decoded_signal[:, self.get_used_subcarrier_indexes()].flatten()
 
-    def _add_CP(self, input_data):
+    def _add_CP(self, input_data: np.ndarray) -> np.ndarray:
         """
         Add the Cyclic prefix to the input data.
 
@@ -332,7 +341,7 @@ class OFDM:
             output = input_data
         return output
 
-    def _remove_CP(self, received_data):
+    def _remove_CP(self, received_data: np.ndarray) -> np.ndarray:
         """
         Remove the Cyclic prefix of the received data.
 
@@ -359,7 +368,7 @@ class OFDM:
 
         return received_data_no_CP
 
-    def _calculate_power_scale(self):
+    def _calculate_power_scale(self) -> float:
         """
         Calculate the power scale that needs to be applied in the
         modulator and removed in the demodulate methods.
@@ -383,7 +392,7 @@ class OFDM:
                       (float(self.num_used_subcarriers) + self.cp_size)
         return power_scale
 
-    def modulate(self, input_signal):
+    def modulate(self, input_signal: np.ndarray) -> np.ndarray:
         """
         Perform the OFDM modulation of the input_signal.
 
@@ -420,7 +429,7 @@ class OFDM:
         # Change the shape to one dimensional array and return that array
         return modulated_ofdm.flatten()
 
-    def demodulate(self, received_signal):
+    def demodulate(self, received_signal: np.ndarray) -> np.ndarray:
         """
         Perform the OFDM demodulation of the received_signal.
 
@@ -469,10 +478,11 @@ class OfdmOneTapEqualizer:
     ofdm_obj : OFDM
         The OFDM object used to modulate/demodulate the data.
     """
-    def __init__(self, ofdm_obj):
+    def __init__(self, ofdm_obj: OFDM):
         self._ofdm_obj = ofdm_obj
 
-    def _equalize_data(self, data_reshaped, mean_freq_response):
+    def _equalize_data(self, data_reshaped: np.ndarray,
+                       mean_freq_response: np.ndarray) -> np.ndarray:
         """
         Perform the one-tap equalization and return `data` after the
         channel compensation.
@@ -503,7 +513,9 @@ class OfdmOneTapEqualizer:
 
         return equalized_ofdm_demodulated_data
 
-    def equalize_data(self, data, impulse_response):
+    def equalize_data(self, data: np.ndarray,
+                      impulse_response: fading.TdlImpulseResponse
+                      ) -> np.ndarray:
         """
         Perform the one-tap equalization and return `data` after the
         channel compensation.

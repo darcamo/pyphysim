@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from typing import Optional, TypeVar
+
 import numpy as np
+
 from ..util.conversion import dB2Linear
 
 # See http://www.qtc.jp/3GPP/Specs/25996-a00.pdf
+
+NumberOrArray = TypeVar("NumberOrArray", np.ndarray, float)
 
 
 class AntGainBase:  # pragma: no cover
     """Base class for antenna models.
     """
-
-    def __init__(self,):
-        pass
-
-    def get_antenna_gain(self, angle):
+    def get_antenna_gain(self, angle: NumberOrArray) -> NumberOrArray:
         """
         Get the antenna gain for the given angle.
 
@@ -41,15 +42,15 @@ class AntGainOmni(AntGainBase):
     ant_gain : float, optional
         The antenna gain (in dBi). If not provided then 0dBi will be assumed.
     """
-
-    def __init__(self, ant_gain=None):
+    def __init__(self, ant_gain: Optional[float] = None):
         super(AntGainOmni, self).__init__()
+        self.ant_gain: float
         if ant_gain is None:
             self.ant_gain = 1.0
         else:
             self.ant_gain = dB2Linear(ant_gain)
 
-    def get_antenna_gain(self, angle):
+    def get_antenna_gain(self, angle: NumberOrArray) -> NumberOrArray:
         """
         Get the antenna gain for the given angle.
 
@@ -66,8 +67,8 @@ class AntGainOmni(AntGainBase):
         """
         if isinstance(angle, np.ndarray):
             return self.ant_gain * np.ones(angle.shape)
-        else:
-            return self.ant_gain
+
+        return self.ant_gain
 
 
 class AntGainBS3GPP25996(AntGainBase):
@@ -88,9 +89,11 @@ class AntGainBS3GPP25996(AntGainBase):
     number_of_sectors : int
         The number of sectors of the base station. It can be either 3 or 6.
     """
-
-    def __init__(self, number_of_sectors=3):
+    def __init__(self, number_of_sectors: int = 3):
         super(AntGainBS3GPP25996, self).__init__()
+
+        self.ant_gain: float
+
         if number_of_sectors == 3:
             self.theta_3db = 70.  # Defined in the norm
             self.Am = 20.  # Maximum attenuation in dB
@@ -104,7 +107,7 @@ class AntGainBS3GPP25996(AntGainBase):
                 "Invalid number of sectors: {0}".format(number_of_sectors))
 
     # noinspection PyPep8
-    def get_antenna_gain(self, angle):
+    def get_antenna_gain(self, angle: NumberOrArray) -> NumberOrArray:
         """
         Get the antenna gain for the given angle.
 

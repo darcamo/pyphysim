@@ -15,12 +15,17 @@ try:
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
-from abc import ABCMeta, abstractmethod
-import numpy as np
-from io import BytesIO
 import cmath
+import math
+from abc import ABCMeta, abstractmethod
+from io import BytesIO
+from typing import Any, Optional, TypeVar, cast
+
+import numpy as np
 
 __all__ = ['Coordinate', 'Shape', 'Hexagon', 'Rectangle', 'Circle']
+
+ComplexOrArray = TypeVar("ComplexOrArray", np.ndarray, complex)
 
 
 class Coordinate:
@@ -31,8 +36,7 @@ class Coordinate:
     complex number) and how to calculate the distance from it to another
     location.
     """
-
-    def __init__(self, pos):
+    def __init__(self, pos: complex):
         """
         Initializes the Coordinate object.
 
@@ -41,11 +45,11 @@ class Coordinate:
         pos : complex
             Coordinate in the complex grid.
         """
-        self._pos = pos
+        self._pos: complex = pos
 
     # xxxxxxxxxx pos property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
-    def pos(self):
+    def pos(self) -> complex:
         """
         Get the coordinate position as a complex number.
 
@@ -57,7 +61,7 @@ class Coordinate:
         return self._pos
 
     @pos.setter
-    def pos(self, value):
+    def pos(self, value: complex) -> None:
         """
         Set the coordinate position.
 
@@ -70,7 +74,7 @@ class Coordinate:
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def calc_dist(self, other):
+    def calc_dist(self, other: "Coordinate") -> float:
         """
         Calculates the distance to another coordinate.
 
@@ -84,10 +88,10 @@ class Coordinate:
         dist : float
             Distance from self to the other coordinate.
         """
-        dist = np.abs(self.pos - other.pos)
+        dist: float = np.abs(self.pos - other.pos)
         return dist
 
-    def move_by_relative_coordinate(self, rel_pos):
+    def move_by_relative_coordinate(self, rel_pos: complex) -> None:
         """
         Move from the current position to the relative coordinate.
 
@@ -101,7 +105,8 @@ class Coordinate:
         """
         self.pos += rel_pos
 
-    def move_by_relative_polar_coordinate(self, radius, angle):
+    def move_by_relative_polar_coordinate(self, radius: float,
+                                          angle: float) -> None:
         """
         Move from the current position to the relative coordinate.
 
@@ -118,7 +123,7 @@ class Coordinate:
         rel_pos = cmath.rect(radius, angle)
         self.move_by_relative_coordinate(rel_pos)
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Representation of a Coordinate object.
 
@@ -149,7 +154,7 @@ class Shape(Coordinate):
     # 'abstract' must be implemented in a subclass.
     __metaclass__ = ABCMeta
 
-    def __init__(self, pos, radius, rotation=0):
+    def __init__(self, pos: complex, radius: float, rotation: float = 0):
         Coordinate.__init__(self, pos)
 
         self._radius = radius
@@ -165,7 +170,7 @@ class Shape(Coordinate):
         # the 'ax' argument in the plot method this will not be used.
         self.figsize = (8, 8)
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Representation of a Shape object.
 
@@ -179,7 +184,7 @@ class Shape(Coordinate):
 
     # xxxxx radius property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
-    def radius(self):
+    def radius(self) -> float:
         """
         Get method for the radius property.
 
@@ -191,7 +196,7 @@ class Shape(Coordinate):
         return self._radius
 
     @radius.setter
-    def radius(self, value):
+    def radius(self, value: float) -> None:
         """
         Set method for the radius property.
 
@@ -206,7 +211,7 @@ class Shape(Coordinate):
 
     # xxxxx rotation property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
-    def rotation(self):
+    def rotation(self) -> float:
         """
         Get method for the rotation property.
 
@@ -218,7 +223,7 @@ class Shape(Coordinate):
         return self._rotation
 
     @rotation.setter
-    def rotation(self, value):
+    def rotation(self, value: float) -> None:
         """
         Set method for the rotation property.
 
@@ -232,7 +237,7 @@ class Shape(Coordinate):
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     @abstractmethod
-    def _get_vertex_positions(self):  # pragma: no cover
+    def _get_vertex_positions(self) -> np.ndarray:  # pragma: no cover
         """
         Calculates the vertex positions ignoring any rotation and
         considering that the shape is at the origin (rotation and
@@ -256,7 +261,7 @@ class Shape(Coordinate):
 
     # xxxxx vertex property xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     @property
-    def vertices_no_trans_no_rotation(self):  # pragma: no cover
+    def vertices_no_trans_no_rotation(self) -> np.ndarray:  # pragma: no cover
         """
         Get the shape vertexes without translation and rotation.
 
@@ -269,7 +274,7 @@ class Shape(Coordinate):
         return self._get_vertex_positions()
 
     @property
-    def vertices(self):
+    def vertices(self) -> np.ndarray:
         """
         Get method for the vertices property.
 
@@ -278,10 +283,10 @@ class Shape(Coordinate):
         np.ndarray
             The shape vertexes.
         """
-        vertex_positions = self._get_vertex_positions()
-        vertex_positions = self.pos + Shape.calc_rotated_pos(
+        vertex_positions: np.ndarray = self._get_vertex_positions()
+        vertex_positions2: np.ndarray = self.pos + Shape.calc_rotated_pos(
             vertex_positions, self.rotation)
-        return vertex_positions
+        return vertex_positions2
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -302,7 +307,7 @@ class Shape(Coordinate):
         mpl_path = path.Path(from_complex_array_to_real_matrix(self.vertices))
 
         # This code is used with Matplotlib version 1.2 or higher.
-        return mpl_path.contains_point([point.real, point.imag])
+        return cast(bool, mpl_path.contains_point([point.real, point.imag]))
 
         # xxxxx Code for Matplotlib version 1.1 xxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The code below was used for Matplotlib lower then version
@@ -316,7 +321,10 @@ class Shape(Coordinate):
         #                       self.vertices)) == 1
 
     # noinspection PyUnresolvedReferences
-    def get_border_point(self, angle, ratio):  # pylint: disable=R0914
+    def get_border_point(
+            self,
+            angle: float,
+            ratio: Optional[float] = None) -> complex:  # pylint: disable=R0914
         """
         Calculates the coordinate of the point that intercepts the
         border of the shape if we go from the origin with a given angle
@@ -338,11 +346,14 @@ class Shape(Coordinate):
             point will be in the end of the line (touching the shape's
             border)
         """
+        if ratio is None:
+            ratio = 1.0
+
         angle_rad = np.pi * angle / 180.
 
         # Which point we get if we walk a distance of cell radius in the
         # desired angle direction?
-        point = self.pos + self._radius * np.exp(angle_rad * 1j)
+        point = cast(complex, self.pos + self._radius * np.exp(angle_rad * 1j))
 
         # Calculates the distance of this point to all vertices and finds
         # the closest vertices
@@ -372,6 +383,7 @@ class Shape(Coordinate):
             # means that the returned point is a linear combination between
             # the shape's central position and the point at the border of
             # the shape
+
             return (1 - ratio) * self.pos + ratio * point
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -409,7 +421,7 @@ class Shape(Coordinate):
         return (1 - ratio) * self.pos + ratio * point
 
     # noinspection PyShadowingNames,PyShadowingNames
-    def plot(self, ax=None):  # pragma: no cover
+    def plot(self, ax: Any = None) -> None:  # pragma: no cover
         """
         Plot the shape using the matplotlib library.
 
@@ -458,9 +470,10 @@ class Shape(Coordinate):
             plt.show()
 
     # noinspection PyShadowingNames
-    def _repr_some_format_(self,
-                           extension='png',
-                           axis_option='equal'):  # pragma: nocover
+    def _repr_some_format_(
+            self,
+            extension: str = 'png',
+            axis_option: str = 'equal') -> Any:  # pragma: nocover
         """
         Return the representation of the shape in the desired format.
 
@@ -472,6 +485,10 @@ class Shape(Coordinate):
             such as 'png', 'svg', stc.
         axis_option : str
             Option to be given to the ax.axis function.
+
+        Returns
+        -------
+        output
         """
         plt.ioff()  # turn off interactive mode
         fig = plt.figure(figsize=self.figsize)
@@ -488,20 +505,21 @@ class Shape(Coordinate):
 
         return output.getvalue()
 
-    def _repr_png_(self):  # pragma: no cover
+    def _repr_png_(self) -> Any:  # pragma: no cover
         """
         Return the PNG representation of the shape.
         """
         return self._repr_some_format_('png')
 
-    def _repr_svg_(self):  # pragma: no cover
+    def _repr_svg_(self) -> Any:  # pragma: no cover
         """
         Return the SVG representation of the shape.
         """
         return self._repr_some_format_('svg')
 
     @staticmethod
-    def calc_rotated_pos(cur_pos, angle):
+    def calc_rotated_pos(cur_pos: ComplexOrArray,
+                         angle: float) -> ComplexOrArray:
         """
         Rotate the complex numbers in the `cur_pos` array by `angle` (in
         degrees) around the origin.
@@ -519,7 +537,7 @@ class Shape(Coordinate):
             The rotate complex number(s).
         """
         angle_rad = angle * np.pi / 180.
-        return cur_pos * np.exp(1j * angle_rad)
+        return cur_pos * np.exp(1j * angle_rad)  # type: ignore
 
 
 class Hexagon(Shape):
@@ -539,12 +557,11 @@ class Hexagon(Shape):
     rotation : float
         Rotation of the hexagon in degrees.
     """
-
-    def __init__(self, pos, radius, rotation=0):
+    def __init__(self, pos: complex, radius: float, rotation: float = 0):
         Shape.__init__(self, pos, radius, rotation)
 
     @property
-    def height(self):
+    def height(self) -> float:
         """
         Get method for the height property.
 
@@ -553,9 +570,9 @@ class Hexagon(Shape):
         float
             The height of the Hexagon.
         """
-        return self._radius * np.sqrt(3.) / 2.0
+        return self._radius * math.sqrt(3.) / 2.0
 
-    def _get_vertex_positions(self):
+    def _get_vertex_positions(self) -> np.ndarray:
         """
         Calculates the vertex positions ignoring any rotation and
         considering that the hexagon is at the origin (rotation and
@@ -566,7 +583,7 @@ class Hexagon(Shape):
         vertex_positions : np.ndarray
             The positions of the vertexes of the shape.
         """
-        vertex_positions = np.zeros(6, dtype=complex)
+        vertex_positions: np.ndarray = np.zeros(6, dtype=complex)
         vertex_positions[0] = complex(-self._radius / 2., -self.height)
         # noinspection PyTypeChecker
         angles = np.linspace(0, 240, 5) * np.pi / 180.
@@ -595,8 +612,7 @@ class Rectangle(Shape):
     rotation : float
         Rotation of the rectangle in degrees.
     """
-
-    def __init__(self, first, second, rotation=0):
+    def __init__(self, first: complex, second: complex, rotation: float = 0):
         central_pos = (first + second) / 2
         radius = np.abs(second - central_pos)
         Shape.__init__(self, central_pos, radius, rotation)
@@ -605,7 +621,7 @@ class Rectangle(Shape):
         self._upper_coord = complex(max(first.real, second.real),
                                     max(first.imag, second.imag))
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Representation of a Rectangle object.
 
@@ -619,7 +635,7 @@ class Rectangle(Shape):
                                                       self._upper_coord,
                                                       self.rotation)
 
-    def _get_vertex_positions(self):
+    def _get_vertex_positions(self) -> np.ndarray:
         """
         Calculates the vertex positions ignoring any rotation and
         considering that the rectangle is at the origin (rotation and
@@ -630,7 +646,7 @@ class Rectangle(Shape):
         vertex_positions : np.ndarray
             The positions of the vertexes of the shape.
         """
-        vertex_positions = np.zeros(4, dtype=complex)
+        vertex_positions: np.ndarray = np.zeros(4, dtype=complex)
         A = self._lower_coord - self.pos
         B = self._upper_coord - self.pos
         vertex_positions[0] = A
@@ -639,9 +655,10 @@ class Rectangle(Shape):
         vertex_positions[3] = complex(A.real, B.imag)
         return vertex_positions
 
-    def _repr_some_format_(self,
-                           extension='png',
-                           axis_option='tight'):  # pragma: no cover
+    def _repr_some_format_(
+            self,
+            extension: str = 'png',
+            axis_option: str = 'tight') -> Any:  # pragma: no cover
         """
         Return the representation of the shape in the desired format.
 
@@ -651,6 +668,8 @@ class Rectangle(Shape):
             The extension of the desired format. This should be something
             that the savefig method in a matplotlib figure can understand,
             such as 'png', 'svg', stc.
+        axis_option : str
+            Option to be given to the ax.axis function.
 
         Notes
         -----
@@ -662,7 +681,7 @@ class Rectangle(Shape):
                                         extension=extension,
                                         axis_option=axis_option)
 
-    def is_point_inside_shape(self, point):
+    def is_point_inside_shape(self, point: complex) -> bool:
         """
         Test is a point is inside the rectangle
 
@@ -673,7 +692,7 @@ class Rectangle(Shape):
 
         Returns
         -------
-        inside_or_not : bool
+        bool
             True if `point` is inside the rectangle, False otherwise.
         """
         min_x = min(self._lower_coord.real, self._upper_coord.real)
@@ -707,11 +726,10 @@ class Circle(Shape):
     radius : float
         Circle's radius.
     """
-
-    def __init__(self, pos, radius):
+    def __init__(self, pos: complex, radius: float):
         Shape.__init__(self, pos, radius)
 
-    def _get_vertex_positions(self):
+    def _get_vertex_positions(self) -> np.ndarray:
         """
         Calculates the vertex positions considering that the circle is
         at the origin (translation will be added automatically later).
@@ -730,13 +748,15 @@ class Circle(Shape):
         returned vertexes was arbitrarily chosen as 12.
         """
         num_vertexes = 12
-        angles = np.linspace(0, (num_vertexes - 1.) / num_vertexes * 2 * np.pi,
-                             num_vertexes)
+        angles: np.ndarray = np.linspace(
+            0, (num_vertexes - 1.) / num_vertexes * 2 * np.pi, num_vertexes)
 
-        vertex_positions = self._radius * np.exp(1j * angles)
+        vertex_positions: np.ndarray = self._radius * np.exp(1j * angles)
         return vertex_positions
 
-    def get_border_point(self, angle, ratio):
+    def get_border_point(self,
+                         angle: float,
+                         ratio: Optional[float] = None) -> complex:
         """
         Calculates the coordinate of the point that intercepts the
         border of the circle if we go from the origin with a given angle
@@ -745,7 +765,7 @@ class Circle(Shape):
         Parameters
         ----------
         angle : float
-            Angle (in degrees)
+            Angle in degrees
         ratio : float
             The ratio from the cell center to the border where the desired
             point is located. It must be a value between 0 and 1.
@@ -758,8 +778,12 @@ class Circle(Shape):
             one the point will be in the end of the line (touching the
             circle's border)
         """
+        if ratio is None:
+            ratio = 1.0
+
         angle_rad = np.pi * angle / 180.
-        return self.pos + np.exp(1j * angle_rad) * self.radius * ratio
+        return cast(complex,
+                    self.pos + np.exp(1j * angle_rad) * self.radius * ratio)
 
     def is_point_inside_shape(self, point: complex) -> bool:
         """
@@ -775,10 +799,10 @@ class Circle(Shape):
         inside_or_not
             True if `point` is inside the circle, False otherwise.
         """
-        return np.abs(self.pos - point) < self.radius
+        return cast(bool, np.abs(self.pos - point) < self.radius)
 
     # noinspection PyShadowingNames,PyShadowingNames
-    def plot(self, ax=None):  # pragma: no cover
+    def plot(self, ax: Any = None) -> None:  # pragma: no cover
         """
         Plot the circle using the Matplotlib library.
 
@@ -826,7 +850,7 @@ class Circle(Shape):
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def from_complex_array_to_real_matrix(a):
+def from_complex_array_to_real_matrix(a: np.ndarray) -> np.ndarray:
     """
     Convert an array of complex numbers to a matrix of real numbers.
 
@@ -896,7 +920,6 @@ if __name__ == '__main__1':  # pragma: no cover
     plt.show()
 
 if __name__ == '__main__':  # pragma: no cover
-    from matplotlib import pyplot as plt
     ax = plt.axes()
 
     h = Hexagon(0, 1)

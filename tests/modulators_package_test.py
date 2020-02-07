@@ -36,12 +36,11 @@ from pyphysim.channels import fading, fading_generators
 class MimoDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
-
     def test_modulators(self):
         """Run doctests in the modulators module."""
         doctest.testmod(fundamental)
 
-    def test_ofdm(self,):
+    def test_ofdm(self, ):
         """Run doctests in the ofdm module."""
         doctest.testmod(ofdm)
 
@@ -50,7 +49,6 @@ class MimoDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class PSKTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.psk_obj = fundamental.PSK(4)
@@ -103,7 +101,8 @@ class PSKTestCase(unittest.TestCase):
             self.psk_obj2.calcTheoreticalSER(SNR_values), theoretical_ser2)
 
         np.testing.assert_array_almost_equal(
-            self.psk_obj2.calcTheoreticalBER(SNR_values), theoretical_ser2 / 3.)
+            self.psk_obj2.calcTheoreticalBER(SNR_values),
+            theoretical_ser2 / 3.)
 
     # The calcTheoreticalPER method is defined in the Modulators class, but
     # can only be tested in a subclass, since it depends on the
@@ -151,15 +150,15 @@ class PSKTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(se2, expected_se2)
 
     def test_modulate_and_demodulate(self):
-        awgn_noise = randn_c(20,) * 1e-2
+        awgn_noise = randn_c(20, ) * 1e-2
 
-        input_data = np.random.random_integers(0, 4 - 1, 20)
+        input_data = np.random.randint(0, 4, 20)
         modulated_data = self.psk_obj.modulate(input_data)
         demodulated_data = self.psk_obj.demodulate(modulated_data + awgn_noise)
 
         np.testing.assert_array_equal(input_data, demodulated_data)
 
-        input_data2 = np.random.random_integers(0, 8 - 1, 20)
+        input_data2 = np.random.randint(0, 8, 20)
         modulated_data2 = self.psk_obj2.modulate(input_data2)
         demodulated_data2 = self.psk_obj2.demodulate(modulated_data2 +
                                                      awgn_noise)
@@ -174,7 +173,6 @@ class PSKTestCase(unittest.TestCase):
 
 
 class BPSKTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.bpsk_obj = fundamental.BPSK()
@@ -201,12 +199,13 @@ class BPSKTestCase(unittest.TestCase):
             self.bpsk_obj.calcTheoreticalBER(SNR_values), theoretical_ser)
 
     def test_modulate_and_demodulate(self):
-        input_data = np.random.random_integers(0, 1, 20)
+        input_data = np.random.randint(0, 2, 20)
         modulated_data = self.bpsk_obj.modulate(input_data)
 
-        awgn_noise = randn_c(20,) * 1e-2
+        awgn_noise = randn_c(20, ) * 1e-2
 
-        demodulated_data = self.bpsk_obj.demodulate(modulated_data + awgn_noise)
+        demodulated_data = self.bpsk_obj.demodulate(modulated_data +
+                                                    awgn_noise)
         np.testing.assert_array_equal(input_data, demodulated_data)
 
         # Test if an exception is raised for invalid arguments
@@ -216,7 +215,6 @@ class BPSKTestCase(unittest.TestCase):
 
 
 class QAMTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.qam_obj = fundamental.QAM(4)
@@ -297,8 +295,9 @@ class QAMTestCase(unittest.TestCase):
         SNR_values = np.array([0, 5, 10, 15, 20])
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        theoretical_ser = np.array(
-            [2.92139018e-01, 7.39382701e-02, 1.56478964e-03, 1.87220798e-08, 0])
+        theoretical_ser = np.array([
+            2.92139018e-01, 7.39382701e-02, 1.56478964e-03, 1.87220798e-08, 0
+        ])
         np.testing.assert_array_almost_equal(
             self.qam_obj.calcTheoreticalSER(SNR_values), theoretical_ser)
 
@@ -335,23 +334,23 @@ class QAMTestCase(unittest.TestCase):
             self.qam_obj3.calcTheoreticalBER(SNR_values), theoretical_ber3)
 
     def test_modulate_and_demodulate(self):
-        awgn_noise = randn_c(20,) * 1e-2
+        awgn_noise = randn_c(20, ) * 1e-2
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        input_data = np.random.random_integers(0, 4 - 1, 20)
+        input_data = np.random.randint(0, 4, 20)
         modulated_data = self.qam_obj.modulate(input_data)
         demodulated_data = self.qam_obj.demodulate(modulated_data + awgn_noise)
         np.testing.assert_array_equal(input_data, demodulated_data)
 
         # xxxxxxxxxx Test for 16-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        input_data2 = np.random.random_integers(0, 16 - 1, 20)
+        input_data2 = np.random.randint(0, 16, 20)
         modulated_data2 = self.qam_obj2.modulate(input_data2)
         demodulated_data2 = self.qam_obj2.demodulate(modulated_data2 +
                                                      awgn_noise)
         np.testing.assert_array_equal(input_data2, demodulated_data2)
 
         # xxxxxxxxxx Test for 64-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        input_data3 = np.random.random_integers(0, 64 - 1, 20)
+        input_data3 = np.random.randint(0, 64, 20)
         modulated_data3 = self.qam_obj3.modulate(input_data3)
         demodulated_data3 = self.qam_obj3.demodulate(modulated_data3 +
                                                      awgn_noise)
@@ -373,7 +372,6 @@ class QAMTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class OfdmTestCase(unittest.TestCase):
     """Unittests for the OFDM class in the ofdm module."""
-
     def setUp(self):
         """Called before each test."""
         self.ofdm_object = OFDM(64, 16, 52)
@@ -413,7 +411,7 @@ class OfdmTestCase(unittest.TestCase):
         self.ofdm_object.set_parameters(64, 16)
         self.assertEqual(self.ofdm_object.num_used_subcarriers, 64)
 
-    def test_prepare_input_signal(self,):
+    def test_prepare_input_signal(self, ):
         # 52 elements -> exactly the number of used subcarriers in the OFDM
         # object
         input_signal = np.r_[1:53]
@@ -427,14 +425,15 @@ class OfdmTestCase(unittest.TestCase):
         self.assertEqual(num_ofdm_symbols, 1)
 
         expected_data = np.array([[
-            0., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39.,
-            40., 41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51., 52., 0.,
-            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4., 5., 6., 7.,
-            8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21.,
-            22., 23., 24., 25., 26.
+            0., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38.,
+            39., 40., 41., 42., 43., 44., 45., 46., 47., 48., 49., 50., 51.,
+            52., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 2., 3., 4.,
+            5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.,
+            19., 20., 21., 22., 23., 24., 25., 26.
         ]])
         np.testing.assert_array_equal(
-            self.ofdm_object._prepare_input_signal(input_signal), expected_data)
+            self.ofdm_object._prepare_input_signal(input_signal),
+            expected_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -607,7 +606,8 @@ class OfdmTestCase(unittest.TestCase):
         expected_data_no_power_scale2 = np.hstack([
             np.fft.ifft(input_ifft[0, :]),
         ])
-        expected_data2 = math.sqrt(power_scale2) * expected_data_no_power_scale2
+        expected_data2 = math.sqrt(
+            power_scale2) * expected_data_no_power_scale2
         expected_data2 = np.hstack(
             [expected_data2[-self.ofdm_object.cp_size:], expected_data2[0:64]])
 
@@ -628,7 +628,8 @@ class OfdmTestCase(unittest.TestCase):
         demodulated_symbols = self.ofdm_object.demodulate(
             modulated_ofdm_symbols)
 
-        np.testing.assert_array_equal(demodulated_symbols.round(), input_signal)
+        np.testing.assert_array_equal(demodulated_symbols.round(),
+                                      input_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Now lets test with a cyclic prefix xxxxxxxxxxxxxxxxxxxxxxxx
@@ -666,7 +667,6 @@ class OfdmTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class OfdmOneTapEqualizerTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -750,7 +750,7 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     # xxxxxxxxxx Input generation (not part of OFDM) xxxxxxxxxxxxxxxxxxxxxx
     num_bits = 2500
     # generating 1's and 0's
-    ip_bits = np.random.random_integers(0, 1, num_bits)
+    ip_bits = np.random.randint(0, 2, num_bits)
     # Number of modulated symbols
     # num_mod_symbols = num_bits * 1
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

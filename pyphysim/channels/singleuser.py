@@ -3,9 +3,18 @@
 """Module containing single user channels. """
 
 import math
+from typing import List, Optional, Union
+
 import numpy as np
 
-from . import fading, fading_generators
+from . import fading
+from .fading_generators import JakesSampleGenerator, RayleighSampleGenerator
+
+# Either a jakes or a Rayleigh model can be used
+FadingGenerator = Union[JakesSampleGenerator, RayleighSampleGenerator]
+
+# Type representing something that can be used to index a numpy array
+Indexes = Union[np.ndarray, List[int], slice]
 
 
 class SuChannel:
@@ -22,7 +31,7 @@ class SuChannel:
 
     Parameters
     ----------
-    fading_generator : T <= fading_generators.FadingSampleGenerator
+    fading_generator : FadingGenerator
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples. If
@@ -34,24 +43,29 @@ class SuChannel:
         Note: The power of each tap will be a negative number (in dB).
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
+    Ts : float, optional
+        The sampling interval.
     """
-
     def __init__(self,
-                 fading_generator=None,
-                 channel_profile=None,
-                 tap_powers_dB=None,
-                 tap_delays=None,
-                 Ts=None):
-        if fading_generator is None:
-            fading_generator = fading_generators.RayleighSampleGenerator()
-            if channel_profile is None and Ts is None:
-                Ts = 1
+                 fading_generator: Optional[FadingGenerator] = None,
+                 channel_profile: Optional[fading.TdlChannelProfile] = None,
+                 tap_powers_dB: Optional[np.ndarray] = None,
+                 tap_delays: Optional[np.ndarray] = None,
+                 Ts: Optional[float] = None):
 
-        if (channel_profile is None and tap_powers_dB is None and
-                tap_delays is None):
+        fading_generator_param: FadingGenerator
+        if fading_generator is None:
+            fading_generator_param = RayleighSampleGenerator()
+            if channel_profile is None and Ts is None:
+                Ts = 1.0
+        else:
+            fading_generator_param = fading_generator
+
+        if (channel_profile is None and tap_powers_dB is None
+                and tap_delays is None):
             # Only the fading generator was provided. Let's assume a flat
             # fading channel
-            self._tdlchannel = fading.TdlChannel(fading_generator,
+            self._tdlchannel = fading.TdlChannel(fading_generator_param,
                                                  tap_powers_dB=np.zeros(1),
                                                  tap_delays=np.zeros(1),
                                                  Ts=Ts)
@@ -59,15 +73,15 @@ class SuChannel:
             # More parameters were provided. We will have then a TDL
             # channel model. Let's just pass these parameters to the
             # base class.
-            self._tdlchannel = fading.TdlChannel(fading_generator,
-                                                 channel_profile, tap_powers_dB,
-                                                 tap_delays, Ts)
+            self._tdlchannel = fading.TdlChannel(fading_generator_param,
+                                                 channel_profile,
+                                                 tap_powers_dB, tap_delays, Ts)
 
         # Path loss which will be multiplied by the impulse response when
         # corrupt_data is called
-        self._pathloss_value = None
+        self._pathloss_value: Optional[float] = None
 
-    def set_pathloss(self, pathloss_value=None):
+    def set_pathloss(self, pathloss_value: Optional[float] = None) -> None:
         """
         Set the path loss (IN LINEAR SCALE).
 
@@ -96,7 +110,8 @@ class SuChannel:
 
         self._pathloss_value = pathloss_value
 
-    def set_num_antennas(self, num_rx_antennas, num_tx_antennas):
+    def set_num_antennas(self, num_rx_antennas: int,
+                         num_tx_antennas: int) -> None:
         """
         Set the number of transmit and receive antennas for MIMO
         transmission.
@@ -113,7 +128,7 @@ class SuChannel:
         """
         self._tdlchannel.set_num_antennas(num_rx_antennas, num_tx_antennas)
 
-    def corrupt_data(self, signal):
+    def corrupt_data(self, signal: np.ndarray) -> np.ndarray:
         """
         Transmit the signal through the TDL channel.
 
@@ -137,9 +152,10 @@ class SuChannel:
         return output
 
     def corrupt_data_in_freq_domain(self,
-                                    signal,
-                                    fft_size,
-                                    carrier_indexes=None):
+                                    signal: np.ndarray,
+                                    fft_size: int,
+                                    carrier_indexes: Optional[Indexes] = None
+                                    ) -> np.ndarray:
         """
         Transmit the signal through the TDL channel, but in the frequency
         domain.
@@ -178,7 +194,7 @@ class SuChannel:
             output *= math.sqrt(self._pathloss_value)
         return output
 
-    def get_last_impulse_response(self):
+    def get_last_impulse_response(self) -> fading.TdlImpulseResponse:
         """
         Get the last generated impulse response.
 
@@ -194,13 +210,12 @@ class SuChannel:
         """
         if self._pathloss_value is None:
             return self._tdlchannel.get_last_impulse_response()
-        else:
-            # noinspection PyTypeChecker
-            return math.sqrt(self._pathloss_value) * \
-                self._tdlchannel.get_last_impulse_response()
+
+        return math.sqrt(self._pathloss_value) * \
+            self._tdlchannel.get_last_impulse_response()
 
     @property
-    def switched_direction(self):
+    def switched_direction(self) -> bool:
         """
         Get the value of `switched_direction`.
 
@@ -212,7 +227,7 @@ class SuChannel:
         return self._tdlchannel.switched_direction
 
     @switched_direction.setter
-    def switched_direction(self, value):
+    def switched_direction(self, value: bool) -> None:
         """
         Set the value of `switched_direction`.
 
@@ -224,7 +239,7 @@ class SuChannel:
         self._tdlchannel.switched_direction = value
 
     @property
-    def num_taps(self):
+    def num_taps(self) -> int:
         """
         Get the number of taps in the profile.
 
@@ -237,7 +252,7 @@ class SuChannel:
         return self._tdlchannel.num_taps
 
     @property
-    def num_taps_with_padding(self):
+    def num_taps_with_padding(self) -> int:
         """
         Get the number of taps in the profile including zero-padding
         when the profile is discretized.
@@ -252,7 +267,7 @@ class SuChannel:
         return self._tdlchannel.num_taps_with_padding
 
     @property
-    def channel_profile(self):
+    def channel_profile(self) -> fading.TdlChannelProfile:
         """
         Return the channel profile.
 
@@ -264,7 +279,7 @@ class SuChannel:
         return self._tdlchannel.channel_profile
 
     @property
-    def num_tx_antennas(self):
+    def num_tx_antennas(self) -> int:
         """
         Get the number of transmit antennas.
 
@@ -276,7 +291,7 @@ class SuChannel:
         return self._tdlchannel.num_tx_antennas
 
     @property
-    def num_rx_antennas(self):
+    def num_rx_antennas(self) -> int:
         """
         Get the number of receive antennas.
 
@@ -304,7 +319,7 @@ class SuMimoChannel(SuChannel):
     ----------
     num_antennas : int
         Number of transmit and receive antennas.
-    fading_generator : T <= fading_generators.FadingSampleGenerator
+    fading_generator : FadingGenerator
         The instance of a fading generator in the `fading_generators`
         module.  It should be a subclass of FadingSampleGenerator. The
         fading generator will be used to generate the channel samples. If
@@ -316,25 +331,30 @@ class SuMimoChannel(SuChannel):
         Note: The power of each tap will be a negative number (in dB).
     tap_delays : np.ndarray
         The delay of each tap (in seconds). Dimension: `L x 1`
+    Ts : float, optional
+        The sampling interval.
     """
-
     def __init__(self,
-                 num_antennas,
-                 fading_generator=None,
-                 channel_profile=None,
-                 tap_powers_dB=None,
-                 tap_delays=None,
-                 Ts=None):
+                 num_antennas: int,
+                 fading_generator: Optional[FadingGenerator] = None,
+                 channel_profile: Optional[fading.TdlChannelProfile] = None,
+                 tap_powers_dB: Optional[np.ndarray] = None,
+                 tap_delays: Optional[np.ndarray] = None,
+                 Ts: Optional[float] = None):
         # Before calling supper to initialize the base class we will set
         # the shape of the fading generator
+        fading_generator_param: FadingGenerator
         if fading_generator is None:
-            fading_generator = fading_generators.RayleighSampleGenerator()
+            fading_generator_param = RayleighSampleGenerator()
             if channel_profile is None and Ts is None:
-                Ts = 1
+                Ts = 1.0
+        else:
+            fading_generator_param = fading_generator
 
         # Set the shape of the fading generator.
-        fading_generator.shape = (num_antennas, num_antennas)
+        fading_generator_param.shape = (num_antennas, num_antennas)
 
         # Initialize attributes from base class
-        super(SuMimoChannel, self).__init__(fading_generator, channel_profile,
-                                            tap_powers_dB, tap_delays, Ts)
+        super(SuMimoChannel,
+              self).__init__(fading_generator_param, channel_profile,
+                             tap_powers_dB, tap_delays, Ts)

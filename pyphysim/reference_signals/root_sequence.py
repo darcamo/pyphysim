@@ -2,9 +2,14 @@
 # -*- coding: utf-8 -*-
 """Module with Sounding Reference Signal (SRS) related functions"""
 
+from typing import List, Optional, Union, cast
+
 import numpy as np
 
 from .zadoffchu import calcBaseZC, get_extended_ZF
+
+# Type representing something that can be used to index a numpy array
+Indexes = Union[np.ndarray, List[int], slice]
 
 __all__ = ['RootSequence']
 
@@ -62,155 +67,155 @@ ROOT_TABLE1 = {
 # subcarriers in two PRBs)
 ROOT_TABLE2 = {
     '0':
-        np.array([
-            -1, 3, 1, -3, 3, -1, 1, 3, -3, 3, 1, 3, -3, 3, 1, 1, -1, 1, 3, -3,
-            3, -3, -1, -3
-        ]),
+    np.array([
+        -1, 3, 1, -3, 3, -1, 1, 3, -3, 3, 1, 3, -3, 3, 1, 1, -1, 1, 3, -3, 3,
+        -3, -1, -3
+    ]),
     '1':
-        np.array([
-            -3, 3, -3, -3, -3, 1, -3, -3, 3, -1, 1, 1, 1, 3, 1, -1, 3, -3, -3,
-            1, 3, 1, 1, -3
-        ]),
+    np.array([
+        -3, 3, -3, -3, -3, 1, -3, -3, 3, -1, 1, 1, 1, 3, 1, -1, 3, -3, -3, 1,
+        3, 1, 1, -3
+    ]),
     '2':
-        np.array([
-            3, -1, 3, 3, 1, 1, -3, 3, 3, 3, 3, 1, -1, 3, -1, 1, 1, -1, -3, -1,
-            -1, 1, 3, 3
-        ]),
+    np.array([
+        3, -1, 3, 3, 1, 1, -3, 3, 3, 3, 3, 1, -1, 3, -1, 1, 1, -1, -3, -1, -1,
+        1, 3, 3
+    ]),
     '3':
-        np.array([
-            -1, -3, 1, 1, 3, -3, 1, 1, -3, -1, -1, 1, 3, 1, 3, 1, -1, 3, 1, 1,
-            -3, -1, -3, -1
-        ]),
+    np.array([
+        -1, -3, 1, 1, 3, -3, 1, 1, -3, -1, -1, 1, 3, 1, 3, 1, -1, 3, 1, 1, -3,
+        -1, -3, -1
+    ]),
     '4':
-        np.array([
-            -1, -1, -1, -3, -3, -1, 1, 1, 3, 3, -1, 3, -1, 1, -1, -3, 1, -1, -3,
-            -3, 1, -3, -1, -1
-        ]),
+    np.array([
+        -1, -1, -1, -3, -3, -1, 1, 1, 3, 3, -1, 3, -1, 1, -1, -3, 1, -1, -3,
+        -3, 1, -3, -1, -1
+    ]),
     '5':
-        np.array([
-            -3, 1, 1, 3, -1, 1, 3, 1, -3, 1, -3, 1, 1, -1, -1, 3, -1, -3, 3, -3,
-            -3, -3, 1, 1
-        ]),
+    np.array([
+        -3, 1, 1, 3, -1, 1, 3, 1, -3, 1, -3, 1, 1, -1, -1, 3, -1, -3, 3, -3,
+        -3, -3, 1, 1
+    ]),
     '6':
-        np.array([
-            1, 1, -1, -1, 3, -3, -3, 3, -3, 1, -1, -1, 1, -1, 1, 1, -1, -3, -1,
-            1, -1, 3, -1, -3
-        ]),
+    np.array([
+        1, 1, -1, -1, 3, -3, -3, 3, -3, 1, -1, -1, 1, -1, 1, 1, -1, -3, -1, 1,
+        -1, 3, -1, -3
+    ]),
     '7':
-        np.array([
-            -3, 3, 3, -1, -1, -3, -1, 3, 1, 3, 1, 3, 1, 1, -1, 3, 1, -1, 1, 3,
-            -3, -1, -1, 1
-        ]),
+    np.array([
+        -3, 3, 3, -1, -1, -3, -1, 3, 1, 3, 1, 3, 1, 1, -1, 3, 1, -1, 1, 3, -3,
+        -1, -1, 1
+    ]),
     '8':
-        np.array([
-            -3, 1, 3, -3, 1, -1, -3, 3, -3, 3, -1, -1, -1, -1, 1, -3, -3, -3, 1,
-            -3, -3, -3, 1, -3
-        ]),
+    np.array([
+        -3, 1, 3, -3, 1, -1, -3, 3, -3, 3, -1, -1, -1, -1, 1, -3, -3, -3, 1,
+        -3, -3, -3, 1, -3
+    ]),
     '9':
-        np.array([
-            1, 1, -3, 3, 3, -1, -3, -1, 3, -3, 3, 3, 3, -1, 1, 1, -3, 1, -1, 1,
-            1, -3, 1, 1
-        ]),
+    np.array([
+        1, 1, -3, 3, 3, -1, -3, -1, 3, -3, 3, 3, 3, -1, 1, 1, -3, 1, -1, 1, 1,
+        -3, 1, 1
+    ]),
     '10':
-        np.array([
-            -1, 1, -3, -3, 3, -1, 3, -1, -1, -3, -3, -3, -1, -3, -3, 1, -1, 1,
-            3, 3, -1, 1, -1, 3
-        ]),
+    np.array([
+        -1, 1, -3, -3, 3, -1, 3, -1, -1, -3, -3, -3, -1, -3, -3, 1, -1, 1, 3,
+        3, -1, 1, -1, 3
+    ]),
     '11':
-        np.array([
-            1, 3, 3, -3, -3, 1, 3, 1, -1, -3, -3, -3, 3, 3, -3, 3, 3, -1, -3, 3,
-            -1, 1, -3, 1
-        ]),
+    np.array([
+        1, 3, 3, -3, -3, 1, 3, 1, -1, -3, -3, -3, 3, 3, -3, 3, 3, -1, -3, 3,
+        -1, 1, -3, 1
+    ]),
     '12':
-        np.array([
-            1, 3, 3, 1, 1, 1, -1, -1, 1, -3, 3, -1, 1, 1, -3, 3, 3, -1, -3, 3,
-            -3, -1, -3, -1
-        ]),
+    np.array([
+        1, 3, 3, 1, 1, 1, -1, -1, 1, -3, 3, -1, 1, 1, -3, 3, 3, -1, -3, 3, -3,
+        -1, -3, -1
+    ]),
     '13':
-        np.array([
-            3, -1, -1, -1, -1, -3, -1, 3, 3, 1, -1, 1, 3, 3, 3, -1, 1, 1, -3, 1,
-            3, -1, -3, 3
-        ]),
+    np.array([
+        3, -1, -1, -1, -1, -3, -1, 3, 3, 1, -1, 1, 3, 3, 3, -1, 1, 1, -3, 1, 3,
+        -1, -3, 3
+    ]),
     '14':
-        np.array([
-            -3, -3, 3, 1, 3, 1, -3, 3, 1, 3, 1, 1, 3, 3, -1, -1, -3, 1, -3, -1,
-            3, 1, 1, 3
-        ]),
+    np.array([
+        -3, -3, 3, 1, 3, 1, -3, 3, 1, 3, 1, 1, 3, 3, -1, -1, -3, 1, -3, -1, 3,
+        1, 1, 3
+    ]),
     '15':
-        np.array([
-            -1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3, 1, 3, 1, -1, -3, -3, -1,
-            -1, -3, -3, -3, -1
-        ]),
+    np.array([
+        -1, -1, 1, -3, 1, 3, -3, 1, -1, -3, -1, 3, 1, 3, 1, -1, -3, -3, -1, -1,
+        -3, -3, -3, -1
+    ]),
     '16':
-        np.array([
-            -1, -3, 3, -1, -1, -1, -1, 1, 1, -3, 3, 1, 3, 3, 1, -1, 1, -3, 1,
-            -3, 1, 1, -3, -1
-        ]),
+    np.array([
+        -1, -3, 3, -1, -1, -1, -1, 1, 1, -3, 3, 1, 3, 3, 1, -1, 1, -3, 1, -3,
+        1, 1, -3, -1
+    ]),
     '17':
-        np.array([
-            1, 3, -1, 3, 3, -1, -3, 1, -1, -3, 3, 3, 3, -1, 1, 1, 3, -1, -3, -1,
-            3, -1, -1, -1
-        ]),
+    np.array([
+        1, 3, -1, 3, 3, -1, -3, 1, -1, -3, 3, 3, 3, -1, 1, 1, 3, -1, -3, -1, 3,
+        -1, -1, -1
+    ]),
     '18':
-        np.array([
-            1, 1, 1, 1, 1, -1, 3, -1, -3, 1, 1, 3, -3, 1, -3, -1, 1, 1, -3, -3,
-            3, 1, 1, -3
-        ]),
+    np.array([
+        1, 1, 1, 1, 1, -1, 3, -1, -3, 1, 1, 3, -3, 1, -3, -1, 1, 1, -3, -3, 3,
+        1, 1, -3
+    ]),
     '19':
-        np.array([
-            1, 3, 3, 1, -1, -3, 3, -1, 3, 3, 3, -3, 1, -1, 1, -1, -3, -1, 1, 3,
-            -1, 3, -3, -3
-        ]),
+    np.array([
+        1, 3, 3, 1, -1, -3, 3, -1, 3, 3, 3, -3, 1, -1, 1, -1, -3, -1, 1, 3, -1,
+        3, -3, -3
+    ]),
     '20':
-        np.array([
-            -1, -3, 3, -3, -3, -3, -1, -1, -3, -1, -3, 3, 1, 3, -3, -1, 3, -1,
-            1, -1, 3, -3, 1, -1
-        ]),
+    np.array([
+        -1, -3, 3, -3, -3, -3, -1, -1, -3, -1, -3, 3, 1, 3, -3, -1, 3, -1, 1,
+        -1, 3, -3, 1, -1
+    ]),
     '21':
-        np.array([
-            -3, -3, 1, 1, -1, 1, -1, 1, -1, 3, 1, -3, -1, 1, -1, 1, -1, -1, 3,
-            3, -3, -1, 1, -3
-        ]),
+    np.array([
+        -3, -3, 1, 1, -1, 1, -1, 1, -1, 3, 1, -3, -1, 1, -1, 1, -1, -1, 3, 3,
+        -3, -1, 1, -3
+    ]),
     '22':
-        np.array([
-            -3, -1, -3, 3, 1, -1, -3, -1, -3, -3, 3, -3, 3, -3, -1, 1, 3, 1, -3,
-            1, 3, 3, -1, -3
-        ]),
+    np.array([
+        -3, -1, -3, 3, 1, -1, -3, -1, -3, -3, 3, -3, 3, -3, -1, 1, 3, 1, -3, 1,
+        3, 3, -1, -3
+    ]),
     '23':
-        np.array([
-            -1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3, -1, 3, -1, 3, 3, -3, 3,
-            1, -1, 3, 3
-        ]),
+    np.array([
+        -1, -1, -1, -1, 3, 3, 3, 1, 3, 3, -3, 1, 3, -1, 3, -1, 3, 3, -3, 3, 1,
+        -1, 3, 3
+    ]),
     '24':
-        np.array([
-            1, -1, 3, 3, -1, -3, 3, -3, -1, -1, 3, -1, 3, -1, -1, 1, 1, 1, 1,
-            -1, -1, -3, -1, 3
-        ]),
+    np.array([
+        1, -1, 3, 3, -1, -3, 3, -3, -1, -1, 3, -1, 3, -1, -1, 1, 1, 1, 1, -1,
+        -1, -3, -1, 3
+    ]),
     '25':
-        np.array([
-            1, -1, 1, -1, 3, -1, 3, 1, 1, -1, -1, -3, 1, 1, -3, 1, 3, -3, 1, 1,
-            -3, -3, -1, -1
-        ]),
+    np.array([
+        1, -1, 1, -1, 3, -1, 3, 1, 1, -1, -1, -3, 1, 1, -3, 1, 3, -3, 1, 1, -3,
+        -3, -1, -1
+    ]),
     '26':
-        np.array([
-            -3, -1, 1, 3, 1, 1, -3, -1, -1, -3, 3, -3, 3, 1, -3, 3, -3, 1, -1,
-            1, -3, 1, 1, 1
-        ]),
+    np.array([
+        -3, -1, 1, 3, 1, 1, -3, -1, -1, -3, 3, -3, 3, 1, -3, 3, -3, 1, -1, 1,
+        -3, 1, 1, 1
+    ]),
     '27':
-        np.array([
-            -1, -3, 3, 3, 1, 1, 3, -1, -3, -1, -1, -1, 3, 1, -3, -3, -1, 3, -3,
-            -1, -3, -1, -3, -1
-        ]),
+    np.array([
+        -1, -3, 3, 3, 1, 1, 3, -1, -3, -1, -1, -1, 3, 1, -3, -3, -1, 3, -3, -1,
+        -3, -1, -3, -1
+    ]),
     '28':
-        np.array([
-            -1, -3, -1, -1, 1, -3, -1, -1, 1, -1, -3, 1, 1, -3, 1, -3, -3, 3, 1,
-            1, -1, 3, -1, -1
-        ]),
+    np.array([
+        -1, -3, -1, -1, 1, -3, -1, -1, 1, -1, -3, 1, 1, -3, 1, -3, -3, 3, 1, 1,
+        -1, 3, -1, -1
+    ]),
     '29':
-        np.array([
-            1, 1, -1, -1, -3, -1, 3, -1, 3, -1, 1, 3, 1, -1, 3, 1, 3, -3, -3, 1,
-            -1, -1, 1, 3
-        ])
+    np.array([
+        1, 1, -1, -1, -3, -1, 3, -1, 3, -1, 1, 3, 1, -1, 3, 1, 3, -3, -3, 1,
+        -1, -1, 1, 3
+    ])
 }
 
 
@@ -239,12 +244,16 @@ class RootSequence:
     """
     n_sc_PRB = 12  # Number of subcarriers in a PRB in LTE
 
-    def __init__(self, root_index: int, size: int = None, Nzc: int = None):
+    def __init__(self,
+                 root_index: int,
+                 size: Optional[int] = None,
+                 Nzc: Optional[int] = None) -> None:
         if size is None and Nzc is None:
             raise AttributeError("Either 'size' or 'Nzc' (or both) must "
                                  "be provided.")
         if size is None:
             size = Nzc
+        assert (isinstance(size, int))
 
         if Nzc is None:
             Nzc = self._get_largest_prime_lower_than_number(size)
@@ -254,8 +263,8 @@ class RootSequence:
                                  "then size must be greater than Nzc")
 
         self._root_index = root_index
-        self._seq_array = None
-        self._extended_seq_array = None  # Extended Zadoff-Chu sequence
+        self._seq_array: np.ndarray = None
+        self._extended_seq_array: np.ndarray = None  # Extended Zadoff-Chu sequence
 
         if size > 2 * self.n_sc_PRB:
             # If size is greater then 2 * n_sc_PRB, the root
@@ -279,7 +288,7 @@ class RootSequence:
                 raise AttributeError("Invalid root sequence size")
 
     @staticmethod
-    def _get_largest_prime_lower_than_number(seq_size):
+    def _get_largest_prime_lower_than_number(seq_size: int) -> int:
         """
         Get the largest prime number lower than `seq_size`.
 
@@ -294,10 +303,10 @@ class RootSequence:
             The largest prime number lower than `seq_size`.
         """
         p = _SMALL_PRIME_LIST[_SMALL_PRIME_LIST <= seq_size][-1]
-        return p
+        return int(p)
 
     @property
-    def Nzc(self):
+    def Nzc(self) -> int:
         """
         Get the size of the Zadoff-Chu sequence (without any extension).
 
@@ -306,10 +315,10 @@ class RootSequence:
         int
             The value of the Nzc property.
         """
-        return self._seq_array.size
+        return cast(int, self._seq_array.size)
 
     @property
-    def size(self):
+    def size(self) -> int:
         """
         Return the size (with extension) of the sequence.
 
@@ -332,11 +341,11 @@ class RootSequence:
         """
         if self._extended_seq_array is None:
             return self.Nzc
-        else:
-            return self._extended_seq_array.size
+
+        return cast(int, self._extended_seq_array.size)
 
     @property
-    def index(self):
+    def index(self) -> int:
         """
         Return the SRS root sequence index.
 
@@ -347,7 +356,7 @@ class RootSequence:
         """
         return self._root_index
 
-    def seq_array(self):
+    def seq_array(self) -> np.ndarray:
         """
         Get the extended Zadoff-Chu root sequence as a numpy array.
 
@@ -358,8 +367,8 @@ class RootSequence:
         """
         if self._extended_seq_array is None:
             return self._seq_array
-        else:
-            return self._extended_seq_array
+
+        return self._extended_seq_array
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the
@@ -369,7 +378,7 @@ class RootSequence:
     # TODO: Make these operation methods (add, mul, etc) also work with
     # RootSequence objects returning a new RootSequence object. Change the
     # docstring type information when you do that.
-    def __add__(self, other):  # pragma: no cover
+    def __add__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform addition with `other`.
 
@@ -383,7 +392,7 @@ class RootSequence:
         """
         return self.seq_array() + other
 
-    def __radd__(self, other):  # pragma: no cover
+    def __radd__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform addition with `other`.
 
@@ -397,7 +406,7 @@ class RootSequence:
         """
         return self.seq_array() + other
 
-    def __mul__(self, other):  # pragma: no cover
+    def __mul__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform multiplication with `other`.
 
@@ -411,7 +420,7 @@ class RootSequence:
         """
         return self.seq_array() * other
 
-    def __rmul__(self, other):  # pragma: no cover
+    def __rmul__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform multiplication with `other`.
 
@@ -425,7 +434,7 @@ class RootSequence:
         """
         return self.seq_array() * other
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: Indexes) -> np.ndarray:
         """
         Index the sequence.
 
@@ -434,12 +443,16 @@ class RootSequence:
 
         Parameters
         ----------
-        val : any
+        val : Indexes
             Anything accepted as indexing by numpy arrays.
+
+        Returns
+        -------
+        np.ndarray
         """
         return self.seq_array()[val]
 
-    def conjugate(self):  # pragma: no cover
+    def conjugate(self) -> np.ndarray:  # pragma: no cover
         """
         Return the conjugate of the root sequence as a numpy array.
 
@@ -450,7 +463,7 @@ class RootSequence:
         """
         return self.seq_array().conj()
 
-    def conj(self):  # pragma: no cover
+    def conj(self) -> np.ndarray:  # pragma: no cover
         """
         Return the conjugate of the root sequence as a numpy array.
 
@@ -462,7 +475,7 @@ class RootSequence:
 
         return self.seq_array().conj()
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Get the representation of the object.
 
@@ -475,10 +488,10 @@ class RootSequence:
             return ("<SrsRootSequence("
                     "root_index={0},Nzc={1})>").format(self._root_index,
                                                        self._seq_array.size)
-        else:
-            return ("<SrsRootSequence("
-                    "root_index={0},size={2},Nzc={1})>").format(
-                        self._root_index, self._seq_array.size,
-                        self._extended_seq_array.size)
+
+        return ("<SrsRootSequence("
+                "root_index={0},size={2},Nzc={1})>").format(
+                    self._root_index, self._seq_array.size,
+                    self._extended_seq_array.size)
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

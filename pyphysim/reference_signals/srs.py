@@ -2,10 +2,18 @@
 # -*- coding: utf-8 -*-
 """Module with Sounding Reference Signal (SRS) related functions"""
 
+from typing import List, Tuple, Union, cast
+
 import numpy as np
 
 from .root_sequence import RootSequence
 from .zadoffchu import get_shifted_root_seq
+
+# Type representing a shape
+Shape = Tuple[int, ...]
+
+# Type representing something that can be used to index a numpy array
+Indexes = Union[np.ndarray, List[int], slice]
 
 __all__ = ['get_srs_seq', 'SrsUeSequence']
 
@@ -13,7 +21,7 @@ __all__ = ['get_srs_seq', 'SrsUeSequence']
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_srs_seq(root_seq, n_cs):
+def get_srs_seq(root_seq: np.ndarray, n_cs: int) -> np.ndarray:
     """
     Get the shifted root sequence suitable as the SRS sequence of a user.
 
@@ -61,8 +69,11 @@ class UeSequence:
     normalize : bool
         True if the reference signal should be normalized. False otherwise.
     """
-
-    def __init__(self, root_seq, n_cs, user_seq_array, normalize=False):
+    def __init__(self,
+                 root_seq: RootSequence,
+                 n_cs: int,
+                 user_seq_array: np.ndarray,
+                 normalize: bool = False):
         self._n_cs = n_cs
         self._root_index = root_seq.index
         self._normalized = normalize
@@ -83,13 +94,13 @@ class UeSequence:
             self._user_seq_array = user_seq_array
 
     @property
-    def normalized(self):
+    def normalized(self) -> bool:
         """True if the reference signal is normalized.
         """
         return self._normalized
 
     @property
-    def size(self):
+    def size(self) -> int:
         """
         Return the size of the reference signal sequence.
 
@@ -109,10 +120,10 @@ class UeSequence:
         >>> user_seq2.size
         150
         """
-        return self.seq_array().size
+        return cast(int, self.seq_array().size)
 
     @property
-    def shape(self):
+    def shape(self) -> Shape:
         """
         Return the shape of the reference signal sequence.
 
@@ -121,9 +132,9 @@ class UeSequence:
         Tuple[int]
             The shape of the reference signal sequence.
         """
-        return self.seq_array().shape
+        return cast(Shape, self.seq_array().shape)
 
-    def seq_array(self):
+    def seq_array(self) -> np.ndarray:
         """
         Get reference signal sequence as a numpy array.
 
@@ -134,7 +145,7 @@ class UeSequence:
         """
         return self._user_seq_array
 
-    def __getitem__(self, val):
+    def __getitem__(self, val: Indexes) -> np.ndarray:
         """
         Index the sequence.
 
@@ -148,7 +159,7 @@ class UeSequence:
         """
         return self.seq_array()[val]
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Get the representation of the object.
 
@@ -157,9 +168,8 @@ class UeSequence:
         str
             The representation of the object.
         """
-        return "<{0}(root_index={1}, n_cs={2})>".format(self.__class__.__name__,
-                                                        self._root_index,
-                                                        self._n_cs)
+        return "<{0}(root_index={1}, n_cs={2})>".format(
+            self.__class__.__name__, self._root_index, self._n_cs)
 
     # xxxxxxxxxx Define some basic methods xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # We can always just get the equivalent numpy array and perform the
@@ -169,7 +179,7 @@ class UeSequence:
     # TODO: Make these operation methods (add, mul, etc) also work with
     # RootSequence objects returning a new RootSequence object. Change the
     # docstring type information when you do that.
-    def __add__(self, other):  # pragma: no cover
+    def __add__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform addition with `other`.
 
@@ -184,7 +194,7 @@ class UeSequence:
 
         return self.seq_array() + other
 
-    def __radd__(self, other):  # pragma: no cover
+    def __radd__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform addition with `other`.
 
@@ -198,7 +208,7 @@ class UeSequence:
         """
         return self.seq_array() + other
 
-    def __mul__(self, other):  # pragma: no cover
+    def __mul__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform multiplication with `other`.
 
@@ -212,7 +222,7 @@ class UeSequence:
         """
         return self.seq_array() * other
 
-    def __rmul__(self, other):  # pragma: no cover
+    def __rmul__(self, other: np.ndarray) -> np.ndarray:  # pragma: no cover
         """
         Perform multiplication with `other`.
 
@@ -226,7 +236,7 @@ class UeSequence:
         """
         return self.seq_array() * other
 
-    def conjugate(self):  # pragma: no cover
+    def conjugate(self) -> np.ndarray:  # pragma: no cover
         """
         Return the conjugate of the root sequence as a numpy array.
 
@@ -238,7 +248,7 @@ class UeSequence:
 
         return self.seq_array().conj()
 
-    def conj(self):  # pragma: no cover
+    def conj(self) -> np.ndarray:  # pragma: no cover
         """
         Return the conjugate of the root sequence as a numpy array.
 
@@ -268,8 +278,10 @@ class SrsUeSequence(UeSequence):
     normalize : bool
         True if the reference signal should be normalized. False otherwise.
     """
-
-    def __init__(self, root_seq, n_cs, normalize=False):
+    def __init__(self,
+                 root_seq: RootSequence,
+                 n_cs: int,
+                 normalize: bool = False):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_srs_seq(root_seq_array, n_cs)
         super(SrsUeSequence, self).__init__(root_seq,

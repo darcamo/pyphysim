@@ -2,10 +2,21 @@
 # -*- coding: utf-8 -*-
 """Module containing simulation parameter classes."""
 
-from collections import Iterable, OrderedDict
-import itertools
 import copy
+import functools
+import itertools
+import operator
+from collections import OrderedDict
+from collections.abc import Iterable
+
+import h5py
 import numpy as np
+
+from ..util.serialize import JsonSerializable
+from .configobjvalidation import (integer_numpy_array_check,
+                                  integer_scalar_or_integer_numpy_array_check,
+                                  real_numpy_array_check,
+                                  real_scalar_or_real_numpy_array_check)
 
 # TODO: Change configobj to yaml + voluptuous (for validation)
 # https://pypi.org/project/voluptuous/
@@ -22,12 +33,6 @@ try:
     import cPickle as pickle
 except ImportError as e:  # pragma: no cover
     import pickle
-
-from .configobjvalidation import real_numpy_array_check, \
-    integer_numpy_array_check, \
-    integer_scalar_or_integer_numpy_array_check, \
-    real_scalar_or_real_numpy_array_check
-from ..util.serialize import JsonSerializable
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
 
@@ -144,7 +149,6 @@ class SimulationParameters(JsonSerializable):
     .SimulationResults : Class to store simulation results.
     .SimulationRunner : Base class to implement Monte Carlo simulations.
     """
-
     def __init__(self):
         # Dictionary that will store the parameters. The key is the
         # parameter name and the value is the parameter value.
@@ -359,7 +363,6 @@ class SimulationParameters(JsonSerializable):
         str
             The object representation as a string.
         """
-
         def modify_name(p_name):
             """
             Add an * in p_name if it is set to be unpacked
@@ -513,15 +516,13 @@ class SimulationParameters(JsonSerializable):
 
         if len(self._unpacked_parameters_set) == 0:
             return 1
-        else:
-            # Generator for the lengths of the parameters set to be
-            # unpacked
-            gen_values = (
-                len(self.parameters[i]) for i in self._unpacked_parameters_set)
-            # Just multiply all the lengths
-            import operator
-            import functools
-            return functools.reduce(operator.mul, gen_values)
+
+        # Generator for the lengths of the parameters set to be
+        # unpacked
+        gen_values = (len(self.parameters[i])
+                      for i in self._unpacked_parameters_set)
+        # Just multiply all the lengths
+        return functools.reduce(operator.mul, gen_values)
 
     def get_pack_indexes(self, fixed_params_dict=None):
         """
@@ -611,7 +612,9 @@ class SimulationParameters(JsonSerializable):
         # order to get the linear indexes.
 
         # Get the lengths of the parameters marked to be unpacked
-        dimensions = [len(self.parameters[i]) for i in self.unpacked_parameters]
+        dimensions = [
+            len(self.parameters[i]) for i in self.unpacked_parameters
+        ]
         aux = np.arange(0, self.get_num_unpacked_variations())
         aux.shape = dimensions
         indexes = eval("aux" +
@@ -827,13 +830,13 @@ class SimulationParameters(JsonSerializable):
         # validation function for numpy float arrays.
         fdict = {
             'real_numpy_array':
-                real_numpy_array_check,
+            real_numpy_array_check,
             'integer_numpy_array':
-                integer_numpy_array_check,
+            integer_numpy_array_check,
             'integer_scalar_or_integer_numpy_array_check':
-                integer_scalar_or_integer_numpy_array_check,
+            integer_scalar_or_integer_numpy_array_check,
             'real_scalar_or_real_numpy_array_check':
-                real_scalar_or_real_numpy_array_check
+            real_scalar_or_real_numpy_array_check
         }
         validator = Validator(fdict)
 
@@ -864,22 +867,16 @@ class SimulationParameters(JsonSerializable):
             # The exception will only describe the error for the first
             # incorrect parameter.
             if first_error[2] is False:
-                # # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                # from pprint import pprint
-                # params = SimulationParameters()
-                # add_params(params, conf_file_parser)
-                # pprint(params.parameters)
-                # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                 msg = ("Error loading file {0}. Parameter '{1}' in section "
                        "'{2}' must be provided.")
                 raise Exception(
                     msg.format(filename, first_error[1], first_error[0][0]))
-            else:
-                msg = ("Error loading file {0}. Parameter '{1}' in section "
-                       "'{2}' is invalid. {3}")
-                raise Exception(
-                    msg.format(filename, first_error[1], first_error[0][0],
-                               str(first_error[2]).capitalize()))
+
+            msg = ("Error loading file {0}. Parameter '{1}' in section "
+                   "'{2}' is invalid. {3}")
+            raise Exception(
+                msg.format(filename, first_error[1], first_error[0][0],
+                           str(first_error[2]).capitalize()))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Finally add the parsed parameters to the params object xxxx
@@ -983,14 +980,7 @@ class SimulationParameters(JsonSerializable):
         --------
         load_from_hdf5_group
         """
-        # Module with utilities for writing code that runs on Python 2 and
-        # 3. We import it here inside save_to_hdf5_group to avoid import
-        # errors when it is not installed and save_to_hdf5_group is not
-        # called.
-        import six
-
-        # Store each parameter in self.parameter in a different dataset
-        for name, value in six.iteritems(self.parameters):
+        for name, value in self.parameters.items():
             ds = group.create_dataset(name, data=value)
             # Save the TITTLE attribute to be more consistent with what
             # Pytables would do.
@@ -1021,7 +1011,6 @@ class SimulationParameters(JsonSerializable):
             attrs = {}
 
         # noinspection PyUnresolvedReferences
-        import h5py
         fid = h5py.File(filename, 'w')
 
         # Save the TITTLE attribute to be more consistent with what
@@ -1137,7 +1126,6 @@ An HDF5 group
             The loaded SimulationParameters object.
         """
         # noinspection PyUnresolvedReferences
-        import h5py
         fid = h5py.File(filename, 'r')
 
         # xxxxxxxxxx params group xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

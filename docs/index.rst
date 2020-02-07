@@ -31,6 +31,7 @@ The complete list of articles in the PyPhysim documentation is shown below.
    hand_written/writing_unittests
    hand_written/speedup
    hand_written/packaging
+   hand_written/typing_support
    hand_written/zreferences
 
 .. _pyphysim_api:

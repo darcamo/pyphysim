@@ -4,7 +4,7 @@
 linear to dB, binary to gray code, as well as the inverse of them.
 """
 
-from typing import Union
+from typing import Optional, TypeVar
 import numpy as np
 from .misc import xor
 
@@ -14,8 +14,14 @@ __all__ = [
     'SNR_dB_to_EbN0_dB', 'EbN0_dB_to_SNR_dB'
 ]
 
+NumberOrArray = TypeVar("NumberOrArray", np.ndarray, float)
+IntOrIntArray = TypeVar("IntOrIntArray", np.ndarray, int)
 
-def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
+
+def single_matrix_to_matrix_of_matrices(single_matrix: np.ndarray,
+                                        nrows: Optional[np.ndarray] = None,
+                                        ncols: Optional[np.ndarray] = None
+                                        ) -> np.ndarray:
     """
     Converts a single numpy array to a numpy array of numpy arrays.
 
@@ -94,6 +100,8 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
      [2 2]]
     """
     if nrows is None:
+        assert (isinstance(ncols, np.ndarray))
+
         # This is the case where we break the matrix into packs of columns
         K = ncols.size
         cumNcols = np.hstack([0, np.cumsum(ncols)])
@@ -115,30 +123,30 @@ def single_matrix_to_matrix_of_matrices(single_matrix, nrows=None, ncols=None):
                 output[rx, tx] = single_matrix[cumNrows[rx]:cumNrows[rx + 1],
                                                cumNcols[tx]:cumNcols[tx + 1]]
         return output
-    else:
-        # When ncols is None, we are either in the 1D Array of 1D arrays
-        # case or in the 2D array case that we want to break into packs of
-        # lines
-        cumNrows = np.hstack([0, np.cumsum(nrows)])
-        output = np.zeros(K, dtype=np.ndarray)
 
-        for rx in np.arange(K):
-            output[rx] = single_matrix[cumNrows[rx]:cumNrows[rx + 1]]
-        return output
+    # When ncols is None, we are either in the 1D Array of 1D arrays
+    # case or in the 2D array case that we want to break into packs of
+    # lines
+    cumNrows = np.hstack([0, np.cumsum(nrows)])
+    output = np.zeros(K, dtype=np.ndarray)
+
+    for rx in np.arange(K):
+        output[rx] = single_matrix[cumNrows[rx]:cumNrows[rx + 1]]
+    return output
 
 
-def dB2Linear(valueIndB):
+def dB2Linear(valueIndB: NumberOrArray) -> NumberOrArray:
     """
     Convert input from dB to linear scale.
 
     Parameters
     ----------
-    valueIndB : float | np.ndarray
+    valueIndB : int | float | np.ndarray
         Value in dB
 
     Returns
     -------
-    valueInLinear : float | np.ndarray
+    valueInLinear : int | float | np.ndarray
         Value in Linear scale.
 
     Examples
@@ -149,18 +157,18 @@ def dB2Linear(valueIndB):
     return pow(10, valueIndB / 10.0)
 
 
-def linear2dB(valueInLinear):
+def linear2dB(valueInLinear: NumberOrArray) -> NumberOrArray:
     """
     Convert input from linear to dB scale.
 
     Parameters
     ----------
-    valueInLinear : float | np.ndarray
+    valueInLinear : int | float | np.ndarray
         Value in Linear scale.
 
     Returns
     -------
-    valueIndB : float | np.ndarray
+    valueIndB : int | float | np.ndarray
         Value in dB scale.
 
     Examples
@@ -168,16 +176,16 @@ def linear2dB(valueInLinear):
     >>> linear2dB(1000)
     30.0
     """
-    return 10.0 * np.log10(valueInLinear)
+    return 10.0 * np.log10(valueInLinear)  # type: ignore
 
 
-def dBm2Linear(valueIndBm):
+def dBm2Linear(valueIndBm: NumberOrArray) -> NumberOrArray:
     """
     Convert input from dBm to linear scale.
 
     Parameters
     ----------
-    valueIndBm : float | np.ndarray
+    valueIndBm : int | float | np.ndarray
         Value in dBm.
 
     Returns
@@ -193,7 +201,7 @@ def dBm2Linear(valueIndBm):
     return dB2Linear(valueIndBm) / 1000.
 
 
-def linear2dBm(valueInLinear):
+def linear2dBm(valueInLinear: NumberOrArray) -> NumberOrArray:
     """
     Convert input from linear to dBm scale.
 
@@ -217,7 +225,7 @@ def linear2dBm(valueInLinear):
 
 # Code from wikipedia
 # http://en.wikipedia.org/wiki/Gray_code#Constructing_an_n-bit_Gray_code
-def binary2gray(num):
+def binary2gray(num: IntOrIntArray) -> IntOrIntArray:
     """
     Convert a number (in decimal format) to the corresponding Gray code
     (still in decimal format).
@@ -240,7 +248,7 @@ def binary2gray(num):
     return xor((num >> 1), num)
 
 
-def gray2binary(num):
+def gray2binary(num: IntOrIntArray) -> IntOrIntArray:
     """
     Convert a number in Gray code (in decimal format) to its original
     value (in decimal format).
@@ -270,8 +278,7 @@ def gray2binary(num):
     return temp
 
 
-def SNR_dB_to_EbN0_dB(SNR: Union[float, np.ndarray],
-                      bits_per_symb: int) -> Union[float, np.ndarray]:
+def SNR_dB_to_EbN0_dB(SNR: NumberOrArray, bits_per_symb: int) -> NumberOrArray:
     """
     Convert an SNR value (in dB) to the equivalent Eb/N0 value (also in
     dB).
@@ -292,11 +299,11 @@ def SNR_dB_to_EbN0_dB(SNR: Union[float, np.ndarray],
     EbN0 = SNR - 10 * np.log10(bits_per_symb)
     ":type: float | np.ndarray"
 
-    return EbN0
+    return EbN0  # type: ignore
 
 
-def EbN0_dB_to_SNR_dB(EbN0: Union[float, np.ndarray],
-                      bits_per_symb: int) -> Union[float, np.ndarray]:
+def EbN0_dB_to_SNR_dB(EbN0: NumberOrArray,
+                      bits_per_symb: int) -> NumberOrArray:
     """Convert an Eb/N0 value (in dB) to the equivalent SNR value (also in dB).
 
     Parameters
@@ -313,4 +320,4 @@ def EbN0_dB_to_SNR_dB(EbN0: Union[float, np.ndarray],
 
     """
     SNR = EbN0 + 10 * np.log10(bits_per_symb)
-    return SNR
+    return SNR  # type: ignore

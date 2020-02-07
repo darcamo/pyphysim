@@ -27,17 +27,16 @@ class Projection:
     >>> v = np.array([1, 2, 3])
     >>> P = Projection(A)
     >>> P.project(v)
-    array([ 1.69577465+0.87887324j,  1.33802817+0.41408451j,
-            2.32957746-0.56901408j])
+    array([1.69577465+0.87887324j, 1.33802817+0.41408451j,
+           2.32957746-0.56901408j])
     >>> P.oProject(v)
     array([-0.69577465-0.87887324j,  0.66197183-0.41408451j,
             0.67042254+0.56901408j])
     >>> P.reflect(v)
-    array([-2.39154930-1.75774648j, -0.67605634-0.82816901j,
+    array([-2.3915493 -1.75774648j, -0.67605634-0.82816901j,
            -1.65915493+1.13802817j])
     """
-
-    def __init__(self, A):
+    def __init__(self, A: np.ndarray):
         self._A = A
         self.Q = Projection.calcProjectionMatrix(A)
 
@@ -45,7 +44,7 @@ class Projection:
         # always a square matrix
         self.oQ = Projection.calcOrthogonalProjectionMatrix(A)
 
-    def project(self, M):
+    def project(self, M: np.ndarray) -> np.ndarray:
         """
         Project the matrix (or vector) M in the desired subspace.
 
@@ -61,7 +60,7 @@ class Projection:
         """
         return self.Q.dot(M)
 
-    def oProject(self, M):
+    def oProject(self, M: np.ndarray) -> np.ndarray:
         """
         Project the matrix (or vector) M the subspace ORTHOGONAL to the
         subspace projected with `project`.
@@ -78,7 +77,7 @@ class Projection:
         """
         return self.oQ.dot(M)
 
-    def reflect(self, M):
+    def reflect(self, M: np.ndarray) -> np.ndarray:
         """Find the reflection of the matrix in the subspace spanned by
         the columns of `A`
 
@@ -95,7 +94,7 @@ class Projection:
         return (np.eye(self.Q.shape[0]) - 2 * self.Q).dot(M)
 
     @staticmethod
-    def calcProjectionMatrix(A):
+    def calcProjectionMatrix(A: np.ndarray) -> np.ndarray:
         """
         Calculates the projection matrix that projects a vector (or a
         matrix) into the signal space spanned by the columns of `A`.
@@ -133,7 +132,7 @@ class Projection:
         return (A.dot(np.linalg.inv(A_H.dot(A)))).dot(A_H)
 
     @staticmethod
-    def calcOrthogonalProjectionMatrix(A):
+    def calcOrthogonalProjectionMatrix(A: np.ndarray) -> np.ndarray:
         """
         Calculates the projection matrix that projects a vector (or a
         matrix) into the signal space orthogonal to the signal space

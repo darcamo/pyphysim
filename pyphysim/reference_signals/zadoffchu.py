@@ -9,7 +9,7 @@ import numpy as np
 __all__ = ['get_shifted_root_seq', 'calcBaseZC', 'get_extended_ZF']
 
 
-def calcBaseZC(Nzc, u, q=0):
+def calcBaseZC(Nzc: int, u: int, q: complex = 0) -> np.ndarray:
     """
     Calculate the root sequence of Zadoff-Chu sequences.
 
@@ -37,7 +37,8 @@ def calcBaseZC(Nzc, u, q=0):
     return a_u
 
 
-def get_shifted_root_seq(root_seq, n_cs, denominator):
+def get_shifted_root_seq(root_seq: np.ndarray, n_cs: int,
+                         denominator: int) -> np.ndarray:
     """
     Get the shifted root sequence suitable as the SRS sequence or the
     DMRS sequence of a user (depend on the `denominator` parameter).
@@ -72,7 +73,7 @@ def get_shifted_root_seq(root_seq, n_cs, denominator):
     return shifted_seq
 
 
-def get_extended_ZF(root_seq, size):
+def get_extended_ZF(root_seq: np.ndarray, size: int) -> np.ndarray:
     """
     Cyclic Extend the Zadoff-Chu root sequence to have size equal to
     `size`.

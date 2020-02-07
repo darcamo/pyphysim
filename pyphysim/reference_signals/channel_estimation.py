@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Module with channel estimation implementations based on the reference
-signals in this package. """
+"""
+Module with channel estimation implementations based on the reference signals in
+this package.
+"""
+
+from typing import Union
+
 import numpy as np
-from .srs import SrsUeSequence, UeSequence
+
 from .dmrs import DmrsUeSequence
+from .srs import SrsUeSequence, UeSequence
 
 
 class CazacBasedChannelEstimator:
@@ -42,8 +48,9 @@ class CazacBasedChannelEstimator:
        Sounding Reference Signal in LTE," Conference: Proceedings of the
        73rd IEEE Vehicular Technology Conference.
     """
-
-    def __init__(self, ue_ref_seq, size_multiplier=2):
+    def __init__(self,
+                 ue_ref_seq: Union[SrsUeSequence, DmrsUeSequence, np.ndarray],
+                 size_multiplier: int = 2) -> None:
         # If ue_ref_seq is not an instance of UeSequence (or a subclass)
         # assume it is a numpy array.
         if isinstance(ue_ref_seq, UeSequence):
@@ -56,11 +63,12 @@ class CazacBasedChannelEstimator:
         self._size_multiplier = size_multiplier
 
     @property
-    def ue_ref_seq(self):
+    def ue_ref_seq(self) -> np.ndarray:
         """Get the sequence of the UE."""
         return self._ue_ref_sequence
 
-    def estimate_channel_freq_domain(self, received_signal, num_taps_to_keep):
+    def estimate_channel_freq_domain(self, received_signal: np.ndarray,
+                                     num_taps_to_keep: int) -> np.ndarray:
         """
         Estimate the channel based on the received signal.
 
@@ -100,7 +108,8 @@ class CazacBasedChannelEstimator:
             tilde_h = y[0:num_taps_to_keep + 1]
         elif received_signal.ndim == 2:
             # Case with multiple receive antennas
-            y = np.fft.ifft(np.conj(r)[np.newaxis, :] * received_signal, r.size)
+            y = np.fft.ifft(
+                np.conj(r)[np.newaxis, :] * received_signal, r.size)
 
             # The channel impulse response consists of the first
             # `num_taps_to_keep` elements in `y`.
@@ -137,8 +146,7 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
     ue_ref_seq : DmrsUeSequence
         The reference signal sequence.
     """
-
-    def __init__(self, ue_ref_seq):
+    def __init__(self, ue_ref_seq: DmrsUeSequence) -> None:
         cover_code = ue_ref_seq.cover_code
         ue_ref_seq_array = ue_ref_seq.seq_array()
         reference_seq = ue_ref_seq_array[0] * cover_code[0]
@@ -150,14 +158,15 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         self._normalized_ref_seq = ue_ref_seq.normalized
 
     @property
-    def cover_code(self):
+    def cover_code(self) -> np.ndarray:
         """Get the cover code of the UE."""
         return self._cover_code
 
     def estimate_channel_freq_domain(self,
-                                     received_signal,
-                                     num_taps_to_keep,
-                                     extra_dimension=True):
+                                     received_signal: np.ndarray,
+                                     num_taps_to_keep: int,
+                                     extra_dimension: bool = True
+                                     ) -> np.ndarray:
         """
         Estimate the channel based on the received signal with cover codes.
 
@@ -219,7 +228,8 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
                 r.shape = (num_antennas, self.cover_code.size, -1)
             else:
                 raise RuntimeError(
-                    'Invalid dimension for received_signal: {0}'.format(r.ndim))
+                    'Invalid dimension for received_signal: {0}'.format(
+                        r.ndim))
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxx Average over the cover code dimension xxxxxxxxxxx

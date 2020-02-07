@@ -3,20 +3,25 @@
 
 # pylint: disable=E1103
 import math
+from typing import Any, Optional, Tuple, Union
+
 import numpy as np
-from collections import Iterable
+
 from ..util.misc import randn_c
+
+Shape = Tuple[int, ...]
 
 
 # noinspection PyPep8
-def generate_jakes_samples(Fd,
-                           Ts=1e-3,
-                           NSamples=100,
-                           L=8,
-                           shape=None,
-                           current_time=0,
-                           phi_l=None,
-                           psi_l=None):
+def generate_jakes_samples(
+        Fd: float,
+        Ts: float = 1e-3,
+        NSamples: int = 100,
+        L: int = 8,
+        shape: Optional[Shape] = None,
+        current_time: float = 0,
+        phi_l: Optional[np.ndarray] = None,
+        psi_l: Optional[np.ndarray] = None) -> Tuple[float, np.ndarray]:
     """
     Generates channel samples according to the Jakes model.
 
@@ -105,18 +110,20 @@ class FadingSampleGenerator:
         `generate_more_samples(num_samples)` method is called it will
         generate samples with this shape as the first dimensions.
     """
-
-    def __init__(self, shape=None):
-        self._shape = shape
+    def __init__(self, shape: Optional[Union[int, Shape]] = None):
+        self._shape: Optional[Shape]
+        # Call the setter of the shape property to avoid duplicating the code
+        # here
+        FadingSampleGenerator.shape.fset(self, shape)  # type: ignore
 
         # Set this variable in a derived class with the next samples
         # everytime the generate_more_samples method is called. Note that
         # generate_more_samples should take the value of self._shape into
         # account.
-        self._samples = None
+        self._samples: Optional[np.ndarray] = None
 
     @property
-    def shape(self):
+    def shape(self) -> Optional[Shape]:
         """
         Get the shape of the sampling generator
 
@@ -127,15 +134,10 @@ class FadingSampleGenerator:
         -------
         tuple[int] | None
         """
-        if self._shape is not None and not isinstance(self._shape, Iterable):
-            shape = (self._shape,)
-        else:
-            shape = self._shape
-
-        return shape
+        return self._shape
 
     @shape.setter
-    def shape(self, new_shape):
+    def shape(self, new_shape: Optional[Union[int, Shape]]) -> None:
         """
         Set the shape of the sampling generator.
 
@@ -147,9 +149,12 @@ class FadingSampleGenerator:
         new_shape : None | int | tuple[int]
             The shape of the generated channel.
         """
-        self._shape = new_shape
+        if isinstance(new_shape, int):
+            self._shape = (new_shape, )
+        else:
+            self._shape = new_shape
 
-    def get_samples(self):
+    def get_samples(self) -> np.ndarray:
         """
         Get the last generated sample.
 
@@ -159,7 +164,9 @@ class FadingSampleGenerator:
         """
         return self._samples
 
-    def generate_more_samples(self, num_samples=None):  # pragma: nocover
+    def generate_more_samples(
+            self,
+            num_samples: Optional[int] = None) -> None:  # pragma: nocover
         """
         Generate next samples.
 
@@ -174,7 +181,8 @@ class FadingSampleGenerator:
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
+    def skip_samples_for_next_generation(
+            self, num_samples: int) -> None:  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -188,7 +196,7 @@ class FadingSampleGenerator:
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def get_similar_fading_generator(self):  # pragma: no cover
+    def get_similar_fading_generator(self) -> Any:  # pragma: no cover
         """
         Get a similar fading generator with the same configuration,
         but that generates independent samples.
@@ -209,14 +217,13 @@ class RayleighSampleGenerator(FadingSampleGenerator):
         `generate_jakes_samples` method is called it will generate samples
         with this shape. If not provided, then 1 will be assumed.
     """
-
-    def __init__(self, shape=None):
+    def __init__(self, shape: Optional[Union[int, Shape]] = None):
         super(RayleighSampleGenerator, self).__init__(shape)
 
         # Generate first sample
         self.generate_more_samples()
 
-    def generate_more_samples(self, num_samples=None):
+    def generate_more_samples(self, num_samples: Optional[int] = None) -> None:
         """
         Generate next samples.
 
@@ -237,11 +244,13 @@ class RayleighSampleGenerator(FadingSampleGenerator):
         elif self.shape is None:
             self._samples = randn_c(num_samples)
         else:
-            shape = list(shape)
-            shape.append(num_samples)
-            self._samples = randn_c(*shape)
+            assert (shape is not None)
+            new_shape = list(shape)
+            new_shape.append(num_samples)
+            self._samples = randn_c(*new_shape)
 
-    def skip_samples_for_next_generation(self, num_samples):  # pragma: no cover
+    def skip_samples_for_next_generation(
+            self, num_samples: int) -> None:  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -259,9 +268,8 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             uncorrelated then calling `skip_samples_for_next_generation`
             does not do anything.
         """
-        pass
 
-    def get_similar_fading_generator(self):
+    def get_similar_fading_generator(self) -> Any:
         """
         Get a similar fading generator with the same configuration,
         but that generates independent samples.
@@ -309,16 +317,21 @@ class JakesSampleGenerator(FadingSampleGenerator):
     --------
     generate_jakes_samples
     """
-
-    def __init__(self, Fd=100, Ts=1e-3, L=8, shape=None, RS=None):
+    def __init__(self,
+                 Fd: float = 100,
+                 Ts: float = 1e-3,
+                 L: int = 8,
+                 shape: Optional[Union[int, Shape]] = None,
+                 RS: Optional[np.random.RandomState] = None):
         super(JakesSampleGenerator, self).__init__(shape)
 
-        self._Fd = Fd
-        self._Ts = Ts
-        self._L = L
+        self._Fd: float = Fd
+        self._Ts: float = Ts
+        self._L: int = L
 
-        self._phi_l = None  # This will be set in the set_shape method
-        self._psi_l = None  # This will be set in the set_shape method
+        # These two will be set in the set_shape method
+        self._phi_l: Optional[np.ndarray] = None
+        self._psi_l: Optional[np.ndarray] = None
 
         if RS is None:
             # If RS was not provided, we set it to the numpy.random
@@ -330,7 +343,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         # self._current_time will be update after each call to the
         # `generate_more_samples` method.
-        self._current_time = 0.0
+        self._current_time: float = 0.0
 
         # Update self._phi_l and self._psi_l according to self._shape
         self._set_phi_and_psi_according_to_shape()
@@ -339,7 +352,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         self.generate_more_samples()
 
     @property
-    def shape(self):
+    def shape(self) -> Optional[Shape]:
         """
         Get the shape of the sampling generator
 
@@ -353,7 +366,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         return super(JakesSampleGenerator, self).shape
 
     @shape.setter
-    def shape(self, new_shape):
+    def shape(self, new_shape: Shape) -> None:
         """
         Set the shape of the sampling generator.
 
@@ -365,25 +378,30 @@ class JakesSampleGenerator(FadingSampleGenerator):
         new_shape : None | int | tuple[int]
             The shape of the generated channel.
         """
-        self._shape = new_shape
+        # Call the base class property setter
+        FadingSampleGenerator.shape.fset(self, new_shape)  # type: ignore
+
         # Since phi and psi depend on the shape we need to update
         # them. Note that `_set_phi_and_psi_according_to_shape` will use
         # the new_shape of self._shape
         self._set_phi_and_psi_according_to_shape()
 
     @property
-    def L(self):
+    def L(self) -> int:
+        """The number of rays for the Jakes model"""
         return self._L
 
     @property
-    def Ts(self):
+    def Ts(self) -> float:
+        """The sample interval (in seconds)"""
         return self._Ts
 
     @property
-    def Fd(self):
+    def Fd(self) -> float:
+        """The Doppler frequency (in Hertz)"""
         return self._Fd
 
-    def _set_phi_and_psi_according_to_shape(self):
+    def _set_phi_and_psi_according_to_shape(self) -> None:
         """
         This will update the phi and psi attributes used to generate the
         jakes samples to reflect the current value of self._shape.
@@ -407,7 +425,9 @@ class JakesSampleGenerator(FadingSampleGenerator):
             self._phi_l = 2 * np.pi * self.RS.rand(*new_shape)
             self._psi_l = 2 * np.pi * self.RS.rand(*new_shape)
 
-    def _generate_time_samples(self, num_samples=None):
+    def _generate_time_samples(self,
+                               num_samples: Optional[int] = None
+                               ) -> np.ndarray:
         """
         Generate the time samples that will be used internally in
         `generate_more_samples` method.
@@ -473,7 +493,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
 
         return t
 
-    def generate_more_samples(self, num_samples=None):
+    def generate_more_samples(self, num_samples: Optional[int] = None) -> None:
         """
         Generate next samples.
 
@@ -498,11 +518,12 @@ class JakesSampleGenerator(FadingSampleGenerator):
         # Finally calculate the channel samples
         # noinspection PyTypeChecker
         h = (math.sqrt(1.0 / self.L) * np.sum(np.exp(
-            1j * (2 * np.pi * self.Fd * np.cos(self._phi_l) * t + self._psi_l)),
+            1j *
+            (2 * np.pi * self.Fd * np.cos(self._phi_l) * t + self._psi_l)),
                                               axis=0))
         self._samples = h
 
-    def skip_samples_for_next_generation(self, num_samples):
+    def skip_samples_for_next_generation(self, num_samples: int) -> None:
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -519,7 +540,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         """
         self._current_time += num_samples * self.Ts
 
-    def get_similar_fading_generator(self):
+    def get_similar_fading_generator(self) -> Any:
         """
         Get a similar fading generator with the same configuration,
         but that generates independent samples.

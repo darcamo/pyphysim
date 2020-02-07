@@ -42,11 +42,26 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
-    # 'sphinx.ext.napoleon',
-    'numpydoc',
+    'sphinx.ext.napoleon',
+    # 'sphinx_autodoc_napoleon_typehints'
+    # 'numpydoc',
 ]
 
-numpydoc_show_class_members = False
+# # Numpydoc settings
+# numpydoc_show_class_members = False
+
+# # Napoleon settings
+# napoleon_google_docstring = True
+# napoleon_numpy_docstring = True
+# napoleon_include_init_with_doc = False
+# napoleon_include_private_with_doc = False
+# napoleon_include_special_with_doc = True
+# napoleon_use_admonition_for_examples = False
+# napoleon_use_admonition_for_notes = False
+# napoleon_use_admonition_for_references = False
+# napoleon_use_ivar = False
+# napoleon_use_param = True
+# napoleon_use_rtype = True
 
 mathjax_path = parent_dir + '/docs/Mathjax/MathJax.js?config=default,local/local.js'
 

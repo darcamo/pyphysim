@@ -6,6 +6,14 @@ Module containing function related to serialization.
 
 import json
 import numpy as np
+from typing import Union, Dict, Any, List
+
+Serializable = Union[np.ndarray, np.int32, np.int64, np.float32, np.
+                     float64, np.float128, set]
+
+# A type corresponding to the JSON representation of the object. For a lack of
+# a better option we use Any
+JsonRepresentation = Any
 
 
 class NumpyOrSetEncoder(json.JSONEncoder):
@@ -26,15 +34,14 @@ class NumpyOrSetEncoder(json.JSONEncoder):
     --------
     json_numpy_or_set_obj_hook
     """
-
-    def default(self, obj):
+    def default(self, obj: Serializable) -> JsonRepresentation:
         """
         If input object is an ndarray it will be converted into a dict holding
         data, dtype, _is_numpy_array and shape.
 
         Parameters
         ----------
-        obj : np.ndarray | any
+        obj : Serializable
 
         Returns
         -------
@@ -59,10 +66,11 @@ class NumpyOrSetEncoder(json.JSONEncoder):
             return {'data': list(obj), '_is_set': True}
 
         # If it is not a numpy array we fall back to base class encoder
-        return json.JSONEncoder(self, obj)
+        return json.JSONEncoder(self, obj)  # type: ignore
 
 
-def json_numpy_or_set_obj_hook(dct):
+def json_numpy_or_set_obj_hook(dct: Dict[str, JsonRepresentation]
+                               ) -> Serializable:
     """
     Decodes a previously encoded numpy array.
 
@@ -73,7 +81,7 @@ def json_numpy_or_set_obj_hook(dct):
 
     Returns
     -------
-    np.ndarray | set | dict
+    np.ndarray | set | dict, optional
         The decoded numpy array or None if the encoded json data was not an
         encoded numpy array.
 
@@ -85,20 +93,20 @@ def json_numpy_or_set_obj_hook(dct):
         if dct['_is_numpy_array'] is True:
             data = dct['data']
             return np.array(data)
-        else:  # pragma: no cover
-            raise ValueError(
-                'Json representation contains the "_is_numpy_array" key '
-                'indicating that the object should be a numpy array, but it '
-                'was set to False, which is not valid.')
+
+        raise ValueError(
+            'Json representation contains the "_is_numpy_array" key '
+            'indicating that the object should be a numpy array, but it '
+            'was set to False, which is not valid.')
     if isinstance(dct, dict) and '_is_set' in dct:
         if dct['_is_set'] is True:
             data = dct['data']
             return set(data)
-        else:  # pragma: no cover
-            raise ValueError(
-                'Json representation contains the "_is_set" key '
-                'indicating that the object should be python set, but it '
-                'was set to False, which is not valid.')
+
+        raise ValueError(
+            'Json representation contains the "_is_set" key '
+            'indicating that the object should be python set, but it '
+            'was set to False, which is not valid.')
     return dct
 
 
@@ -112,8 +120,7 @@ class JsonSerializable:
 
     Note that a subclass must implement the `_to_dict` and `_from_dict` methods.
     """
-
-    def _to_dict(self,):
+    def _to_dict(self) -> Dict[str, Any]:
         """
         Convert the object to a dictionary representation.
 
@@ -124,7 +131,7 @@ class JsonSerializable:
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert the object to a dictionary representation.
 
@@ -136,7 +143,7 @@ class JsonSerializable:
         return self._to_dict()
 
     @staticmethod
-    def _from_dict(d):
+    def _from_dict(d: Dict[str, Any]) -> Any:
         """
         Convert from a dictionary to an object.
 
@@ -153,7 +160,7 @@ class JsonSerializable:
         raise NotImplementedError("Implement in a subclass")
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: Dict[str, Any]) -> Any:
         """
         Convert from a dictionary to an object.
 
@@ -169,7 +176,7 @@ class JsonSerializable:
         """
         return cls._from_dict(d)
 
-    def to_json(self):
+    def to_json(self) -> JsonRepresentation:
         """
         Convert the object to JSON.
 
@@ -181,7 +188,7 @@ class JsonSerializable:
         return json.dumps(self._to_dict(), cls=NumpyOrSetEncoder)
 
     @classmethod
-    def from_json(cls, data):
+    def from_json(cls, data: JsonRepresentation) -> Any:
         """
         Convert a JSON representation of the object to an actual object.
 

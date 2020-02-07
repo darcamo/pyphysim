@@ -86,7 +86,6 @@ class SimulationsDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the simulations
     package.
     """
-
     def test_configobjvalidation(self):
         """Run configobjvalidation doctests"""
         doctest.testmod(configobjvalidation)
@@ -113,7 +112,6 @@ class SimulationsDoctestsTestCase(unittest.TestCase):
 
 
 class SimulationHelpersTestCase(unittest.TestCase):
-
     def test_get_common_parser(self):
         p = get_common_parser()
         p2 = get_common_parser()
@@ -129,7 +127,6 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     Unit-tests for the module functions in the in the configobjvalidation
     module.
     """
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -251,7 +248,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         parsed_array = real_scalar_or_real_numpy_array_check(array_string,
                                                              min=0,
                                                              max=30)
-        expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14., 20.])
+        expected_parsed_array = np.array(
+            [0., 5., 10., 11., 12., 13., 14., 20.])
         self.assertTrue(parsed_array.dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
@@ -284,7 +282,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             integer_scalar_or_integer_numpy_array_check(value),
             expected_parsed_value)
         self.assertTrue(
-            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+            isinstance(integer_scalar_or_integer_numpy_array_check(value),
+                       int))
 
         value = "76"
         expected_parsed_value = 76
@@ -292,7 +291,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             integer_scalar_or_integer_numpy_array_check(value),
             expected_parsed_value)
         self.assertTrue(
-            isinstance(integer_scalar_or_integer_numpy_array_check(value), int))
+            isinstance(integer_scalar_or_integer_numpy_array_check(value),
+                       int))
 
         # Test validation against the minimum and maximum allowed value
         value = "6"
@@ -305,33 +305,29 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
 
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
         array_string = "[0 5 10:15]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
-                                                                   min=0,
-                                                                   max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "10:15"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
-                                                                   min=0,
-                                                                   max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "[10:15]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
-                                                                   min=0,
-                                                                   max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
-        parsed_array = integer_scalar_or_integer_numpy_array_check(array_string,
-                                                                   min=0,
-                                                                   max=30)
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
         self.assertTrue(parsed_array.dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
@@ -357,57 +353,73 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
     """
     Unit-tests for the functions in the parameters module.
     """
-
     def setUp(self):
         """Called before each test."""
         pass
 
     def test_combine_simulation_parameters(self):
         sim_params1 = SimulationParameters.create({
-            'first': 10,
-            'second': 20,
-            'third': np.array([1, 3, 2, 5]),
+            'first':
+            10,
+            'second':
+            20,
+            'third':
+            np.array([1, 3, 2, 5]),
             'fourth': ['A', 'B']
         })
         sim_params1.set_unpack_parameter('third')
         sim_params1.set_unpack_parameter('fourth')
 
         sim_params2 = SimulationParameters.create({
-            'first': 10,
-            'second': 20,
-            'third': np.array([-1, 1, 3, 8])
+            'first':
+            10,
+            'second':
+            20,
+            'third':
+            np.array([-1, 1, 3, 8])
         })
         sim_params2.set_unpack_parameter('third')
 
         sim_params3 = SimulationParameters.create({
-            'first': 10,
-            'third': np.array([-1, 1, 3, 8]),
+            'first':
+            10,
+            'third':
+            np.array([-1, 1, 3, 8]),
             'fourth': ['B', 'C']
         })
         sim_params3.set_unpack_parameter('third')
         sim_params3.set_unpack_parameter('fourth')
 
         sim_params4 = SimulationParameters.create({
-            'first': 10,
-            'second': 30,
-            'third': np.array([-1, 1, 3, 8]),
+            'first':
+            10,
+            'second':
+            30,
+            'third':
+            np.array([-1, 1, 3, 8]),
             'fourth': ['B', 'C']
         })
         sim_params4.set_unpack_parameter('third')
         sim_params4.set_unpack_parameter('fourth')
 
         sim_params5 = SimulationParameters.create({
-            'first': 10,
-            'second': 20,
-            'third': np.array([-1, 1, 3, 8]),
+            'first':
+            10,
+            'second':
+            20,
+            'third':
+            np.array([-1, 1, 3, 8]),
             'fourth': ['B', 'C']
         })
         sim_params5.set_unpack_parameter('fourth')
 
         sim_params6 = SimulationParameters.create({
-            'first': 10,
-            'second': 20,
-            'third': np.array([-1, 1, 3, 8]),
+            'first':
+            10,
+            'second':
+            20,
+            'third':
+            np.array([-1, 1, 3, 8]),
             'fourth': ['B', 'C']
         })
         sim_params6.set_unpack_parameter('third')
@@ -439,8 +451,8 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
         self.assertEqual(union['second'], sim_params1['second'])
         np.testing.assert_array_almost_equal(union['third'],
                                              np.array([-1, 1, 2, 3, 5, 8]))
-        np.testing.assert_array_equal(union['fourth'], np.array(['A', 'B',
-                                                                 'C']))
+        np.testing.assert_array_equal(union['fourth'],
+                                      np.array(['A', 'B', 'C']))
 
         self.assertEqual(set(union.unpacked_parameters), {'third', 'fourth'})
 
@@ -454,7 +466,6 @@ class SimulationParametersTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationParameters class in the parameters module.
     """
-
     def setUp(self):
         params_dict = {'first': 10, 'second': 20}
         self.sim_params = SimulationParameters.create(params_dict)
@@ -810,7 +821,8 @@ class SimulationParametersTestCase(unittest.TestCase):
             # sim_params_elem = sim_params_unpacked_list[0]
             out_elem = sim_params_elem._to_dict()
             self.assertIsInstance(out_elem, dict)
-            self.assertEqual(out_elem['parameters'], sim_params_elem.parameters)
+            self.assertEqual(out_elem['parameters'],
+                             sim_params_elem.parameters)
             self.assertEqual(out_elem['unpacked_parameters_set'],
                              sim_params_elem._unpacked_parameters_set)
             self.assertEqual(out_elem['unpack_index'],
@@ -924,7 +936,8 @@ class SimulationParametersTestCase(unittest.TestCase):
         # and here we test for the bug in case it ever comes back after
         # some code change.
         params = SimulationParameters.create({
-            'first': np.array([0, 5, 10, 26]),
+            'first':
+            np.array([0, 5, 10, 26]),
             'second': ['aha', 'ahe'],
             'third': [10],
             'fourth': [30],
@@ -1132,7 +1145,6 @@ class SimulationParametersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Results Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ResultsModuleFunctionsTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -1255,7 +1267,6 @@ class ResultTestCase(unittest.TestCase):
     """
     Unit-tests for the Result class in the results module.
     """
-
     def setUp(self):
         """Called before each test."""
         self.result1 = Result("name", Result.SUMTYPE)
@@ -1631,8 +1642,10 @@ class ResultTestCase(unittest.TestCase):
         self.assertAlmostEqual(result2.get_result_var(), expected_var2)
 
     def test_representation(self):
-        self.assertEqual(self.result1.__repr__(), "Result -> name: Nothing yet")
-        self.assertEqual(self.result2.__repr__(), "Result -> name2: 0/0 -> NaN")
+        self.assertEqual(self.result1.__repr__(),
+                         "Result -> name: Nothing yet")
+        self.assertEqual(self.result2.__repr__(),
+                         "Result -> name2: 0/0 -> NaN")
         self.assertEqual(self.result3.__repr__(),
                          "Result -> name3: Nothing yet")
         self.assertEqual(self.result4.__repr__(),
@@ -1645,7 +1658,8 @@ class ResultTestCase(unittest.TestCase):
         self.result4.update(2)
 
         self.assertEqual(self.result1.__repr__(), "Result -> name: 10")
-        self.assertEqual(self.result2.__repr__(), "Result -> name2: 2/4 -> 0.5")
+        self.assertEqual(self.result2.__repr__(),
+                         "Result -> name2: 2/4 -> 0.5")
         self.assertEqual(self.result3.__repr__(), "Result -> name3: 0.4")
         self.assertEqual(self.result4.__repr__(),
                          "Result -> name4: [0.  0.  0.5 0.5 0.  0. ]")
@@ -1819,7 +1833,6 @@ class SimulationResultsTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationResults class in the results module.
     """
-
     def setUp(self):
         # First SimulationResults object
         self.simresults = SimulationResults()
@@ -1977,7 +1990,8 @@ class SimulationResultsTestCase(unittest.TestCase):
         lele_result.update(3, 10)
         lulu_result.update(3)
         lulu_result.update(1)
-        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE, 20)
+        elapsed_time_result2 = Result.create('elapsed_time', Result.SUMTYPE,
+                                             20)
         simresults.add_result(lala_result)
         simresults.add_result(lele_result)
         simresults.add_result(lulu_result)
@@ -2438,7 +2452,6 @@ def _delete_progressbar_output_files():  # pragma: no cover
 # Define a _DummyRunner class for the testing the simulate and
 # simulate_in_parallel methods in the SimulationRunner class.
 class _DummyRunner(SimulationRunner):
-
     def __init__(self):
         SimulationRunner.__init__(self, read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
@@ -2472,7 +2485,6 @@ class _DummyRunner(SimulationRunner):
 
 
 class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
-
     def __init__(self):
         SimulationRunner.__init__(self, read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
@@ -2518,7 +2530,6 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
 # SkipThisOne exception is raised in the implemented _run_simulation
 # method.
 class _DummyRunnerWithSkip(SimulationRunner):
-
     def __init__(self):
         SimulationRunner.__init__(self, read_command_line_args=False)
         # This is used only for testing purposes. You would not have this
@@ -2570,7 +2581,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationRunner class in the runner module.
     """
-
     def setUp(self):
         self.runner = SimulationRunner(read_command_line_args=False)
 
@@ -3054,7 +3064,6 @@ def _get_clear_string_from_stringio_object(mystring):  # pragma: no cover
 
 
 class ProgressbarTextTestCase(unittest.TestCase):
-
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
@@ -3242,7 +3251,6 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
 
 class ProgressbarText2TestCase(unittest.TestCase):
-
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
@@ -3332,7 +3340,6 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
 
 class ProgressbarText3TestCase(unittest.TestCase):
-
     def setUp(self):
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
@@ -3367,7 +3374,6 @@ class ProgressbarText3TestCase(unittest.TestCase):
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
@@ -3478,7 +3484,6 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class ProgressbarZMQTextTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.output_filename = "ProgressbarZMQTextTestCase.out"

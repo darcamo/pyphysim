@@ -5,13 +5,18 @@
 The doWF method performs the waterfilling algorithm.
 """
 
+from typing import Tuple
+
 import numpy as np
 
 __all__ = ['doWF']
 
 
 # noinspection PyUnresolvedReferences
-def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
+def doWF(vtChannels: np.ndarray,
+         dPt: float,
+         noiseVar: float = 1.0,
+         Es: float = 1.0) -> Tuple[np.ndarray, float]:
     """
     Performs the Waterfilling algorithm and returns the optimum power and
     water level.
@@ -68,7 +73,8 @@ def doWF(vtChannels, dPt, noiseVar=1.0, Es=1.0):
             Es * vtChannelsSorted[dNChannels - dRemoveChannels - 1])
         Ps = (
             minMu - float(noiseVar) /
-            (Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)]))
+            (Es * vtChannelsSorted[np.arange(0, dNChannels - dRemoveChannels)])
+        )
 
     # Distributes the remaining power among the all the remaining channels
     dPdiff = dPt - np.sum(Ps)

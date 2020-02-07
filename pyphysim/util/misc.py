@@ -6,11 +6,17 @@ module.
 """
 
 import math
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, cast
+
 import numpy as np
 from scipy.special import erfc
 
+IntOrIntArray = TypeVar("IntOrIntArray", np.ndarray, int)
+NumberOrArrayUnion = Union[np.ndarray, float]
 
-def gmd(U, S, V_H, tol=0.0):
+
+def gmd(U: np.ndarray, S: np.ndarray, V_H: np.ndarray,
+        tol: float = 0.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Perform the Geometric Mean Decomposition of a matrix A, whose SVD is
     given by `[U, S, V_H] = np.linalg.svd(A)`.
@@ -59,12 +65,13 @@ def gmd(U, S, V_H, tol=0.0):
 
     # l = min(m, n)
     # noinspection PyTypeChecker
-    p = np.asscalar(np.sum(S >= tol))  # Number of singular values >= tol
+    p = np.sum(S >= tol).item()  # Number of singular values >= tol
 
-    # If there is no singular value greater then the tolerance, then we
-    # return nothing
+    # If there is no singular value greater than the tolerance, then we
+    # throw an exception
     if p < 1:
-        return
+        raise RuntimeError(
+            "This is no singular value greater than the tolerance")
 
     # If we only have one singular value, that will be our diagonal
     # element
@@ -118,8 +125,8 @@ def gmd(U, S, V_H, tol=0.0):
         sq_delta1 = delta1**2
         sq_delta2 = delta2**2
         if flag:
-            c = 1
-            s = 0
+            c = 1.0
+            s = 0.0
         else:
             c = math.sqrt((sigma_bar**2 - sq_delta2) / (sq_delta1 - sq_delta2))
             s = math.sqrt(1 - c**2)
@@ -150,7 +157,7 @@ def gmd(U, S, V_H, tol=0.0):
     return Q, R, P
 
 
-def peig(A, n):
+def peig(A: np.ndarray, n: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Returns a matrix whose columns are the `n` dominant eigenvectors of
     `A` (eigenvectors corresponding to the `n` dominant eigenvalues).
@@ -164,7 +171,7 @@ def peig(A, n):
 
     Returns
     -------
-    [np.ndarray, np.ndarray]
+    np.ndarray, np.ndarray
         A list with two elements where the first element is a 2D numpy
         array with the desired eigenvectors, while the second element is a
         1D numpy array with the corresponding eigenvalues.
@@ -195,10 +202,10 @@ def peig(A, n):
     indexes = indexes[::-1]
     V = V[:, indexes[0:n]]
     D = D[indexes[0:n]]
-    return [V, D]
+    return V, D
 
 
-def leig(A, n):
+def leig(A: np.ndarray, n: int) -> Tuple[np.ndarray, np.ndarray]:
     """
     Returns a matrix whose columns are the `n` least significant
     eigenvectors of `A` (eigenvectors corresponding to the `n` dominant
@@ -213,7 +220,7 @@ def leig(A, n):
 
     Returns
     -------
-    [np.ndarray,np.ndarray]
+    np.ndarray,np.ndarray
         A list with two elements where the first element is a 2D numpy
         array with the desired eigenvectors, while the second element is a
         1D numpy array with the corresponding eigenvalues.
@@ -243,10 +250,10 @@ def leig(A, n):
     indexes = np.argsort(D.real)
     V = V[:, indexes[0:n]]
     D = D[indexes[0:n]]
-    return [V, D]
+    return V, D
 
 
-def pretty_time(time_in_seconds):
+def pretty_time(time_in_seconds: float) -> str:
     """
     Return the time in a more friendly way.
 
@@ -278,13 +285,14 @@ def pretty_time(time_in_seconds):
 
     if hours > 0:
         return "%sh:%02dm:%02ds" % (hours, minutes, seconds)
-    elif minutes > 0:
+
+    if minutes > 0:
         return "%sm:%02ds" % (minutes, seconds)
-    else:
-        return "%.2fs" % time_in_seconds
+
+    return "%.2fs" % time_in_seconds
 
 
-def xor(a, b):
+def xor(a: int, b: int) -> int:
     """
     Calculates the xor operation between a and b.
 
@@ -301,7 +309,7 @@ def xor(a, b):
 
     Returns
     -------
-    result : int
+    int
         The result of the `xor` operation between `a` and `b`.
 
     Examples
@@ -314,7 +322,7 @@ def xor(a, b):
     return a.__xor__(b)
 
 
-def randn_c(*args):
+def randn_c(*args: int) -> np.ndarray:
     """
     Generates a random circularly complex gaussian matrix.
 
@@ -345,7 +353,8 @@ def randn_c(*args):
                                      (1j * np.random.randn(*args)))
 
 
-def randn_c_RS(RS, *args):  # pragma: no cover
+def randn_c_RS(RS: np.random.RandomState,
+               *args: int) -> np.ndarray:  # pragma: no cover
     """
     Generates a random circularly complex gaussian matrix.
 
@@ -373,13 +382,12 @@ def randn_c_RS(RS, *args):  # pragma: no cover
     if RS is None:
         # noinspection PyArgumentList
         return randn_c(*args)
-    else:
-        # noinspection PyArgumentList
-        return (1.0 / math.sqrt(2.0)) * (RS.randn(*args) +
-                                         (1j * RS.randn(*args)))
+
+    # noinspection PyArgumentList
+    return (1.0 / math.sqrt(2.0)) * (RS.randn(*args) + (1j * RS.randn(*args)))
 
 
-def level2bits(n):
+def level2bits(n: int) -> int:
     """
     Calculates the number of bits needed to represent n different
     values.
@@ -404,7 +412,7 @@ def level2bits(n):
     return int2bits(n - 1)
 
 
-def int2bits(n):
+def int2bits(n: int) -> int:
     """
     Calculates the number of bits needed to represent an integer n.
 
@@ -440,7 +448,8 @@ def int2bits(n):
 # integer. However, we are writing the documentation as if it were a numpy
 # ufunc because we will create the count_bits ufunc with it using
 # numpy.vectorize and count_bits will inherit the documentation.
-def _count_bits_single_element(n):  # pragma: no cover
+def _count_bits_single_element(n: IntOrIntArray
+                               ) -> IntOrIntArray:  # pragma: no cover
     """
     Count the number of bits that are set in `n`.
 
@@ -476,7 +485,9 @@ count_bits = np.vectorize(_count_bits_single_element)
 #                            doc=_count_bits_single_element.__doc__)
 
 
-def count_bit_errors(first, second, axis=None):
+def count_bit_errors(first: IntOrIntArray,
+                     second: IntOrIntArray,
+                     axis: Optional[Any] = None) -> IntOrIntArray:
     """
     Compare `first` and `second` and count the number of equivalent bit
     errors.
@@ -521,10 +532,10 @@ def count_bit_errors(first, second, axis=None):
     array([2, 4])
     """
     different_bits = xor(first, second)
-    return np.sum(count_bits(different_bits), axis)
+    return np.sum(count_bits(different_bits), axis)  # type: ignore
 
 
-def qfunc(x):
+def qfunc(x: float) -> float:
     """
     Calculates the 'q' function of x.
 
@@ -547,10 +558,11 @@ def qfunc(x):
     >>> round(qfunc(3.0), 9)
     0.001349898
     """
-    return 0.5 * erfc(x / math.sqrt(2))
+    return cast(float, 0.5 * erfc(x / math.sqrt(2)))
 
 
-def least_right_singular_vectors(A, n):
+def least_right_singular_vectors(
+        A: np.ndarray, n: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Return the three matrices. The first one is formed by the `n` least
     significative right singular vectors of `A`, the second one is
@@ -567,7 +579,7 @@ def least_right_singular_vectors(A, n):
 
     Returns
     -------
-    (np.ndarray, np.ndarray, np.ndarray)
+    np.ndarray, np.ndarray, np.ndarray
         The tree matrices V0, V1 and S.
 
         The matrix V0 has the right singular vectors corresponding to
@@ -598,8 +610,7 @@ def least_right_singular_vectors(A, n):
            [ 0.01889071, -0.5845124 ],
            [ 0.78166296, -0.49723869]])
     >>> S
-    array([ 1.88354706,  9.81370681])
-
+    array([1.88354706, 9.81370681])
     """
     # Note that numpy.linalg.svd returns the hermitian of V
     [_, S, V_H] = np.linalg.svd(A, full_matrices=True)
@@ -610,7 +621,7 @@ def least_right_singular_vectors(A, n):
 
     # Since the SVD gives the values in descending order, we just need to
     # reverse the order instead of performing a full sort
-    sort_indexes = [i for i in reversed(range(0, V.shape[0]))]
+    sort_indexes = list(reversed(range(0, V.shape[0])))
     # sort_indexes = S.argsort()
 
     # The `n` columns corresponding to the least significative singular
@@ -653,7 +664,7 @@ def least_right_singular_vectors(A, n):
 #     return base_c[tuple(indexes)]
 
 
-def calc_unorm_autocorr(x):
+def calc_unorm_autocorr(x: np.ndarray) -> np.ndarray:
     """
     Calculates the unormalized auto-correlation of an array x starting
     from lag 0.
@@ -682,7 +693,7 @@ def calc_unorm_autocorr(x):
     return R[R.size // 2:]
 
 
-def calc_autocorr(x):
+def calc_autocorr(x: np.ndarray) -> np.ndarray:
     """
     Calculates the (normalized) auto-correlation of an array x starting
     from lag 0.
@@ -713,7 +724,7 @@ def calc_autocorr(x):
 
 
 # noinspection PyPep8
-def update_inv_sum_diag(invA, diagonal):
+def update_inv_sum_diag(invA: np.ndarray, diagonal: np.ndarray) -> np.ndarray:
     """
     Calculates the inverse of a matrix :math:`(A + D)`, where :math:`D` is a diagonal
     matrix, given the inverse of :math`A` and the diagonal of :math:`D`.
@@ -746,8 +757,9 @@ def update_inv_sum_diag(invA, diagonal):
     # identity matrix multiplied by a constant (only one element is
     # different of zero).
     # pylint: disable=C0111
-    def calc_update_term(inv_matrix, p_index, p_indexed_element,
-                         p_diagonal_element):
+    def calc_update_term(inv_matrix: np.ndarray, p_index: int,
+                         p_indexed_element: float,
+                         p_diagonal_element: float) -> np.ndarray:
         term1 = (p_diagonal_element *
                  np.outer(inv_matrix[:, p_index], inv_matrix[p_index, :]))
         return term1 / (1 + p_diagonal_element * p_indexed_element)
@@ -761,7 +773,8 @@ def update_inv_sum_diag(invA, diagonal):
     return new_inv
 
 
-def calc_confidence_interval(mean, std, n, P=95):
+def calc_confidence_interval(mean: float, std: float, n: int,
+                             P: float = 95.0) -> Tuple[float, float]:
     """
     Calculate the confidence interval that contains the true mean (of a
     normal random variable) with a certain probability `P`, given the
@@ -785,7 +798,7 @@ def calc_confidence_interval(mean, std, n, P=95):
 
     Returns
     -------
-    Interval : [float,float]
+    float, float
         A list with two float elements, the interval minimum and maximum
         values.
 
@@ -818,10 +831,11 @@ def calc_confidence_interval(mean, std, n, P=95):
     min_value = mean - (C * norm_std)
     max_value = mean + (C * norm_std)
 
-    return [min_value, max_value]
+    return min_value, max_value
 
 
-def get_principal_component_matrix(A, num_components):
+def get_principal_component_matrix(A: np.ndarray,
+                                   num_components: int) -> np.ndarray:
     """
     Returns a matrix without the "principal components" of `A`.
 
@@ -861,7 +875,8 @@ def get_principal_component_matrix(A, num_components):
     return out
 
 
-def get_range_representation(array, filename_mode=False):
+def get_range_representation(array: np.ndarray,
+                             filename_mode: bool = False) -> Optional[str]:
     """
     Get the "range representation" of a numpy array consisting of a
     arithmetic progression. If no valid range representation exists,
@@ -906,14 +921,14 @@ def get_range_representation(array, filename_mode=False):
         # array is an arithmetic progression
         if filename_mode is True:
             return "{0}_({1})_{2}".format(array[0], step, array[-1])
-        else:
-            return "{0}:{1}:{2}".format(array[0], step, array[-1])
-    else:
-        # array is not an arithmetic progression
-        return None
+        return "{0}:{1}:{2}".format(array[0], step, array[-1])
+
+    # array is not an arithmetic progression
+    return None
 
 
-def get_mixed_range_representation(array, filename_mode=False):
+def get_mixed_range_representation(array: np.ndarray,
+                                   filename_mode: bool = False) -> str:
     """
     Get the "range representation" of a numpy array. This is similar to
     get_range_representation, but it no pure range representation is
@@ -998,6 +1013,7 @@ def get_mixed_range_representation(array, filename_mode=False):
     out = []
     for pair in output_expressions:
         value = get_range_representation(array[pair[0]:pair[1]], filename_mode)
+        assert (value is not None)
         if value != '':
             out.append(value)
 
@@ -1005,7 +1021,9 @@ def get_mixed_range_representation(array, filename_mode=False):
 
 
 # noinspection PyPep8
-def replace_dict_values(name, dictionary, filename_mode=False):
+def replace_dict_values(name: str,
+                        dictionary: Dict[str, str],
+                        filename_mode: bool = False) -> str:
     """
     Perform the replacements in `name` with the value of dictionary[name].
 
@@ -1066,7 +1084,8 @@ def replace_dict_values(name, dictionary, filename_mode=False):
 
 # Function taken from
 # http://stackoverflow.com/questions/10480806/compare-dictionaries-ignoring-specific-keys
-def equal_dicts(a, b, ignore_keys):
+def equal_dicts(a: Dict[Any, Any], b: Dict[Any, Any],
+                ignore_keys: List[Any]) -> bool:
     """
     Test if two dictionaries are equal ignoring certain keys.
 
@@ -1076,7 +1095,7 @@ def equal_dicts(a, b, ignore_keys):
         The first dictionary
     b : dict
         The second dictionary
-    ignore_keys : list | tuple
+    ignore_keys : list
         A list or tuple with the keys to be ignored.
     """
     ka = set(a).difference(ignore_keys)
@@ -1084,7 +1103,7 @@ def equal_dicts(a, b, ignore_keys):
     return ka == kb and all(a[k] == b[k] for k in ka)
 
 
-def calc_decorrelation_matrix(cov_matrix):
+def calc_decorrelation_matrix(cov_matrix: np.ndarray) -> np.ndarray:
     """
     Calculates the decorrelation matrix that can be applied to a data vector
     whose covariance matrix is ``cov_matrix`` so that the new vector covariance
@@ -1112,7 +1131,7 @@ def calc_decorrelation_matrix(cov_matrix):
 
 
 # noinspection PyPep8
-def calc_whitening_matrix(cov_matrix):
+def calc_whitening_matrix(cov_matrix: np.ndarray) -> np.ndarray:
     """
     Calculates the whitening matrix that can be applied to a data vector
     whose covariance matrix is ``cov_matrix`` so that the new vector
@@ -1149,7 +1168,7 @@ def calc_whitening_matrix(cov_matrix):
     return W
 
 
-def calc_shannon_sum_capacity(sinrs):
+def calc_shannon_sum_capacity(sinrs: NumberOrArrayUnion) -> float:
     """
     Calculate the sum of the Shannon capacity of the values in `sinrs`
 
@@ -1168,14 +1187,14 @@ def calc_shannon_sum_capacity(sinrs):
     >>> calc_shannon_sum_capacity(11.4)
     3.6322682154995127
     >>> calc_shannon_sum_capacity(20.3)
-    4.4127815253384757
+    4.412781525338476
     >>> sinrs_linear = np.array([11.4, 20.3])
     >>> print(calc_shannon_sum_capacity(sinrs_linear))
-    8.04504974084
+    8.045049740837989
     """
     sum_capacity = np.sum(np.log2(1 + sinrs))
 
-    return sum_capacity
+    return cast(float, sum_capacity)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1189,7 +1208,7 @@ try:
     # If the misc_c.so extension was compiled then any method defined there
     # will replace the corresponding method defined here.
     # pylint: disable=E0611,F0401
-    from ..c_extensions.misc_c import *
+    from ..c_extensions.misc_c import *  # type: ignore
     USING_CYTHON = True
 except ImportError:  # pragma: no cover
     import warnings
@@ -1197,7 +1216,6 @@ except ImportError:  # pragma: no cover
     warnings.warn(
         "util.misc.count_bits will be slow, since cythonized version was not used"
     )
-    pass
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 if __name__ == '__main__':  # pragma: nocover

@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """Implement several metrics for subspaces."""
 
-import numpy as np
 import math
+from typing import cast
+
+import numpy as np
 
 from .projections import calcProjectionMatrix
 
@@ -17,7 +19,8 @@ __all__ = [
 # have different sizes. At least obtaining the chordal distance from the
 # principal angles does not work when matrix1 and matrix2 have different
 # shapes.
-def calc_principal_angles(matrix1, matrix2):
+def calc_principal_angles(matrix1: np.ndarray,
+                          matrix2: np.ndarray) -> np.ndarray:
     """
     Calculates the principal angles between `matrix1` and `matrix2`.
 
@@ -43,7 +46,7 @@ def calc_principal_angles(matrix1, matrix2):
     >>> A = np.array([[1, 2], [3, 4], [5, 6]])
     >>> B = np.array([[1, 5], [3, 7], [5, -1]])
     >>> print(calc_principal_angles(A, B))
-    [ 0.          0.54312217]
+    [0.         0.54312217]
     """
     # First we need to find the orthogonal basis for matrix1 and
     # matrix2. This can be done with the QR decomposition. Note that if
@@ -73,7 +76,8 @@ def calc_principal_angles(matrix1, matrix2):
 
 
 # noinspection PyPep8
-def calc_chordal_distance_from_principal_angles(principalAngles):
+def calc_chordal_distance_from_principal_angles(principalAngles: np.ndarray
+                                                ) -> float:
     """
     Calculates the chordal distance from the principal angles.
 
@@ -102,15 +106,15 @@ def calc_chordal_distance_from_principal_angles(principalAngles):
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
     >>> princ_angles = calc_principal_angles(A, B)
-    >>> print(round(calc_chordal_distance_from_principal_angles(princ_angles), 12))
-    0.473867859572
+    >>> print(round(calc_chordal_distance_from_principal_angles(princ_angles), 8))
+    0.47386786
     """
     # noinspection PyTypeChecker
-    summation = np.asscalar(np.sum(np.sin(principalAngles)**2))
+    summation = (np.sum(np.sin(principalAngles)**2)).item()
     return math.sqrt(summation)
 
 
-def calc_chordal_distance(matrix1, matrix2):
+def calc_chordal_distance(matrix1: np.ndarray, matrix2: np.ndarray) -> float:
     """
     Calculates the chordal distance between the two matrices
 
@@ -140,8 +144,8 @@ def calc_chordal_distance(matrix1, matrix2):
     >>> A = np.arange(1, 9.)
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
-    >>> print(calc_chordal_distance(A, B))
-    0.473867859572
+    >>> print(round(calc_chordal_distance(A, B), 8))
+    0.47386786
     """
     Q1 = np.linalg.qr(matrix1)[0]
     Q2 = np.linalg.qr(matrix2)[0]
@@ -152,10 +156,10 @@ def calc_chordal_distance(matrix1, matrix2):
     # ran(matrix1) and ran(matrix2), respectively
     Q1_sqr = Q1.dot(Q1.conjugate().transpose())
     Q2_sqr = Q2.dot(Q2.conjugate().transpose())
-    return np.linalg.norm(Q1_sqr - Q2_sqr, 'fro') / math.sqrt(2.)
+    return cast(float, np.linalg.norm(Q1_sqr - Q2_sqr, 'fro') / math.sqrt(2.))
 
 
-def calc_chordal_distance_2(matrix1, matrix2):
+def calc_chordal_distance_2(matrix1: np.ndarray, matrix2: np.ndarray) -> float:
     """
     Calculates the chordal distance between the two matrices
 
@@ -185,9 +189,12 @@ def calc_chordal_distance_2(matrix1, matrix2):
     >>> A = np.arange(1, 9.)
     >>> A.shape = (4, 2)
     >>> B = np.array([[1.2, 2.1], [2.9, 4.3], [5.2, 6.1], [6.8, 8.1]])
-    >>> print(calc_chordal_distance_2(A, B))
-    0.473867859572
+    >>> print(round(calc_chordal_distance_2(A, B), 8))
+    0.47386786
     """
-    return (np.linalg.norm(
-        calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2), 'fro') /
-            math.sqrt(2))
+    return cast(
+        float,  #
+        (np.linalg.norm(
+            calcProjectionMatrix(matrix1) - calcProjectionMatrix(matrix2),
+            'fro') / math.sqrt(2))  #
+    )

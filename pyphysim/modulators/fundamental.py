@@ -18,13 +18,17 @@ try:
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
-import numpy as np
 import math
+from typing import Optional, TypeVar, Union
 
+import numpy as np
+
+from pyphysim.util.conversion import binary2gray, dB2Linear, gray2binary
 from pyphysim.util.misc import level2bits, qfunc
-from pyphysim.util.conversion import gray2binary, binary2gray, dB2Linear
 
 PI = np.pi
+
+NumberOrArray = TypeVar("NumberOrArray", np.ndarray, float)
 
 __all__ = ['Modulator', 'PSK', 'QPSK', 'BPSK', 'QAM']
 
@@ -63,19 +67,18 @@ class Modulator:
                                 - 1. - 1.j, - 1. - 1.j]))
     array([0, 0, 3, 3, 1, 3, 3, 3, 2, 2])
     """
-
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes the Modulator object.
         """
         # This should be set in a subclass of the Modulator Class by
         # calling the setConstellation method..
-        self._M = 0  # Constellation size (modulation cardinality)
+        self._M: int = 0  # Constellation size (modulation cardinality)
         # Number of bits represented by each symbol in the constellation
-        self._K = 0
-        self.symbols = np.array([])
+        self._K: int = 0
+        self.symbols: np.ndarray = np.array([])
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         Get method for the 'name' property.
 
@@ -87,7 +90,7 @@ class Modulator:
         return "{0:d}-{1:s}".format(self._M, self.__class__.__name__)
 
     @property
-    def M(self):
+    def M(self) -> int:
         """
         Get method for the M property.
 
@@ -101,7 +104,7 @@ class Modulator:
         return self._M
 
     @property
-    def K(self):
+    def K(self) -> int:
         """
         Get method for the K property.
 
@@ -115,7 +118,7 @@ class Modulator:
         """
         return self._K
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Get the string representation of the object.
 
@@ -126,7 +129,7 @@ class Modulator:
         """
         return "{0} object".format(self.name)
 
-    def setConstellation(self, symbols):
+    def setConstellation(self, symbols: np.ndarray) -> None:
         """
         Set the constellation of the modulator.
 
@@ -143,7 +146,7 @@ class Modulator:
         self._K = np.log2(M)
         self.symbols = symbols
 
-    def plotConstellation(self):  # pragma: no cover
+    def plotConstellation(self) -> None:  # pragma: no cover
         """Plot the constellation (in a scatter plot).
         """
         fig = plt.figure()
@@ -170,7 +173,7 @@ class Modulator:
 
         plt.show()
 
-    def modulate(self, inputData):
+    def modulate(self, inputData: Union[int, np.ndarray]) -> np.ndarray:
         """
         Modulate the input data (decimal data).
 
@@ -196,7 +199,7 @@ class Modulator:
         except IndexError:
             raise ValueError("Input data must be between 0 and 2^M")
 
-    def demodulate(self, receivedData):
+    def demodulate(self, receivedData: np.ndarray) -> np.ndarray:
         """
         Demodulate the data.
 
@@ -246,7 +249,8 @@ class Modulator:
         return output
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def calcTheoreticalSER(self, SNR):  # pragma: no cover
+    def calcTheoreticalSER(self, SNR: NumberOrArray
+                           ) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the theoretical symbol error rate.
 
@@ -271,7 +275,8 @@ class Modulator:
         """
         raise NotImplementedError("calcTheoreticalSER: Not implemented")
 
-    def calcTheoreticalBER(self, SNR):  # pragma: no cover
+    def calcTheoreticalBER(self, SNR: NumberOrArray
+                           ) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the theoretical bit error rate.
 
@@ -296,7 +301,8 @@ class Modulator:
         """
         raise NotImplementedError("calcTheoreticalBER: Not implemented")
 
-    def calcTheoreticalPER(self, SNR, packet_length):
+    def calcTheoreticalPER(self, SNR: NumberOrArray,
+                           packet_length: int) -> NumberOrArray:
         """
         Calculates the theoretical package error rate.
 
@@ -334,7 +340,10 @@ class Modulator:
         PER = 1 - ((1 - BER)**packet_length)
         return PER
 
-    def calcTheoreticalSpectralEfficiency(self, SNR, packet_length=None):
+    def calcTheoreticalSpectralEfficiency(self,
+                                          SNR: NumberOrArray,
+                                          packet_length: Optional[int] = None
+                                          ) -> NumberOrArray:
         """
         Calculates the theoretical spectral efficiency.
 
@@ -354,7 +363,7 @@ class Modulator:
         ----------
         SNR : float | np.ndarray
             Signal-to-noise-value (in dB).
-        packet_length : int
+        packet_length : int, optional
             The package length. That is, the number of bits in each
             package.
 
@@ -385,8 +394,7 @@ class Modulator:
 class PSK(Modulator):
     """PSK Class
     """
-
-    def __init__(self, M, phaseOffset=0):
+    def __init__(self, M: int, phaseOffset: float = 0) -> None:
         """Initializes the PSK object.
 
         Parameters
@@ -413,7 +421,7 @@ class PSK(Modulator):
 
     # noinspection PyUnresolvedReferences
     @staticmethod
-    def _createConstellation(M, phaseOffset):
+    def _createConstellation(M: int, phaseOffset: float) -> np.ndarray:
         """Generates the Constellation for the PSK modulation scheme.
 
         Parameters
@@ -440,7 +448,7 @@ class PSK(Modulator):
         imagPart[abs(imagPart) < 1e-15] = 0
         return realPart + 1j * imagPart
 
-    def setPhaseOffset(self, phaseOffset):
+    def setPhaseOffset(self, phaseOffset: float) -> None:
         """Set a new phase offset for the constellation
 
         Parameters
@@ -452,7 +460,7 @@ class PSK(Modulator):
         self.setConstellation(self._createConstellation(self._M, phaseOffset))
 
     # noinspection PyPep8
-    def calcTheoreticalSER(self, SNR):
+    def calcTheoreticalSER(self, SNR: NumberOrArray) -> NumberOrArray:
         """Calculates the theoretical (approximation for high M and high
         SNR) symbol error rate for the M-PSK scheme.
 
@@ -474,7 +482,7 @@ class PSK(Modulator):
         ser = 2. * qfunc(np.sqrt(2. * snr) * math.sin(PI / self._M))
         return ser
 
-    def calcTheoreticalBER(self, SNR):
+    def calcTheoreticalBER(self, SNR: NumberOrArray) -> NumberOrArray:
         """Calculates the theoretical (approximation) bit error rate for
         the M-PSK scheme using Gray coding.
 
@@ -503,11 +511,10 @@ class PSK(Modulator):
 class QPSK(PSK):  # pragma: no cover
     """QPSK Class
     """
-
-    def __init__(self):
+    def __init__(self) -> None:
         PSK.__init__(self, 4, PI / 4.)
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Get the string representation of the object.
 
@@ -528,15 +535,14 @@ class QPSK(PSK):  # pragma: no cover
 class BPSK(Modulator):
     """BPSK Class
     """
-
-    def __init__(self):
+    def __init__(self) -> None:
         Modulator.__init__(self)
         # The number "1" will be mapped to "-1" and the number "0" will be
         # mapped to "1"
         self.setConstellation(np.array([1, -1]))
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         Get the name property.
 
@@ -547,7 +553,7 @@ class BPSK(Modulator):
         """
         return "{0:s}".format(self.__class__.__name__)
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Get the string representation of the object.
 
@@ -558,7 +564,7 @@ class BPSK(Modulator):
         """
         return "BPSK object"
 
-    def calcTheoreticalSER(self, SNR):
+    def calcTheoreticalSER(self, SNR: NumberOrArray) -> NumberOrArray:
         """
         Calculates the theoretical (approximation) symbol error rate for
         the BPSK scheme.
@@ -580,7 +586,7 @@ class BPSK(Modulator):
         ser = qfunc(np.sqrt(2 * snr))
         return ser
 
-    def calcTheoreticalBER(self, SNR):
+    def calcTheoreticalBER(self, SNR: NumberOrArray) -> NumberOrArray:
         """
         Calculates the theoretical (approximation) bit error rate for the
         BPSK scheme.
@@ -597,7 +603,7 @@ class BPSK(Modulator):
         """
         return self.calcTheoreticalSER(SNR)
 
-    def modulate(self, inputData):
+    def modulate(self, inputData: np.ndarray) -> np.ndarray:
         """
         Modulate the input data (decimal data).
 
@@ -624,7 +630,7 @@ class BPSK(Modulator):
             raise ValueError("Input data can only contains '0's and '1's")
         return 1 - 2 * inputData
 
-    def demodulate(self, receivedData):
+    def demodulate(self, receivedData: np.ndarray) -> np.ndarray:
         """
         Demodulate the data.
 
@@ -651,8 +657,7 @@ class BPSK(Modulator):
 class QAM(Modulator):
     """QAM Class
     """
-
-    def __init__(self, M):
+    def __init__(self, M: int) -> None:
         """Initializes the QAM object.
 
         Parameters
@@ -683,7 +688,7 @@ class QAM(Modulator):
         self.setConstellation(symbols)
 
     @staticmethod
-    def _createConstellation(M):
+    def _createConstellation(M: int) -> np.ndarray:
         """
         Generates the Constellation for the (SQUARE) M-QAM modulation
         scheme.
@@ -712,7 +717,7 @@ class QAM(Modulator):
         return symbols / math.sqrt(average_energy)
 
     @staticmethod
-    def _calculateGrayMappingIndexQAM(L):
+    def _calculateGrayMappingIndexQAM(L: int) -> np.ndarray:
         """
         Calculates the indexes that should be applied to the
         constellation created by _createConstellation in order to
@@ -773,7 +778,8 @@ class QAM(Modulator):
         return np.reshape(index_matrix, L**2)
 
     # noinspection PyPep8
-    def _calcTheoreticalSingleCarrierErrorRate(self, SNR):
+    def _calcTheoreticalSingleCarrierErrorRate(self, SNR: NumberOrArray
+                                               ) -> NumberOrArray:
         """
         Calculates the theoretical (approximation) error rate of a single
         carrier in the QAM system (QAM has two carriers).
@@ -804,9 +810,9 @@ class QAM(Modulator):
         sqrtM = np.sqrt(self._M)
         Psc = (2. * (1. - (1. / sqrtM)) *
                qfunc(np.sqrt(snr * 3. / (self._M - 1.))))
-        return Psc
+        return Psc  # type: ignore
 
-    def calcTheoreticalSER(self, SNR):
+    def calcTheoreticalSER(self, SNR: NumberOrArray) -> NumberOrArray:
         """
         Calculates the theoretical (approximation) symbol error rate for
         the QAM scheme.
@@ -827,7 +833,7 @@ class QAM(Modulator):
         ser = 1 - (1 - Psc)**2
         return ser
 
-    def calcTheoreticalBER(self, SNR):
+    def calcTheoreticalBER(self, SNR: NumberOrArray) -> NumberOrArray:
         """
         Calculates the theoretical (approximation) bit error rate for
         the QAM scheme.

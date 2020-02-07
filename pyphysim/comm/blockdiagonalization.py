@@ -11,29 +11,51 @@ There are two ways to use this module. You can either use the
 
 """
 
-import numpy as np
 import collections
+from typing import Iterable, List, Optional, Tuple, Union, cast
+
+import numpy as np
+
 from scipy.linalg import block_diag
 
-from ..comm import waterfilling
-from ..util.misc import least_right_singular_vectors, \
-    calc_shannon_sum_capacity, calc_whitening_matrix
-from ..util.conversion import single_matrix_to_matrix_of_matrices, \
-    linear2dB
-from ..subspace.projections import calcProjectionMatrix
-from ..modulators.fundamental import Modulator
 from ..channels.multiuser import MultiUserChannelMatrixExtInt
+from ..comm import waterfilling
+from ..modulators.fundamental import BPSK, PSK, QAM, QPSK
+from ..subspace.projections import calcProjectionMatrix
+from ..util.conversion import linear2dB, single_matrix_to_matrix_of_matrices
+from ..util.misc import (calc_shannon_sum_capacity, calc_whitening_matrix,
+                         least_right_singular_vectors)
 
 __all__ = [
     'block_diagonalize', 'calc_receive_filter', 'BlockDiagonalizer',
     'BDWithExtIntBase', 'WhiteningBD', 'EnhancedBD'
 ]
 
+NumberOrArrayUnion = Union[np.ndarray, float]
+Modulator = Union[BPSK, PSK, QPSK, QAM]
+
+# A solution found with the block diagonalization algorithm
+BdSolution = Tuple[np.ndarray, np.ndarray]
+
+# A solution found with the block diagonalization algorithm for the case with
+# external interference. This corresponds to a tuple of 3 numpy arrays.
+#
+# The first one is a 1D numpy array of 2D numpy arrays (the precoder of each
+# user).
+#
+# The second one is a 1D numpy array of 2D numpy arrays (the receive filter of
+# each user).
+#
+# The third one is a 1D numpy array of integers with the number of streams of
+# each user.
+BdWithExtIntSolution = Tuple[np.ndarray, np.ndarray, np.ndarray]
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def block_diagonalize(mtChannel, num_users, iPu, noise_var):
+def block_diagonalize(mtChannel: np.ndarray, num_users: int, iPu: float,
+                      noise_var: float) -> BdSolution:
     """
     Performs the block diagonalization of `mtChannel`.
 
@@ -68,7 +90,7 @@ def block_diagonalize(mtChannel, num_users, iPu, noise_var):
     return results_tuple
 
 
-def calc_receive_filter(newH):
+def calc_receive_filter(newH: np.ndarray) -> np.ndarray:
     """
     Calculates the Zero-Forcing receive filter.
 
@@ -79,7 +101,7 @@ def calc_receive_filter(newH):
 
     Returns
     -------
-    W_bd_H : np.ndarray
+    np.ndarray
         The zero-forcing matrix to separate each stream of each user. Note
         that W_bd_H is directly applied to the received signals (no need
         to calculate the conjugate transpose).
@@ -90,7 +112,8 @@ def calc_receive_filter(newH):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxx Helper Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def _calc_stream_reduction_matrix(Re_k, kept_streams):
+def _calc_stream_reduction_matrix(Re_k: np.ndarray,
+                                  kept_streams: int) -> np.ndarray:
     """Calculates the `P` matrix that performs the stream reduction such that
     the subspace of the remaining streams span the dimensions with the
     lowest interference (according to the external interference plus noise
@@ -116,7 +139,8 @@ def _calc_stream_reduction_matrix(Re_k, kept_streams):
     return min_Vs
 
 
-def _calc_effective_throughput(sinrs, modulator, packet_length):
+def _calc_effective_throughput(sinrs: NumberOrArrayUnion, modulator: Modulator,
+                               packet_length: int) -> float:
     """Calculates the effective throughput of the values in `sinrs` considering
     the given modulator and packet_length.
 
@@ -128,7 +152,7 @@ def _calc_effective_throughput(sinrs, modulator, packet_length):
     ----------
     sinrs : float | np.ndarray
         SINR values (in linear scale).
-    modulator : T <= Modulator
+    modulator : Modulator
         A modulator object such as M-PSK, M-QAM, etc. See the
         :mod:`.modulators` module.
     packet_length: int
@@ -143,7 +167,7 @@ def _calc_effective_throughput(sinrs, modulator, packet_length):
     SINRs = linear2dB(sinrs)
     se = modulator.calcTheoreticalSpectralEfficiency(SINRs, packet_length)
     total_se = np.sum(se)
-    return total_se
+    return cast(float, total_se)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -233,14 +257,15 @@ class BlockDiagonalizer:
     class implement two power allocation methods, a global power allocation,
     and a 'per transmitter' power allocation.
     """
-    def __init__(self, num_users, iPu, noise_var):
+    def __init__(self, num_users: int, iPu: float, noise_var: float) -> None:
         self.num_users = num_users
         self.iPu = iPu
         # Noise power is used in the water-filling calculations
         self.noise_var = noise_var
 
     # noinspection PyPep8
-    def _calc_BD_matrix_no_power_scaling(self, mtChannel):
+    def _calc_BD_matrix_no_power_scaling(self,
+                                         mtChannel: np.ndarray) -> BdSolution:
         """
         Calculates the modulation matrix "M" that block diagonalizes the
         channel `mtChannel`, but without any king of power scaling.
@@ -288,8 +313,8 @@ class BlockDiagonalizer:
         iNrU = iNr // self.num_users
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Ms_bad = []
-        Sigma = []
+        Ms_bad: List[np.ndarray] = []
+        Sigma: List[np.ndarray] = []
 
         # Calculates the interfering channels $\tilde{\mat{H}}_j$ as well
         # as $\tilde{\mtV}_j^{(1)}$ and $\tilde{\mtV}_j^{(0)}$.
@@ -332,7 +357,8 @@ class BlockDiagonalizer:
         Sigma = np.array(Sigma)
         return Ms_bad, Sigma
 
-    def _perform_global_waterfilling_power_scaling(self, Ms_bad, Sigma):
+    def _perform_global_waterfilling_power_scaling(
+            self, Ms_bad: np.ndarray, Sigma: np.ndarray) -> np.ndarray:
         """Perform the power scaling based on the water-filling algorithm for
         all the parallel channel gains in `Sigma`.
 
@@ -369,7 +395,8 @@ class BlockDiagonalizer:
 
         return Ms_good
 
-    def _perform_normalized_waterfilling_power_scaling(self, Ms_bad, Sigma):
+    def _perform_normalized_waterfilling_power_scaling(
+            self, Ms_bad: np.ndarray, Sigma: np.ndarray) -> np.ndarray:
         """Perform the power scaling based on the water-filling
         algorithm for all the parallel channel gains in `Sigma`,
         but normalize the result by the power of the base station
@@ -431,7 +458,7 @@ class BlockDiagonalizer:
 
         return Ms_good
 
-    def block_diagonalize(self, mtChannel):
+    def block_diagonalize(self, mtChannel: np.ndarray) -> BdSolution:
         """
         Perform the block diagonalization.
 
@@ -449,7 +476,7 @@ class BlockDiagonalizer:
 
         Returns
         -------
-        (newH, Ms_good) : (np.ndarray,np.ndarray)
+        np.ndarray, np.ndarray
             newH is a 2D numpy array corresponding to the Block
             diagonalized channel, while Ms_good is a 2D numpy array
             corresponding to the precoder matrix used to block diagonalize
@@ -475,7 +502,8 @@ class BlockDiagonalizer:
         # Return block diagonalized channel and the used precoding matrix
         return newH, Ms_good
 
-    def block_diagonalize_no_waterfilling(self, mtChannel):
+    def block_diagonalize_no_waterfilling(self,
+                                          mtChannel: np.ndarray) -> BdSolution:
         """
         Performs the block diagonalization, but without applying the
         water-filling algorithm.
@@ -532,7 +560,7 @@ class BlockDiagonalizer:
         return newH, Ms_good
 
     @staticmethod
-    def calc_receive_filter(newH):
+    def calc_receive_filter(newH: np.ndarray) -> np.ndarray:
         """
         Calculates the Zero-Forcing receive filter.
 
@@ -551,7 +579,8 @@ class BlockDiagonalizer:
         return W_bd
 
     # noinspection PyPep8
-    def _get_tilde_channel(self, mtChannel, user):
+    def _get_tilde_channel(self, mtChannel: np.ndarray,
+                           user: int) -> np.ndarray:
         """
         Return the combined channel of all users except `user`.
 
@@ -576,7 +605,9 @@ class BlockDiagonalizer:
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
         return self._get_sub_channel(mtChannel, desiredUsers)
 
-    def _get_sub_channel(self, mt_channel, desired_users):
+    def _get_sub_channel(
+            self, mt_channel: np.ndarray,
+            desired_users: Union[int, Iterable[int]]) -> np.ndarray:
         """
         Get a subchannel according to the desired_users vector.
 
@@ -617,12 +648,13 @@ class BlockDiagonalizer:
         iNrU = nrows // self.num_users
 
         if isinstance(desired_users, collections.Iterable):
-            vtIndexes = []
+            vtIndexes: List[int] = []
             for index in desired_users:
                 vtIndexes.extend(range(iNrU * index, (index + 1) * iNrU))
         else:
             assert isinstance(desired_users, int)
-            vtIndexes = range(iNrU * desired_users, (desired_users + 1) * iNrU)
+            vtIndexes = list(
+                range(iNrU * desired_users, (desired_users + 1) * iNrU))
         return mt_channel[vtIndexes, :]
 
 
@@ -645,11 +677,14 @@ class BDWithExtIntBase(BlockDiagonalizer):
     pe : float
         Power of the external interference source (in linear scale)
     """
-    def __init__(self, num_users, iPu, noise_var, pe):
+    def __init__(self, num_users: int, iPu: float, noise_var: float,
+                 pe: float) -> None:
         BlockDiagonalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
-    def calc_whitening_matrices(self, mu_channel):
+    def calc_whitening_matrices(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> List[np.ndarray]:
         """
         Calculates the whitening receive filters for each user.
 
@@ -695,11 +730,15 @@ class WhiteningBD(BDWithExtIntBase):
     pe : float
         Power of the external interference source (in linear scale)
     """
-    def __init__(self, num_users, iPu, noise_var, pe):
+    def __init__(self, num_users: int, iPu: float, noise_var: float,
+                 pe: float) -> None:
         BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
 
     @staticmethod
-    def _calc_receive_filter_with_whitening(newH, whitening_filter, Nr, Nt):
+    def _calc_receive_filter_with_whitening(newH: np.ndarray,
+                                            whitening_filter: np.ndarray,
+                                            Nr: np.ndarray,
+                                            Nt: np.ndarray) -> np.ndarray:
         """
         Calculates the Zero-Forcing receive filter of all users.
 
@@ -734,7 +773,9 @@ class WhiteningBD(BDWithExtIntBase):
 
         return Wk_all_users
 
-    def block_diagonalize_no_waterfilling(self, mu_channel):
+    def block_diagonalize_no_waterfilling(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """
         Perform the block diagonalization of `mu_channel` taking the external
         interference into account.
@@ -821,7 +862,8 @@ class EnhancedBD(BDWithExtIntBase):
     See the :class:`BlockDiagonalizer` class for details about the block
     diagonalization process.
     """
-    def __init__(self, num_users, iPu, noise_var, pe):
+    def __init__(self, num_users: int, iPu: float, noise_var: float,
+                 pe: float) -> None:
         BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
 
         # Function used to decide how many streams will be sacrificed to
@@ -996,7 +1038,7 @@ class EnhancedBD(BDWithExtIntBase):
             raise AttributeError(msg)
 
     @property
-    def metric_name(self):
+    def metric_name(self) -> str:
         """Get name of the method used to decide how many streams to sacrifice.
 
          Returns
@@ -1007,7 +1049,9 @@ class EnhancedBD(BDWithExtIntBase):
         return self._metric_func_name
 
     @staticmethod
-    def calc_receive_filter_user_k(Heq_k_P, P=None):
+    def calc_receive_filter_user_k(Heq_k_P: np.ndarray,
+                                   P: Optional[np.ndarray] = None
+                                   ) -> np.ndarray:
         """
         Calculates the Zero-Forcing receive filter of a single user `k` with or
         without the stream reduction.
@@ -1050,7 +1094,8 @@ class EnhancedBD(BDWithExtIntBase):
 
     # NOTE: PROBABLY, THIS IS ONLY VALID FOR SPATIAL MULTIPLEXING.
     @staticmethod
-    def _calc_linear_SINRs(Heq_k_red, Wk, Re_k):
+    def _calc_linear_SINRs(Heq_k_red: np.ndarray, Wk: np.ndarray,
+                           Re_k: np.ndarray) -> np.ndarray:
         """Calculates the effective SINRs of each parallel channel.
 
         Parameters
@@ -1088,7 +1133,9 @@ class EnhancedBD(BDWithExtIntBase):
                                 np.abs(external_interference_plus_noise))
         return sinr
 
-    def _perform_BD_no_waterfilling_no_stream_reduction(self, mu_channel):
+    def _perform_BD_no_waterfilling_no_stream_reduction(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """
         Function called inside perform_BD_no_waterfilling when no stream
         reduction should be performed.
@@ -1110,7 +1157,6 @@ class EnhancedBD(BDWithExtIntBase):
             filter for a user (1D numpy array of 2D numpy arrays).
         Ns_all_users: np.ndarray
             Number of streams of each user (1D numpy array of ints).
-
         """
         # xxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         K = mu_channel.K
@@ -1144,7 +1190,9 @@ class EnhancedBD(BDWithExtIntBase):
 
         return MsPk_all_users, Wk_all_users, Ns_all_users
 
-    def _perform_BD_no_waterfilling_fixed_or_naive_reduction(self, mu_channel):
+    def _perform_BD_no_waterfilling_fixed_or_naive_reduction(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """
         Function called inside perform_BD_no_waterfilling when the naive or
         the fixed stream reduction should be performed.
@@ -1233,7 +1281,9 @@ class EnhancedBD(BDWithExtIntBase):
 
         return MsPk_all_users, Wk_all_users, Ns_all_users
 
-    def _perform_BD_no_waterfilling_decide_number_streams(self, mu_channel):
+    def _perform_BD_no_waterfilling_decide_number_streams(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """
         Function called inside perform_BD_no_waterfilling when the stream
         reduction is performed and the number of sacrificed streams depend on
@@ -1356,7 +1406,9 @@ class EnhancedBD(BDWithExtIntBase):
 
         return MsPk_all_users, Wk_all_users, Ns_all_users
 
-    def block_diagonalize_no_waterfilling(self, mu_channel):
+    def block_diagonalize_no_waterfilling(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """Perform the block diagonalization of `mu_channel` taking the
         external interference into account.
 
