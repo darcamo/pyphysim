@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "pyphysim"
+version = "0.1.0"
+description = "Implementation of a digital communication (physical layer) in python"
+authors = ["Darlan Cavalcante Moreira <darcamo@gmail.com>"]
+license = "GPL-2.0-or-later"
+readme = "README.md"
+repository = "https://github.com/darcamo/pyphysim"
+keywords = ["phy", "QAM", "PSK", "QPSK", "BPSK", "OFDM", "Modulation", "Monte Carlo"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Telecommunications Industry",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License (GPL)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering"
+]
+include = ["LICENSE.md"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+numpy = "*"
+scipy = "*"
+matplotlib = "*"
+configobj = "*"
+h5py = "*"
+
+[tool.poetry.dev-dependencies]
+cython = "*"
+ipyparallel = "*"
+ipython = "*"
+ipywidgets = "*"
+isort = "*"
+mypy = "*"
+nose = "*"
+pre-commit = "*"
+pylint = "*"
+sphinx = "*"
+sphinx_rtd_theme = "*"
+yapf = "*"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
