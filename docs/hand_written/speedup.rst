@@ -34,7 +34,7 @@ showing runsnakerun in action.
 
 .. image:: ../_images/runsnakerun_screenshot-2.0.png
    :scale: 80%
-   
+
 .. _runsnakerun: http://www.vrplumber.com/programming/runsnakerun/
 
 
@@ -86,7 +86,7 @@ The setup.py and setup.cfg files are already properly configured to
 compile the Cython extensions implement in PyPhysim. Simple call the command
 
 .. code-block:: bash
-                
+
    $ python setup.py build_ext
 
 to compile all the Cython extensions.
@@ -142,7 +142,7 @@ misc_c.pyx whenever the Cython extension is compiled, or use the native
 python version when the Cython extension is not compiled.
 
 .. note::
-   
+
    The setup.cfg file is configured so that all the compiled Cython
    extensions are put in the `c_extensions` folder.
 
@@ -166,7 +166,7 @@ in that source file.
 
 
 .. todo::
-   
+
    Verify is this is really necessary when the code is compiled into an
    extension of only if we had used the pyximport.
 
@@ -177,7 +177,7 @@ Cython code together with your Python code using the same tools as for
 Python code alone.
 
 .. note::
-   
+
    If your profiling is messed up because of the call overhead to some
    small functions that you rather do not want to see in your profile -
    either because you plan to inline them anyway or because you are sure
@@ -199,7 +199,7 @@ Python code alone.
    disabling profiling for my_often_called_function will give you more
    reliable information when optimizing its calling function.
 
-   
+
 Other Alternatives to speed-up python code
 ------------------------------------------
 

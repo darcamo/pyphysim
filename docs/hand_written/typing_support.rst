@@ -31,5 +31,3 @@ Some useful information:
 - Inspecting the type of variables: Use :code:`reveal_type(expr)` to see the
   type of :code:`expr`. It only works in `mypy` and you get a :code:`NameError`
   if you try to run code with it in Python.
-
-

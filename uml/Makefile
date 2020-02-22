@@ -9,7 +9,7 @@
 # second has the package diagram. At last, in the "simple" target the class
 # diagrams only have the class names.
 #
-# 
+#
 # Extending this Makefile
 # -----------------------
 #

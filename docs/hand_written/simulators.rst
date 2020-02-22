@@ -41,4 +41,3 @@ class (the simulatro main class that inherits from
 Another good alternative is using the `configobj library <http://www.voidspace.org.uk/python/configobj.html>`_, which provides an
 arguable easier to use API then configparser. Another advantage of using
 configobj is its ability to validate the configuration file.
-

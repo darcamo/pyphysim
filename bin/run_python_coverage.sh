@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 # Example in http://nedbatchelder.com/code/coverage/cmd.html
 
 # You need to install the coverage package (available in the Ubuntu
@@ -6,7 +8,7 @@
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # This script run coverage on each test file here and append the
 # data to the .coverage file. Then it generates a coverage report.
-# 
+#
 # Note that the coverage report omits stuff on the /usr folder to avoid
 # reporting information about built-in modules.
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

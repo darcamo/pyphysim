@@ -4,4 +4,3 @@
 ((python-mode
   (flycheck-checker . python-pylint)
   (mode . auto-revert)))
-

@@ -53,7 +53,7 @@ The after downloading Mathjax to the `docs/Mathjax/` edit the
 there.
 
 .. code-block:: javascript
-                
+
     // Matrices
     TEX.Macro("mtA", "\\mathbf{A}");
     TEX.Macro("mtB", "\\mathbf{B}");
@@ -107,5 +107,3 @@ there.
     TEX.Macro("vtX", "\\mathbf{x}");
     TEX.Macro("vtY", "\\mathbf{y}");
     TEX.Macro("vtZ", "\\mathbf{z}");
-
-    

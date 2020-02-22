@@ -17,6 +17,3 @@ This will create a `env` folder. Activate the environment with
 
 Now you can install the python dependencies such as numpy, scipy, Cython,
 IPython, etc.
-
-
-

@@ -20,7 +20,7 @@ pyphysim.util.misc module
     :undoc-members:
     :show-inheritance:
 
-       
+
 pyphysim.util.serialize module
 ------------------------------
 

@@ -21,5 +21,3 @@
 [General]
         rep_max = 5000
         unpacked_parameters = SNR, Pe_dBm
-
-        

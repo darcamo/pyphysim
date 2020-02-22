@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 # This requires the cloc program to be installed.
 cd ..
 echo xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
