@@ -9,6 +9,7 @@ Subpackages
     pyphysim.c_extensions
     pyphysim.cell
     pyphysim.channels
+    pyphysim.channel_estimation
     pyphysim.comm
     pyphysim.extra
     pyphysim.ia
