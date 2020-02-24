@@ -23,8 +23,10 @@ except ImportError:  # pragma: no cover
 try:
     # noinspection PyUnresolvedReferences
     import pandas as pd
+    DataFrame = pd.DataFrame
 except ImportError:  # pragma: no cover
-    pass
+    # This will be used just for type checking, since pandas is not installed
+    from typing import Any as DataFrame
 
 # One of SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE
 ResultType = int
@@ -1861,7 +1863,7 @@ class SimulationResults(JsonSerializable):
     #     fid.close()
     #     return simresults
 
-    def to_dataframe(self) -> pd.DataFrame:
+    def to_dataframe(self) -> DataFrame:
         """
         Convert the SimulationResults object to a pandas DataFrame.
         """

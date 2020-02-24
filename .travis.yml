@@ -1,35 +1,29 @@
 language: python
 python:
-  - "3.6"
-
-notifications:
-  email: false
-
-# Setup anaconda
+- 3.6
+# env:
+#   global:
+#   - secure: "<encrypted MYPYPI_USER=username>"
+#   - secure: "<encrypted MYPYPI_PASS=p@ssword>"
 before_install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-# command to install dependencies
+- pip install poetry
 install:
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose Cython pyzmq pandas h5py ipyparallel
-  - source activate test-environment
-  # Install packages not available in conda using pip
-  - pip install configobj
-  - pip install python-coveralls
-  - pip install .
-# command to run tests
+- poetry install
 script:
+# - poetry run flake8 my_package test
+# - poetry run coverage run --source=my_package -m unittest discover -b
   - nosetests --with-coverage --cover-package=pyphysim tests/
+# before_deploy:
+# - poetry config repositories.mypypi http://mypypi.example.com/simple
+# - poetry config http-basic.mypypi $MYPYPI_USER $MYPYPI_PASS
+# - poetry build -f sdist
+# deploy:
+#   provider: script
+#   script: poetry publish -r mypypi
+#   skip_cleanup: true
+#   on:
+#     tags: true
 
-
-# Calculate coverage
+## Calculate coverage
 after_success:
   - coveralls
