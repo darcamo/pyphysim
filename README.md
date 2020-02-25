@@ -18,8 +18,7 @@ implemented (see the pyphysim.simulations package).
 Note
 ----
 
-It is possible to run the files in the "apps" and "tests" folders without
-installing PyPhysim. In that case, you should probably at least run the
-setup script to compile any C extension with
+Install [poetry](https://python-poetry.org/), clone this repository and then use
+the command `poetry install` to install pyphysim.
 
-`python setup.py build_ext`
+You can also directly install it from pypi with `pip install pyphysim`.
