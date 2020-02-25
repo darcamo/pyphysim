@@ -3436,11 +3436,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         # Sleep for a very short time so that the
         # ProgressbarMultiProcessServer object has time to create the file
         # with the current progress
-        sleep(0.02)
-
-        # xxxxxxxxxx DEBUG xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        sleep(0.04)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        sleep(0.5)
 
         self.mpbar.stop_updater(0)
 
