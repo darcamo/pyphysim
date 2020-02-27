@@ -22,7 +22,8 @@ def compute_ls_estimation(Y_p: np.ndarray, s: np.ndarray) -> np.ndarray:
         The received symbols. Dimension must be either `Nr x num_pilots` or
         `num_realizations x Nr x num_pilots`
     s : np.ndarray
-        The transmitted pilots. Dimension must be `Nt x num_pilots`
+        The transmitted pilots. Dimension must be either `Nt x num_pilots` or
+        `num_realizations x Nt x num_pilots`
 
     Returns
     -------
@@ -95,9 +96,11 @@ def compute_mmse_estimation(Y_p: np.ndarray, s: np.ndarray, noise_power: float,
     Parameters
     ----------
     Y_p : np.ndarray
-        The received symbols. Dimension must be `Nr x num_pilots`
+        The received symbols. Dimension must be either `Nr x num_pilots` or
+        `num_realizations x Nr x num_pilots`
     s : np.ndarray
-        The transmitted pilots. Dimension must be `Nt x num_pilots`
+        The transmitted pilots. Dimension must be either `Nt x num_pilots` or
+        `num_realizations x Nt x num_pilots`
     noise_power : float
         The noise power.
     C : np.ndarray
@@ -106,7 +109,8 @@ def compute_mmse_estimation(Y_p: np.ndarray, s: np.ndarray, noise_power: float,
     Returns
     -------
     np.ndarray
-        The estimated channel.
+        The estimated channel using the MMSE algorithm.
+        Dimension: either `Nr x Nt` or `num_realizations x Nr x Nt`
     """
     if Y_p.ndim == 2:
         assert (s.ndim == 2)
