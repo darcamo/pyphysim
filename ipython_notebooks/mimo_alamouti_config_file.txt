@@ -1,5 +1,5 @@
 [Scenario]
-        SNR = [  0.   5.  10.  15.  20.]
+        SNR = [ 0.  5. 10. 15. 20.]
         M = 16
         modulator = QAM
         NSymbs = 200

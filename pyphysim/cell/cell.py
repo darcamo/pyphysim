@@ -145,7 +145,8 @@ class AccessPoint(Node):
         an ID and its plot will shown a symbol at the access point
         location instead of the ID.
     """
-    def __init__(self, pos: complex,
+    def __init__(self,
+                 pos: complex,
                  ap_id: Optional[Union[int, str]] = None) -> None:
         Node.__init__(self, pos, plot_marker='^', marker_color='b')
 
@@ -1740,10 +1741,10 @@ class Cluster(shapes.Shape):
         return cell_positions
 
     @staticmethod
-    def _calc_cell_positions_3sec(cell_radius: float,
-                                  num_cells: int,
-                                  rotation: Optional[float] = None
-                                  ) -> np.ndarray:
+    def _calc_cell_positions_3sec(
+            cell_radius: float,
+            num_cells: int,
+            rotation: Optional[float] = None) -> np.ndarray:
         """
         Helper function used by the Cluster class.
 
@@ -1774,10 +1775,10 @@ class Cluster(shapes.Shape):
                                                     rotation)
 
     @staticmethod
-    def _calc_cell_positions_hexagon(cell_radius: float,
-                                     num_cells: int,
-                                     rotation: Optional[float] = None
-                                     ) -> np.ndarray:
+    def _calc_cell_positions_hexagon(
+            cell_radius: float,
+            num_cells: int,
+            rotation: Optional[float] = None) -> np.ndarray:
         """
         Helper function used by the Cluster class.
 
@@ -1871,10 +1872,10 @@ class Cluster(shapes.Shape):
 
     # noinspection PyUnresolvedReferences
     @staticmethod
-    def _calc_cell_positions_square(side_length: float,
-                                    num_cells: int,
-                                    rotation: Optional[float] = None
-                                    ) -> np.ndarray:
+    def _calc_cell_positions_square(
+            side_length: float,
+            num_cells: int,
+            rotation: Optional[float] = None) -> np.ndarray:
         """
         Helper function used by the Cluster class.
 
@@ -2233,12 +2234,12 @@ class Cluster(shapes.Shape):
                 self.get_cell_by_id(cell_ids).add_random_user(
                     user_color, min_dist_ratio)
 
-    def add_border_users(self,
-                         cell_ids: IntOrIntIterable,
-                         angles: FloatOrFloatIterable,
-                         ratios: FloatOrFloatIterable = 1.0,
-                         user_color: Optional[StrOrStrIterable] = None
-                         ) -> None:
+    def add_border_users(
+            self,
+            cell_ids: IntOrIntIterable,
+            angles: FloatOrFloatIterable,
+            ratios: FloatOrFloatIterable = 1.0,
+            user_color: Optional[StrOrStrIterable] = None) -> None:
         """
         Add users to all the cells indicated by `cell_indexes` at the
         specified angle(s) (in degrees) and ratio (relative distance
@@ -2415,7 +2416,8 @@ class Cluster(shapes.Shape):
                 self._wrapped_cells['wrap{0}_{1}:{2}'.format(
                     wrapped_id, rel_center, rel_cell)] \
                     = w
-                self._cell_pos[wrapped_id - 1].append(w.pos)
+                self._cell_pos[wrapped_id - 1] = np.append(
+                    self._cell_pos[wrapped_id - 1], w.pos)
         else:
             msg = ("Wrap around not implemented for a cluster with {0} "
                    "cells.")
@@ -2758,10 +2760,10 @@ class Grid:
             plt.show()
 
     # This method is the same in the Shape class
-    def _repr_some_format_(self,
-                           extension: str = 'png',
-                           axis_option: str = 'equal'
-                           ) -> Any:  # pragma: no cover
+    def _repr_some_format_(
+            self,
+            extension: str = 'png',
+            axis_option: str = 'equal') -> Any:  # pragma: no cover
         """
         Return the representation of the shape in the desired format.
 

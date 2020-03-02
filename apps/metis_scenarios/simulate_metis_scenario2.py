@@ -59,8 +59,8 @@ def find_ap_assoc_best_channel(pl_all_plus_wl):
     return ap_assoc
 
 
-def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps, ap_assoc, transmitting_aps,
-                                  Pt, noise_var):
+def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps, ap_assoc,
+                                  transmitting_aps, Pt, noise_var):
     """
     Perform the simulation for a given AP association.
 
@@ -303,7 +303,7 @@ def perform_simulation(
         ax1.set_ylim([-60, 60])
         ax1.set_xlim([-60, 60])
         ax1 = plot_all_rooms(all_rooms, ax1)
-        ax1.hold(True)
+        #ax1.hold(True)
 
         # ax2 will be used for annotations
         ax2 = plt.subplot(gs[1])
