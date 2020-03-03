@@ -3,21 +3,27 @@
 """Module implementing helper functions for simulators."""
 
 import sys
+from typing import Any, List, Optional, Union
+
+from .progressbar import ProgressbarZMQServer
+from .runner import SimulationRunner
 
 try:
     # noinspection PyUnresolvedReferences
     from ipyparallel import Client, LoadBalancedView, DirectView
 except ImportError:  # pragma: no cover
-    pass
-
-from .progressbar import ProgressbarZMQServer
+    Client = Any
+    LoadBalancedView = Any
+    DirectView = Any
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def simulate_do_what_i_mean(runner_or_list_of_runners,
-                            folder=None):  # pragma: no cover
+def simulate_do_what_i_mean(
+        runner_or_list_of_runners: Union[SimulationRunner,
+                                         List[SimulationRunner]],
+        folder: Optional[str] = None) -> None:  # pragma: no cover
     """
     This will either call the simulate method or the simulate_in_parallel
     method as appropriated.
@@ -49,7 +55,8 @@ def simulate_do_what_i_mean(runner_or_list_of_runners,
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
+def _add_folder_to_ipython_engines_path(client: Client, folder: str
+                                        ) -> None:  # pragma: no cover
     """
     Add a folder to sys.path of each ipython engine.
 
@@ -81,9 +88,10 @@ def _add_folder_to_ipython_engines_path(client, folder):  # pragma: no cover
     dview.execute('sys.path.append("{0}")'.format(folder), block=True)
 
 
-def _simulate_do_what_i_mean_single_runner(runner,
-                                           folder=None,
-                                           block=True):  # pragma: no cover
+def _simulate_do_what_i_mean_single_runner(runner: SimulationRunner,
+                                           folder: Optional[str] = None,
+                                           block: bool = True
+                                           ) -> None:  # pragma: no cover
     """
     This will either call the `simulate` method or the
     `simulate_in_parallel` method as appropriated.
@@ -150,8 +158,9 @@ def _simulate_do_what_i_mean_single_runner(runner,
             runner.simulate()
 
 
-def _simulate_do_what_i_mean_multiple_runners(list_of_runners,
-                                              folder=None):  # pragma: no cover
+def _simulate_do_what_i_mean_multiple_runners(
+        list_of_runners: List[SimulationRunner],
+        folder: Optional[str] = None) -> None:  # pragma: no cover
     """
     This will either call the `simulate` method or the
     `simulate_in_parallel` method as appropriated.

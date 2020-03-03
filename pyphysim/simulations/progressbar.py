@@ -49,6 +49,7 @@ except ImportError:  # pragma: no cover
     pass
 
 # Type used to store IP address and port number
+ClientID = int
 IPAddress = str
 PortNumber = int
 
@@ -1140,7 +1141,7 @@ class ProgressbarDistributedServerBase:
         self._filename = filename
 
         self._manager = multiprocessing.Manager()
-        self._client_data_list = self._manager.list()  # pylint: disable=E1101
+        self._client_data_list: List[Any] = self._manager.list()  # pylint: disable=E1101
 
         # total_final_count will be updated each time the register_*
         # function is called.
@@ -1230,7 +1231,7 @@ class ProgressbarDistributedServerBase:
         # corresponding proxy progressbar passing the client_id and any
         # other required data.
 
-    def _register_client(self, total_count: int) -> int:
+    def _register_client(self, total_count: int) -> ClientID:
         """
         Register a new "client" for the progressbar and return its `client_id`.
 
@@ -1245,7 +1246,7 @@ class ProgressbarDistributedServerBase:
 
         Returns
         -------
-        client_id : int
+        client_id : ClientID
             The client_id. The function whose process is tracked by the
             ProgressbarMultiProcessServer must update the element
             `client_id` with the current
@@ -1372,7 +1373,7 @@ class ProgressbarDistributedServerBase:
             self._update_process = multiprocessing.Process(
                 name="ProgressBarUpdater",
                 target=self._update_progress,
-                args=[self._filename, start_delay])
+                args=(self._filename, start_delay))
 
             self._update_process.daemon = True
 
@@ -1441,10 +1442,10 @@ class ProgressbarDistributedClientBase:
 
     Parameters
     ----------
-    client_id : int
+    client_id : ClientID
         The client ID.
     """
-    def __init__(self, client_id: int):
+    def __init__(self, client_id: ClientID):
         """
         """
         self.client_id = client_id
@@ -1615,12 +1616,13 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
 
     Parameters
     ----------
-    client_id : int
+    client_id : ClientID
         The client ID
     client_data_list : list
         The client data list
     """
-    def __init__(self, client_id: int, client_data_list: List[Any]) -> None:
+    def __init__(self, client_id: ClientID,
+                 client_data_list: List[Any]) -> None:
         """Initializes the ProgressbarMultiProcessClient object."""
         ProgressbarDistributedClientBase.__init__(self, client_id)
         self._client_data_list = client_data_list
@@ -1677,10 +1679,10 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         sys.stdout. If it is not None then the progress will be output to a
         file with name `filename`. This is usually useful for debugging and
         testing purposes.
-    ip : string
+    ip : IPAddress
         An string representing the address of the server socket.
         Ex: '192.168.0.117', 'localhost', etc.
-    port : int
+    port : PortNumber
         The port to bind the socket.
     """
     def __init__(self,
@@ -1690,28 +1692,6 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
                  filename: Optional[str] = None,
                  ip: IPAddress = 'localhost',
                  port: PortNumber = 7396) -> None:
-        """
-        Initializes the ProgressbarDistributedServerBase object.
-
-        Parameters
-        ----------
-        progresschar : str
-            Character used in the progressbar.
-        message : str
-            Message writen in the progressbar.
-        sleep_time : float
-            Time between progressbar updates (in seconds).
-        filename : str
-            If filename is None (default) then progress will be output to
-            sys.stdout. If it is not None then the progress will be output
-            to a file with name `filename`. This is usually useful for
-            debugging and testing purposes.
-        ip : string
-            A string representing the address of the server socket.
-            Ex: '192.168.0.117', 'localhost', etc.
-        port : int
-            The port to bind the socket.
-        """
         ProgressbarDistributedServerBase.__init__(self, progresschar, message,
                                                   sleep_time, filename)
 
@@ -1721,8 +1701,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
 
         # We store the IP and port of the socket in the Namespace, since
         # the socket will be created in a different process
-        self._ns.ip = ip
-        self._ns.port = port
+        self._ns.ip = ip  # type: ignore
+        self._ns.port = port  # type: ignore
 
         # This will be set to a ZMQ Context in the _update_progress method
         self._zmq_context: Optional[zmq.Context] = None
@@ -1739,7 +1719,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         str
             The string representing the address of the server socket.
         """
-        return cast(IPAddress, self._ns.ip)
+        return cast(IPAddress, self._ns.ip)  # type: ignore
 
     @property
     def port(self) -> PortNumber:
@@ -1751,7 +1731,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         int
             The port used.
         """
-        return cast(PortNumber, self._ns.port)
+        return cast(PortNumber, self._ns.port)  # type: ignore
 
     def register_client_and_get_proxy_progressbar(self, total_count: int
                                                   ) -> "ProgressbarZMQClient":
@@ -1879,27 +1859,15 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
 
     Parameters
     ----------
-    client_id : int
+    client_id : ClientID
         The client ID.
-    ip : str
+    ip : IPAddress
         A string representing the IP address of the server.
-    port : int
+    port : PortNumber
         The port number used by the server.
     """
-    def __init__(self, client_id: int, ip: IPAddress,
+    def __init__(self, client_id: ClientID, ip: IPAddress,
                  port: PortNumber) -> None:
-        """
-        Initializes the ProgressbarZMQClient object.
-
-        Parameters
-        ----------
-        client_id : int
-            The client ID.
-        ip : str
-            A string representing the IP address of the server.
-        port : int
-            The port number used by the server.
-        """
         ProgressbarDistributedClientBase.__init__(self, client_id)
         self.ip = ip
         self.port = port

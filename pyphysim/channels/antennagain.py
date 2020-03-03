@@ -66,7 +66,7 @@ class AntGainOmni(AntGainBase):
             The gain (in linear scale) for the provided angle.
         """
         if isinstance(angle, np.ndarray):
-            return self.ant_gain * np.ones(angle.shape)
+            return self.ant_gain * np.ones(angle.shape)  # type: ignore
 
         return self.ant_gain
 
@@ -127,4 +127,4 @@ class AntGainBS3GPP25996(AntGainBase):
         #\(-\min\left[ 12\left( \frac{\theta}{\theta_{3dB}} \right)^2, A_m \right]\), where \(-180 \geq \theta \geq 180\)
         ant_pattern_gain = dB2Linear(
             -np.minimum(12 * (angle / self.theta_3db)**2, self.Am))
-        return self.ant_gain * ant_pattern_gain
+        return self.ant_gain * ant_pattern_gain  # type: ignore

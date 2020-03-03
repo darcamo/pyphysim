@@ -12,10 +12,10 @@ There are two ways to use this module. You can either use the
 """
 
 import collections
-from typing import Iterable, List, Optional, Tuple, Union, cast
+from typing import (Any, Callable, Dict, Iterable, List, Optional, Tuple,
+                    Union, cast)
 
 import numpy as np
-
 from scipy.linalg import block_diag
 
 from ..channels.multiuser import MultiUserChannelMatrixExtInt
@@ -36,6 +36,12 @@ Modulator = Union[BPSK, PSK, QPSK, QAM]
 
 # A solution found with the block diagonalization algorithm
 BdSolution = Tuple[np.ndarray, np.ndarray]
+
+# metric function
+MetricFunc = Callable[..., float]
+
+# Extra arguments for the metric
+MetricExtraArgs = Dict[str, Any]
 
 # A solution found with the block diagonalization algorithm for the case with
 # external interference. This corresponds to a tuple of 3 numpy arrays.
@@ -357,8 +363,9 @@ class BlockDiagonalizer:
         Sigma = np.array(Sigma)
         return Ms_bad, Sigma
 
-    def _perform_global_waterfilling_power_scaling(
-            self, Ms_bad: np.ndarray, Sigma: np.ndarray) -> np.ndarray:
+    def _perform_global_waterfilling_power_scaling(self, Ms_bad: np.ndarray,
+                                                   Sigma: np.ndarray
+                                                   ) -> np.ndarray:
         """Perform the power scaling based on the water-filling algorithm for
         all the parallel channel gains in `Sigma`.
 
@@ -395,8 +402,10 @@ class BlockDiagonalizer:
 
         return Ms_good
 
-    def _perform_normalized_waterfilling_power_scaling(
-            self, Ms_bad: np.ndarray, Sigma: np.ndarray) -> np.ndarray:
+    def _perform_normalized_waterfilling_power_scaling(self,
+                                                       Ms_bad: np.ndarray,
+                                                       Sigma: np.ndarray
+                                                       ) -> np.ndarray:
         """Perform the power scaling based on the water-filling
         algorithm for all the parallel channel gains in `Sigma`,
         but normalize the result by the power of the base station
@@ -605,9 +614,9 @@ class BlockDiagonalizer:
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
         return self._get_sub_channel(mtChannel, desiredUsers)
 
-    def _get_sub_channel(
-            self, mt_channel: np.ndarray,
-            desired_users: Union[int, Iterable[int]]) -> np.ndarray:
+    def _get_sub_channel(self, mt_channel: np.ndarray,
+                         desired_users: Union[int, Iterable[int]]
+                         ) -> np.ndarray:
         """
         Get a subchannel according to the desired_users vector.
 
@@ -647,7 +656,7 @@ class BlockDiagonalizer:
         # Number of receive antennas per user
         iNrU = nrows // self.num_users
 
-        if isinstance(desired_users, collections.Iterable):
+        if isinstance(desired_users, collections.abc.Iterable):
             vtIndexes: List[int] = []
             for index in desired_users:
                 vtIndexes.extend(range(iNrU * index, (index + 1) * iNrU))
@@ -682,9 +691,8 @@ class BDWithExtIntBase(BlockDiagonalizer):
         BlockDiagonalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
-    def calc_whitening_matrices(
-            self,
-            mu_channel: MultiUserChannelMatrixExtInt) -> List[np.ndarray]:
+    def calc_whitening_matrices(self, mu_channel: MultiUserChannelMatrixExtInt
+                                ) -> List[np.ndarray]:
         """
         Calculates the whitening receive filters for each user.
 
@@ -773,7 +781,7 @@ class WhiteningBD(BDWithExtIntBase):
 
         return Wk_all_users
 
-    def block_diagonalize_no_waterfilling(
+    def block_diagonalize_no_waterfilling(  # type: ignore
             self,
             mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """
@@ -870,17 +878,20 @@ class EnhancedBD(BDWithExtIntBase):
         # mitigate external interference. This is set in the
         # set_ext_int_handling_metric method (as well as the _modulator and
         # _packet_length attributes)
-        self._metric_func = None  # The default metric will be None
+        self._metric_func: Optional[
+            MetricFunc] = None  # The default metric will be None
 
         self._metric_func_name = 'None'
 
         # Extra arguments that will be passed to the self._metric_func when
         # it is called.
-        self._metric_func_extra_args = {}
+        self._metric_func_extra_args: MetricExtraArgs = {}
 
-    def set_ext_int_handling_metric(self,
-                                    metric,
-                                    metric_func_extra_args_dict=None):
+    def set_ext_int_handling_metric(
+            self,
+            metric: Optional[str],
+            metric_func_extra_args_dict: Optional[MetricExtraArgs] = None
+    ) -> None:
         """
         Set the metric used to decide how many streams to sacrifice for
         external interference handling.
@@ -954,10 +965,6 @@ class EnhancedBD(BDWithExtIntBase):
             "modulator" and "packet_length" keywords with a modulator
             object and an integer, respectively. For the other metrics
             metric_func_extra_args_dict will be ignored.
-
-        Returns
-        -------
-        None
 
         Raises
         ------
@@ -1387,7 +1394,7 @@ class EnhancedBD(BDWithExtIntBase):
                 # SINR (in linear scale) of all streams of user k.
                 sinrs_k = self._calc_linear_SINRs(Heq_k_red, W_k, Rek)
 
-                # noinspection PyCallingNonCallable
+                assert self._metric_func is not None
                 metric_value_for_user_k[index] = self._metric_func(
                     sinrs_k,
                     # Use use the '**' magic to pass the values in the
@@ -1406,7 +1413,7 @@ class EnhancedBD(BDWithExtIntBase):
 
         return MsPk_all_users, Wk_all_users, Ns_all_users
 
-    def block_diagonalize_no_waterfilling(
+    def block_diagonalize_no_waterfilling(  # type: ignore
             self,
             mu_channel: MultiUserChannelMatrixExtInt) -> BdWithExtIntSolution:
         """Perform the block diagonalization of `mu_channel` taking the

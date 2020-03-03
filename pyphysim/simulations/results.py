@@ -6,7 +6,7 @@ from __future__ import division
 
 import os.path
 from collections.abc import Iterable
-from typing import Any, Optional, List, Dict, Iterator
+from typing import Any, Optional, List, Dict, Iterator, cast
 
 import numpy as np
 
@@ -37,9 +37,9 @@ __all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def combine_simulation_results(
-        simresults1: "SimulationResults",
-        simresults2: "SimulationResults") -> "SimulationResults":
+def combine_simulation_results(simresults1: "SimulationResults",
+                               simresults2: "SimulationResults"
+                               ) -> "SimulationResults":
     """
     Combine two SimulationResults objects with different parameters values.
 
@@ -852,7 +852,8 @@ class SimulationResults(JsonSerializable):
 
     """
     def __init__(self) -> None:
-        self._results: Dict[str, Result] = dict()
+        super().__init__()
+        self._results: Dict[str, List[Result]] = dict()
 
         # This will store the simulation parameters used in the simulation
         # that resulted in the results. This should be set by calling the
@@ -868,6 +869,9 @@ class SimulationResults(JsonSerializable):
         # (before any string replacements). This is useful when this file is
         # loaded to recover the SimulationResults object.
         self.original_filename: Optional[str] = None
+
+        # The SimulationResults will set and retrieve this value
+        self.current_rep = -1
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -1147,10 +1151,10 @@ class SimulationResults(JsonSerializable):
         """
         return list(self._results.keys())
 
-    def get_result_values_list(
-            self,
-            result_name: str,
-            fixed_params: Optional[Dict[str, Any]] = None) -> List[Any]:
+    def get_result_values_list(self,
+                               result_name: str,
+                               fixed_params: Optional[Dict[str, Any]] = None
+                               ) -> List[Any]:
         """
         Get the values for the results with name `result_name`.
 
@@ -1263,7 +1267,7 @@ class SimulationResults(JsonSerializable):
             out = [i.get_confidence_interval(P) for i in self[result_name]]
         return out
 
-    def __getitem__(self, key: str) -> Result:
+    def __getitem__(self, key: str) -> List[Result]:
         """
         Get the value of the desired result.
 
@@ -1274,10 +1278,9 @@ class SimulationResults(JsonSerializable):
 
         Returns
         -------
-        value :
-            The desired result.
+        List[Result]
+            The desired results.
         """
-
         # if key in self._results.keys():
         return self._results[key]
         # else:
@@ -1347,8 +1350,8 @@ class SimulationResults(JsonSerializable):
         """
 
         # -----------------------------------------------------------------
-        def list_of_results_to_list_of_dicts(
-                result_list: List[Result]) -> List[Dict[str, Any]]:
+        def list_of_results_to_list_of_dicts(result_list: List[Result]
+                                             ) -> List[Dict[str, Any]]:
             """
             Convert a list of Result objects into a list of dictionary
             representations ob Result objects.
@@ -1383,7 +1386,7 @@ class SimulationResults(JsonSerializable):
         return d
 
     @staticmethod
-    def _from_dict(d: Dict[str, Any]) -> Result:
+    def _from_dict(d: Dict[str, Any]) -> "SimulationResults":
         """
         Convert from a dictionary to a SimulationResults object.
 
@@ -1394,11 +1397,11 @@ class SimulationResults(JsonSerializable):
 
         Returns
         -------
-        Result
+        SimulationResults
             The converted object.
         """
-        def list_of_dicts_to_list_of_results(
-                result_list: Dict[str, Any]) -> List[Result]:
+        def list_of_dicts_to_list_of_results(result_list: Dict[str, Any]
+                                             ) -> List[Result]:
             """
             Convert a list of dictionary representations of Result objects to a
             list of Result objects.
@@ -1410,7 +1413,7 @@ class SimulationResults(JsonSerializable):
 
             Returns
             -------
-            list[Result]
+            List[Result]
                 List of Result objects.
             """
             out = [Result.from_dict(r) for r in result_list]
@@ -1463,7 +1466,7 @@ class SimulationResults(JsonSerializable):
         with open(filename, 'w') as output:
             output.write(self.to_json())
 
-    def save_to_file(self, filename: str) -> None:
+    def save_to_file(self, filename: str) -> str:
         """
         Save the SimulationResults to the file `filename`.
 

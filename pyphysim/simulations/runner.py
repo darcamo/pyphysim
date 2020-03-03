@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 """Module containing the simulation runner."""
 
-import argparse
 import itertools
 import os
 import sys
+from argparse import ArgumentParser
 from time import time
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
-from pyphysim.simulations.progressbar import ProgressbarZMQClient
+from pyphysim.simulations.progressbar import ProgressbarZMQClient, ProgressBarBase
 
 from ..util.misc import pretty_time
 from .parameters import SimulationParameters
@@ -17,39 +18,46 @@ from .progressbar import (ProgressBarIPython, ProgressbarText,
                           ProgressbarZMQServer)
 from .results import Result, SimulationResults
 
-# try:
-#     # noinspection PyUnresolvedReferences
-#     from ipyparallel import LoadBalancedView, DirectView
-# except ImportError:  # pragma: no cover
-#     pass
+try:
+    # noinspection PyUnresolvedReferences
+    from ipyparallel import LoadBalancedView, DirectView
+except ImportError:  # pragma: no cover
+    LoadBalancedView = Any
+    DirectView = Any
 
 __all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
+
+UpdateFunction = Callable[[int], None]
+
+ProxybarData = Tuple[int, str, int]
+
+# A view form ipyparallel
+ParallelView = Union[LoadBalancedView, DirectView]
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Command Line Argument Parser xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_common_parser():
+def get_common_parser() -> ArgumentParser:
     """
     Get the command line parser that can be used.
 
-    The global parser is a singleton object of the argparse.Argumentparser
-    class which is used in the `simulate_do_what_i_mean` function to parse
-    command line arguments.
+    The global parser is a singleton object of the ArgumentParser class which is
+    used in the `simulate_do_what_i_mean` function to parse command line
+    arguments.
 
-    It already has two arguments, "index" and "config" configured. If you
-    need more then that, you can get the global parser object by calling
-    this function and then calling the `add_argument` method of the
-    returned object. See the documentation of argparse.Argumentparser for
-    more.
+    It already has two arguments, "index" and "config" configured. If you need
+    more then that, you can get the global parser object by calling this
+    function and then calling the `add_argument` method of the returned object.
+    See the documentation of ArgumentParser for more.
 
     Returns
     -------
-    argparse.ArgumentParser
+    ArgumentParser
         The command line parser.
     """
-    if get_common_parser.parser is None:
-        parser = argparse.ArgumentParser()
+    if get_common_parser.parser is None:  # type: ignore
+        parser = ArgumentParser()
         group = parser.add_argument_group('General')
 
         help_msg = ('An index for the parameters variations. If provided, '
@@ -82,12 +90,12 @@ def get_common_parser():
             help=help_msg,
             action='store_true')
 
-        get_common_parser.parser = parser
+        get_common_parser.parser = parser  # type: ignore
 
-    return get_common_parser.parser
+    return get_common_parser.parser  # type: ignore
 
 
-get_common_parser.parser = None
+get_common_parser.parser = None  # type: ignore
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -95,9 +103,10 @@ get_common_parser.parser = None
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_partial_results_filename(results_base_filename,
-                                 current_params,
-                                 partial_results_folder=None):
+def get_partial_results_filename(results_base_filename: str,
+                                 current_params: SimulationParameters,
+                                 partial_results_folder: Optional[str] = None
+                                 ) -> str:
     """
     Get the name of the file where the partial result will be saved for
     the unpacked result with index `unpack_index`.
@@ -150,7 +159,7 @@ class SkipThisOne(Exception):
         The message with more information on why the exception was
         raised.
     """
-    def __init__(self, msg):
+    def __init__(self, msg: str) -> None:
         """
         Parameters
         ----------
@@ -161,7 +170,7 @@ class SkipThisOne(Exception):
         super().__init__()
         self.msg = msg
 
-    def __str__(self):  # pragma: nocover
+    def __str__(self) -> str:  # pragma: nocover
         """
         Convert the exception object to a suitable string representation.
 
@@ -248,13 +257,13 @@ class SimulationRunner:
     .Result : Class to store a single simulation result.
     """
     def __init__(self,
-                 default_config_file=None,
-                 config_spec=None,
-                 read_command_line_args=True,
-                 save_parsed_file=False):
+                 default_config_file: Optional[str] = None,
+                 config_spec: Optional[str] = None,
+                 read_command_line_args: bool = True,
+                 save_parsed_file: bool = False) -> None:
         self.rep_max = 1
         # Number of iterations performed by simulation when it finished
-        self._runned_reps = []
+        self._runned_reps: List[int] = []
 
         self._config_filename = None
         # Configobj specification (to validate parameters read from the
@@ -305,7 +314,7 @@ class SimulationRunner:
 
         # This variable will be used later to store the progressbar object
         # when it is created in the _get_update_progress_function method
-        self._pbar = None
+        self._pbar: Optional[ProgressBarBase] = None
 
         # xxxxxxxxxx update_progress_function_style xxxxxxxxxxxxxxxxxxxxxxx
         # --- When the simulation is performed Serially -------------------
@@ -322,7 +331,7 @@ class SimulationRunner:
         # - If it is None then no progressbar will be used
         # - If it is not None then a socket progressbar will be used, which
         #   employs the same style as 'text2'
-        self.update_progress_function_style = 'text2'
+        self.update_progress_function_style: Optional[str] = 'text2'
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
         # progressbar will write the progress to a file with appropriated
@@ -335,7 +344,7 @@ class SimulationRunner:
         # None a progressbar based on ZMQ sockets will be used. Set
         # progressbar_extra_args to "{'port':3456}" in order for the
         # progressbar to use port 3456.
-        self.progressbar_extra_args = {}
+        self.progressbar_extra_args: Dict[str, Any] = {}
 
         # Additional message printed in the progressbar. The message can
         # contain "{SomeParameterName}" which will be replaced with the
@@ -349,7 +358,7 @@ class SimulationRunner:
         # that will be created in the simulate_in_parallel method. This
         # object is part of ipyparallel framework and is used to get
         # the actual results of performing an asynchronous task in IPython.
-        self._async_results = None
+        self._async_results: Optional[Any] = None
 
         # xxxxxxxxxx Configure saving of simulation results xxxxxxxxxxxxxxx
         # If this variable is set to True the saved partial results will be
@@ -365,14 +374,14 @@ class SimulationRunner:
         # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
         # Variable to store the name of the file where the simulation
         # results will be stored.
-        self._results_base_filename = None
+        self._results_base_filename: Optional[str] = None
         # Variable to store all the names for the partial results. Each
         # name in it will be equivalent to the value of
         # _results_base_filename appended with unpack_i where i will be an
         # integer. These names will be used after the simulation has
         # finished and full results were saved to delete the files with the
         # partial results.
-        self._results_base_filename_unpack_list = []
+        self._results_base_filename_unpack_list: List[str] = []
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Interval variables for tracking simulation time xxxxxxxxxxx
@@ -385,7 +394,7 @@ class SimulationRunner:
         self.__toc = 0.0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def set_results_filename(self, filename=None):
+    def set_results_filename(self, filename: Optional[str] = None) -> None:
         """
         Set the name of the file where the simulation results will be
         saved.
@@ -415,7 +424,7 @@ class SimulationRunner:
         self._results_base_filename = filename
 
     @property
-    def results_base_filename(self):
+    def results_base_filename(self) -> Optional[str]:
         """
         Get name of the file where the last simulation results were stored.
 
@@ -433,7 +442,7 @@ class SimulationRunner:
         return filename
 
     @property
-    def results_filename(self):
+    def results_filename(self) -> Optional[str]:
         """
         Get name of the file where the last simulation results were stored.
 
@@ -454,8 +463,8 @@ class SimulationRunner:
 
         return results_filename
 
-    def _get_progress_output_sink(self,
-                                  param_variation_index):  # pragma: no cover
+    def _get_progress_output_sink(self, param_variation_index: Union[int, str]
+                                  ) -> Any:  # pragma: no cover
         """
         Get the output sink for the progressbars.
 
@@ -486,7 +495,7 @@ class SimulationRunner:
 
         return out
 
-    def __delete_partial_results_maybe(self):
+    def __delete_partial_results_maybe(self) -> None:
         """
         (maybe) Delete the files containing partial results.
 
@@ -511,8 +520,10 @@ class SimulationRunner:
             # Do nothing if self.delete_partial_results_bool is not True
             pass
 
-    def __save_partial_results(self, current_rep, current_params,
-                               current_sim_results, partial_results_filename):
+    def __save_partial_results(self, current_rep: int,
+                               current_params: SimulationParameters,
+                               current_sim_results: SimulationResults,
+                               partial_results_filename: str) -> None:
         """
         Save the partial simulation results to a file.
 
@@ -526,10 +537,6 @@ class SimulationRunner:
             The partial simulations results object to be saved.
         partial_results_filename : str
             The name of the file to save the partial simulation results.
-
-        Returns
-        -------
-        None
 
         Notes
         -----
@@ -567,7 +574,7 @@ class SimulationRunner:
         self._results_base_filename_unpack_list.append(filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def clear(self):  # pragma: no cover
+    def clear(self) -> None:  # pragma: no cover
         """
         Clear the SimulationRunner.
 
@@ -582,7 +589,9 @@ class SimulationRunner:
         self._runned_reps = []
         self.results = SimulationResults()
 
-    def __run_simulation_and_track_elapsed_time(self, current_parameters):
+    def __run_simulation_and_track_elapsed_time(
+            self,
+            current_parameters: SimulationParameters) -> SimulationResults:
         """
         Perform the _run_simulation method and track its execution time.
         This time will be added as a Result to the returned
@@ -595,6 +604,11 @@ class SimulationRunner:
             simulation. The self.params variable is not used directly. It
             is first unpacked in the simulate function which then calls
             _run_simulation for each combination of unpacked parameters.
+
+        Returns
+        -------
+        SimulationResults
+            The current simulation results.
 
         Notes
         -----
@@ -609,7 +623,8 @@ class SimulationRunner:
 
         return current_sim_results
 
-    def _run_simulation(self, current_parameters):
+    def _run_simulation(self, current_parameters: SimulationParameters
+                        ) -> SimulationResults:
         """
         Performs one iteration of the simulation.
 
@@ -642,7 +657,9 @@ class SimulationRunner:
                                   "in a subclass of SimulationRunner")
 
     # pylint: disable=W0613,R0201
-    def _keep_going(self, current_params, current_sim_results, current_rep):
+    def _keep_going(self, current_params: SimulationParameters,
+                    current_sim_results: SimulationResults,
+                    current_rep: int) -> bool:
         """
         Check if the simulation should continue or stop.
 
@@ -679,7 +696,8 @@ class SimulationRunner:
         return True
 
     def _get_serial_update_progress_function(
-            self, current_params):  # pragma: no cover
+            self, current_params: SimulationParameters
+    ) -> UpdateFunction:  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -724,7 +742,7 @@ class SimulationRunner:
 
         # By default, the returned function is a dummy function that does
         # nothing
-        def update_progress_func(_):
+        def update_progress_func(_: int) -> None:
             pass
 
         if self.update_progress_function_style is None:
@@ -781,7 +799,8 @@ class SimulationRunner:
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def _get_parallel_update_progress_function(self):  # pragma: no cover
+    def _get_parallel_update_progress_function(
+            self) -> ProxybarData:  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -845,7 +864,7 @@ class SimulationRunner:
         return proxybar_data
 
     @property
-    def elapsed_time(self):
+    def elapsed_time(self) -> float:
         """
         Get the simulation elapsed time. Do not set this value.
 
@@ -857,7 +876,7 @@ class SimulationRunner:
         return pretty_time(self._elapsed_time)
 
     @property
-    def runned_reps(self):
+    def runned_reps(self) -> List[int]:
         """
         Get method for the runned_reps property.
 
@@ -907,8 +926,10 @@ class SimulationRunner:
 
     # noinspection PyUnboundLocalVariable
     def _simulate_for_current_params_common(
-            self, current_params,
-            update_progress_func=lambda value: None):  # pragma: no cover
+            self,
+            current_params: SimulationParameters,
+            update_progress_func: UpdateFunction = lambda value: None
+    ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
         """
         Parameters
         ----------
@@ -1053,8 +1074,10 @@ class SimulationRunner:
         # iterations run as well as the SimulationResults object.
         return current_rep, current_sim_results, partial_results_filename
 
-    def _simulate_for_current_params_serial(self, current_params,
-                                            var_print_iter):
+    def _simulate_for_current_params_serial(
+            self, current_params: SimulationParameters,
+            var_print_iter: Iterator[int]
+    ) -> Tuple[int, SimulationResults, str]:
         """
         Simulate (serial) for the current parameters.
 
@@ -1065,6 +1088,13 @@ class SimulationRunner:
         var_print_iter : iterator
             An iterator obtained from calling the
             __get_print_variation_iterator method.
+
+        Returns
+        -------
+        (int, SimulationResults, str)
+            The value of `current_rep`, the current results as a
+            SimulationResults object, and the name of the file storing
+            partial results.
         """
         # (maybe) Print the current variation. This is something like
         # ------------- Current Variation: 4/84 ------------
@@ -1082,7 +1112,10 @@ class SimulationRunner:
     # pragma line here.
     @staticmethod
     def _simulate_for_current_params_parallel(
-            obj, current_params, proxybar_data=None):  # pragma: no cover
+            obj: "SimulationRunner",
+            current_params: SimulationParameters,
+            proxybar_data=None
+    ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
         """
         Simulate (parallel) for the current parameters.
 
@@ -1122,7 +1155,9 @@ class SimulationRunner:
         return obj._simulate_for_current_params_common(current_params,
                                                        update_progress_func)
 
-    def __get_print_variation_iterator(self, num_variations, start=0):
+    def __get_print_variation_iterator(self,
+                                       num_variations: int,
+                                       start: int = 0) -> Iterator[int]:
         """
         Returns an iterator that prints the current variation each time
         it's "next" method is called.
@@ -1161,7 +1196,7 @@ class SimulationRunner:
                 print()  # print a new line
                 yield i
 
-    def simulate(self, param_variation_index=None):
+    def simulate(self, param_variation_index: Optional[int] = None) -> None:
         """
         Performs the full Monte Carlo simulation (serially).
 
@@ -1299,8 +1334,8 @@ class SimulationRunner:
 
     # The unittests for this method only run if an ipython cluster is
     # started with a profile called "tests".
-    def simulate_in_parallel(self, view,
-                             wait: bool = True):  # pragma: no cover
+    def simulate_in_parallel(self, view: ParallelView,
+                             wait: bool = True) -> None:  # pragma: no cover
         """
         Same as the simulate method, but the different parameters
         configurations are simulated in parallel.
@@ -1395,7 +1430,7 @@ class SimulationRunner:
         if wait is True:
             self.wait_parallel_simulation()
 
-    def wait_parallel_simulation(self):  # pragma: no cover
+    def wait_parallel_simulation(self) -> None:  # pragma: no cover
         """
         Wait for the parallel simulation to finish and then update the
         self.results variable (as well as other internal variables).
@@ -1448,18 +1483,20 @@ class SimulationRunner:
             self._async_results = None
 
     # noinspection PyMethodMayBeStatic
-    def _on_simulate_start(self):
+    def _on_simulate_start(self) -> None:
         """This method is called only once, in the beginning of the the
         simulate method.
 
         """
 
     # noinspection PyMethodMayBeStatic
-    def _on_simulate_finish(self):
+    def _on_simulate_finish(self) -> None:
         """This method is called only once at the end of the simulate method.
 
         """
-    def _on_simulate_current_params_start(self, current_params):
+    def _on_simulate_current_params_start(self,
+                                          current_params: SimulationParameters
+                                          ) -> None:
         """
         This method is called once for each simulation parameters
         combination before any iteration of _run_simulation is performed
@@ -1481,8 +1518,9 @@ class SimulationRunner:
         """
 
     # noinspection PyMethodMayBeStatic
-    def _on_simulate_current_params_finish(self, current_params,
-                                           current_params_sim_results):
+    def _on_simulate_current_params_finish(
+            self, current_params: SimulationParameters,
+            current_params_sim_results: SimulationResults) -> None:
         """This method is called once for each simulation parameters
         combination after all iterations of _run_simulation are performed
         (for that combination of simulation parameters).

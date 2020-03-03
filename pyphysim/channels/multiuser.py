@@ -2124,11 +2124,11 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     def H_no_ext_int(self) -> np.ndarray:
         """Get method for the H_no_ext_int property."""
         # Call H property get method of the base class
-        H = MultiUserChannelMatrix.H.fget(self)
+        H = MultiUserChannelMatrix.H.fget(self)  # type: ignore
         return H[:self.K, :self.K]
 
-    def corrupt_data(self, data: np.ndarray,
-                     ext_int_data: np.ndarray) -> np.ndarray:
+    def corrupt_data(  # type: ignore
+            self, data: np.ndarray, ext_int_data: np.ndarray) -> np.ndarray:
         """
         Corrupt data passed through the channel.
 
@@ -2332,9 +2332,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
         return full_Nr, full_Nt, full_K, extIntK, extIntNt
 
-    def init_from_channel_matrix(self, channel_matrix: np.ndarray,
-                                 Nr: np.ndarray, Nt: np.ndarray, K: int,
-                                 NtE: Iterable[int]) -> None:
+    def init_from_channel_matrix(  # type: ignore
+            self, channel_matrix: np.ndarray, Nr: np.ndarray, Nt: np.ndarray,
+            K: int, NtE: Iterable[int]) -> None:
         """
         Initializes the multiuser channel matrix from the given
         `channel_matrix`.
@@ -2376,8 +2376,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
         MultiUserChannelMatrix.init_from_channel_matrix(
             self, channel_matrix, full_Nr, full_Nt, full_K)
 
-    def randomize(self, Nr: IntOrIntArrayUnion, Nt: IntOrIntArrayUnion, K: int,
-                  NtE: Iterable[int]) -> None:
+    def randomize(  # type: ignore
+            self, Nr: IntOrIntArrayUnion, Nt: IntOrIntArrayUnion, K: int,
+            NtE: Iterable[int]) -> None:
         """
         Generates a random channel matrix for all users as well as for the
         external interference source(s).
@@ -2666,9 +2667,9 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
 
     # pylint: disable=W0222
     # noinspection PyPep8
-    def _calc_JP_Bkl_cov_matrix_first_part(self, F_all_users: np.ndarray,
-                                           k: int,
-                                           Rek: NumberOrArray) -> np.ndarray:
+    def _calc_JP_Bkl_cov_matrix_first_part(  # type: ignore
+            self, F_all_users: np.ndarray, k: int,
+            Rek: NumberOrArray) -> np.ndarray:
         """
         Calculates the first part in the equation of the Blk covariance matrix
         in equation (28) of [Cadambe2008]_ when joint process is employed.

@@ -13,15 +13,15 @@ Shape = Tuple[int, ...]
 
 
 # noinspection PyPep8
-def generate_jakes_samples(
-        Fd: float,
-        Ts: float = 1e-3,
-        NSamples: int = 100,
-        L: int = 8,
-        shape: Optional[Shape] = None,
-        current_time: float = 0,
-        phi_l: Optional[np.ndarray] = None,
-        psi_l: Optional[np.ndarray] = None) -> Tuple[float, np.ndarray]:
+def generate_jakes_samples(Fd: float,
+                           Ts: float = 1e-3,
+                           NSamples: int = 100,
+                           L: int = 8,
+                           shape: Optional[Shape] = None,
+                           current_time: float = 0,
+                           phi_l: Optional[np.ndarray] = None,
+                           psi_l: Optional[np.ndarray] = None
+                           ) -> Tuple[float, np.ndarray]:
     """
     Generates channel samples according to the Jakes model.
 
@@ -110,7 +110,7 @@ class FadingSampleGenerator:
         `generate_more_samples(num_samples)` method is called it will
         generate samples with this shape as the first dimensions.
     """
-    def __init__(self, shape: Optional[Union[int, Shape]] = None):
+    def __init__(self, shape: Optional[Union[int, Shape]] = None) -> None:
         self._shape: Optional[Shape]
         # Call the setter of the shape property to avoid duplicating the code
         # here
@@ -164,9 +164,8 @@ class FadingSampleGenerator:
         """
         return self._samples
 
-    def generate_more_samples(
-            self,
-            num_samples: Optional[int] = None) -> None:  # pragma: nocover
+    def generate_more_samples(self, num_samples: Optional[int] = None
+                              ) -> None:  # pragma: nocover
         """
         Generate next samples.
 
@@ -181,8 +180,8 @@ class FadingSampleGenerator:
         """
         raise NotImplementedError("Implement in a subclass")
 
-    def skip_samples_for_next_generation(
-            self, num_samples: int) -> None:  # pragma: no cover
+    def skip_samples_for_next_generation(self, num_samples: int
+                                         ) -> None:  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -217,7 +216,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
         `generate_jakes_samples` method is called it will generate samples
         with this shape. If not provided, then 1 will be assumed.
     """
-    def __init__(self, shape: Optional[Union[int, Shape]] = None):
+    def __init__(self, shape: Optional[Union[int, Shape]] = None) -> None:
         super(RayleighSampleGenerator, self).__init__(shape)
 
         # Generate first sample
@@ -249,8 +248,8 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             new_shape.append(num_samples)
             self._samples = randn_c(*new_shape)
 
-    def skip_samples_for_next_generation(
-            self, num_samples: int) -> None:  # pragma: no cover
+    def skip_samples_for_next_generation(self, num_samples: int
+                                         ) -> None:  # pragma: no cover
         """
         Advance sample generation process by `num_samples` similarly to
         what would happen if you call `generate_more_samples(
@@ -268,7 +267,6 @@ class RayleighSampleGenerator(FadingSampleGenerator):
             uncorrelated then calling `skip_samples_for_next_generation`
             does not do anything.
         """
-
     def get_similar_fading_generator(self) -> Any:
         """
         Get a similar fading generator with the same configuration,
@@ -322,7 +320,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
                  Ts: float = 1e-3,
                  L: int = 8,
                  shape: Optional[Union[int, Shape]] = None,
-                 RS: Optional[np.random.RandomState] = None):
+                 RS: Optional[np.random.RandomState] = None) -> None:
         super(JakesSampleGenerator, self).__init__(shape)
 
         self._Fd: float = Fd
@@ -425,8 +423,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
             self._phi_l = 2 * np.pi * self.RS.rand(*new_shape)
             self._psi_l = 2 * np.pi * self.RS.rand(*new_shape)
 
-    def _generate_time_samples(self,
-                               num_samples: Optional[int] = None
+    def _generate_time_samples(self, num_samples: Optional[int] = None
                                ) -> np.ndarray:
         """
         Generate the time samples that will be used internally in
