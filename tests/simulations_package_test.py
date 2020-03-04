@@ -42,6 +42,7 @@ except ImportError:  # pragma: no cover
 try:  # pragma: nocover
     # noinspection PyUnresolvedReferences
     from pandas import DataFrame
+    assert DataFrame  # Avoid unused import warning for DataFrame
 
     _PANDAS_AVAILABLE = True
 except ImportError:  # pragma: nocover
@@ -1018,46 +1019,6 @@ class SimulationParametersTestCase(unittest.TestCase):
         params2 = SimulationParameters.load_from_pickled_file(filename)
         self.assertEqual(unpacked_parameters, params2.unpacked_parameters)
         delete_file_if_possible(filename)
-
-    # # For now saving to HDF5 does not work in python 3.
-    # # Uncomment and debug if you want it
-    # def test_save_to_and_load_from_hdf5_file(self):
-    #     self.sim_params.add('third', np.array([1, 3, 2, 5]))
-    #     self.sim_params.add('fourth', ['A', 'B'])
-    #     self.sim_params.set_unpack_parameter('third')
-    #     self.sim_params.set_unpack_parameter('fourth')
-
-    #     filename = 'params.h5'
-    #     # Let's make sure the file does not exist
-    #     delete_file_if_possible(filename)
-
-    #     # Save to the file
-    #     self.sim_params.save_to_hdf5_file(filename)
-
-    #     # Load from the file
-    #     sim_params2 = SimulationParameters.load_from_hdf5_file(filename)
-
-    #     self.assertEqual(self.sim_params['first'], sim_params2['first'])
-    #     self.assertEqual(self.sim_params['second'], sim_params2['second'])
-    #     self.assertEqual(len(self.sim_params), len(sim_params2))
-    #     self.assertEqual(self.sim_params.get_num_unpacked_variations(),
-    #                      sim_params2.get_num_unpacked_variations())
-
-    #     # Delete the where the parameters were saved
-    #     delete_file_if_possible(filename)
-
-    #     # xxxxx Test saving and loading one of the unpacked variations xxxx
-    #     filename2 = 'params_3.pickle'
-    #     fourth_unpacked_param = self.sim_params.get_unpacked_params_list()[3]
-    #     fourth_unpacked_param.save_to_hdf5_file(filename2)
-
-    #     fourth_unpacked_param2 = SimulationParameters.load_from_hdf5_file(
-    #         filename2)
-    #     self.assertEqual(fourth_unpacked_param, fourth_unpacked_param2)
-
-    #     # Delete the where the parameters were saved
-    #     delete_file_if_possible(filename2)
-    #     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # noinspection PyUnresolvedReferences
     def test_load_from_config_file(self):
@@ -2239,124 +2200,6 @@ class SimulationResultsTestCase(unittest.TestCase):
         # Delete the where the results were saved
         delete_file_if_possible(filename_json)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    # def test_save_to_and_load_from_hdf5_file(self):
-    #     base_filename = 'results_({age})_({temperature})_({factor})'
-
-    #     try:
-    #         import h5py
-    #         del h5py
-    #     except ImportError:  # pragma: no cover
-    #         self.skipTest("The h5py module is not installed")
-
-    #     # # xxxxx Add a result with accumulate set to True xxxxxxxxxxxxxxxxxx
-    #     # result_acu = Result('name', Result.RATIOTYPE,
-    #     #                     accumulate_values=True)
-    #     # result_acu.update(13, 15)
-    #     # result_acu.update(30, 43)
-    #     # self.simresults.add_result(result_acu)
-    #     # # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    #     # Set simulation parameters
-    #     self.simresults.params.add('factor', [0.5, 0.6])
-    #     self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
-    #     self.simresults.params.add('age', 3)
-    #     self.simresults.params.set_unpack_parameter('temperature')
-    #     self.simresults.params.set_unpack_parameter('factor')
-    #     self.simresults['lala'][0].update(4)
-    #     self.simresults['lala'][0].update(21)
-    #     self.simresults['lele'][0].update(12, 24)
-    #     self.simresults['lele'][0].update(5, 7)
-
-    #     # Save to the file
-    #     filename = self.simresults.save_to_hdf5_file(base_filename)
-
-    #     # Load from the file
-    #     simresults2 = SimulationResults.load_from_hdf5_file(filename)
-    #     self.assertEqual(simresults2.original_filename,
-    #                      '{0}.h5'.format(base_filename))
-    #     self.assertEqual(len(self.simresults), len(simresults2))
-    #     self.assertEqual(set(self.simresults.get_result_names()),
-    #                      set(simresults2.get_result_names()))
-
-    #     self.assertEqual(self.simresults['lala'][0].type_code,
-    #                      simresults2['lala'][0].type_code)
-    #     self.assertEqual(self.simresults['lele'][0].type_code,
-    #                      simresults2['lele'][0].type_code)
-
-    #     self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
-    #                            simresults2['lala'][0].get_result(),)
-    #     self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
-    #                            simresults2['lele'][0].get_result(),)
-
-    #     for r1, r2 in zip(self.simresults, simresults2):
-    #         for elem1, elem2 in zip(r1, r2):
-    #             self.assertTrue(elem1 == elem2)
-
-    #     # test if the parameters were also saved
-    #     self.assertEqual(self.simresults.params['age'],
-    #                      simresults2.params['age'])
-    #     np.testing.assert_almost_equal(self.simresults.params['factor'],
-    #                                    simresults2.params['factor'])
-    #     np.testing.assert_almost_equal(self.simresults.params['temperature'],
-    #                                    simresults2.params['temperature'])
-    #     self.assertTrue(self.simresults.params, simresults2.params)
-
-    #     # Test if the unpacked parameters where also saved
-    #     self.assertEqual(self.simresults.params.unpacked_parameters[0],
-    #                      simresults2.params.unpacked_parameters[0])
-
-    #     # Remove the file created during the test
-    #     try:
-    #         os.remove(filename)
-    #     except OSError:  # pragma: no cover
-    #         pass
-
-    # def test_save_to_and_load_from_pytables_file(self):
-    #     filename = 'results_pytables.h5'
-    #     # Let's make sure the file does not exist
-    #     try:
-    #         os.remove(filename)
-    #     except OSError:  # pragma: no cover
-    #         pass
-
-    #     # Set simulation parameters
-    #     self.simresults.params.add('factor', [0.5, 0.6])
-    #     self.simresults.params.add('temperature', [50.5, 60.0, 70.8])
-    #     self.simresults.params.add('age', 3)
-    #     self.simresults.params.set_unpack_parameter('temperature')
-    #     self.simresults.params.set_unpack_parameter('factor')
-
-    #     # Save to the file
-    #     self.simresults.save_to_pytables_file(filename)
-
-    #     # Load from the file
-    #     simresults2 = SimulationResults.load_from_pytables_file(filename)
-    #     self.assertEqual(len(self.simresults), len(simresults2))
-    #     self.assertEqual(set(self.simresults.get_result_names()),
-    #                      set(simresults2.get_result_names()))
-
-    #     self.assertEqual(self.simresults['lala'][0].type_code,
-    #                      simresults2['lala'][0].type_code)
-    #     self.assertEqual(self.simresults['lele'][0].type_code,
-    #                      simresults2['lele'][0].type_code)
-
-    #     self.assertAlmostEqual(self.simresults['lala'][0].get_result(),
-    #                            simresults2['lala'][0].get_result(),)
-    #     self.assertAlmostEqual(self.simresults['lele'][0].get_result(),
-    #                            simresults2['lele'][0].get_result(),)
-
-    #     # test if the parameters were also saved
-    #     self.assertEqual(self.simresults.params['age'],
-    #                      simresults2.params['age'])
-    #     np.testing.assert_almost_equal(self.simresults.params['factor'],
-    #                                    simresults2.params['factor'])
-    #     np.testing.assert_almost_equal(self.simresults.params['temperature'],
-    #                                    simresults2.params['temperature'])
-
-    #     # Test if the unpacked parameters where also saved
-    #     self.assertEqual(self.simresults.params.unpacked_parameters[0],
-    #                      simresults2.params.unpacked_parameters[0])
 
     def test_to_dataframe(self):
         # If the pandas package is not installed, we will skip testing this

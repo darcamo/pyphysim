@@ -25,7 +25,6 @@ numpy = "*"
 scipy = "*"
 matplotlib = "*"
 configobj = "*"
-h5py = "*"
 
 [tool.poetry.dev-dependencies]
 cython = "*"
