@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Perform the simulation of the Block Diagonalization (BD) algorithm
 (several variations of the BD algorithm).

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Module with Sounding Reference Signal (SRS) related functions"""
 
 from typing import List, Tuple, Union, cast

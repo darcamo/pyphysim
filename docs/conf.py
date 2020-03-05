@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # pyphysim documentation build configuration file, created by
 # sphinx-quickstart on Thu Sep 15 16:50:43 2016.

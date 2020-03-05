@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # pylint: disable=E1101,E1103,W0403
 """

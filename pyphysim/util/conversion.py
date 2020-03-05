@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Module containing function related to several conversions, such as
 linear to dB, binary to gray code, as well as the inverse of them.
 """

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Simple script to simulate a CoMP transmission which consists of a
 simple block diagonalization of the channel.

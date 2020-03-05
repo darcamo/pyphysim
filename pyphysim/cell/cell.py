@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Module that implements Cell and Cluster related classes."""
 
 try:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module implementing validation functions to define "specs" for configobj
 validation.

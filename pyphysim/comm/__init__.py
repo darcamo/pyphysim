@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Package with communication related modules such as modulators, channels,
 etc.
 

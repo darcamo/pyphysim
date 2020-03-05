@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Module containing simulation result classes."""
 
 from __future__ import division

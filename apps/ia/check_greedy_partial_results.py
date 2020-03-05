@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
 import sys

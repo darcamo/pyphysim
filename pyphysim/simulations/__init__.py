@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module containing useful classes to implement Monte Carlo simulations.
 

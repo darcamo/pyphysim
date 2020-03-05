@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Simulator for the SINRs of a dense indoor scenario.
 

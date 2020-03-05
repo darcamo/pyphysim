@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Script that reads two files with saved SimulationResults and combine
 them into a new SimulationResults which is saved to a new file.

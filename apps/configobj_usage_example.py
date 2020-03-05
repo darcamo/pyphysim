@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # See the link below for an "argparse + configobj" option
 # http://mail.scipy.org/pipermail/numpy-discussion/2011-November/059332.html

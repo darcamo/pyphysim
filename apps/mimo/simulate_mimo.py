@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module containing simulation runners for the several MIMO schemes
 algorithms in the comm.mimo module.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Perform the simulation of the transmission of QAM symbols through an
 awgn channel.

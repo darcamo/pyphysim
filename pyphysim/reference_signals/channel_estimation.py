@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module with channel estimation implementations based on the reference signals in
 this package.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import math
 from typing import List, Optional, Tuple, Union, cast

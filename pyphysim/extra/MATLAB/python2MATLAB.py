@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Module with functions to easily moving data from python to MATLAB."""
 
 import numpy as np

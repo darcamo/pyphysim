@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # http://www.doughellmann.com/PyMOTW/struct/
 # import struct

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Module implementing different MIMO schemes.
 
 Each MIMO scheme is implemented as a class inheriting from

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # pylint: disable=R0914
 """Module implementing the block diagonalization algorithm.

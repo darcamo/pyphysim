@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Script that reads a SimulationResults file and save the corresponding
 partial results.

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module containing the base class for Interference Alignment (IA)
 Algorithms.

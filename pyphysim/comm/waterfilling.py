@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Implements a waterfilling method.
 
 The doWF method performs the waterfilling algorithm.
