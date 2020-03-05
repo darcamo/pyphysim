@@ -17,6 +17,8 @@ repos:
     - id: mixed-line-ending
     - id: fix-encoding-pragma
       args: ['--remove']
+    - id: check-toml
+    - id: debug-statements
 
 # -   repo: https://github.com/pre-commit/mirrors-yapf
 #     rev: v0.29.0
