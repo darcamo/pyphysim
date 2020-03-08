@@ -5,6 +5,7 @@ module.
 """
 
 import math
+import numba
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
 import numpy as np
@@ -14,7 +15,9 @@ IntOrIntArray = TypeVar("IntOrIntArray", np.ndarray, int)
 NumberOrArrayUnion = Union[np.ndarray, float]
 
 
-def gmd(U: np.ndarray, S: np.ndarray, V_H: np.ndarray,
+def gmd(U: np.ndarray,
+        S: np.ndarray,
+        V_H: np.ndarray,
         tol: float = 0.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Perform the Geometric Mean Decomposition of a matrix A, whose SVD is
@@ -443,12 +446,8 @@ def int2bits(n: int) -> int:
     return bits
 
 
-# Note: This method works only for an integer `n` and returns an
-# integer. However, we are writing the documentation as if it were a numpy
-# ufunc because we will create the count_bits ufunc with it using
-# numpy.vectorize and count_bits will inherit the documentation.
-def _count_bits_single_element(n: IntOrIntArray
-                               ) -> IntOrIntArray:  # pragma: no cover
+@numba.vectorize
+def count_bits(n: IntOrIntArray) -> IntOrIntArray:  # pragma: no cover
     """
     Count the number of bits that are set in `n`.
 
@@ -477,11 +476,44 @@ def _count_bits_single_element(n: IntOrIntArray
     return count
 
 
-# Make count_bits an ufunc
-count_bits = np.vectorize(_count_bits_single_element)
+# # Note: This method works only for an integer `n` and returns an
+# # integer. However, we are writing the documentation as if it were a numpy
+# # ufunc because we will create the count_bits ufunc with it using
+# # numpy.vectorize and count_bits will inherit the documentation.
+# def _count_bits_single_element(n: IntOrIntArray
+#                                ) -> IntOrIntArray:  # pragma: no cover
+#     """
+#     Count the number of bits that are set in `n`.
 
-# count_bits = np.frompyfunc(_count_bits_single_element, 1, 1,
-#                            doc=_count_bits_single_element.__doc__)
+#     Parameters
+#     ----------
+#     n : int | np.ndarray
+#         An integer number or a numpy array of integer numbers.
+
+#     Returns
+#     -------
+#     Number of bits that are equal to 1 in the bit representation of the
+#     number `n`.
+
+#     Examples
+#     --------
+#     >>> a = np.array([3, 0, 2])
+#     >>> print(count_bits(a))
+#     [2 0 1]
+
+#     """
+#     count = 0
+#     while n > 0:
+#         if n & 1 == 1:
+#             count += 1
+#         n >>= 1
+#     return count
+
+# # Make count_bits an ufunc
+# count_bits = np.vectorize(_count_bits_single_element)
+
+# # count_bits = np.frompyfunc(_count_bits_single_element, 1, 1,
+# #                            doc=_count_bits_single_element.__doc__)
 
 
 def count_bit_errors(first: IntOrIntArray,
@@ -772,7 +804,9 @@ def update_inv_sum_diag(invA: np.ndarray, diagonal: np.ndarray) -> np.ndarray:
     return new_inv
 
 
-def calc_confidence_interval(mean: float, std: float, n: int,
+def calc_confidence_interval(mean: float,
+                             std: float,
+                             n: int,
                              P: float = 95.0) -> Tuple[float, float]:
     """
     Calculate the confidence interval that contains the true mean (of a
@@ -1200,22 +1234,22 @@ def calc_shannon_sum_capacity(sinrs: NumberOrArrayUnion) -> float:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxx Load Cython reimplementation of functions here xxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-try:
-    # If the misc_c.so extension was compiled then any method defined there
-    # will replace the corresponding method defined here.
-    # pylint: disable=E0611,F0401
-    from ..c_extensions.misc_c import *  # type: ignore
-    USING_CYTHON = True
-except ImportError:  # pragma: no cover
-    import warnings
-    USING_CYTHON = False
-    warnings.warn(
-        "util.misc.count_bits will be slow, since cythonized version was not used"
-    )
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# # xxxxx Load Cython reimplementation of functions here xxxxxxxxxxxxxxxxxxxx
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# try:
+#     # If the misc_c.so extension was compiled then any method defined there
+#     # will replace the corresponding method defined here.
+#     # pylint: disable=E0611,F0401
+#     from ..c_extensions.misc_c import *  # type: ignore
+#     USING_CYTHON = True
+# except ImportError:  # pragma: no cover
+#     import warnings
+#     USING_CYTHON = False
+#     warnings.warn(
+#         "util.misc.count_bits will be slow, since cythonized version was not used"
+#     )
+# # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 if __name__ == '__main__':  # pragma: nocover
     import doctest

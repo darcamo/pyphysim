@@ -3389,6 +3389,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         try:
             # noinspection PyUnresolvedReferences
             import zmq
+            assert zmq  # Avoid unused import warning for DataFrame
         except ImportError:  # pragma: no cover
             self.skipTest("The zmq module is not installed")
 
