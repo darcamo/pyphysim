@@ -6,11 +6,10 @@ Script to read the result files created by the simulate_greedy_ia.py
 simulator and create a table with the stream statistics.
 """
 
-
-
 import itertools
 
 import numpy as np
+
 from pyphysim.simulations.parameters import SimulationParameters
 from pyphysim.simulations.results import SimulationResults
 from pyphysim.util import misc

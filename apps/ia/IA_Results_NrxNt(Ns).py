@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """Script to generate the plots."""
 
-
-
 import numpy as np
+
 from pyphysim.extra.pgfplotshelper import *
 from pyphysim.simulations.results import SimulationResults
 
@@ -344,10 +343,9 @@ if __name__ == '__main__':
     BER_ALL_ALGS = "{0}\n\n{1}\n\n{2}\n\n{3}".format(
         (generate_pgfplots_plotline(
             SNR_closed_form, ber_closed_form, options="closed form style") +
-         "\n\\addlegendentry{Closed-Form};"),
-        (generate_pgfplots_plotline(
-            SNR_alt_min, ber_alt_min[max_iterations], options="alt min style") +
-         "\n\\addlegendentry{Alt. Min.};"),
+         "\n\\addlegendentry{Closed-Form};"), (generate_pgfplots_plotline(
+             SNR_alt_min, ber_alt_min[max_iterations],
+             options="alt min style") + "\n\\addlegendentry{Alt. Min.};"),
         (generate_pgfplots_plotline(SNR_max_SINR,
                                     ber_max_sinr[max_iterations],
                                     options="max sinr style") +
@@ -370,10 +368,9 @@ if __name__ == '__main__':
         (generate_pgfplots_plotline(SNR_max_SINR,
                                     sum_capacity_max_sinr[max_iterations],
                                     options="max sinr style") +
-         "\n\\addlegendentry{Max SINR};"),
-        (generate_pgfplots_plotline(
-            SNR_mmse, sum_capacity_mmse[max_iterations], options="mmse style") +
-         "\n\\addlegendentry{MMSE};"))
+         "\n\\addlegendentry{Max SINR};"), (generate_pgfplots_plotline(
+             SNR_mmse, sum_capacity_mmse[max_iterations], options="mmse style")
+                                            + "\n\\addlegendentry{MMSE};"))
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # xxxxxxxxxxxxxxx Plot Filenames xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

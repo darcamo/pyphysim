@@ -54,8 +54,8 @@ def simulate_do_what_i_mean(
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-def _add_folder_to_ipython_engines_path(client: Client, folder: str
-                                        ) -> None:  # pragma: no cover
+def _add_folder_to_ipython_engines_path(
+        client: Client, folder: str) -> None:  # pragma: no cover
     """
     Add a folder to sys.path of each ipython engine.
 
@@ -87,10 +87,10 @@ def _add_folder_to_ipython_engines_path(client: Client, folder: str
     dview.execute('sys.path.append("{0}")'.format(folder), block=True)
 
 
-def _simulate_do_what_i_mean_single_runner(runner: SimulationRunner,
-                                           folder: Optional[str] = None,
-                                           block: bool = True
-                                           ) -> None:  # pragma: no cover
+def _simulate_do_what_i_mean_single_runner(
+        runner: SimulationRunner,
+        folder: Optional[str] = None,
+        block: bool = True) -> None:  # pragma: no cover
     """
     This will either call the `simulate` method or the
     `simulate_in_parallel` method as appropriated.

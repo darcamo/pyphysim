@@ -4,8 +4,6 @@ Perform the simulation of the transmission of QAM symbols through an
 awgn channel.
 """
 
-
-
 from apps.awgn_modulators.simulate_psk import VerySimplePskSimulationRunner
 from pyphysim.modulators import fundamental
 
@@ -16,8 +14,7 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
     VerySimplePskSimulationRunner.
 
     """
-
-    def __init__(self,):
+    def __init__(self, ):
         VerySimplePskSimulationRunner.__init__(self)
         M = 16
 

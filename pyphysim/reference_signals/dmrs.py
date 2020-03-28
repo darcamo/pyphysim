@@ -4,6 +4,7 @@
 from typing import Optional, cast
 
 import numpy as np
+
 from pyphysim.reference_signals.srs import UeSequence
 
 from .root_sequence import RootSequence

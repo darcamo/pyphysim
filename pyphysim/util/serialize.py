@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Union
 
 import numpy as np
 
-Serializable = Union[np.ndarray, np.int32, np.int64, np.float32, np.
-                     float64, np.float128, set]
+Serializable = Union[np.ndarray, np.int32, np.int64, np.float32, np.float64,
+                     np.float128, set]
 
 # A type corresponding to the JSON representation of the object. For a lack of
 # a better option we use Any
@@ -69,8 +69,8 @@ class NumpyOrSetEncoder(json.JSONEncoder):
         return json.JSONEncoder(self, obj)  # type: ignore
 
 
-def json_numpy_or_set_obj_hook(dct: Dict[str, JsonRepresentation]
-                               ) -> Serializable:
+def json_numpy_or_set_obj_hook(
+        dct: Dict[str, JsonRepresentation]) -> Serializable:
     """
     Decodes a previously encoded numpy array.
 

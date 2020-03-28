@@ -20,6 +20,7 @@ from itertools import repeat
 from time import sleep
 
 import numpy as np
+
 from pyphysim.simulations import (configobjvalidation, parameters, progressbar,
                                   results, runner, simulationhelpers)
 # noinspection PyProtectedMember
@@ -50,7 +51,6 @@ try:  # pragma: nocover
     _PANDAS_AVAILABLE = True
 except ImportError:  # pragma: nocover
     _PANDAS_AVAILABLE = False
-
 
 
 def delete_file_if_possible(filename):

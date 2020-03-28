@@ -28,6 +28,7 @@ from collections.abc import Iterable
 from typing import Any, Optional, TypeVar
 
 import numpy as np
+
 from pyphysim.util import conversion
 
 __all__ = [
@@ -96,8 +97,8 @@ class PathLossBase:
 
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     @abstractmethod
-    def which_distance_dB(self, PL: NumberOrArray
-                          ) -> NumberOrArray:  # pragma: no cover
+    def which_distance_dB(
+            self, PL: NumberOrArray) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the distance that yields the given path loss (in dB).
 
@@ -159,11 +160,11 @@ class PathLossBase:
 
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(self,
-                                           d: np.ndarray,
-                                           ax: Optional[Any] = None,
-                                           extra_args: Optional[Any] = None
-                                           ) -> None:  # pragma: no cover
+    def plot_deterministic_path_loss_in_dB(
+            self,
+            d: np.ndarray,
+            ax: Optional[Any] = None,
+            extra_args: Optional[Any] = None) -> None:  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in `d` (in Km).
 
@@ -366,8 +367,8 @@ class PathLossIndoorBase(PathLossBase):
 
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     @abstractmethod
-    def which_distance_dB(self, PL: NumberOrArray
-                          ) -> NumberOrArray:  # pragma: no cover
+    def which_distance_dB(
+            self, PL: NumberOrArray) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the distance that yields the given path loss (in dB).
 
@@ -427,11 +428,11 @@ class PathLossIndoorBase(PathLossBase):
 
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(self,
-                                           d: NumberOrArray,
-                                           ax: Optional[Any] = None,
-                                           extra_args: Optional[Any] = None
-                                           ) -> None:  # pragma: no cover
+    def plot_deterministic_path_loss_in_dB(
+            self,
+            d: NumberOrArray,
+            ax: Optional[Any] = None,
+            extra_args: Optional[Any] = None) -> None:  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in `d` (in
         meters).
@@ -539,8 +540,8 @@ class PathLossOutdoorBase(PathLossBase):
 
     # xxxxx Start - Implemented these functions in subclasses xxxxxxxxxxxxx
     @abstractmethod
-    def which_distance_dB(self, PL: NumberOrArray
-                          ) -> NumberOrArray:  # pragma: no cover
+    def which_distance_dB(
+            self, PL: NumberOrArray) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the distance that yields the given path loss (in dB).
 
@@ -600,11 +601,11 @@ class PathLossOutdoorBase(PathLossBase):
 
     # xxxxx End - Implemented these functions in subclasses xxxxxxxxxxxxxxx
 
-    def plot_deterministic_path_loss_in_dB(self,
-                                           d: NumberOrArray,
-                                           ax: Optional[Any] = None,
-                                           extra_args: Optional[Any] = None
-                                           ) -> None:  # pragma: no cover
+    def plot_deterministic_path_loss_in_dB(
+            self,
+            d: NumberOrArray,
+            ax: Optional[Any] = None,
+            extra_args: Optional[Any] = None) -> None:  # pragma: no cover
         """
         Plot the path loss (in dB) for the distance values in ``d`` (in Km).
 
@@ -1077,8 +1078,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
             self.fc, self.get_latex_repr())
 
     @staticmethod
-    def get_latex_repr(num_walls: Optional[int] = None
-                       ) -> str:  # pragma: no cover
+    def get_latex_repr(
+            num_walls: Optional[int] = None) -> str:  # pragma: no cover
         """
         Get the Latex representation (equation) for the PathLossGeneral class.
 
@@ -1201,8 +1202,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
 
         return pl_dB
 
-    def _calc_PS7_path_loss_dB_LOS_same_floor(self, d: NumberOrArray
-                                              ) -> NumberOrArray:
+    def _calc_PS7_path_loss_dB_LOS_same_floor(
+            self, d: NumberOrArray) -> NumberOrArray:
         """
         Calculate the deterministic path loss according to the Propagation
         Scenario (PS) 7 of the METIS project for the LOS case.
@@ -1310,12 +1311,13 @@ class PathLossMetisPS7(PathLossIndoorBase):
         pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5.) + X
         return pl_dB
 
-    def which_distance_dB(self, PL: NumberOrArray
-                          ) -> NumberOrArray:  # pragma: nocover
+    def which_distance_dB(
+            self, PL: NumberOrArray) -> NumberOrArray:  # pragma: nocover
         pass
 
     def _calc_deterministic_path_loss_dB(  # type: ignore
-            self, d: NumberOrArray,
+            self,
+            d: NumberOrArray,
             num_walls: int = 0) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the Path Loss (in dB) for a given distance (in meters)

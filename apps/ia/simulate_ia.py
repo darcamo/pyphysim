@@ -8,6 +8,7 @@ from pprint import pprint
 from time import time
 
 import numpy as np
+
 import pyphysim.channels.multiuser
 from pyphysim.ia import algorithms
 from pyphysim.modulators import fundamental
@@ -42,7 +43,6 @@ class IASimulationRunner(SimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self,
                  IaSolverClass,
                  default_config_file,
@@ -161,7 +161,8 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = np.vstack(received_data_no_interference)
+        received_data_no_interference = np.vstack(
+            received_data_no_interference)
         demodulated_data = self.modulator.demodulate(
             received_data_no_interference)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -194,7 +195,8 @@ class IASimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
                                          numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE,
+                                        bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -314,7 +316,6 @@ class AlternatingSimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
@@ -359,7 +360,6 @@ class ClosedFormSimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
@@ -404,7 +404,6 @@ class MinLeakageSimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
@@ -443,7 +442,6 @@ class MaxSINRSimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)
@@ -482,7 +480,6 @@ class MMSESimulationRunner(IASimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, default_config_file, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=-50, max=100, default=0:5:31)

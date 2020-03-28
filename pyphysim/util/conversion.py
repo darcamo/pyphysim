@@ -19,10 +19,10 @@ NumberOrArray = TypeVar("NumberOrArray", np.ndarray, float)
 IntOrIntArray = TypeVar("IntOrIntArray", np.ndarray, int)
 
 
-def single_matrix_to_matrix_of_matrices(single_matrix: np.ndarray,
-                                        nrows: Optional[np.ndarray] = None,
-                                        ncols: Optional[np.ndarray] = None
-                                        ) -> np.ndarray:
+def single_matrix_to_matrix_of_matrices(
+        single_matrix: np.ndarray,
+        nrows: Optional[np.ndarray] = None,
+        ncols: Optional[np.ndarray] = None) -> np.ndarray:
     """
     Converts a single numpy array to a numpy array of numpy arrays.
 

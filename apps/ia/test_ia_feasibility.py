@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """module docstring"""
 
-
-
 import numpy as np
+
 from pyphysim.channels.multiuser import MultiUserChannelMatrix
 from pyphysim.ia import algorithms
 from pyphysim.modulators.fundamental import PSK

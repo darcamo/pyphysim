@@ -14,6 +14,8 @@ _prepare_external_interference method.
 """
 
 import numpy as np
+from scipy.linalg import block_diag
+
 from pyphysim.cell import cell
 from pyphysim.channels import multiuser, pathloss
 from pyphysim.comm.blockdiagonalization import EnhancedBD, WhiteningBD
@@ -23,14 +25,12 @@ from pyphysim.simulations import (Result, SimulationParameters,
 from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
 from pyphysim.util import misc
 from pyphysim.util.conversion import dB2Linear, dBm2Linear
-from scipy.linalg import block_diag
 
 
 class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
     """
     Simulation runner for a Block Diagonalization transmission.
     """
-
     def __init__(self, read_command_line_args=True, save_parsed_file=False):
         default_config_file = 'bd_config_file.txt'
 
@@ -65,11 +65,12 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         # xxxxxxxxxx Initialize parameters configuration xxxxxxxxxxxxxxxxxx
         # Among other things, this will create the self.params object with
         # the simulation parameters read from the config file.
-        SimulationRunner.__init__(self,
-                                  default_config_file=default_config_file,
-                                  config_spec=spec,
-                                  read_command_line_args=read_command_line_args,
-                                  save_parsed_file=save_parsed_file)
+        SimulationRunner.__init__(
+            self,
+            default_config_file=default_config_file,
+            config_spec=spec,
+            read_command_line_args=read_command_line_args,
+            save_parsed_file=save_parsed_file)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Channel Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -399,7 +400,8 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
          spec_effic_result_None,
          sinr_result_None) = self.__simulate_for_one_metric(
              Ns_all_users_None, external_int_data_all_metrics,
-             MsPk_all_users_None, Wk_all_users_None, 'None', current_parameters)
+             MsPk_all_users_None, Wk_all_users_None, 'None',
+             current_parameters)
 
         # naive metric
         (ber_result_naive, ser_result_naive, per_result_naive,
@@ -488,8 +490,8 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
         return simResults
 
     def __simulate_for_one_metric(self, Ns_all_users,
-                                  external_int_data_all_metrics, MsPk_all_users,
-                                  Wk_all_users, metric_name,
+                                  external_int_data_all_metrics,
+                                  MsPk_all_users, Wk_all_users, metric_name,
                                   current_parameters):
         """
         This method is only called inside the _run_simulation method.

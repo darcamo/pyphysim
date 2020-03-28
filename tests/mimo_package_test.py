@@ -14,6 +14,7 @@ import unittest
 import warnings
 
 import numpy as np
+
 from pyphysim import mimo
 from pyphysim.mimo.mimo import (MRC, MRT, Alamouti, Blast, GMDMimo, SVDMimo,
                                 calc_post_processing_SINRs)
@@ -27,8 +28,7 @@ class MimoDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the mimo module.
     """
-
-    def test_mimo(self,):
+    def test_mimo(self, ):
         """Run doctests in the mimo module."""
         doctest.testmod(mimo)
 
@@ -114,7 +114,6 @@ def calc_SINRs(channel, W, G_H, noise_var):
 class BlastTestCase(unittest.TestCase):
     """Unittests for the Blast class in the mimo module.
     """
-
     def setUp(self):
         """Called before each test."""
         self.blast_object = Blast()
@@ -222,7 +221,6 @@ class BlastTestCase(unittest.TestCase):
 
 
 class MRTTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.mrt_object = MRT()
@@ -367,7 +365,6 @@ class MRTTestCase(unittest.TestCase):
 
 
 class MRCTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.mrc_object = MRC()
@@ -437,7 +434,6 @@ class MRCTestCase(unittest.TestCase):
 
 
 class SVDMimoTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.svdmimo_object = SVDMimo()
@@ -528,7 +524,6 @@ class SVDMimoTestCase(unittest.TestCase):
 
 
 class GMDMimoTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.gmdmimo_object = GMDMimo()
@@ -606,7 +601,6 @@ class GMDMimoTestCase(unittest.TestCase):
 class AlamoutiTestCase(unittest.TestCase):
     """Unittests for the Alamouti class in the mimo module.
     """
-
     def setUp(self):
         """Called before each test."""
         self.alamouti_object = Alamouti()
@@ -639,9 +633,9 @@ class AlamoutiTestCase(unittest.TestCase):
                 -13 + 13j, 14 + 14j, -15 + 15j
             ],
              [
-                 1 + 1j, 0 - 0j, 3 + 3j, 2 - 2j, 5 + 5j, 4 - 4j, 7 + 7j, 6 - 6j,
-                 9 + 9j, 8 - 8j, 11 + 11j, 10 - 10j, 13 + 13j, 12 - 12j,
-                 15 + 15j, 14 - 14j
+                 1 + 1j, 0 - 0j, 3 + 3j, 2 - 2j, 5 + 5j, 4 - 4j, 7 + 7j,
+                 6 - 6j, 9 + 9j, 8 - 8j, 11 + 11j, 10 - 10j, 13 + 13j,
+                 12 - 12j, 15 + 15j, 14 - 14j
              ]]) / np.sqrt(2)
 
         np.testing.assert_array_almost_equal(self.alamouti_object.encode(data),

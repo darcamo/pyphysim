@@ -4,9 +4,8 @@ Perform the simulation of the transmission of PSK symbols through an
 awgn channel.
 """
 
-
-
 import numpy as np
+
 from pyphysim.modulators import fundamental
 from pyphysim.simulations import *
 from pyphysim.util import misc
@@ -30,8 +29,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
     SNR values and employ the "unpack" functionality of the
     SimulationParameters class.
     """
-
-    def __init__(self,):
+    def __init__(self, ):
         SimulationRunner.__init__(self)
 
         SNR = np.array([0, 3, 6, 9, 12])
@@ -95,7 +93,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
                                          numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE,
+                                        bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 

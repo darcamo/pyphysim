@@ -362,9 +362,8 @@ class BlockDiagonalizer:
         Sigma = np.array(Sigma)
         return Ms_bad, Sigma
 
-    def _perform_global_waterfilling_power_scaling(self, Ms_bad: np.ndarray,
-                                                   Sigma: np.ndarray
-                                                   ) -> np.ndarray:
+    def _perform_global_waterfilling_power_scaling(
+            self, Ms_bad: np.ndarray, Sigma: np.ndarray) -> np.ndarray:
         """Perform the power scaling based on the water-filling algorithm for
         all the parallel channel gains in `Sigma`.
 
@@ -401,10 +400,8 @@ class BlockDiagonalizer:
 
         return Ms_good
 
-    def _perform_normalized_waterfilling_power_scaling(self,
-                                                       Ms_bad: np.ndarray,
-                                                       Sigma: np.ndarray
-                                                       ) -> np.ndarray:
+    def _perform_normalized_waterfilling_power_scaling(
+            self, Ms_bad: np.ndarray, Sigma: np.ndarray) -> np.ndarray:
         """Perform the power scaling based on the water-filling
         algorithm for all the parallel channel gains in `Sigma`,
         but normalize the result by the power of the base station
@@ -613,9 +610,9 @@ class BlockDiagonalizer:
         desiredUsers = [i for i in vtAllUserIndexes if i != user]
         return self._get_sub_channel(mtChannel, desiredUsers)
 
-    def _get_sub_channel(self, mt_channel: np.ndarray,
-                         desired_users: Union[int, Iterable[int]]
-                         ) -> np.ndarray:
+    def _get_sub_channel(
+            self, mt_channel: np.ndarray,
+            desired_users: Union[int, Iterable[int]]) -> np.ndarray:
         """
         Get a subchannel according to the desired_users vector.
 
@@ -690,8 +687,9 @@ class BDWithExtIntBase(BlockDiagonalizer):
         BlockDiagonalizer.__init__(self, num_users, iPu, noise_var)
         self.pe = pe
 
-    def calc_whitening_matrices(self, mu_channel: MultiUserChannelMatrixExtInt
-                                ) -> List[np.ndarray]:
+    def calc_whitening_matrices(
+            self,
+            mu_channel: MultiUserChannelMatrixExtInt) -> List[np.ndarray]:
         """
         Calculates the whitening receive filters for each user.
 
@@ -887,9 +885,9 @@ class EnhancedBD(BDWithExtIntBase):
         self._metric_func_extra_args: MetricExtraArgs = {}
 
     def set_ext_int_handling_metric(
-            self,
-            metric: Optional[str],
-            metric_func_extra_args_dict: Optional[MetricExtraArgs] = None
+        self,
+        metric: Optional[str],
+        metric_func_extra_args_dict: Optional[MetricExtraArgs] = None
     ) -> None:
         """
         Set the metric used to decide how many streams to sacrifice for

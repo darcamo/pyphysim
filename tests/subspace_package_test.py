@@ -12,6 +12,7 @@ import doctest
 import unittest
 
 import numpy as np
+
 from pyphysim.subspace import metrics, projections
 from pyphysim.util.misc import randn_c
 

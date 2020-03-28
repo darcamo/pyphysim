@@ -7,6 +7,8 @@ reduction
 from time import time
 
 import numpy as np
+from scipy import linalg as sp_linalg
+
 import pyphysim.channels.multiuser
 from pyphysim.cell import cell
 from pyphysim.channels import pathloss
@@ -14,9 +16,9 @@ from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
 from pyphysim.simulations import progressbar
 from pyphysim.util import conversion, misc
-from scipy import linalg as sp_linalg
 
 tic = time()
+
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Simulation Parameters xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

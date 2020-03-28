@@ -10,6 +10,7 @@ from time import time
 import numpy as np
 import scipy.io
 from configobj import ConfigObj
+
 from pyphysim.simulations.progressbar import (DummyProgressbar,
                                               ProgressbarMultiProcessServer)
 from pyphysim.subspace.metrics import (
@@ -207,11 +208,11 @@ class CodebookFinder:
         # self._codebook_type variable
         gen_functions = {
             CodebookFinder.REAL:
-                CodebookFinder._generate_real_random_codebook,
+            CodebookFinder._generate_real_random_codebook,
             CodebookFinder.COMPLEX:
-                CodebookFinder._generate_complex_random_codebook,
+            CodebookFinder._generate_complex_random_codebook,
             CodebookFinder.COMPLEX_QEGT:
-                CodebookFinder._generate_complex_qegt_random_codebook
+            CodebookFinder._generate_complex_qegt_random_codebook
         }
 
         # Simulation
@@ -345,7 +346,8 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
         """
         q.put(find_codebook(*args))
 
-    def save_results(best_dist, best_codebook, best_principal_angles, filename):
+    def save_results(best_dist, best_codebook, best_principal_angles,
+                     filename):
         # Save matlab version
         scipy.io.savemat(filename, {
             'codebook': best_codebook,
@@ -436,7 +438,7 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
 
     best_codebook = codebooks[best_index]
     (best_dist, best_principal_angles
-    ) = CodebookFinder.calc_min_chordal_dist(best_codebook)
+     ) = CodebookFinder.calc_min_chordal_dist(best_codebook)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     print("Maximum minimum distance found: {0}".format(best_dist))

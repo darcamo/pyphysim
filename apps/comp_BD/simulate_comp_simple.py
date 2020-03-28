@@ -7,6 +7,7 @@ simple block diagonalization of the channel.
 from time import time
 
 import numpy as np
+
 import pyphysim.channels.multiuser
 from pyphysim.cell import cell
 from pyphysim.channels import pathloss

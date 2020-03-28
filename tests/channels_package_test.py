@@ -8,7 +8,6 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
-
 import doctest
 import math
 import unittest
@@ -16,6 +15,8 @@ import warnings
 from copy import copy
 
 import numpy as np
+from scipy.linalg import block_diag
+
 from pyphysim import channels
 from pyphysim.channels import (antennagain, fading, fading_generators,
                                multiuser, noise, pathloss, singleuser)
@@ -24,7 +25,6 @@ from pyphysim.ia.algorithms import ClosedFormIASolver
 from pyphysim.util.conversion import (dB2Linear,
                                       single_matrix_to_matrix_of_matrices)
 from pyphysim.util.misc import least_right_singular_vectors, randn_c
-from scipy.linalg import block_diag
 
 
 # noinspection PyMethodMayBeStatic

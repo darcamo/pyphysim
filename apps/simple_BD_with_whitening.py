@@ -4,6 +4,7 @@
 from time import time
 
 import numpy as np
+
 import pyphysim.channels.multiuser
 from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
@@ -55,5 +56,5 @@ enhancedBD = blockdiagonalization.EnhancedBD(K, transmit_power, noise_var, pe)
 
 (newH,
  Ms) = BD.block_diagonalize_no_waterfilling(multiuser_channel.big_H_no_ext_int)
-(newH_ext, Ms_ext,
- Ns_all_users) = enhancedBD.block_diagonalize_no_waterfilling(multiuser_channel)
+(newH_ext, Ms_ext, Ns_all_users
+ ) = enhancedBD.block_diagonalize_no_waterfilling(multiuser_channel)

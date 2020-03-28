@@ -150,11 +150,11 @@ class SuChannel:
 
         return output
 
-    def corrupt_data_in_freq_domain(self,
-                                    signal: np.ndarray,
-                                    fft_size: int,
-                                    carrier_indexes: Optional[Indexes] = None
-                                    ) -> np.ndarray:
+    def corrupt_data_in_freq_domain(
+            self,
+            signal: np.ndarray,
+            fft_size: int,
+            carrier_indexes: Optional[Indexes] = None) -> np.ndarray:
         """
         Transmit the signal through the TDL channel, but in the frequency
         domain.

@@ -131,6 +131,7 @@ class DummyProgressbar:  # pragma: no cover
         This method accepts any argument without errors, but they won't
         matter, since this class does nothing.
         """
+
     def progress(self, count: int) -> None:
         """This `progress` method has the same signature from the one in the
         :class:`ProgressbarText` class.
@@ -242,6 +243,7 @@ class ProgressBarBase:
         This method should be implemented in sub-classes if any
         initialization code should be run.
         """
+
     def _perform_finalizations(self) -> None:  # pragma: nocover
         """
         Perform any finalization (cleanings) after the progressbar stops.
@@ -249,6 +251,7 @@ class ProgressBarBase:
         This method should be implemented in sub-classes if any
         finalization code should be run.
         """
+
     def start(self) -> None:
         """
         Start the progressbar.
@@ -990,7 +993,8 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
 
     The progressbar will be rendered using IPython widgets.
     """
-    def __init__(self, finalcount: int,
+    def __init__(self,
+                 finalcount: int,
                  side_message: Optional[str] = None) -> None:
         """
         Initializes the progressbar object.
@@ -1732,8 +1736,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         """
         return cast(PortNumber, self._ns.port)  # type: ignore
 
-    def register_client_and_get_proxy_progressbar(self, total_count: int
-                                                  ) -> "ProgressbarZMQClient":
+    def register_client_and_get_proxy_progressbar(
+            self, total_count: int) -> "ProgressbarZMQClient":
         """
         Register a new client progressbar and return a proxy to it.
 

@@ -2,6 +2,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+
 from pyphysim.channels.fading import COST259_TUx
 from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.channels.singleuser import SuChannel

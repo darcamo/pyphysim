@@ -11,6 +11,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, List, Optional, Sequence, TypeVar, Union, cast
 
 import numpy as np
+
 import pyphysim.channels.multiuser as muchannels
 
 from ..util.conversion import linear2dB
@@ -995,7 +996,8 @@ class IASolverBaseClass:  # pylint: disable=R0902
         return SINR_k
 
     @abstractmethod
-    def solve(self, Ns: Union[int, np.ndarray],
+    def solve(self,
+              Ns: Union[int, np.ndarray],
               P: Optional[np.ndarray] = None) -> Any:  # pragma: no cover
         """
         Find the IA solution.

@@ -161,11 +161,11 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         """Get the cover code of the UE."""
         return self._cover_code
 
-    def estimate_channel_freq_domain(self,
-                                     received_signal: np.ndarray,
-                                     num_taps_to_keep: int,
-                                     extra_dimension: bool = True
-                                     ) -> np.ndarray:
+    def estimate_channel_freq_domain(
+            self,
+            received_signal: np.ndarray,
+            num_taps_to_keep: int,
+            extra_dimension: bool = True) -> np.ndarray:
         """
         Estimate the channel based on the received signal with cover codes.
 

@@ -12,6 +12,7 @@ import doctest
 import unittest
 
 import numpy as np
+
 from pyphysim.extra.MATLAB import python2MATLAB
 
 
@@ -21,7 +22,6 @@ class MATLABDoctestsTestCase(unittest.TestCase):
     package.
 
     """
-
     def test_python2MATLAB(self):
         """Run python2MATLAB doctests"""
         doctest.testmod(python2MATLAB)
@@ -29,7 +29,6 @@ class MATLABDoctestsTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class MATLABFunctionsTestCase(unittest.TestCase):
-
     def test_mmat(self):
         # Test 1D numpy array
         a = np.arange(10) + (10 - np.arange(10)) * 1j

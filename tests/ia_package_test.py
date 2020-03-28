@@ -8,7 +8,6 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
-
 try:
     import cPickle as pickle
 except ImportError as e:  # pragma: no cover
@@ -18,8 +17,9 @@ import doctest
 import unittest
 
 import numpy as np
-import pyphysim.ia  # Import the package ia
 from numpy.linalg import norm
+
+import pyphysim.ia  # Import the package ia
 from pyphysim import channels
 from pyphysim.ia.algorithms import (AlternatingMinIASolver,
                                     BruteForceStreamIASolver,

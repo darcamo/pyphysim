@@ -7,8 +7,9 @@ Alignment algorithms in the algorithms.ia module.
 from time import time
 
 import numpy as np
-import pandas as pd
 from numpy.linalg.linalg import LinAlgError
+
+import pandas as pd
 from pyphysim.cell import cell
 from pyphysim.channels import multiuser, pathloss
 from pyphysim.ia import algorithms
@@ -37,7 +38,6 @@ class IASimulationRunner(SimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, default_config_file, read_command_line_args=True):
         """
         Constructor of the IASimulationRunner class.
@@ -346,7 +346,8 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = np.vstack(received_data_no_interference)
+        received_data_no_interference = np.vstack(
+            received_data_no_interference)
         demodulated_data = self.modulator.demodulate(
             received_data_no_interference)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -379,7 +380,8 @@ class IASimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
                                          numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE,
+                                        bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -743,8 +745,8 @@ def main_plot(index=0):  # pylint: disable=R0914,R0915
     _plot_ber(results, greedy_random_fixed_params, ax, 'Greedy (With PL)',
               '-r*')
 
-    _plot_sum_capacity(results, greedy_nopl_fixed_params, ax2, 'Greedy (No PL)',
-                       '-b*')
+    _plot_sum_capacity(results, greedy_nopl_fixed_params, ax2,
+                       'Greedy (No PL)', '-b*')
     _plot_sum_capacity(results, greedy_random_fixed_params, ax2,
                        'Greedy (With PL)', '-r*')
 

@@ -512,9 +512,9 @@ class OfdmOneTapEqualizer:
 
         return equalized_ofdm_demodulated_data
 
-    def equalize_data(self, data: np.ndarray,
-                      impulse_response: fading.TdlImpulseResponse
-                      ) -> np.ndarray:
+    def equalize_data(
+            self, data: np.ndarray,
+            impulse_response: fading.TdlImpulseResponse) -> np.ndarray:
         """
         Perform the one-tap equalization and return `data` after the
         channel compensation.

@@ -26,7 +26,6 @@ parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # sys.path.insert(0, os.path.abspath('.'))
 
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.

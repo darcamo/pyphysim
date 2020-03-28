@@ -13,6 +13,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Optional, cast
 
 import numpy as np
+
 from pyphysim.util.conversion import linear2dB
 from pyphysim.util.misc import gmd
 
@@ -29,11 +30,11 @@ __all__ = [
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Functions to calculate the SINRs xxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def calc_post_processing_SINRs(channel: np.ndarray,
-                               W: np.ndarray,
-                               G_H: np.ndarray,
-                               noise_var: Optional[float] = None
-                               ) -> np.ndarray:
+def calc_post_processing_SINRs(
+        channel: np.ndarray,
+        W: np.ndarray,
+        G_H: np.ndarray,
+        noise_var: Optional[float] = None) -> np.ndarray:
     """
     Calculate the post processing SINRs (in dB) of all streams for a given
     MIMO scheme.
@@ -59,11 +60,11 @@ def calc_post_processing_SINRs(channel: np.ndarray,
         calc_post_processing_linear_SINRs(channel, W, G_H, noise_var))
 
 
-def calc_post_processing_linear_SINRs(channel: np.ndarray,
-                                      W: np.ndarray,
-                                      G_H: np.ndarray,
-                                      noise_var: Optional[float] = None
-                                      ) -> np.ndarray:
+def calc_post_processing_linear_SINRs(
+        channel: np.ndarray,
+        W: np.ndarray,
+        G_H: np.ndarray,
+        noise_var: Optional[float] = None) -> np.ndarray:
     """
     Calculate the post processing SINRs (in linear scale) of all streams
     for a given MIMO scheme.
@@ -220,9 +221,10 @@ class MimoBase:
             '_calc_precoder still needs to be implemented')
 
     @staticmethod
-    def _calc_receive_filter(channel: np.ndarray,
-                             noise_var: Optional[float] = None
-                             ) -> np.ndarray:  # pragma: nocover
+    def _calc_receive_filter(
+        channel: np.ndarray,
+        noise_var: Optional[float] = None
+    ) -> np.ndarray:  # pragma: nocover
         """
         Calculate the receive filter for the MIMO scheme, if there is any.
 
@@ -1091,9 +1093,10 @@ class Alamouti(MimoBase):
         raise RuntimeError("Alamouti scheme has no linear precoder")
 
     @staticmethod
-    def _calc_receive_filter(channel: np.ndarray,
-                             noise_var: Optional[float] = None
-                             ) -> np.ndarray:  # pragma: nocover
+    def _calc_receive_filter(
+        channel: np.ndarray,
+        noise_var: Optional[float] = None
+    ) -> np.ndarray:  # pragma: nocover
         """
         Not defined.
 

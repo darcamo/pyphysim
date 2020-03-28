@@ -4,13 +4,12 @@ Module containing simulation runners for the several MIMO schemes
 algorithms in the comm.mimo module.
 """
 
-
-
 from copy import copy
 from pprint import pprint
 
 import numpy as np
 from matplotlib import pyplot as plt
+
 from pyphysim.mimo import mimo
 from pyphysim.modulators import fundamental
 from pyphysim.simulations import (Result, SimulationParameters,
@@ -35,14 +34,13 @@ class MIMOSimulationRunner(SimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self,
                  MimoSchemeClass,
                  config_filename,
                  spec,
                  read_command_line_args=True):
-        SimulationRunner.__init__(self,
-                                  read_command_line_args=read_command_line_args)
+        SimulationRunner.__init__(
+            self, read_command_line_args=read_command_line_args)
 
         # Read the simulation configuration from the file. What is read and
         self.params = SimulationParameters.load_from_config_file(
@@ -125,7 +123,8 @@ class MIMOSimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
                                          numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE,
+                                        bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -167,7 +166,6 @@ class AlamoutiSimulationRunner(MIMOSimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
@@ -204,7 +202,6 @@ class BlastSimulationRunner(MIMOSimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
@@ -241,7 +238,6 @@ class MRCSimulationRunner(MIMOSimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
@@ -278,7 +274,6 @@ class MRTSimulationRunner(MIMOSimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
@@ -315,7 +310,6 @@ class SVDMimoSimulationRunner(MIMOSimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)
@@ -352,7 +346,6 @@ class GMDMimoSimulationRunner(MIMOSimulationRunner):
     read_command_line_args : bool
         If True (default), read and parse command line arguments.
     """
-
     def __init__(self, config_filename, read_command_line_args=True):
         spec = """[Scenario]
         SNR=real_numpy_array(min=0, max=100, default=0:5:21)

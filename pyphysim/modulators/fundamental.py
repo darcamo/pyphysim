@@ -21,6 +21,7 @@ import math
 from typing import Optional, TypeVar, Union
 
 import numpy as np
+
 from pyphysim.util.conversion import binary2gray, dB2Linear, gray2binary
 from pyphysim.util.misc import level2bits, qfunc
 
@@ -247,8 +248,8 @@ class Modulator:
         return output
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def calcTheoreticalSER(self, SNR: NumberOrArray
-                           ) -> NumberOrArray:  # pragma: no cover
+    def calcTheoreticalSER(
+            self, SNR: NumberOrArray) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the theoretical symbol error rate.
 
@@ -273,8 +274,8 @@ class Modulator:
         """
         raise NotImplementedError("calcTheoreticalSER: Not implemented")
 
-    def calcTheoreticalBER(self, SNR: NumberOrArray
-                           ) -> NumberOrArray:  # pragma: no cover
+    def calcTheoreticalBER(
+            self, SNR: NumberOrArray) -> NumberOrArray:  # pragma: no cover
         """
         Calculates the theoretical bit error rate.
 
@@ -338,10 +339,10 @@ class Modulator:
         PER = 1 - ((1 - BER)**packet_length)
         return PER
 
-    def calcTheoreticalSpectralEfficiency(self,
-                                          SNR: NumberOrArray,
-                                          packet_length: Optional[int] = None
-                                          ) -> NumberOrArray:
+    def calcTheoreticalSpectralEfficiency(
+            self,
+            SNR: NumberOrArray,
+            packet_length: Optional[int] = None) -> NumberOrArray:
         """
         Calculates the theoretical spectral efficiency.
 
@@ -776,8 +777,8 @@ class QAM(Modulator):
         return np.reshape(index_matrix, L**2)
 
     # noinspection PyPep8
-    def _calcTheoreticalSingleCarrierErrorRate(self, SNR: NumberOrArray
-                                               ) -> NumberOrArray:
+    def _calcTheoreticalSingleCarrierErrorRate(
+            self, SNR: NumberOrArray) -> NumberOrArray:
         """
         Calculates the theoretical (approximation) error rate of a single
         carrier in the QAM system (QAM has two carriers).

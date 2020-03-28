@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 """Plot the Power Spectral Density of OFDM modulated data"""
 
-
-
 import numpy as np
 from matplotlib import pylab
 from matplotlib import pyplot as plt
+
 from pyphysim.modulators.ofdm import OFDM
 
 if __name__ == '__main__':

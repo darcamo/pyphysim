@@ -36,9 +36,9 @@ __all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def combine_simulation_results(simresults1: "SimulationResults",
-                               simresults2: "SimulationResults"
-                               ) -> "SimulationResults":
+def combine_simulation_results(
+        simresults1: "SimulationResults",
+        simresults2: "SimulationResults") -> "SimulationResults":
     """
     Combine two SimulationResults objects with different parameters values.
 
@@ -1150,10 +1150,10 @@ class SimulationResults(JsonSerializable):
         """
         return list(self._results.keys())
 
-    def get_result_values_list(self,
-                               result_name: str,
-                               fixed_params: Optional[Dict[str, Any]] = None
-                               ) -> List[Any]:
+    def get_result_values_list(
+            self,
+            result_name: str,
+            fixed_params: Optional[Dict[str, Any]] = None) -> List[Any]:
         """
         Get the values for the results with name `result_name`.
 
@@ -1349,8 +1349,8 @@ class SimulationResults(JsonSerializable):
         """
 
         # -----------------------------------------------------------------
-        def list_of_results_to_list_of_dicts(result_list: List[Result]
-                                             ) -> List[Dict[str, Any]]:
+        def list_of_results_to_list_of_dicts(
+                result_list: List[Result]) -> List[Dict[str, Any]]:
             """
             Convert a list of Result objects into a list of dictionary
             representations ob Result objects.
@@ -1399,8 +1399,8 @@ class SimulationResults(JsonSerializable):
         SimulationResults
             The converted object.
         """
-        def list_of_dicts_to_list_of_results(result_list: Dict[str, Any]
-                                             ) -> List[Result]:
+        def list_of_dicts_to_list_of_results(
+                result_list: Dict[str, Any]) -> List[Result]:
             """
             Convert a list of dictionary representations of Result objects to a
             list of Result objects.

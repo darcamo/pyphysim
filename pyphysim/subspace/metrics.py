@@ -75,8 +75,8 @@ def calc_principal_angles(matrix1: np.ndarray,
 
 
 # noinspection PyPep8
-def calc_chordal_distance_from_principal_angles(principalAngles: np.ndarray
-                                                ) -> float:
+def calc_chordal_distance_from_principal_angles(
+        principalAngles: np.ndarray) -> float:
     """
     Calculates the chordal distance from the principal angles.
 

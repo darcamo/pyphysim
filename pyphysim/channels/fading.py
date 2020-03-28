@@ -15,7 +15,6 @@ try:
 except ModuleNotFoundError:
     _MATPLOTLIB_AVAILABLE = False
 
-
 Shape = Tuple[int, ...]
 
 # Either a jakes or a Rayleigh model can be used

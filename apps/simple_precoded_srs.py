@@ -2,18 +2,19 @@
 
 import math
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 # noinspection PyPackageRequirements
 import bokeh.models.widgets as bw
 # noinspection PyPackageRequirements
 import bokeh.plotting as bp
-import numpy as np
 # noinspection PyPackageRequirements
 from bokeh.io import gridplot
 # from bokeh.plotting import figure, output_server, show, ColumnDataSource, \
 # gridplot
 # noinspection PyPackageRequirements
 from bokeh.models import HoverTool
-from matplotlib import pyplot as plt
 from pyphysim.channels.fading import COST259_TUx, TdlChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.reference_signals.srs import get_srs_seq
@@ -204,8 +205,8 @@ def estimate_channels_remove_only_direct(Y1, Y2, Y3, r1, r2, r3, Nsc,
             uH23_eq_est, uH31_eq_est, uH32_eq_est, uH33_eq_est)
 
 
-def estimate_channels_remove_direct_and_perform_SIC(Y1, Y2, Y3, r1, r2, r3, Nsc,
-                                                    comb_indexes):
+def estimate_channels_remove_direct_and_perform_SIC(Y1, Y2, Y3, r1, r2, r3,
+                                                    Nsc, comb_indexes):
     # xxxxxxxxxx AN 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     tilde_y11 = np.fft.ifft(Y1 * r1[:, np.newaxis].conj(), n=Nsc // 2, axis=0)
     tilde_y11[
@@ -470,8 +471,8 @@ def main():
     # int_g = math.sqrt(int_path_loss)  # Gain of interfering links
     # dir_d = 1.0                   #  Gain of direct links
 
-    pl = np.array([[2.21e-08, 2.14e-09,
-                    1.88e-08], [3.45e-10, 2.17e-08, 4.53e-10],
+    pl = np.array([[2.21e-08, 2.14e-09, 1.88e-08],
+                   [3.45e-10, 2.17e-08, 4.53e-10],
                    [4.38e-10, 8.04e-10, 4.75e-08]])
     # pl = np.array([[  1,   0.1,   0.1],
     #                [  0.1,   1,   0.1],

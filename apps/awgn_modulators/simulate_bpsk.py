@@ -4,8 +4,8 @@ Perform the simulation of the transmission of BPSK symbols through an
 awgn channel.
 """
 
-
 import numpy as np
+
 from apps.awgn_modulators.simulate_psk import VerySimplePskSimulationRunner
 from pyphysim.modulators import fundamental
 
@@ -16,7 +16,6 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
     VerySimplePskSimulationRunner.
 
     """
-
     def __init__(self):
         VerySimplePskSimulationRunner.__init__(self)
 

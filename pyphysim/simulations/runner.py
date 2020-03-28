@@ -103,10 +103,10 @@ get_common_parser.parser = None  # type: ignore
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def get_partial_results_filename(results_base_filename: str,
-                                 current_params: SimulationParameters,
-                                 partial_results_folder: Optional[str] = None
-                                 ) -> str:
+def get_partial_results_filename(
+        results_base_filename: str,
+        current_params: SimulationParameters,
+        partial_results_folder: Optional[str] = None) -> str:
     """
     Get the name of the file where the partial result will be saved for
     the unpacked result with index `unpack_index`.
@@ -463,8 +463,9 @@ class SimulationRunner:
 
         return results_filename
 
-    def _get_progress_output_sink(self, param_variation_index: Union[int, str]
-                                  ) -> Any:  # pragma: no cover
+    def _get_progress_output_sink(
+            self,
+            param_variation_index: Union[int, str]) -> Any:  # pragma: no cover
         """
         Get the output sink for the progressbars.
 
@@ -623,8 +624,9 @@ class SimulationRunner:
 
         return current_sim_results
 
-    def _run_simulation(self, current_parameters: SimulationParameters
-                        ) -> SimulationResults:
+    def _run_simulation(
+            self,
+            current_parameters: SimulationParameters) -> SimulationResults:
         """
         Performs one iteration of the simulation.
 
@@ -696,7 +698,7 @@ class SimulationRunner:
         return True
 
     def _get_serial_update_progress_function(
-            self, current_params: SimulationParameters
+        self, current_params: SimulationParameters
     ) -> UpdateFunction:  # pragma: no cover
         """
         Return a function that should be called to update the
@@ -926,9 +928,9 @@ class SimulationRunner:
 
     # noinspection PyUnboundLocalVariable
     def _simulate_for_current_params_common(
-            self,
-            current_params: SimulationParameters,
-            update_progress_func: UpdateFunction = lambda value: None
+        self,
+        current_params: SimulationParameters,
+        update_progress_func: UpdateFunction = lambda value: None
     ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
         """
         Parameters
@@ -1075,8 +1077,8 @@ class SimulationRunner:
         return current_rep, current_sim_results, partial_results_filename
 
     def _simulate_for_current_params_serial(
-            self, current_params: SimulationParameters,
-            var_print_iter: Iterator[int]
+        self, current_params: SimulationParameters,
+        var_print_iter: Iterator[int]
     ) -> Tuple[int, SimulationResults, str]:
         """
         Simulate (serial) for the current parameters.
@@ -1112,9 +1114,9 @@ class SimulationRunner:
     # pragma line here.
     @staticmethod
     def _simulate_for_current_params_parallel(
-            obj: "SimulationRunner",
-            current_params: SimulationParameters,
-            proxybar_data=None
+        obj: "SimulationRunner",
+        current_params: SimulationParameters,
+        proxybar_data=None
     ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
         """
         Simulate (parallel) for the current parameters.
@@ -1334,7 +1336,8 @@ class SimulationRunner:
 
     # The unittests for this method only run if an ipython cluster is
     # started with a profile called "tests".
-    def simulate_in_parallel(self, view: ParallelView,
+    def simulate_in_parallel(self,
+                             view: ParallelView,
                              wait: bool = True) -> None:  # pragma: no cover
         """
         Same as the simulate method, but the different parameters
@@ -1494,9 +1497,9 @@ class SimulationRunner:
         """This method is called only once at the end of the simulate method.
 
         """
-    def _on_simulate_current_params_start(self,
-                                          current_params: SimulationParameters
-                                          ) -> None:
+
+    def _on_simulate_current_params_start(
+            self, current_params: SimulationParameters) -> None:
         """
         This method is called once for each simulation parameters
         combination before any iteration of _run_simulation is performed

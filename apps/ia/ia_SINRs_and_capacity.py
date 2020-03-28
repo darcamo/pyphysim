@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 """module docstring"""
 
-
-
 try:
     import cPickle as pickle
 except ImportError as e:  # pragma: no cover
     import pickle
 
 import numpy as np
-import pyphysim.channels.multiuser
 from matplotlib import pyplot as plt
+
+import pyphysim.channels.multiuser
 from pandas import DataFrame
 from pyphysim.ia.algorithms import (AlternatingMinIASolver, MaxSinrIASolver,
                                     MMSEIASolver)

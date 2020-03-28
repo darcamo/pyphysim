@@ -1431,8 +1431,8 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         num_Rx = Bkl_all_l[0].shape[0]
         Uk = np.zeros([num_Rx, num_streams], dtype=complex)
         for l in range(num_streams):
-            Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l],
-                                                 l)[:, 0]
+            Uk[:, l] = MaxSinrIASolver._calc_Ukl(Hkk, Vk, Bkl_all_l[l], l)[:,
+                                                                           0]
 
         return Uk / np.linalg.norm(Uk, 'fro')
 

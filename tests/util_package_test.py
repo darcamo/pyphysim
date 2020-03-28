@@ -13,6 +13,7 @@ import json
 import unittest
 
 import numpy as np
+
 from pyphysim.util import conversion, misc, serialize
 
 
@@ -22,7 +23,6 @@ class UtilDoctestsTestCase(unittest.TestCase):
     package.
 
     """
-
     def test_misc(self):
         """Run misc doctests"""
         doctest.testmod(misc)
@@ -37,7 +37,6 @@ class UtilDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # noinspection PyMethodMayBeStatic
 class ConversionTestCase(unittest.TestCase):
-
     def test_single_matrix_to_matrix_of_matrices(self):
         nrows = np.array([2, 4, 6])
         ncols = np.array([2, 3, 5])
@@ -92,7 +91,7 @@ class ConversionTestCase(unittest.TestCase):
         # In this case we break the channel into packs of lines
         matrix_of_matrices2 = conversion.single_matrix_to_matrix_of_matrices(
             single_matrix, nrows)
-        self.assertEqual(matrix_of_matrices2.shape, (3,))
+        self.assertEqual(matrix_of_matrices2.shape, (3, ))
 
         expected1 = np.array([[0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
                               [0, 0, 1, 1, 1, 2, 2, 2, 2, 2]])
@@ -116,18 +115,21 @@ class ConversionTestCase(unittest.TestCase):
         # In this case we break the channel into packs of columns
         matrix_of_matrices3 = conversion.single_matrix_to_matrix_of_matrices(
             single_matrix, None, ncols)
-        self.assertEqual(matrix_of_matrices3.shape, (3,))
+        self.assertEqual(matrix_of_matrices3.shape, (3, ))
 
         expected1 = np.array([[0, 0], [0, 0], [3, 3], [3, 3], [3, 3], [3, 3],
                               [6, 6], [6, 6], [6, 6], [6, 6], [6, 6], [6, 6]])
         expected2 = np.array([[1, 1, 1], [1, 1, 1], [4, 4, 4], [4, 4, 4],
                               [4, 4, 4], [4, 4, 4], [7, 7, 7], [7, 7, 7],
                               [7, 7, 7], [7, 7, 7], [7, 7, 7], [7, 7, 7]])
-        expected3 = np.array([[2, 2, 2, 2, 2], [2, 2, 2, 2, 2], [5, 5, 5, 5, 5],
-                              [5, 5, 5, 5, 5], [5, 5, 5, 5, 5], [5, 5, 5, 5, 5],
-                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
-                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8], [8, 8, 8, 8,
-                                                                 8]])
+        expected3 = np.array([[2, 2, 2, 2, 2], [2, 2, 2, 2,
+                                                2], [5, 5, 5, 5, 5],
+                              [5, 5, 5, 5, 5], [5, 5, 5, 5,
+                                                5], [5, 5, 5, 5, 5],
+                              [8, 8, 8, 8, 8], [8, 8, 8, 8,
+                                                8], [8, 8, 8, 8, 8],
+                              [8, 8, 8, 8, 8], [8, 8, 8, 8, 8],
+                              [8, 8, 8, 8, 8]])
         np.testing.assert_array_equal(expected1, matrix_of_matrices3[0])
         np.testing.assert_array_equal(expected2, matrix_of_matrices3[1])
         np.testing.assert_array_equal(expected3, matrix_of_matrices3[2])
@@ -142,7 +144,7 @@ class ConversionTestCase(unittest.TestCase):
         array_of_arrays = conversion.single_matrix_to_matrix_of_matrices(
             single_array, nrows)
 
-        self.assertEqual(array_of_arrays.shape, (3,))
+        self.assertEqual(array_of_arrays.shape, (3, ))
         np.testing.assert_array_equal(array_of_arrays[0], expected1)
 
         np.testing.assert_array_equal(array_of_arrays[1], expected2)
@@ -215,7 +217,6 @@ class ConversionTestCase(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
-
     def test_gmd(self):
         A = np.array([[6, 8, 0, 4], [8, 6, 7, 6], [10, 9, 7, 3], [6, 2, 9, 2]])
 
@@ -275,10 +276,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         [V_n3, _] = misc.peig(A, 3)
 
-        expected_V_n3 = np.array(
-            [[0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j, 0.69593520],
-             [0.68522942, -0.24255902 + 0.37567057j, -0.02693857 + 0.57425752j],
-             [0.38918583 + 0.09728652j, 0.80863645, -0.40625488 - 0.14189355j]])
+        expected_V_n3 = np.array([
+            [0.27354856 + 0.54286421j, 0.15266747 - 0.35048035j, 0.69593520],
+            [0.68522942, -0.24255902 + 0.37567057j, -0.02693857 + 0.57425752j],
+            [0.38918583 + 0.09728652j, 0.80863645, -0.40625488 - 0.14189355j]
+        ])
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -309,10 +311,11 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # xxxxx Test for n==3 (all columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         [V_n3, _] = misc.leig(A, 3)
 
-        expected_V_n3 = np.array(
-            [[0.69593520, 0.15266747 - 0.35048035j, 0.27354856 + 0.54286421j],
-             [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j, 0.68522942],
-             [-0.40625488 - 0.14189355j, 0.80863645, 0.38918583 + 0.09728652j]])
+        expected_V_n3 = np.array([
+            [0.69593520, 0.15266747 - 0.35048035j, 0.27354856 + 0.54286421j],
+            [-0.02693857 + 0.57425752j, -0.24255902 + 0.37567057j, 0.68522942],
+            [-0.40625488 - 0.14189355j, 0.80863645, 0.38918583 + 0.09728652j]
+        ])
         np.testing.assert_array_almost_equal(V_n3, expected_V_n3)
 
         # xxxxx Test for n==2 (two columns) xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -332,8 +335,9 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
 
     def test_level2bits(self):
-        self.assertEqual(list(map(misc.level2bits, range(
-            1, 20))), [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
+        self.assertEqual(
+            list(map(misc.level2bits, range(1, 20))),
+            [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
 
         # Test if an exception is raised for a value of n lower then 1
         with self.assertRaises(ValueError):
@@ -342,8 +346,9 @@ class MiscFunctionsTestCase(unittest.TestCase):
             misc.level2bits(-2)
 
     def test_int2bits(self):
-        self.assertEqual(list(map(misc.int2bits, range(
-            0, 19))), [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
+        self.assertEqual(
+            list(map(misc.int2bits, range(0, 19))),
+            [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
 
         # Test if an exception is raised for a negative value of n
         with self.assertRaises(ValueError):
@@ -390,9 +395,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
             np.array([[-0.62341491, -0.64116998], [0.01889071, -0.5845124],
                       [0.78166296, -0.49723869]]), 8)
 
-        np.testing.assert_array_almost_equal(S,
-                                             np.array([1.88354706, 9.81370681]),
-                                             8)
+        np.testing.assert_array_almost_equal(
+            S, np.array([1.88354706, 9.81370681]), 8)
 
         # xxxxxxxxxx Test a numpy bug xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # When numpy is manually installed, but without lapack, it will use
@@ -404,8 +408,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
         M = 8  # Number of rows
         N = 12  # Number of columns
         [_, _, V_H
-        ] = np.linalg.svd(np.random.randn(M, N) + 1j * np.random.randn(M, N),
-                          full_matrices=True)
+         ] = np.linalg.svd(np.random.randn(M, N) + 1j * np.random.randn(M, N),
+                           full_matrices=True)
         # Test if all the last N - M rows are equal to zero (the bug) or not.
         self.assertNotAlmostEqual(np.linalg.norm(V_H[M - N:]), 0.0)
 
@@ -418,7 +422,8 @@ class MiscFunctionsTestCase(unittest.TestCase):
     def test_calc_autocorr(self):
         x = np.array([4., 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
-        expected_autocor = np.array([1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
+        expected_autocor = np.array(
+            [1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
     def test_calc_confidence_interval(self):
@@ -715,7 +720,6 @@ class MiscFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Serialize Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class NumpyOrSetEncoderTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         self.a = np.arange(100)
@@ -725,14 +729,14 @@ class NumpyOrSetEncoderTestCase(unittest.TestCase):
         # xxxxxxxxxx Test for Numpy arrays xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         encoded_a = json.dumps(self.a, cls=serialize.NumpyOrSetEncoder)
         self.assertIsInstance(encoded_a, str)
-        decoded_a = json.loads(encoded_a,
-                               object_hook=serialize.json_numpy_or_set_obj_hook)
+        decoded_a = json.loads(
+            encoded_a, object_hook=serialize.json_numpy_or_set_obj_hook)
         np.testing.assert_array_almost_equal(self.a, decoded_a)
 
         encoded_b = json.dumps(self.b, cls=serialize.NumpyOrSetEncoder)
         self.assertIsInstance(encoded_b, str)
-        decoded_b = json.loads(encoded_b,
-                               object_hook=serialize.json_numpy_or_set_obj_hook)
+        decoded_b = json.loads(
+            encoded_b, object_hook=serialize.json_numpy_or_set_obj_hook)
         np.testing.assert_array_almost_equal(self.b, decoded_b)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -757,8 +761,8 @@ class NumpyOrSetEncoderTestCase(unittest.TestCase):
         c = {1, 5, 20}  # A python native set
         encoded_c = json.dumps(c, cls=serialize.NumpyOrSetEncoder)
         self.assertIsInstance(encoded_a, str)
-        decoded_c = json.loads(encoded_c,
-                               object_hook=serialize.json_numpy_or_set_obj_hook)
+        decoded_c = json.loads(
+            encoded_c, object_hook=serialize.json_numpy_or_set_obj_hook)
         self.assertSetEqual(c, decoded_c)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

@@ -4,6 +4,7 @@
 from __future__ import division
 
 import numpy as np
+
 import pyphysim.channels.multiuser
 from pyphysim.ia import algorithms
 from pyphysim.modulators import fundamental
@@ -249,7 +250,8 @@ if __name__ == '__main__':
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Demodulate Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        received_data_no_interference = np.vstack(received_data_no_interference)
+        received_data_no_interference = np.vstack(
+            received_data_no_interference)
         # received_data_no_interference = np.vstack(received_data_no_interference2)
         demodulated_data = modulator.demodulate(received_data_no_interference)
         # demodulated_data = map(modulator.demodulate, received_data_no_interference)

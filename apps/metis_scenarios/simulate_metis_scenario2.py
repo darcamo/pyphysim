@@ -7,24 +7,17 @@ project. Only one floor of one building is simulated and only the indoor
 access points are considered.
 """
 
-
-
-# xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
+from matplotlib import gridspec
+from matplotlib import pyplot as plt
+
 from apps.metis_scenarios.simulate_metis_scenario import (
     calc_num_walls, calc_room_positions_square, get_ap_positions,
     plot_all_rooms)
-from matplotlib import gridspec
-from matplotlib import pyplot as plt
 from pyphysim.cell import shapes
 from pyphysim.channels import pathloss
 from pyphysim.channels.noise import calc_thermal_noise_power_dBm
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
-
-# import matplotlib as mpl
-
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 def find_ap_assoc_best_channel(pl_all_plus_wl):

@@ -9,6 +9,7 @@ subclass.
 """
 
 import numpy as np
+
 from pyphysim.modulators import fundamental
 from pyphysim.simulations import *
 from pyphysim.util import misc
@@ -36,8 +37,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
     SimulationParameters class.
 
     """
-
-    def __init__(self,):
+    def __init__(self, ):
         SimulationRunner.__init__(self)
 
         SNR = np.array([0, 3, 6, 9, 12])
@@ -107,7 +107,8 @@ class VerySimplePskSimulationRunner(SimulationRunner):
         numSymbolsResult = Result.create("num_symbols", Result.SUMTYPE,
                                          numSymbols)
 
-        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE, bitErrors)
+        bitErrorsResult = Result.create("bit_errors", Result.SUMTYPE,
+                                        bitErrors)
 
         numBitsResult = Result.create("num_bits", Result.SUMTYPE, numBits)
 
@@ -233,8 +234,14 @@ if __name__ == '__main__':
 
         ax1.semilogy(SNR_p, ber_p, '--g*', label='BER_P')
         ax1.semilogy(SNR_p, ser_p, '--b*', label='SER_P')
-        ax1.semilogy(SNR_p, theoretical_ber_p, '-g+', label='Theoretical BER_P')
-        ax1.semilogy(SNR_p, theoretical_ser_p, '-b+', label='theoretical SER_P')
+        ax1.semilogy(SNR_p,
+                     theoretical_ber_p,
+                     '-g+',
+                     label='Theoretical BER_P')
+        ax1.semilogy(SNR_p,
+                     theoretical_ser_p,
+                     '-b+',
+                     label='theoretical SER_P')
 
         modulator_obj = sim_p.params['modulator']
 
@@ -254,8 +261,14 @@ if __name__ == '__main__':
         ax2 = plt.subplot(122)
         ax2.semilogy(SNR_s, ber_s, '--g*', label='BER_s')
         ax2.semilogy(SNR_s, ser_s, '--b*', label='SER_s')
-        ax2.semilogy(SNR_s, theoretical_ber_s, '-g+', label='Theoretical BER_s')
-        ax2.semilogy(SNR_s, theoretical_ser_s, '-b+', label='theoretical SER_s')
+        ax2.semilogy(SNR_s,
+                     theoretical_ber_s,
+                     '-g+',
+                     label='Theoretical BER_s')
+        ax2.semilogy(SNR_s,
+                     theoretical_ser_s,
+                     '-b+',
+                     label='theoretical SER_s')
 
         modulator_obj = sim_s.params['modulator']
 

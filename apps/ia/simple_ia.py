@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """module docstring"""
 
-
 import numpy as np
+
 import pyphysim.channels.multiuser
 from pyphysim.ia import algorithms
 from pyphysim.simulations.progressbar import ProgressbarText

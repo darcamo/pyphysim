@@ -11,6 +11,7 @@ import math
 
 import numpy as np
 from matplotlib import pyplot as plt
+
 from pyphysim.channels import pathloss
 from pyphysim.channels.noise import calc_thermal_noise_power_dBm
 from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
@@ -373,15 +374,16 @@ def perform_simulation_SINR_heatmap(
     pl_3gpp = pl_3gpp_obj.calc_path_loss(dists_m / 1000.)
     pl_free_space = pl_free_space_obj.calc_path_loss(dists_m / 1000.)
     pl_nothing = np.ones([
-        num_rooms_per_side, num_rooms_per_side, num_discrete_positions_per_room,
-        num_discrete_positions_per_room, num_aps
+        num_rooms_per_side, num_rooms_per_side,
+        num_discrete_positions_per_room, num_discrete_positions_per_room,
+        num_aps
     ],
                          dtype=float)
 
     # We need to know the number of walls the signal must pass to reach the
     # receiver to calculate the path loss for the METIS PS7 model.
-    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(dists_m,
-                                                   num_walls=num_walls_extended)
+    pl_metis_ps7 = pl_metis_ps7_obj.calc_path_loss(
+        dists_m, num_walls=num_walls_extended)
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs for each path loss model xxxxxxxxxxxxx

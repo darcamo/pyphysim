@@ -8,6 +8,7 @@ code.
 """
 
 import numpy as np
+
 from pyphysim.comm import waterfilling
 
 

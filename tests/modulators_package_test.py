@@ -13,6 +13,7 @@ import math
 import unittest
 
 import numpy as np
+
 from pyphysim.channels import fading, fading_generators
 from pyphysim.modulators import OFDM, fundamental, ofdm
 from pyphysim.util.misc import randn_c

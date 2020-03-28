@@ -12,6 +12,8 @@ import doctest
 import unittest
 
 import numpy as np
+from scipy.linalg import block_diag
+
 from pyphysim.channels import multiuser
 from pyphysim.comm import blockdiagonalization, waterfilling
 from pyphysim.modulators import fundamental
@@ -19,7 +21,6 @@ from pyphysim.subspace.projections import calcProjectionMatrix
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.util.misc import (calc_shannon_sum_capacity,
                                 calc_whitening_matrix, randn_c)
-from scipy.linalg import block_diag
 
 
 # UPDATE THIS CLASS if another module is added to the comm package
@@ -27,12 +28,11 @@ from scipy.linalg import block_diag
 class CommDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
-
-    def test_blockdiagonalization(self,):
+    def test_blockdiagonalization(self, ):
         """Run doctests in the blockdiagonalization module."""
         doctest.testmod(blockdiagonalization)
 
-    def test_waterfilling(self,):
+    def test_waterfilling(self, ):
         """Run doctests in the waterfilling module."""
         doctest.testmod(waterfilling)
 
@@ -44,7 +44,6 @@ class WaterfillingTestCase(unittest.TestCase):
     """Unittests for the waterfilling module.
 
     """
-
     def test_doWF(self):
         """
         - `vtChannels`: Numpy array with the channel POWER gains (power of the
@@ -94,7 +93,6 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
     module.
 
     """
-
     def setUp(self):
         """Called before each test."""
         self.Pu = 5.  # Power for each user
@@ -278,7 +276,8 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         tol = 1e-12  # Tolerance for the GreaterEqual test
         # Total power restriction
         total_power = num_users * Pu
-        self.assertGreaterEqual(total_power + tol, np.linalg.norm(Ms, 'fro')**2)
+        self.assertGreaterEqual(total_power + tol,
+                                np.linalg.norm(Ms, 'fro')**2)
 
         # accumulated number of receive antennas
         cum_Nt = np.cumsum(
@@ -332,7 +331,6 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 # TODO: finish implementation
 # noinspection PyMethodMayBeStatic
 class BDWithExtIntBaseTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -363,7 +361,6 @@ class BDWithExtIntBaseTestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class WhiteningBDTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -504,7 +501,6 @@ class WhiteningBDTestCase(unittest.TestCase):
 # TODO: finish implementation
 # noinspection PyMethodMayBeStatic
 class EnhancedBDTestCase(unittest.TestCase):
-
     def setUp(self):
         """Called before each test."""
         pass
@@ -548,7 +544,8 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Test setting the metric to capacity xxxxxxxxxxxxxxxxxxxxxxx
         enhancedBD_obj.set_ext_int_handling_metric('capacity')
-        self.assertEqual(enhancedBD_obj._metric_func, calc_shannon_sum_capacity)
+        self.assertEqual(enhancedBD_obj._metric_func,
+                         calc_shannon_sum_capacity)
         self.assertEqual(enhancedBD_obj.metric_name, "capacity")
         # metric_func_extra_args is an empty dictionary for the capacity
         # metric
@@ -720,8 +717,8 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Now with the Naive Stream Reduction xxxxxxxxxxxxxxxxxxxxxxx
         num_streams = 1
-        enhancedBD_obj.set_ext_int_handling_metric('naive',
-                                                   {'num_streams': num_streams})
+        enhancedBD_obj.set_ext_int_handling_metric(
+            'naive', {'num_streams': num_streams})
 
         (MsPk_naive_all, Wk_naive_all, Ns_naive_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
@@ -777,8 +774,8 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # Now let's test the fixed metric
         num_streams = 1
-        enhancedBD_obj.set_ext_int_handling_metric('fixed',
-                                                   {'num_streams': num_streams})
+        enhancedBD_obj.set_ext_int_handling_metric(
+            'fixed', {'num_streams': num_streams})
 
         (MsPk_fixed_all, Wk_fixed_all, Ns_fixed_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
@@ -843,18 +840,22 @@ class EnhancedBDTestCase(unittest.TestCase):
         self.assertAlmostEqual(iPu, np.linalg.norm(MsPk_cap_2, 'fro')**2)
 
         # Test if MsPk really block diagonalizes the channel
-        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_cap_1), 'fro'),
-                                  0)
-        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_cap_2), 'fro'), 0)
-        self.assertNotAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_cap_2), 'fro'),
-                                  0)
-        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'), 0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H1, MsPk_cap_1), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H1, MsPk_cap_2), 'fro'),
+                               0)
+        self.assertNotAlmostEqual(
+            np.linalg.norm(np.dot(H2, MsPk_cap_2), 'fro'), 0)
+        self.assertAlmostEqual(np.linalg.norm(np.dot(H2, MsPk_cap_1), 'fro'),
+                               0)
 
         sinrs2 = np.empty(K, dtype=np.ndarray)
         sinrs2[0] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H1, MsPk_cap_1), Wk_cap_all[0], noise_plus_int_cov_matrix[0])
+            np.dot(H1, MsPk_cap_1), Wk_cap_all[0],
+            noise_plus_int_cov_matrix[0])
         sinrs2[1] = blockdiagonalization.EnhancedBD._calc_linear_SINRs(
-            np.dot(H2, MsPk_cap_2), Wk_cap_all[1], noise_plus_int_cov_matrix[1])
+            np.dot(H2, MsPk_cap_2), Wk_cap_all[1],
+            noise_plus_int_cov_matrix[1])
 
         # Spectral efficiency
         # noinspection PyPep8
@@ -867,10 +868,11 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         # xxxxx Handling external interference xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Handling external interference using the effective_throughput metric
-        enhancedBD_obj.set_ext_int_handling_metric('effective_throughput', {
-            'modulator': psk_obj,
-            'packet_length': packet_length
-        })
+        enhancedBD_obj.set_ext_int_handling_metric(
+            'effective_throughput', {
+                'modulator': psk_obj,
+                'packet_length': packet_length
+            })
 
         (MsPk_effec_all, Wk_effec_all, Ns_effec_all) \
             = enhancedBD_obj.block_diagonalize_no_waterfilling(
