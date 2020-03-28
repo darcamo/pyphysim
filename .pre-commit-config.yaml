@@ -2,23 +2,23 @@
 # See https://pre-commit.com/hooks.html for more hooks
 exclude: ^ipython_notebooks/*
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.5.0
-    hooks:
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
-    - id: check-added-large-files
-    - id: check-case-conflict
-    - id: check-docstring-first
-      exclude: 'apps'
-    - id: check-executables-have-shebangs
-    - id: check-merge-conflict
-    - id: check-symlinks
-    - id: mixed-line-ending
-    - id: fix-encoding-pragma
-      args: ['--remove']
-    - id: check-toml
-    - id: debug-statements
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.5.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-added-large-files
+  - id: check-case-conflict
+  - id: check-docstring-first
+    exclude: 'apps'
+  - id: check-executables-have-shebangs
+  - id: check-merge-conflict
+  - id: check-symlinks
+  - id: mixed-line-ending
+  - id: fix-encoding-pragma
+    args: ['--remove']
+  - id: check-toml
+  - id: debug-statements
 
 # -   repo: https://github.com/pre-commit/mirrors-yapf
 #     rev: v0.29.0
@@ -33,3 +33,7 @@ repos:
 #   hooks:
 #   - id: python-import-sorter
 #     args: ['--silent-overwrite']
+- repo: https://github.com/darcamo/version_check_hook.git
+  rev: v1.0
+  hooks:
+  - id: version_check
