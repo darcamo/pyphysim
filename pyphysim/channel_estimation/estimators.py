@@ -4,8 +4,9 @@ Module with some simple channel estimation functions.
 Note: See also :mod:`reference_signals.channel_estimation`.
 """
 
-import numpy as np
 import math
+
+import numpy as np
 
 
 def compute_ls_estimation(Y_p: np.ndarray, s: np.ndarray) -> np.ndarray:

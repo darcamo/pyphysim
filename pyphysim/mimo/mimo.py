@@ -13,7 +13,6 @@ from abc import ABCMeta, abstractmethod
 from typing import Optional, cast
 
 import numpy as np
-
 from pyphysim.util.conversion import linear2dB
 from pyphysim.util.misc import gmd
 

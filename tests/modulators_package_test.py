@@ -8,14 +8,14 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
-import unittest
 import doctest
-import numpy as np
 import math
-from pyphysim.modulators import fundamental, ofdm
-from pyphysim.modulators import OFDM
-from pyphysim.util.misc import randn_c
+import unittest
+
+import numpy as np
 from pyphysim.channels import fading, fading_generators
+from pyphysim.modulators import OFDM, fundamental, ofdm
+from pyphysim.util.misc import randn_c
 
 
 # UPDATE THIS CLASS if another module is added to the comm package

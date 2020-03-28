@@ -5,9 +5,9 @@ awgn channel.
 """
 
 
+import numpy as np
 from apps.awgn_modulators.simulate_psk import VerySimplePskSimulationRunner
 from pyphysim.modulators import fundamental
-import numpy as np
 
 
 class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):

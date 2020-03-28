@@ -8,12 +8,12 @@ Each module has doctests for its functions and all we need to do is run all
 of them.
 """
 
-import unittest
 import doctest
-import numpy as np
 import json
+import unittest
 
-from pyphysim.util import misc, conversion, serialize
+import numpy as np
+from pyphysim.util import conversion, misc, serialize
 
 
 # noinspection PyMethodMayBeStatic

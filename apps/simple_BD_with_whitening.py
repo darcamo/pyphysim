@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """module docstring"""
 
-import numpy as np
 from time import time
 
-from pyphysim.util import conversion
+import numpy as np
+import pyphysim.channels.multiuser
 from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
-import pyphysim.channels.multiuser
+from pyphysim.util import conversion
 
 tic = time()
 

@@ -4,16 +4,16 @@ Simple script to simulate a CoMP transmission which consists of a
 simple block diagonalization of the channel.
 """
 
-import numpy as np
 from time import time
 
-from pyphysim.util import conversion, misc
-from pyphysim.simulations import progressbar
+import numpy as np
+import pyphysim.channels.multiuser
 from pyphysim.cell import cell
+from pyphysim.channels import pathloss
 from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
-from pyphysim.channels import pathloss
-import pyphysim.channels.multiuser
+from pyphysim.simulations import progressbar
+from pyphysim.util import conversion, misc
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

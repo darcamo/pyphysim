@@ -11,16 +11,18 @@ access points are considered.
 
 # xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
-from matplotlib import pyplot as plt
+from apps.metis_scenarios.simulate_metis_scenario import (
+    calc_num_walls, calc_room_positions_square, get_ap_positions,
+    plot_all_rooms)
 from matplotlib import gridspec
-# import matplotlib as mpl
-
-from apps.metis_scenarios.simulate_metis_scenario import \
-    calc_room_positions_square, get_ap_positions, calc_num_walls, plot_all_rooms
-from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
+from matplotlib import pyplot as plt
 from pyphysim.cell import shapes
 from pyphysim.channels import pathloss
 from pyphysim.channels.noise import calc_thermal_noise_power_dBm
+from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
+
+# import matplotlib as mpl
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

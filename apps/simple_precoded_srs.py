@@ -1,25 +1,24 @@
 #!/usr/bin/env python
 
 import math
-import numpy as np
-from matplotlib import pyplot as plt
-from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
-    get_extended_ZF
-from pyphysim.reference_signals.srs import get_srs_seq
-from pyphysim.channels.fading import COST259_TUx, TdlChannel
-from pyphysim.channels.fading_generators import JakesSampleGenerator
-from pyphysim.util.conversion import linear2dB
 
 # noinspection PyPackageRequirements
+import bokeh.models.widgets as bw
+# noinspection PyPackageRequirements
 import bokeh.plotting as bp
+import numpy as np
+# noinspection PyPackageRequirements
+from bokeh.io import gridplot
 # from bokeh.plotting import figure, output_server, show, ColumnDataSource, \
 # gridplot
 # noinspection PyPackageRequirements
 from bokeh.models import HoverTool
-# noinspection PyPackageRequirements
-import bokeh.models.widgets as bw
-# noinspection PyPackageRequirements
-from bokeh.io import gridplot
+from matplotlib import pyplot as plt
+from pyphysim.channels.fading import COST259_TUx, TdlChannel
+from pyphysim.channels.fading_generators import JakesSampleGenerator
+from pyphysim.reference_signals.srs import get_srs_seq
+from pyphysim.reference_signals.zadoffchu import calcBaseZC, get_extended_ZF
+from pyphysim.util.conversion import linear2dB
 
 # matplotlib.interactive(True)
 

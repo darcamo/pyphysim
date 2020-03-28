@@ -8,10 +8,10 @@ Each module has doctests for its functions and all we need to do is run all
 of them.
 """
 
-import unittest
 import doctest
-import numpy as np
+import unittest
 
+import numpy as np
 from pyphysim.extra.MATLAB import python2MATLAB
 
 

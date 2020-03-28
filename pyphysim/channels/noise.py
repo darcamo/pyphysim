@@ -2,7 +2,9 @@
 
 # pylint: disable=E1103
 from typing import cast
+
 import scipy.constants
+
 from ..util.conversion import linear2dBm
 
 

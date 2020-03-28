@@ -8,7 +8,8 @@ from argparse import ArgumentParser
 from time import time
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
-from pyphysim.simulations.progressbar import ProgressbarZMQClient, ProgressBarBase
+from pyphysim.simulations.progressbar import (ProgressBarBase,
+                                              ProgressbarZMQClient)
 
 from ..util.misc import pretty_time
 from .parameters import SimulationParameters

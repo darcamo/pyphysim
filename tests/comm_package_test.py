@@ -8,18 +8,18 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
-import unittest
 import doctest
-import numpy as np
-from scipy.linalg import block_diag
+import unittest
 
+import numpy as np
+from pyphysim.channels import multiuser
 from pyphysim.comm import blockdiagonalization, waterfilling
 from pyphysim.modulators import fundamental
-from pyphysim.channels import multiuser
-from pyphysim.util.misc import calc_whitening_matrix, randn_c, \
-    calc_shannon_sum_capacity
-from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.subspace.projections import calcProjectionMatrix
+from pyphysim.util.conversion import dB2Linear, linear2dB
+from pyphysim.util.misc import (calc_shannon_sum_capacity,
+                                calc_whitening_matrix, randn_c)
+from scipy.linalg import block_diag
 
 
 # UPDATE THIS CLASS if another module is added to the comm package

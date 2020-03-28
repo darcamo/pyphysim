@@ -32,7 +32,7 @@ import os
 import sys
 import time
 import warnings
-from typing import Any, Tuple, Optional, List, cast
+from typing import Any, List, Optional, Tuple, cast
 
 from IPython.display import display
 from ipywidgets import FloatProgress, HBox, Label

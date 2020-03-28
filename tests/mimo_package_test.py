@@ -8,16 +8,17 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
-import warnings
-import unittest
 import doctest
-import numpy as np
 import math
+import unittest
+import warnings
+
+import numpy as np
 from pyphysim import mimo
-from pyphysim.mimo.mimo import Blast, Alamouti, MRC, MRT, SVDMimo, GMDMimo, \
-    calc_post_processing_SINRs
-from pyphysim.util.misc import randn_c, gmd
+from pyphysim.mimo.mimo import (MRC, MRT, Alamouti, Blast, GMDMimo, SVDMimo,
+                                calc_post_processing_SINRs)
 from pyphysim.util.conversion import linear2dB
+from pyphysim.util.misc import gmd, randn_c
 
 
 # UPDATE THIS CLASS if another module is added to the comm package

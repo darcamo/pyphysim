@@ -9,11 +9,10 @@ subclass.
 """
 
 import numpy as np
-
-from pyphysim.simulations import *
 from pyphysim.modulators import fundamental
-from pyphysim.util.conversion import dB2Linear
+from pyphysim.simulations import *
 from pyphysim.util import misc
+from pyphysim.util.conversion import dB2Linear
 
 
 class VerySimplePskSimulationRunner(SimulationRunner):

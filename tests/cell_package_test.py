@@ -8,12 +8,12 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
+import doctest
 import math
 import unittest
-import doctest
-import numpy as np
 
-from pyphysim.cell import shapes, cell
+import numpy as np
+from pyphysim.cell import cell, shapes
 
 
 class ConcreteShape(shapes.Shape):

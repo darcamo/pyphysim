@@ -8,10 +8,10 @@ Each module has doctests for its functions and all we need to do is run all
 of them them.
 """
 
-import unittest
 import doctest
-import numpy as np
+import unittest
 
+import numpy as np
 from pyphysim.subspace import metrics, projections
 from pyphysim.util.misc import randn_c
 

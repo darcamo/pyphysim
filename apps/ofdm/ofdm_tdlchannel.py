@@ -2,11 +2,12 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from pyphysim.modulators import QPSK, OFDM
-from pyphysim.modulators.ofdm import OfdmOneTapEqualizer
-from pyphysim.channels.singleuser import SuChannel
-from pyphysim.channels.fading_generators import JakesSampleGenerator
 from pyphysim.channels.fading import COST259_TUx
+from pyphysim.channels.fading_generators import JakesSampleGenerator
+from pyphysim.channels.singleuser import SuChannel
+from pyphysim.modulators import OFDM, QPSK
+from pyphysim.modulators.ofdm import OfdmOneTapEqualizer
+
 """Simulate an OFDM transmission through a Tapped Delay Line channel. """
 
 if __name__ == '__main__':

@@ -8,17 +8,31 @@ Each module has doctests for its functions and all we need to do is run all
 of them.
 """
 
+import doctest
+import glob
+import json
 import os
 import sys
 import unittest
-import doctest
-import numpy as np
-import glob
-from time import sleep
+from copy import copy
 from io import StringIO
 from itertools import repeat
-from copy import copy
-import json
+from time import sleep
+
+import numpy as np
+from pyphysim.simulations import (configobjvalidation, parameters, progressbar,
+                                  results, runner, simulationhelpers)
+# noinspection PyProtectedMember
+from pyphysim.simulations.configobjvalidation import (
+    _parse_float_range_expr, integer_scalar_or_integer_numpy_array_check,
+    real_scalar_or_real_numpy_array_check)
+from pyphysim.simulations.parameters import (SimulationParameters,
+                                             combine_simulation_parameters)
+from pyphysim.simulations.results import (Result, SimulationResults,
+                                          combine_simulation_results)
+from pyphysim.simulations.runner import (SimulationRunner, SkipThisOne,
+                                         get_common_parser)
+from pyphysim.util import misc
 
 try:
     # noinspection PyUnresolvedReferences
@@ -37,19 +51,6 @@ try:  # pragma: nocover
 except ImportError:  # pragma: nocover
     _PANDAS_AVAILABLE = False
 
-from pyphysim.simulations import configobjvalidation, parameters, progressbar, \
-    results, runner, simulationhelpers
-from pyphysim.simulations.results import combine_simulation_results
-# noinspection PyProtectedMember
-from pyphysim.simulations.configobjvalidation import _parse_float_range_expr, \
-    real_scalar_or_real_numpy_array_check, \
-    integer_scalar_or_integer_numpy_array_check
-from pyphysim.simulations.parameters import SimulationParameters, \
-    combine_simulation_parameters
-from pyphysim.simulations.results import Result, SimulationResults
-from pyphysim.simulations.runner import SimulationRunner, SkipThisOne, \
-    get_common_parser
-from pyphysim.util import misc
 
 
 def delete_file_if_possible(filename):

@@ -8,25 +8,22 @@ Each module has several doctests that we run in addition to the unittests
 defined here.
 """
 
-import unittest
 import doctest
-import numpy as np
 import math
+import unittest
 
+import numpy as np
 import pyphysim.reference_signals
-from pyphysim.reference_signals.srs import SrsUeSequence
-from pyphysim.reference_signals.channel_estimation import \
-    CazacBasedChannelEstimator, CazacBasedWithOCCChannelEstimator
-from pyphysim.reference_signals.dmrs import DmrsUeSequence
-from pyphysim.reference_signals.zadoffchu import calcBaseZC, \
-    get_extended_ZF, get_shifted_root_seq
-from pyphysim.reference_signals.srs import get_srs_seq
-from pyphysim.reference_signals.dmrs import get_dmrs_seq
-from pyphysim.channels.fading import TdlChannel
-from pyphysim.channels.fading import COST259_TUx
+from pyphysim.channels.fading import COST259_TUx, TdlChannel
 from pyphysim.channels.fading_generators import JakesSampleGenerator
-from pyphysim.reference_signals.root_sequence import RootSequence
 from pyphysim.reference_signals import zadoffchu
+from pyphysim.reference_signals.channel_estimation import (
+    CazacBasedChannelEstimator, CazacBasedWithOCCChannelEstimator)
+from pyphysim.reference_signals.dmrs import DmrsUeSequence, get_dmrs_seq
+from pyphysim.reference_signals.root_sequence import RootSequence
+from pyphysim.reference_signals.srs import SrsUeSequence, get_srs_seq
+from pyphysim.reference_signals.zadoffchu import (calcBaseZC, get_extended_ZF,
+                                                  get_shifted_root_seq)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

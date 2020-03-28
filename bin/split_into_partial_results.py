@@ -4,14 +4,8 @@ Script that reads a SimulationResults file and save the corresponding
 partial results.
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-import os
-parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-sys.path.append(parent_dir)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 import argparse
+import os
 
 from pyphysim.simulations.results import SimulationResults
 from pyphysim.simulations.runner import get_partial_results_filename

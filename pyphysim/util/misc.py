@@ -5,9 +5,9 @@ module.
 """
 
 import math
-import numba
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
+import numba
 import numpy as np
 from scipy.special import erfc
 

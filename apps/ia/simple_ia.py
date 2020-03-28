@@ -3,12 +3,10 @@
 
 
 import numpy as np
-
-from pyphysim.util.conversion import dB2Linear, linear2dB
+import pyphysim.channels.multiuser
 from pyphysim.ia import algorithms
 from pyphysim.simulations.progressbar import ProgressbarText
-import pyphysim.channels.multiuser
-
+from pyphysim.util.conversion import dB2Linear, linear2dB
 
 # calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
 

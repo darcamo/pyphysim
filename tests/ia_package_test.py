@@ -14,18 +14,22 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle  # type: ignore
 
-import unittest
 import doctest
-import numpy as np
-from numpy.linalg import norm
+import unittest
 
-from pyphysim import channels
+import numpy as np
 import pyphysim.ia  # Import the package ia
-from pyphysim.ia.algorithms import AlternatingMinIASolver, IASolverBaseClass, \
-    MaxSinrIASolver, MinLeakageIASolver, ClosedFormIASolver, MMSEIASolver, \
-    IterativeIASolverBaseClass, GreedStreamIASolver, BruteForceStreamIASolver
-from pyphysim.util.misc import peig, leig, randn_c
+from numpy.linalg import norm
+from pyphysim import channels
+from pyphysim.ia.algorithms import (AlternatingMinIASolver,
+                                    BruteForceStreamIASolver,
+                                    ClosedFormIASolver, GreedStreamIASolver,
+                                    IASolverBaseClass,
+                                    IterativeIASolverBaseClass,
+                                    MaxSinrIASolver, MinLeakageIASolver,
+                                    MMSEIASolver)
 from pyphysim.util.conversion import linear2dB
+from pyphysim.util.misc import leig, peig, randn_c
 
 
 class CustomTestCase(unittest.TestCase):

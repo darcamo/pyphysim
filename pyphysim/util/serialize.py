@@ -4,8 +4,9 @@ Module containing function related to serialization.
 """
 
 import json
+from typing import Any, Dict, List, Union
+
 import numpy as np
-from typing import Union, Dict, Any, List
 
 Serializable = Union[np.ndarray, np.int32, np.int64, np.float32, np.
                      float64, np.float128, set]

@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 """Module to find good codebooks"""
 
-from configobj import ConfigObj
+import math
+import multiprocessing
 from itertools import combinations
 from optparse import OptionParser
 from time import time
-import math
-import multiprocessing
+
 import numpy as np
 import scipy.io
-
-from pyphysim.subspace.metrics import \
-    calc_chordal_distance_from_principal_angles, calc_principal_angles
-from pyphysim.simulations.progressbar import DummyProgressbar, \
-    ProgressbarMultiProcessServer
-
+from configobj import ConfigObj
+from pyphysim.simulations.progressbar import (DummyProgressbar,
+                                              ProgressbarMultiProcessServer)
+from pyphysim.subspace.metrics import (
+    calc_chordal_distance_from_principal_angles, calc_principal_angles)
 from pyphysim.util.misc import pretty_time
 
 

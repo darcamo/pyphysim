@@ -4,7 +4,9 @@ linear to dB, binary to gray code, as well as the inverse of them.
 """
 
 from typing import Optional, TypeVar
+
 import numpy as np
+
 from .misc import xor
 
 __all__ = [

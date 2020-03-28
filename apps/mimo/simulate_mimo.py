@@ -6,19 +6,17 @@ algorithms in the comm.mimo module.
 
 
 
-# xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from matplotlib import pyplot as plt
-import numpy as np
-from pprint import pprint
 from copy import copy
+from pprint import pprint
 
-from pyphysim.simulations import SimulationRunner, SimulationParameters, \
-    SimulationResults, Result
+import numpy as np
+from matplotlib import pyplot as plt
 from pyphysim.mimo import mimo
 from pyphysim.modulators import fundamental
-from pyphysim.util.conversion import dB2Linear, linear2dB
+from pyphysim.simulations import (Result, SimulationParameters,
+                                  SimulationResults, SimulationRunner)
 from pyphysim.util import misc
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+from pyphysim.util.conversion import dB2Linear, linear2dB
 
 
 class MIMOSimulationRunner(SimulationRunner):

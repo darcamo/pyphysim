@@ -4,17 +4,17 @@ Simple script to simulate a CoMP transmission with the possible stream
 reduction
 """
 
-import numpy as np
-from scipy import linalg as sp_linalg
 from time import time
 
-from pyphysim.util import conversion, misc
-from pyphysim.simulations import progressbar
+import numpy as np
+import pyphysim.channels.multiuser
 from pyphysim.cell import cell
+from pyphysim.channels import pathloss
 from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
-from pyphysim.channels import pathloss
-import pyphysim.channels.multiuser
+from pyphysim.simulations import progressbar
+from pyphysim.util import conversion, misc
+from scipy import linalg as sp_linalg
 
 tic = time()
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

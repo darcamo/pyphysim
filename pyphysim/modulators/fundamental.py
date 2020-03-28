@@ -21,7 +21,6 @@ import math
 from typing import Optional, TypeVar, Union
 
 import numpy as np
-
 from pyphysim.util.conversion import binary2gray, dB2Linear, gray2binary
 from pyphysim.util.misc import level2bits, qfunc
 

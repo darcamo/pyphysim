@@ -4,9 +4,8 @@
 # http://mail.scipy.org/pipermail/numpy-discussion/2011-November/059332.html
 
 from configobj import ConfigObj, flatten_errors
-from validate import Validator
-
 from pyphysim.simulations.configobjvalidation import real_numpy_array_check
+from validate import Validator
 
 if __name__ == '__main__':
     config_file_name = 'psk_simulation_config.txt'

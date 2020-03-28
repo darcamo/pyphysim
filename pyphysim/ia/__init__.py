@@ -8,4 +8,4 @@ the IA algorithm object. This includes generating the channel and setting
 the noise variance.
 """
 
-from . import iabase, algorithms
+from . import algorithms, iabase

@@ -4,11 +4,10 @@
 
 
 import numpy as np
-
-from pyphysim.ia import algorithms
-from pyphysim.util.conversion import dB2Linear
 from pyphysim.channels.multiuser import MultiUserChannelMatrix
+from pyphysim.ia import algorithms
 from pyphysim.modulators.fundamental import PSK
+from pyphysim.util.conversion import dB2Linear
 
 if __name__ == '__main__':
     K = 3

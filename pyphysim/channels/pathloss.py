@@ -28,7 +28,6 @@ from collections.abc import Iterable
 from typing import Any, Optional, TypeVar
 
 import numpy as np
-
 from pyphysim.util import conversion
 
 __all__ = [

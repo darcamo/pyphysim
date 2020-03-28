@@ -5,6 +5,9 @@ from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
 
+from ..util.conversion import dB2Linear, linear2dB
+from .fading_generators import JakesSampleGenerator, RayleighSampleGenerator
+
 try:
     import matplotlib.pyplot as plt
     # from mpl_toolkits.mplot3d import art3d
@@ -12,8 +15,6 @@ try:
 except ModuleNotFoundError:
     _MATPLOTLIB_AVAILABLE = False
 
-from ..util.conversion import dB2Linear, linear2dB
-from .fading_generators import JakesSampleGenerator, RayleighSampleGenerator
 
 Shape = Tuple[int, ...]
 

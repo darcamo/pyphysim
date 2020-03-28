@@ -3,11 +3,9 @@
 
 
 
-# xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-from pyphysim.simulations.results import SimulationResults
 import numpy as np
 from pyphysim.extra.pgfplotshelper import *
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+from pyphysim.simulations.results import SimulationResults
 
 # In Ipython run this script with
 #     run -i IA_Results_2x2(1).py

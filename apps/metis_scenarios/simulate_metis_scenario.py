@@ -7,20 +7,13 @@ project. Only one floor of one building is simulated and only the indoor
 access points are considered.
 """
 
-
-
-# xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import math
+
 import numpy as np
 from matplotlib import pyplot as plt
-# import matplotlib as mpl
-
-from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
-# from pyphysim.cell import shapes
 from pyphysim.channels import pathloss
 from pyphysim.channels.noise import calc_thermal_noise_power_dBm
-
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+from pyphysim.util.conversion import dB2Linear, dBm2Linear, linear2dB
 
 
 def calc_room_positions_square(side_length, num_rooms):

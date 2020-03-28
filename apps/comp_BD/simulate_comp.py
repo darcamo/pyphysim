@@ -14,17 +14,16 @@ _prepare_external_interference method.
 """
 
 import numpy as np
-from scipy.linalg import block_diag
-
-from pyphysim.simulations import SimulationRunner, \
-    SimulationResults, Result, SimulationParameters
-from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
-from pyphysim.util.conversion import dB2Linear, dBm2Linear
-from pyphysim.util import misc
 from pyphysim.cell import cell
-from pyphysim.modulators import fundamental
-from pyphysim.channels import pathloss, multiuser
+from pyphysim.channels import multiuser, pathloss
 from pyphysim.comm.blockdiagonalization import EnhancedBD, WhiteningBD
+from pyphysim.modulators import fundamental
+from pyphysim.simulations import (Result, SimulationParameters,
+                                  SimulationResults, SimulationRunner)
+from pyphysim.simulations.simulationhelpers import simulate_do_what_i_mean
+from pyphysim.util import misc
+from pyphysim.util.conversion import dB2Linear, dBm2Linear
+from scipy.linalg import block_diag
 
 
 class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902

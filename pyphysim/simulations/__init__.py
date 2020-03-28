@@ -17,7 +17,6 @@ classes defined in the :mod:`.simulations` module see the section
 :ref:`implementing_monte_carlo_simulations`.
 """
 
-# pylint: disable=W0614,W0401
 from .parameters import *
-from .runner import *
 from .results import *
+from .runner import *

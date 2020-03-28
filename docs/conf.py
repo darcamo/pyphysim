@@ -18,12 +18,14 @@
 #
 import os
 import sys
+
+# Import PyPhysim so that we can check the version
+import pyphysim
+
 parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
 sys.path.append(parent_dir)
 # sys.path.insert(0, os.path.abspath('.'))
 
-# Import PyPhysim so that we can check the version
-import pyphysim
 
 # -- General configuration ------------------------------------------------
 

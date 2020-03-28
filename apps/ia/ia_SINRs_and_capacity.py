@@ -8,17 +8,14 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
-from matplotlib import pyplot as plt
-
 import numpy as np
-
-from pandas import DataFrame
-
-from pyphysim.ia.algorithms import AlternatingMinIASolver, MaxSinrIASolver, \
-    MMSEIASolver
-from pyphysim.util.conversion import dB2Linear
-from pyphysim.simulations.progressbar import ProgressbarText
 import pyphysim.channels.multiuser
+from matplotlib import pyplot as plt
+from pandas import DataFrame
+from pyphysim.ia.algorithms import (AlternatingMinIASolver, MaxSinrIASolver,
+                                    MMSEIASolver)
+from pyphysim.simulations.progressbar import ProgressbarText
+from pyphysim.util.conversion import dB2Linear
 
 
 def calc_SINRs_and_capacity(solver):

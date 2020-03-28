@@ -18,7 +18,6 @@ from numbers import Number
 from typing import Iterable, List, Optional, Tuple, TypeVar, Union, cast
 
 import numpy as np
-
 from scipy.linalg import block_diag
 
 from ..util.conversion import single_matrix_to_matrix_of_matrices

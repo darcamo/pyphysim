@@ -33,6 +33,10 @@ repos:
 #   hooks:
 #   - id: python-import-sorter
 #     args: ['--silent-overwrite']
+- repo: https://github.com/timothycrosley/isort
+  rev: 4.3.21
+  hooks:
+    - id: isort
 - repo: https://github.com/darcamo/version_check_hook.git
   rev: v1.0
   hooks:
