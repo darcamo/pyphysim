@@ -1,16 +1,6 @@
 #!/usr/bin/env python
 """Module to find good codebooks"""
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-import os
-try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
-except NameError:
-    sys.path.append('../')
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 from configobj import ConfigObj
 from itertools import combinations
 from optparse import OptionParser

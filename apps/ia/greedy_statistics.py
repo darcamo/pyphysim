@@ -6,15 +6,7 @@ Script to read the result files created by the simulate_greedy_ia.py
 simulator and create a table with the stream statistics.
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-import os
-try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
-except NameError:
-    sys.path.append('../')
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 import itertools
 import numpy as np

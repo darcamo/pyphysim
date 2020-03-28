@@ -4,19 +4,6 @@ Simple script to simulate a CoMP transmission with the possible stream
 reduction
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-
-import os
-
-try:
-    pyphysim_dir = os.path.split(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))[0]
-except NameError:
-    pyphysim_dir = '../'
-sys.path.append(pyphysim_dir)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 import numpy as np
 from scipy import linalg as sp_linalg
 from time import time

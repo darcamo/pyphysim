@@ -7,16 +7,6 @@ the waterfilling algorithm, while the drawWF creates a file with this
 code.
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-import os
-try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    sys.path.append(parent_dir)
-except NameError:
-    sys.path.append('../')
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 import numpy as np
 from pyphysim.comm import waterfilling
 

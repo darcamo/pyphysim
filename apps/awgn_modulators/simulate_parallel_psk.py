@@ -8,20 +8,6 @@ example of the differences between both methods in a SimulationRunner
 subclass.
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-
-import os
-
-try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    grandparent_dir = os.path.split(parent_dir)[0]
-    sys.path.append(grandparent_dir)
-except NameError:
-    sys.path.append('../../')
-    parent_dir = './'
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 import numpy as np
 
 from pyphysim.simulations import *

@@ -13,19 +13,6 @@ The external interference is generated in the
 _prepare_external_interference method.
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-
-import os
-
-try:
-    pyphysim_dir = os.path.split(
-        os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))[0]
-except NameError:
-    pyphysim_dir = '../'
-sys.path.append(pyphysim_dir)
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 import numpy as np
 from scipy.linalg import block_diag
 

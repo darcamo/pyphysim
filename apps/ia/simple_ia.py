@@ -1,25 +1,14 @@
 #!/usr/bin/env python
 """module docstring"""
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
-import os
-try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    grandparent_dir = os.path.split(parent_dir)[0]
-    sys.path.append(grandparent_dir)
-except NameError:
-    sys.path.append('../../')
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# xxxxxxxxxx Import Statements xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 import numpy as np
 
 from pyphysim.util.conversion import dB2Linear, linear2dB
 from pyphysim.ia import algorithms
 from pyphysim.simulations.progressbar import ProgressbarText
 import pyphysim.channels.multiuser
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 
 # calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))
 

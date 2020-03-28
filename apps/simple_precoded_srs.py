@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-import sys
-
-sys.path.append('../')
-# from matplotlib import pyplot as plt
-
 import math
 import numpy as np
 from matplotlib import pyplot as plt

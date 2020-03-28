@@ -4,18 +4,7 @@ Perform the simulation of the transmission of QAM symbols through an
 awgn channel.
 """
 
-# xxxxxxxxxx Add the parent folder to the python path. xxxxxxxxxxxxxxxxxxxx
-import sys
 
-import os
-
-try:
-    parent_dir = os.path.split(os.path.abspath(os.path.dirname(__file__)))[0]
-    grandparent_dir = os.path.split(parent_dir)[0]
-    sys.path.append(grandparent_dir)
-except NameError:
-    sys.path.append('../../')
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 from apps.awgn_modulators.simulate_psk import VerySimplePskSimulationRunner
 from pyphysim.modulators import fundamental
