@@ -193,7 +193,7 @@ class BlastTestCase(unittest.TestCase):
         self.blast_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.blast_object.decode(received_data3)
-        np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
+        np.testing.assert_array_almost_equal(decoded_data3.round(5), data)
 
     def test_calc_post_processing_SINRs(self):
         Nr = 4
