@@ -130,7 +130,7 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Case with a single channel -> Y is 2D
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        num_pilots = 10
+        num_pilots = 100
         Nr = 3
         Nt = 1
         pilot_power = 1.5
@@ -159,8 +159,9 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
         Y_vec = np.reshape(Y, (Nr * num_pilots, 1), order="F")
         S = np.kron(s.T, np.eye(Nr))
         I_Nr = np.eye(Nr)
-        expected_h_mmse = (np.linalg.inv(noise_power * I_Nr + C) @ C
-                           @ S.T.conj()) @ Y_vec / np.linalg.norm(s)**2
+        expected_h_mmse = (
+            np.linalg.inv(noise_power * I_Nr + num_pilots * C) @ C
+            @ S.T.conj()) @ Y_vec / np.linalg.norm(s)**2 * num_pilots
 
         np.testing.assert_array_almost_equal(h_mmse, expected_h_mmse)
 
@@ -241,6 +242,87 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
             np.eye(Nr) +
             alpha**2 * pilot_power * num_pilots / noise_power * C))
         self.assertAlmostEqual(mse, expected_mse)
+
+    def test_compare_empirical_ls_MSE_with_theoretical(self):
+        num_pilots = 10
+        Nr = 3
+        Nt = 1
+        pilot_power = 1.5
+        noise_power = 0.5
+        alpha = 0.7
+
+        rep_max = 5000
+        mse_ls = 0.0
+        for i in range(rep_max):
+            # Pilot symbols. Dimension: Nt x num_pilots
+            s = generate_pilots(pilot_power=pilot_power,
+                                shape=(Nt, num_pilots))
+
+            # Noise vector. Dimension: Nr x num_pilots
+            N = generate_noise(noise_power, (Nr, num_pilots))
+
+            # Channel with path loss
+            h = generate_channel_no_correlation(alpha, Nr, Nt)
+
+            Y = h @ s + N
+
+            h_ls = compute_ls_estimation(Y, s)
+
+            mse_ls += (np.linalg.norm(h_ls - h) / alpha)**2
+
+        mse_ls /= rep_max
+        theoretical_mse_ls = compute_theoretical_ls_MSE(
+            Nr, noise_power, alpha, pilot_power, num_pilots)
+
+        relative_diff = abs(theoretical_mse_ls - mse_ls) / theoretical_mse_ls
+        # Check that the empirical and theoretical MSE are different by less then 3%
+        self.assertLess(relative_diff, 3e-2)
+
+    def test_compare_empirical_mmse_MSE_with_theoretical(self):
+        num_pilots = 10
+        Nr = 3
+        Nt = 1
+        pilot_power = 1.5
+        noise_power = 0.5
+        alpha = 0.7
+
+        rep_max = 5000
+        mse_mmse = 0.0
+        mse_mmse2 = 0.0
+        for i in range(rep_max):
+            # Pilot symbols. Dimension: Nt x num_pilots
+            s = generate_pilots(pilot_power=pilot_power,
+                                shape=(Nt, num_pilots))
+
+            # Noise vector. Dimention: Nr x num_pilots
+            N = generate_noise(noise_power, (Nr, num_pilots))
+
+            # Covariance matrix of the channel (correlation between receive
+            # antennas). Dimension: Nr x Nr
+            C = alpha**2 * np.eye(Nr)
+
+            # Channel matrix. Dimension: Nr x Nt
+            h = generate_channel_with_correlation(alpha, Nr, Nt, C)
+            assert (h.shape == (Nr, Nt))
+
+            Y = h * s + N
+
+            h_mmse = compute_mmse_estimation(Y, s, noise_power, C)
+
+            Y_vec = np.reshape(Y, (Nr * num_pilots, 1), order="F")
+            S = np.kron(s.T, np.eye(Nr))
+
+            mse_mmse += (np.linalg.norm(h_mmse - h))**2
+
+        mse_mmse /= rep_max
+        theoretical_mse_mmse = compute_theoretical_mmse_MSE(
+            Nr, noise_power, 1.0, pilot_power, num_pilots, C)
+
+        relative_diff = abs(theoretical_mse_mmse -
+                            mse_mmse) / theoretical_mse_mmse
+
+        # Check that the empirical and theoretical MSE are different by less then 3%
+        self.assertLess(relative_diff, 3e-2)
 
 
 if __name__ == '__main__':

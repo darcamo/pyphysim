@@ -17,6 +17,10 @@ def compute_ls_estimation(Y_p: np.ndarray, s: np.ndarray) -> np.ndarray:
     where the channel is assumed constant during the transmission of all the
     pilots.
 
+    The formula comes from the "Performance analysis of block and comb type
+    channel estimation for massive MIMO systems (Gábor Fodor at all) - 2014"
+    paper.
+
     Parameters
     ----------
     Y_p : np.ndarray
@@ -66,6 +70,10 @@ def compute_theoretical_ls_MSE(Nr: int, noise_power: float, alpha: float,
     where the channel is assumed constant during the transmission of all the
     pilots.
 
+    The formula comes from the "Performance analysis of block and comb type
+    channel estimation for massive MIMO systems (Gábor Fodor at all) - 2014"
+    paper.
+
     Parameters
     ----------
     Nr : int
@@ -93,6 +101,17 @@ def compute_mmse_estimation(Y_p: np.ndarray, s: np.ndarray, noise_power: float,
                             C: np.ndarray) -> np.ndarray:
     """
     Compute the channel estimation using the MMSE estimator.
+
+    The estimated channel is for a SIMO channel (multiple receive antennas)
+    where the channel is assumed constant during the transmission of all the
+    pilots.
+
+    Note: If there is path loss it should be accounted in the channel covariance
+    matrix.
+
+    The formula comes from the "Performance analysis of block and comb type
+    channel estimation for massive MIMO systems (Gábor Fodor at all) - 2014"
+    paper.
 
     Parameters
     ----------
@@ -124,8 +143,12 @@ def compute_mmse_estimation(Y_p: np.ndarray, s: np.ndarray, noise_power: float,
         S = np.kron(s.T, np.eye(Nr))
 
         I_Nr = np.eye(Nr)
-        return (np.linalg.inv(noise_power * I_Nr + C) @ C
-                @ S.T.conj()) @ Y_vec / (s @ s.T.conj())
+
+        pilot_power_times_num_pilots = s @ s.T.conj()
+
+        return (
+            np.linalg.inv(noise_power * I_Nr + num_pilots * C) @ C
+            @ S.T.conj()) @ Y_vec / pilot_power_times_num_pilots * num_pilots
 
     num_realizations, Nr, num_pilots = Y_p.shape
 
@@ -154,7 +177,15 @@ def compute_mmse_estimation(Y_p: np.ndarray, s: np.ndarray, noise_power: float,
 def compute_theoretical_mmse_MSE(Nr, noise_power, alpha, pilot_power,
                                  num_pilots, C):
     """
-    Compute the theorectical MSE for the MMSE channel estimator.
+    Compute the theoretical MSE for the MMSE channel estimator.
+
+    The estimated channel is for a SIMO channel (multiple receive antennas)
+    where the channel is assumed constant during the transmission of all the
+    pilots.
+
+    The formula comes from the "Performance analysis of block and comb type
+    channel estimation for massive MIMO systems (Gábor Fodor at all) - 2014"
+    paper.
 
     Parameters
     ----------
