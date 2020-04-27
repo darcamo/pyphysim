@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyphysim"
-version = "0.3"
+version = "0.4"
 description = "Implementation of a digital communication (physical layer) in python"
 authors = ["Darlan Cavalcante Moreira <darcamo@gmail.com>"]
 license = "GPL-2.0-or-later"
