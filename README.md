@@ -8,18 +8,34 @@ PyPhysim
 
 Simulation of Digital Communication (physical layer) in Python.
 
-This includes classes related to digital modulation, AWGN channels, MIMO,
-OFDM, etc.. It also includes classes related to multiuser transmission such
-as block diagonalization, interference alignment, etc.
+This includes classes related to digital modulation (M-QAM, M-PSK, etc), AWGN
+channel, Rayleigh and tapped delay line channel models, channel estimation,
+MIMO, OFDM, etc.. It also includes classes related to multiuser transmission,
+such as block diagonalization, interference alignment, etc., as well as classes
+representing access nodes and users for easily creating physical layer
+simulations.
 
 Furthermore, a framework for implementing Monte Carlo simulations is also
-implemented (see the pyphysim.simulations package).
+implemented (see the pyphysim.simulations package) to help with creating
+simulators that run many independent realizations and average the results.
 
 
-Note
-----
+Installation
+------------
 
-Install [poetry](https://python-poetry.org/), clone this repository and then use
-the command `poetry install` to install pyphysim.
+Pyphysim is available in [Pypi](https://pypi.org/project/pyphysim/) and can be
+installed with pip or similar tools. If you want to install from the git
+repository, then install [poetry](https://python-poetry.org/) first, clone the
+repository, and run the command `poetry install` from the cloned folder to
+install pyphysim and its dependencies in a virtual environment (created by
+poetry). After that, just use `poetry shell` to activate the environment and you
+should be able to import pyphysim from python started in that shell.
 
-You can also directly install it from pypi with `pip install pyphysim`.
+
+Examples
+========
+
+One of the simplest things that can be simulated is transmission through an AWGN
+channel using some digital modulation such as QPSK. This is illustrated in the
+[QPSK_transmission_with_AWGN_channel.ipynb](notebooks/QPSK_transmission_with_AWGN_channel.ipynb)
+notebook in the github repository.

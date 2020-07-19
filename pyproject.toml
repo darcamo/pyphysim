@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "pyphysim"
 version = "0.4"
-description = "Implementation of a digital communication (physical layer) in python"
+description = "Simulation of digital communication (physical layer) in python"
 authors = ["Darlan Cavalcante Moreira <darcamo@gmail.com>"]
 license = "GPL-2.0-or-later"
 readme = "README.md"
 repository = "https://github.com/darcamo/pyphysim"
-keywords = ["phy", "QAM", "PSK", "QPSK", "BPSK", "OFDM", "Modulation", "Monte Carlo"]
+keywords = ["physical layer", "QAM", "PSK", "QPSK", "BPSK", "OFDM", "Modulation", "Monte Carlo", "simulation", "MIMO", "Tapped Delay Line"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Telecommunications Industry",
@@ -20,32 +20,43 @@ include = ["LICENSE.md", "pyphysim/py.typed"]
 # build = 'build.py'
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.8"
 numpy = "*"
 scipy = "*"
 matplotlib = "*"
 configobj = "*"
-numba = "^0.48.0"
+numba = "*"
+
+# Required to run simulations in parallel
+ipyparallel = {version = "^6.3.0", optional = true}
+ipython = {version = "^7.16.1", optional = true}
+
+# Required to use the 'ipython' style for progressbar (only works inside a notebook)
+ipywidgets = {version = "^7.5.1", optional = true}
+
+# Required to use the `to_dataframe` method of SimulationResults
+pandas = {version = "^1.0.5", optional = true}
 
 [tool.poetry.dev-dependencies]
-ipyparallel = "*"
-ipython = "*"
-ipywidgets = "*"
-isort = "*"
-mypy = "*"
-nose = "*"
-pre-commit = "*"
-pylint = "*"
-sphinx = "*"
-sphinx_rtd_theme = "*"
-yapf = "*"
-coverage = "^5.0.3"
-coveralls = "^1.11.1"
+nose = "^1.3.7"
+mypy = "^0.782"
+pre-commit = "^2.6.0"
+pylint = "^2.5.3"
+sphinx = "^3.1.2"
+sphinx_rtd_theme = "^0.5.0"
+yapf = "^0.30.0"
+coverage = "^5.2"
+coveralls = "^2.1.1"
 pudb = "^2019.2"
-darglint = "^1.4.1"
+darglint = "^1.5.1"
+importmagic = "^0.1.7"
+jupyterlab = "^2.2.0"
+jupyterlab_code_formatter = "^1.3.5"
+jupyter-lsp = "^0.8.0"
 
 [build-system]
-requires = ["poetry>=0.12", "rtd-poetry"]
+# See https://github.com/chrahunt/rtd-poetry/issues/3
+requires = ["poetry>=1.0", "rtd-poetry-tmp"]
 build-backend = "rtd_poetry"
 # requires = ["poetry>=0.12"]
 # build-backend = "poetry.masonry.api"
