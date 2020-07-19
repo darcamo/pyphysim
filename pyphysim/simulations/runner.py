@@ -196,6 +196,13 @@ class SimulationRunner:
     method (as well as any of the optional methods). The complete procedure
     is described in the documentation of the :mod:`simulations` module.
 
+    Note: If a given run of `_run_simulation` cannot finish and save results for
+    some reason then you should raise a SkipThisOne exception. For instance if
+    your `_run_simulation` implementation inverts a matrix for some reason and
+    in rare cases the matrix you are trying to invert might be singular. You
+    might want too raise a SkipThisOne exception if that occurs to simple "try
+    again".
+
     The code below illustrates the minimum pseudo code to implement a
     subclass of :class:`SimulationRunner`.
 
@@ -277,7 +284,7 @@ class SimulationRunner:
 
             # This member variable will store all the parsed command line
             # arguments
-            self.command_line_args = parser.parse_args()
+            [self.command_line_args, _] = parser.parse_known_args()
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -331,7 +338,7 @@ class SimulationRunner:
         # - If it is None then no progressbar will be used
         # - If it is not None then a socket progressbar will be used, which
         #   employs the same style as 'text2'
-        self.update_progress_function_style: Optional[str] = 'text2'
+        self._update_progress_function_style: Optional[str] = 'text2'
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
         # progressbar will write the progress to a file with appropriated
@@ -393,6 +400,26 @@ class SimulationRunner:
         self.__tic = 0.0
         self.__toc = 0.0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    @property
+    def update_progress_function_style(self):
+        return self._update_progress_function_style
+
+    @update_progress_function_style.setter
+    def update_progress_function_style(self, value):
+        self._update_progress_function_style = value
+
+        if value == 'ipython':
+            try:
+                # Try to create a ProgressBarIPython to check that it is available
+                pbar = ProgressBarIPython(0)
+            except ModuleNotFoundError:
+                import warnings
+                warnings.warn(
+                    "You need to install IPython and ipywidgets to use the 'ipython' progressbar style"
+                )
+                # Fallback to 'text2' style
+                self._update_progress_function_style = 'text2'
 
     def set_results_filename(self, filename: Optional[str] = None) -> None:
         """
@@ -589,6 +616,7 @@ class SimulationRunner:
         # Number of iterations performed by simulation when it finished
         self._runned_reps = []
         self.results = SimulationResults()
+        self._pbar = None
 
     def __run_simulation_and_track_elapsed_time(
             self,
@@ -985,8 +1013,10 @@ class SimulationRunner:
             # NOTE: If the type of this exception is changed in the
             # future make sure it is not caught in the except block.
             if not current_params == current_sim_results.params:
-                err_msg = ("Partial results loaded from file does not match"
-                           " current parameters. \nfile: {0}")
+                err_msg = (
+                    "Partial results loaded from file does not match"
+                    " current parameters. \nfile: '{0}'\nDelete that file first to simulate with new configuration."
+                )
                 raise ValueError(err_msg.format(partial_results_filename))
 
             # The current_rep will be set to the value or run
@@ -1077,8 +1107,8 @@ class SimulationRunner:
         return current_rep, current_sim_results, partial_results_filename
 
     def _simulate_for_current_params_serial(
-        self, current_params: SimulationParameters,
-        var_print_iter: Iterator[int]
+            self, current_params: SimulationParameters,
+            var_print_iter: Iterator[int]
     ) -> Tuple[int, SimulationResults, str]:
         """
         Simulate (serial) for the current parameters.
@@ -1226,6 +1256,10 @@ class SimulationRunner:
         --------
         simulate_in_parallel
         """
+        # Reset the SimulationRunner (only really meaningful in case the
+        # simulate method is called more than once)
+        self.clear()
+
         if param_variation_index is not None:  # pragma: no cover
             # Maybe even though param_variation_index is a valid integer it
             # was passed as a string. Let's try to convert whatever we have
@@ -1369,6 +1403,10 @@ class SimulationRunner:
         result files won't be automatically deleted after the simulation is
         finished.
         """
+        # Reset the SimulationRunner (only really meaningful in case the
+        # simulate method is called more than once)
+        self.clear()
+
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.__tic = time()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

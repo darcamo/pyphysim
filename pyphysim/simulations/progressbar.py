@@ -34,10 +34,14 @@ import time
 import warnings
 from typing import Any, List, Optional, Tuple, cast
 
-from IPython.display import display
-from ipywidgets import FloatProgress, HBox, Label
-
 from ..util.misc import pretty_time
+
+try:
+    from IPython.display import display
+    from ipywidgets import FloatProgress, HBox, Label
+    _IPYTHON_AVAILABLE = True
+except:
+    _IPYTHON_AVAILABLE = False
 
 try:
     # noinspection PyUnresolvedReferences
@@ -1010,6 +1014,11 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
             A message to display on the right side of the progressbar. This
             is rendered as Latex and thus can contain math.
         """
+        if not _IPYTHON_AVAILABLE:
+            raise ModuleNotFoundError(
+                'To use ProgressBarIPython please install IPython and ipywidgets'
+            )
+
         super(ProgressBarIPython, self).__init__(finalcount)
 
         # IPython already provide us a nice widget to represent
