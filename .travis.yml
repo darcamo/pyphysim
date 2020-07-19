@@ -1,6 +1,6 @@
 language: python
 python:
-- 3.6
+- 3.8
 # env:
 #   global:
 #   - secure: "<encrypted MYPYPI_USER=username>"
