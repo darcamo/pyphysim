@@ -1563,6 +1563,10 @@ class SimulationResults(JsonSerializable):
             The SimulationResults object loaded from the file `filename`.
         """
         ext = os.path.splitext(filename)[-1]
+        if ext == '':
+            filename = '{0}.pickle'.format(filename)
+            ext = '.pickle'
+
         ext_to_load_func_mapping = {
             '.pickle': SimulationResults._load_from_pickle_file,
             '.json': SimulationResults._load_from_json_file
