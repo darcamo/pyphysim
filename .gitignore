@@ -68,6 +68,7 @@ docs/Mathjax/*
 # ipython notebook server in the ipython_notebooks/ folder and change one
 # of the notebooks there.
 ipython_notebooks/.ipynb_checkpoints
+.virtual_documents
 
 # Emacs related
 flycheck*

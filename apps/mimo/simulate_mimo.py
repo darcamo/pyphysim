@@ -22,9 +22,7 @@ class MIMOSimulationRunner(SimulationRunner):
     """
     Base class for the MIMO simulation runners.
 
-    Most of the code in the simulation runners for the different MIMO
-    schemes is common to all schemes and thus is here in the
-    MIMOSimulationRunner class.
+    Most of the code in the all different MIMO schemes simulators is the same.
 
     Parameters
     ----------
@@ -144,12 +142,12 @@ class MIMOSimulationRunner(SimulationRunner):
 
         return simResults
 
-    # def _keep_going(self, current_params, simulation_results, current_rep):
-    #     accumulated_bit_errors \
-    #         = simulation_results['bit_errors'][-1].get_result()
+    def _keep_going(self, current_params, simulation_results, current_rep):
+        accumulated_bit_errors \
+            = simulation_results['bit_errors'][-1].get_result()
 
-    #     max_bit_errors = current_params['max_bit_errors']
-    #     return accumulated_bit_errors < max_bit_errors
+        max_bit_errors = current_params['max_bit_errors']
+        return accumulated_bit_errors < max_bit_errors
 
 
 class AlamoutiSimulationRunner(MIMOSimulationRunner):
@@ -176,7 +174,7 @@ class AlamoutiSimulationRunner(MIMOSimulationRunner):
         Nt=integer(min=2,max=2,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
-        max_bit_errors=integer(min=1, default=3000)
+        max_bit_errors=integer(min=1, default=5000)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
@@ -212,7 +210,7 @@ class BlastSimulationRunner(MIMOSimulationRunner):
         Nr=integer(min=1,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
-        max_bit_errors=integer(min=1, default=3000)
+        max_bit_errors=integer(min=1, default=5000)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
@@ -248,7 +246,7 @@ class MRCSimulationRunner(MIMOSimulationRunner):
         Nr=integer(min=1,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
-        max_bit_errors=integer(min=1, default=3000)
+        max_bit_errors=integer(min=1, default=5000)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
@@ -284,7 +282,7 @@ class MRTSimulationRunner(MIMOSimulationRunner):
         Nr=integer(min=1,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
-        max_bit_errors=integer(min=1, default=3000)
+        max_bit_errors=integer(min=1, default=5000)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
@@ -320,7 +318,7 @@ class SVDMimoSimulationRunner(MIMOSimulationRunner):
         Nr=integer(min=1,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
-        max_bit_errors=integer(min=1, default=3000)
+        max_bit_errors=integer(min=1, default=5000)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
@@ -356,7 +354,7 @@ class GMDMimoSimulationRunner(MIMOSimulationRunner):
         Nr=integer(min=1,default=2)
         [General]
         rep_max=integer(min=1, default=5000)
-        max_bit_errors=integer(min=1, default=3000)
+        max_bit_errors=integer(min=1, default=5000)
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
