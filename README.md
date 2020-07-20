@@ -37,5 +37,5 @@ Examples
 
 One of the simplest things that can be simulated is transmission through an AWGN
 channel using some digital modulation such as QPSK. This is illustrated in the
-[QPSK_transmission_with_AWGN_channel.ipynb](notebooks/QPSK_transmission_with_AWGN_channel.ipynb)
+[QPSK_transmission_with_AWGN_channel.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/QPSK_transmission_with_AWGN_channel.ipynb)
 notebook in the github repository.
