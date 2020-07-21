@@ -880,6 +880,7 @@ class SimulationRunner:
                     message=message,
                     sleep_time=sleep_time,
                     filename=filename,
+                    style=self.update_progress_function_style,
                     **self.progressbar_extra_args)
 
             # Note that this will be an object of the ProgressbarZMQClient

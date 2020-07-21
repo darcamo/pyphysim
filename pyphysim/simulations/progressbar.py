@@ -1121,12 +1121,16 @@ class ProgressbarDistributedServerBase:
         sys.stdout. If it is not None then the progress will be output
         to a file with name `filename`. This is usually useful for
         debugging and testing purposes.
+    style : str
+        The progressbar style. It controls which progressbar is used to display
+        progress. It can be either 'text1', 'text2', 'text3', or 'ipython'
     """
     def __init__(self,
                  progresschar: str = '*',
                  message: str = '',
                  sleep_time: float = 1.0,
-                 filename: Optional[str] = None):
+                 filename: Optional[str] = None,
+                 style="text2"):
         """
         Initializes the ProgressbarDistributedServerBase object.
 
@@ -1143,6 +1147,10 @@ class ProgressbarDistributedServerBase:
             sys.stdout. If it is not None then the progress will be output
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
+        style : str
+            The progressbar style. It controls which progressbar is used to
+            display progress. It can be either 'text1', 'text2', 'text3', or
+            'ipython'
         """
         self._progresschar = progresschar
         self._message = message
@@ -1154,6 +1162,8 @@ class ProgressbarDistributedServerBase:
 
         self._manager = multiprocessing.Manager()
         self._client_data_list: List[Any] = self._manager.list()  # pylint: disable=E1101
+
+        self._style = style
 
         # total_final_count will be updated each time the register_*
         # function is called.
@@ -1282,6 +1292,25 @@ class ProgressbarDistributedServerBase:
         self._client_data_list.append(0)
         return client_id
 
+    # Only called inside `_update_progress`
+    def __cretae_inner_progressbar(self, output):
+        if self._style == 'text1':
+            return ProgressbarText(self.total_final_count,
+                                   self._progresschar,
+                                   self._message,
+                                   output=output)
+        if self._style == 'text3':
+            return ProgressbarText3(self.total_final_count,
+                                    self._progresschar,
+                                    self._message,
+                                    output=output)
+
+        # Default style
+        return ProgressbarText2(self.total_final_count,
+                                self._progresschar,
+                                self._message,
+                                output=output)
+
     # This method will be run in a different process. Because of this the
     # coverage program does not see that this method in run in the test code
     # even though we know it is run (otherwise no output would
@@ -1315,10 +1344,12 @@ class ProgressbarDistributedServerBase:
         else:
             output = open(filename, 'w')
 
-        pbar = ProgressbarText2(self.total_final_count,
-                                self._progresschar,
-                                self._message,
-                                output=output)
+        # pbar = ProgressbarText2(self.total_final_count,
+        #                         self._progresschar,
+        #                         self._message,
+        #                         output=output)
+        pbar = self.__cretae_inner_progressbar(output)
+
         count = 0
         while count < self.total_final_count and self.running.is_set():
             time.sleep(self._sleep_time)
@@ -1556,7 +1587,8 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
                  progresschar: str = '*',
                  message: str = '',
                  sleep_time: float = 1.0,
-                 filename: Optional[str] = None) -> None:
+                 filename: Optional[str] = None,
+                 style: str = "text2") -> None:
         """
         Initializes the ProgressbarMultiProcessServer object.
 
@@ -1575,7 +1607,7 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
             debugging and testing purposes.
         """
         ProgressbarDistributedServerBase.__init__(self, progresschar, message,
-                                                  sleep_time, filename)
+                                                  sleep_time, filename, style)
 
     def _update_client_data_list(self) -> None:
         """
@@ -1703,9 +1735,10 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
                  sleep_time: float = 1.0,
                  filename: Optional[str] = None,
                  ip: IPAddress = 'localhost',
-                 port: PortNumber = 7396) -> None:
+                 port: PortNumber = 7396,
+                 style: str = "text2") -> None:
         ProgressbarDistributedServerBase.__init__(self, progresschar, message,
-                                                  sleep_time, filename)
+                                                  sleep_time, filename, style)
 
         # Create a Multiprocessing namespace
         # pylint: disable=E1101
