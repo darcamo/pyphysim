@@ -3,7 +3,7 @@
 exclude: ^ipython_notebooks/*
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v2.5.0
+  rev: v3.1.0
   hooks:
   - id: trailing-whitespace
   - id: end-of-file-fixer
@@ -27,10 +27,10 @@ repos:
   rev: 598ff67cc598dddee43bc611d0bf4a07f4b08619
   hooks:
   - id: yapf-isort
-# - repo: https://github.com/darcamo/version_check_hook.git
-#   rev: v1.0
-#   hooks:
-#   - id: version_check
+- repo: https://github.com/darcamo/version_check_hook.git
+  rev: v1.1
+  hooks:
+  - id: version_check
 # # Currently darglint is slow and thus this might be commented out in the future
 # -   repo: https://github.com/terrencepreilly/darglint
 #     rev: master

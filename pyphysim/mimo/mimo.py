@@ -222,8 +222,8 @@ class MimoBase:
 
     @staticmethod
     def _calc_receive_filter(
-        channel: np.ndarray,
-        noise_var: Optional[float] = None
+            channel: np.ndarray,
+            noise_var: Optional[float] = None
     ) -> np.ndarray:  # pragma: nocover
         """
         Calculate the receive filter for the MIMO scheme, if there is any.
@@ -1094,8 +1094,8 @@ class Alamouti(MimoBase):
 
     @staticmethod
     def _calc_receive_filter(
-        channel: np.ndarray,
-        noise_var: Optional[float] = None
+            channel: np.ndarray,
+            noise_var: Optional[float] = None
     ) -> np.ndarray:  # pragma: nocover
         """
         Not defined.

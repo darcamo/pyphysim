@@ -97,7 +97,7 @@ def plot_true_and_estimated_channel_with_bokeh(true_channel,
 
 
 def plot_true_and_estimated_channel_with_bokeh_all_antennas(
-    true_channel, estimated_channel, title=''):
+        true_channel, estimated_channel, title=''):
     p0 = plot_true_and_estimated_channel_with_bokeh(true_channel,
                                                     estimated_channel,
                                                     'Antenna 1', 0)

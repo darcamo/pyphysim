@@ -260,8 +260,8 @@ def simulate_for_a_given_ap_assoc(pl: np.ndarray, ap_assoc: np.ndarray,
 
 
 def perform_simulation_SINR_heatmap(
-    scenario_params,  # pylint: disable=R0914
-    power_params):
+        scenario_params,  # pylint: disable=R0914
+        power_params):
     """
     Perform the simulation.
 

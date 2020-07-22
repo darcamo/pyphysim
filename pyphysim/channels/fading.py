@@ -652,7 +652,7 @@ class TdlImpulseResponse:
 
     @staticmethod
     def concatenate_samples(
-        impulse_responses: List["TdlImpulseResponse"]
+            impulse_responses: List["TdlImpulseResponse"]
     ) -> "TdlImpulseResponse":
         """
         Concatenate multiple TdlImpulseResponse objects and return the new

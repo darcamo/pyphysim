@@ -105,9 +105,9 @@ def simulate_for_a_given_ap_assoc(pl_plus_wl_tx_aps, ap_assoc,
 
 
 def perform_simulation(
-    scenario_params,  # pylint: disable=R0914
-    power_params,
-    plot_results_bool=True):
+        scenario_params,  # pylint: disable=R0914
+        power_params,
+        plot_results_bool=True):
     """
     Run the simulation.
 

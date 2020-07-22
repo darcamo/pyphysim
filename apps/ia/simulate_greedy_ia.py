@@ -255,8 +255,8 @@ class IASimulationRunner(SimulationRunner):
         cluster0.delete_all_users()
 
     def _run_simulation(
-        self,  # pylint: disable=R0914,R0915
-        current_parameters):
+            self,  # pylint: disable=R0914,R0915
+            current_parameters):
         # xxxxxxxxxx Prepare the scenario for this iteration. xxxxxxxxxxxxx
         # This will create user in random positions and calculate pathloss
         # (if the scenario includes it). After that, it will generate

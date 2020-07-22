@@ -88,12 +88,12 @@ class CustomTestCase(unittest.TestCase):
                             pickle.HIGHEST_PROTOCOL)
 
     def _maybe_load_state_and_randomize_channel(  # pragma: no cover
-        self,
-        filename,
-        iasolver=None,
-        Nr=None,
-        Nt=None,
-        K=None):
+            self,
+            filename,
+            iasolver=None,
+            Nr=None,
+            Nt=None,
+            K=None):
         """
         Load the state of a previous test fail, if the saved file exists.
 

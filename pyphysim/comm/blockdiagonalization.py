@@ -15,6 +15,7 @@ from typing import (Any, Callable, Dict, Iterable, List, Optional, Tuple,
                     Union, cast)
 
 import numpy as np
+
 from scipy.linalg import block_diag
 
 from ..channels.multiuser import MultiUserChannelMatrixExtInt
@@ -885,9 +886,9 @@ class EnhancedBD(BDWithExtIntBase):
         self._metric_func_extra_args: MetricExtraArgs = {}
 
     def set_ext_int_handling_metric(
-        self,
-        metric: Optional[str],
-        metric_func_extra_args_dict: Optional[MetricExtraArgs] = None
+            self,
+            metric: Optional[str],
+            metric_func_extra_args_dict: Optional[MetricExtraArgs] = None
     ) -> None:
         """
         Set the metric used to decide how many streams to sacrifice for

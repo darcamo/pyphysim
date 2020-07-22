@@ -92,8 +92,8 @@ class IASimulationRunner(SimulationRunner):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def _run_simulation(
-        self,  # pylint: disable=R0914,R0915
-        current_parameters):
+            self,  # pylint: disable=R0914,R0915
+            current_parameters):
         # xxxxx Input parameters (set in the constructor) xxxxxxxxxxxxxxxxx
         M = self.modulator.M
         NSymbs = current_parameters["NSymbs"]
