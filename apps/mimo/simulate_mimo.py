@@ -4,6 +4,7 @@ Module containing simulation runners for the several MIMO schemes
 algorithms in the comm.mimo module.
 """
 
+import os
 from copy import copy
 from pprint import pprint
 
@@ -279,7 +280,7 @@ class MRTSimulationRunner(MIMOSimulationRunner):
         modulator=option('QPSK', 'PSK', 'QAM', 'BPSK', default="QAM")
         NSymbs=integer(min=10, max=1000000, default=200)
         Nt=integer(min=2,default=2)
-        Nr=integer(min=1,default=2)
+        Nr=integer(min=1, max=1,default=1)
         [General]
         rep_max=integer(min=1, default=5000)
         max_bit_errors=integer(min=1, default=5000)
@@ -403,6 +404,7 @@ def simulate_general(runner, results_filename):
         # parallel
         from ipyparallel import Client
         cl = Client()
+        cl[:].use_cloudpickle()
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
 
@@ -414,7 +416,7 @@ def simulate_general(runner, results_filename):
         # We use block=True to ensure that all engines have modified their
         # path to include the folder with the simulator before we create
         # the load lanced view in the following.
-        dview.execute('sys.path.append("{0}")'.format(parent_dir), block=True)
+        dview.execute('sys.path.append("{0}")'.format(os.getcwd()), block=True)
 
         # But for the actual simulation we are better using a load balanced
         # view

@@ -27,7 +27,7 @@ repos:
   rev: 598ff67cc598dddee43bc611d0bf4a07f4b08619
   hooks:
   - id: yapf-isort
-- repo: /home/darlan/git_files/version_check_hook
+- repo: https://github.com/darcamo/version_check_hook.git
   rev: v1.2
   hooks:
   - id: version_check
