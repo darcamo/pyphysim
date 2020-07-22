@@ -7,6 +7,8 @@ This module is not intended to be used directly. The functions defined here
 are used in the other modules in the :mod:`pyphysim.simulations` package.
 """
 
+from typing import Any, Callable, List, Optional, Union
+
 import numpy as np
 import validate
 
@@ -16,7 +18,9 @@ __all__ = [
 ]
 
 
-def _parse_range_expr(value, converter=float):
+def _parse_range_expr(
+        value: str,
+        converter: Callable[[str], Union[int, float]] = float) -> np.ndarray:
     """
     Parse a string in the form of min:max or min:step:max and return a
     numpy array.
@@ -34,8 +38,8 @@ def _parse_range_expr(value, converter=float):
         The parsed numpy array.
     """
     try:
-        limits = value.split(':')
-        limits = [converter(i) for i in limits]
+        limits: Union[List[int], List[float]]
+        limits = [converter(i) for i in value.split(':')]
         if len(limits) == 2:
             value = np.arange(limits[0], limits[1])
         elif len(limits) == 3:
@@ -46,7 +50,7 @@ def _parse_range_expr(value, converter=float):
     return value
 
 
-def _parse_float_range_expr(value):
+def _parse_float_range_expr(value: str) -> np.ndarray:
     """
     Parse a string in the form of min:max or min:step:max and return a
     numpy array (of floats).
@@ -64,7 +68,7 @@ def _parse_float_range_expr(value):
     return _parse_range_expr(value, float)
 
 
-def _parse_int_range_expr(value):
+def _parse_int_range_expr(value: str) -> np.ndarray:
     """
     Parse a string in the form of min:max or min:step:max and return a
     numpy array (of integers).
@@ -84,7 +88,9 @@ def _parse_int_range_expr(value):
 
 # pylint: disable= W0622
 # noinspection PyShadowingBuiltins
-def real_numpy_array_check(value, min=None, max=None):
+def real_numpy_array_check(value: str,
+                           min: Optional[int] = None,
+                           max: Optional[int] = None):
     """
     Parse and validate `value` as a numpy array (of floats).
 
@@ -109,7 +115,7 @@ def real_numpy_array_check(value, min=None, max=None):
 
     Returns
     -------
-    np.ndarray
+    List[float]
         The parsed numpy array.
 
     Notes
@@ -128,6 +134,7 @@ def real_numpy_array_check(value, min=None, max=None):
             value = value[1:-1].strip()
             value = value.replace(',', ' ')  # Replace commas with spaces
             value = value.split()  # Split based on spaces
+            # Notice that at this point value is a list of strings
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # Test if it is a list or not
@@ -164,12 +171,12 @@ def real_numpy_array_check(value, min=None, max=None):
             raise validate.VdtValueTooBigError(out.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    return out
+    return out.tolist()
 
 
 # pylint: disable= W0622
 # noinspection PyShadowingBuiltins
-def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
+def real_scalar_or_real_numpy_array_check(value: str, min=None, max=None):
     """
     Parse and validate `value` as a float number if possible and, if not,
     parse it as a numpy array (of floats).
@@ -198,7 +205,7 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
 
     Returns
     -------
-    np.ndarray
+    float | List[float]
         The parsed numpy array.
 
     Notes
@@ -216,11 +223,16 @@ def real_scalar_or_real_numpy_array_check(value, min=None, max=None):
     except validate.VdtTypeError:
         value = real_numpy_array_check(value, min, max)
 
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+
     return value
 
 
 # noinspection PyShadowingBuiltins
-def integer_numpy_array_check(value, min=None, max=None):
+def integer_numpy_array_check(value: str,
+                              min: Optional[int] = None,
+                              max: Optional[int] = None) -> List[int]:
     """
     Parse and validate `value` as a numpy array (of integers).
 
@@ -245,7 +257,7 @@ def integer_numpy_array_check(value, min=None, max=None):
 
     Returns
     -------
-    np.ndarray
+    List[int]
         The parsed numpy array.
 
     Notes
@@ -301,11 +313,14 @@ def integer_numpy_array_check(value, min=None, max=None):
             raise validate.VdtValueTooBigError(out.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    return out
+    return out.tolist()
 
 
 # noinspection PyShadowingBuiltins
-def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
+def integer_scalar_or_integer_numpy_array_check(
+        value: str,
+        min: Optional[int] = None,
+        max: Optional[int] = None) -> Union[int, List[int]]:
     """
     Parse and validate `value` as an integer number if possible and,
     if not, parse it as a numpy array (of integers).
@@ -334,7 +349,7 @@ def integer_scalar_or_integer_numpy_array_check(value, min=None, max=None):
 
     Returns
     -------
-    int | np.ndarray
+    int | List[int]
         The parsed numpy array.
 
     Notes

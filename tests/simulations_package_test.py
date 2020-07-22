@@ -202,7 +202,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
                                                              min=0,
                                                              max=30)
         expected_parsed_array = np.array([0., 6., 17.])
-        self.assertTrue(parsed_array.dtype is np.dtype('float'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
@@ -213,7 +213,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
                                                              min=0,
                                                              max=30)
         expected_parsed_array = np.array([0., 5., 10., 11., 12., 13., 14.])
-        self.assertTrue(parsed_array.dtype is np.dtype('float'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
@@ -222,7 +222,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
                                                              min=0,
                                                              max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
-        self.assertTrue(parsed_array.dtype is np.dtype('float'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
@@ -231,7 +231,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
                                                              min=0,
                                                              max=30)
         expected_parsed_array = np.array([10., 11., 12., 13., 14.])
-        self.assertTrue(parsed_array.dtype is np.dtype('float'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
@@ -241,7 +241,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
                                                              max=30)
         expected_parsed_array = np.array(
             [0., 5., 10., 11., 12., 13., 14., 20.])
-        self.assertTrue(parsed_array.dtype is np.dtype('float'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('float'))
         np.testing.assert_array_almost_equal(parsed_array,
                                              expected_parsed_array)
 
@@ -299,28 +299,28 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         parsed_array = integer_scalar_or_integer_numpy_array_check(
             array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14])
-        self.assertTrue(parsed_array.dtype is np.dtype('int'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "10:15"
         parsed_array = integer_scalar_or_integer_numpy_array_check(
             array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
-        self.assertTrue(parsed_array.dtype is np.dtype('int'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "[10:15]"
         parsed_array = integer_scalar_or_integer_numpy_array_check(
             array_string, min=0, max=30)
         expected_parsed_array = np.array([10, 11, 12, 13, 14])
-        self.assertTrue(parsed_array.dtype is np.dtype('int'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         array_string = "[0,5,10:15,20]"
         parsed_array = integer_scalar_or_integer_numpy_array_check(
             array_string, min=0, max=30)
         expected_parsed_array = np.array([0, 5, 10, 11, 12, 13, 14, 20])
-        self.assertTrue(parsed_array.dtype is np.dtype('int'))
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('int'))
         np.testing.assert_array_equal(parsed_array, expected_parsed_array)
 
         # xxxxx Test validation against the minimum allowed value xxxxxxxxx
