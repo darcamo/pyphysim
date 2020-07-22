@@ -35,7 +35,14 @@ should be able to import pyphysim from python started in that shell.
 Examples
 ========
 
-One of the simplest things that can be simulated is transmission through an AWGN
-channel using some digital modulation such as QPSK. This is illustrated in the
-[QPSK_transmission_with_AWGN_channel.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/QPSK_transmission_with_AWGN_channel.ipynb)
-notebook in the github repository.
+There are a few notebooks in the
+[notebooks](https://github.com/darcamo/pyphysim/tree/master/notebooks) folder in
+the GitHub repository. A list of some of the notebooks with a small description
+is shown below for quick access.
+
+- [Transmission_with_AWGN_channel.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/Transmission_with_AWGN_channel.ipynb):
+  Illustrates the use of digital modulation to transmit through an AWGN channel
+  and the usage of classes that help creating Monte Carlo simulations
+- [Transmission_with_Rayleigh_and_AWGN_channels.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/Transmission_with_Rayleigh_and_AWGN_channels.ipynb): Extends the previous notebook to transmission through a Rayleigh channel and discuss running simulation
+- [TDL_and_OFDM.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/TDL_and_OFDM.ipynb): Simulation of transmission through a frequency selective channel that varies in time using OFDM
+- [PathLoss classes.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/PathLoss_classes.ipynb): Illustrate some path loss classes
