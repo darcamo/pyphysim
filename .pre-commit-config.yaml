@@ -27,8 +27,8 @@ repos:
   rev: 598ff67cc598dddee43bc611d0bf4a07f4b08619
   hooks:
   - id: yapf-isort
-- repo: https://github.com/darcamo/version_check_hook.git
-  rev: v1.1
+- repo: /home/darlan/git_files/version_check_hook
+  rev: v1.2
   hooks:
   - id: version_check
 # # Currently darglint is slow and thus this might be commented out in the future
