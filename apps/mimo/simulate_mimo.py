@@ -38,12 +38,10 @@ class MIMOSimulationRunner(SimulationRunner):
                  config_filename,
                  spec,
                  read_command_line_args=True):
-        SimulationRunner.__init__(
-            self, read_command_line_args=read_command_line_args)
-
-        # Read the simulation configuration from the file. What is read and
-        self.params = SimulationParameters.load_from_config_file(
-            config_filename, spec, save_parsed_file=True)
+        super().__init__(default_config_file=config_filename,
+                         config_spec=spec,
+                         read_command_line_args=read_command_line_args,
+                         save_parsed_file=True)
 
         # Set the max_bit_errors and rep_max attributes
         self.max_bit_errors = self.params['max_bit_errors']

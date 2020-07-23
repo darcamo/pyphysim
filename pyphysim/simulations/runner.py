@@ -4,6 +4,7 @@
 import itertools
 import os
 import sys
+import warnings
 from argparse import ArgumentParser
 from time import time
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
@@ -139,9 +140,9 @@ def get_partial_results_filename(
     return partial_results_filename
 
 
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxx Exception xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx Exception xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SkipThisOne(Exception):
     """
     Exception that can be raised in the `_run_simulation` method to skip
@@ -177,6 +178,541 @@ class SkipThisOne(Exception):
             String representation of the object.
         """
         return "SkipThisOne: {0}".format(self.msg)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SimulationTracking xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SimulationTracking:
+    """
+    Class in charge of tracking simulation progress.
+
+    This class handles progressbar updating and elapsed time tracking. It is
+    only used by the SimulationRunner class.
+
+    Since SimulationRunner may perform a simulation either serially or in
+    parallel and this changes which information is printed. Therefore the
+    SimulationRunner class must call either the `set_serial_tracking` or
+    `set_parallel_tracking` method once to indicate to the SimulationTracking
+    object which type will be used.
+    """
+    def __init__(self):
+        # This variable will be used later to store the progressbar object
+        # when it is created in the _get_update_progress_function method
+        self._pbar: Optional[Union[ProgressBarBase,
+                                   ProgressbarZMQServer]] = None
+
+        # xxxxxxxxxx update_progress_function_style xxxxxxxxxxxxxxxxxxxxxxx
+        # --- When the simulation is performed Serially -------------------
+        # Sets the style of the used progressbar. The allowed values are
+        # 'text1', 'text2', None, or a callable object.
+        # - If it is 'text1' then the ProgressbarText class will be used.
+        # - If it is 'text2' then the ProgressbarText2 class will be used.
+        # - If it is None, then no progressbar will be used.
+        # - If it is a callable, then that callable object must receive two
+        #   arguments, the rep_max and the message values, and return a
+        #   function that receives a single argument (the custom
+        #   parameters).
+        # --- When the simulation is performed in parallel ----------------
+        # - If it is None then no progressbar will be used
+        # - If it is not None then a socket progressbar will be used, which
+        #   employs the same style as 'text2'
+        self._update_progress_function_style: Optional[str] = 'text2'
+
+        # This can be either 'screen' or 'file'. If it is 'file' then the
+        # progressbar will write the progress to a file with appropriated
+        # filename
+        self._progress_output_type = 'screen'
+
+        # Dictionary with extra arguments that will be passed to the
+        # __init__ method of the progressbar class. For instance, when
+        # simulating in parallel and update_progress_function_style is not
+        # None a progressbar based on ZMQ sockets will be used. Set
+        # progressbar_extra_args to "{'port':3456}" in order for the
+        # progressbar to use port 3456.
+        self.progressbar_extra_args: Dict[str, Any] = {}
+
+        # Additional message printed in the progressbar. The message can
+        # contain "{SomeParameterName}" which will be replaced with the
+        # parameter value.
+        #
+        # Note that if the update_progress_function_style is None, then no
+        # message will be printed either.
+        self.progressbar_message = 'Progress'
+
+        # xxxxx Interval variables for tracking simulation time xxxxxxxxxxx
+        # Note that self._elapsed_time is different from the 'elapsed_time'
+        # result returned after the simulation has finished. This variable
+        # only tracks the CURRENT SIMULATION and does not account the time
+        # any loaded partial results required to be simulated.
+        self._elapsed_time = 0.0
+        self.__tic = 0.0
+        self.__toc = 0.0
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Iterator to print the current variation xxxxxxxxxxxxxxxxxxx
+        # This is only used for serial simulations, since for parallel
+        # simulations several different variations are computed at the same time
+        #
+        # The first time the next_variation method is called this iterator will
+        # be created
+        self._var_print_iter = None
+        # This will be updated with the number of variations in the first
+        # time the next_variation method is called
+        self._num_variations = 0
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Used when progress output type is set to 'file'
+        self.results_base_filename = "simulation"
+
+    # This method is called when the SimulationTracking class is pickled
+    def __getstate__(self):  # pragma: no cover
+        # We will pickle everything as default, except for the "_pbar"
+        # member variable that will not be pickled. The reason is that
+        # it may be a ProgressbarZMQServer object, which cannot be
+        # pickled (uses ZMQ sockets).
+        state = dict(self.__dict__)
+        del state['_pbar']
+        return state
+
+    @property
+    def progress_output_type(self):
+        return self._progress_output_type
+
+    @progress_output_type.setter
+    def progress_output_type(self, value):
+        if (value != 'screen') and (value != 'file'):
+            raise RuntimeError(
+                "progress_output_type can be either 'screen' or 'file'")
+        self._progress_output_type = value
+
+    def set_serial_tracking(self, num_variations, param_variation_index):
+        self._var_print_iter = self.get_print_variation_iterator(
+            num_variations, start=param_variation_index)
+        self._num_variations = num_variations
+
+    def set_parallel_tracking(self, num_variations):
+        self._num_variations = num_variations
+
+    def clear(self):
+        self._elapsed_time = 0.0
+        self.__tic = 0.0
+        self.__toc = 0.0
+        self._pbar = None
+        self._var_print_iter = None
+        self._num_variations = 0
+
+    def tic(self):
+        self.__tic = time()
+
+    def toc(self):
+        self.__toc = time()
+        self._elapsed_time = self.__toc - self.__tic
+
+    @property
+    def update_progress_function_style(self):
+        return self._update_progress_function_style
+
+    @update_progress_function_style.setter
+    def update_progress_function_style(self, value):
+        self._update_progress_function_style = value
+
+        if value == 'ipython':
+            try:
+                # Try to create a ProgressBarIPython to check that it is available
+                pbar = ProgressBarIPython(0)
+            except ModuleNotFoundError:
+                import warnings
+                warnings.warn(
+                    "You need to install IPython and ipywidgets to use the 'ipython' progressbar style"
+                )
+                # Fallback to 'text2' style
+                self._update_progress_function_style = 'text2'
+
+    def start_progress_updater(self):
+        """
+        Start the updating of the (parallel) progressbar
+        """
+        if self._pbar is not None:
+            self._pbar.start_updater()
+
+    def stop_progress_updater(self):
+        """
+        Stop the updating of the (parallel) progressbar
+        """
+        if self.update_progress_function_style is not None:
+            # pragma: no cover
+            self._pbar.stop_updater()
+
+    @property
+    def elapsed_time(self) -> str:
+        """
+        Get the simulation elapsed time. Do not set this value.
+
+        Returns
+        -------
+        float
+            The elapsed time.
+        """
+        return pretty_time(self._elapsed_time)
+
+    def _get_progress_output_sink(
+            self,
+            param_variation_index: Union[int, str]) -> Any:  # pragma: no cover
+        """
+        Get the output sink for the progressbars.
+
+        If 'self.progress_output_type' is equal to 'screen' this method
+        will simple return sys.stdout.
+
+        Parameters
+        ----------
+        param_variation_index : int | str
+            Int or a string that can be converted to int. If this is
+            provided and 'self.progress_output_type' is 'file',
+            this will be used in the filename of the progress output file.
+
+        Returns
+        -------
+        out : sys.stdout or a file object
+        """
+        out = sys.stdout
+        if self.progress_output_type == 'screen':
+            pass
+        else:
+            total_unpacks = self._num_variations
+            num_digits = len(str(total_unpacks))
+            unpack_index_str = str(param_variation_index).zfill(num_digits)
+            filename = '{0}_progress_{1}_of_{2}.txt'.format(
+                self.results_base_filename, unpack_index_str, total_unpacks)
+            out = open(filename, 'w')
+
+        return out
+
+    def get_serial_update_progress_function(
+        self, current_params: SimulationParameters
+    ) -> UpdateFunction:  # pragma: no cover
+        """
+        Return a function that should be called to update the
+        progressbar for the simulation of the current parameters.
+
+        Note that something similar to
+        "------------- Current Variation: 4/84 ------------"
+        will be printed to indicate the current variation.
+
+        This method is only called in the 'simulate' method when simulations are
+         performed serially.
+
+        The returned function accepts a single argument, corresponding to
+        the number of iterations executed so far.
+
+        The style of the progressbar used to get the returned function depend on
+        the value of the self.update_progress_function_style attribute.
+
+        Parameters
+        ----------
+        current_params : SimulationParameters
+            The current combination of simulation parameters. This should
+            be used to perform any replacement in the
+            self.progressbar_message string that will be written in the
+            progressbar. Note that string replacement will also work in
+            self.progressbar_message for a 'rep_max' field.
+
+        Returns
+        -------
+        func : (int) -> []
+            A function that accepts a single integer argument and can be
+            called to update the progressbar.
+
+        Notes
+        -----
+        The equivalent of this method which is used in the
+        simulate_in_parallel method if the
+        get_parallel_update_progress_function method.
+        """
+        rep_max = current_params.parameters['rep_max']
+
+        # (maybe) Print the current variation. This is something like
+        # ------------- Current Variation: 4/84 ------------
+        self.next_variation()
+
+        # If the progressbar_message has any string replacements in the
+        # form {some_param} where 'some_param' is a parameter in
+        # current_params then it will be replaced by the current value of
+        # 'some_param'.
+        message = self.progressbar_message.format(**current_params.parameters)
+
+        # By default, the returned function is a dummy function that does
+        # nothing
+        def update_progress_func(_: int) -> None:
+            pass
+
+        if self.update_progress_function_style is None:
+            return update_progress_func
+
+        # If self.progress_output_type is equal to 'screen', this will be
+        # sys.stdout, otherwise it will be a file object. Note that
+        # self.progress_output_type is used when
+        # self.update_progress_function_style is either 'text1' or 'text2'.
+        output_progress_sink = self._get_progress_output_sink(
+            current_params.unpack_index)
+
+        # If the self.update_progress_function_style attribute matches one
+        # of the available styles, then update_progress_func will be
+        # appropriately set.
+        if self.update_progress_function_style == 'text1':  # pragma: no cover
+            # We will use the ProgressbarText class
+            # noinspection PyArgumentList
+            self._pbar = ProgressbarText(rep_max,
+                                         '*',
+                                         message,
+                                         output=output_progress_sink,
+                                         **self.progressbar_extra_args)
+            update_progress_func = self._pbar
+            self._pbar.delete_progress_file_after_completion = True
+        elif self.update_progress_function_style == 'text2':
+            # We will use the ProgressbarText2 class
+            # noinspection PyArgumentList
+            self._pbar = ProgressbarText2(rep_max,
+                                          '*',
+                                          message,
+                                          output=output_progress_sink,
+                                          **self.progressbar_extra_args)
+            update_progress_func = self._pbar
+            self._pbar.delete_progress_file_after_completion = True
+        elif self.update_progress_function_style == 'ipython':
+            self._pbar = ProgressBarIPython(rep_max, message)
+            update_progress_func = self._pbar
+
+        elif callable(self.update_progress_function_style) is True:
+            # We will use a custom function to update the progress. Note
+            # that we call self.update_progress_function_style to return
+            # the actual function that will be used to update the
+            # progress. That is, the function stored in
+            # self.update_progress_function_style should basically do what
+            # _get_update_progress_function is supposed to do.
+
+            # pylint: disable=E1102
+            # noinspection PyCallingNonCallable
+            update_progress_func = self.update_progress_function_style(
+                rep_max, self.progressbar_message)  # pragma: no cover
+
+        return update_progress_func
+
+    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def get_parallel_update_progress_functions(
+        self, simulation_parameters: SimulationParameters
+    ) -> List[ProgressbarZMQClient]:
+        """
+        Return a list of functions (actually, function objects) that should
+        be called to update the progress accounting each parameter variation
+
+        This method is only called in the 'simulate_in_parallel' method of the
+        SimulationRunner class.
+
+        Each function in the list  accepts a single argument, corresponding to
+        the number of iterations executed so far for that particular parameter
+        variation.
+
+        Notes
+        -----
+        While the `get_serial_update_progress_function` method receives the
+        "current parameters" this `get_parallel_update_progress_functions`
+        receives the full parameters. The reason for this is that when the
+        simulation is performed in parallel multiple process (for different
+        parameters) will update the same progressbar. Therefore, it does
+        not make sense to perform replacements in the progressbar message
+        based on current parameters, but on the full parameters instead.
+        """
+        num_variations = simulation_parameters.get_num_unpacked_variations()
+
+        # xxxxxxxxxx Create the server progressbar xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        if self.update_progress_function_style is not None:
+            parameters = simulation_parameters.parameters
+            # If the progressbar_message has any string replacements
+            #  in the form {some_param} where 'some_param' is a
+            # parameter in 'full_params' then it will be replaced by
+            #  the value of 'some_param'.
+            message = self.progressbar_message.format(**parameters)
+
+            sleep_time = 1.0
+            if self.progress_output_type == 'screen':
+                filename = None
+            else:
+                # Lets update the progress every 30 seconds
+                sleep_time = 30.0
+                filename = '{0}_progress.txt'.format(
+                    self.results_base_filename)
+
+            self._pbar = ProgressbarZMQServer(
+                message=message,
+                sleep_time=sleep_time,
+                filename=filename,
+                style=self.update_progress_function_style,
+                **self.progressbar_extra_args)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
+
+        # Create the proxy progressbars
+        update_progress_functions = []
+        for _ in range(num_variations):
+            update_progress_functions.append(
+                self._get_parallel_update_progress_function(
+                    simulation_parameters))
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        return update_progress_functions
+
+    def _get_parallel_update_progress_function(
+        self, simulation_parameters: SimulationParameters
+    ) -> ProgressbarZMQClient:  # pragma: no cover
+        """
+        Return a function that should be called to update the
+        progressbar for the simulation of the current parameters.
+
+        This method is only called in the 'simulate_in_parallel' method.
+
+        The returned function accepts a single argument, corresponding to
+        the number of iterations executed so far.
+
+        Returns
+        -------
+        list[int,int]
+            List with the proxybar client_id, ip and port.
+        """
+        def update_progress_func(_: int) -> None:
+            pass
+
+        if self.update_progress_function_style is None:
+            return update_progress_func
+
+        parameters = simulation_parameters.parameters
+        rep_max = parameters["rep_max"]
+        # Note that this will be an object of the ProgressbarZMQClient
+        # class, but it behaves like a function.
+        # assert(isinstance(self._pbar, ProgressbarZMQServer))
+        proxybar = \
+            self._pbar.register_client_and_get_proxy_progressbar(
+                rep_max)
+
+        return proxybar
+
+    def get_print_variation_iterator(
+            self,
+            num_variations: int,
+            start: Optional[int] = 0) -> Iterator[int]:
+        """
+        Returns an iterator that prints the current variation each time
+        it's "next" method is called.
+
+        Create the var_print_iter Iterator Each time the 'next' method of
+        var_print_iter is called it will print something like
+
+        ------------- Current Variation: 4/84 ------------
+
+        which means the variation 4 of 84 variations.
+
+        Parameters
+        ----------
+        num_variations : int
+            The number of different variations.
+        start : int (default is 1)
+            The index of the first variation.
+
+        Returns
+        -------
+        iterator
+            An iterator that can be called to print the current variation.
+        """
+        if start is None:
+            start = 0
+
+        if (self.update_progress_function_style is None
+                or self.progress_output_type != 'screen'
+                or self.update_progress_function_style == 'ipython'):
+            for _ in itertools.repeat(''):
+                yield 0
+        else:  # pragma: no cover
+            variation_pbar = ProgressbarText3(num_variations,
+                                              progresschar='-',
+                                              message="Current Variation:")
+
+            for i in range(start, num_variations):
+                variation_pbar.progress(i + 1)
+                print()  # print a new line
+                yield i
+
+    def next_variation(self):
+        if self._var_print_iter is None:
+            warnings.warn(
+                "The `next_variation` method was called without `set_serial_tracking` method have been called before"
+            )
+        #     self._var_print_iter =
+        else:
+            next(self._var_print_iter)
+
+
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxx SimulationConfigurator xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+class SimulationConfigurator:
+    """
+    Class in charge of simulation configuration.
+
+    It will read parameters from file, as well as from the command line.
+
+    The `params` attribute has all simulation parameters.
+    """
+    def __init__(self,
+                 default_config_file: Optional[str] = None,
+                 config_spec: Optional[str] = None,
+                 read_command_line_args: bool = True,
+                 save_parsed_file: bool = False):
+        self._config_filename = None
+        # Configobj specification (to validate parameters read from the
+        # config file)
+        self._configobj_spec = config_spec
+
+        # xxxxx Parse command line arguments (get config filename) xxxxxxxx
+        if read_command_line_args is True:  # pragma: no cover
+            # Note that the get_common_parser always return the same object
+            parser = get_common_parser()
+
+            # This member variable will store all the parsed command line
+            # arguments
+            [self.command_line_args, _] = parser.parse_known_args()
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            # Get the config filename if it was provided in the command
+            # line. If not, use the default value.
+            if self.command_line_args.config is None:
+                self._config_filename = default_config_file
+            else:  # pragma: no cover
+                self._config_filename = self.command_line_args.config
+            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        else:  # pragma: no cover
+            # Since we are not parsing command line arguments, the config
+            # file will be the provided default_config_file
+            self._config_filename = default_config_file
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
+        if self._config_filename is None:
+            self.params = SimulationParameters()
+        else:  # pragma: no cover
+            if not os.path.isfile(self._config_filename):
+                # If the config file does not exist, we will save the file
+                # no matter the value of save_parsed_file
+                save_parsed_file = True
+
+            # Read the simulation configuration from the file. What is read and
+            self.params = SimulationParameters.load_from_config_file(
+                self._config_filename,
+                self._configobj_spec,
+                save_parsed_file=save_parsed_file)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -269,94 +805,17 @@ class SimulationRunner:
         # Number of iterations performed by simulation when it finished
         self._runned_reps: List[int] = []
 
-        self._config_filename = None
-        # Configobj specification (to validate parameters read from the
-        # config file)
-        self._configobj_spec = config_spec
-
-        # xxxxx Parse command line arguments (get config filename) xxxxxxxx
-        if read_command_line_args is True:  # pragma: no cover
-            # Note that the get_common_parser always return the same object
-            parser = get_common_parser()
-
-            # This member variable will store all the parsed command line
-            # arguments
-            [self.command_line_args, _] = parser.parse_known_args()
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            # Get the config filename if it was provided in the command
-            # line. If not, use the default value.
-            if self.command_line_args.config is None:
-                self._config_filename = default_config_file
-            else:  # pragma: no cover
-                self._config_filename = self.command_line_args.config
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        else:  # pragma: no cover
-            # Since we are not parsing command line arguments, the config
-            # file will be the provided default_config_file
-            self._config_filename = default_config_file
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxx Read the parameters from the config file xxxxxxxxxxxxx
-        if self._config_filename is None:
-            self.params = SimulationParameters()
-        else:  # pragma: no cover
-            if not os.path.isfile(self._config_filename):
-                # If the config file does not exist, we will save the file
-                # no matter the value of save_parsed_file
-                save_parsed_file = True
-
-            self.params = SimulationParameters.load_from_config_file(
-                self._config_filename,
-                self._configobj_spec,
-                save_parsed_file=save_parsed_file)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # The simulation configurator handles reading parameters from a config
+        # file as well as from the command line. In the end, what we will use
+        # from it is its "params" attribute.
+        self._simulation_configurator = SimulationConfigurator(
+            default_config_file, config_spec, read_command_line_args,
+            save_parsed_file)
 
         self.results = SimulationResults()
 
-        # This variable will be used later to store the progressbar object
-        # when it is created in the _get_update_progress_function method
-        self._pbar: Optional[ProgressBarBase] = None
-
-        # xxxxxxxxxx update_progress_function_style xxxxxxxxxxxxxxxxxxxxxxx
-        # --- When the simulation is performed Serially -------------------
-        # Sets the style of the used progressbar. The allowed values are
-        # 'text1', 'text2', None, or a callable object.
-        # - If it is 'text1' then the ProgressbarText class will be used.
-        # - If it is 'text2' then the ProgressbarText2 class will be used.
-        # - If it is None, then no progressbar will be used.
-        # - If it is a callable, then that callable object must receive two
-        #   arguments, the rep_max and the message values, and return a
-        #   function that receives a single argument (the custom
-        #   parameters).
-        # --- When the simulation is performed in parallel ----------------
-        # - If it is None then no progressbar will be used
-        # - If it is not None then a socket progressbar will be used, which
-        #   employs the same style as 'text2'
-        self._update_progress_function_style: Optional[str] = 'text2'
-
-        # This can be either 'screen' or 'file'. If it is 'file' then the
-        # progressbar will write the progress to a file with appropriated
-        # filename
-        self.progress_output_type = 'screen'
-
-        # Dictionary with extra arguments that will be passed to the
-        # __init__ method of the progressbar class. For instance, when
-        # simulating in parallel and update_progress_function_style is not
-        # None a progressbar based on ZMQ sockets will be used. Set
-        # progressbar_extra_args to "{'port':3456}" in order for the
-        # progressbar to use port 3456.
-        self.progressbar_extra_args: Dict[str, Any] = {}
-
-        # Additional message printed in the progressbar. The message can
-        # contain "{SomeParameterName}" which will be replaced with the
-        # parameter value.
-        #
-        # Note that if the update_progress_function_style is None, then no
-        # message will be printed either.
-        self.progressbar_message = 'Progress'
+        # Handle the progressbar and elapsed time tracking
+        self._simulation_tracking = SimulationTracking()
 
         # This variable will be used to store the AsyncMapResult object
         # that will be created in the simulate_in_parallel method. This
@@ -388,36 +847,27 @@ class SimulationRunner:
         self._results_base_filename_unpack_list: List[str] = []
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Interval variables for tracking simulation time xxxxxxxxxxx
-        # Note that self._elapsed_time is different from the 'elapsed_time'
-        # result returned after the simulation has finished. This variable
-        # only tracks the CURRENT SIMULATION and does not account the time
-        # any loaded partial results required to be simulated.
-        self._elapsed_time = 0.0
-        self.__tic = 0.0
-        self.__toc = 0.0
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    @property
+    def params(self):
+        return self._simulation_configurator.params
 
     @property
     def update_progress_function_style(self):
-        return self._update_progress_function_style
+        return self._simulation_tracking.update_progress_function_style
 
     @update_progress_function_style.setter
     def update_progress_function_style(self, value):
-        self._update_progress_function_style = value
+        self._simulation_tracking.update_progress_function_style = value
 
-        if value == 'ipython':
-            try:
-                # Try to create a ProgressBarIPython to check that it is available
-                pbar = ProgressBarIPython(0)
-            except ModuleNotFoundError:
-                import warnings
-                warnings.warn(
-                    "You need to install IPython and ipywidgets to use the 'ipython' progressbar style"
-                )
-                # Fallback to 'text2' style
-                self._update_progress_function_style = 'text2'
+    @property
+    def progressbar_message(self):
+        return self._simulation_tracking.progressbar_message
 
+    @progressbar_message.setter
+    def progressbar_message(self, value):
+        self._simulation_tracking.progressbar_message = value
+
+    # TODO: Change this to set property of results_filename
     def set_results_filename(self, filename: Optional[str] = None) -> None:
         """
         Set the name of the file where the simulation results will be
@@ -446,6 +896,7 @@ class SimulationRunner:
             automatically stored.
         """
         self._results_base_filename = filename
+        self._simulation_tracking.results_base_filename = self.results_base_filename
 
     @property
     def results_base_filename(self) -> Optional[str]:
@@ -458,12 +909,11 @@ class SimulationRunner:
             The result base filename.
         """
         if self._results_base_filename is None:
-            filename = None
-        else:
-            # noinspection PyTypeChecker
-            filename = self.results.get_filename_with_replaced_params(
-                self._results_base_filename)
-        return filename
+            return None
+
+        # noinspection PyTypeChecker
+        return self.results.get_filename_with_replaced_params(
+            self._results_base_filename)
 
     @property
     def results_filename(self) -> Optional[str]:
@@ -487,38 +937,15 @@ class SimulationRunner:
 
         return results_filename
 
-    def _get_progress_output_sink(
-            self,
-            param_variation_index: Union[int, str]) -> Any:  # pragma: no cover
-        """
-        Get the output sink for the progressbars.
+    @property
+    def progress_output_type(self):
+        return self._simulation_tracking.progress_output_type
 
-        If 'self.progress_output_type' is equal to 'screen' this method
-        will simple return sys.stdout.
-
-        Parameters
-        ----------
-        param_variation_index : int | str
-            Int or a string that can be converted to int. If this is
-            provided and 'self.progress_output_type' is 'file',
-            this will be used in the filename of the progress output file.
-
-        Returns
-        -------
-        out : sys.stdout or a file object
-        """
-        out = sys.stdout
-        if self.progress_output_type == 'screen':
-            pass
-        else:
-            total_unpacks = self.params.get_num_unpacked_variations()
-            num_digits = len(str(total_unpacks))
-            unpack_index_str = str(param_variation_index).zfill(num_digits)
-            filename = '{0}_progress_{1}_of_{2}.txt'.format(
-                self.results_base_filename, unpack_index_str, total_unpacks)
-            out = open(filename, 'w')
-
-        return out
+    @progress_output_type.setter
+    def progress_output_type(self, value):
+        """value can be either 'screen' of 'file'"""
+        self._simulation_tracking.progress_output_type = value
+        self._simulation_tracking.results_base_filename = self.results_base_filename
 
     def __delete_partial_results_maybe(self) -> None:
         """
@@ -609,11 +1036,10 @@ class SimulationRunner:
         will be kept.
 
         """
-        self._elapsed_time = 0.0
         # Number of iterations performed by simulation when it finished
         self._runned_reps = []
         self.results = SimulationResults()
-        self._pbar = None
+        self._simulation_tracking.clear()
 
     def __run_simulation_and_track_elapsed_time(
             self,
@@ -722,177 +1148,8 @@ class SimulationRunner:
         # maximum number of allowed iterations is reached.
         return True
 
-    def _get_serial_update_progress_function(
-        self, current_params: SimulationParameters
-    ) -> UpdateFunction:  # pragma: no cover
-        """
-        Return a function that should be called to update the
-        progressbar for the simulation of the current parameters.
-
-        This method is only called in the 'simulate' method.
-
-        The returned function accepts a single argument, corresponding to
-        the number of iterations executed so far.
-
-        The progressbar used to get the returned function depend on the
-        value of the self.update_progress_function_style attribute.
-
-        Parameters
-        ----------
-        current_params : SimulationParameters
-            The current combination of simulation parameters. This should
-            be used to perform any replacement in the
-            self.progressbar_message string that will be written in the
-            progressbar. Note that string replacement will also work in
-            self.progressbar_message for a 'rep_max' field.
-
-        Returns
-        -------
-        func : (int) -> []
-            A function that accepts a single integer argument and can be
-            called to update the progressbar.
-
-        Notes
-        -----
-        The equivalent of this method which is used in the
-        simulate_in_parallel method if the
-        _get_parallel_update_progress_function method.
-        """
-        if 'rep_max' not in current_params.parameters:
-            current_params.parameters['rep_max'] = self.rep_max
-
-        # If the progressbar_message has any string replacements in the
-        # form {some_param} where 'some_param' is a parameter in
-        # current_params then it will be replaced by the current value of
-        # 'some_param'.
-        message = self.progressbar_message.format(**current_params.parameters)
-
-        # By default, the returned function is a dummy function that does
-        # nothing
-        def update_progress_func(_: int) -> None:
-            pass
-
-        if self.update_progress_function_style is None:
-            return update_progress_func
-
-        # If self.progress_output_type is equal to 'screen', this will be
-        # sys.stdout, otherwise it will be a file object. Note that
-        # self.progress_output_type is used when
-        # self.update_progress_function_style is either 'text1' or 'text2'.
-        output_progress_sink = self._get_progress_output_sink(
-            current_params.unpack_index)
-
-        # If the self.update_progress_function_style attribute matches one
-        # of the available styles, then update_progress_func will be
-        # appropriately set.
-        if self.update_progress_function_style == 'text1':  # pragma: no cover
-            # We will use the ProgressbarText class
-            # noinspection PyArgumentList
-            self._pbar = ProgressbarText(self.rep_max,
-                                         '*',
-                                         message,
-                                         output=output_progress_sink,
-                                         **self.progressbar_extra_args)
-            update_progress_func = self._pbar.progress
-            self._pbar.delete_progress_file_after_completion = True
-        elif self.update_progress_function_style == 'text2':
-            # We will use the ProgressbarText2 class
-            # noinspection PyArgumentList
-            self._pbar = ProgressbarText2(self.rep_max,
-                                          '*',
-                                          message,
-                                          output=output_progress_sink,
-                                          **self.progressbar_extra_args)
-            update_progress_func = self._pbar.progress
-            self._pbar.delete_progress_file_after_completion = True
-        elif self.update_progress_function_style == 'ipython':
-            self._pbar = ProgressBarIPython(self.rep_max, message)
-            update_progress_func = self._pbar.progress
-
-        elif callable(self.update_progress_function_style) is True:
-            # We will use a custom function to update the progress. Note
-            # that we call self.update_progress_function_style to return
-            # the actual function that will be used to update the
-            # progress. That is, the function stored in
-            # self.update_progress_function_style should basically do what
-            # _get_update_progress_function is supposed to do.
-
-            # pylint: disable=E1102
-            # noinspection PyCallingNonCallable
-            update_progress_func = self.update_progress_function_style(
-                self.rep_max, self.progressbar_message)  # pragma: no cover
-
-        return update_progress_func
-
-    # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-    def _get_parallel_update_progress_function(
-            self) -> ProxybarData:  # pragma: no cover
-        """
-        Return a function that should be called to update the
-        progressbar for the simulation of the current parameters.
-
-        This method is only called in the 'simulate_in_parallel' method.
-
-        The returned function accepts a single argument, corresponding to
-        the number of iterations executed so far.
-
-        # The progressbar used to get the returned function depend on the
-        # value of the self.update_progress_function_style attribute.
-
-        Returns
-        -------
-        list[int,int]
-            List with the proxybar client_id, ip and port.
-
-        Notes
-        -----
-        While the _get_serial_update_progress_function method receives the
-        "current parameters" this _get_parallel_update_progress_function
-        receives the full parameters. The reason for this is that when the
-        simulation is performed in parallel multiple process (for different
-        parameters) will update the same progressbar. Therefore, it does
-        not make sense to perform replacements in the progressbar message
-        based on current parameters.
-        """
-        if self.update_progress_function_style is not None:
-            if self._pbar is None:
-                parameters = self.params.parameters
-                # If the progressbar_message has any string replacements
-                #  in the form {some_param} where 'some_param' is a
-                # parameter in 'full_params' then it will be replaced by
-                #  the value of 'some_param'.
-                message = self.progressbar_message.format(**parameters)
-
-                sleep_time = 1.0
-                if self.progress_output_type == 'screen':
-                    filename = None
-                else:
-                    # Lets update the progress every 30 seconds
-                    sleep_time = 30.0
-                    filename = '{0}_progress.txt'.format(
-                        self._results_base_filename)
-
-                self._pbar = ProgressbarZMQServer(
-                    message=message,
-                    sleep_time=sleep_time,
-                    filename=filename,
-                    style=self.update_progress_function_style,
-                    **self.progressbar_extra_args)
-
-            # Note that this will be an object of the ProgressbarZMQClient
-            # class, but it behaves like a function.
-            proxybar = \
-                self._pbar.register_client_and_get_proxy_progressbar(
-                    self.rep_max)
-            proxybar_data = [proxybar.client_id, proxybar.ip, proxybar.port]
-        else:
-            return None
-
-        return proxybar_data
-
     @property
-    def elapsed_time(self) -> float:
+    def elapsed_time(self) -> str:
         """
         Get the simulation elapsed time. Do not set this value.
 
@@ -901,7 +1158,7 @@ class SimulationRunner:
         float
             The elapsed time.
         """
-        return pretty_time(self._elapsed_time)
+        return self._simulation_tracking.elapsed_time
 
     @property
     def runned_reps(self) -> List[int]:
@@ -916,16 +1173,6 @@ class SimulationRunner:
             combination.
         """
         return self._runned_reps
-
-    # This method is called when the SimulationRunner class is pickled
-    def __getstate__(self):  # pragma: no cover
-        # We will pickle everything as default, except for the "_pbar"
-        # member variable that will not be pickled. The reason is that
-        # it may be a ProgressbarZMQServer object, which cannot be
-        # pickled (uses ZMQ sockets).
-        state = dict(self.__dict__)
-        del state['_pbar']
-        return state
 
     # def get_runned_reps_fix_params(
     #         self,
@@ -1105,8 +1352,7 @@ class SimulationRunner:
         return current_rep, current_sim_results, partial_results_filename
 
     def _simulate_for_current_params_serial(
-            self, current_params: SimulationParameters,
-            var_print_iter: Iterator[int]
+        self, current_params: SimulationParameters
     ) -> Tuple[int, SimulationResults, str]:
         """
         Simulate (serial) for the current parameters.
@@ -1115,9 +1361,6 @@ class SimulationRunner:
         ----------
         current_params : SimulationParameters
             The current parameters
-        var_print_iter : iterator
-            An iterator obtained from calling the
-            __get_print_variation_iterator method.
 
         Returns
         -------
@@ -1126,11 +1369,8 @@ class SimulationRunner:
             SimulationResults object, and the name of the file storing
             partial results.
         """
-        # (maybe) Print the current variation. This is something like
-        # ------------- Current Variation: 4/84 ------------
-        next(var_print_iter)
-
-        update_progress_func = self._get_serial_update_progress_function(
+        # Note that "current_params" must have a rep_max parameter
+        update_progress_func = self._simulation_tracking.get_serial_update_progress_function(
             current_params)
 
         return self._simulate_for_current_params_common(
@@ -1144,7 +1384,7 @@ class SimulationRunner:
     def _simulate_for_current_params_parallel(
         obj: "SimulationRunner",
         current_params: SimulationParameters,
-        proxybar_data=None
+        update_progress_func=None
     ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
         """
         Simulate (parallel) for the current parameters.
@@ -1156,12 +1396,9 @@ class SimulationRunner:
             that this method is set to static is to allow it to be pickled.
         current_params : SimulationParameters
             The current parameters
-        proxybar_data : (int,str,int) | None
-                The elements are the "client_id" (and int), the "ip" (a
-                string with an IP address) and the "port". This data should
-                be used to create a ProgressbarZMQClient object that can be
-                used to update the progressbar (via a ZMQ socket)
-
+        update_progress_func : (int) -> []
+            The function (or an object with __call__ operator) that can be
+            called to update the current progress.
         Returns
         -------
         (int, SimulationResults, str)
@@ -1169,64 +1406,70 @@ class SimulationRunner:
             SimulationResults object, and the name of the file storing
             partial results.
         """
-        # xxxxxxxxxx Function to update the progress xxxxxxxxxxxxxxxxxx
-        if proxybar_data is None:
-
-            def update_progress_func(_):
-                pass
-        else:
-            client_id, ip, port = proxybar_data  # pylint: disable=W0633
-            finalcount = current_params["rep_max"]
-            assert (isinstance(finalcount, int))
-            proxybar = ProgressbarZMQClient(client_id, ip, port, finalcount)
-            update_progress_func = proxybar.progress
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # pylint: disable= W0212
         # noinspection PyProtectedMember
         return obj._simulate_for_current_params_common(current_params,
                                                        update_progress_func)
 
-    def __get_print_variation_iterator(self,
-                                       num_variations: int,
-                                       start: int = 0) -> Iterator[int]:
+    def _simulate_common_setup(self):
         """
-        Returns an iterator that prints the current variation each time
-        it's "next" method is called.
-
-        Create the var_print_iter Iterator Each time the 'next' method of
-        var_print_iter is called it will print something like
-
-        ------------- Current Variation: 4/84 ------------
-
-        which means the variation 4 of 84 variations.
-
-        Parameters
-        ----------
-        num_variations : int
-            The number of different variations.
-        start : int (default is 1)
-            The index of the first variation.
-
-        Returns
-        -------
-        iterator
-            An iterator that can be called to print the current variation.
+        Common code that must run in the beginning of a simulation.
         """
-        if (self.update_progress_function_style is None
-                or self.progress_output_type != 'screen'
-                or self.update_progress_function_style == 'ipython'):
-            for _ in itertools.repeat(''):
-                yield 0
-        else:  # pragma: no cover
-            variation_pbar = ProgressbarText3(num_variations,
-                                              progresschar='-',
-                                              message="Current Variation:")
+        # Reset the SimulationRunner (only really meaningful in case the
+        # simulate method is called more than once)
+        self.clear()
+        self.params.parameters['rep_max'] = self.rep_max
 
-            for i in range(start, num_variations):
-                variation_pbar.progress(i + 1)
-                print()  # print a new line
-                yield i
+        # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._simulation_tracking.tic()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
+        self.results.rep_max = self.rep_max
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Store the Simulation parameters in the SimulationResults object.
+        # With this, the simulation parameters will be available for
+        # someone that has the SimulationResults object (loaded from a
+        # file, for instance).
+        self.results.set_parameters(self.params)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Implement the _on_simulate_start method in a subclass if you need
+        # to run code at the start of the simulate method.
+        self._on_simulate_start()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def simulate_common_cleaning(self):
+        """
+        Common code that must run in the end of a simulation
+        """
+        # Implement the _on_simulate_finish method in a subclass if you
+        # need to run code at the end of the simulate method.
+        self._on_simulate_finish()
+
+        # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxx
+        self.results.runned_reps = self.runned_reps
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._simulation_tracking.toc()
+
+        # Also save the elapsed time in the SimulationResults object
+        self.results.elapsed_time = self.elapsed_time
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Save the results if results_base_filename is not None x
+        if self._results_base_filename is not None:
+            self.results.save_to_file(self._results_base_filename)
+            # Delete the partial results (this will only delete the
+            # partial results if self.delete_partial_results_bool is
+            # True)
+            self.__delete_partial_results_maybe()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def simulate(self, param_variation_index: Optional[int] = None) -> None:
         """
@@ -1256,36 +1499,13 @@ class SimulationRunner:
         --------
         simulate_in_parallel
         """
-        # Reset the SimulationRunner (only really meaningful in case the
-        # simulate method is called more than once)
-        self.clear()
+        self._simulate_common_setup()
 
         if param_variation_index is not None:  # pragma: no cover
             # Maybe even though param_variation_index is a valid integer it
             # was passed as a string. Let's try to convert whatever we have
             # to an integer.
             param_variation_index = int(param_variation_index)
-
-        # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.__tic = time()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
-        self.results.rep_max = self.rep_max
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Store the Simulation parameters in the SimulationResults object.
-        # With this, the simulation parameters will be available for
-        # someone that has the SimulationResults object (loaded from a
-        # file, for instance).
-        self.results.set_parameters(self.params)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Implement the _on_simulate_start method in a subclass if you need
-        # to run code at the start of the simulate method.
-        self._on_simulate_start()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Get the number of variations of the transmit parameters
@@ -1294,21 +1514,9 @@ class SimulationRunner:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxx Start of the code unique to the serial version xxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Create the var_print_iter Iterator
-        # Each time the 'next' method of var_print_iter is called it will
-        # print something like
-        # ------------- Current Variation: 4/84 ------------
-        # which means the variation 4 of 84 variations.
-
-        # However, this will only be printed if
-        # self.progress_output_type is equal to 'screen'
-        if param_variation_index is None:
-            var_print_iter = self.__get_print_variation_iterator(
-                num_variations)
-        else:
-            var_print_iter = self.__get_print_variation_iterator(
-                num_variations, start=param_variation_index)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Tell the SimulationTracking that serial simulation will be done
+        self._simulation_tracking.set_serial_tracking(num_variations,
+                                                      param_variation_index)
 
         # Here we can either simulate for a single combination of
         # parameters, if param_variation_index was provided, or for all
@@ -1322,8 +1530,7 @@ class SimulationRunner:
 
             if 0 <= param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
-                self._simulate_for_current_params_serial(
-                    current_params, var_print_iter)
+                self._simulate_for_current_params_serial(current_params)
 
         # If param_variation_index is None we will run for all parameters
         # combinations
@@ -1333,7 +1540,7 @@ class SimulationRunner:
             for current_params in self.params.get_unpacked_params_list():
                 (current_rep, current_sim_results, _) \
                     = self._simulate_for_current_params_serial(
-                        current_params, var_print_iter)
+                        current_params)
 
                 # Store the number of repetitions actually ran for the
                 # current parameters combination
@@ -1343,35 +1550,37 @@ class SimulationRunner:
                 self.results.append_all_results(current_sim_results)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-            # Implement the _on_simulate_finish method in a subclass if you
-            # need to run code at the end of the simulate method.
-            self._on_simulate_finish()
+            self.simulate_common_cleaning()
 
-            # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxx
-            self.results.runned_reps = self._runned_reps
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    def __create_default_ipyparallel_view(self):
+        """
+        Create a default view for parallel computation.
 
-            # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            self.__toc = time()
-            self._elapsed_time = self.__toc - self.__tic
+        This method is run in the `simulate_in_parallel` method if a "view" is
+        not passed.
+        """
+        from ipyparallel import Client
+        c = Client()
+        dview = c.direct_view()
 
-            # Also save the elapsed time in the SimulationResults object
-            self.results.elapsed_time = self._elapsed_time
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        try:
+            import cloudpickle
+            # Use cloudpickle library if available
+            # It can pickle more things than standard pickle module
+            c[:].use_cloudpickle()
+        except ModuleNotFoundError:
+            pass
 
-            # xxxxx Save the results if results_filename is not None xxxxxx
-            if self._results_base_filename is not None:
-                self.results.save_to_file(self._results_base_filename)
-                # Delete the partial results (this will only delete the
-                # partial results if self.delete_partial_results_bool is
-                # True)
-                self.__delete_partial_results_maybe()
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        dview.execute('%reset')
+        dview.execute('import sys')
+        dview.execute('sys.path.append("{0}")'.format(os.getcwd()), block=True)
+        view = c.load_balanced_view()
+        return view
 
     # The unittests for this method only run if an ipython cluster is
     # started with a profile called "tests".
     def simulate_in_parallel(self,
-                             view: ParallelView,
+                             view: Optional[ParallelView] = None,
                              wait: bool = True) -> None:  # pragma: no cover
         """
         Same as the simulate method, but the different parameters
@@ -1403,30 +1612,10 @@ class SimulationRunner:
         result files won't be automatically deleted after the simulation is
         finished.
         """
-        # Reset the SimulationRunner (only really meaningful in case the
-        # simulate method is called more than once)
-        self.clear()
+        self._simulate_common_setup()
 
-        # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self.__tic = time()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
-        self.results.rep_max = self.rep_max  # pylint: disable=W0201
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Store the Simulation parameters in the SimulationResults object.
-        # With this, the simulation parameters will be available for
-        # someone that has the SimulationResults object (loaded from a
-        # file, for instance).
-        self.results.set_parameters(self.params)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Implement the _on_simulate_start method in a subclass if you need
-        # to run code at the start of the simulate method.
-        self._on_simulate_start()
+        if view is None:
+            view = self.__create_default_ipyparallel_view()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Get the number of variations of the transmit parameters
@@ -1435,17 +1624,16 @@ class SimulationRunner:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxx Start of the code unique to the parallel version xxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Tell the SimulationTracking that parallel simulation will be done
+        self._simulation_tracking.set_parallel_tracking(num_variations)
+
+        if 'rep_max' not in self.params:
+            self.params.parameters['rep_max'] = self.rep_max
 
         # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
-        if self.update_progress_function_style is not None:  # pragma: no cover
-            # Create the proxy progressbars
-            proxybar_data_list = []
-            for _ in range(num_variations):
-                proxybar_data_list.append(
-                    self._get_parallel_update_progress_function())
-        else:  # self.update_progress_function_style is None
-            # Create the dummy update progress functions
-            proxybar_data_list = [None] * num_variations
+        update_progress_funcs = \
+            self._simulation_tracking.get_parallel_update_progress_functions(
+            self.params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxx Perform the actual simulation in asynchronously parallel xxxx
@@ -1461,14 +1649,16 @@ class SimulationRunner:
             # ... and we also need to pass the
             # simulation parameters for each engine
             self.params.get_unpacked_params_list(),
-            proxybar_data_list,
+            update_progress_funcs,
             block=False)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        if self._pbar is not None:  # pragma: no cover
-            self._pbar.start_updater()
+        # For parallel computations we need to call the start_progress_updater
+        # to start the progressbar server updating progress
+        self._simulation_tracking.start_progress_updater()
 
         if wait is True:
+            # Wait all currently running simulations to finish
             self.wait_parallel_simulation()
 
     def wait_parallel_simulation(self) -> None:  # pragma: no cover
@@ -1489,35 +1679,14 @@ class SimulationRunner:
                 self.results.append_all_results(r)
                 self._results_base_filename_unpack_list.append(filename)
 
-            # Implement the _on_simulate_finish method in a subclass if you
-            # need to run code at the end of the simulate method.
-            self._on_simulate_finish()
+            self.simulate_common_cleaning()
 
-            # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxx
-            self.results.runned_reps = self.runned_reps
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-            # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            self.__toc = time()
-            self._elapsed_time = self.__toc - self.__tic
-
-            # Also save the elapsed time in the SimulationResults object
-            self.results.elapsed_time = self.elapsed_time
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-            # xxxxx Save the results if results_base_filename is not None x
-            if self._results_base_filename is not None:
-                self.results.save_to_file(self.results_base_filename)
-                # Delete the partial results (this will only delete the
-                # partial results if self.delete_partial_results_bool is
-                #  True)
-                self.__delete_partial_results_maybe()
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-            # Stop the progressbar updating progress
-            if self.update_progress_function_style is not None:
-                # pragma: no cover
-                self._pbar.stop_updater()
+            # For parallel computations we need to call the stop_progress_updater
+            # to stop the progressbar server updating progress
+            self._simulation_tracking.stop_progress_updater()
+            # if self.update_progress_function_style is not None:
+            #     # pragma: no cover
+            #     self._pbar.stop_updater()
 
             # Erase the self._async_results object, since we already got
             #  all information we needed from it

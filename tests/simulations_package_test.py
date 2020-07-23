@@ -2422,7 +2422,6 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Note that we are also testing the elapsed_time and runned_reps
         # properties, which should just return these attributes.
         self.assertEqual(self.runner.rep_max, 1)
-        self.assertEqual(self.runner._elapsed_time, 0.0)
         self.assertEqual(self.runner.elapsed_time, "0.00s")
         self.assertEqual(self.runner.runned_reps, [])
         self.assertTrue(isinstance(self.runner.params, SimulationParameters))
@@ -2598,7 +2597,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
             # We use block=True to ensure that all engines have modified
             # their path to include the folder with the simulator before we
             # create the load lanced view in the following.
-            dview.execute('sys.path.append("{0}")'.format(current_dir),
+            dview.execute('sys.path.append("{0}")'.format(os.getcwd()),
                           block=True)
 
             lview = cl.load_balanced_view()
@@ -2701,7 +2700,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
             # We use block=True to ensure that all engines have modified
             # their path to include the folder with the simulator before we
             # create the load lanced view in the following.
-            dview.execute('sys.path.append("{0}")'.format(current_dir),
+            dview.execute('sys.path.append("{0}")'.format(os.getcwd()),
                           block=True)
 
             lview = cl.load_balanced_view()

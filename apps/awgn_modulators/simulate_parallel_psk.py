@@ -7,6 +7,7 @@ This performs the same simulation "in serial" and "in parallel" as an
 example of the differences between both methods in a SimulationRunner
 subclass.
 """
+import os
 
 import numpy as np
 
@@ -191,7 +192,7 @@ if __name__ == '__main__':
     # Add the folder containing PyPhysim to the python path in all the
     # engines
     dview.execute('import sys')
-    dview.execute('sys.path.append("{0}")'.format(parent_dir))
+    dview.execute('sys.path.append("{0}")'.format(os.getcwd()))
 
     from matplotlib import pyplot as plt
     # noinspection PyUnresolvedReferences
