@@ -153,8 +153,8 @@ class Shape(Coordinate):
     # 'abstract' must be implemented in a subclass.
     __metaclass__ = ABCMeta
 
-    def __init__(self, pos: complex, radius: float, rotation: float = 0):
-        Coordinate.__init__(self, pos)
+    def __init__(self, pos: complex, radius: float, rotation: float = 0, **kw):
+        super().__init__(pos=pos, **kw)
 
         self._radius = radius
         self._rotation = rotation
@@ -556,8 +556,8 @@ class Hexagon(Shape):
     rotation : float
         Rotation of the hexagon in degrees.
     """
-    def __init__(self, pos: complex, radius: float, rotation: float = 0):
-        Shape.__init__(self, pos, radius, rotation)
+    def __init__(self, pos: complex, radius: float, rotation: float = 0, **kw):
+        super().__init__(pos=pos, radius=radius, rotation=rotation, **kw)
 
     @property
     def height(self) -> float:
@@ -611,10 +611,17 @@ class Rectangle(Shape):
     rotation : float
         Rotation of the rectangle in degrees.
     """
-    def __init__(self, first: complex, second: complex, rotation: float = 0):
+    def __init__(self,
+                 first: complex,
+                 second: complex,
+                 rotation: float = 0,
+                 **kw):
         central_pos = (first + second) / 2
         radius = np.abs(second - central_pos)
-        Shape.__init__(self, central_pos, radius, rotation)
+        super().__init__(pos=central_pos,
+                         radius=radius,
+                         rotation=rotation,
+                         **kw)
         self._lower_coord = complex(min(first.real, second.real),
                                     min(first.imag, second.imag))
         self._upper_coord = complex(max(first.real, second.real),
@@ -726,7 +733,7 @@ class Circle(Shape):
         Circle's radius.
     """
     def __init__(self, pos: complex, radius: float):
-        Shape.__init__(self, pos, radius)
+        super().__init__(pos=pos, radius=radius)
 
     def _get_vertex_positions(self) -> np.ndarray:
         """

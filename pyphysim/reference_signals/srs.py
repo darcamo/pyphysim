@@ -283,7 +283,4 @@ class SrsUeSequence(UeSequence):
                  normalize: bool = False):
         root_seq_array = root_seq.seq_array()
         user_seq_array = get_srs_seq(root_seq_array, n_cs)
-        super(SrsUeSequence, self).__init__(root_seq,
-                                            n_cs,
-                                            user_seq_array,
-                                            normalize=normalize)
+        super().__init__(root_seq, n_cs, user_seq_array, normalize=normalize)

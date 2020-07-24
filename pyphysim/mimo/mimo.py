@@ -411,7 +411,7 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
         be equal to 1.
     """
     def __init__(self, channel: Optional[np.ndarray] = None):
-        MimoBase.__init__(self, channel=None)
+        super().__init__(channel=None)
         if channel is not None:
             self.set_channel_matrix(channel)
 
@@ -434,7 +434,7 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
         # We will store the channel as a 2D numpy to be consistent with the
         # other MIMO classes
         if len(channel.shape) == 1:
-            super(MisoBase, self).set_channel_matrix(channel[np.newaxis, :])
+            super().set_channel_matrix(channel[np.newaxis, :])
         else:
             Nr = channel.shape[0]
             if Nr != 1:
@@ -442,7 +442,7 @@ class MisoBase(MimoBase):  # pylint: disable=W0223
                                  "scenario with a single receive antenna")
             # By calling the parent set_channel_matrix method the
             # self._W and self._G_H will be set to None
-            super(MisoBase, self).set_channel_matrix(channel)
+            super().set_channel_matrix(channel)
 
     def getNumberOfLayers(self) -> int:  # pragma: no cover
         """
@@ -489,7 +489,7 @@ class Blast(MimoBase):
         channel : np.ndarray
             MIMO channel matrix.
         """
-        MimoBase.__init__(self, channel)
+        super().__init__(channel)
         self._noise_var: float = 0.0
 
     def set_channel_matrix(self, channel: np.ndarray) -> None:
@@ -513,7 +513,7 @@ class Blast(MimoBase):
                        self.__class__.__name__)
             warnings.warn(msg)
 
-        super(Blast, self).set_channel_matrix(channel)
+        super().set_channel_matrix(channel)
 
     def getNumberOfLayers(self) -> int:
         """
@@ -680,7 +680,7 @@ class MRT(MisoBase):
         number of receive antennas is assumed to be equal to 1.
     """
     def __init__(self, channel: Optional[np.ndarray] = None):
-        MisoBase.__init__(self, channel)
+        super().__init__(channel)
 
     # noinspection PyUnresolvedReferences
     @staticmethod
@@ -805,7 +805,7 @@ class MRC(Blast):
         MIMO channel matrix.
     """
     def __init__(self, channel: Optional[np.ndarray] = None):
-        Blast.__init__(self, channel)
+        super().__init__(channel)
 
     def set_channel_matrix(self, channel: np.ndarray) -> None:
         """
@@ -822,9 +822,9 @@ class MRC(Blast):
         # We will store the channel as a 2D numpy to be consistent with the
         # other MIMO classes
         if len(channel.shape) == 1:
-            super(MRC, self).set_channel_matrix(channel[:, np.newaxis])
+            super().set_channel_matrix(channel[:, np.newaxis])
         else:
-            super(MRC, self).set_channel_matrix(channel)
+            super().set_channel_matrix(channel)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -840,7 +840,7 @@ class SVDMimo(Blast):
         MIMO channel matrix.
     """
     def __init__(self, channel: Optional[np.ndarray] = None):
-        Blast.__init__(self, channel)
+        super().__init__(channel)
 
     @staticmethod
     def _calc_precoder(channel: np.ndarray) -> np.ndarray:
@@ -959,7 +959,7 @@ class GMDMimo(Blast):
         MIMO channel matrix.
     """
     def __init__(self, channel: Optional[np.ndarray] = None):
-        Blast.__init__(self, channel)
+        super().__init__(channel)
 
     @staticmethod
     def _calc_precoder(channel: np.ndarray) -> np.ndarray:
@@ -1080,7 +1080,7 @@ class Alamouti(MimoBase):
         MIMO channel matrix.
     """
     def __init__(self, channel: Optional[np.ndarray] = None):
-        MimoBase.__init__(self, channel)
+        super().__init__(channel)
 
     @staticmethod
     def _calc_precoder(channel: np.ndarray) -> np.ndarray:  # pragma: nocover
@@ -1121,14 +1121,14 @@ class Alamouti(MimoBase):
         None
         """
         if len(channel.shape) == 1:
-            super(Alamouti, self).set_channel_matrix(channel[np.newaxis, :])
+            super().set_channel_matrix(channel[np.newaxis, :])
         else:
             _, Nt = channel.shape
             if Nt != 2:
                 msg = ("The number of transmit antennas must be equal to "
                        "2 for the {0} scheme").format(self.__class__.__name__)
                 raise ValueError(msg)
-            super(Alamouti, self).set_channel_matrix(channel)
+            super().set_channel_matrix(channel)
 
     def getNumberOfLayers(self) -> int:
         """

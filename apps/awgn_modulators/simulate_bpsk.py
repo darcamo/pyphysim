@@ -17,7 +17,7 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
 
     """
     def __init__(self):
-        VerySimplePskSimulationRunner.__init__(self)
+        super().__init__()
 
         snr = np.array([0, 2, 4, 6, 8, 10])
         self.params.add('SNR', snr)

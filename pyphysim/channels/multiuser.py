@@ -2056,7 +2056,7 @@ class MultiUserChannelMatrixExtInt(  # pylint: disable=R0904
     interference.
     """
     def __init__(self) -> None:
-        MultiUserChannelMatrix.__init__(self)
+        super().__init__()
         self._extIntK: int = 0  # Number of external interference sources
         # Number of transmit antennas of the external interference sources.
         self._extIntNt: int = 0

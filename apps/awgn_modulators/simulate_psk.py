@@ -30,7 +30,7 @@ class VerySimplePskSimulationRunner(SimulationRunner):
     SimulationParameters class.
     """
     def __init__(self, ):
-        SimulationRunner.__init__(self)
+        super().__init__()
 
         SNR = np.array([0, 3, 6, 9, 12])
         M = 4

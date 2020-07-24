@@ -66,7 +66,7 @@ class ClosedFormIASolver(IASolverBaseClass):
     def __init__(self,
                  multiUserChannel: muchannels.MultiUserChannelMatrix,
                  use_best_init: bool = True):
-        IASolverBaseClass.__init__(self, multiUserChannel)
+        super().__init__(multiUserChannel)
         self._use_best_init = use_best_init
 
     # noinspection PyPep8
@@ -306,7 +306,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
     __metaclass__ = ABCMeta
 
     def __init__(self, multiUserChannel: muchannels.MultiUserChannelMatrix):
-        IASolverBaseClass.__init__(self, multiUserChannel)
+        super().__init__(multiUserChannel)
 
         # Count how many times the step method was called. This will be
         # reseted to zero whenever the channel or the precoder is
@@ -462,7 +462,7 @@ class IterativeIASolverBaseClass(IASolverBaseClass):
                    P: Optional[np.ndarray] = None) -> None:
         self._runned_iterations = 0
         # randomizeF in the base class will set `self._P` to `P`
-        super(IterativeIASolverBaseClass, self).randomizeF(Ns, P)
+        super().randomizeF(Ns, P)
 
     randomizeF.__doc__ = IASolverBaseClass.randomizeF.__doc__
 
@@ -914,7 +914,7 @@ class AlternatingMinIASolver(IterativeIASolverBaseClass):
        on, pp.2445,2448, 19-24 April 2009
     """
     def __init__(self, multiUserChannel: muchannels.MultiUserChannelMatrix):
-        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
+        super().__init__(multiUserChannel)
 
         self._C: List[np.ndarray] = [
         ]  # Basis of the interference subspace for each user
@@ -1141,7 +1141,7 @@ class MinLeakageIASolver(IterativeIASolverBaseClass):
         The multiuser channel.
     """
     def __init__(self, multiUserChannel: muchannels.MultiUserChannelMatrix):
-        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
+        super().__init__(multiUserChannel)
 
     def get_cost(self) -> float:
         """
@@ -1259,7 +1259,7 @@ class MaxSinrIASolver(IterativeIASolverBaseClass):
         The multiuser channel.
     """
     def __init__(self, multiUserChannel: muchannels.MultiUserChannelMatrix):
-        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
+        super().__init__(multiUserChannel)
 
     # noinspection PyPep8
     def _calc_Bkl_cov_matrix_first_part_rev(self, k: int) -> np.ndarray:
@@ -1533,7 +1533,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
        for MIMO Interference Channels," vol. 60, no. 1, pp. 206-218, 2011.
     """
     def __init__(self, multiUserChannel: muchannels.MultiUserChannelMatrix):
-        IterativeIASolverBaseClass.__init__(self, multiUserChannel)
+        super().__init__(multiUserChannel)
 
         self._mu: Optional[np.ndarray] = None
 
@@ -1874,7 +1874,7 @@ class GreedStreamIASolver:
         self._iasolver = iasolver_obj
         self._runned_iterations = 0
 
-        # #IASolverBaseClass.__init__(self, multiUserChannel)
+        # #super().__init__(multiUserChannel)
 
         # # Maximum number of iterations that the underlying iterative IA
         # # algorithm can run for a given stream configuration.

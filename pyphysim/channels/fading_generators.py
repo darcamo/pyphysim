@@ -217,7 +217,7 @@ class RayleighSampleGenerator(FadingSampleGenerator):
         with this shape. If not provided, then 1 will be assumed.
     """
     def __init__(self, shape: Optional[Union[int, Shape]] = None) -> None:
-        super(RayleighSampleGenerator, self).__init__(shape)
+        super().__init__(shape)
 
         # Generate first sample
         self.generate_more_samples()
@@ -322,7 +322,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
                  L: int = 8,
                  shape: Optional[Union[int, Shape]] = None,
                  RS: Optional[np.random.RandomState] = None) -> None:
-        super(JakesSampleGenerator, self).__init__(shape)
+        super().__init__(shape)
 
         self._Fd: float = Fd
         self._Ts: float = Ts
@@ -362,7 +362,7 @@ class JakesSampleGenerator(FadingSampleGenerator):
         -------
         tuple[int] | None
         """
-        return super(JakesSampleGenerator, self).shape
+        return super().shape
 
     @shape.setter
     def shape(self, new_shape: Shape) -> None:

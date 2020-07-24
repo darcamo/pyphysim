@@ -27,7 +27,7 @@ class ConcreteShape(shapes.Shape):
     def __init__(self, pos, radius, rotation=0):
         """Initialize the shape.
         """
-        shapes.Shape.__init__(self, pos, radius, rotation)
+        super().__init__(pos, radius, rotation)
 
     def _get_vertex_positions(self):
         """This method will not be called in our tests.
@@ -724,13 +724,21 @@ class CellSquareTestCase(unittest.TestCase):
                                   rotation=0)
         self.C2 = cell.CellSquare(pos=-3.5 + 3j,
                                   side_length=2.5,
-                                  cell_id=1,
+                                  cell_id=2,
                                   rotation=60)
         self.C2.fill_color = 'r'
         self.C2.fill_face_bool = True
 
     # TODO: Add test methods for the CellSquare class
-    def test_some_method(self):
+    def test_constructor(self):
+        self.assertAlmostEqual(self.C1.pos, 2 - 3j)
+        self.assertAlmostEqual(self.C1.rotation, 0)
+        self.assertAlmostEqual(self.C1.cell_id, 1)
+
+        self.assertAlmostEqual(self.C2.pos, -3.5 + 3j)
+        self.assertAlmostEqual(self.C2.rotation, 60)
+        self.assertAlmostEqual(self.C2.cell_id, 2)
+
         # self.C1.plot()
 
         pass

@@ -80,10 +80,7 @@ class DmrsUeSequence(UeSequence):
             self._occ.flags.writeable = False
             user_seq_array = user_seq_array * cover_code[:, np.newaxis]
 
-        super(DmrsUeSequence, self).__init__(root_seq,
-                                             n_cs,
-                                             user_seq_array,
-                                             normalize=normalize)
+        super().__init__(root_seq, n_cs, user_seq_array, normalize=normalize)
 
     @property
     def cover_code(self) -> np.ndarray:

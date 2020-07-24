@@ -48,7 +48,7 @@ class CustomTestCase(unittest.TestCase):
     def __init__(self, methodName='runTest'):
         """Init method.
         """
-        unittest.TestCase.__init__(self, methodName)
+        super().__init__(methodName)
 
         self._new_test = None  # Don't change this
 

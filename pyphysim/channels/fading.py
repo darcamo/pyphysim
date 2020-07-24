@@ -1328,5 +1328,5 @@ class TdlMimoChannel(TdlChannel):
                 "The provided fading_generator for the TdlMimoChannel class"
                 " must have a shape with two values")
 
-        super(TdlMimoChannel, self).__init__(fading_generator, channel_profile,
-                                             tap_powers_dB, tap_delays, Ts)
+        super().__init__(fading_generator, channel_profile, tap_powers_dB,
+                         tap_delays, Ts)

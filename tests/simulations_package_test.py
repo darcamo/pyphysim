@@ -2285,7 +2285,7 @@ def _delete_progressbar_output_files():  # pragma: no cover
 # simulate_in_parallel methods in the SimulationRunner class.
 class _DummyRunner(SimulationRunner):
     def __init__(self):
-        SimulationRunner.__init__(self, read_command_line_args=False)
+        super().__init__(read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
         # progressbar in these testes.
         self.rep_max = 2
@@ -2318,7 +2318,7 @@ class _DummyRunner(SimulationRunner):
 
 class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
     def __init__(self):
-        SimulationRunner.__init__(self, read_command_line_args=False)
+        super().__init__(read_command_line_args=False)
         # Set the progress bar message to None to avoid print the
         # progressbar in these testes.
         self.rep_max = 2
@@ -2363,7 +2363,7 @@ class _DummyRunnerRandom(SimulationRunner):  # pragma: no cover
 # method.
 class _DummyRunnerWithSkip(SimulationRunner):
     def __init__(self):
-        SimulationRunner.__init__(self, read_command_line_args=False)
+        super().__init__(read_command_line_args=False)
         # This is used only for testing purposes. You would not have this
         # attribute in derives classes from SimulationRunner
         self._num_skipped = -1

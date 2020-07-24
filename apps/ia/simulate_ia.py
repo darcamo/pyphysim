@@ -4,6 +4,7 @@ Module containing simulation runners for the several Interference
 Alignment algorithms in the algorithms.ia module.
 """
 
+import os
 from pprint import pprint
 from time import time
 
@@ -48,8 +49,7 @@ class IASimulationRunner(SimulationRunner):
                  default_config_file,
                  spec,
                  read_command_line_args=True):
-        SimulationRunner.__init__(self, default_config_file, spec,
-                                  read_command_line_args)
+        super().__init__(default_config_file, spec, read_command_line_args)
 
         # Set the max_bit_errors and rep_max attributes
         self.max_bit_errors = self.params['max_bit_errors']
@@ -335,9 +335,8 @@ class AlternatingSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self, algorithms.AlternatingMinIASolver,
-                                    default_config_file, spec,
-                                    read_command_line_args)
+        super().__init__(algorithms.AlternatingMinIASolver,
+                         default_config_file, spec, read_command_line_args)
 
         # self.update_progress_function_style = None
 
@@ -379,9 +378,8 @@ class ClosedFormSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self, algorithms.ClosedFormIASolver,
-                                    default_config_file, spec,
-                                    read_command_line_args)
+        super().__init__(algorithms.ClosedFormIASolver, default_config_file,
+                         spec, read_command_line_args)
 
     # Since we create the channel object in the __init__ method of
     # IASimulationRunner, we need to re-seed the channel for each set of
@@ -423,9 +421,8 @@ class MinLeakageSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self, algorithms.MinLeakageIASolver,
-                                    default_config_file, spec,
-                                    read_command_line_args)
+        super().__init__(algorithms.MinLeakageIASolver, default_config_file,
+                         spec, read_command_line_args)
 
 
 class MaxSINRSimulationRunner(IASimulationRunner):
@@ -461,9 +458,8 @@ class MaxSINRSimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self, algorithms.MaxSinrIASolver,
-                                    default_config_file, spec,
-                                    read_command_line_args)
+        super().__init__(algorithms.MaxSinrIASolver, default_config_file, spec,
+                         read_command_line_args)
 
 
 class MMSESimulationRunner(IASimulationRunner):
@@ -499,9 +495,8 @@ class MMSESimulationRunner(IASimulationRunner):
         unpacked_parameters=string_list(default=list('SNR'))
         """.split("\n")
 
-        IASimulationRunner.__init__(self, algorithms.MMSEIASolver,
-                                    default_config_file, spec,
-                                    read_command_line_args)
+        super().__init__(algorithms.MMSEIASolver, default_config_file, spec,
+                         read_command_line_args)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

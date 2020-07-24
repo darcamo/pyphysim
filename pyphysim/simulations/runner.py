@@ -207,7 +207,7 @@ class SimulationRunner:
 
        class SomeSimulator(SimulationRunner):
        def __init__(self):
-           SimulationRunner.__init__(self)
+           super().__init__()
            # Do whatever you need/want
 
            # Add the simulation parameters to the `params` attribute.

@@ -141,7 +141,7 @@ class SuChannel:
         np.ndarray
             The received signal after transmission through the TDL channel.
         """
-        # output = super(SuChannel, self).corrupt_data(signal)
+        # output = super().corrupt_data(signal)
         output = self._tdlchannel.corrupt_data(signal)
 
         if self._pathloss_value is not None:

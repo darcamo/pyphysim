@@ -405,7 +405,7 @@ class PSK(Modulator):
             constellation.
 
         """
-        Modulator.__init__(self)
+        super().__init__()
         # Check if M is a power of 2
         assert 2**math.log(M, 2) == M
 
@@ -511,7 +511,7 @@ class QPSK(PSK):  # pragma: no cover
     """QPSK Class
     """
     def __init__(self) -> None:
-        PSK.__init__(self, 4, PI / 4.)
+        super().__init__(4, PI / 4.)
 
     def __repr__(self) -> str:  # pragma: no cover
         """
@@ -535,7 +535,7 @@ class BPSK(Modulator):
     """BPSK Class
     """
     def __init__(self) -> None:
-        Modulator.__init__(self)
+        super().__init__()
         # The number "1" will be mapped to "-1" and the number "0" will be
         # mapped to "1"
         self.setConstellation(np.array([1, -1]))
@@ -669,7 +669,7 @@ class QAM(Modulator):
         ValueError
             If M is not a square power of 2.
         """
-        Modulator.__init__(self)
+        super().__init__()
 
         # Check if M is an even power of 2
         power = math.log(M, 2)

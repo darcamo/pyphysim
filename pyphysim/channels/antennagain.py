@@ -42,7 +42,7 @@ class AntGainOmni(AntGainBase):
         The antenna gain (in dBi). If not provided then 0dBi will be assumed.
     """
     def __init__(self, ant_gain: Optional[float] = None):
-        super(AntGainOmni, self).__init__()
+        super().__init__()
         self.ant_gain: float
         if ant_gain is None:
             self.ant_gain = 1.0
@@ -89,7 +89,7 @@ class AntGainBS3GPP25996(AntGainBase):
         The number of sectors of the base station. It can be either 3 or 6.
     """
     def __init__(self, number_of_sectors: int = 3):
-        super(AntGainBS3GPP25996, self).__init__()
+        super().__init__()
 
         self.ant_gain: float
 

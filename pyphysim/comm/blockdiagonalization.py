@@ -15,7 +15,6 @@ from typing import (Any, Callable, Dict, Iterable, List, Optional, Tuple,
                     Union, cast)
 
 import numpy as np
-
 from scipy.linalg import block_diag
 
 from ..channels.multiuser import MultiUserChannelMatrixExtInt
@@ -685,7 +684,7 @@ class BDWithExtIntBase(BlockDiagonalizer):
     """
     def __init__(self, num_users: int, iPu: float, noise_var: float,
                  pe: float) -> None:
-        BlockDiagonalizer.__init__(self, num_users, iPu, noise_var)
+        super().__init__(num_users, iPu, noise_var)
         self.pe = pe
 
     def calc_whitening_matrices(
@@ -738,7 +737,7 @@ class WhiteningBD(BDWithExtIntBase):
     """
     def __init__(self, num_users: int, iPu: float, noise_var: float,
                  pe: float) -> None:
-        BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
+        super().__init__(num_users, iPu, noise_var, pe)
 
     @staticmethod
     def _calc_receive_filter_with_whitening(newH: np.ndarray,
@@ -870,7 +869,7 @@ class EnhancedBD(BDWithExtIntBase):
     """
     def __init__(self, num_users: int, iPu: float, noise_var: float,
                  pe: float) -> None:
-        BDWithExtIntBase.__init__(self, num_users, iPu, noise_var, pe)
+        super().__init__(num_users, iPu, noise_var, pe)
 
         # Function used to decide how many streams will be sacrificed to
         # mitigate external interference. This is set in the

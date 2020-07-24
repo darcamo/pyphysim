@@ -150,8 +150,7 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         ue_ref_seq_array = ue_ref_seq.seq_array()
         reference_seq = ue_ref_seq_array[0] * cover_code[0]
 
-        super(CazacBasedWithOCCChannelEstimator,
-              self).__init__(reference_seq, size_multiplier=1)
+        super().__init__(reference_seq, size_multiplier=1)
 
         self._cover_code = cover_code
         self._normalized_ref_seq = ue_ref_seq.normalized
@@ -249,5 +248,4 @@ class CazacBasedWithOCCChannelEstimator(CazacBasedChannelEstimator):
         # xxxxxxxxxxxxxxx Perform the estimation xxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Call the estimate_channel_freq_domain from the base class
-        return super(CazacBasedWithOCCChannelEstimator, self).\
-            estimate_channel_freq_domain(r_mean, num_taps_to_keep)
+        return super().estimate_channel_freq_domain(r_mean, num_taps_to_keep)

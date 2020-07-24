@@ -64,7 +64,7 @@ class Node(shapes.Coordinate):
                  marker_color: str = 'r',
                  cell_id: Optional[Union[str, int]] = None,
                  parent_pos: Optional[complex] = None) -> None:
-        shapes.Coordinate.__init__(self, pos)
+        super().__init__(pos)
         self.plot_marker: str = plot_marker
         self.marker_color: str = marker_color
         self.marker_size: int = 6  # Changing this value will affect only the plot
@@ -147,7 +147,7 @@ class AccessPoint(Node):
     def __init__(self,
                  pos: complex,
                  ap_id: Optional[Union[int, str]] = None) -> None:
-        Node.__init__(self, pos, plot_marker='^', marker_color='b')
+        super().__init__(pos, plot_marker='^', marker_color='b', cell_id=ap_id)
 
         # List to store the users associated with this access point
         self._users: List[Node] = []
@@ -307,7 +307,7 @@ class AccessPoint(Node):
 # TODO: maybe refactor this class so that we don't inherit from any
 # shape and use composition instead
 # noinspection PyAbstractClass
-class CellBase(AccessPoint, shapes.Shape):  # pylint: disable=W0223
+class CellBase(shapes.Shape, AccessPoint):  # pylint: disable=W0223
     """
     Base class for all cell types.
 
@@ -330,9 +330,13 @@ class CellBase(AccessPoint, shapes.Shape):  # pylint: disable=W0223
                  pos: complex,
                  radius: float,
                  cell_id: Optional[Union[str, int]] = None,
-                 rotation: float = 0.0) -> None:
-        AccessPoint.__init__(self, pos, ap_id=cell_id)
-        shapes.Shape.__init__(self, pos, radius, rotation)
+                 rotation: float = 0.0,
+                 **kw) -> None:
+        super().__init__(pos=pos,
+                         radius=radius,
+                         rotation=rotation,
+                         ap_id=cell_id,
+                         **kw)
 
     def __repr__(self) -> str:
         """
@@ -603,8 +607,10 @@ class Cell(shapes.Hexagon, CellBase):
                  radius: float,
                  cell_id: Optional[Union[str, int]] = None,
                  rotation: float = 0.0) -> None:
-        shapes.Hexagon.__init__(self, pos, radius, rotation)
-        CellBase.__init__(self, pos, radius, cell_id, rotation)
+        super().__init__(pos=pos,
+                         radius=radius,
+                         rotation=rotation,
+                         cell_id=cell_id)
 
     def plot(self, ax: Optional[Any] = None) -> None:  # pragma: no cover
         """
@@ -665,7 +671,7 @@ class Cell3Sec(CellBase):
                  radius: float,
                  cell_id: Optional[Union[str, int]] = None,
                  rotation: float = 0.0) -> None:
-        CellBase.__init__(self, pos, radius, cell_id, rotation)
+        super().__init__(pos, radius, cell_id, rotation)
 
         sec_positions = self._calc_sectors_positions()
 
@@ -1012,11 +1018,14 @@ class CellSquare(shapes.Rectangle, CellBase):
                  cell_id: Optional[Union[str, int]] = None,
                  rotation: float = 0.0) -> None:
         half_side = side_length / 2.
-        shapes.Rectangle.__init__(self, pos - half_side - 1j * half_side,
-                                  pos + half_side + 1j * half_side, rotation)
 
-        CellBase.__init__(self, pos,
-                          math.sqrt(2.0) * side_length / 2., cell_id, rotation)
+        first = pos - half_side - 1j * half_side
+        second = pos + half_side + 1j * half_side
+        radius = math.sqrt(2.0) * side_length / 2.
+
+        # super().__init__(first=first, second=second, rotation=rotation, pos=pos, radius=radius, cell_id=cell_id)
+        shapes.Rectangle.__init__(self, first, second, rotation)
+        CellBase.__init__(self, pos, radius, cell_id, rotation)
 
     def plot(self, ax: Optional[Any] = None) -> None:  # pragma: no cover
         """
@@ -1131,7 +1140,7 @@ class CellWrap(CellBase):
             cell_id = "Wrap {0}".format(wrapped_cell.id)
         else:
             cell_id = None
-        CellBase.__init__(self, pos, radius, cell_id, rotation)
+        super().__init__(pos, radius, cell_id, rotation)
 
         self.fill_face_bool: bool = True
         self.fill_color: str = 'gray'
@@ -1334,7 +1343,7 @@ class Cluster(shapes.Shape):
                  cluster_id: Optional[int] = None,
                  cell_type: str = 'simple',
                  rotation: float = 0.0) -> None:
-        shapes.Shape.__init__(self, pos, radius=0, rotation=0)
+        super().__init__(pos=pos, radius=0, rotation=0)
 
         # xxxxx Store for later reference (in __repr__) xxxxxxxxxxxxxxxxxxx
         self._cell_type: str = cell_type

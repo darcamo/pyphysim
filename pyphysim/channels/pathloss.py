@@ -472,7 +472,7 @@ class PathLossIndoorBase(PathLossBase):
         PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
-        return super(PathLossIndoorBase, self).calc_path_loss_dB(d, **kargs)
+        return super().calc_path_loss_dB(d, **kargs)
 
     def calc_path_loss(self, d: NumberOrArray,
                        **kargs: Any) -> NumberOrArray:  # pragma: no cover
@@ -643,7 +643,7 @@ class PathLossOutdoorBase(PathLossBase):
         PL : float | np.ndarray
             Path loss (in dB) for the given distance(s).
         """
-        return super(PathLossOutdoorBase, self).calc_path_loss_dB(d)
+        return super().calc_path_loss_dB(d)
 
     def calc_path_loss(self, d: NumberOrArray, **kargs: Any) -> NumberOrArray:
         """

@@ -15,7 +15,7 @@ class VerySimpleQamSimulationRunner(VerySimplePskSimulationRunner):
 
     """
     def __init__(self, ):
-        VerySimplePskSimulationRunner.__init__(self)
+        super().__init__()
         M = 16
 
         SNR = np.array([0, 3, 6, 9, 12, 15, 18])
