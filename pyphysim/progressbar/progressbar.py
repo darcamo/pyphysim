@@ -57,11 +57,12 @@ IPAddress = str
 PortNumber = int
 
 __all__ = [
-    'DummyProgressbar', 'ProgressBarBase', 'ProgressbarText',
-    'ProgressbarText2', 'ProgressbarText3', 'ProgressbarMultiProcessServer',
+    'DummyProgressbar', 'ProgressBarBase', 'ProgressbarTextBase',
+    'ProgressbarText', 'ProgressbarText2', 'ProgressbarText3',
+    'ProgressBarIPython', 'ProgressbarDistributedServerBase',
+    'ProgressbarDistributedClientBase', 'ProgressbarMultiProcessServer',
     'ProgressbarMultiProcessClient', 'ProgressbarZMQServer',
-    'ProgressBarIPython', 'center_message', 'ProgressbarTextBase',
-    'ProgressbarDistributedServerBase', 'ProgressbarDistributedClientBase'
+    'ProgressbarZMQClient'
 ]
 
 
@@ -418,7 +419,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
             which means that the progress will be printed in the standard
             output.
         """
-        super(ProgressbarTextBase, self).__init__(finalcount)
+        super().__init__(finalcount)
 
         # This will be updated with the progress and should contain the
         # whole string representation of the progressbar.
@@ -700,8 +701,7 @@ class ProgressbarText(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
-                                     output)
+        super().__init__(finalcount, progresschar, message, output)
 
         # stores how many characters where already printed in a previous
         # call to the `progress` function
@@ -854,8 +854,7 @@ class ProgressbarText2(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
-                                     output)
+        super().__init__(finalcount, progresschar, message, output)
 
     def _update_iteration(self, count: int) -> None:
         """
@@ -952,8 +951,7 @@ class ProgressbarText3(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        ProgressbarTextBase.__init__(self, finalcount, progresschar, message,
-                                     output)
+        super().__init__(finalcount, progresschar, message, output)
 
         # The ProgressbarText3 class already prints an empty line after
         # each update. Therefore, there is no need to print an empty line
@@ -1019,7 +1017,7 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
                 'To use ProgressBarIPython please install IPython and ipywidgets'
             )
 
-        super(ProgressBarIPython, self).__init__(finalcount)
+        super().__init__(finalcount)
 
         # IPython already provide us a nice widget to represent
         # progressbars.
@@ -1606,8 +1604,7 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
             to a file with name `filename`. This is usually useful for
             debugging and testing purposes.
         """
-        ProgressbarDistributedServerBase.__init__(self, progresschar, message,
-                                                  sleep_time, filename, style)
+        super().__init__(progresschar, message, sleep_time, filename, style)
 
     def _update_client_data_list(self) -> None:
         """
@@ -1668,7 +1665,7 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
     def __init__(self, client_id: ClientID,
                  client_data_list: List[Any]) -> None:
         """Initializes the ProgressbarMultiProcessClient object."""
-        ProgressbarDistributedClientBase.__init__(self, client_id)
+        super().__init__(client_id)
         self._client_data_list = client_data_list
 
     def progress(self, count: int) -> None:
@@ -1737,8 +1734,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
                  ip: IPAddress = 'localhost',
                  port: PortNumber = 7396,
                  style: str = "text2") -> None:
-        ProgressbarDistributedServerBase.__init__(self, progresschar, message,
-                                                  sleep_time, filename, style)
+        super().__init__(progresschar, message, sleep_time, filename, style)
 
         # Create a Multiprocessing namespace
         # pylint: disable=E1101
@@ -1913,7 +1909,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
     """
     def __init__(self, client_id: ClientID, ip: IPAddress,
                  port: PortNumber) -> None:
-        ProgressbarDistributedClientBase.__init__(self, client_id)
+        super().__init__(client_id)
         self.ip = ip
         self.port = port
 

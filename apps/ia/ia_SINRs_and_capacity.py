@@ -8,12 +8,12 @@ except ImportError as e:  # pragma: no cover
 
 import numpy as np
 from matplotlib import pyplot as plt
+from pandas import DataFrame
 
 import pyphysim.channels.multiuser
-from pandas import DataFrame
 from pyphysim.ia.algorithms import (AlternatingMinIASolver, MaxSinrIASolver,
                                     MMSEIASolver)
-from pyphysim.simulations.progressbar import ProgressbarText
+from pyphysim.progressbar import ProgressbarText
 from pyphysim.util.conversion import dB2Linear
 
 

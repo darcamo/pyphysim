@@ -9,11 +9,11 @@ from time import time
 import numpy as np
 
 import pyphysim.channels.multiuser
+from pyphysim import progressbar
 from pyphysim.cell import cell
 from pyphysim.channels import pathloss
 from pyphysim.comm import blockdiagonalization
 from pyphysim.modulators import fundamental
-from pyphysim.simulations import progressbar
 from pyphysim.util import conversion, misc
 
 tic = time()

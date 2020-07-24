@@ -5,7 +5,7 @@ import numpy as np
 
 import pyphysim.channels.multiuser
 from pyphysim.ia import algorithms
-from pyphysim.simulations.progressbar import ProgressbarText
+from pyphysim.progressbar import ProgressbarText
 from pyphysim.util.conversion import dB2Linear, linear2dB
 
 # calc_capacity = lambda sirn: np.sum(np.log2(1 + sirn))

@@ -4,7 +4,7 @@
 import sys
 from typing import Any, List, Optional, Union
 
-from .progressbar import ProgressbarZMQServer
+from ..progressbar import ProgressbarZMQServer
 from .runner import SimulationRunner
 
 try:

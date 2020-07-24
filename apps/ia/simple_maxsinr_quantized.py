@@ -8,7 +8,7 @@ import numpy as np
 import pyphysim.channels.multiuser
 from pyphysim.ia import algorithms
 from pyphysim.modulators import fundamental
-from pyphysim.simulations.progressbar import ProgressbarText2
+from pyphysim.progressbar import ProgressbarText2
 from pyphysim.util import misc
 from pyphysim.util.conversion import dB2Linear
 

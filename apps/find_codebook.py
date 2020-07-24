@@ -11,8 +11,8 @@ import numpy as np
 import scipy.io
 from configobj import ConfigObj
 
-from pyphysim.simulations.progressbar import (DummyProgressbar,
-                                              ProgressbarMultiProcessServer)
+from pyphysim.progressbar import (DummyProgressbar,
+                                  ProgressbarMultiProcessServer)
 from pyphysim.subspace.metrics import (
     calc_chordal_distance_from_principal_angles, calc_principal_angles)
 from pyphysim.util.misc import pretty_time

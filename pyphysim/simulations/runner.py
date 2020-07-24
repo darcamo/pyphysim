@@ -8,14 +8,11 @@ from argparse import ArgumentParser
 from time import time
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
-from pyphysim.simulations.progressbar import (ProgressBarBase,
-                                              ProgressbarZMQClient)
-
+from ..progressbar import (ProgressBarBase, ProgressBarIPython,
+                           ProgressbarText, ProgressbarText2, ProgressbarText3,
+                           ProgressbarZMQClient, ProgressbarZMQServer)
 from ..util.misc import pretty_time
 from .parameters import SimulationParameters
-from .progressbar import (ProgressBarIPython, ProgressbarText,
-                          ProgressbarText2, ProgressbarText3,
-                          ProgressbarZMQServer)
 from .results import Result, SimulationResults
 
 try:
