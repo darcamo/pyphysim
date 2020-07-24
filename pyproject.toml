@@ -57,6 +57,7 @@ jupyter-lsp = "^0.8.0"
 ipympl = "^0.5.7"
 pip = "^20.1.1"
 python-language-server = {extras = ["all"], version = "^0.34.1"}
+epc = "^0.0.5"
 
 [build-system]
 # See https://github.com/chrahunt/rtd-poetry/issues/3
