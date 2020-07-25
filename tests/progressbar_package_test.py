@@ -568,13 +568,14 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         self.assertIsNone(self.proxybar1._zmq_context)
         self.assertIsNone(self.proxybar2._zmq_context)
 
-        # Before the first time the progress method in self.proxybar1 and
-        # self.proxybar2 is called their "_progress_func" variable points
-        # to the "_connect_and_update_progress" method
-        self.assertTrue(self.proxybar1._progress_func == progressbar.
-                        ProgressbarZMQClient._connect_and_update_progress)
-        self.assertTrue(self.proxybar2._progress_func == progressbar.
-                        ProgressbarZMQClient._connect_and_update_progress)
+        # In the first time the `progress` method is called it will call the
+        # `start` method, which will create the zmq sockets
+        self.proxybar1.start()
+        self.proxybar2.start()
+        self.assertIsNotNone(self.proxybar1._zmq_push_socket)
+        self.assertIsNotNone(self.proxybar1._zmq_context)
+        self.assertIsNotNone(self.proxybar2._zmq_push_socket)
+        self.assertIsNotNone(self.proxybar2._zmq_context)
 
     def test_update_progress(self):
         try:

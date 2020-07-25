@@ -32,7 +32,7 @@ import os
 import sys
 import time
 import warnings
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple, cast, final
 
 from ..util.misc import pretty_time
 
@@ -257,6 +257,7 @@ class ProgressBarBase:
         finalization code should be run.
         """
 
+    @final
     def start(self) -> None:
         """
         Start the progressbar.
@@ -264,12 +265,16 @@ class ProgressBarBase:
         This method should be called just before the progressbar is used
         for the first time. Among possible other things, it will store the
         current time so that the elapsed time can be tracked.
+
+        If is automatically called in the `progress` method, if not called
+        before.
         """
         if self._initialized is False:
             self._start_time = time.time()
             self._perform_initialization()
             self._initialized = True
 
+    @final
     def stop(self) -> None:
         """
         Stop the progressbar.
@@ -310,6 +315,7 @@ class ProgressBarBase:
         """
         raise NotImplementedError("Implement this method in a subclass")
 
+    @final
     def progress(self, count: int) -> None:
         """
         Updates the current progress.
@@ -357,6 +363,21 @@ class ProgressBarBase:
             # character.
             if count == self.finalcount:
                 self.stop()
+
+    def __call__(self, count: int) -> None:
+        """
+        Updates the current progress.
+
+        This method is the same as the :meth:`progress`. It is defined so
+        that a progressbar object can behave like a function.
+
+        Parameters
+        ----------
+        count : int
+            The new amount of progress.
+        """
+        # noinspection PyArgumentList,PyTypeChecker
+        self.progress(count)
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1470,7 +1491,7 @@ class ProgressbarDistributedServerBase:
     #     return toc - self._tic.value
 
 
-class ProgressbarDistributedClientBase:
+class ProgressbarDistributedClientBase(ProgressBarBase):
     """
     Proxy progressbar that behaves like a ProgressbarText object, but is
     actually updating a shared (with other clients) progressbar.
@@ -1486,20 +1507,33 @@ class ProgressbarDistributedClientBase:
     client_id : ClientID
         The client ID.
     """
-    def __init__(self, client_id: ClientID):
+    def __init__(self, client_id: ClientID, finalcount: int):
         """
         """
+        super().__init__(finalcount)
         self.client_id = client_id
 
-    # Implement this method in a derived class
-    def progress(self, count: int) -> None:
-        """Updates the proxy progress bar.
+    def _update_iteration(self, count: int) -> None:  # pragma: no cover
+        """
+        Update the progressbar according with the new `count`.
 
         Parameters
         ----------
         count : int
-            The new amount of progress.
+            The current count to be represented in the progressbar. The
+            progressbar represents this count as a percent value of
+            self.finalcount
         """
+        raise NotImplementedError("Implement this method in a subclass")
+
+    def _display_current_progress(self) -> None:  # pragma: nocover
+        """
+        Refresh the progress representation.
+
+        This method should be defined in a subclass.
+        """
+        # There is nothing to do in a client progressbar
+        pass
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1641,7 +1675,8 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
             The proxy progressbar.
         """
         client_id = self._register_client(total_count)
-        return ProgressbarMultiProcessClient(client_id, self._client_data_list)
+        return ProgressbarMultiProcessClient(client_id, self._client_data_list,
+                                             total_count)
 
 
 # Used by the ProgressbarMultiProcessServer class
@@ -1662,13 +1697,13 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
     client_data_list : list
         The client data list
     """
-    def __init__(self, client_id: ClientID,
-                 client_data_list: List[Any]) -> None:
+    def __init__(self, client_id: ClientID, client_data_list: List[Any],
+                 finalcount: int) -> None:
         """Initializes the ProgressbarMultiProcessClient object."""
-        super().__init__(client_id)
+        super().__init__(client_id, finalcount)
         self._client_data_list = client_data_list
 
-    def progress(self, count: int) -> None:
+    def _update_iteration(self, count: int) -> None:
         """Updates the proxy progress bar.
 
         Parameters
@@ -1750,6 +1785,14 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         # This will be set to a ZMQ Socket in the _update_progress method
         self._zmq_pull_socket: Optional[zmq.sugar.socket.Socket] = None
 
+    def __repr__(self):
+        return f"ProgressbarZMQServer(ip={self.ip}, port={self.port}, num_clients={self.num_clients})"
+
+    @property
+    def num_clients(self):
+        """Number of registered clients"""
+        return self._last_id + 1
+
     @property
     def ip(self) -> IPAddress:
         """
@@ -1790,7 +1833,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
             The proxy progressbar.
         """
         client_id = self._register_client(total_count)
-        proxybar = ProgressbarZMQClient(client_id, self.ip, self.port)
+        proxybar = ProgressbarZMQClient(client_id, self.ip, self.port,
+                                        total_count)
         return proxybar
 
     # noinspection PyUnresolvedReferences
@@ -1907,53 +1951,19 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
     port : PortNumber
         The port number used by the server.
     """
-    def __init__(self, client_id: ClientID, ip: IPAddress,
-                 port: PortNumber) -> None:
-        super().__init__(client_id)
+    def __init__(self, client_id: ClientID, ip: IPAddress, port: PortNumber,
+                 finalcount: int) -> None:
+        super().__init__(client_id, finalcount)
         self.ip = ip
         self.port = port
-
-        # Function that will be called to update the progress. This
-        # variable is initially set to the "_connect_and_update_progress"
-        # method that will create the socket, connect it to the main
-        # progressbar and finally set "_progress_func" to the "_progress"
-        # method that will actually update the progress.
-        self._progress_func = \
-            ProgressbarZMQClient._connect_and_update_progress
 
         # ZMQ Variables: These variables will be set the first time the
         # progress method is called.
         self._zmq_context: Optional[zmq.Context] = None
         self._zmq_push_socket: Optional[zmq.sugar.socket.Socket] = None
 
-    def progress(self, count: int) -> None:
+    def _update_iteration(self, count: int) -> None:
         """Updates the proxy progress bar.
-
-        Parameters
-        ----------
-        count : int
-            The new amount of progress.
-        """
-        # noinspection PyArgumentList,PyTypeChecker
-        self._progress_func(self, count)
-
-    def __call__(self, count: int) -> None:
-        """
-        Updates the proxy progress bar.
-
-        This method is the same as the :meth:`progress`. It is define so
-        that a ProgressbarZMQClient object can behave like a function.
-
-        Parameters
-        ----------
-        count : int
-            The new amount of progress.
-        """
-        # noinspection PyArgumentList,PyTypeChecker
-        self._progress_func(self, count)
-
-    def _progress(self, count: int) -> None:
-        """
 
         Parameters
         ----------
@@ -1966,7 +1976,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         assert (self._zmq_push_socket is not None)
         self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
 
-    def _connect_and_update_progress(self, count: int) -> None:
+    def _perform_initialization(self) -> None:
         """
         Creates the "push socket", connects it to the socket of the main
         progressbar and then updates the progress.
@@ -1993,9 +2003,12 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         # received.
         self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
 
-        self._progress_func = ProgressbarZMQClient._progress
-        # noinspection PyArgumentList,PyTypeChecker
-        self._progress_func(self, count)
+        # self._progress_func = ProgressbarZMQClient._progress
+        # # noinspection PyArgumentList,PyTypeChecker
+        # self._progress_func(self, self.finalcount)
+
+    def __repr__(self):
+        return f"ProgressbarZMQClient(client_id={self.client_id}, ip='{self.ip}', port={self.port}, finalcount={self.finalcount})"
 
 
 # xxxxxxxxxx ProgressbarZMQServer - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

@@ -1176,7 +1176,9 @@ class SimulationRunner:
                 pass
         else:
             client_id, ip, port = proxybar_data  # pylint: disable=W0633
-            proxybar = ProgressbarZMQClient(client_id, ip, port)
+            finalcount = current_params["rep_max"]
+            assert (isinstance(finalcount, int))
+            proxybar = ProgressbarZMQClient(client_id, ip, port, finalcount)
             update_progress_func = proxybar.progress
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
