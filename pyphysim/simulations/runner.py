@@ -1705,9 +1705,14 @@ class SimulationRunner:
         This method is run in the `simulate_in_parallel` method if a "view" is
         not passed.
         """
-        from ipyparallel import Client
-        c = Client()
-        dview = c.direct_view()
+        try:
+            from ipyparallel import Client
+            c = Client(timeout=2.0)
+            dview = c.direct_view()
+        except ModuleNotFoundError:
+            raise RuntimeError(
+                "You need to install the 'ipyparallel' library to use the `simulate_in_parallel` method. You most likely also want to install the 'cloudpickle' library"
+            )
 
         try:
             import cloudpickle

@@ -401,7 +401,7 @@ def simulate_general(runner, results_filename):
         # are running. In that case we will perform the simulation in
         # parallel
         from ipyparallel import Client
-        cl = Client()
+        cl = Client(timeout=2.0)
         cl[:].use_cloudpickle()
         # We create a direct view to run coe in all engines
         dview = cl.direct_view()
