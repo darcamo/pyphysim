@@ -6,6 +6,7 @@ import os
 import sys
 import warnings
 from argparse import ArgumentParser
+from pathlib import Path
 from time import time
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
@@ -302,6 +303,22 @@ class SimulationTracking:
         self._var_print_iter = None
         self._num_variations = 0
 
+    def setup(self):
+        """
+        Setup code that run in the begining of a simulation.
+
+        This method must be called once in the start of a simulation.
+        """
+        self.tic()
+
+    def cleanup(self):
+        """
+        Clean-up code that run in the end of a simulation.
+
+        This method must be called once in end of a simulation.
+        """
+        self.toc()
+
     def tic(self):
         self.__tic = time()
 
@@ -319,13 +336,14 @@ class SimulationTracking:
 
         if value == 'ipython':
             try:
-                # Try to create a ProgressBarIPython to check that it is available
+                # Try to create a ProgressBarIPython to check that it is
+                # available
                 pbar = ProgressBarIPython(0)
             except ModuleNotFoundError:
                 import warnings
                 warnings.warn(
-                    "You need to install IPython and ipywidgets to use the 'ipython' progressbar style"
-                )
+                    "You need to install IPython and ipywidgets to use the "
+                    "'ipython' progressbar style")
                 # Fallback to 'text2' style
                 self._update_progress_function_style = 'text2'
 
@@ -645,8 +663,8 @@ class SimulationTracking:
     def next_variation(self):
         if self._var_print_iter is None:
             warnings.warn(
-                "The `next_variation` method was called without `set_serial_tracking` method have been called before"
-            )
+                "The `next_variation` method was called without "
+                "`set_serial_tracking` method have been called before")
         #     self._var_print_iter =
         else:
             next(self._var_print_iter)
@@ -713,6 +731,314 @@ class SimulationConfigurator:
                 self._configobj_spec,
                 save_parsed_file=save_parsed_file)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def setup(self, rep_max):
+        """
+        Setup code that run in the begining of a simulation.
+
+        This method must be called once in the start of a simulation.
+        """
+        self.params.parameters['rep_max'] = rep_max
+
+    def cleanup(self):
+        """
+        Clean-up code that run in the end of a simulation.
+
+        This method must be called once in end of a simulation.
+        """
+        pass
+
+
+class SimulationResultsSaver:
+    def __init__(self):
+        self.results = SimulationResults()
+
+        # xxxxxxxxxx Configure saving of simulation results xxxxxxxxxxxxxxx
+        # If this variable is set to True the saved partial results will be
+        # deleted after the simulation is finished.
+        self.delete_partial_results_bool = False
+
+        # Folder where the partial results will be saved. Set this to None
+        # to save the partial results in the same folder of the final
+        # results.
+        self.partial_results_folder = 'partial_results'
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
+        # Variable to store the name of the file where the simulation
+        # results will be stored.
+        self._results_base_filename: Optional[str] = None
+        # Variable to store all the names for the partial results. Each
+        # name in it will be equivalent to the value of
+        # _results_base_filename appended with unpack_i where i will be an
+        # integer. These names will be used after the simulation has
+        # finished and full results were saved to delete the files with the
+        # partial results.
+        self._results_base_filename_unpack_list: List[str] = []
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Last time the save_partial_results_maybe method was called
+        self.__last_tic = time()
+
+    def clear(self):
+        self.results = SimulationResults()
+
+        # # Not sure this is necessary
+        # self._results_base_filename_unpack_list = []
+
+    def setup(self, rep_max, params):
+        """
+        Setup code that run in the begining of a simulation.
+
+        This method must be called once in the start of a simulation.
+        """
+        self.results.repmax = rep_max
+        # Store the Simulation parameters in the SimulationResults object.
+        # With this, the simulation parameters will be available for
+        # someone that has the SimulationResults object (loaded from a
+        # file, for instance).
+        self.results.set_parameters(params)
+
+    def cleanup(self, runned_reps, elapsed_time):
+        """
+        Clean-up code that run in the end of a simulation.
+
+        This method must be called once in end of a simulation.
+        """
+        # Save the number of runned iterations
+        self.results.runned_reps = runned_reps
+
+        # Also save the elapsed time in the SimulationResults object
+        self.results.elapsed_time = elapsed_time
+
+        # xxxxx Save the results if results_base_filename is not None x
+        if self._results_base_filename is not None:
+            self.results.save_to_file(self._results_base_filename)
+            # Delete the partial results (this will only delete the
+            # partial results if self.delete_partial_results_bool is
+            # True)
+            self.__delete_partial_results_maybe()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def set_results_filename(self, filename: Optional[str] = None) -> None:
+        self._results_base_filename = filename
+
+    @property
+    def results_base_filename(self) -> Optional[str]:
+        """
+        Get name of the file where the last simulation results were stored.
+
+        Returns
+        -------
+        str
+            The result base filename.
+        """
+        if self._results_base_filename is None:
+            return None
+
+        # noinspection PyTypeChecker
+        return self.results.get_filename_with_replaced_params(
+            self._results_base_filename)
+
+    @property
+    def results_filename(self) -> Optional[str]:
+        """
+        Get name of the file where the last simulation results were stored.
+
+        Returns
+        -------
+        str
+            The result base filename.
+        """
+        results_base_filename = self.results_base_filename
+        if results_base_filename is None:
+            results_filename = None
+        else:
+            ext = os.path.splitext(results_base_filename)[-1]
+            if ext == '.pickle':
+                results_filename = results_base_filename
+            else:
+                results_filename = '{0}.pickle'.format(results_base_filename)
+
+        return results_filename
+
+    def __delete_partial_results_maybe(self) -> None:
+        """
+        (maybe) Delete the files containing partial results.
+
+        This method is called inside the simulate method after the full
+        results were saved. It will only have an effect if the
+        "delete_partial_results_bool" variable is True (thus the 'maybe' in
+        the method's name).
+
+        Notes
+        -----
+        This method will do nothing if self.delete_partial_results_bool is
+        not True.
+        """
+        if self.delete_partial_results_bool is True:
+            for name in self._results_base_filename_unpack_list:
+                try:
+                    os.remove(name)
+                except OSError:  # pragma: no cover
+                    pass
+            self._results_base_filename_unpack_list = []
+        else:
+            # Do nothing if self.delete_partial_results_bool is not True
+            pass
+
+    def _get_partial_results_filename(self, current_params):
+        return get_partial_results_filename(self.results_base_filename,
+                                            current_params,
+                                            self.partial_results_folder)
+
+    def save_partial_results(self, current_rep: int,
+                             current_params: SimulationParameters,
+                             current_sim_results: SimulationResults) -> \
+    Optional[str]:
+        """
+        Save the partial simulation results to a file.
+
+        Note: It won't do anything if `_results_base_filename` is None
+
+        Parameters
+        ----------
+        current_rep : int
+            Current repetition.
+        current_params : SimulationParameters
+            The current parameters.
+        current_sim_results : SimulationResults
+            The partial simulations results object to be saved.
+        partial_results_filename : str
+            The name of the file to save the partial simulation results.
+
+        Returns
+        -------
+        str
+            Name of the file were partial results were stored
+
+        Notes
+        -----
+        The name of the results file where the partial results were saved,
+        that is, the value of the `partial_results_filename` argument will
+        be automatically added to the list of files to be deleted after the
+        simulation is finished if delete_partial_results_bool is
+        True. However, remember that in the simulate_in_parallel method
+        this method will be run in a different object in an IPython
+        engine. Therefore, you will need to manually add, the value of the
+        partial_results_filename variable to the list of files to be
+        deleted (the __results_base_filename_unpack_list variable).
+        """
+        if self._results_base_filename is None:
+            return None
+
+        # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
+        # First we add the current parameters to the partial simulation
+        # results object
+        current_sim_results.set_parameters(current_params)
+        # Now we can save the partial results to a file.
+        current_sim_results.current_rep = current_rep
+
+        partial_results_filename = self._get_partial_results_filename(
+            current_params)
+
+        # Try to save the partial results
+        try:
+            filename = current_sim_results.save_to_file(
+                partial_results_filename)
+        except IOError as e:
+            if self.partial_results_folder is not None:
+
+                os.mkdir(self.partial_results_folder)
+                # This should not raise IOError again.
+                filename = current_sim_results.save_to_file(
+                    partial_results_filename)
+            else:  # pragma: no cover
+                raise e
+
+        # Get the absolute path because the current working directory when this
+        # method is run might be different from the current working directory
+        # when the cleaning (deleting partial results) is done
+        full_partial_file_name = Path(filename).absolute()
+        self._results_base_filename_unpack_list.append(full_partial_file_name)
+
+        return full_partial_file_name
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def save_partial_results_maybe(self, current_rep: int,
+                                   current_params: SimulationParameters,
+                                   current_sim_results: SimulationResults) -> \
+    Optional[str]:
+        """
+        Calls `save_partial_results` if `current_rep` is multiple of 500 OR
+        the elapsed time since the last call to this method is more then 5
+        minutes.
+
+        This method may be called after each simulation iteration and it will
+        only save partial results from time to time.
+
+        Calling the `save_partial_results` method too often to save partial
+        retults (for instance after each iteration) may degrade performance of
+        the simulation. A bette compromise is to only save from time to time. In
+        that case, this methoc may be used instead of `save_partial_results`.
+
+         """
+        toc = time()
+        if ((toc - self.__last_tic > 300 or current_rep % 500 == 0)):
+            self.save_partial_results(current_rep, current_params,
+                                      current_sim_results)
+            self.__last_tic = toc
+
+    def load_partial_results(self, current_params):
+        """
+        Load the partial simulation results from a file, if available.
+
+        Returns None if no partial results are available.
+
+        Parameters
+        ----------
+        current_params
+
+        Returns
+        -------
+        current_sim_results or None
+        """
+        if self._results_base_filename is None:
+            return None
+
+        # Get the name of the file with partial results for current parameters
+        partial_results_filename = self._get_partial_results_filename(
+            current_params)
+
+        try:
+            # If loading partial results succeeds, then we will have
+            # partial results. If it fails because the file does not
+            # exist, this will thrown a IOError exception and we will
+            # execute the except block instead.
+            current_sim_results = SimulationResults.load_from_file(
+                partial_results_filename)
+
+            # Note that at this point we have successfully loaded the
+            # partial results from the file. However, we still need to
+            # make sure it matches our current parameters. It it does
+            # not match the user likely used a wrong name and we raise
+            # an exception to stop the simulation.
+            #
+            # NOTE: If the type of this exception is changed in the
+            # future make sure it is not caught in the except block.
+            if not current_params == current_sim_results.params:
+                err_msg = (
+                    "Partial results loaded from file does not match"
+                    " current parameters. \nfile: '{0}'\nDelete that file "
+                    "first to simulate with new configuration.")
+                raise ValueError(err_msg.format(partial_results_filename))
+
+            return current_sim_results
+
+        except IOError:
+            # There is no file with partial results
+            return None
+        # TODO: Finish the implementation
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -812,7 +1138,8 @@ class SimulationRunner:
             default_config_file, config_spec, read_command_line_args,
             save_parsed_file)
 
-        self.results = SimulationResults()
+        # self.results = SimulationResults()
+        self._simulation_results_saver = SimulationResultsSaver()
 
         # Handle the progressbar and elapsed time tracking
         self._simulation_tracking = SimulationTracking()
@@ -823,33 +1150,13 @@ class SimulationRunner:
         # the actual results of performing an asynchronous task in IPython.
         self._async_results: Optional[Any] = None
 
-        # xxxxxxxxxx Configure saving of simulation results xxxxxxxxxxxxxxx
-        # If this variable is set to True the saved partial results will be
-        # deleted after the simulation is finished.
-        self.delete_partial_results_bool = False
-
-        # Folder where the partial results will be saved. Set this to None
-        # to save the partial results in the same folder of the final
-        # results.
-        self.partial_results_folder = 'partial_results'
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
-        # Variable to store the name of the file where the simulation
-        # results will be stored.
-        self._results_base_filename: Optional[str] = None
-        # Variable to store all the names for the partial results. Each
-        # name in it will be equivalent to the value of
-        # _results_base_filename appended with unpack_i where i will be an
-        # integer. These names will be used after the simulation has
-        # finished and full results were saved to delete the files with the
-        # partial results.
-        self._results_base_filename_unpack_list: List[str] = []
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
     @property
     def params(self):
         return self._simulation_configurator.params
+
+    @property
+    def results(self):
+        return self._simulation_results_saver.results
 
     @property
     def update_progress_function_style(self):
@@ -867,7 +1174,6 @@ class SimulationRunner:
     def progressbar_message(self, value):
         self._simulation_tracking.progressbar_message = value
 
-    # TODO: Change this to set property of results_filename
     def set_results_filename(self, filename: Optional[str] = None) -> None:
         """
         Set the name of the file where the simulation results will be
@@ -895,47 +1201,29 @@ class SimulationRunner:
             results will be stored. If not provided the results will not be
             automatically stored.
         """
-        self._results_base_filename = filename
-        self._simulation_tracking.results_base_filename = self.results_base_filename
+        self._simulation_results_saver.set_results_filename(filename)
+        self._simulation_tracking.results_base_filename = \
+            self._simulation_results_saver.results_base_filename
 
     @property
-    def results_base_filename(self) -> Optional[str]:
-        """
-        Get name of the file where the last simulation results were stored.
-
-        Returns
-        -------
-        str
-            The result base filename.
-        """
-        if self._results_base_filename is None:
-            return None
-
-        # noinspection PyTypeChecker
-        return self.results.get_filename_with_replaced_params(
-            self._results_base_filename)
+    def results_filename(self):
+        return self._simulation_results_saver.results_filename
 
     @property
-    def results_filename(self) -> Optional[str]:
-        """
-        Get name of the file where the last simulation results were stored.
+    def delete_partial_results_bool(self):
+        return self._simulation_results_saver.delete_partial_results_bool
 
-        Returns
-        -------
-        str
-            The result base filename.
-        """
-        results_base_filename = self.results_base_filename
-        if results_base_filename is None:
-            results_filename = None
-        else:
-            ext = os.path.splitext(results_base_filename)[-1]
-            if ext == '.pickle':
-                results_filename = results_base_filename
-            else:
-                results_filename = '{0}.pickle'.format(results_base_filename)
+    @delete_partial_results_bool.setter
+    def delete_partial_results_bool(self, value):
+        self._simulation_results_saver.delete_partial_results_bool = value
 
-        return results_filename
+    @property
+    def partial_results_folder(self):
+        return self._simulation_results_saver.partial_results_folder
+
+    @partial_results_folder.setter
+    def partial_results_folder(self, value):
+        self._simulation_results_saver.partial_results_folder = value
 
     @property
     def progress_output_type(self):
@@ -945,86 +1233,8 @@ class SimulationRunner:
     def progress_output_type(self, value):
         """value can be either 'screen' of 'file'"""
         self._simulation_tracking.progress_output_type = value
-        self._simulation_tracking.results_base_filename = self.results_base_filename
-
-    def __delete_partial_results_maybe(self) -> None:
-        """
-        (maybe) Delete the files containing partial results.
-
-        This method is called inside the simulate method after the full
-        results were saved. It will only have an effect if the
-        "delete_partial_results_bool" variable is True (thus the 'maybe' in
-        the method's name).
-
-        Notes
-        -----
-        This method will do nothing if self.delete_partial_results_bool is
-        not True.
-        """
-        if self.delete_partial_results_bool is True:
-            for name in self._results_base_filename_unpack_list:
-                try:
-                    os.remove(name)
-                except OSError:  # pragma: no cover
-                    pass
-            self._results_base_filename_unpack_list = []
-        else:
-            # Do nothing if self.delete_partial_results_bool is not True
-            pass
-
-    def __save_partial_results(self, current_rep: int,
-                               current_params: SimulationParameters,
-                               current_sim_results: SimulationResults,
-                               partial_results_filename: str) -> None:
-        """
-        Save the partial simulation results to a file.
-
-        Parameters
-        ----------
-        current_rep : int
-            Current repetition.
-        current_params : SimulationParameters
-            The current parameters.
-        current_sim_results : SimulationResults
-            The partial simulations results object to be saved.
-        partial_results_filename : str
-            The name of the file to save the partial simulation results.
-
-        Notes
-        -----
-        The name of the results file where the partial results were saved,
-        that is, the value of the `partial_results_filename` argument will
-        be automatically added to the list of files to be deleted after the
-        simulation is finished if delete_partial_results_bool is
-        True. However, remember that in the simulate_in_parallel method
-        this method will be run in a different object in an IPython
-        engine. Therefore, you will need to manually add, the value of the
-        partial_results_filename variable to the list of files to be
-        deleted (the __results_base_filename_unpack_list variable).
-        """
-        # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
-        # First we add the current parameters to the partial simulation
-        # results object
-        current_sim_results.set_parameters(current_params)
-        # Now we can save the partial results to a file.
-        current_sim_results.current_rep = current_rep
-
-        # Try to save the partial results
-        try:
-            filename = current_sim_results.save_to_file(
-                partial_results_filename)
-        except IOError as e:
-            if self.partial_results_folder is not None:
-
-                os.mkdir(self.partial_results_folder)
-                # This should not raise IOError again.
-                filename = current_sim_results.save_to_file(
-                    partial_results_filename)
-            else:  # pragma: no cover
-                raise e
-
-        self._results_base_filename_unpack_list.append(filename)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._simulation_tracking.results_base_filename = \
+            self._simulation_results_saver.results_base_filename
 
     def clear(self) -> None:  # pragma: no cover
         """
@@ -1038,7 +1248,8 @@ class SimulationRunner:
         """
         # Number of iterations performed by simulation when it finished
         self._runned_reps = []
-        self.results = SimulationResults()
+        # self.results = SimulationResults()
+        self._simulation_results_saver.clear()
         self._simulation_tracking.clear()
 
     def __run_simulation_and_track_elapsed_time(
@@ -1118,7 +1329,8 @@ class SimulationRunner:
 
         This function may be reimplemented in the derived class if a stop
         condition besides the number of iterations is desired. The idea is
-        that _run_simulation returns a :class:`.SimulationResults` object, which is
+        that _run_simulation returns a :class:`.SimulationResults` object,
+        which is
         then passed to _keep_going, which is then in charge of deciding if
         the simulation should stop or not.
 
@@ -1227,43 +1439,19 @@ class SimulationRunner:
 
         # First we try to Load the partial results for the current
         # parameters.
-        try:
-            # Name of the file where the partial results will be saved
-            if self._results_base_filename is not None:
-                partial_results_filename = get_partial_results_filename(
-                    self.results_base_filename, current_params,
-                    self.partial_results_folder)
-            else:
-                # If __results_base_filename is None there is also no
-                # partial results to load. Therefore, lets raise an
-                # IOError here to go to the except catching
-                raise IOError()
+        current_sim_results = \
+            self._simulation_results_saver.load_partial_results(
+            current_params)
 
-            # If loading partial results succeeds, then we will have
-            # partial results. If it fails because the file does not
-            # exist, this will thrown a IOError exception and we will
-            # execute the except block instead.
-            current_sim_results = SimulationResults.load_from_file(
-                partial_results_filename)
-            num_skipped_reps_result = Result.create("num_skipped_reps",
-                                                    Result.SUMTYPE, 0)
-            current_sim_results.add_result(num_skipped_reps_result)
-
-            # Note that at this point we have successfully loaded the
-            # partial results from the file. However, we still need to
-            # make sure it matches our current parameters. It it does
-            # not match the user likely used a wrong name and we raise
-            # an exception to stop the simulation.
-            #
-            # NOTE: If the type of this exception is changed in the
-            # future make sure it is not caught in the except block.
-            if not current_params == current_sim_results.params:
-                err_msg = (
-                    "Partial results loaded from file does not match"
-                    " current parameters. \nfile: '{0}'\nDelete that file first to simulate with new configuration."
-                )
-                raise ValueError(err_msg.format(partial_results_filename))
-
+        # If loading partial results failed then we will run the FIRST
+        # repetition here and the "while" statement after this
+        # will run as usual.
+        if current_sim_results is None:
+            current_sim_results = \
+                self.__run_simulation_and_track_elapsed_time(
+                    current_params)
+            current_rep = 1
+        else:
             # The current_rep will be set to the value or run
             # repetitions in the loaded partial results. This means
             # that the "while" statement after this try/except block
@@ -1272,20 +1460,10 @@ class SimulationRunner:
             # noinspection PyUnresolvedReferences
             current_rep = current_sim_results.current_rep
 
-        # If loading partial results failed then we will run the FIRST
-        # repetition here and the "while" statement after this
-        # try/except block will run as usual.
-        except IOError:
-            # Perform the first iteration of _run_simulation
-            current_sim_results = \
-                self.__run_simulation_and_track_elapsed_time(
-                    current_params)
-            # Add the extra 'num_skipped_reps' Result.
-            current_sim_results.add_new_result('num_skipped_reps',
-                                               Result.SUMTYPE, 0)
-            current_rep = 1
+        # Add the extra 'num_skipped_reps' Result.
+        current_sim_results.add_new_result("num_skipped_reps", Result.SUMTYPE,
+                                           0)
 
-        last_tic = time()
         # Run more iterations until one of the stop criteria is
         # reached. Note that if partial results were loaded successfully
         # from file and they already achieve the stop criteria then the
@@ -1311,20 +1489,12 @@ class SimulationRunner:
                 # current_rep. After that, the while loop will continue the
                 # simulation.
                 current_sim_results['num_skipped_reps'][-1].update(1)
-                # TODO: Maybe log that one repetition was skipped
-                # print("\nAlready skipped {0} repetitions").format(
-                #     current_sim_results['num_skipped_reps'][-1].get_result())
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-            toc = time()
             # Save partial results each 500 iterations as well as each 5
             # minutes
-            if ((toc - last_tic > 300 or current_rep % 500 == 0)
-                    and self._results_base_filename is not None):
-                self.__save_partial_results(current_rep, current_params,
-                                            current_sim_results,
-                                            partial_results_filename)
-                last_tic = time()
+            self._simulation_results_saver.save_partial_results_maybe(
+                current_rep, current_params, current_sim_results)
 
         # If the while loop ended before rep_max repetitions (because
         # _keep_going returned false) then set the progressbar to full.
@@ -1339,12 +1509,9 @@ class SimulationRunner:
 
         # xxxxxxxxxx Save partial results to file xxxxxxxxxxxxxxxxxxxxx
         # Save partial results for current parameters after all repetitions
-        if self._results_base_filename is not None:
-            self.__save_partial_results(current_rep, current_params,
-                                        current_sim_results,
-                                        partial_results_filename)
-        else:
-            partial_results_filename = None
+        partial_results_filename = \
+            self._simulation_results_saver.save_partial_results(
+            current_rep, current_params, current_sim_results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # This function returns a tuple containing the number of
@@ -1370,7 +1537,8 @@ class SimulationRunner:
             partial results.
         """
         # Note that "current_params" must have a rep_max parameter
-        update_progress_func = self._simulation_tracking.get_serial_update_progress_function(
+        update_progress_func = \
+            self._simulation_tracking.get_serial_update_progress_function(
             current_params)
 
         return self._simulate_for_current_params_common(
@@ -1414,27 +1582,16 @@ class SimulationRunner:
 
     def _simulate_common_setup(self):
         """
-        Common code that must run in the beginning of a simulation.
+        Common setup code that must run in the beginning of a simulation.
         """
         # Reset the SimulationRunner (only really meaningful in case the
         # simulate method is called more than once)
         self.clear()
-        self.params.parameters['rep_max'] = self.rep_max
 
         # xxxxxxxxxxxxxxx Some initialization xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self._simulation_tracking.tic()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxx Store rep_max in the results object xxxxxxxxxxxxxxxxxxxxxxx
-        self.results.rep_max = self.rep_max
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Store the Simulation parameters in the SimulationResults object.
-        # With this, the simulation parameters will be available for
-        # someone that has the SimulationResults object (loaded from a
-        # file, for instance).
-        self.results.set_parameters(self.params)
+        self._simulation_configurator.setup(self.rep_max)
+        self._simulation_tracking.setup()
+        self._simulation_results_saver.setup(self.rep_max, self.params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1451,26 +1608,14 @@ class SimulationRunner:
         # need to run code at the end of the simulate method.
         self._on_simulate_finish()
 
-        # xxxxxxx Save the number of runned iterations xxxxxxxxxxxxxxxx
-        self.results.runned_reps = self.runned_reps
+        # xxxxxxx Cleaning xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._simulation_tracking.cleanup()
+        self._simulation_configurator.cleanup()
+        self._simulation_results_saver.cleanup(self._runned_reps,
+                                               self.elapsed_time)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-        # xxxxx Update the elapsed time xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        self._simulation_tracking.toc()
-
-        # Also save the elapsed time in the SimulationResults object
-        self.results.elapsed_time = self.elapsed_time
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # xxxxx Save the results if results_base_filename is not None x
-        if self._results_base_filename is not None:
-            self.results.save_to_file(self._results_base_filename)
-            # Delete the partial results (this will only delete the
-            # partial results if self.delete_partial_results_bool is
-            # True)
-            self.__delete_partial_results_maybe()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    # TODO: maybe refactor the code path where param_variation_index is not None
     def simulate(self, param_variation_index: Optional[int] = None) -> None:
         """
         Performs the full Monte Carlo simulation (serially).
@@ -1522,10 +1667,11 @@ class SimulationRunner:
         # parameters, if param_variation_index was provided, or for all
         # combinations if it is not provided.
         if param_variation_index is not None:
-            if self._results_base_filename is None:
+            if self._simulation_results_saver.results_base_filename is None:
                 err_msg = ('The results filename must be set before'
                            ' calling the "simulate" method.')
                 raise RuntimeError(err_msg)
+
             param_comb_list = self.params.get_unpacked_params_list()
 
             if 0 <= param_variation_index < len(param_comb_list):
@@ -1540,7 +1686,7 @@ class SimulationRunner:
             for current_params in self.params.get_unpacked_params_list():
                 (current_rep, current_sim_results, _) \
                     = self._simulate_for_current_params_serial(
-                        current_params)
+                    current_params)
 
                 # Store the number of repetitions actually ran for the
                 # current parameters combination
@@ -1633,7 +1779,7 @@ class SimulationRunner:
         # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
         update_progress_funcs = \
             self._simulation_tracking.get_parallel_update_progress_functions(
-            self.params)
+                self.params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxx Perform the actual simulation in asynchronously parallel xxxx
@@ -1677,11 +1823,14 @@ class SimulationRunner:
             for reps, r, filename in results:
                 self._runned_reps.append(reps)
                 self.results.append_all_results(r)
-                self._results_base_filename_unpack_list.append(filename)
+                self._simulation_results_saver\
+                    ._results_base_filename_unpack_list.append(
+                    filename)
 
             self.simulate_common_cleaning()
 
-            # For parallel computations we need to call the stop_progress_updater
+            # For parallel computations we need to call the
+            # stop_progress_updater
             # to stop the progressbar server updating progress
             self._simulation_tracking.stop_progress_updater()
             # if self.update_progress_function_style is not None:

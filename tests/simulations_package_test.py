@@ -2486,6 +2486,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # The results will be the SNR values multiplied by 1.2. plus the
         # bias parameter
         dummyrunner.simulate()
+        self.assertGreater(dummyrunner._simulation_tracking._elapsed_time, 0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2512,6 +2513,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Now we do not set the results filename
         dummyrunner2 = _DummyRunner()
         dummyrunner2.simulate()
+        self.assertGreater(dummyrunner2._simulation_tracking._elapsed_time,
+                           0.0)
 
         self.assertEqual(dummyrunner.results, dummyrunner2.results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2522,6 +2525,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner3.set_results_filename('dummyrunner3_results')
         dummyrunner3.delete_partial_results_bool = False
         dummyrunner3.simulate()
+        self.assertGreater(dummyrunner3._simulation_tracking._elapsed_time,
+                           0.0)
 
         # Now we change the bias parameter
         dummyrunner3.params.add('bias', 1.5)
@@ -2538,6 +2543,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner4.set_results_filename('dummyrunner3_results')
         dummyrunner4.delete_partial_results_bool = True
         dummyrunner4.simulate()
+        self.assertGreater(dummyrunner4._simulation_tracking._elapsed_time,
+                           0.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Delete the pickle files in the same folder
@@ -2630,6 +2637,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         sim_runner.simulate_in_parallel(lview)
+        self.assertGreater(sim_runner._simulation_tracking._elapsed_time, 0.0)
 
         results_extra_1 = sim_runner.results.get_result_values_list(
             'lala', {'extra': 2.2})
