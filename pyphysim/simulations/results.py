@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Module containing simulation result classes."""
 
-from __future__ import division
-
 import os.path
 from collections.abc import Iterable
 from typing import Any, Dict, Iterator, List, Optional, cast
