@@ -352,6 +352,9 @@ class SimulationParameters(JsonSerializable):
         """
         return self.parameters[name]
 
+    def __setitem__(self, key, value):
+        self.parameters[key] = value
+
     def __repr__(self):  # pragma: no cover
         """
         Get the object representation as a string.
