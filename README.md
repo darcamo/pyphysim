@@ -46,3 +46,4 @@ is shown below for quick access.
 - [Transmission_with_Rayleigh_and_AWGN_channels.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/Transmission_with_Rayleigh_and_AWGN_channels.ipynb): Extends the previous notebook to transmission through a Rayleigh channel and discuss running simulation
 - [TDL_and_OFDM.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/TDL_and_OFDM.ipynb): Simulation of transmission through a frequency selective channel that varies in time using OFDM
 - [PathLoss classes.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/PathLoss_classes.ipynb): Illustrate some path loss classes
+- [Alamouti.ipynb](https://github.com/darcamo/pyphysim/blob/master/notebooks/Alamouti.ipynb): Illustrates how to simulate using multiple antennas and how to use configuration files
