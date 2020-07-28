@@ -338,7 +338,7 @@ class SimulationTracking:
             try:
                 # Try to create a ProgressBarIPython to check that it is
                 # available
-                pbar = ProgressBarIPython(0)
+                ProgressBarIPython(0)
             except ModuleNotFoundError:
                 import warnings
                 warnings.warn(
@@ -665,7 +665,6 @@ class SimulationTracking:
             warnings.warn(
                 "The `next_variation` method was called without "
                 "`set_serial_tracking` method have been called before")
-        #     self._var_print_iter =
         else:
             next(self._var_print_iter)
 
@@ -862,6 +861,18 @@ class SimulationResultsSaver:
 
         return results_filename
 
+    def add_partial_filename_for_cleaning(self, filename: str):
+        """
+        Manually add a filename for later deletion (if
+        delete_partial_results_bool is True).
+
+        Parameter
+        ---------
+        filename
+            The name of the partial file.
+        """
+        self._results_base_filename_unpack_list.append(filename)
+
     def __delete_partial_results_maybe(self) -> None:
         """
         (maybe) Delete the files containing partial results.
@@ -883,19 +894,15 @@ class SimulationResultsSaver:
                 except OSError:  # pragma: no cover
                     pass
             self._results_base_filename_unpack_list = []
-        else:
-            # Do nothing if self.delete_partial_results_bool is not True
-            pass
 
     def _get_partial_results_filename(self, current_params):
         return get_partial_results_filename(self.results_base_filename,
                                             current_params,
                                             self.partial_results_folder)
 
-    def save_partial_results(self, current_rep: int,
-                             current_params: SimulationParameters,
-                             current_sim_results: SimulationResults) -> \
-    Optional[str]:
+    def save_partial_results(
+            self, current_rep: int, current_params: SimulationParameters,
+            current_sim_results: SimulationResults) -> Optional[str]:
         """
         Save the partial simulation results to a file.
 
@@ -909,8 +916,6 @@ class SimulationResultsSaver:
             The current parameters.
         current_sim_results : SimulationResults
             The partial simulations results object to be saved.
-        partial_results_filename : str
-            The name of the file to save the partial simulation results.
 
         Returns
         -------
@@ -965,10 +970,9 @@ class SimulationResultsSaver:
         return full_partial_file_name
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def save_partial_results_maybe(self, current_rep: int,
-                                   current_params: SimulationParameters,
-                                   current_sim_results: SimulationResults) -> \
-    Optional[str]:
+    def save_partial_results_maybe(
+            self, current_rep: int, current_params: SimulationParameters,
+            current_sim_results: SimulationResults) -> None:
         """
         Calls `save_partial_results` if `current_rep` is multiple of 500 OR
         the elapsed time since the last call to this method is more then 5
@@ -981,10 +985,9 @@ class SimulationResultsSaver:
         retults (for instance after each iteration) may degrade performance of
         the simulation. A bette compromise is to only save from time to time. In
         that case, this methoc may be used instead of `save_partial_results`.
-
-         """
+        """
         toc = time()
-        if ((toc - self.__last_tic > 300 or current_rep % 500 == 0)):
+        if toc - self.__last_tic > 300 or current_rep % 500 == 0:
             self.save_partial_results(current_rep, current_params,
                                       current_sim_results)
             self.__last_tic = toc
@@ -1038,7 +1041,6 @@ class SimulationResultsSaver:
         except IOError:
             # There is no file with partial results
             return None
-        # TODO: Finish the implementation
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1441,7 +1443,7 @@ class SimulationRunner:
         # parameters.
         current_sim_results = \
             self._simulation_results_saver.load_partial_results(
-            current_params)
+                current_params)
 
         # If loading partial results failed then we will run the FIRST
         # repetition here and the "while" statement after this
@@ -1511,7 +1513,7 @@ class SimulationRunner:
         # Save partial results for current parameters after all repetitions
         partial_results_filename = \
             self._simulation_results_saver.save_partial_results(
-            current_rep, current_params, current_sim_results)
+                current_rep, current_params, current_sim_results)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # This function returns a tuple containing the number of
@@ -1539,7 +1541,7 @@ class SimulationRunner:
         # Note that "current_params" must have a rep_max parameter
         update_progress_func = \
             self._simulation_tracking.get_serial_update_progress_function(
-            current_params)
+                current_params)
 
         return self._simulate_for_current_params_common(
             current_params, update_progress_func)
@@ -1574,7 +1576,6 @@ class SimulationRunner:
             SimulationResults object, and the name of the file storing
             partial results.
         """
-
         # pylint: disable= W0212
         # noinspection PyProtectedMember
         return obj._simulate_for_current_params_common(current_params,
@@ -1698,7 +1699,8 @@ class SimulationRunner:
 
             self.simulate_common_cleaning()
 
-    def __create_default_ipyparallel_view(self):
+    @staticmethod
+    def __create_default_ipyparallel_view():
         """
         Create a default view for parallel computation.
 
@@ -1711,8 +1713,9 @@ class SimulationRunner:
             dview = c.direct_view()
         except ModuleNotFoundError:
             raise RuntimeError(
-                "You need to install the 'ipyparallel' library to use the `simulate_in_parallel` method. You most likely also want to install the 'cloudpickle' library"
-            )
+                "You need to install the 'ipyparallel' library to use the "
+                "`simulate_in_parallel` method. You most likely also want to "
+                "install the 'cloudpickle' library")
 
         try:
             import cloudpickle
@@ -1828,9 +1831,11 @@ class SimulationRunner:
             for reps, r, filename in results:
                 self._runned_reps.append(reps)
                 self.results.append_all_results(r)
-                self._simulation_results_saver\
-                    ._results_base_filename_unpack_list.append(
+                self._simulation_results_saver.add_partial_filename_for_cleaning(
                     filename)
+                # self._simulation_results_saver\
+                #         ._results_base_filename_unpack_list.append(
+                #             filename)
 
             self.simulate_common_cleaning()
 
