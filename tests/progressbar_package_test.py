@@ -111,6 +111,9 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
 
     def test_write_initialization(self):
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 25)
+
         self.pbar.width = 80
         self.pbar._perform_initialization()
 
@@ -135,6 +138,9 @@ class ProgressbarTextTestCase(unittest.TestCase):
             "---0---0---0---0---0---0---0---0---0---0\n")
 
     def test_progress(self):
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 25)
+
         # Before the first time the progress method is called, the
         # _start_time and _stop_time variables used to track the elapsed
         # time are equal to zero.
@@ -200,6 +206,9 @@ class ProgressbarTextTestCase(unittest.TestCase):
             "    1    2    3    4    5    6    7    8    9    0\n"
             "----0----0----0----0----0----0----0----0----0----0\n"
             "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 25)
 
     def test_str(self):
         self.pbar.progress(10)
@@ -350,6 +359,9 @@ class ProgressbarText2TestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_progress(self):
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 50)
+
         self.pbar.progress(15)
         self.assertEqual(
             self.out.getvalue(),
@@ -371,6 +383,9 @@ class ProgressbarText2TestCase(unittest.TestCase):
             "\r[**************         30%                      ]"
             "  15 of 50 complete")
 
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 50)
+
 
 class ProgressbarText3TestCase(unittest.TestCase):
     def setUp(self):
@@ -387,6 +402,9 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
 
     def test_progress(self):
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 50)
+
         self.pbar.progress(15)
 
         self.assertEqual(
@@ -404,6 +422,9 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.assertEqual(
             self.out2.getvalue(),
             "\r********************** 40/50 *********************")
+
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar2.finalcount, 50)
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
@@ -423,13 +444,14 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
     def test_register(self):
         # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.mpbar._last_id, 1)
-        self.assertEqual(self.mpbar.total_final_count, 25)
+        self.assertEqual(self.mpbar.finalcount, 25)
+        self.assertEqual(self.mpbar.num_clients, 2)
 
         # Register a new proxy progressbar and test the last_id and
         # total_final_count again.
         proxybar3 = self.mpbar.register_client_and_get_proxy_progressbar(13)
         self.assertEqual(self.mpbar._last_id, 2)
-        self.assertEqual(self.mpbar.total_final_count, 38)
+        self.assertEqual(self.mpbar.finalcount, 38)
         self.assertEqual(proxybar3.client_id, 2)
 
     def test_proxy_progressbars(self):
@@ -469,7 +491,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         # Sleep for a very short time so that the
         # ProgressbarMultiProcessServer object has time to create the file
         # with the current progress
-        sleep(0.5)
+        sleep(1.0)
 
         self.mpbar.stop_updater(0)
 
@@ -484,14 +506,14 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
             expected_progress_string)
 
     def test_start_and_stop_updater_process(self):
-        self.assertFalse(self.mpbar.running.is_set())
+        self.assertFalse(self.mpbar.is_running)
         self.assertEqual(self.mpbar._start_updater_count, 0)
         self.mpbar.start_updater()
         # We need some time for the process to start and self.mpbar.running
         # is set
         sleep(0.1)
         self.assertEqual(self.mpbar._start_updater_count, 1)
-        self.assertTrue(self.mpbar.running.is_set())
+        self.assertTrue(self.mpbar.is_running)
 
         # Call the start_updater a second time. This should not really try
         # to start the updater process, since it is already started.
@@ -504,11 +526,20 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         # process is actually stopped.
         self.mpbar.stop_updater()
         self.assertEqual(self.mpbar._start_updater_count, 1)
-        self.assertTrue(self.mpbar.running.is_set())
+        self.assertTrue(self.mpbar.is_running)
 
         self.mpbar.stop_updater()
         self.assertEqual(self.mpbar._start_updater_count, 0)
-        self.assertFalse(self.mpbar.running.is_set())
+        self.assertFalse(self.mpbar.is_running)
+
+
+class ProgressBarIPythonTestCase(unittest.TestCase):
+    def setUp(self) -> None:
+        self.pbar = progressbar.ProgressBarIPython(50, "message")
+
+    def test_atributes(self):
+        self.assertEqual(self.pbar.finalcount, 50)
+        self.assertEqual(self.pbar.message, "message")
 
 
 # TODO: finish implementation
@@ -533,13 +564,14 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
     def test_register(self):
         # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.zmqbar._last_id, 1)
-        self.assertEqual(self.zmqbar.total_final_count, 25)
+        self.assertEqual(self.zmqbar.finalcount, 25)
+        self.assertEqual(self.zmqbar.num_clients, 2)
 
         # Register a new proxy progressbar and test the last_id and
         # total_final_count again.
         proxybar3 = self.zmqbar.register_client_and_get_proxy_progressbar(13)
         self.assertEqual(self.zmqbar._last_id, 2)
-        self.assertEqual(self.zmqbar.total_final_count, 38)
+        self.assertEqual(self.zmqbar.finalcount, 38)
 
         # Test IP and port of the proxy progress bars
         self.assertEqual(self.proxybar1.ip, self.zmqbar.ip)
