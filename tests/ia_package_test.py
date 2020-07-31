@@ -2682,7 +2682,6 @@ class MMSEIASolverTestCase(CustomTestCase):
     def test_calc_Vi_for_a_given_mu(self):
         sum_term = randn_c(3, 3)
         sum_term = sum_term.dot(sum_term.conj().T)
-        ":type: np.ndarray"
 
         mu = 0.135
         H_herm_U = randn_c(3, 2)

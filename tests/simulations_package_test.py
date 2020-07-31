@@ -851,7 +851,6 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # Now test converting from json
         decoded_params = SimulationParameters.from_json(encoded_params)
-        ":type: SimulationParameters"
         self.assertTrue(self.sim_params == decoded_params)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -868,7 +867,6 @@ class SimulationParametersTestCase(unittest.TestCase):
             # Now test converting from json
             decoded_sim_params_elem = SimulationParameters.from_json(
                 encoded_sim_params_elem)
-            ":type: SimulationParameters"
 
             self.assertEqual(decoded_sim_params_elem, sim_params_elem)
             self.assertEqual(decoded_sim_params_elem._original_sim_params,
@@ -1989,7 +1987,6 @@ class SimulationResultsTestCase(unittest.TestCase):
                          [0.55, 0.4])
 
         lulu_list = self.simresults.get_result_values_list('lulu')
-        ":type: list[np.ndarray]"
 
         np.testing.assert_array_almost_equal(
             lulu_list[0], np.array([0., 0.5, 0., 0.5, 0., 0.]))

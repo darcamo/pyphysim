@@ -151,7 +151,6 @@ def perform_simulation(
 
     Pt = dBm2Linear(Pt_dBm)  # 20 dBm transmit power
     noise_var = dBm2Linear(noise_power_dBm)
-    ":type: float"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the positions of all rooms xxxxxxxxxxxxxxxxxxxxx
@@ -235,7 +234,6 @@ def perform_simulation(
     # Take the path loss plus wall losses only for the transmitting aps
     pl_all_plus_wall_losses_tx_aps = pl_all_plus_wl.take(transmitting_aps,
                                                          axis=1)
-    ":type: np.ndarray"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxxxxxxx Calculate the SINRs and capacity xxxxxxxxxxxxxxxxxxxxxxxxx

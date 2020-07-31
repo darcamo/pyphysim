@@ -298,7 +298,6 @@ def SNR_dB_to_EbN0_dB(SNR: NumberOrArray, bits_per_symb: int) -> NumberOrArray:
 
     """
     EbN0 = SNR - 10 * np.log10(bits_per_symb)
-    ":type: float | np.ndarray"
 
     return EbN0  # type: ignore
 

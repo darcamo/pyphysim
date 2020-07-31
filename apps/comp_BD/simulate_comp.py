@@ -101,7 +101,6 @@ class BDSimulationRunner(SimulationRunner):  # pylint: disable=R0902
             'BPSK': fundamental.BPSK
         }
         self.modulator = modulator_options[self.params['modulator']](M)
-        ":type: fundamental.PSK | fundamental.QPSK | fundamental.QAM | fundamental.BPSK"
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

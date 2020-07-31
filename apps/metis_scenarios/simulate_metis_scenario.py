@@ -40,7 +40,6 @@ def calc_room_positions_square(side_length, num_rooms):
 
     int_positions = np.unravel_index(np.arange(num_rooms),
                                      (sqrt_num_rooms, sqrt_num_rooms))
-    ":type: (np.ndarray, np.ndarray)"
 
     room_positions = (
         side_length *
@@ -120,7 +119,6 @@ def calc_num_walls(side_length, room_positions, ap_positions):
     """
     all_positions_diffs = (room_positions.reshape(-1, 1) -
                            1.0001 * ap_positions.reshape(1, -1))
-    ":type: np.ndarray"
 
     num_walls \
         = np.round(
@@ -308,7 +306,6 @@ def perform_simulation_SINR_heatmap(
     aux = np.linspace(-(1. - step), (1. - step),
                       num_discrete_positions_per_room)
     aux = np.meshgrid(aux, aux, indexing='ij')
-    ":type: np.ndarray"
     user_relative_positions = aux[1] + 1j * aux[0][::-1]
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

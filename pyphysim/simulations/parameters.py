@@ -915,8 +915,7 @@ class SimulationParameters(JsonSerializable):
         Convert the SimulationParameters object to a dictionary for easier
         further serialization.
         """
-        original_sim_params = self._original_sim_params
-        ":type: SimulationParameters"
+        original_sim_params: "SimulationParameters" = self._original_sim_params
 
         if original_sim_params is not None:
             original_sim_params = original_sim_params._to_dict()

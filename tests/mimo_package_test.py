@@ -254,9 +254,7 @@ class MRTTestCase(unittest.TestCase):
         self.mrt_object.set_channel_matrix(channel)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
-        ":type: np.ndarray"
         W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1) / math.sqrt(Nt)
-        ":type: np.ndarray"
 
         encoded_data = self.mrt_object.encode(data)
 
@@ -271,11 +269,9 @@ class MRTTestCase(unittest.TestCase):
         self.mrt_object.set_channel_matrix(channel)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
-        ":type: np.ndarray"
 
         encoded_data = self.mrt_object.encode(data)
         W = np.exp(-1j * np.angle(channel)).reshape(Nt, 1)
-        ":type: np.ndarray"
 
         expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -291,11 +287,9 @@ class MRTTestCase(unittest.TestCase):
         self.mrt_object.set_channel_matrix(channel2)
 
         data_aux = data.reshape(1, data.size)  # Useful for broadcasting
-        ":type: np.ndarray"
 
         encoded_data = self.mrt_object.encode(data)
         W = np.exp(-1j * np.angle(channel2)).reshape(Nt, 1)
-        ":type: np.ndarray"
 
         expected_encoded_data = (1. / math.sqrt(Nt)) * W * data_aux
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -314,7 +308,6 @@ class MRTTestCase(unittest.TestCase):
 
         # Add '0.1' as a noise term
         received_data = channel.dot(encoded_data) + 0.0001
-        ":type: np.ndarray"
 
         decoded_data = self.mrt_object.decode(received_data)
 
@@ -331,7 +324,6 @@ class MRTTestCase(unittest.TestCase):
 
         # Add '0.1' as a noise term
         received_data = channel.dot(encoded_data) + 0.0001
-        ":type: np.ndarray"
 
         decoded_data = self.mrt_object.decode(received_data)
 
@@ -451,7 +443,6 @@ class SVDMimoTestCase(unittest.TestCase):
 
         _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
-        ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data_aux)
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -470,7 +461,6 @@ class SVDMimoTestCase(unittest.TestCase):
 
         _, _, V_H = np.linalg.svd(channel)
         W = V_H.conj().T / math.sqrt(Nt)
-        ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data_aux)
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -543,7 +533,6 @@ class GMDMimoTestCase(unittest.TestCase):
         U, S, V_H = np.linalg.svd(channel)
         _, _, P = gmd(U, S, V_H)
         W = P / math.sqrt(Nt)
-        ":type: np.ndarray"
 
         expected_encoded_data = W.dot(data.reshape(Nr, -1))
         np.testing.assert_array_almost_equal(expected_encoded_data,
@@ -624,7 +613,6 @@ class AlamoutiTestCase(unittest.TestCase):
 
     def test_encode(self):
         data = np.r_[0:16] + np.r_[0:16] * 1j
-        ":type: np.ndarray"
 
         expected_encoded_data = np.array(
             [[
@@ -643,7 +631,6 @@ class AlamoutiTestCase(unittest.TestCase):
 
     def test_decode(self):
         data = np.r_[0:16] + np.r_[0:16] * 1j
-        ":type: np.ndarray"
 
         encoded_data = self.alamouti_object.encode(data)
         # We will test the decoding with a random channel

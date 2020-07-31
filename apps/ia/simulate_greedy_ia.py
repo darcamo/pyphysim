@@ -7,9 +7,9 @@ Alignment algorithms in the algorithms.ia module.
 from time import time
 
 import numpy as np
+import pandas as pd
 from numpy.linalg.linalg import LinAlgError
 
-import pandas as pd
 from pyphysim.cell import cell
 from pyphysim.channels import multiuser, pathloss
 from pyphysim.ia import algorithms
@@ -316,7 +316,6 @@ class IASimulationRunner(SimulationRunner):
         # xxxxx Input Data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # inputData has the data of all users (vertically stacked)
         inputData = self.data_RS.randint(0, M, [np.sum(Ns), NSymbs])
-        ":type: np.ndarray"
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Modulate input data xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

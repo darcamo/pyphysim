@@ -59,7 +59,6 @@ path_loss_border = path_loss_obj.calc_path_loss(cell_radius)
 noise_var = conversion.dBm2Linear(N0_dBm)
 snr = conversion.dB2Linear(SNR_dB)
 transmit_power = snr * noise_var / path_loss_border
-":type: float"
 # External interference power
 pe = conversion.dBm2Linear(Pe_dBm)
 

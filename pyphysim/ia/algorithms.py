@@ -1582,8 +1582,7 @@ class MMSEIASolver(IterativeIASolverBaseClass):
             aux = np.dot(Hki, Vi)
             sum_term = sum_term + np.dot(aux, aux.conj().T)
 
-        sum_term2 = sum_term + self.noise_var * np.eye(self.Nr[k])
-        ":type: np.ndarray"
+        sum_term2: np.ndarray = sum_term + self.noise_var * np.eye(self.Nr[k])
 
         Uk = np.linalg.solve(sum_term2, np.dot(Hkk, Vk))
         return Uk

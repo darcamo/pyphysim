@@ -636,7 +636,6 @@ class EnhancedBDTestCase(unittest.TestCase):
 
         expected_spectral_efficiency = np.sum(
             psk_obj.calcTheoreticalSpectralEfficiency(SINRs_dB, packet_length))
-        ":type: float"
 
         spectral_efficiency = blockdiagonalization._calc_effective_throughput(
             sinrs_linear, psk_obj, packet_length)

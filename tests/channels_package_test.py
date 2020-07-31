@@ -15,6 +15,7 @@ import warnings
 from copy import copy
 
 import numpy as np
+from scipy.linalg import block_diag
 
 from pyphysim import channels
 from pyphysim.channels import (antennagain, fading, fading_generators,
@@ -24,7 +25,6 @@ from pyphysim.ia.algorithms import ClosedFormIASolver
 from pyphysim.util.conversion import (dB2Linear,
                                       single_matrix_to_matrix_of_matrices)
 from pyphysim.util.misc import least_right_singular_vectors, randn_c
-from scipy.linalg import block_diag
 
 
 # noinspection PyMethodMayBeStatic
@@ -3844,13 +3844,11 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             # First part in the equation of Bkl (the double summation)
             expected_first_part = 0.0
-            ":type: np.ndarray"
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
             for j in range(K):
                 aux = 0.0
-                ":type: np.ndarray"
                 Hkj = self.multiH.get_Hkl(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
@@ -3864,7 +3862,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
             expected_first_part_with_noise = (expected_first_part +
                                               np.eye(Nr[k]) * noise_power)
-            ":type: np.ndarray"
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -4196,7 +4193,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         for k in range(K):
             # First part in the equation of Bkl (the double summation)
             expected_first_part = 0.0
-            ":type: np.ndarray"
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
@@ -4204,7 +4200,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Hk_H = Hk.conjugate().transpose()
             for j in range(K):
                 aux = 0.0
-                ":type: np.ndarray"
 
                 # Calculates individually for each stream
                 for d in range(Ns[k]):
@@ -4216,7 +4211,6 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
             expected_first_part_with_noise = (expected_first_part +
                                               np.eye(Nr[k]) * noise_power)
-            ":type: np.ndarray"
 
             # Test without noise
             np.testing.assert_array_almost_equal(
@@ -5207,13 +5201,11 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         for k in range(K):
             # First part in the equation of Bkl (the double summation)
             expected_first_part = 0.0
-            ":type: np.ndarray"
 
             # The inner for loop will calculate
             # $\text{aux} = \sum_{d=1}^{d^{[j]}} \mtH^{[kj]}\mtV_{\star d}^{[j]} \mtV_{\star d}^{[j]\dagger} \mtH^{[kj]\dagger}$
             for j in range(K):
                 aux = 0.0
-                ":type: np.ndarray"
                 Hkj = self.multiH.get_Hkl(k, j)
                 Hkj_H = Hkj.conjugate().transpose()
 
@@ -5799,7 +5791,6 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         d = 1.2
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
-        ":type: np.ndarray"
 
         self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                expected_pl_in_dB)
@@ -5811,7 +5802,6 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.n = n
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
-        ":type: np.ndarray"
         self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                expected_pl_in_dB)
         self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
@@ -5822,7 +5812,6 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.fc = fc
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
-        ":type: np.ndarray"
         self.assertAlmostEqual(self.pl.calc_path_loss_dB(1.2),
                                expected_pl_in_dB)
         self.assertAlmostEqual(self.pl.calc_path_loss(1.2),
@@ -5833,7 +5822,6 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         d = np.array([1.2, 1.4, 1.6])
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
-        ":type: np.ndarray"
 
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss_dB([1.2, 1.4, 1.6]), expected_pl_in_dB, 16)
@@ -5849,7 +5837,6 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         self.pl.fc = fc
         expected_pl_in_dB = (
             10 * n * (np.log10(d) + np.log10(fc) + 6.0 - 4.377911390697565))
-        ":type: np.ndarray"
 
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss_dB([1.2, 1.4, 1.6]), expected_pl_in_dB, 16)
@@ -5870,7 +5857,6 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # test calc_path_loss (linear scale)
         expected_pl_linear = dB2Linear(-expected_pl_in_dB)
-        ":type: np.ndarray"
 
         np.testing.assert_array_almost_equal(
             self.pl.calc_path_loss([1.2, 1.4, 1.6]), expected_pl_linear)
@@ -6008,7 +5994,6 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         d = np.array([10., 50., 100., 1000.])
         expected_pl_dB_NLOS \
             = A * np.log10(d) + B + C * math.log10(fc_GHz / 5) + X
-        ":type: np.ndarray"
         np.testing.assert_array_almost_equal(
             self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=num_walls),
             expected_pl_dB_NLOS)
@@ -6041,7 +6026,6 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
         d = np.array([10., 50., 100., 1000.])
         expected_pl_dB_LOS \
             = A * np.log10(d) + B + C * math.log10(fc_GHz / 5)
-        ":type: np.ndarray"
         np.testing.assert_array_almost_equal(
             self.pl._calc_PS7_path_loss_dB_same_floor(d, num_walls=0),
             expected_pl_dB_LOS)
@@ -6154,7 +6138,6 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 
         # Distances for which the path loss will be calculated
         d = np.linspace(1, 20, 20)
-        ":type: np.ndarray"
 
         # xxxxxxxxxx Test for the 'open' area type xxxxxxxxxxxxxxxxxxxxxxxx
         self.pl.area_type = 'open'

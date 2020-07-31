@@ -476,7 +476,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
@@ -505,7 +504,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H2[50:-50] - tilde_H2[50:-50])
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
@@ -578,7 +576,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50] - tilde_H1[50:-50])
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
@@ -649,7 +646,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[5:-5] - tilde_H1[5:-5])
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
@@ -729,7 +725,6 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1[50:-50, :] - tilde_H1_espected[50:-50, :])
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.shape),
@@ -800,7 +795,6 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         cover_code1 = cover_codes[0]
         Y_with_cover_code = \
             (cover_code1[0] * Y[0] + cover_code1[1] * Y[1]) / 2.0
-        ":type: np.ndarray"
         r1_no_cover_code = r1[0] * cover_code1[0]
 
         y1 = np.fft.ifft(np.conj(r1_no_cover_code) * Y_with_cover_code, size)
@@ -816,7 +810,6 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1 - tilde_H1)
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.size),
@@ -881,7 +874,6 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         cover_code1 = cover_codes[0]
         Y_with_cover_code = \
             (cover_code1[0] * Y[:,0,:] + cover_code1[1] * Y[:,1,:]) / 2.0
-        ":type: np.ndarray"
 
         r1_no_cover_code = r1[0] * cover_code1[0]
 
@@ -902,7 +894,6 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
         # channel estimation error is higher at the first and last
         # subcarriers we will test only the inner 200 subcarriers
         error = np.abs(H1 - tilde_H1_espected)
-        ":type: np.ndarray"
 
         np.testing.assert_almost_equal(error / 2.,
                                        np.zeros(error.shape),

@@ -166,10 +166,8 @@ class HexagonTestCase(unittest.TestCase):
 
         # noinspection PyTypeChecker
         aux = 1j * np.pi * np.linspace(0, 300, 6) / 180.
-        ":type: np.ndarray"
 
         expected_vertexes = 1.5 * np.exp(aux)
-        ":type: np.ndarray"
 
         # Lets sort the expected vertexes (regarding the angle of the
         # vertexes)
@@ -184,7 +182,6 @@ class HexagonTestCase(unittest.TestCase):
                                              obtained_vertexes)
 
         expected_vertexes2 = (2. / 1.5) * expected_vertexes
-        ":type: np.ndarray"
 
         obtained_vertexes2 = self.H2._get_vertex_positions()
         np.testing.assert_array_almost_equal(expected_vertexes2,
@@ -330,7 +327,6 @@ class CircleTestCase(unittest.TestCase):
         # The angles need to be in degrees for the get_border_point method
         angles = np.linspace(0, (num_vertexes - 1.) / num_vertexes * 360,
                              num_vertexes)
-        ":type: np.ndarray"
 
         # pylint: disable=E1103
         expected_vertexes = np.array(

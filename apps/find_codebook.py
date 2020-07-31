@@ -88,7 +88,6 @@ class CodebookFinder:
         """
         C = (1. / math.sqrt(2.0)) * (self._rs.randn(K, Nt, Ns) +
                                      (1j * self._rs.randn(K, Nt, Ns)))
-        ":type: np.ndarray"
         for k in range(0, K):
             C[k, :, :] /= np.linalg.norm(C[k, :, :], 'fro')
 
@@ -191,7 +190,6 @@ class CodebookFinder:
         min_index = dists.argmin()  # Index of the minimum distance (in the
         # flattened array)
         min_dist = dists.flatten()[min_index]  # Same as dists.min()
-        ":type: float"
         principal_angles = np.array(principal_angles[min_index])
 
         return min_dist, principal_angles
@@ -385,7 +383,6 @@ def find_codebook_multiple_processes(Nt, Ns, K, rep_max=100):
     pb = ProgressbarMultiProcessServer(
         message="Find {0} {1} precoders in G({2},{3})".format(
             K, CodebookFinder.type_to_string(codebook_type), Nt, Ns))
-    ":type: ProgressbarMultiProcessServer"
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # xxxxx Create the processes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
