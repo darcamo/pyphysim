@@ -32,6 +32,14 @@ try:
 except ImportError as e:  # pragma: no cover
     import pickle
 
+try:
+    # noinspection PyUnresolvedReferences
+    import pandas as pd
+    DataFrame = pd.DataFrame
+except ImportError:  # pragma: no cover
+    # This will be used just for type checking, since pandas is not installed
+    from typing import Any as DataFrame
+
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
 
 
@@ -355,6 +363,19 @@ class SimulationParameters(JsonSerializable):
     def __setitem__(self, key, value):
         self.parameters[key] = value
 
+    def __modify_name(self, p_name):
+        """
+        Add an * in p_name if it is set to be unpacked
+
+        Parameters
+        ----------
+        p_name : str
+            The original name.
+        """
+        if p_name in self._unpacked_parameters_set:
+            p_name += '*'
+        return p_name
+
     def __repr__(self):  # pragma: no cover
         """
         Get the object representation as a string.
@@ -364,22 +385,10 @@ class SimulationParameters(JsonSerializable):
         str
             The object representation as a string.
         """
-        def modify_name(p_name):
-            """
-            Add an * in p_name if it is set to be unpacked
-
-            Parameters
-            ----------
-            p_name : str
-                The original name.
-            """
-            if p_name in self._unpacked_parameters_set:
-                p_name += '*'
-            return p_name
-
         repr_list = []
         for name, value in self.parameters.items():
-            repr_list.append("'{0}': {1}".format(modify_name(name), value))
+            repr_list.append("'{0}': {1}".format(self.__modify_name(name),
+                                                 value))
         return '{%s}' % ', '.join(repr_list)
 
     def __len__(self):
@@ -955,6 +964,16 @@ class SimulationParameters(JsonSerializable):
 
         sim_params._original_sim_params = original_sim_params
         return sim_params
+
+    def to_dataframe(self):
+        """
+        Convert the SimulationParamters object to a pandas DataFrame.
+        """
+        data = {}
+        all_params_list = self.get_unpacked_params_list()
+        for name in self:
+            data[name] = [a[name] for a in all_params_list]
+        return pd.DataFrame(data)
 
 
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

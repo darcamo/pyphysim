@@ -126,7 +126,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             # noinspection PyUnresolvedReferences
             import validate
         except ImportError:  # pragma: no cover
-            self.skipTest("The validate module is not installed")
+            self.skipTest("test_parse_range_expr - "
+                          "The validate module is not installed")
 
         expr = "10:15"
         expected_parsed_expr = np.r_[10:15]
@@ -168,7 +169,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             # noinspection PyUnresolvedReferences
             import validate
         except ImportError:  # pragma: no cover
-            self.skipTest("The validate module is not installed")
+            self.skipTest("test_real_scalar_or_real_numpy_array_check - "
+                          "The validate module is not installed")
 
         # xxxxxxxxxx Try to parse float scalar values xxxxxxxxxxxxxxxxxxxxx
         value = "4.6"
@@ -263,7 +265,8 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
             # noinspection PyUnresolvedReferences
             import validate
         except ImportError:  # pragma: no cover
-            self.skipTest("The validate module is not installed")
+            self.skipTest("test_integer_scalar_or_integer_numpy_array_check - "
+                          "The validate module is not installed")
 
         # xxxxxxxxxx Try to parse float scalar values xxxxxxxxxxxxxxxxxxxxx
         value = "4"
@@ -601,6 +604,12 @@ class SimulationParametersTestCase(unittest.TestCase):
         a._unpack_index = 1
         b._unpack_index = 3
         self.assertFalse(a == b)
+
+    def test_repr(self):
+        self.sim_params.add('third', np.array([1, 3, 2, 5]))
+        self.sim_params.set_unpack_parameter("third")
+        self.assertEqual(repr(self.sim_params),
+                         "{'first': 10, 'second': 20, 'third*': [1 3 2 5]}")
 
     def test_get_unpacked_params_list(self):
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
@@ -1016,6 +1025,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             del validate
         except ImportError:  # pragma: no cover
             self.skipTest(
+                "test_load_from_config_file - "
                 "This configobj and validate modules must be installed.")
 
         filename = 'test_config_file.txt'
@@ -1087,6 +1097,34 @@ class SimulationParametersTestCase(unittest.TestCase):
         # xxxxxxxxxx Remove the config file used in this test xxxxxxxxxxxxx
         delete_file_if_possible(filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_to_dataframe(self):
+        # If the pandas package is not installed, we will skip testing this
+        # method
+        if not _PANDAS_AVAILABLE:  # pragma: nocover
+            self.skipTest("test_to_dataframe - Pandas is not installed")
+
+        # Create some dummy parameters (including two parameters set to be
+        # unpacked)
+        params = SimulationParameters()
+        params.add("extra", 2.3)
+        params.add("SNR", np.array([0, 3, 6, 9]))
+        params.add("bias", [1.2, 1.6])
+        params.set_unpack_parameter('SNR')
+        params.set_unpack_parameter('bias')
+        params.add("Name", "Some string")
+
+        df = params.to_dataframe()
+        self.assertEqual(len(df.columns), 4)
+        self.assertEqual(len(df), params.get_num_unpacked_variations())
+
+        col_names = ["SNR", "bias", "Name", "extra"]
+        for name in col_names:
+            self.assertIn(name, df.columns)
+
+        for i, l in enumerate(params.get_unpacked_params_list()):
+            for col_names in ["SNR", "bias", "Name", "extra"]:
+                self.assertAlmostEqual(l[col_names], df.loc[i, col_names])
 
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2191,7 +2229,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # If the pandas package is not installed, we will skip testing this
         # method
         if not _PANDAS_AVAILABLE:  # pragma: nocover
-            self.skipTest("Pandas is not installed")
+            self.skipTest("test_to_dataframe - Pandas is not installed")
 
         # Create some dummy parameters (including two parameters set to be
         # unpacked)
@@ -2587,7 +2625,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # engine running.
     def test_simulate_in_parallel(self):  # pragma: no cover
         if not _IPYTHON_AVAILABLE:
-            self.skipTest("IPython is not installed")
+            self.skipTest(
+                "test_simulate_in_parallel - IPython is not installed")
 
         try:
             from ipyparallel import Client
@@ -2606,9 +2645,11 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
             lview = cl.load_balanced_view()
             if len(lview) == 0:
-                self.skipTest("At least one IPython engine must be running.")
+                self.skipTest("test_simulate_in_parallel - "
+                              "At least one IPython engine must be running.")
         except IOError:
             self.skipTest(
+                "test_simulate_in_parallel - "
                 "The IPython engines were not found. ('tests' profile)")
 
         # noinspection PyUnresolvedReferences
@@ -2691,11 +2732,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # engine running.
     def test_simulate_in_parallel_with_random_values(self):  # pragma: no cover
         if not _IPYTHON_AVAILABLE:
-            self.skipTest("IPython is not installed")
+            self.skipTest("test_simulate_in_parallel_with_random_values - "
+                          "IPython is not installed")
 
         try:
             from ipyparallel import Client
-            cl = Client(profile=b"tests")
+            cl = Client(profile=b"tests", timeout=1.0)
 
             dview = cl.direct_view()
             # Reset the engines so that we don't have variables there from
@@ -2712,7 +2754,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
             if len(lview) == 0:  # pragma: no cover
                 self.skipTest("At least one IPython engine must be running.")
         except IOError:  # pragma: no cover
-            self.skipTest("The IPython engines were not found. ('tests' "
+            self.skipTest("test_simulate_in_parallel_with_random_values - "
+                          "The IPython engines were not found. ('tests' "
                           "profile)")
         #
         #
