@@ -1595,5 +1595,14 @@ class SimulationResults(JsonSerializable):
         df = pd.DataFrame(data)
         return df
 
+    def _repr_html_(self):
+        """
+        Method used by the jupyter rich display.
+
+        We will simple use the HTML representation of the corresponding pandas
+        dataframe.
+        """
+        return self.to_dataframe()._repr_html_()
+
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

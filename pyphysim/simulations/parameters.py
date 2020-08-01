@@ -975,5 +975,15 @@ class SimulationParameters(JsonSerializable):
             data[name] = [a[name] for a in all_params_list]
         return pd.DataFrame(data)
 
+    def _repr_html_(self):
+        """
+        Method used by the jupyter rich display.
+
+        We will simple use the HTML representation of the
+        corresponding pandas
+        dataframe.
+        """
+        return self.to_dataframe()._repr_html_()
+
 
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
