@@ -40,6 +40,7 @@ from ..util.misc import pretty_time
 try:
     from IPython.display import display
     from ipywidgets import FloatProgress, HBox, Label
+
     _IPYTHON_AVAILABLE = True
 except:
     _IPYTHON_AVAILABLE = False
@@ -108,10 +109,7 @@ def center_message(message: str,
     left_fill_size = fill_size // 2 + (fill_size % 2)
     right_fill_size = (fill_size // 2)
 
-    new_message = "{0}{1} {2} {3}{4}".format(left, fill_char * left_fill_size,
-                                             message,
-                                             fill_char * right_fill_size,
-                                             right)
+    new_message = f"{left}{fill_char * left_fill_size} {message} {fill_char * right_fill_size}{right}"
     return new_message
 
 
@@ -168,9 +166,8 @@ class ProgressBarBase:
 
     Notes
     -----
-    Derived classes should implement :func:`_update_iteration` and
-    :func:`_display_current_progress`. Optionally derived class might also
-    implement :func:`_perform_initialization` and :func:`_perform_finalizations`
+    Derived classes should implement :func:`_display_current_progress`.
+    Optionally derived class might also implement :func:`_perform_finalizations`
     """
     def __init__(self, finalcount: int):
         """
@@ -184,29 +181,40 @@ class ProgressBarBase:
             with the current amount in the progressbar. When the amount
             becomes equal to `finalcount` the bar will be 100% complete.
         """
+        self._n = 0
         self._finalcount = finalcount
-
-        # This will be set to True after the `start` method is called to
-        # initialize the progressbar.
-        self._initialized = False
 
         # This will be set to true when the progress reaches 100%. When
         # this is True, any subsequent calls to the `progress` method will
         # be ignored.
         self._finalized = False
 
-        # This variable will store the time when the `start` method was
-        # called for the first time (either manually or in the `progress`
-        # method. It will be used for tracking the elapsed time.
-        self._start_time = 0.0
+        # Stores the time when the progressbar was created
+        self._start_time = time.time()
         # This variable will store the time when the `stop` method was
         # called for the first time (either manually or in the `progress`
         # method. It will be used for tracking the elapsed time.
         self._stop_time = 0.0
 
+        # last time the _display_current_progress method was called
+        self.__last_display_time = -1
+        # Minimum interval between calls to the _display_current_progress method
+        self._display_interval = 0.1
+
+    @property
+    def n(self):
+        return self._n
+
     @property
     def finalcount(self):
         return self._finalcount
+
+    @property
+    def elapsed_time_in_seconds(self) -> float:
+        if self._finalized is False:
+            return time.time() - self._start_time
+
+        return self._stop_time - self._start_time
 
     @property
     def elapsed_time(self) -> str:
@@ -218,17 +226,23 @@ class ProgressBarBase:
         str
             The elapsed time.
         """
-        elapsed_time = 0.0
-        if self._initialized is True:
-            if self._finalized is False:
-                elapsed_time = time.time() - self._start_time
-            else:
-                elapsed_time = self._stop_time - self._start_time
-        return pretty_time(elapsed_time)
+        return pretty_time(self.elapsed_time_in_seconds)
+
+    def get_eta_in_seconds(self) -> float:
+        """Get the estimated time to finish the progress in seconds."""
+        progress = self._n / self._finalcount
+        if progress == 0:
+            return 0.0
+        return (1 - progress) * self.elapsed_time_in_seconds / progress
+
+    def get_eta(self) -> str:
+        """Get the estimated time to finish the progress."""
+        return pretty_time(self.get_eta_in_seconds())
 
     def _count_to_percent(self, count: int) -> float:
         """
-        Convert a given count into the equivalent percentage.
+        Convert a given count into the equivalent percentage (between 0% and
+        100%).
 
         Parameters
         ----------
@@ -243,16 +257,8 @@ class ProgressBarBase:
             The percentage that `count` is of self.finalcount (between 0
             and 100)
         """
-        percentage = (count / float(self._finalcount)) * 100.0
+        percentage = (count / self._finalcount) * 100.0
         return percentage
-
-    def _perform_initialization(self) -> None:
-        """
-        Perform any initializations for the progressbar.
-
-        This method should be implemented in sub-classes if any
-        initialization code should be run.
-        """
 
     def _perform_finalizations(self) -> None:  # pragma: nocover
         """
@@ -261,23 +267,6 @@ class ProgressBarBase:
         This method should be implemented in sub-classes if any
         finalization code should be run.
         """
-
-    @final
-    def start(self) -> None:
-        """
-        Start the progressbar.
-
-        This method should be called just before the progressbar is used
-        for the first time. Among possible other things, it will store the
-        current time so that the elapsed time can be tracked.
-
-        If is automatically called in the `progress` method, if not called
-        before.
-        """
-        if self._initialized is False:
-            self._start_time = time.time()
-            self._perform_initialization()
-            self._initialized = True
 
     @final
     def stop(self) -> None:
@@ -303,6 +292,9 @@ class ProgressBarBase:
         """
         Update the progressbar according with the new `count`.
 
+        Any subclass that reimplements this method must call the base class
+        version.
+
         Parameters
         ----------
         count : int
@@ -310,7 +302,7 @@ class ProgressBarBase:
             progressbar represents this count as a percent value of
             self.finalcount
         """
-        raise NotImplementedError("Implement this method in a subclass")
+        self._n = count
 
     def _display_current_progress(self) -> None:  # pragma: nocover
         """
@@ -343,12 +335,6 @@ class ProgressBarBase:
         progress.
         """
         if self._finalized is False:
-            # Start the progressbar. This only have an effect the first
-            # time it is called. It initializes the elapsed time tracking
-            # and call the _perform_initialization method to perform any
-            # initialization.
-            self.start()
-
             # Sanity check. If count is greater then self.finalcount we set
             # it to self.finalcount
             if count > self._finalcount:
@@ -360,13 +346,18 @@ class ProgressBarBase:
             # method.
             self._update_iteration(count)
 
-            # Refresh the progress representation.
-            self._display_current_progress()
+            tic = time.time()
+            if tic - self.__last_display_time > self._display_interval:
+                # Refresh the progress representation.
+                self._display_current_progress()  # Implemented in a subclass
+                self.__last_display_time = tic
 
             # If count is equal to self.finalcount we have reached
             # 100%. In that case, we also write a final newline
             # character.
             if count == self._finalcount:
+                # Force refreshing the progress display
+                self._display_current_progress()
                 self.stop()
 
     def __call__(self, count: int) -> None:
@@ -388,11 +379,6 @@ class ProgressBarBase:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarTextBase - START xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-# The code here and in some of the derived classes is inspired in the code
-# located in
-# http://nbviewer.ipython.org/url/github.com/ipython/ipython/raw/master/
-# /examples/notebooks/Progress%20Bars.ipynb
-#
 # noinspection PyAbstractClass
 class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
     """
@@ -423,8 +409,9 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
     def __init__(self,
                  finalcount: int,
                  progresschar: str = '*',
-                 message: str = '',
-                 output: Any = sys.stdout) -> None:
+                 message: Optional[str] = None,
+                 output: Any = sys.stdout,
+                 width: int = 50) -> None:
         """
         Initializes the progressbar object.
 
@@ -447,11 +434,6 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         """
         super().__init__(finalcount)
 
-        # This will be updated with the progress and should contain the
-        # whole string representation of the progressbar.
-        self.prog_bar = "Progress Representation"
-        self.old_prog_bar = ""
-
         # character used to represent progress
         self.progresschar = progresschar
 
@@ -460,7 +442,8 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         self.delete_progress_file_after_completion = False
 
         # This should be a multiple of 10. The lower possible value is 40.
-        self._width = 50
+
+        self._width = 40 if width < 40 else width
 
         # By default, self._output points to sys.stdout so I can use the
         # write/flush methods to display the progress bar.
@@ -469,6 +452,10 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
 
         # If true, an empty line will be printed when the progress finishes
         self._print_empty_line_at_the_end = True
+
+    @property
+    def message(self):
+        return self._message
 
     def __del__(self) -> None:
         """
@@ -512,7 +499,9 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
             there is the label '{percent}' in the central_message it will
             be replaced by the percentage. If there is the label
             '{elapsed_time}' in the central_message it will be replaced by
-            the elapsed time. Note that this message should be very small,
+            the elapsed time. Likewise, if there is the label {eta} it will be
+            replaced with the estimated time to finish the progress.
+            Note that this message should be very small,
             since it hides the progresschars.
         left_side : str
             The left side of the bar.
@@ -526,7 +515,6 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         """
         # Remove any fractional part
         percent_done = int(percent)
-        elapsed_time = self.elapsed_time
 
         # Calculates how many characters are spent just for the sides.
         sides_length = len(left_side) + len(right_side)
@@ -547,13 +535,24 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
                     (all_full - num_hashes) + right_side)
 
         # Replace the center of prog_bar with the message
-        central_message = central_message.format(percent=percent_done,
-                                                 elapsed_time=elapsed_time)
+        central_message = central_message.format(
+            percent=percent_done,
+            elapsed_time=self.elapsed_time,
+            eta={self.elapsed_time})
         pct_place = (len(prog_bar) // 2) - (len(str(central_message)) // 2)
         prog_bar = prog_bar[0:pct_place] + central_message + prog_bar[
             pct_place + len(central_message):]
 
         return prog_bar
+
+    def _get_prog_string(self):
+        """
+        Get a string representing the text progressbar line.
+
+        In the simplest case this could be just a call to the
+        `_get_percentage_representation` method.
+        """
+        NotImplementedError("Implement this method in a subclass")
 
     def _maybe_delete_output_file(self) -> None:
         """
@@ -603,35 +602,26 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         """
         Refresh the progress representation.
 
-        All text progressbars should implement the `_update_iteration` to
-        update the `prog_bar` member variable with the text representation
-        of the progressbar.
-
         This method is responsible to sending this text representation to
         the output.
+
+        All text progressbars should implement the `_get_prog_string` to
+        return a string representing the current progress.
         """
-        # We will only write the progress if it actually changed since
-        # the last time. This is specially useful when the output is a
-        # file and it will avoid writing many unnecessary equal lines to
-        # the file.
-        if self.old_prog_bar != self.prog_bar:
-            # Save the current prog_bar variable before it is updated in
-            # the _update_iteration method.
-            self.old_prog_bar = self.prog_bar
+        # We simple change the cursor to the beginning of the line and
+        # write the string representation of the prog_bar variable.
+        self._output.write('\r')
+        self._output.write(self._get_prog_string())
 
-            # We simple change the cursor to the beginning of the line and
-            # write the string representation of the prog_bar variable.
-            self._output.write('\r')
-            self._output.write('{0}'.format(self.prog_bar))
-
-            # Flush everything to guarantee that at this point
-            # everything is written to the output.
-            self._output.flush()
+        # Flush everything to guarantee that at this point
+        # everything is written to the output. Note: there is a minimum interval
+        # between calls to the `_display_current_progress` method.
+        self._output.flush()
 
     # The string representation of a text progressbar should display the
     # whole progressbar
     def __str__(self) -> str:
-        return str(self.prog_bar)
+        return str(self._get_prog_string())
 
 
 # xxxxxxxxxx ProgressbarTextBase - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -673,7 +663,6 @@ class ProgressbarText(ProgressbarTextBase):
     Examples
     --------
     >> pb = ProgressbarText(100, 'o', "Hello Simulation")
-    >> pb.start()
     ---------------- Hello Simulation ---------------1
         1    2    3    4    5    6    7    8    9    0
     ----0----0----0----0----0----0----0----0----0----0
@@ -689,8 +678,9 @@ class ProgressbarText(ProgressbarTextBase):
     def __init__(self,
                  finalcount: int,
                  progresschar: str = '*',
-                 message: str = '',
-                 output: Any = sys.stdout):
+                 message: Optional[str] = None,
+                 output: Any = sys.stdout,
+                 width: int = 50):
         """
         Initializes the ProgressbarText object.
 
@@ -711,11 +701,19 @@ class ProgressbarText(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        super().__init__(finalcount, progresschar, message, output)
+        super().__init__(finalcount, progresschar, message, output, width)
 
         # stores how many characters where already printed in a previous
         # call to the `progress` function
         self.progresscharcount = 0
+
+        # Initialize the progressbar header
+        bartitle = self.__get_initialization_bartitle()
+        marker_line1, marker_line2 = self.__get_initialization_markers()
+
+        self._output.write(bartitle)
+        self._output.write(marker_line1)
+        self._output.write(marker_line2)
 
     def __get_initialization_bartitle(self) -> str:
         """
@@ -737,13 +735,12 @@ class ProgressbarText(ProgressbarTextBase):
 
         Notes
         -----
-        This method is only a helper method called in the
-        `_perform_initialization` method.
+        This method is only a helper method called in the `__init__` method.
         """
-        if len(self._message) != 0:
-            message = self._message
-        else:
+        if self._message is None:
             message = '% Progress'
+        else:
+            message = self._message
 
         bartitle = center_message(message, self.width + 1, '-', '', '1\n')
         return bartitle
@@ -762,7 +759,7 @@ class ProgressbarText(ProgressbarTextBase):
         Notes
         -----
         This method is only a helper method called in the
-        `_perform_initialization` method.
+        `__init__` method.
         """
         steps = self.width // 10  # This division must be exact
 
@@ -779,42 +776,15 @@ class ProgressbarText(ProgressbarTextBase):
 
         return line1, line2
 
-    def _perform_initialization(self) -> None:
-        bartitle = self.__get_initialization_bartitle()
-        marker_line1, marker_line2 = self.__get_initialization_markers()
-
-        self._output.write(bartitle)
-        self._output.write(marker_line1)
-        self._output.write(marker_line2)
-
-    def _update_iteration(self, count: int) -> None:
-        percentage = self._count_to_percent(count)
+    def _get_prog_string(self) -> str:
+        percentage = self._count_to_percent(self._n)
 
         # Set the self.prog_bar variable simply as a string containing as
         # many self.progresschar characters as necessary.
-        self.prog_bar = self._get_percentage_representation(percentage,
-                                                            left_side='',
-                                                            right_side='',
-                                                            central_message='')
-
-    @ProgressbarTextBase.width.setter
-    def width(self, value: int) -> None:
-        """
-        Set method for the width property.
-
-        Parameters
-        ----------
-        value : int
-        """
-        # If value is lower than 40, the width will be set to 40.
-        # If value is not a multiple of 10, width will be set to the
-        # largest multiple of 10 which is lower then value.
-        #
-        # Only allow changing widget if the progressbar has not started yet
-        if not self._initialized:
-            if value < 40:
-                value = 40
-            self._width = value - (value % 10)
+        return self._get_percentage_representation(percentage,
+                                                   left_side='',
+                                                   right_side='',
+                                                   central_message='')
 
 
 # xxxxxxxxxx ProgressbarText - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -859,8 +829,9 @@ class ProgressbarText2(ProgressbarTextBase):
     def __init__(self,
                  finalcount: int,
                  progresschar: str = '*',
-                 message: str = '',
-                 output: Any = sys.stdout) -> None:
+                 message: Optional[str] = None,
+                 output: Any = sys.stdout,
+                 width: int = 50) -> None:
         """
         Initializes the progressbar object.
 
@@ -883,7 +854,7 @@ class ProgressbarText2(ProgressbarTextBase):
             which means that the progress will be printed in the standard
             output.
         """
-        super().__init__(finalcount, progresschar, message, output)
+        super().__init__(finalcount, progresschar, message, output, width)
 
     @ProgressbarTextBase.width.setter
     def width(self, value: int) -> None:
@@ -901,45 +872,33 @@ class ProgressbarText2(ProgressbarTextBase):
             value = 40
         self._width = value - (value % 10)
 
-    @property
-    def message(self):
-        return self._message
-
-    @message.setter
-    def message(self, val):
+    @ProgressbarTextBase.message.setter
+    def message(self, val: Optional[str]):
         self._message = val
 
-    def _update_iteration(self, count: int) -> None:
-        """
-        Update the self.prog_bar member variable according with the new
-        `count`.
-
-        Parameters
-        ----------
-        count : int
-            The current count to be represented in the progressbar. The
-            progressbar represents this count as a percent value of
-            self.finalcount
-        """
+    def _get_prog_string(self) -> str:
         # Convert `count` to the equivalent percentage
-        percent_count = self._count_to_percent(count)
+        percent_count = self._count_to_percent(self._n)
 
         # Update the self.prog_bar variable with (only) the current
         # percentage representation. The message is not included and will
         # be appended after this.
-        self.prog_bar = self._get_percentage_representation(
+        prog_bar = self._get_percentage_representation(
             percent_count,
             central_message='{percent}%',
             left_side='[',
             right_side=']')
 
-        # Append the message to the self.prog_bar variable if there is one
-        # (or a default message if there is no message set)..
-        if len(self._message) != 0:
-            message = self._message.format(elapsed_time=self.elapsed_time)
-            self.prog_bar += "  {0}".format(message)
+        if self._message is None:
+            # Default message if there is no message set
+            message = f'{self._n} of {self._finalcount} complete'
         else:
-            self.prog_bar += '  %d of %d complete' % (count, self._finalcount)
+            message = self._message.format(elapsed_time=self.elapsed_time,
+                                           percent=percent_count,
+                                           eta=self.get_eta())
+
+        # Append the message to the end of the progressbar
+        return f"{prog_bar}  {message}"
 
 
 # xxxxxxxxxx ProgressbarText2 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -982,8 +941,9 @@ class ProgressbarText3(ProgressbarText2):
     def __init__(self,
                  finalcount: int,
                  progresschar: str = '*',
-                 message: str = '',
-                 output: Any = sys.stdout) -> None:
+                 message: Optional[str] = None,
+                 output: Any = sys.stdout,
+                 width: int = 50) -> None:
         """
         Initializes the progressbar object.
 
@@ -1004,36 +964,24 @@ class ProgressbarText3(ProgressbarText2):
             which means that the progress will be printed in the standard
             output.
         """
-        super().__init__(finalcount, progresschar, message, output)
+        super().__init__(finalcount, progresschar, message, output, width)
 
         # The ProgressbarText3 class already prints an empty line after
         # each update. Therefore, there is no need to print an empty line
         # after all the progress has been finished.
         self._print_empty_line_at_the_end = False
 
-    def _update_iteration(self, count: int) -> None:
-        """
-        Update the self.prog_bar member variable according with the new
-        `count`.
+    def _get_prog_string(self) -> str:
+        full_count = f"{self._n}/{self._finalcount}"
 
-        Parameters
-        ----------
-        count : int
-            The current count to be represented in the progressbar. The
-            progressbar represents this count as a percent value of
-            self.finalcount
-        """
-        full_count = "{0}/{1}".format(count, self._finalcount)
+        if self._message is None:
+            return center_message(full_count,
+                                  length=self.width,
+                                  fill_char=self.progresschar)
 
-        if len(self._message) != 0:
-            self.prog_bar = center_message("{0} {1}".format(
-                self._message, full_count),
-                                           length=self.width,
-                                           fill_char=self.progresschar)
-        else:
-            self.prog_bar = center_message(full_count,
-                                           length=self.width,
-                                           fill_char=self.progresschar)
+        return center_message(f"{self._message} {full_count}",
+                              length=self.width,
+                              fill_char=self.progresschar)
 
 
 # xxxxxxxxxx ProgressbarText3 - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1065,8 +1013,8 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
         """
         if not _IPYTHON_AVAILABLE:
             raise ModuleNotFoundError(
-                'To use ProgressBarIPython please install IPython and ipywidgets'
-            )
+                'To use ProgressBarIPython please install IPython and '
+                'ipywidgets')
 
         super().__init__(finalcount)
 
@@ -1087,6 +1035,7 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
         # side we use a container.
         self.container_widget = HBox()
         self.container_widget.children = [self.prog_bar, self._message]
+        display(self.container_widget)
 
     @property
     def message(self) -> str:
@@ -1095,23 +1044,6 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
     @message.setter
     def message(self, value: str):
         self._message.value = value
-
-    def _update_iteration(self, count: int) -> None:
-        """
-        Update the self.prog_bar member variable according with the new
-        `count`.
-
-        Parameters
-        ----------
-        count : int
-            The current count to be represented in the progressbar. The
-            progressbar represents this count as a percent value of
-            self.finalcount
-        """
-        percentage = self._count_to_percent(count)
-
-        # Update the IPython progressbar widget
-        self.prog_bar.value = percentage
 
     def _display_current_progress(self) -> None:
         """
@@ -1122,21 +1054,12 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
         # need to display the widget once and IPython will take care of
         # re-displaying it whenever the widget changes. Therefore, we don't
         # need to do anything here and we will display the widget in the
-        # `_perform_initialization` method instead, since it is called only
+        # `__init__` method instead, since it is called only
         # once.
+        percentage = self._count_to_percent(self._n)
 
-    def _perform_initialization(self) -> None:
-        """
-        Perform any initializations for the progressbar.
-
-        This method should be implemented in sub-classes if any
-        initialization code should be run.
-        """
-
-        # Display the container with the progressbar and the message.
-        # If no message was provided the the text widget inside the
-        # container will be invisible
-        display(self.container_widget)
+        # Update the IPython progressbar widget
+        self.prog_bar.value = percentage
 
     def _perform_finalizations(self) -> None:
         """
@@ -1190,7 +1113,7 @@ class ProgressbarDistributedServerBase:
     """
     def __init__(self,
                  progresschar: str = '*',
-                 message: str = '',
+                 message: Optional[str] = None,
                  sleep_time: float = 1.0,
                  filename: Optional[str] = None,
                  style="text2"):
@@ -1215,8 +1138,8 @@ class ProgressbarDistributedServerBase:
             display progress. It can be either 'text1', 'text2', 'text3', or
             'ipython'
         """
-        self._progresschar = progresschar
-        self._message = message
+        self._progresschar: str = progresschar
+        self._message: Optional[str] = message
 
         self._sleep_time = sleep_time
         self._last_id = -1
@@ -1571,28 +1494,6 @@ class ProgressbarDistributedClientBase(ProgressBarBase):
         super().__init__(finalcount)
         self.client_id = client_id
 
-    def _update_iteration(self, count: int) -> None:  # pragma: no cover
-        """
-        Update the progressbar according with the new `count`.
-
-        Parameters
-        ----------
-        count : int
-            The current count to be represented in the progressbar. The
-            progressbar represents this count as a percent value of
-            self.finalcount
-        """
-        raise NotImplementedError("Implement this method in a subclass")
-
-    def _display_current_progress(self) -> None:  # pragma: nocover
-        """
-        Refresh the progress representation.
-
-        This method should be defined in a subclass.
-        """
-        # There is nothing to do in a client progressbar
-        pass
-
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx ProgressbarMultiProcessServer - START xxxxxxxxxxxxxxxxxxx
@@ -1765,15 +1666,8 @@ class ProgressbarMultiProcessClient(ProgressbarDistributedClientBase):
         super().__init__(client_id, finalcount)
         self._client_data_list = client_data_list
 
-    def _update_iteration(self, count: int) -> None:
-        """Updates the proxy progress bar.
-
-        Parameters
-        ----------
-        count : int
-            The new amount of progress.
-        """
-        self._client_data_list[self.client_id] = count
+    def _display_current_progress(self) -> None:
+        self._client_data_list[self.client_id] = self._n
 
 
 # xxxxxxxxxx ProgressbarMultiProcessServer - END xxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1849,7 +1743,8 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
 
     def __repr__(self):
         status = '-> updating' if self.is_running else '-> stopped'
-        return f"ProgressbarZMQServer(ip={self.ip}, port={self.port}, num_clients={self.num_clients}) {status}"
+        return f"ProgressbarZMQServer(ip={self.ip}, port={self.port}, " \
+               f"num_clients={self.num_clients}) {status}"
 
     @property
     def ip(self) -> IPAddress:
@@ -2017,41 +1912,12 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
 
         # ZMQ Variables: These variables will be set the first time the
         # progress method is called.
-        self._zmq_context: Optional[zmq.Context] = None
-        self._zmq_push_socket: Optional[zmq.sugar.socket.Socket] = None
+        self._zmq_context: zmq.Context = zmq.Context()
+        self._zmq_push_socket: zmq.sugar.socket.Socket = self._zmq_context.socket(
+            zmq.PUSH)
 
-    def _update_iteration(self, count: int) -> None:
-        """Updates the proxy progress bar.
-
-        Parameters
-        ----------
-        count : int
-            The new amount of progress.
-        """
-        # The message is a string composed of the client ID and the current
-        # count
-        message = f"{self.client_id}:{count}"
-        assert (self._zmq_push_socket is not None)
-        self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
-
-    def _perform_initialization(self) -> None:
-        """
-        Creates the "push socket", connects it to the socket of the main
-        progressbar and then updates the progress.
-
-        This function will be called only in the first time the "progress"
-        method is called. Subsequent calls to "progress" will actually
-        calls the "_progress" method.
-
-        Parameters
-        ----------
-        count : int
-            The new amount of progress.
-        """
-        self._zmq_context = zmq.Context()
-        self._zmq_push_socket = self._zmq_context.socket(zmq.PUSH)
-        self._zmq_push_socket.connect("tcp://{0}:{1}".format(
-            self.ip, self.port))
+        # Conect with the server
+        self._zmq_push_socket.connect(f"tcp://{self.ip}:{self.port}")
 
         # The default LINGER value for a ZMQ socket is -1, which means
         # "wait forever". That means that if the message was not received
@@ -2061,9 +1927,12 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         # received.
         self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
 
-        # self._progress_func = ProgressbarZMQClient._progress
-        # # noinspection PyArgumentList,PyTypeChecker
-        # self._progress_func(self, self.finalcount)
+    def _display_current_progress(self) -> None:
+        # The message is a string composed of the client ID and the current
+        # count
+        message = f"{self.client_id}:{self._n}"
+        assert (self._zmq_push_socket is not None)
+        self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
 
     def __repr__(self):
         return f"ProgressbarZMQClient(client_id={self.client_id}, ip='{self.ip}', port={self.port}, finalcount={self._finalcount})"

@@ -12,7 +12,7 @@ import doctest
 import os
 import unittest
 from io import StringIO
-from time import sleep
+from time import sleep, time
 
 from pyphysim.progressbar import progressbar
 from pyphysim.util.misc import pretty_time
@@ -98,58 +98,76 @@ def _get_clear_string_from_stringio_object(mystring):  # pragma: no cover
 
 class ProgressbarTextTestCase(unittest.TestCase):
     def setUp(self):
-        message = "ProgressbarText Unittest"
+        self.message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
         self.out = StringIO()
+        self.tic = time()
         self.pbar = progressbar.ProgressbarText(50,
                                                 '*',
-                                                message,
+                                                self.message,
                                                 output=self.out)
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
 
+        # For testing purposes we set _display_interval to zero
+        self.pbar._display_interval = 0.0
+        self.pbar2._display_interval = 0.0
+
     def test_write_initialization(self):
-        self.assertEqual(self.pbar.finalcount, 50)
-        self.assertEqual(self.pbar2.finalcount, 25)
+        out = StringIO()
+        out2 = StringIO()
 
-        self.pbar.width = 80
-        self.pbar._perform_initialization()
+        pbar = progressbar.ProgressbarText(50,
+                                           '*',
+                                           self.message,
+                                           output=out,
+                                           width=80)
+        # Setting the width to a value below 40 should actually set the
+        # width to 40
+        pbar2 = progressbar.ProgressbarText(25,
+                                            'x',
+                                            message="Just a Message",
+                                            output=out2,
+                                            width=30)
 
+        self.assertEqual(pbar.finalcount, 50)
+        self.assertEqual(pbar2.finalcount, 25)
+
+        # self.pbar.width = 80
         self.assertEqual(
-            self.out.getvalue(),
+            out.getvalue(),
             ("--------------------------- ProgressbarText Unittest -------"
              "-------------------1\n       1       2       3       4      "
              " 5       6       7       8       9       0\n-------0-------0"
              "-------0-------0-------0-------0-------0-------0-------0----"
              "---0\n"))
 
-        # Setting the width to a value below 40 should actually set the
-        # width to 40
-        self.pbar2.width = 30
-        self.assertEqual(self.pbar2.width, 40)
-
-        self.pbar2._message = "Just a Message"
-        self.pbar2._perform_initialization()
+        # In the constructor we asked for a width of 30, but setting the width
+        # to a value below 40 should actually set the width to 40
+        self.assertEqual(pbar2.width, 40)
         self.assertEqual(
-            self.out2.getvalue(), "------------ Just a Message -----------1\n"
+            out2.getvalue(), "------------ Just a Message -----------1\n"
             "   1   2   3   4   5   6   7   8   9   0\n"
             "---0---0---0---0---0---0---0---0---0---0\n")
 
     def test_progress(self):
         self.assertEqual(self.pbar.finalcount, 50)
         self.assertEqual(self.pbar2.finalcount, 25)
+        self.assertEqual(self.pbar.n, 0)
+        self.assertEqual(self.pbar2.n, 0)
 
         # Before the first time the progress method is called, the
         # _start_time and _stop_time variables used to track the elapsed
         # time are equal to zero.
         self.assertEqual(self.pbar.elapsed_time, '0.00s')
-        self.assertEqual(self.pbar._start_time, 0.0)
+        self.assertAlmostEqual(self.pbar._start_time, self.tic, places=2)
         self.assertEqual(self.pbar._stop_time, 0.0)
 
         # Progress 20% (10 is equivalent to 20% of 50)
         self.pbar.progress(10)
+        self.assertEqual(self.pbar.n, 10)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
             # self.out.getvalue(),
@@ -166,6 +184,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
         # Progress to 70%
         self.pbar.progress(35)
+        self.assertEqual(self.pbar.n, 35)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
             "------------ ProgressbarText Unittest -----------1\n"
@@ -181,6 +200,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         # Anything greater than or equal the final count will set the
         # progress to 100%
         self.pbar.progress(55)
+        self.assertEqual(self.pbar.n, 50)
         self.assertEqual(
             _get_clear_string_from_stringio_object(self.out),
             "------------ ProgressbarText Unittest -----------1\n"
@@ -221,10 +241,11 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
     def test_small_progress_and_zero_finalcount(self):
         # Test the case when the progress is lower then 1%.
-        pbar3 = progressbar.ProgressbarText(finalcount=200, output=self.out)
+        out = StringIO()
+        pbar3 = progressbar.ProgressbarText(finalcount=200, output=out)
         pbar3.progress(1)
         self.assertEqual(
-            _get_clear_string_from_stringio_object(self.out),
+            _get_clear_string_from_stringio_object(out),
             "------------------- % Progress ------------------1\n"
             "    1    2    3    4    5    6    7    8    9    0\n"
             "----0----0----0----0----0----0----0----0----0----0\n")
@@ -592,18 +613,8 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         self.assertEqual(self.proxybar2.ip, self.zmqbar.ip)
         self.assertEqual(self.proxybar2.port, self.zmqbar.port)
 
-        # Since we did not call the progress method of the proxy
-        # progressbars not even once yet, they have not created their
-        # sockets yet.
-        self.assertIsNone(self.proxybar1._zmq_push_socket)
-        self.assertIsNone(self.proxybar2._zmq_push_socket)
-        self.assertIsNone(self.proxybar1._zmq_context)
-        self.assertIsNone(self.proxybar2._zmq_context)
-
         # In the first time the `progress` method is called it will call the
         # `start` method, which will create the zmq sockets
-        self.proxybar1.start()
-        self.proxybar2.start()
         self.assertIsNotNone(self.proxybar1._zmq_push_socket)
         self.assertIsNotNone(self.proxybar1._zmq_context)
         self.assertIsNotNone(self.proxybar2._zmq_push_socket)
