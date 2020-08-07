@@ -579,8 +579,6 @@ class Result(JsonSerializable):
         # pylint: disable=W0212
         assert self._update_type_code == other._update_type_code, (
             "Can only merge two objects with the same name and type")
-        assert self._update_type_code != Result.MISCTYPE, (
-            "Cannot merge results of the MISCTYPE type")
         assert self.name == other.name, (
             "Can only merge two objects with the same name and type")
 
@@ -594,11 +592,21 @@ class Result(JsonSerializable):
             self._value_list.extend(other._value_list)
             self._total_list.extend(other._total_list)
 
-        self.num_updates += other.num_updates
-        self._value += other._value
-        self._total += other._total
-        self._result_sum += other._result_sum
-        self._result_squared_sum += other._result_squared_sum
+        if self._update_type_code == Result.MISCTYPE:
+            # For MISCTYPE we just replaced current values with the values from
+            # other
+            self.num_updates = other.num_updates
+            self._value = other._value
+            self._total = other._total
+            self._result_sum = other._result_sum
+            self._result_squared_sum = other._result_squared_sum
+        else:
+            # For other types we combine the results by summing them
+            self.num_updates += other.num_updates
+            self._value += other._value
+            self._total += other._total
+            self._result_sum += other._result_sum
+            self._result_squared_sum += other._result_squared_sum
 
     def get_result(self) -> Any:
         """
