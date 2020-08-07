@@ -5,4 +5,4 @@ perform Monte Carlo simulations of communications systems.
 """
 
 # The short X.Y version.
-__version__ = "0.5.1"
+__version__ = "0.6.0"
