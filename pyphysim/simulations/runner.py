@@ -1156,6 +1156,12 @@ class SimulationRunner:
         # the actual results of performing an asynchronous task in IPython.
         self._async_results: Optional[Any] = None
 
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        if self.results_filename is None:
+            return f"{class_name}(rep_max={self.rep_max}, num_params_variations={self.params.get_num_unpacked_variations()})"
+        return f"{class_name}(rep_max={self.rep_max}, num_params_variations={self.params.get_num_unpacked_variations()}, results_filename='{self.results_filename}')"
+
     @property
     def params(self):
         return self._simulation_configurator.params
