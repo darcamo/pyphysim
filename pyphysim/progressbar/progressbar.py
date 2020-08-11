@@ -202,12 +202,22 @@ class ProgressBarBase:
         self._display_interval = 0.1
 
     @property
-    def n(self):
+    def n(self) -> int:
         return self._n
 
     @property
     def finalcount(self):
         return self._finalcount
+
+    @property
+    def display_interval(self) -> float:
+        return self._display_interval
+
+    @display_interval.setter
+    def display_interval(self, value: float):
+        if value < 0:
+            value = 0.0
+        self._display_interval = value
 
     @property
     def elapsed_time_in_seconds(self) -> float:
@@ -1912,8 +1922,15 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
 
         # ZMQ Variables: These variables will be set the first time the
         # progress method is called.
+        self._zmq_context: Optional[zmq.Context] = None
+        self._zmq_push_socket: Optional[zmq.sugar.socket.Socket] = None
+
+    def __connect_socket(self):
+        # ZMQ Variables: These variables will be set the first time the
+        # progress method is called.
         self._zmq_context: zmq.Context = zmq.Context()
-        self._zmq_push_socket: zmq.sugar.socket.Socket = self._zmq_context.socket(
+        self._zmq_push_socket: zmq.sugar.socket.Socket = \
+            self._zmq_context.socket(
             zmq.PUSH)
 
         # Conect with the server
@@ -1928,6 +1945,12 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         self._zmq_push_socket.setsockopt(zmq.LINGER, 0)
 
     def _display_current_progress(self) -> None:
+        if self._zmq_context is None:
+            self.__connect_socket()
+
+        assert (self._zmq_context is not None)
+        assert (self._zmq_push_socket is not None)
+
         # The message is a string composed of the client ID and the current
         # count
         message = f"{self.client_id}:{self._n}"

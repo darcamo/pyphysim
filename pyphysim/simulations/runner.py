@@ -655,6 +655,7 @@ class SimulationTracking:
             variation_pbar = ProgressbarText3(num_variations,
                                               progresschar='-',
                                               message="Current Variation:")
+            variation_pbar.display_interval = 0.0
 
             for i in range(start, num_variations):
                 variation_pbar.progress(i + 1)
