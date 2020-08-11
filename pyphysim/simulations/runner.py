@@ -1130,8 +1130,12 @@ class SimulationRunner:
                  read_command_line_args: bool = True,
                  save_parsed_file: bool = False) -> None:
         self.rep_max = 1
-        # Number of iterations performed by simulation when it finished
-        self._runned_reps: List[int] = []
+        # Number of iterations performed by simulation for each parameters
+        # variation. In case `param_variation_index` is passed to `simulate`
+        # then only a single variation will be run and this variable will have
+        # an integer. In case all variations are simulated it will have a list
+        # of integers.
+        self._runned_reps: Union[List[int], int] = []
 
         # The simulation configurator handles reading parameters from a config
         # file as well as from the command line. In the end, what we will use
@@ -1677,7 +1681,11 @@ class SimulationRunner:
 
             if 0 <= param_variation_index < len(param_comb_list):
                 current_params = param_comb_list[param_variation_index]
-                self._simulate_for_current_params_serial(current_params)
+                (current_rep, current_sim_results,
+                 _) = self._simulate_for_current_params_serial(current_params)
+                # Store the number of repetitions actually ran for the
+                # current parameters combination
+                self._runned_reps = current_rep
 
         # If param_variation_index is None we will run for all parameters
         # combinations

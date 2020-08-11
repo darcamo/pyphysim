@@ -2521,8 +2521,11 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # The results will be the SNR values multiplied by 1.2. plus the
         # bias parameter
+        self.assertEqual(dummyrunner.runned_reps, [])
         dummyrunner.simulate()
         self.assertGreater(dummyrunner._simulation_tracking._elapsed_time, 0.0)
+        self.assertEqual(dummyrunner.runned_reps, [dummyrunner.rep_max] *
+                         dummyrunner.params.get_num_unpacked_variations())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the tests xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2605,6 +2608,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
         # Now we perform the simulation
         dummyrunner.simulate(param_variation_index=4)
+        # Note that `dummyrunner.runned_reps` is not a list, but an integer
+        self.assertEqual(dummyrunner.runned_reps, 2)
         pr = SimulationResults.load_from_file(
             'partial_results/dummyrunner_results_bias_1.3_unpack_04.pickle')
 
@@ -2675,8 +2680,11 @@ class SimulationRunnerTestCase(unittest.TestCase):
         _delete_progressbar_output_files()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        self.assertEqual(sim_runner.runned_reps, [])
         sim_runner.simulate_in_parallel(lview)
         self.assertGreater(sim_runner._simulation_tracking._elapsed_time, 0.0)
+        self.assertEqual(sim_runner.runned_reps, [sim_runner.rep_max] *
+                         sim_runner.params.get_num_unpacked_variations())
 
         results_extra_1 = sim_runner.results.get_result_values_list(
             'lala', {'extra': 2.2})
