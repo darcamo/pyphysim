@@ -538,7 +538,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         central_message = central_message.format(
             percent=percent_done,
             elapsed_time=self.elapsed_time,
-            eta={self.elapsed_time})
+            eta={self.get_eta_in_seconds()})
         pct_place = (len(prog_bar) // 2) - (len(str(central_message)) // 2)
         prog_bar = prog_bar[0:pct_place] + central_message + prog_bar[
             pct_place + len(central_message):]
