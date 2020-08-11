@@ -206,9 +206,10 @@ class SimulationTracking:
         # xxxxxxxxxx update_progress_function_style xxxxxxxxxxxxxxxxxxxxxxx
         # --- When the simulation is performed Serially -------------------
         # Sets the style of the used progressbar. The allowed values are
-        # 'text1', 'text2', None, or a callable object.
+        # 'text1', 'text2' (default), 'ipython', None, or a callable object.
         # - If it is 'text1' then the ProgressbarText class will be used.
         # - If it is 'text2' then the ProgressbarText2 class will be used.
+        # - If it is 'ipython' then the ProgressBarIPython class will be used.
         # - If it is None, then no progressbar will be used.
         # - If it is a callable, then that callable object must receive two
         #   arguments, the rep_max and the message values, and return a
@@ -216,8 +217,8 @@ class SimulationTracking:
         #   parameters).
         # --- When the simulation is performed in parallel ----------------
         # - If it is None then no progressbar will be used
-        # - If it is not None then a socket progressbar will be used, which
-        #   employs the same style as 'text2'
+        # - If it is not None then a single socket progressbar will be used for
+        #   all parameter variations
         self._update_progress_function_style: Optional[str] = 'text2'
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
@@ -309,7 +310,7 @@ class SimulationTracking:
 
         This method must be called once in the start of a simulation.
         """
-        self.tic()
+        self._tic()
 
     def cleanup(self):
         """
@@ -317,12 +318,12 @@ class SimulationTracking:
 
         This method must be called once in end of a simulation.
         """
-        self.toc()
+        self._toc()
 
-    def tic(self):
+    def _tic(self):
         self.__tic = time()
 
-    def toc(self):
+    def _toc(self):
         self.__toc = time()
         self._elapsed_time = self.__toc - self.__tic
 
@@ -1398,31 +1399,6 @@ class SimulationRunner:
         """
         return self._runned_reps
 
-    # def get_runned_reps_fix_params(
-    #         self,
-    #         fixed_params_dict=None):  # pragma: no cover
-    #     """
-    #     Get the number of runned repetitions for a given set of parameters.
-
-    #     You can get a list of the number of repetitions combination of
-    #     transmit parameters with the "runned_reps" property. However, if
-    #     you have more then one transmit parameter set to be unpacked it
-    #     might be difficult knowing which element in the list corresponds to
-    #     the simulation for a given set of transmit parameters. By using the
-    #     get_runned_reps_fix_params method you will be the number
-    #     repetitions for the desired set of transmit parameters.
-
-    #     Parameters
-    #     ----------
-    #     fixed_params_dict : dictionary
-    #     """
-    #     if fixed_params_dict is None:
-    #         fixed_params_dict = dict()
-
-    #     indexes = self.params.get_pack_indexes(fixed_params_dict)
-    #     runned_reps_subset = np.array(self.runned_reps)[indexes]
-    #     return runned_reps_subset
-
     # noinspection PyUnboundLocalVariable
     def _simulate_for_current_params_common(
         self,
@@ -1847,9 +1823,6 @@ class SimulationRunner:
                 self.results.append_all_results(r)
                 self._simulation_results_saver.add_partial_filename_for_cleaning(
                     filename)
-                # self._simulation_results_saver\
-                #         ._results_base_filename_unpack_list.append(
-                #             filename)
 
             self.simulate_common_cleaning()
 
@@ -1857,9 +1830,6 @@ class SimulationRunner:
             # stop_progress_updater
             # to stop the progressbar server updating progress
             self._simulation_tracking.stop_progress_updater()
-            # if self.update_progress_function_style is not None:
-            #     # pragma: no cover
-            #     self._pbar.stop_updater()
 
             # Erase the self._async_results object, since we already got
             #  all information we needed from it
@@ -1867,15 +1837,15 @@ class SimulationRunner:
 
     # noinspection PyMethodMayBeStatic
     def _on_simulate_start(self) -> None:
-        """This method is called only once, in the beginning of the the
+        """
+        This method is called only once, in the beginning of the the
         simulate method.
-
         """
 
     # noinspection PyMethodMayBeStatic
     def _on_simulate_finish(self) -> None:
-        """This method is called only once at the end of the simulate method.
-
+        """
+        This method is called only once at the end of the simulate method.
         """
 
     def _on_simulate_current_params_start(
