@@ -1595,10 +1595,8 @@ class SimulationResults(JsonSerializable):
             name = res[0].name
             data[name] = [r.get_result() for r in res]
 
-        try:
+        if self.runned_reps is not None:
             data['runned_reps'] = self.runned_reps
-        except AttributeError:  # pragma: no cover
-            pass
 
         df = pd.DataFrame(data)
         return df

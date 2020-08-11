@@ -1107,6 +1107,12 @@ class SimulationParametersTestCase(unittest.TestCase):
         # Create some dummy parameters (including two parameters set to be
         # unpacked)
         params = SimulationParameters()
+
+        # Try converting an empty SimulationParameters
+        df = params.to_dataframe()
+        self.assertTrue(isinstance(df, DataFrame))
+        self.assertTrue(df.empty)
+
         params.add("extra", 2.3)
         params.add("SNR", np.array([0, 3, 6, 9]))
         params.add("bias", [1.2, 1.6])
@@ -2243,6 +2249,12 @@ class SimulationResultsTestCase(unittest.TestCase):
         params.add("Name", "Some string")
 
         sim_results = SimulationResults()
+
+        # Try converting an empty SimulationResults
+        df = sim_results.to_dataframe()
+        self.assertTrue(isinstance(df, DataFrame))
+        self.assertTrue(df.empty)
+
         for p in params.get_unpacked_params_list():
             extra = p['extra']
             SNR = p['SNR']
