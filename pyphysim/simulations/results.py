@@ -211,7 +211,7 @@ class Result(JsonSerializable):
     """
     # Like an Enumeration for the type of results.
     (SUMTYPE, RATIOTYPE, MISCTYPE, CHOICETYPE) = range(4)
-    _all_types = {
+    _all_types_names = {
         SUMTYPE: "SUMTYPE",
         RATIOTYPE: "RATIOTYPE",
         MISCTYPE: "MISCTYPE",
@@ -426,7 +426,7 @@ class Result(JsonSerializable):
             The result type string (SUMTYPE, RATIOTYPE, MISCTYPE or
             CHOICETYPE).
         """
-        return Result._all_types[self._update_type_code]
+        return Result._all_types_names[self._update_type_code]
 
     @property
     def type_code(self) -> ResultType:
@@ -858,6 +858,9 @@ class SimulationResults(JsonSerializable):
     """
     def __init__(self) -> None:
         super().__init__()
+        # Note that the same name can store several `Result` objects. The reason
+        # for this it to store a given result for different parameters
+        # variations
         self._results: Dict[str, List[Result]] = dict()
 
         # This will store the simulation parameters used in the simulation

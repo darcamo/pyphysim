@@ -288,7 +288,8 @@ class SimulationTracking:
                 "progress_output_type can be either 'screen' or 'file'")
         self._progress_output_type = value
 
-    def set_serial_tracking(self, num_variations, param_variation_index):
+    def set_serial_tracking(self, num_variations: int,
+                            param_variation_index: Optional[int]):
         self._var_print_iter = self.get_print_variation_iterator(
             num_variations, start=param_variation_index)
         self._num_variations = num_variations
@@ -1603,8 +1604,72 @@ class SimulationRunner:
                                                self.elapsed_time)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+    def _simulate_serially_single_param_variation(
+            self, param_variation_index: Union[int, str]) -> None:
+        # xxxxxxxxxx Common part xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._simulate_common_setup()
+
+        # Get the number of variations of the transmit parameters
+        num_variations = self.params.get_num_unpacked_variations()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Maybe even though param_variation_index is a valid integer it
+        # was passed as a string. Let's try to convert whatever we have
+        # to an integer.
+        param_variation_index = int(param_variation_index)
+
+        # Tell the SimulationTracking that serial simulation will be done
+
+        self._simulation_tracking.set_serial_tracking(num_variations,
+                                                      param_variation_index)
+
+        if self._simulation_results_saver.results_base_filename is None:
+            err_msg = ('The results filename must be set before'
+                       ' calling the "simulate" method.')
+            raise RuntimeError(err_msg)
+
+        param_comb_list = self.params.get_unpacked_params_list()
+
+        if 0 <= param_variation_index < len(param_comb_list):
+            current_params = param_comb_list[param_variation_index]
+            (current_rep, current_sim_results,
+             _) = self._simulate_for_current_params_serial(current_params)
+            # Store the number of repetitions actually ran for the
+            # current parameters combination
+            self._runned_reps = current_rep
+
+    def _simulate_serially_all_param_variation(self) -> None:
+        # xxxxxxxxxx Common part xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        self._simulate_common_setup()
+
+        # Get the number of variations of the transmit parameters
+        num_variations = self.params.get_num_unpacked_variations()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        # Tell the SimulationTracking that serial simulation will be done
+        self._simulation_tracking.set_serial_tracking(num_variations, None)
+
+        # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        # Loop through all the parameters combinations
+        for current_params in self.params.get_unpacked_params_list():
+            (current_rep, current_sim_results, _) \
+                = self._simulate_for_current_params_serial(
+                current_params)
+
+            # Store the number of repetitions actually ran for the
+            # current parameters combination
+            self._runned_reps.append(current_rep)
+            # Lets append the simulation results for the current
+            # parameters
+            self.results.append_all_results(current_sim_results)
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+        self.simulate_common_cleaning()
+
     # TODO: maybe refactor the code path where param_variation_index is not None
-    def simulate(self, param_variation_index: Optional[int] = None) -> None:
+    def simulate(
+            self,
+            param_variation_index: Optional[Union[int, str]] = None) -> None:
         """
         Performs the full Monte Carlo simulation (serially).
 
@@ -1626,69 +1691,19 @@ class SimulationRunner:
             variation with index given by `param_variation_index`. In that
             case, calling the set_results_filename method before the
             simulate method is required since only the partial results will
-            be saved.
+            be saved. This is useful when running simulations in clusters, since
+            you can run different jobs, each job simulation for a different
+            `param_variation_index`.
 
         See Also
         --------
         simulate_in_parallel
         """
-        self._simulate_common_setup()
-
-        if param_variation_index is not None:  # pragma: no cover
-            # Maybe even though param_variation_index is a valid integer it
-            # was passed as a string. Let's try to convert whatever we have
-            # to an integer.
-            param_variation_index = int(param_variation_index)
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-        # Get the number of variations of the transmit parameters
-        num_variations = self.params.get_num_unpacked_variations()
-
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # xxxxx Start of the code unique to the serial version xxxxxxxxxxxx
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        # Tell the SimulationTracking that serial simulation will be done
-        self._simulation_tracking.set_serial_tracking(num_variations,
-                                                      param_variation_index)
-
-        # Here we can either simulate for a single combination of
-        # parameters, if param_variation_index was provided, or for all
-        # combinations if it is not provided.
-        if param_variation_index is not None:
-            if self._simulation_results_saver.results_base_filename is None:
-                err_msg = ('The results filename must be set before'
-                           ' calling the "simulate" method.')
-                raise RuntimeError(err_msg)
-
-            param_comb_list = self.params.get_unpacked_params_list()
-
-            if 0 <= param_variation_index < len(param_comb_list):
-                current_params = param_comb_list[param_variation_index]
-                (current_rep, current_sim_results,
-                 _) = self._simulate_for_current_params_serial(current_params)
-                # Store the number of repetitions actually ran for the
-                # current parameters combination
-                self._runned_reps = current_rep
-
-        # If param_variation_index is None we will run for all parameters
-        # combinations
+        if param_variation_index is None:
+            self._simulate_serially_all_param_variation()
         else:
-            # xxxxx FOR UNPACKED PARAMETERS xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-            # Loop through all the parameters combinations
-            for current_params in self.params.get_unpacked_params_list():
-                (current_rep, current_sim_results, _) \
-                    = self._simulate_for_current_params_serial(
-                    current_params)
-
-                # Store the number of repetitions actually ran for the
-                # current parameters combination
-                self._runned_reps.append(current_rep)
-                # Lets append the simulation results for the current
-                # parameters
-                self.results.append_all_results(current_sim_results)
-            # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-            self.simulate_common_cleaning()
+            self._simulate_serially_single_param_variation(
+                param_variation_index)
 
     @staticmethod
     def __create_default_ipyparallel_view():
@@ -1757,14 +1772,12 @@ class SimulationRunner:
         result files won't be automatically deleted after the simulation is
         finished.
         """
+        # xxxxxxxxxx Common part xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self._simulate_common_setup()
-
-        if view is None:
-            view = self.__create_default_ipyparallel_view()
-        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Get the number of variations of the transmit parameters
         num_variations = self.params.get_num_unpacked_variations()
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # xxxxx Start of the code unique to the parallel version xxxxxxxxx
@@ -1782,6 +1795,9 @@ class SimulationRunner:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxx Perform the actual simulation in asynchronously parallel xxxx
+        if view is None:
+            view = self.__create_default_ipyparallel_view()
+
         # NOTE: If this fails because of some pickling error, make sure the
         # class of 'self' (that is, the subclass of SimulationRunner that
         # you are trying to run) is pickle-able.

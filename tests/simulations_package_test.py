@@ -16,6 +16,7 @@ import sys
 import unittest
 from copy import copy
 from itertools import repeat
+from pathlib import Path
 
 import numpy as np
 
@@ -2527,7 +2528,23 @@ class SimulationRunnerTestCase(unittest.TestCase):
         dummyrunner.set_results_filename(filename)
         # This will make the progressbar print to a file, instead of stdout
         dummyrunner.progress_output_type = 'file'  # Default is 'screen'
+        # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+        # xxxxxxxxxx Perform a simulation of a single params variation xxxx
+        delete_file_if_possible(
+            "partial_results/dummyrunner_results_bias_1.3_unpack_03.pickle")
+        partial_file = Path(
+            "partial_results/dummyrunner_results_bias_1.3_unpack_03.pickle")
+        self.assertFalse(partial_file.exists())
+        dummyrunner.simulate(param_variation_index=3)
+        self.assertTrue(partial_file.exists())
+        delete_file_if_possible(
+            "partial_results/dummyrunner_results_bias_1.3_unpack_03.pickle")
+
+        # The results in the SImulationRunner is still empty, since only partial
+        # results were saved to a file
+        self.assertEqual(len(dummyrunner.results), 0)
+        dummyrunner.clear()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform the simulation xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
