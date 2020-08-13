@@ -7,6 +7,9 @@ import itertools
 import operator
 from collections import OrderedDict
 from collections.abc import Iterable
+from typing import Any, Dict
+from typing import Iterable as IterableType
+from typing import List, Optional, Set, cast
 
 import numpy as np
 
@@ -30,7 +33,7 @@ except ImportError:  # pragma: no cover
 try:
     import cPickle as pickle
 except ImportError as e:  # pragma: no cover
-    import pickle
+    import pickle  # type: ignore
 
 try:
     # noinspection PyUnresolvedReferences
@@ -42,11 +45,16 @@ except ImportError:  # pragma: no cover
 
 __all__ = ["combine_simulation_parameters", "SimulationParameters"]
 
+# Type of the dictionary that stores the simulation parameters
+ParametersDict = Dict[str, Any]
+
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxx Module Functions xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-def combine_simulation_parameters(params1, params2):
+def combine_simulation_parameters(
+        params1: "SimulationParameters",
+        params2: "SimulationParameters") -> "SimulationParameters":
     """
     Combine two SimulationParameters objects and return a new
     SimulationParameters object corresponding to the union of them.
@@ -155,15 +163,15 @@ class SimulationParameters(JsonSerializable):
     .SimulationResults : Class to store simulation results.
     .SimulationRunner : Base class to implement Monte Carlo simulations.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         # Dictionary that will store the parameters. The key is the
         # parameter name and the value is the parameter value.
-        self.parameters = {}
+        self.parameters: ParametersDict = {}
 
         # A set to store the names of the parameters that will be unpacked.
         # Note there is a property to get the parameters marked to be
         # unpacked, that is, the unpacked_parameters property.
-        self._unpacked_parameters_set = set()
+        self._unpacked_parameters_set: Set[str] = set()
 
         # If this SimulationParameters object was unpacked into a list of
         # SimulationParameters objects then each of these new objects will
@@ -174,11 +182,11 @@ class SimulationParameters(JsonSerializable):
         # SimulationParameters object. The original SimulationParameters
         # object will be stored in the _original_sim_params member
         # variable.
-        self._unpack_index = -1
-        self._original_sim_params = None
+        self._unpack_index: int = -1
+        self._original_sim_params: Optional["SimulationParameters"] = None
 
     @property
-    def unpack_index(self):
+    def unpack_index(self) -> int:
         """Get method for the unpack_index property.
 
         Returns
@@ -190,7 +198,7 @@ class SimulationParameters(JsonSerializable):
         return self._unpack_index
 
     @property
-    def unpacked_parameters(self):
+    def unpacked_parameters(self) -> List[str]:
         """
         Names of the parameters marked to be unpacked.
 
@@ -201,7 +209,7 @@ class SimulationParameters(JsonSerializable):
         return sorted(self._unpacked_parameters_set)
 
     @property
-    def fixed_parameters(self):
+    def fixed_parameters(self) -> List[str]:
         """
         Names of the parameters which are NOT marked to be unpacked.
 
@@ -217,7 +225,11 @@ class SimulationParameters(JsonSerializable):
         return fixed_params
 
     @staticmethod
-    def _create(params_dict, unpack_index=-1, original_sim_params=None):
+    def _create(
+        params_dict: ParametersDict,
+        unpack_index: int = -1,
+        original_sim_params: Optional["SimulationParameters"] = None
+    ) -> "SimulationParameters":
         """
         Creates a new SimulationParameters object.
 
@@ -256,7 +268,7 @@ class SimulationParameters(JsonSerializable):
         return sim_params
 
     @staticmethod
-    def create(params_dict):
+    def create(params_dict: ParametersDict) -> "SimulationParameters":
         """
         Creates a new SimulationParameters object.
 
@@ -278,7 +290,7 @@ class SimulationParameters(JsonSerializable):
         """
         return SimulationParameters._create(params_dict)
 
-    def add(self, name, value):
+    def add(self, name: str, value: Any) -> None:
         """Adds a new parameter to the SimulationParameters object.
 
         If there is already a parameter with the same name it will be
@@ -293,7 +305,7 @@ class SimulationParameters(JsonSerializable):
         """
         self.parameters[name] = value
 
-    def remove(self, name):
+    def remove(self, name: str) -> None:
         """
         Remove the parameter with name `name` from the SimulationParameters
         object
@@ -312,7 +324,9 @@ class SimulationParameters(JsonSerializable):
         if name in self._unpacked_parameters_set:
             self._unpacked_parameters_set.remove(name)
 
-    def set_unpack_parameter(self, name, unpack_bool=True):
+    def set_unpack_parameter(self,
+                             name: str,
+                             unpack_bool: bool = True) -> None:
         """Set the unpack property of the parameter with name `name`.
 
         The parameter `name` must be already added to the
@@ -343,7 +357,7 @@ class SimulationParameters(JsonSerializable):
         else:
             raise ValueError("Unknown parameter: `{0}`".format(name))
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         """Return the parameter with name `name`.
 
         Easy access to a given parameter using the brackets syntax.
@@ -360,10 +374,10 @@ class SimulationParameters(JsonSerializable):
         """
         return self.parameters[name]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any) -> None:
         self.parameters[key] = value
 
-    def __modify_name(self, p_name):
+    def __modify_name(self, p_name: str) -> str:
         """
         Add an * in p_name if it is set to be unpacked
 
@@ -376,7 +390,7 @@ class SimulationParameters(JsonSerializable):
             p_name += '*'
         return p_name
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
         """
         Get the object representation as a string.
 
@@ -391,7 +405,7 @@ class SimulationParameters(JsonSerializable):
                                                  value))
         return '{%s}' % ', '.join(repr_list)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """
         Get the number of different parameters stored in the
         SimulationParameters object.
@@ -404,7 +418,7 @@ class SimulationParameters(JsonSerializable):
         """
         return len(self.parameters)
 
-    def __iter__(self):  # pragma: no cover
+    def __iter__(self) -> IterableType[str]:  # pragma: no cover
         """
         Get an iterator to the parameters in the SimulationParameters
         object.
@@ -416,7 +430,7 @@ class SimulationParameters(JsonSerializable):
         """
         return iter(self.parameters)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """
         Check if two SimulationParameters objects are equal.
 
@@ -480,7 +494,7 @@ class SimulationParameters(JsonSerializable):
         # are equal
         return True
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         """
         Check if two SimulationParameters objects are different.
 
@@ -500,7 +514,7 @@ class SimulationParameters(JsonSerializable):
 
         return not self.__eq__(other)
 
-    def get_num_unpacked_variations(self):
+    def get_num_unpacked_variations(self) -> int:
         """
         Get the number of variations when the parameters are unpacked.
 
@@ -534,7 +548,9 @@ class SimulationParameters(JsonSerializable):
         # Just multiply all the lengths
         return functools.reduce(operator.mul, gen_values)
 
-    def get_pack_indexes(self, fixed_params_dict=None):
+    def get_pack_indexes(
+            self,
+            fixed_params_dict: Optional[ParametersDict] = None) -> np.ndarray:
         """
         When you call the function get_unpacked_params_list you get a
         list of SimulationParameters objects corresponding to all
@@ -635,7 +651,7 @@ class SimulationParameters(JsonSerializable):
 
         return indexes
 
-    def get_unpacked_params_list(self):
+    def get_unpacked_params_list(self) -> List["SimulationParameters"]:
         """
         Get a list of SimulationParameters objects, each one
         corresponding to a possible combination of (unpacked) parameters.
@@ -683,7 +699,7 @@ class SimulationParameters(JsonSerializable):
         # Lambda function to get an iterator to a (iterable) parameter
         # given its name. This only works if self.parameters[name] is an
         # iterable.
-        def get_iter_from_name(name):
+        def get_iter_from_name(name: str) -> IterableType[Any]:
             return iter(self.parameters[name])
 
         # Dictionary that stores the name and an iterator of a parameter
@@ -737,7 +753,7 @@ class SimulationParameters(JsonSerializable):
         ]
         return sim_params_list
 
-    def save_to_pickled_file(self, filename):
+    def save_to_pickled_file(self, filename: str) -> None:
         """
         Save the SimulationParameters object to the file `filename` using
         pickle.
@@ -751,7 +767,7 @@ class SimulationParameters(JsonSerializable):
             pickle.dump(self, output, protocol=2)
 
     @staticmethod
-    def load_from_pickled_file(filename):
+    def load_from_pickled_file(filename: str) -> "SimulationParameters":
         """
         Load the SimulationParameters from the file 'filename' previously
         stored (using pickle) with `save_to_pickled_file`.
@@ -768,10 +784,13 @@ class SimulationParameters(JsonSerializable):
         """
         with open(filename, 'rb') as input_file:
             obj = pickle.load(input_file)
-        return obj
+        return cast("SimulationParameters", obj)
 
     @staticmethod
-    def load_from_config_file(filename, spec=None, save_parsed_file=False):
+    def load_from_config_file(
+            filename: str,
+            spec: Optional[List[str]] = None,
+            save_parsed_file: bool = False) -> "SimulationParameters":
         """
         Load the SimulationParameters from a config file using the
         configobj module.
@@ -810,7 +829,8 @@ class SimulationParameters(JsonSerializable):
             spec = []
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        def add_params(simulation_params, config):
+        def add_params(simulation_params: "SimulationParameters",
+                       config: Any) -> None:
             """
             Add the parameters in `config`.
 
@@ -919,15 +939,17 @@ class SimulationParameters(JsonSerializable):
 
         return params
 
-    def _to_dict(self):
+    def _to_dict(self) -> Dict[str, Any]:
         """
         Convert the SimulationParameters object to a dictionary for easier
         further serialization.
         """
-        original_sim_params: "SimulationParameters" = self._original_sim_params
+        original_sim_params: Optional[Dict[str, Any]]
 
-        if original_sim_params is not None:
-            original_sim_params = original_sim_params._to_dict()
+        if self._original_sim_params is None:
+            original_sim_params = None
+        else:
+            original_sim_params = self._original_sim_params._to_dict()
 
         out = {
             'parameters': self.parameters,
@@ -938,7 +960,7 @@ class SimulationParameters(JsonSerializable):
         return out
 
     @staticmethod
-    def _from_dict(d):
+    def _from_dict(d: Dict[str, Any]) -> "SimulationParameters":
         """
         Create a new SimulationParameters object from a dictionary.
 
@@ -965,17 +987,17 @@ class SimulationParameters(JsonSerializable):
         sim_params._original_sim_params = original_sim_params
         return sim_params
 
-    def to_dataframe(self):
+    def to_dataframe(self) -> "DataFrame":  # type: ignore
         """
         Convert the SimulationParamters object to a pandas DataFrame.
         """
         data = {}
         all_params_list = self.get_unpacked_params_list()
-        for name in self:
+        for name in self:  # type: ignore
             data[name] = [a[name] for a in all_params_list]
-        return pd.DataFrame(data)
+        return pd.DataFrame(data)  # type: ignore
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """
         Method used by the jupyter rich display.
 
@@ -983,7 +1005,7 @@ class SimulationParameters(JsonSerializable):
         corresponding pandas
         dataframe.
         """
-        return self.to_dataframe()._repr_html_()
+        return self.to_dataframe()._repr_html_()  # type: ignore
 
 
 # xxxxxxxxxx SimulationParameters - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

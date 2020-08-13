@@ -32,7 +32,7 @@ def generate_random_points_in_circle(num_points: int,
 
 
 def generate_random_points_in_rectangle(num_points: int, width: float,
-                                        height: float):
+                                        height: float) -> np.ndarray:
     """
     Generate `num_points` points uniformly inside a rectangle.
 

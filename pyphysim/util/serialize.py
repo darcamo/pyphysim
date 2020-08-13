@@ -4,7 +4,7 @@ Module containing function related to serialization.
 """
 
 import json
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Union, cast
 
 import numpy as np
 
@@ -120,7 +120,7 @@ class JsonSerializable:
 
     Note that a subclass must implement the `_to_dict` and `_from_dict` methods.
     """
-    def _to_dict(self) -> Dict[str, Any]:
+    def _to_dict(self) -> Any:
         """
         Convert the object to a dictionary representation.
 
@@ -140,10 +140,10 @@ class JsonSerializable:
         dict
             The dictionary representation of the object.
         """
-        return self._to_dict()
+        return cast(Dict[str, Any], self._to_dict())
 
     @staticmethod
-    def _from_dict(d: Dict[str, Any]) -> Any:
+    def _from_dict(d: Any) -> Any:
         """
         Convert from a dictionary to an object.
 

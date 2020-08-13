@@ -33,7 +33,8 @@ import sys
 import threading
 import time
 import warnings
-from typing import Any, List, Optional, Tuple, cast, final
+from typing import (Any, List, Literal, Optional, TextIO, Tuple, Union, cast,
+                    final)
 
 from ..util.misc import pretty_time
 
@@ -53,6 +54,9 @@ except ImportError:  # pragma: no cover
     # ProgressbarZMQServer and ProgressbarZMQClient classes require it
     pass
 
+ProgressBarStyle = Union[Literal["text1"], Literal["text2"], Literal["text3"],
+                         Literal["ipython"]]
+
 # Type used to store IP address and port number
 ClientID = int
 IPAddress = str
@@ -64,7 +68,7 @@ __all__ = [
     'ProgressBarIPython', 'ProgressbarDistributedServerBase',
     'ProgressbarDistributedClientBase', 'ProgressbarMultiProcessServer',
     'ProgressbarMultiProcessClient', 'ProgressbarZMQServer',
-    'ProgressbarZMQClient'
+    'ProgressbarZMQClient', 'ProgressBarStyle'
 ]
 
 
@@ -169,7 +173,7 @@ class ProgressBarBase:
     Derived classes should implement :func:`_display_current_progress`.
     Optionally derived class might also implement :func:`_perform_finalizations`
     """
-    def __init__(self, finalcount: int):
+    def __init__(self, finalcount: int) -> None:
         """
         Initializes the progressbar object.
 
@@ -181,32 +185,32 @@ class ProgressBarBase:
             with the current amount in the progressbar. When the amount
             becomes equal to `finalcount` the bar will be 100% complete.
         """
-        self._n = 0
-        self._finalcount = finalcount
+        self._n: int = 0
+        self._finalcount: int = finalcount
 
         # This will be set to true when the progress reaches 100%. When
         # this is True, any subsequent calls to the `progress` method will
         # be ignored.
-        self._finalized = False
+        self._finalized: bool = False
 
         # Stores the time when the progressbar was created
-        self._start_time = time.time()
+        self._start_time: float = time.time()
         # This variable will store the time when the `stop` method was
         # called for the first time (either manually or in the `progress`
         # method. It will be used for tracking the elapsed time.
-        self._stop_time = 0.0
+        self._stop_time: float = 0.0
 
         # last time the _display_current_progress method was called
-        self.__last_display_time = -1
+        self.__last_display_time: float = -1.0
         # Minimum interval between calls to the _display_current_progress method
-        self._display_interval = 0.1
+        self._display_interval: float = 0.1
 
     @property
     def n(self) -> int:
         return self._n
 
     @property
-    def finalcount(self):
+    def finalcount(self) -> int:
         return self._finalcount
 
     @property
@@ -214,7 +218,7 @@ class ProgressBarBase:
         return self._display_interval
 
     @display_interval.setter
-    def display_interval(self, value: float):
+    def display_interval(self, value: float) -> None:
         if value < 0:
             value = 0.0
         self._display_interval = value
@@ -464,7 +468,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         self._print_empty_line_at_the_end = True
 
     @property
-    def message(self):
+    def message(self) -> Optional[str]:
         return self._message
 
     def __del__(self) -> None:
@@ -555,7 +559,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
 
         return prog_bar
 
-    def _get_prog_string(self):
+    def _get_prog_string(self) -> str:
         """
         Get a string representing the text progressbar line.
 
@@ -563,6 +567,7 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         `_get_percentage_representation` method.
         """
         NotImplementedError("Implement this method in a subclass")
+        return ""
 
     def _maybe_delete_output_file(self) -> None:
         """
@@ -866,7 +871,7 @@ class ProgressbarText2(ProgressbarTextBase):
         """
         super().__init__(finalcount, progresschar, message, output, width)
 
-    @ProgressbarTextBase.width.setter
+    @ProgressbarTextBase.width.setter  # type: ignore
     def width(self, value: int) -> None:
         """
         Set method for the width property.
@@ -882,8 +887,8 @@ class ProgressbarText2(ProgressbarTextBase):
             value = 40
         self._width = value - (value % 10)
 
-    @ProgressbarTextBase.message.setter
-    def message(self, val: Optional[str]):
+    @ProgressbarTextBase.message.setter  # type: ignore
+    def message(self, val: Optional[str]) -> None:
         self._message = val
 
     def _get_prog_string(self) -> str:
@@ -1049,10 +1054,10 @@ class ProgressBarIPython(ProgressBarBase):  # pragma: no cover
 
     @property
     def message(self) -> str:
-        return self._message.value
+        return cast(str, self._message.value)
 
     @message.setter
-    def message(self, value: str):
+    def message(self, value: str) -> None:
         self._message.value = value
 
     def _display_current_progress(self) -> None:
@@ -1126,7 +1131,7 @@ class ProgressbarDistributedServerBase:
                  message: Optional[str] = None,
                  sleep_time: float = 1.0,
                  filename: Optional[str] = None,
-                 style="text2"):
+                 style: ProgressBarStyle = "text2") -> None:
         """
         Initializes the ProgressbarDistributedServerBase object.
 
@@ -1160,7 +1165,7 @@ class ProgressbarDistributedServerBase:
         # self._client_data_list: List[Any] = self._manager.list()  # pylint: disable=E1101
         self._client_data_list: List[int] = []
 
-        self._style = style
+        self._style: ProgressBarStyle = style
 
         # total_final_count will be updated each time the register_*
         # function is called.
@@ -1212,11 +1217,11 @@ class ProgressbarDistributedServerBase:
         return self._total_final_count
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         return self._is_running
 
     @property
-    def num_clients(self):
+    def num_clients(self) -> int:
         """Number of registered clients"""
         return self._last_id + 1
 
@@ -1301,7 +1306,7 @@ class ProgressbarDistributedServerBase:
         return client_id
 
     # Only called inside `_update_progress`
-    def __create_inner_progressbar(self, output):
+    def __create_inner_progressbar(self, output: TextIO) -> ProgressBarBase:
         if self._style == 'text1':
             return ProgressbarText(self.finalcount,
                                    self._progresschar,
@@ -1589,7 +1594,7 @@ class ProgressbarMultiProcessServer(ProgressbarDistributedServerBase):
                  message: str = '',
                  sleep_time: float = 1.0,
                  filename: Optional[str] = None,
-                 style: str = "text2") -> None:
+                 style: ProgressBarStyle = "text2") -> None:
         """
         Initializes the ProgressbarMultiProcessServer object.
 
@@ -1734,7 +1739,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
                  filename: Optional[str] = None,
                  ip: IPAddress = 'localhost',
                  port: PortNumber = 7396,
-                 style: str = "text2") -> None:
+                 style: ProgressBarStyle = "text2") -> None:
         super().__init__(progresschar, message, sleep_time, filename, style)
 
         # Create a Multiprocessing namespace
@@ -1743,15 +1748,15 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
 
         # We store the IP and port of the socket in the Namespace, since
         # the socket will be created in a different process
-        self._ip = ip  # type: ignore
-        self._port = port  # type: ignore
+        self._ip: IPAddress = ip
+        self._port: PortNumber = port
 
         # This will be set to a ZMQ Context in the _update_progress method
         self._zmq_context: Optional[zmq.Context] = None
         # This will be set to a ZMQ Socket in the _update_progress method
         self._zmq_pull_socket: Optional[zmq.sugar.socket.Socket] = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         status = '-> updating' if self.is_running else '-> stopped'
         return f"ProgressbarZMQServer(ip={self.ip}, port={self.port}, " \
                f"num_clients={self.num_clients}) {status}"
@@ -1925,13 +1930,11 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         self._zmq_context: Optional[zmq.Context] = None
         self._zmq_push_socket: Optional[zmq.sugar.socket.Socket] = None
 
-    def __connect_socket(self):
+    def __connect_socket(self) -> None:
         # ZMQ Variables: These variables will be set the first time the
         # progress method is called.
-        self._zmq_context: zmq.Context = zmq.Context()
-        self._zmq_push_socket: zmq.sugar.socket.Socket = \
-            self._zmq_context.socket(
-            zmq.PUSH)
+        self._zmq_context = zmq.Context()
+        self._zmq_push_socket = self._zmq_context.socket(zmq.PUSH)
 
         # Conect with the server
         self._zmq_push_socket.connect(f"tcp://{self.ip}:{self.port}")
@@ -1957,7 +1960,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         assert (self._zmq_push_socket is not None)
         self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"ProgressbarZMQClient(client_id={self.client_id}, ip='{self.ip}', port={self.port}, finalcount={self._finalcount})"
 
 

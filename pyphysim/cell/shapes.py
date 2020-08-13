@@ -35,7 +35,7 @@ class Coordinate:
     complex number) and how to calculate the distance from it to another
     location.
     """
-    def __init__(self, pos: complex):
+    def __init__(self, pos: complex, **kwargs: Any) -> None:
         """
         Initializes the Coordinate object.
 
@@ -153,8 +153,12 @@ class Shape(Coordinate):
     # 'abstract' must be implemented in a subclass.
     __metaclass__ = ABCMeta
 
-    def __init__(self, pos: complex, radius: float, rotation: float = 0, **kw):
-        super().__init__(pos=pos, **kw)
+    def __init__(self,
+                 pos: complex,
+                 radius: float,
+                 rotation: float = 0,
+                 **kwargs: Any) -> None:
+        super().__init__(pos=pos, **kwargs)
 
         self._radius = radius
         self._rotation = rotation
@@ -556,8 +560,12 @@ class Hexagon(Shape):
     rotation : float
         Rotation of the hexagon in degrees.
     """
-    def __init__(self, pos: complex, radius: float, rotation: float = 0, **kw):
-        super().__init__(pos=pos, radius=radius, rotation=rotation, **kw)
+    def __init__(self,
+                 pos: complex,
+                 radius: float,
+                 rotation: float = 0,
+                 **kwargs: Any) -> None:
+        super().__init__(pos=pos, radius=radius, rotation=rotation, **kwargs)
 
     @property
     def height(self) -> float:
@@ -615,13 +623,13 @@ class Rectangle(Shape):
                  first: complex,
                  second: complex,
                  rotation: float = 0,
-                 **kw):
+                 **kwargs: Any) -> None:
         central_pos = (first + second) / 2
         radius = np.abs(second - central_pos)
         super().__init__(pos=central_pos,
                          radius=radius,
                          rotation=rotation,
-                         **kw)
+                         **kwargs)
         self._lower_coord = complex(min(first.real, second.real),
                                     min(first.imag, second.imag))
         self._upper_coord = complex(max(first.real, second.real),

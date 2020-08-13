@@ -3,7 +3,8 @@
 
 import os.path
 from collections.abc import Iterable
-from typing import Any, Dict, Iterator, List, Optional, cast
+from typing import (Any, Dict, Iterator, List, Optional, Tuple, TypedDict,
+                    Union, cast)
 
 import numpy as np
 
@@ -20,13 +21,26 @@ except ImportError:  # pragma: no cover
 try:
     # noinspection PyUnresolvedReferences
     import pandas as pd
-    DataFrame = pd.DataFrame
 except ImportError:  # pragma: no cover
-    # This will be used just for type checking, since pandas is not installed
-    from typing import Any as DataFrame
+    pass
 
 # One of SUMTYPE, RATIOTYPE, MISCTYPE or CHOICETYPE
 ResultType = int
+
+# The type of a dictionary representation of a Result object
+ResultAsDict = TypedDict(
+    'ResultAsDict', {
+        'name': str,
+        'update_type_code': ResultType,
+        "value": Any,
+        "total": Any,
+        "result_sum": float,
+        "result_squared_sum": float,
+        "num_updates": int,
+        "accumulate_values_bool": bool,
+        "value_list": List[Any],
+        "total_list": List[Any]
+    })
 
 __all__ = ["combine_simulation_results", "SimulationResults", "Result"]
 
@@ -271,7 +285,7 @@ class Result(JsonSerializable):
         self._value_list: List[Any] = []
         self._total_list: List[Any] = []
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         Compare two Result objects.
 
@@ -542,7 +556,7 @@ class Result(JsonSerializable):
             assert isinstance(
                 p_value,
                 (int, np.int, np.int32,
-                 np.int64)), ("Value for the CHOICETYPE must be an integer.")
+                 np.int64)), "Value for the CHOICETYPE must be an integer."
 
             self._value[p_value] += 1
             self._total += 1
@@ -676,7 +690,7 @@ class Result(JsonSerializable):
         return ((self._result_squared_sum / self.num_updates) -
                 (self.get_result_mean())**2)
 
-    def get_confidence_interval(self, P: float = 95.0) -> np.ndarray:
+    def get_confidence_interval(self, P: float = 95.0) -> Tuple[float, float]:
         """
         Get the confidence interval that contains the true result with a
         given probability `P`.
@@ -691,8 +705,7 @@ class Result(JsonSerializable):
 
         Returns
         -------
-        Interval : np.ndarray
-            Numpy (float) array with two elements.
+            Tuple with two float values.
 
         See also
         --------
@@ -703,13 +716,13 @@ class Result(JsonSerializable):
                        "the MISC update type.")
             raise RuntimeError(message)
 
-        mean = self.get_result_mean()
-        std = np.sqrt(self.get_result_var())
-        n = self.num_updates
+        mean: float = self.get_result_mean()
+        std: float = np.sqrt(self.get_result_var())
+        n: int = self.num_updates
         return calc_confidence_interval(mean, std, n, P)
 
     # Overwrite version in  JsonSerializable
-    def _to_dict(self) -> Dict[str, Any]:
+    def _to_dict(self) -> ResultAsDict:
         """
         Convert the Result object to a dictionary representation.
 
@@ -718,22 +731,20 @@ class Result(JsonSerializable):
         dict
             The dictionary representation of the object.
         """
-        d = {
-            'name': self.name,
-            'update_type_code': self._update_type_code,
-            'value': self._value,
-            'total': self._total,
-            'result_sum': self._result_sum,
-            'result_squared_sum': self._result_squared_sum,
-            'num_updates': self.num_updates,
-            'accumulate_values_bool': self._accumulate_values_bool,
-            'value_list': self._value_list,
-            'total_list': self._total_list
-        }
-        return d
+        return ResultAsDict(
+            name=self.name,
+            update_type_code=self._update_type_code,
+            value=self._value,
+            total=self._total,
+            result_sum=self._result_sum,
+            result_squared_sum=self._result_squared_sum,
+            num_updates=self.num_updates,
+            accumulate_values_bool=self._accumulate_values_bool,
+            value_list=self._value_list,
+            total_list=self._total_list)
 
     @staticmethod
-    def _from_dict(d: Dict[str, Any]) -> "Result":
+    def _from_dict(d: ResultAsDict) -> "Result":
         """
         Convert from a dictionary to a Result object.
 
@@ -755,7 +766,7 @@ class Result(JsonSerializable):
             r = Result(name=d['name'],
                        update_type_code=d['update_type_code'],
                        accumulate_values=d['accumulate_values_bool'],
-                       choice_num=len(values))
+                       choice_num=len(values))  # type: ignore
 
             for i, v in enumerate(values):
                 for _ in range(v):
@@ -870,7 +881,7 @@ class SimulationResults(JsonSerializable):
 
         # Don't change this manually. This will be set in the
         # SimulationRunner class in the end of the simulation.
-        self.runned_reps: Optional[int] = None
+        self.runned_reps: Optional[Union[List[int], int]] = None
 
         # When the SimulationResults object is saved to a file with the method
         # 'save_to_file', this variable will be set to the used filename
@@ -879,9 +890,9 @@ class SimulationResults(JsonSerializable):
         self.original_filename: Optional[str] = None
 
         # The SimulationResults will set and retrieve this value
-        self.current_rep = -1
+        self.current_rep: int = -1
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: "SimulationResults") -> bool:  # type: ignore
         """
         Compare two SimulationResults objects.
 
@@ -1304,7 +1315,7 @@ class SimulationResults(JsonSerializable):
         """
         return len(self._results)
 
-    def __iter__(self) -> Iterator[Result]:  # pragma: no cover
+    def __iter__(self) -> Iterator[List[Result]]:  # pragma: no cover
         # """Get an iterator to the internal dictionary. Therefore iterating
         # through this will iterate through the dictionary keys, that is, the
         # name of the results stored in the SimulationResults object.
@@ -1409,7 +1420,7 @@ class SimulationResults(JsonSerializable):
             The converted object.
         """
         def list_of_dicts_to_list_of_results(
-                result_list: Dict[str, Any]) -> List[Result]:
+                result_list: List[Dict[str, Any]]) -> List[Result]:
             """
             Convert a list of dictionary representations of Result objects to a
             list of Result objects.
@@ -1546,7 +1557,7 @@ class SimulationResults(JsonSerializable):
             #     # partial results are saved.
             #     raise IOError("Could not unpickle file '{0}'".format(
             #         filename))
-
+        assert (isinstance(obj, SimulationResults))
         return obj
 
     @staticmethod
@@ -1554,7 +1565,7 @@ class SimulationResults(JsonSerializable):
         with open(filename, 'r') as inputfile:
             json_data = inputfile.read()
         obj = SimulationResults.from_json(json_data)
-        return obj
+        return cast(SimulationResults, obj)
 
     @staticmethod
     def load_from_file(filename: str) -> "SimulationResults":
@@ -1584,14 +1595,14 @@ class SimulationResults(JsonSerializable):
 
         return load_func(filename)
 
-    def to_dataframe(self) -> DataFrame:
+    def to_dataframe(self) -> "DataFrame":  # type: ignore
         """
         Convert the SimulationResults object to a pandas DataFrame.
         """
         # The data dictionary that we will use to create the DataFrame
         data = {}
         all_params_list = self.params.get_unpacked_params_list()
-        for name in self.params:
+        for name in self.params:  # type: ignore
             data[name] = [a[name] for a in all_params_list]
 
         for res in self:
@@ -1599,19 +1610,18 @@ class SimulationResults(JsonSerializable):
             data[name] = [r.get_result() for r in res]
 
         if self.runned_reps is not None:
-            data['runned_reps'] = self.runned_reps
+            data['runned_reps'] = self.runned_reps  # type: ignore
 
-        df = pd.DataFrame(data)
-        return df
+        return pd.DataFrame(data)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """
         Method used by the jupyter rich display.
 
         We will simple use the HTML representation of the corresponding pandas
         dataframe.
         """
-        return self.to_dataframe()._repr_html_()
+        return self.to_dataframe()._repr_html_()  # type: ignore
 
 
 # xxxxxxxxxx SimulationResults - END xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

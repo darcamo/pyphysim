@@ -8,11 +8,13 @@ import warnings
 from argparse import ArgumentParser
 from pathlib import Path
 from time import time
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import (Any, Callable, Dict, Iterator, List, Literal, Optional,
+                    TextIO, Tuple, Union)
 
 from ..progressbar import (ProgressBarBase, ProgressBarIPython,
-                           ProgressbarText, ProgressbarText2, ProgressbarText3,
-                           ProgressbarZMQClient, ProgressbarZMQServer)
+                           ProgressBarStyle, ProgressbarText, ProgressbarText2,
+                           ProgressbarText3, ProgressbarZMQClient,
+                           ProgressbarZMQServer)
 from ..util.misc import pretty_time
 from .parameters import SimulationParameters
 from .results import Result, SimulationResults
@@ -27,6 +29,8 @@ except ImportError:  # pragma: no cover
 __all__ = ["get_partial_results_filename", "SimulationRunner", "SkipThisOne"]
 
 UpdateFunction = Callable[[int], None]
+
+ProgressOutputType = Union[Literal["screen"], Literal["file"]]
 
 ProxybarData = Tuple[int, str, int]
 
@@ -197,7 +201,7 @@ class SimulationTracking:
     `set_parallel_tracking` method once to indicate to the SimulationTracking
     object which type will be used.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         # This variable will be used later to store the progressbar object
         # when it is created in the _get_update_progress_function method
         self._pbar: Optional[Union[ProgressBarBase,
@@ -219,12 +223,13 @@ class SimulationTracking:
         # - If it is None then no progressbar will be used
         # - If it is not None then a single socket progressbar will be used for
         #   all parameter variations
-        self._update_progress_function_style: Optional[str] = 'text2'
+        self._update_progress_function_style: Optional[
+            ProgressBarStyle] = 'text2'
 
         # This can be either 'screen' or 'file'. If it is 'file' then the
         # progressbar will write the progress to a file with appropriated
         # filename
-        self._progress_output_type = 'screen'
+        self._progress_output_type: ProgressOutputType = 'screen'
 
         # Dictionary with extra arguments that will be passed to the
         # __init__ method of the progressbar class. For instance, when
@@ -258,17 +263,17 @@ class SimulationTracking:
         #
         # The first time the next_variation method is called this iterator will
         # be created
-        self._var_print_iter = None
+        self._var_print_iter: Optional[Iterator[int]] = None
         # This will be updated with the number of variations in the first
         # time the next_variation method is called
-        self._num_variations = 0
+        self._num_variations: int = 0
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Used when progress output type is set to 'file'
         self.results_base_filename = "simulation"
 
     # This method is called when the SimulationTracking class is pickled
-    def __getstate__(self):  # pragma: no cover
+    def __getstate__(self) -> Dict[str, Any]:  # pragma: no cover
         # We will pickle everything as default, except for the "_pbar"
         # member variable that will not be pickled. The reason is that
         # it may be a ProgressbarZMQServer object, which cannot be
@@ -278,26 +283,26 @@ class SimulationTracking:
         return state
 
     @property
-    def progress_output_type(self):
+    def progress_output_type(self) -> ProgressOutputType:
         return self._progress_output_type
 
     @progress_output_type.setter
-    def progress_output_type(self, value):
+    def progress_output_type(self, value: ProgressOutputType) -> None:
         if (value != 'screen') and (value != 'file'):
             raise RuntimeError(
                 "progress_output_type can be either 'screen' or 'file'")
         self._progress_output_type = value
 
     def set_serial_tracking(self, num_variations: int,
-                            param_variation_index: Optional[int]):
+                            param_variation_index: Optional[int]) -> None:
         self._var_print_iter = self.get_print_variation_iterator(
             num_variations, start=param_variation_index)
         self._num_variations = num_variations
 
-    def set_parallel_tracking(self, num_variations):
+    def set_parallel_tracking(self, num_variations: int) -> None:
         self._num_variations = num_variations
 
-    def clear(self):
+    def clear(self) -> None:
         self._elapsed_time = 0.0
         self.__tic = 0.0
         self.__toc = 0.0
@@ -305,7 +310,7 @@ class SimulationTracking:
         self._var_print_iter = None
         self._num_variations = 0
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Setup code that run in the begining of a simulation.
 
@@ -313,7 +318,7 @@ class SimulationTracking:
         """
         self._tic()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Clean-up code that run in the end of a simulation.
 
@@ -321,19 +326,20 @@ class SimulationTracking:
         """
         self._toc()
 
-    def _tic(self):
+    def _tic(self) -> None:
         self.__tic = time()
 
-    def _toc(self):
+    def _toc(self) -> None:
         self.__toc = time()
         self._elapsed_time = self.__toc - self.__tic
 
     @property
-    def update_progress_function_style(self):
+    def update_progress_function_style(self) -> Optional[ProgressBarStyle]:
         return self._update_progress_function_style
 
     @update_progress_function_style.setter
-    def update_progress_function_style(self, value):
+    def update_progress_function_style(
+            self, value: Optional[ProgressBarStyle]) -> None:
         self._update_progress_function_style = value
 
         if value == 'ipython':
@@ -349,25 +355,27 @@ class SimulationTracking:
                 # Fallback to 'text2' style
                 self._update_progress_function_style = 'text2'
 
-    def start_progress_updater(self):
+    def start_progress_updater(self) -> None:
         """
         Start the updating of the (parallel) progressbar
         """
         if self._pbar is not None:
+            assert (isinstance(self._pbar, ProgressbarZMQServer))
             self._pbar.start_updater()
 
-    def stop_progress_updater(self):
+    def stop_progress_updater(self) -> None:
         """
         Stop the updating of the (parallel) progressbar
         """
         if self.update_progress_function_style is not None:
+            assert (isinstance(self._pbar, ProgressbarZMQServer))
             # pragma: no cover
             self._pbar.stop_updater()
 
     @property
     def elapsed_time(self) -> str:
         """
-        Get the simulation elapsed time. Do not set this value.
+        Get the simulation elapsed time (as a string).
 
         Returns
         -------
@@ -378,7 +386,8 @@ class SimulationTracking:
 
     def _get_progress_output_sink(
             self,
-            param_variation_index: Union[int, str]) -> Any:  # pragma: no cover
+            param_variation_index: Union[int,
+                                         str]) -> TextIO:  # pragma: no cover
         """
         Get the output sink for the progressbars.
 
@@ -397,9 +406,7 @@ class SimulationTracking:
         out : sys.stdout or a file object
         """
         out = sys.stdout
-        if self.progress_output_type == 'screen':
-            pass
-        else:
+        if self.progress_output_type == 'file':
             total_unpacks = self._num_variations
             num_digits = len(str(total_unpacks))
             unpack_index_str = str(param_variation_index).zfill(num_digits)
@@ -488,8 +495,8 @@ class SimulationTracking:
                                          message,
                                          output=output_progress_sink,
                                          **self.progressbar_extra_args)
-            update_progress_func = self._pbar
             self._pbar.delete_progress_file_after_completion = True
+            return self._pbar
         elif self.update_progress_function_style == 'text2':
             # We will use the ProgressbarText2 class
             # noinspection PyArgumentList
@@ -498,31 +505,31 @@ class SimulationTracking:
                                           message,
                                           output=output_progress_sink,
                                           **self.progressbar_extra_args)
-            update_progress_func = self._pbar
             self._pbar.delete_progress_file_after_completion = True
+            return self._pbar
         elif self.update_progress_function_style == 'ipython':
             self._pbar = ProgressBarIPython(rep_max, message)
-            update_progress_func = self._pbar
+            return self._pbar
 
-        elif callable(self.update_progress_function_style) is True:
-            # We will use a custom function to update the progress. Note
-            # that we call self.update_progress_function_style to return
-            # the actual function that will be used to update the
-            # progress. That is, the function stored in
-            # self.update_progress_function_style should basically do what
-            # _get_update_progress_function is supposed to do.
-
-            # pylint: disable=E1102
-            # noinspection PyCallingNonCallable
-            update_progress_func = self.update_progress_function_style(
-                rep_max, self.progressbar_message)  # pragma: no cover
+        # elif callable(self.update_progress_function_style) is True:
+        #     # We will use a custom function to update the progress. Note
+        #     # that we call self.update_progress_function_style to return
+        #     # the actual function that will be used to update the
+        #     # progress. That is, the function stored in
+        #     # self.update_progress_function_style should basically do what
+        #     # _get_update_progress_function is supposed to do.
+        #
+        #     # pylint: disable=E1102
+        #     # noinspection PyCallingNonCallable
+        #     update_progress_func = self.update_progress_function_style(
+        #         rep_max, self.progressbar_message)  # pragma: no cover
 
         return update_progress_func
 
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def get_parallel_update_progress_functions(
         self, simulation_parameters: SimulationParameters
-    ) -> List[ProgressbarZMQClient]:
+    ) -> List[Union[ProgressbarZMQClient, UpdateFunction]]:
         """
         Return a list of functions (actually, function objects) that should
         be called to update the progress accounting each parameter variation
@@ -585,7 +592,7 @@ class SimulationTracking:
 
     def _get_parallel_update_progress_function(
         self, simulation_parameters: SimulationParameters
-    ) -> ProgressbarZMQClient:  # pragma: no cover
+    ) -> Union[ProgressbarZMQClient, UpdateFunction]:  # pragma: no cover
         """
         Return a function that should be called to update the
         progressbar for the simulation of the current parameters.
@@ -610,7 +617,7 @@ class SimulationTracking:
         rep_max = parameters["rep_max"]
         # Note that this will be an object of the ProgressbarZMQClient
         # class, but it behaves like a function.
-        # assert(isinstance(self._pbar, ProgressbarZMQServer))
+        assert (isinstance(self._pbar, ProgressbarZMQServer))
         proxybar = \
             self._pbar.register_client_and_get_proxy_progressbar(
                 rep_max)
@@ -663,7 +670,7 @@ class SimulationTracking:
                 print()  # print a new line
                 yield i
 
-    def next_variation(self):
+    def next_variation(self) -> None:
         if self._var_print_iter is None:
             warnings.warn(
                 "The `next_variation` method was called without "
@@ -685,7 +692,7 @@ class SimulationConfigurator:
     """
     def __init__(self,
                  default_config_file: Optional[str] = None,
-                 config_spec: Optional[str] = None,
+                 config_spec: Optional[List[str]] = None,
                  read_command_line_args: bool = True,
                  save_parsed_file: bool = False):
         self._config_filename = None
@@ -734,7 +741,7 @@ class SimulationConfigurator:
                 save_parsed_file=save_parsed_file)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def setup(self, rep_max):
+    def setup(self, rep_max: int) -> None:
         """
         Setup code that run in the begining of a simulation.
 
@@ -742,7 +749,7 @@ class SimulationConfigurator:
         """
         self.params.parameters['rep_max'] = rep_max
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Clean-up code that run in the end of a simulation.
 
@@ -752,18 +759,18 @@ class SimulationConfigurator:
 
 
 class SimulationResultsSaver:
-    def __init__(self):
+    def __init__(self) -> None:
         self.results = SimulationResults()
 
         # xxxxxxxxxx Configure saving of simulation results xxxxxxxxxxxxxxx
         # If this variable is set to True the saved partial results will be
         # deleted after the simulation is finished.
-        self.delete_partial_results_bool = False
+        self.delete_partial_results_bool: bool = False
 
         # Folder where the partial results will be saved. Set this to None
         # to save the partial results in the same folder of the final
         # results.
-        self.partial_results_folder = 'partial_results'
+        self.partial_results_folder: str = 'partial_results'
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxx Internal variables you should not modify xxxxxxxxxxxxxxxxxx
@@ -776,32 +783,40 @@ class SimulationResultsSaver:
         # integer. These names will be used after the simulation has
         # finished and full results were saved to delete the files with the
         # partial results.
-        self._results_base_filename_unpack_list: List[str] = []
+        self._results_base_filename_unpack_list: List[Union[str, Path]] = []
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Last time the save_partial_results_maybe method was called
-        self.__last_tic = time()
+        self.__last_tic: float = time()
 
-    def clear(self):
+    def clear(self) -> None:
         self.results = SimulationResults()
 
         # # Not sure this is necessary
         # self._results_base_filename_unpack_list = []
 
-    def setup(self, rep_max, params):
+    def setup(self, rep_max: int, params: SimulationParameters) -> None:
         """
         Setup code that run in the begining of a simulation.
 
         This method must be called once in the start of a simulation.
+
+        Parameters
+        ----------
+        rep_max
+            The maximum number of iterations of each parameters configuration
+        params
+            The simulation parameters
         """
-        self.results.repmax = rep_max
+        self.results.rep_max = rep_max  # type: ignore
         # Store the Simulation parameters in the SimulationResults object.
         # With this, the simulation parameters will be available for
         # someone that has the SimulationResults object (loaded from a
         # file, for instance).
         self.results.set_parameters(params)
 
-    def cleanup(self, runned_reps, elapsed_time):
+    def cleanup(self, runned_reps: Union[List[int], int],
+                elapsed_time: str) -> None:
         """
         Clean-up code that run in the end of a simulation.
 
@@ -811,7 +826,7 @@ class SimulationResultsSaver:
         self.results.runned_reps = runned_reps
 
         # Also save the elapsed time in the SimulationResults object
-        self.results.elapsed_time = elapsed_time
+        self.results.elapsed_time = elapsed_time  # type: ignore
 
         # xxxxx Save the results if results_base_filename is not None x
         if self._results_base_filename is not None:
@@ -864,7 +879,7 @@ class SimulationResultsSaver:
 
         return results_filename
 
-    def add_partial_filename_for_cleaning(self, filename: str):
+    def add_partial_filename_for_cleaning(self, filename: str) -> None:
         """
         Manually add a filename for later deletion (if
         delete_partial_results_bool is True).
@@ -898,7 +913,9 @@ class SimulationResultsSaver:
                     pass
             self._results_base_filename_unpack_list = []
 
-    def _get_partial_results_filename(self, current_params):
+    def _get_partial_results_filename(
+            self, current_params: SimulationParameters) -> str:
+        assert (self.results_base_filename is not None)
         return get_partial_results_filename(self.results_base_filename,
                                             current_params,
                                             self.partial_results_folder)
@@ -970,7 +987,7 @@ class SimulationResultsSaver:
         full_partial_file_name = Path(filename).absolute()
         self._results_base_filename_unpack_list.append(full_partial_file_name)
 
-        return full_partial_file_name
+        return full_partial_file_name.name
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def save_partial_results_maybe(
@@ -995,7 +1012,9 @@ class SimulationResultsSaver:
                                       current_sim_results)
             self.__last_tic = toc
 
-    def load_partial_results(self, current_params):
+    def load_partial_results(
+            self, current_params: SimulationParameters
+    ) -> Optional[SimulationResults]:
         """
         Load the partial simulation results from a file, if available.
 
@@ -1129,10 +1148,10 @@ class SimulationRunner:
     """
     def __init__(self,
                  default_config_file: Optional[str] = None,
-                 config_spec: Optional[str] = None,
+                 config_spec: Optional[List[str]] = None,
                  read_command_line_args: bool = True,
                  save_parsed_file: bool = False) -> None:
-        self.rep_max = 1
+        self.rep_max: int = 1
         # Number of iterations performed by simulation for each parameters
         # variation. In case `param_variation_index` is passed to `simulate`
         # then only a single variation will be run and this variable will have
@@ -1159,34 +1178,35 @@ class SimulationRunner:
         # the actual results of performing an asynchronous task in IPython.
         self._async_results: Optional[Any] = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         class_name = self.__class__.__name__
         if self.results_filename is None:
             return f"{class_name}(rep_max={self.rep_max}, num_params_variations={self.params.get_num_unpacked_variations()})"
         return f"{class_name}(rep_max={self.rep_max}, num_params_variations={self.params.get_num_unpacked_variations()}, results_filename='{self.results_filename}')"
 
     @property
-    def params(self):
+    def params(self) -> SimulationParameters:
         return self._simulation_configurator.params
 
     @property
-    def results(self):
+    def results(self) -> SimulationResults:
         return self._simulation_results_saver.results
 
     @property
-    def update_progress_function_style(self):
+    def update_progress_function_style(self) -> Optional[str]:
         return self._simulation_tracking.update_progress_function_style
 
     @update_progress_function_style.setter
-    def update_progress_function_style(self, value):
+    def update_progress_function_style(
+            self, value: Optional[ProgressBarStyle]) -> None:
         self._simulation_tracking.update_progress_function_style = value
 
     @property
-    def progressbar_message(self):
+    def progressbar_message(self) -> str:
         return self._simulation_tracking.progressbar_message
 
     @progressbar_message.setter
-    def progressbar_message(self, value):
+    def progressbar_message(self, value: str) -> None:
         self._simulation_tracking.progressbar_message = value
 
     def set_results_filename(self, filename: Optional[str] = None) -> None:
@@ -1217,39 +1237,45 @@ class SimulationRunner:
             automatically stored.
         """
         self._simulation_results_saver.set_results_filename(filename)
-        self._simulation_tracking.results_base_filename = \
-            self._simulation_results_saver.results_base_filename
+        if self._simulation_results_saver.results_base_filename is not None:
+            self._simulation_tracking.results_base_filename = \
+                self._simulation_results_saver.results_base_filename
+        else:
+            self._simulation_tracking.results_base_filename = "simulation"
 
     @property
-    def results_filename(self):
+    def results_filename(self) -> Optional[str]:
         return self._simulation_results_saver.results_filename
 
     @property
-    def delete_partial_results_bool(self):
+    def delete_partial_results_bool(self) -> bool:
         return self._simulation_results_saver.delete_partial_results_bool
 
     @delete_partial_results_bool.setter
-    def delete_partial_results_bool(self, value):
+    def delete_partial_results_bool(self, value: bool) -> None:
         self._simulation_results_saver.delete_partial_results_bool = value
 
     @property
-    def partial_results_folder(self):
+    def partial_results_folder(self) -> str:
         return self._simulation_results_saver.partial_results_folder
 
     @partial_results_folder.setter
-    def partial_results_folder(self, value):
+    def partial_results_folder(self, value: str) -> None:
         self._simulation_results_saver.partial_results_folder = value
 
     @property
-    def progress_output_type(self):
+    def progress_output_type(self) -> ProgressOutputType:
         return self._simulation_tracking.progress_output_type
 
     @progress_output_type.setter
-    def progress_output_type(self, value):
+    def progress_output_type(self, value: ProgressOutputType) -> None:
         """value can be either 'screen' of 'file'"""
         self._simulation_tracking.progress_output_type = value
-        self._simulation_tracking.results_base_filename = \
-            self._simulation_results_saver.results_base_filename
+        if self._simulation_results_saver.results_base_filename is not None:
+            self._simulation_tracking.results_base_filename = \
+                self._simulation_results_saver.results_base_filename
+        else:
+            self._simulation_tracking.results_base_filename = "simulation"
 
     def clear(self) -> None:  # pragma: no cover
         """
@@ -1388,7 +1414,7 @@ class SimulationRunner:
         return self._simulation_tracking.elapsed_time
 
     @property
-    def runned_reps(self) -> List[int]:
+    def runned_reps(self) -> Union[List[int], int]:
         """
         Get method for the runned_reps property.
 
@@ -1406,7 +1432,7 @@ class SimulationRunner:
         self,
         current_params: SimulationParameters,
         update_progress_func: UpdateFunction = lambda value: None
-    ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
+    ) -> Tuple[int, SimulationResults, Optional[str]]:  # pragma: no cover
         """
         Parameters
         ----------
@@ -1510,7 +1536,7 @@ class SimulationRunner:
 
     def _simulate_for_current_params_serial(
         self, current_params: SimulationParameters
-    ) -> Tuple[int, SimulationResults, str]:
+    ) -> Tuple[int, SimulationResults, Optional[str]]:
         """
         Simulate (serial) for the current parameters.
 
@@ -1540,10 +1566,9 @@ class SimulationRunner:
     # pragma line here.
     @staticmethod
     def _simulate_for_current_params_parallel(
-        obj: "SimulationRunner",
-        current_params: SimulationParameters,
-        update_progress_func=None
-    ) -> Tuple[int, SimulationResults, str]:  # pragma: no cover
+        obj: "SimulationRunner", current_params: SimulationParameters,
+        update_progress_func: UpdateFunction
+    ) -> Tuple[int, SimulationResults, Optional[str]]:  # pragma: no cover
         """
         Simulate (parallel) for the current parameters.
 
@@ -1569,7 +1594,7 @@ class SimulationRunner:
         return obj._simulate_for_current_params_common(current_params,
                                                        update_progress_func)
 
-    def _simulate_common_setup(self):
+    def _simulate_common_setup(self) -> None:
         """
         Common setup code that must run in the beginning of a simulation.
         """
@@ -1589,7 +1614,7 @@ class SimulationRunner:
         self._on_simulate_start()
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def simulate_common_cleaning(self):
+    def simulate_common_cleaning(self) -> None:
         """
         Common code that must run in the end of a simulation
         """
@@ -1658,6 +1683,7 @@ class SimulationRunner:
 
             # Store the number of repetitions actually ran for the
             # current parameters combination
+            assert (isinstance(self._runned_reps, list))
             self._runned_reps.append(current_rep)
             # Lets append the simulation results for the current
             # parameters
@@ -1706,7 +1732,7 @@ class SimulationRunner:
                 param_variation_index)
 
     @staticmethod
-    def __create_default_ipyparallel_view():
+    def __create_default_ipyparallel_view() -> LoadBalancedView:
         """
         Create a default view for parallel computation.
 
@@ -1724,7 +1750,7 @@ class SimulationRunner:
                 "install the 'cloudpickle' library")
 
         try:
-            import cloudpickle
+            import cloudpickle  # type: ignore
             # Use cloudpickle library if available
             # It can pickle more things than standard pickle module
             c[:].use_cloudpickle()
@@ -1785,7 +1811,7 @@ class SimulationRunner:
         # Tell the SimulationTracking that parallel simulation will be done
         self._simulation_tracking.set_parallel_tracking(num_variations)
 
-        if 'rep_max' not in self.params:
+        if 'rep_max' not in self.params:  # type: ignore
             self.params.parameters['rep_max'] = self.rep_max
 
         # xxxxxxxxxx Progressbar for the parallel simulation xxxxxxxxxxxxxx
@@ -1836,6 +1862,7 @@ class SimulationRunner:
 
             results = self._async_results.get()
             for reps, r, filename in results:
+                assert (isinstance(self._runned_reps, list))
                 self._runned_reps.append(reps)
                 self.results.append_all_results(r)
                 self._simulation_results_saver.add_partial_filename_for_cleaning(

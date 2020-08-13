@@ -25,7 +25,7 @@ import math
 import warnings
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, TypeVar, cast
 
 import numpy as np
 
@@ -812,7 +812,7 @@ class PathLossGeneral(PathLossOutdoorBase):
             log10 = math.log10
 
         PL = (10 * self._n * log10(d)) + self._C
-        return PL
+        return cast(NumberOrArray, PL)
 
 
 class PathLossFreeSpace(PathLossGeneral):
@@ -1167,6 +1167,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
             Path loss in dB.
         """
         if isinstance(num_walls, Iterable):
+            assert isinstance(d, np.ndarray)
             # Code for num_walls array. Since num_walls is an array then
             # some values might be equal to zero while others might be
             # equal to zero. We will calculate them separately.
@@ -1176,6 +1177,8 @@ class PathLossMetisPS7(PathLossIndoorBase):
             # and we must broadcast them first to be equal to the
             # dimensions of d.
             [_, num_walls] = np.broadcast_arrays(d, num_walls)
+
+            assert isinstance(num_walls, np.ndarray)
 
             LOS_index = (num_walls == 0)
             NLOS_index = ~LOS_index
@@ -1200,7 +1203,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
             else:
                 raise ValueError("num_walls cannot be negative")
 
-        return pl_dB
+        return cast(NumberOrArray, pl_dB)
 
     def _calc_PS7_path_loss_dB_LOS_same_floor(
             self, d: NumberOrArray) -> NumberOrArray:
@@ -1248,7 +1251,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         fc_GHz = self.fc / 1e3
 
         pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5.)
-        return pl_dB
+        return cast(NumberOrArray, pl_dB)
 
     def _calc_PS7_path_loss_dB_NLOS_same_floor(self,
                                                d: NumberOrArray,
@@ -1309,7 +1312,7 @@ class PathLossMetisPS7(PathLossIndoorBase):
         # FL = 17 + 4 (n_f - 1)
 
         pl_dB = A * log10(d) + B + C * log10(fc_GHz / 5.) + X
-        return pl_dB
+        return cast(NumberOrArray, pl_dB)
 
     def which_distance_dB(
             self, PL: NumberOrArray) -> NumberOrArray:  # pragma: nocover
@@ -1640,7 +1643,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
 
         L = (69.55 + 26.16 * log10(self.fc) - 13.82 * log10(self.hbs) - a +
              (44.9 - 6.55 * log10(self.hbs)) * log10(d) - K)
-        return L
+        return cast(NumberOrArray, L)
 
     def which_distance_dB(self, PL: NumberOrArray) -> NumberOrArray:
         """

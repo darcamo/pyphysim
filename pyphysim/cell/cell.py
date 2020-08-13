@@ -331,12 +331,12 @@ class CellBase(shapes.Shape, AccessPoint):  # pylint: disable=W0223
                  radius: float,
                  cell_id: Optional[Union[str, int]] = None,
                  rotation: float = 0.0,
-                 **kw) -> None:
+                 **kwargs: Any) -> None:
         super().__init__(pos=pos,
                          radius=radius,
                          rotation=rotation,
                          ap_id=cell_id,
-                         **kw)
+                         **kwargs)
 
     def __repr__(self) -> str:
         """
