@@ -115,11 +115,14 @@ def _simulate_do_what_i_mean_single_runner(
         method 'wait_parallel_simulation' of the runner object at some
         point.
     """
-    if runner.command_line_args.index is not None:
+    if runner._simulation_configurator.command_line_args.index is not None:
         # Perform the simulation (serially) for the desired index
         msg = "Simulation will be run for the parameters variation: {0}"
-        print(msg.format(runner.command_line_args.index))
-        runner.simulate(runner.command_line_args.index)
+        print(
+            msg.format(
+                runner._simulation_configurator.command_line_args.index))
+        runner.simulate(
+            runner._simulation_configurator.command_line_args.index)
 
     else:
         run_in_parallel = True
@@ -206,7 +209,7 @@ def _simulate_do_what_i_mean_multiple_runners(
     # xxxxxxxxxx Start the simulation for each runner xxxxxxxxxxxxxxxxx
     add_folder_to_path = True
     for runner in list_of_runners:
-        runner._pbar = pbar  # pylint: disable= W0212
+        runner._simulation_tracking._pbar = pbar  # pylint: disable= W0212
         if add_folder_to_path is True:
             _simulate_do_what_i_mean_single_runner(runner, folder, block=False)
             add_folder_to_path = False
