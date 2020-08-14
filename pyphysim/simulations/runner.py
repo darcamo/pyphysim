@@ -1750,7 +1750,7 @@ class SimulationRunner:
                 "install the 'cloudpickle' library")
 
         try:
-            import cloudpickle  # type: ignore
+            import cloudpickle
             # Use cloudpickle library if available
             # It can pickle more things than standard pickle module
             c[:].use_cloudpickle()

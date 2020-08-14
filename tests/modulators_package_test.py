@@ -24,7 +24,7 @@ from pyphysim.util.misc import randn_c
 class MimoDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the comm
     package. """
-    def test_modulators(self):
+    def test_modulators(self) -> None:
         """Run doctests in the modulators module."""
         doctest.testmod(fundamental)
 
@@ -37,12 +37,12 @@ class MimoDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Modulators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class PSKTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.psk_obj = fundamental.PSK(4)
         self.psk_obj2 = fundamental.PSK(8)
 
-    def test_constellation(self):
+    def test_constellation(self) -> None:
         self.assertEqual(self.psk_obj.M, 4)
         self.assertAlmostEqual(self.psk_obj.K, 2)
         np.testing.assert_array_almost_equal(
@@ -59,7 +59,7 @@ class PSKTestCase(unittest.TestCase):
                 -0.70710678 - 0.70710678j
             ]))
 
-    def test_set_phase_offset(self):
+    def test_set_phase_offset(self) -> None:
         self.psk_obj.setPhaseOffset(np.pi / 4.)
 
         np.testing.assert_array_almost_equal(
@@ -69,7 +69,7 @@ class PSKTestCase(unittest.TestCase):
                 -0.70710678 - 0.70710678j, 0.70710678 - 0.70710678j
             ]))
 
-    def test_calc_theoretical_SER_and_BER(self):
+    def test_calc_theoretical_SER_and_BER(self) -> None:
         SNR_values = np.array([-5, 0, 5, 10])
 
         # xxxxxxxxxx Test for the 4-PSK xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -95,7 +95,7 @@ class PSKTestCase(unittest.TestCase):
     # The calcTheoreticalPER method is defined in the Modulators class, but
     # can only be tested in a subclass, since it depends on the
     # calcTheoreticalBER method. Therefore, we chose to test it here.
-    def test_calc_theoretical_PER(self):
+    def test_calc_theoretical_PER(self) -> None:
         L1 = 50
         L2 = 120
         SNRs = np.array([10, 13])
@@ -119,7 +119,7 @@ class PSKTestCase(unittest.TestCase):
         PER = self.psk_obj.calcTheoreticalPER(SNRs, 1)
         np.testing.assert_array_almost_equal(BER, PER)
 
-    def test_calc_theoretical_spectral_efficiency(self):
+    def test_calc_theoretical_spectral_efficiency(self) -> None:
         L1 = 50
         L2 = 120
         SNRs = np.array([10, 13])
@@ -137,7 +137,7 @@ class PSKTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(se1, expected_se1)
         np.testing.assert_array_almost_equal(se2, expected_se2)
 
-    def test_modulate_and_demodulate(self):
+    def test_modulate_and_demodulate(self) -> None:
         awgn_noise = randn_c(20, ) * 1e-2
 
         input_data = np.random.randint(0, 4, 20)
@@ -161,20 +161,20 @@ class PSKTestCase(unittest.TestCase):
 
 
 class BPSKTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.bpsk_obj = fundamental.BPSK()
 
-    def test_name(self):
+    def test_name(self) -> None:
         self.assertEqual(self.bpsk_obj.name, "BPSK")
 
-    def test_constellation(self):
+    def test_constellation(self) -> None:
         self.assertEqual(self.bpsk_obj.M, 2)
         self.assertAlmostEqual(self.bpsk_obj.K, 1)
         np.testing.assert_array_almost_equal(self.bpsk_obj.symbols,
                                              np.array([1, -1]))
 
-    def test_calc_theoretical_SER_and_BER(self):
+    def test_calc_theoretical_SER_and_BER(self) -> None:
         SNR_values = np.array([-5, 0, 5, 10])
 
         theoretical_ser = np.array(
@@ -186,7 +186,7 @@ class BPSKTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             self.bpsk_obj.calcTheoreticalBER(SNR_values), theoretical_ser)
 
-    def test_modulate_and_demodulate(self):
+    def test_modulate_and_demodulate(self) -> None:
         input_data = np.random.randint(0, 2, 20)
         modulated_data = self.bpsk_obj.modulate(input_data)
 
@@ -203,19 +203,19 @@ class BPSKTestCase(unittest.TestCase):
 
 
 class QAMTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.qam_obj = fundamental.QAM(4)
         self.qam_obj2 = fundamental.QAM(16)
         self.qam_obj3 = fundamental.QAM(64)
 
-    def test_invalid_QAM_size(self):
+    def test_invalid_QAM_size(self) -> None:
         with self.assertRaises(ValueError):
             fundamental.QAM(32)
         with self.assertRaises(ValueError):
             fundamental.QAM(63)
 
-    def test_constellation(self):
+    def test_constellation(self) -> None:
         self.assertEqual(self.qam_obj.M, 4)
         self.assertAlmostEqual(self.qam_obj.K, 2)
         np.testing.assert_array_almost_equal(
@@ -279,7 +279,7 @@ class QAMTestCase(unittest.TestCase):
                 0.46291005 - 0.15430335j, 0.15430335 - 0.15430335j
             ]))
 
-    def test_calc_theoretical_SER_and_BER(self):
+    def test_calc_theoretical_SER_and_BER(self) -> None:
         SNR_values = np.array([0, 5, 10, 15, 20])
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -321,7 +321,7 @@ class QAMTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             self.qam_obj3.calcTheoreticalBER(SNR_values), theoretical_ber3)
 
-    def test_modulate_and_demodulate(self):
+    def test_modulate_and_demodulate(self) -> None:
         awgn_noise = randn_c(20, ) * 1e-2
 
         # xxxxxxxxxx Test for 4-QAM xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -360,11 +360,11 @@ class QAMTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class OfdmTestCase(unittest.TestCase):
     """Unittests for the OFDM class in the ofdm module."""
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.ofdm_object = OFDM(64, 16, 52)
 
-    def test_ofdm_set_parameters(self):
+    def test_ofdm_set_parameters(self) -> None:
         # Test regular usage
         self.assertEqual(self.ofdm_object.fft_size, 64)
         self.assertEqual(self.ofdm_object.cp_size, 16)
@@ -530,14 +530,14 @@ class OfdmTestCase(unittest.TestCase):
             self.ofdm_object._prepare_input_signal(input_signal),
             expected_data3)
 
-    def test_prepare_decoded_signal(self):
+    def test_prepare_decoded_signal(self) -> None:
         input1 = np.r_[1:105]
         input2 = self.ofdm_object._prepare_input_signal(input1)
         output = self.ofdm_object._prepare_decoded_signal(input2)
         np.testing.assert_array_equal(output, input1)
 
     # noinspection PyPep8
-    def test_calculate_power_scale(self):
+    def test_calculate_power_scale(self) -> None:
         expected_power_scale = float(self.ofdm_object.fft_size) \
                                * (float(self.ofdm_object.fft_size) /
                                   (self.ofdm_object.num_used_subcarriers +
@@ -552,7 +552,7 @@ class OfdmTestCase(unittest.TestCase):
         self.assertAlmostEqual(1024. * (1024. / (900. + 100.)),
                                self.ofdm_object._calculate_power_scale())
 
-    def test_modulate(self):
+    def test_modulate(self) -> None:
         # Exactly two OFDM symbols (with 52 used subcarriers)
         input_signal = np.r_[1:105]
 
@@ -603,7 +603,7 @@ class OfdmTestCase(unittest.TestCase):
             self.ofdm_object.modulate(input_signal[0:52]), expected_data2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_demodulate(self):
+    def test_demodulate(self) -> None:
         # xxxxx First lets try without cyclic prefix xxxxxxxxxxxxxxxxxxxxxx
         # Exactly two OFDM symbols (with 52 used subcarriers)
         input_signal = np.r_[1:105] + 1j * np.r_[1:105]
@@ -652,11 +652,11 @@ class OfdmTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class OfdmOneTapEqualizerTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_equalize_data(self):
+    def test_equalize_data(self) -> None:
         num_of_subcarriers = 24
         ofdm_obj = OFDM(num_of_subcarriers, cp_size=8)
         onetap_equalizer = ofdm.OfdmOneTapEqualizer(ofdm_obj)

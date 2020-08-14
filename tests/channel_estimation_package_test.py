@@ -48,7 +48,7 @@ def generate_channel_with_correlation(alpha, Nr, Nt, C, num_channels=None):
 
 
 class ChannelEstimationFunctionsTest(unittest.TestCase):
-    def test_compute_ls_estimation(self):
+    def test_compute_ls_estimation(self) -> None:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Case with a single transmit antenna and a single channel -> Y is 2D
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -126,7 +126,7 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
         h_ls = compute_ls_estimation(Y, s)
         np.testing.assert_array_almost_equal(h_ls, expected_h_ls)
 
-    def test_compute_mmse_estimation(self):
+    def test_compute_mmse_estimation(self) -> None:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Case with a single channel -> Y is 2D
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -215,7 +215,7 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
         h_mmse = compute_mmse_estimation(Y, s, noise_power, C)
         np.testing.assert_array_almost_equal(h_mmse, expected_h_mmse)
 
-    def test_compute_theoretical_ls_MSE(self):
+    def test_compute_theoretical_ls_MSE(self) -> None:
         Nr = 4
         noise_power = 0.3
         alpha = 0.9
@@ -228,7 +228,7 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
             (alpha**2) * pilot_power * num_pilots)
         self.assertAlmostEqual(mse, expected_mse)
 
-    def test_compute_theoretical_mmse_MSE(self):
+    def test_compute_theoretical_mmse_MSE(self) -> None:
         Nr = 4
         noise_power = 0.3
         alpha = 0.9
@@ -243,7 +243,7 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
             alpha**2 * pilot_power * num_pilots / noise_power * C))
         self.assertAlmostEqual(mse, expected_mse)
 
-    def test_compare_empirical_ls_MSE_with_theoretical(self):
+    def test_compare_empirical_ls_MSE_with_theoretical(self) -> None:
         num_pilots = 10
         Nr = 3
         Nt = 1
@@ -278,7 +278,7 @@ class ChannelEstimationFunctionsTest(unittest.TestCase):
         # Check that the empirical and theoretical MSE are different by less then 3%
         self.assertLess(relative_diff, 3e-2)
 
-    def test_compare_empirical_mmse_MSE_with_theoretical(self):
+    def test_compare_empirical_mmse_MSE_with_theoretical(self) -> None:
         num_pilots = 10
         Nr = 3
         Nt = 1

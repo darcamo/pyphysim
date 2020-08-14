@@ -23,11 +23,11 @@ class UtilDoctestsTestCase(unittest.TestCase):
     package.
 
     """
-    def test_misc(self):
+    def test_misc(self) -> None:
         """Run misc doctests"""
         doctest.testmod(misc)
 
-    def test_conversion(self):
+    def test_conversion(self) -> None:
         """Run conversion doctests"""
         doctest.testmod(conversion)
 
@@ -37,7 +37,7 @@ class UtilDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # noinspection PyMethodMayBeStatic
 class ConversionTestCase(unittest.TestCase):
-    def test_single_matrix_to_matrix_of_matrices(self):
+    def test_single_matrix_to_matrix_of_matrices(self) -> None:
         nrows = np.array([2, 4, 6])
         ncols = np.array([2, 3, 5])
         single_matrix = np.array([
@@ -151,28 +151,28 @@ class ConversionTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(array_of_arrays[2], expected3)
 
-    def test_dB2Linear(self):
+    def test_dB2Linear(self) -> None:
         self.assertAlmostEqual(conversion.dB2Linear(30), 1000.0)
 
-    def test_linear2dB(self):
+    def test_linear2dB(self) -> None:
         self.assertAlmostEqual(conversion.linear2dB(1000), 30.0)
 
-    def test_dBm2Linear(self):
+    def test_dBm2Linear(self) -> None:
         self.assertAlmostEqual(conversion.dBm2Linear(60), 1000.0)
 
-    def test_linear2dBm(self):
+    def test_linear2dBm(self) -> None:
         self.assertAlmostEqual(conversion.linear2dBm(1000), 60.0)
 
-    def test_binary2gray(self):
+    def test_binary2gray(self) -> None:
         np.testing.assert_array_equal(conversion.binary2gray(np.arange(0, 8)),
                                       np.array([0, 1, 3, 2, 6, 7, 5, 4]))
 
-    def test_gray2binary(self):
+    def test_gray2binary(self) -> None:
         vec = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         np.testing.assert_array_equal(
             conversion.gray2binary(conversion.binary2gray(vec)), vec)
 
-    def test_SNR_dB_to_EbN0_dB(self):
+    def test_SNR_dB_to_EbN0_dB(self) -> None:
         bps_1 = 2
         bps_2 = 4
         SNR1 = 10.
@@ -188,7 +188,7 @@ class ConversionTestCase(unittest.TestCase):
         self.assertAlmostEqual(conversion.SNR_dB_to_EbN0_dB(SNR2, bps_2),
                                8.97940008672)
 
-    def test_EbN0_dB_to_SNR_dB(self):
+    def test_EbN0_dB_to_SNR_dB(self) -> None:
         bps_1 = 2
         bps_2 = 4
         SNR1 = 10.
@@ -217,7 +217,7 @@ class ConversionTestCase(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class MiscFunctionsTestCase(unittest.TestCase):
     """Test the functions in the module."""
-    def test_gmd(self):
+    def test_gmd(self) -> None:
         A = np.array([[6, 8, 0, 4], [8, 6, 7, 6], [10, 9, 7, 3], [6, 2, 9, 2]])
 
         [U, S, V_H] = np.linalg.svd(A)
@@ -264,7 +264,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(A, Q.dot(R).dot(P.conj().T))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_peig(self):
+    def test_peig(self) -> None:
         A = np.array([[2 - 0j, 3 + 12j, 7 + 1j], [3 - 12j, 6 + 0j, 5 + 3j],
                       [7 - 1j, 5 - 3j, 4 + 0j]])
 
@@ -299,7 +299,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
                                   [0.38918583 + 0.09728652j]])
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
 
-    def test_leig(self):
+    def test_leig(self) -> None:
         A = np.array([[2 - 0j, 3 + 12j, 7 + 1j], [3 - 12j, 6 + 0j, 5 + 3j],
                       [7 - 1j, 5 - 3j, 4 + 0j]])
 
@@ -334,7 +334,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
                                   [-0.40625488 - 0.14189355j]])
         np.testing.assert_array_almost_equal(V_n1, expected_V_n1)
 
-    def test_level2bits(self):
+    def test_level2bits(self) -> None:
         self.assertEqual(
             list(map(misc.level2bits, range(1, 20))),
             [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
@@ -345,7 +345,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             misc.level2bits(-2)
 
-    def test_int2bits(self):
+    def test_int2bits(self) -> None:
         self.assertEqual(
             list(map(misc.int2bits, range(0, 19))),
             [1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5])
@@ -354,7 +354,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             misc.int2bits(-1)
 
-    def test_count_bits(self):
+    def test_count_bits(self) -> None:
         n = np.r_[0:9, 15]
 
         # First we test for the scalar input values
@@ -373,18 +373,18 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_num_bits = np.array([0, 1, 1, 2, 1, 2, 2, 3, 1, 4])
         np.testing.assert_array_equal(misc.count_bits(n), expected_num_bits)
 
-    def test_count_bit_errors(self):
+    def test_count_bit_errors(self) -> None:
         a = np.random.randint(0, 16, 20)
         b = np.random.randint(0, 16, 20)
         expected_bit_count = np.sum(misc.count_bits(misc.xor(a, b)))
         self.assertEqual(expected_bit_count, misc.count_bit_errors(a, b))
 
-    def test_qfunc(self):
+    def test_qfunc(self) -> None:
         self.assertAlmostEqual(misc.qfunc(0.0), 0.5)
         self.assertAlmostEqual(misc.qfunc(1.0), 0.158655254, 9)
         self.assertAlmostEqual(misc.qfunc(3.0), 0.001349898, 9)
 
-    def test_least_right_singular_vectors(self):
+    def test_least_right_singular_vectors(self) -> None:
         A = np.array([1, 2, 3, 6, 5, 4, 2, 2, 1])
         A.shape = (3, 3)
         (min_Vs, remaining_Vs, S) = misc.least_right_singular_vectors(A, 1)
@@ -413,20 +413,20 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # Test if all the last N - M rows are equal to zero (the bug) or not.
         self.assertNotAlmostEqual(np.linalg.norm(V_H[M - N:]), 0.0)
 
-    def test_calc_unorm_autocorr(self):
+    def test_calc_unorm_autocorr(self) -> None:
         x = np.array([4., 2, 1, 3, 7, 3, 8])
         unorm_autocor = misc.calc_unorm_autocorr(x)
         expected_unorm_autocor = np.array([152, 79, 82, 53, 42, 28, 32])
         np.testing.assert_array_equal(unorm_autocor, expected_unorm_autocor)
 
-    def test_calc_autocorr(self):
+    def test_calc_autocorr(self) -> None:
         x = np.array([4., 2, 1, 3, 7, 3, 8])
         autocor = misc.calc_autocorr(x)
         expected_autocor = np.array(
             [1., -0.025, 0.15, -0.175, -0.25, -0.2, 0.])
         np.testing.assert_array_almost_equal(autocor, expected_autocor)
 
-    def test_calc_confidence_interval(self):
+    def test_calc_confidence_interval(self) -> None:
         # xxxxx Test for a 95% confidence interval xxxxxxxxxxxxxxxxxxxxxxxx
         mean = 250.2
         std = 2.5
@@ -445,7 +445,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(interval, expected_interval)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_update_inv_sum_diag(self):
+    def test_update_inv_sum_diag(self) -> None:
         A = np.random.randn(3, 3)
         D = np.diag([1.2, 1.5, 0.9])
         invA = np.linalg.inv(A)
@@ -457,7 +457,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         invB = misc.update_inv_sum_diag(invA, D.diagonal())
         np.testing.assert_array_almost_equal(expected_invB, invB)
 
-    def test_get_principal_component_matrix(self):
+    def test_get_principal_component_matrix(self) -> None:
         A = np.array([[0.03300776 - 0.77428109j, 0.13839634 + 0.24361978j],
                       [-0.07248757 + 0.35349072j, -0.04558698 - 0.12223548j],
                       [-0.19711349 + 0.33872698j, -0.00456194 - 0.14161498j]])
@@ -473,7 +473,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(expected_new_A, new_A)
 
-    def test_get_range_representation(self):
+    def test_get_range_representation(self) -> None:
         a = np.array([5, 10, 15])
         expr_a = misc.get_range_representation(a)
         expected_expr_a = "5,10,15"
@@ -527,7 +527,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         self.assertIsNone(
             misc.get_range_representation(np.array([6, 10, 20, 50])))
 
-    def test_get_mixed_range_representation(self):
+    def test_get_mixed_range_representation(self) -> None:
         a = np.array([2])
         expr_a = misc.get_mixed_range_representation(a)
         expected_expr_a = "2"
@@ -607,7 +607,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         expected_expr_c = "11.0,10.2,8.4:-0.2:7.6,5.0:-2.0:-3.0,-10.0"
         self.assertEqual(expr_c, expected_expr_c)
 
-    def test_replace_dict_values(self):
+    def test_replace_dict_values(self) -> None:
         name = "something {value1} - {value2} something else {value3}"
         dictionary = {
             'value1': 'bla bla',
@@ -657,7 +657,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
             = 'something bla bla - [2,5:5:30,31,32,50] something else 76'
         self.assertEqual(new_name4, expected_new_name4)
 
-    def test_pretty_time(self):
+    def test_pretty_time(self) -> None:
         self.assertEqual(misc.pretty_time(0), '0.00s')
         self.assertEqual(misc.pretty_time(2.3), '2.30s')
         self.assertEqual(misc.pretty_time(5.15), '5.15s')
@@ -683,7 +683,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
 
         self.assertEqual(misc.pretty_time(6137), '1h:42m:17s')
 
-    def test_calc_decorrelation_matrix(self):
+    def test_calc_decorrelation_matrix(self) -> None:
         A = misc.randn_c(3, 3)
 
         # B is symmetric and positive semi-definite
@@ -696,7 +696,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # D must be a diagonal matrix
         np.testing.assert_array_almost_equal(D, np.diag(D.diagonal()))
 
-    def test_calc_whitening_matrix(self):
+    def test_calc_whitening_matrix(self) -> None:
         A = misc.randn_c(3, 3)
 
         # B is symmetric and positive semi-definite
@@ -709,7 +709,7 @@ class MiscFunctionsTestCase(unittest.TestCase):
         # D must be an identity matrix
         np.testing.assert_array_almost_equal(D, np.eye(3))
 
-    def test_calc_shannon_sum_capacity(self):
+    def test_calc_shannon_sum_capacity(self) -> None:
         sinrs_linear = np.array([11.4, 20.3])
         expected_sum_capacity = np.sum(np.log2(1 + sinrs_linear))
         self.assertAlmostEqual(expected_sum_capacity,
@@ -720,12 +720,12 @@ class MiscFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Serialize Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class NumpyOrSetEncoderTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.a = np.arange(100)
         self.b = np.array([[10, 20, 30.2], [100, 200, 300]])
 
-    def test_json_encode_decode(self):
+    def test_json_encode_decode(self) -> None:
         # xxxxxxxxxx Test for Numpy arrays xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         encoded_a = json.dumps(self.a, cls=serialize.NumpyOrSetEncoder)
         self.assertIsInstance(encoded_a, str)

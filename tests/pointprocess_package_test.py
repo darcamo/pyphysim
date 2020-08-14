@@ -14,11 +14,11 @@ from pyphysim import pointprocess as pp
 
 
 class PointProcessTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_generate_random_points_in_circle(self):
+    def test_generate_random_points_in_circle(self) -> None:
         # This test will test the `generate_random_points_in_circle` function
         # when only a maximum radius is passed
         num_points = 500000
@@ -58,7 +58,7 @@ class PointProcessTestCase(unittest.TestCase):
         ratio3 = num_smaller_area_points3 / expected_num_smaller_area_points3
         self.assertAlmostEqual(ratio3, 1.0, 1)
 
-    def test_generate_random_points_in_circle2(self):
+    def test_generate_random_points_in_circle2(self) -> None:
         # This test will test the `generate_random_points_in_circle` function
         # when both a maximum and a minimum radius are passed
         num_points = 500000
@@ -86,7 +86,7 @@ class PointProcessTestCase(unittest.TestCase):
         ratio2 = num_smaller_area_points2 / expected_num_smaller_area_points2
         self.assertAlmostEqual(ratio2, 1.0, 1)
 
-    def test_generate_random_points_in_rectangle(self):
+    def test_generate_random_points_in_rectangle(self) -> None:
         num_points = 50000
         width = 3.0
         height = 2.0

@@ -42,7 +42,7 @@ class SimulationsDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the simulations
     package.
     """
-    def test_progressbar(self):
+    def test_progressbar(self) -> None:
         """Run progressbar doctests"""
         doctest.testmod(progressbar)
 
@@ -97,7 +97,7 @@ def _get_clear_string_from_stringio_object(mystring):  # pragma: no cover
 
 
 class ProgressbarTextTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
@@ -115,7 +115,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.pbar._display_interval = 0.0
         self.pbar2._display_interval = 0.0
 
-    def test_write_initialization(self):
+    def test_write_initialization(self) -> None:
         out = StringIO()
         out2 = StringIO()
 
@@ -152,7 +152,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
             "   1   2   3   4   5   6   7   8   9   0\n"
             "---0---0---0---0---0---0---0---0---0---0\n")
 
-    def test_progress(self):
+    def test_progress(self) -> None:
         self.assertEqual(self.pbar.finalcount, 50)
         self.assertEqual(self.pbar2.finalcount, 25)
         self.assertEqual(self.pbar.n, 0)
@@ -230,7 +230,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.assertEqual(self.pbar.finalcount, 50)
         self.assertEqual(self.pbar2.finalcount, 25)
 
-    def test_str(self):
+    def test_str(self) -> None:
         self.pbar.progress(10)
         self.assertEqual(str(self.pbar),
                          '**********                                        ')
@@ -239,7 +239,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
         self.assertEqual(str(self.pbar),
                          '*************************                         ')
 
-    def test_small_progress_and_zero_finalcount(self):
+    def test_small_progress_and_zero_finalcount(self) -> None:
         # Test the case when the progress is lower then 1%.
         out = StringIO()
         pbar3 = progressbar.ProgressbarText(finalcount=200, output=out)
@@ -250,7 +250,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
             "    1    2    3    4    5    6    7    8    9    0\n"
             "----0----0----0----0----0----0----0----0----0----0\n")
 
-    def test_deleting_progress_file_after_progress_finished(self):
+    def test_deleting_progress_file_after_progress_finished(self) -> None:
         out = open('test_progress_file1.txt', 'w')
         pbar = progressbar.ProgressbarText(50,
                                            '*',
@@ -314,7 +314,7 @@ class ProgressbarTextTestCase(unittest.TestCase):
 
 
 class ProgressbarText2TestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
@@ -327,7 +327,7 @@ class ProgressbarText2TestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
 
-    def test_get_percentage_representation(self):
+    def test_get_percentage_representation(self) -> None:
         # xxxxxxxxxx Tests for bar width of 50 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
         self.assertEqual(
             self.pbar._get_percentage_representation(50,
@@ -379,7 +379,7 @@ class ProgressbarText2TestCase(unittest.TestCase):
             '                        ]')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_progress(self):
+    def test_progress(self) -> None:
         self.assertEqual(self.pbar.finalcount, 50)
         self.assertEqual(self.pbar2.finalcount, 50)
 
@@ -409,7 +409,7 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
 
 class ProgressbarText3TestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         message = "ProgressbarText Unittest"
         # The progress will be printed to the StringIO object instead of
         # sys.stdout
@@ -422,7 +422,7 @@ class ProgressbarText3TestCase(unittest.TestCase):
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText3(50, '*', output=self.out2)
 
-    def test_progress(self):
+    def test_progress(self) -> None:
         self.assertEqual(self.pbar.finalcount, 50)
         self.assertEqual(self.pbar2.finalcount, 50)
 
@@ -449,7 +449,7 @@ class ProgressbarText3TestCase(unittest.TestCase):
 
 
 class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.output_filename = "ProgressbarMultiProcessTextTestCase.out"
 
@@ -462,7 +462,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.proxybar2 = self.mpbar.register_client_and_get_proxy_progressbar(
             15)
 
-    def test_register(self):
+    def test_register(self) -> None:
         # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.mpbar._last_id, 1)
         self.assertEqual(self.mpbar.finalcount, 25)
@@ -475,7 +475,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
         self.assertEqual(self.mpbar.finalcount, 38)
         self.assertEqual(proxybar3.client_id, 2)
 
-    def test_proxy_progressbars(self):
+    def test_proxy_progressbars(self) -> None:
         # Test the information in the proxybar1
         self.assertEqual(self.proxybar1.client_id, 0)
         self.assertTrue(
@@ -489,7 +489,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
     # Note: This method will sleep for 0.01 seconds thus adding to the total
     # amount of time required to run all tests. Unfortunately, this is a
     # necessary cost.
-    def test_updater(self):
+    def test_updater(self) -> None:
         # Remove old file from previous test run
         delete_file_if_possible(self.output_filename)
 
@@ -526,7 +526,7 @@ class ProgressbarMultiProcessTextTestCase(unittest.TestCase):
             _get_clear_string_from_stringio_object(progress_string),
             expected_progress_string)
 
-    def test_start_and_stop_updater_process(self):
+    def test_start_and_stop_updater_process(self) -> None:
         self.assertFalse(self.mpbar.is_running)
         self.assertEqual(self.mpbar._start_updater_count, 0)
         self.mpbar.start_updater()
@@ -558,14 +558,14 @@ class ProgressBarIPythonTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.pbar = progressbar.ProgressBarIPython(50, "message")
 
-    def test_atributes(self):
+    def test_atributes(self) -> None:
         self.assertEqual(self.pbar.finalcount, 50)
         self.assertEqual(self.pbar.message, "message")
 
 
 # TODO: finish implementation
 class ProgressbarZMQTextTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.output_filename = "ProgressbarZMQTextTestCase.out"
 
@@ -582,7 +582,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
     def tearDown(self):
         self.zmqbar.stop_updater()
 
-    def test_register(self):
+    def test_register(self) -> None:
         # Test last_id and total_final_count of the main progress bar
         self.assertEqual(self.zmqbar._last_id, 1)
         self.assertEqual(self.zmqbar.finalcount, 25)
@@ -602,7 +602,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         self.assertEqual(proxybar3.ip, self.zmqbar.ip)
         self.assertEqual(proxybar3.port, self.zmqbar.port)
 
-    def test_proxy_progressbars(self):
+    def test_proxy_progressbars(self) -> None:
         # Test the information in the proxybar1
         self.assertEqual(self.proxybar1.client_id, 0)
         self.assertEqual(self.proxybar1.ip, self.zmqbar.ip)
@@ -621,7 +621,7 @@ class ProgressbarZMQTextTestCase(unittest.TestCase):
         self.assertIsNone(self.proxybar2._zmq_push_socket)
         self.assertIsNone(self.proxybar2._zmq_context)
 
-    def test_update_progress(self):
+    def test_update_progress(self) -> None:
         try:
             # noinspection PyUnresolvedReferences
             import zmq

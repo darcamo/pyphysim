@@ -36,19 +36,19 @@ class SrsDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the simulations
     package.
     """
-    def test_srs_module(self):
+    def test_srs_module(self) -> None:
         """Run reference_signals module doctests"""
         doctest.testmod(pyphysim.reference_signals.srs)
 
-    def test_dmrs_module(self):
+    def test_dmrs_module(self) -> None:
         """Run reference_signals module doctests"""
         doctest.testmod(pyphysim.reference_signals.dmrs)
 
-    def test_root_sequence_module(self):
+    def test_root_sequence_module(self) -> None:
         """Run reference_signals module doctests"""
         doctest.testmod(pyphysim.reference_signals.root_sequence)
 
-    def test_zadoffchu_module(self):
+    def test_zadoffchu_module(self) -> None:
         """Run reference_signals module doctests"""
         doctest.testmod(pyphysim.reference_signals.zadoffchu)
 
@@ -61,11 +61,11 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
     Module to test the Zadoff-Chu related functions in the Zadoff-Chu
     module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_calcBaseZC(self):
+    def test_calcBaseZC(self) -> None:
         Nzc = 63
         n = np.r_[0:Nzc]
 
@@ -79,7 +79,7 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
         expected_zf2 = np.exp(-1j * 25 * np.pi * n * (n + 1) / Nzc)
         np.testing.assert_array_almost_equal(zf2, expected_zf2)
 
-    def test_get_shifted_root_seq(self):
+    def test_get_shifted_root_seq(self) -> None:
         Nzc = 63
         n = np.r_[0:Nzc]
         u = 25
@@ -96,7 +96,7 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
         self.assertEqual(zf1_shifted.size, Nzc)
         np.testing.assert_almost_equal(zf1_shifted, expected_shifted_zf1)
 
-    def test_get_extended_ZF(self):
+    def test_get_extended_ZF(self) -> None:
         a = zadoffchu.calcBaseZC(139, u=20)
         b = zadoffchu.calcBaseZC(31, u=14)
         c = zadoffchu.calcBaseZC(19, u=5)
@@ -130,7 +130,7 @@ class ZadoffChuFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Root Sequence Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class RootSequenceTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
         self.root_seq_no_ext2 = RootSequence(root_index=6, Nzc=31)
@@ -147,7 +147,7 @@ class RootSequenceTestCase(unittest.TestCase):
         self.small_root_seq3 = RootSequence(root_index=15, size=24)
         self.small_root_seq4 = RootSequence(root_index=23, size=24)
 
-    def test_init(self):
+    def test_init(self) -> None:
         with self.assertRaises(AttributeError):
             RootSequence(root_index=25)
         with self.assertRaises(AttributeError):
@@ -157,7 +157,7 @@ class RootSequenceTestCase(unittest.TestCase):
         with self.assertRaises(AttributeError):
             RootSequence(root_index=25, size=14)
 
-    def test_Nzc(self):
+    def test_Nzc(self) -> None:
         self.assertEqual(self.root_seq_no_ext1.Nzc, 139)
         self.assertEqual(self.root_seq_no_ext2.Nzc, 31)
         self.assertEqual(self.root_seq1.Nzc, 149)
@@ -167,7 +167,7 @@ class RootSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.root_seq5.Nzc, 31)
         self.assertEqual(self.root_seq6.Nzc, 31)
 
-    def test_size(self):
+    def test_size(self) -> None:
         self.assertEqual(self.root_seq1.size, 150)
         self.assertEqual(self.root_seq2.size, 150)
         self.assertEqual(self.root_seq3.size, 64)
@@ -180,7 +180,7 @@ class RootSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.small_root_seq3.size, 24)
         self.assertEqual(self.small_root_seq4.size, 24)
 
-    def test_seq_array(self):
+    def test_seq_array(self) -> None:
         # xxxxxxxxxx Small Root Sequences xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Line 15 of the first table
         expected_small_root_seq1 = np.exp(
@@ -259,7 +259,7 @@ class RootSequenceTestCase(unittest.TestCase):
                                              expected_root_seq6)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_getitem(self):
+    def test_getitem(self) -> None:
         seq_no_ext1_seq_array = self.root_seq_no_ext1.seq_array()
         seq1_seq_array = self.root_seq1.seq_array()
         seq2_seq_array = self.root_seq2.seq_array()
@@ -288,7 +288,7 @@ class RootSequenceTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx SRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SrsUeSequenceTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         root_seq_no_ext1 = RootSequence(root_index=25, Nzc=139)
         self.user_seq_no_ext1 = SrsUeSequence(root_seq=root_seq_no_ext1,
@@ -318,7 +318,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         root_seq6 = RootSequence(root_index=6, size=256, Nzc=31)
         self.user_seq6 = SrsUeSequence(root_seq=root_seq6, n_cs=5)
 
-    def test_size(self):
+    def test_size(self) -> None:
         self.assertEqual(self.user_seq_no_ext1.size, 139)
         self.assertEqual(self.user_seq_no_ext2.size, 31)
         self.assertEqual(self.user_seq1.size, 150)
@@ -328,7 +328,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.user_seq5.size, 32)
         self.assertEqual(self.user_seq6.size, 256)
 
-    def test_shape(self):
+    def test_shape(self) -> None:
         self.assertEqual(self.user_seq_no_ext1.shape, (139, ))
         self.assertEqual(self.user_seq_no_ext2.shape, (31, ))
         self.assertEqual(self.user_seq1.shape, (150, ))
@@ -338,7 +338,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(self.user_seq5.shape, (32, ))
         self.assertEqual(self.user_seq6.shape, (256, ))
 
-    def test_seq_array(self):
+    def test_seq_array(self) -> None:
         # calcBaseZC, get_srs_seq, get_extended_ZF
 
         expected_user_seq_no_ext1 = get_srs_seq(calcBaseZC(139, 25), 3)
@@ -378,7 +378,7 @@ class SrsUeSequenceTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.user_seq6.seq_array(),
                                              expected_user_seq6)
 
-    def test_getitem(self):
+    def test_getitem(self) -> None:
         seqs = [self.user_seq1, self.user_seq2, self.user_seq3]
         for seq in seqs:
             np.testing.assert_almost_equal(seq[4], seq.seq_array()[4])
@@ -392,11 +392,11 @@ class SrsUeSequenceTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # noinspection PyMethodMayBeStatic
 class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_estimate_channel_with_srs(self):
+    def test_estimate_channel_with_srs(self) -> None:
         Nsc = 300  # 300 subcarriers
         size = Nsc // 2
         Nzc = 139
@@ -510,7 +510,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
                                        decimal=2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_estimate_channel_without_comb_pattern(self):
+    def test_estimate_channel_without_comb_pattern(self) -> None:
         Nsc = 300  # 300 subcarriers
         size = Nsc  # The size is also 300, since there is no comb pattern
         Nzc = 139
@@ -581,7 +581,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
                                        np.zeros(error.size),
                                        decimal=2)
 
-    def test_estimate_channel_with_dmrs(self):
+    def test_estimate_channel_with_dmrs(self) -> None:
         Nsc = 24
         size = Nsc
 
@@ -651,7 +651,7 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
                                        np.zeros(error.size),
                                        decimal=2)
 
-    def test_estimate_channel_multiple_rx(self):
+    def test_estimate_channel_multiple_rx(self) -> None:
         Nsc = 300  # 300 subcarriers
         size = Nsc // 2
         Nzc = 139
@@ -733,11 +733,11 @@ class CazacBasedChannelEstimatorTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_estimate_channel_with_dmrs(self):
+    def test_estimate_channel_with_dmrs(self) -> None:
         Nsc = 24
         size = Nsc
 
@@ -815,7 +815,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
                                        np.zeros(error.size),
                                        decimal=2)
 
-    def test_estimate_channel_multiple_rx(self):
+    def test_estimate_channel_multiple_rx(self) -> None:
         Nsc = 24
         size = Nsc
         Nr = 3  # Number of receive antennas
@@ -904,7 +904,7 @@ class CazacBasedWithOCCChannelEstimatorTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx DMRS Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class DmrsUeSequenceTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         root_seq1 = RootSequence(root_index=15, size=12)
         self.dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1,
@@ -925,7 +925,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         root_seq6 = RootSequence(root_index=23, size=48)
         self.dmrs_seq6 = DmrsUeSequence(root_seq=root_seq6, n_cs=4)
 
-    def test_size(self):
+    def test_size(self) -> None:
         # Without cover code
         self.assertEqual(self.dmrs_seq1.size, 12)
         self.assertEqual(self.dmrs_seq2.size, 12)
@@ -957,7 +957,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(dmrs_seq2.size, 12)
         self.assertEqual(dmrs_seq5.size, 48)
 
-    def test_shape(self):
+    def test_shape(self) -> None:
         # Without cover code
         self.assertEqual(self.dmrs_seq1.shape, (12, ))
         self.assertEqual(self.dmrs_seq2.shape, (12, ))
@@ -989,7 +989,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         self.assertEqual(dmrs_seq2.shape, (2, 12))
         self.assertEqual(dmrs_seq5.shape, (4, 48))
 
-    def test_seq_array(self):
+    def test_seq_array(self) -> None:
         # xxxxxxxxxx Test withoyut cover code xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         expected_dmrs1 = get_dmrs_seq(RootSequence(15, 12).seq_array(), 3)
         expected_dmrs1 /= math.sqrt(expected_dmrs1.size)
@@ -1083,7 +1083,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
                                              dmrs_seq5.seq_array())
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_getitem(self):
+    def test_getitem(self) -> None:
         seqs = [self.dmrs_seq1, self.dmrs_seq2, self.dmrs_seq3, self.dmrs_seq4]
         for seq in seqs:
             np.testing.assert_almost_equal(seq[4], seq.seq_array()[4])
@@ -1103,7 +1103,7 @@ class DmrsUeSequenceTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(dmrs_seq[1, 0:8:2],
                                        dmrs_seq.seq_array()[1, 0:8:2])
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         root_seq1 = RootSequence(root_index=15, size=12)
         dmrs_seq1 = DmrsUeSequence(root_seq=root_seq1, n_cs=3)
 

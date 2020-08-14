@@ -44,7 +44,7 @@ class WaterfillingTestCase(unittest.TestCase):
     """Unittests for the waterfilling module.
 
     """
-    def test_doWF(self):
+    def test_doWF(self) -> None:
         """
         - `vtChannels`: Numpy array with the channel POWER gains (power of the
         parallel AWGN channels).
@@ -93,7 +93,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
     module.
 
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.Pu = 5.  # Power for each user
         self.noise_var = 1e-6
@@ -109,7 +109,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         self.BD = blockdiagonalization.BlockDiagonalizer(
             self.num_users, self.Pu, self.noise_var)
 
-    def test_calc_BD_matrix_no_power_scaling(self):
+    def test_calc_BD_matrix_no_power_scaling(self) -> None:
         channel = randn_c(self.iNr, self.iNt)
         (Ms_bad, _) = self.BD._calc_BD_matrix_no_power_scaling(channel)
 
@@ -136,7 +136,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # zero
         self.assertAlmostEqual(0., np.abs(masked_newH).sum())
 
-    def test_perform_global_waterfilling_power_scaling(self):
+    def test_perform_global_waterfilling_power_scaling(self) -> None:
         channel = randn_c(self.iNr, self.iNt)
         (Ms_bad, Sigma) = self.BD._calc_BD_matrix_no_power_scaling(channel)
 
@@ -168,7 +168,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
         # see if it is close to zero.
         self.assertAlmostEqual(0., np.abs(masked_newH).sum())
 
-    def test_perform_normalized_waterfilling_power_scaling(self):
+    def test_perform_normalized_waterfilling_power_scaling(self) -> None:
         channel = randn_c(self.iNr, self.iNt)
         (Ms_bad, Sigma) = self.BD._calc_BD_matrix_no_power_scaling(channel)
 
@@ -202,7 +202,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
             tol = 1e-12
             self.assertGreaterEqual(self.Pu + tol, individual_powers[-1])
 
-    def test_block_diagonalize(self):
+    def test_block_diagonalize(self) -> None:
         Pu = self.Pu
         noise_var = self.noise_var
         num_users = self.num_users
@@ -249,7 +249,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
                                'fro')**2)
             self.assertGreaterEqual(Pu + tol, individual_powers[-1])
 
-    def test_block_diagonalize_no_waterfilling(self):
+    def test_block_diagonalize_no_waterfilling(self) -> None:
         Pu = self.Pu
         num_users = self.num_users
         num_antennas = self.num_antennas
@@ -294,7 +294,7 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
                                'fro')**2)
             self.assertGreaterEqual(Pu + tol, individual_powers[-1])
 
-    def test_calc_receive_filter(self):
+    def test_calc_receive_filter(self) -> None:
         Pu = self.Pu
         noise_var = self.noise_var
         num_users = self.num_users
@@ -331,11 +331,11 @@ class BlockDiaginalizerTestCase(unittest.TestCase):
 # TODO: finish implementation
 # noinspection PyMethodMayBeStatic
 class BDWithExtIntBaseTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_calc_whitening_matrices(self):
+    def test_calc_whitening_matrices(self) -> None:
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size
@@ -361,11 +361,11 @@ class BDWithExtIntBaseTestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class WhiteningBDTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_block_diagonalize_no_waterfilling(self):
+    def test_block_diagonalize_no_waterfilling(self) -> None:
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size
@@ -501,11 +501,11 @@ class WhiteningBDTestCase(unittest.TestCase):
 # TODO: finish implementation
 # noinspection PyMethodMayBeStatic
 class EnhancedBDTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_set_ext_int_handling_metric(self):
+    def test_set_ext_int_handling_metric(self) -> None:
         K = 3
         iPu = 1e-3  # Power for each user (linear scale)
         noise_var = 1e-4
@@ -571,7 +571,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         self.assertEqual(metric_func_extra_args['num_streams'], 2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_receive_filter(self):
+    def test_calc_receive_filter(self) -> None:
         # Equivalent channel without including stream reduction
         Heq_k = randn_c(3, 3)
         Re_k = randn_c(3, 2)
@@ -616,7 +616,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_W2, W2)
 
     # TODO: Implement-me
-    def test_calc_linear_SINRs(self):
+    def test_calc_linear_SINRs(self) -> None:
         # Heq_k_red = np.array([[2, 2], [1, 2]])
         # # Usually this will be the inverse of Heq_k_red, but for testing
         # # purposes we can specify a different Wk
@@ -627,7 +627,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         # print SINRs
         pass
 
-    def test_calc_effective_throughput(self):
+    def test_calc_effective_throughput(self) -> None:
         psk_obj = fundamental.PSK(8)
         packet_length = 60
 
@@ -643,7 +643,7 @@ class EnhancedBDTestCase(unittest.TestCase):
         self.assertAlmostEqual(spectral_efficiency,
                                expected_spectral_efficiency)
 
-    def test_block_diagonalize_no_waterfilling(self):
+    def test_block_diagonalize_no_waterfilling(self) -> None:
         Nr = np.array([2, 2])
         Nt = np.array([2, 2])
         K = Nt.size

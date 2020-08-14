@@ -29,34 +29,34 @@ from pyphysim.util.misc import least_right_singular_vectors, randn_c
 
 # noinspection PyMethodMayBeStatic
 class ChannelsDoctestsTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_channels(self):
+    def test_channels(self) -> None:
         """Run doctests in the channels module."""
         doctest.testmod(channels)
 
-    def test_noise(self):
+    def test_noise(self) -> None:
         """Run doctests in the noise module."""
         doctest.testmod(noise)
 
-    def test_fading_generators(self):
+    def test_fading_generators(self) -> None:
         """Run doctests in the fading_generators module."""
         doctest.testmod(fading_generators)
 
-    def test_pathloss(self):
+    def test_pathloss(self) -> None:
         """Run doctests in the pathloss module."""
         doctest.testmod(pathloss)
 
-    def test_multiuser(self):
+    def test_multiuser(self) -> None:
         """Run doctests in the multiuser module."""
         doctest.testmod(multiuser)
 
 
 # noinspection PyMethodMayBeStatic
 class ModuleFunctionsTestCase(unittest.TestCase):
-    def test_calc_thermal_noise_power(self):
+    def test_calc_thermal_noise_power(self) -> None:
         T = 23  # Temperature in degrees
 
         # Test for 1Hz
@@ -94,7 +94,7 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         noise_power_dBm = noise.calc_thermal_noise_power_dBm(T, delta_f)
         self.assertAlmostEqual(noise_power_dBm, -101, places=0)
 
-    def test_generate_jakes_samples(self):
+    def test_generate_jakes_samples(self) -> None:
         Fd = 5  # Doppler frequency (in Hz)
         Ts = 1e-3  # Sampling interval (in seconds)
         N = 1000  # Number of samples
@@ -112,7 +112,7 @@ class ModuleFunctionsTestCase(unittest.TestCase):
         self.assertAlmostEqual(new_current_time, 4752 * Ts)
         self.assertEqual(h2.shape, (4, 3, N))
 
-    def test_calc_stream_reduction_matrix(self):
+    def test_calc_stream_reduction_matrix(self) -> None:
         Re_k = randn_c(3, 2)
         Re_k = np.dot(Re_k, Re_k.transpose().conjugate())
 
@@ -134,11 +134,11 @@ class ModuleFunctionsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Fading_generators Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class FadingSampleGeneratorTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_shape_property(self):
+    def test_shape_property(self) -> None:
         obj1 = fading_generators.FadingSampleGenerator(shape=None)
         obj2 = fading_generators.FadingSampleGenerator(shape=4)
         obj3 = fading_generators.FadingSampleGenerator(shape=(2, 3))
@@ -151,14 +151,14 @@ class FadingSampleGeneratorTestCase(unittest.TestCase):
 
 
 class RayleighSampleGeneratorTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.obj0 = fading_generators.RayleighSampleGenerator(shape=None)
         self.obj1 = fading_generators.RayleighSampleGenerator(shape=1)
         self.obj2 = fading_generators.RayleighSampleGenerator(shape=3)
         self.obj3 = fading_generators.RayleighSampleGenerator(shape=(4, 3))
 
-    def test_generate_more_samples(self):
+    def test_generate_more_samples(self) -> None:
         # num_samples is None
         self.assertTrue(isinstance(self.obj0.get_samples(), complex))
         self.assertEqual(self.obj1.get_samples().shape, (1, ))
@@ -175,7 +175,7 @@ class RayleighSampleGeneratorTestCase(unittest.TestCase):
         self.assertEqual(self.obj2.get_samples().shape, (3, 5))
         self.assertEqual(self.obj3.get_samples().shape, (4, 3, 5))
 
-    def test_get_similar_fading_generator(self):
+    def test_get_similar_fading_generator(self) -> None:
         # RayleighSampleGenerator only has the _shape attribute
         obj0 = self.obj0.get_similar_fading_generator()
         obj1 = self.obj1.get_similar_fading_generator()
@@ -189,7 +189,7 @@ class RayleighSampleGeneratorTestCase(unittest.TestCase):
 
 
 class JakesSampleGeneratorTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         Fd = 5  # Doppler frequency (in Hz)
         Ts = 1e-3  # Sampling interval (in seconds)
@@ -204,7 +204,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.NRays = NRays
         self.Fd = Fd
 
-    def test_phi_and_psi(self):
+    def test_phi_and_psi(self) -> None:
         # Note that phi and psi are computed during the object
         # creation. They would only need to change if the number of rays of
         # the Jakes model or the shape were changed.
@@ -216,7 +216,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.obj2._psi_l.shape,
                                       [self.NRays, 3, 2, 1])
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         # Try to change Jakes parameters that phi and psi depend on
         self.assertIsNone(self.obj1.shape)
         self.assertEqual(self.obj2.shape, (3, 2))
@@ -241,7 +241,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
             # noinspection PyPropertyAccess
             self.obj1.Fd = 50
 
-    def test_generate_more_samples(self):
+    def test_generate_more_samples(self) -> None:
         sample1_obj1 = self.obj1.get_samples()
         sample1_obj2 = self.obj2.get_samples()
         self.assertEqual(sample1_obj1.shape, (1, ))
@@ -258,7 +258,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.obj1._current_time, 101 * self.Ts)
         self.assertAlmostEqual(self.obj2._current_time, 101 * self.Ts)
 
-    def test_skip_samples_for_next_generation(self):
+    def test_skip_samples_for_next_generation(self) -> None:
         # Obj2 is a copy of self.obj1 and will generate the same samples
         obj2 = copy(self.obj1)
 
@@ -289,7 +289,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.obj1.get_samples(),
                                              obj2.get_samples())
 
-    def test_get_similar_fading_generator(self):
+    def test_get_similar_fading_generator(self) -> None:
         obj1 = self.obj1.get_similar_fading_generator()
         obj2 = self.obj2.get_similar_fading_generator()
         # Modify the new objects. Since we will only compare the parameters
@@ -312,7 +312,7 @@ class JakesSampleGeneratorTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Fading Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class TdlChannelProfileTestCase(unittest.TestCase):
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         prof1 = fading.TdlChannelProfile(np.array([0, -3, -10]),
                                          np.array([0, 1e-3, 5e-4]))
         prof2 = fading.TdlChannelProfile(np.array([0, -3, -10, -30]),
@@ -321,7 +321,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         self.assertEqual(prof1.name, 'custom')
         self.assertEqual(prof2.name, 'some name')
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         tu = fading.COST259_TUx
         ra = fading.COST259_RAx
         ht = fading.COST259_HTx
@@ -396,7 +396,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
                 17849., 18016.
             ]) * 1e-9)
 
-    def test_discretize(self):
+    def test_discretize(self) -> None:
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
         max_num_of_subcarriers = math.floor(maxSystemBand / 15e3)
@@ -470,7 +470,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             tu_discretized.get_discretize_profile(Ts)
 
-    def test_num_taps_with_padding(self):
+    def test_num_taps_with_padding(self) -> None:
         tu = fading.COST259_TUx
         ra = fading.COST259_RAx
         ht = fading.COST259_HTx
@@ -499,7 +499,7 @@ class TdlChannelProfileTestCase(unittest.TestCase):
 
 
 class TdlImpulseResponseTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.Ts = 3.255e-08
         tu = fading.COST259_TUx
@@ -512,7 +512,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         self.impulse_response = fading.TdlImpulseResponse(
             self.tap_values, tu_discretized)
 
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         num_samples = 5
         tap_values = (np.random.randn(15, num_samples) +
                       1j * np.random.randn(15, num_samples))
@@ -523,7 +523,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             fading.TdlImpulseResponse(tap_values, tu)
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         # With Ts = 3.255e-8, the discretized TU channel profile has 15 non
         # zero taps. Including the zero taps we have 67 taps. Here we will
         # test these dimensions
@@ -551,7 +551,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
             Ts * np.array(
                 [0, 7, 16, 21, 27, 38, 40, 41, 47, 50, 56, 58, 60, 63, 66]))
 
-    def test_multiply(self):
+    def test_multiply(self) -> None:
         impulse_response_scaled = self.impulse_response * 0.42
         # Test that a new object is returned
         self.assertTrue(impulse_response_scaled is not self.impulse_response)
@@ -569,7 +569,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
             impulse_response_scaled.tap_values,
             self.impulse_response.tap_values * 0.42)
 
-    def test_get_freq_response(self):
+    def test_get_freq_response(self) -> None:
         fft_size = 1024
 
         freq_response = self.impulse_response.get_freq_response(fft_size)
@@ -592,7 +592,7 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(freq_response,
                                              expected_frequency_response)
 
-    def test_concatenate_samples(self):
+    def test_concatenate_samples(self) -> None:
         num_samples2 = 13
         tap_values2 = (np.random.randn(15, num_samples2) +
                        1j * np.random.randn(15, num_samples2))
@@ -665,17 +665,17 @@ class TdlImpulseResponseTestCase(unittest.TestCase):
                 [self.impulse_response, impulse_response3])
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_plot_impulse_response(self):
+    def test_plot_impulse_response(self) -> None:
         # self.impulse_response.plot_impulse_response()
         pass
 
-    def test_plot_frequency_response(self):
+    def test_plot_frequency_response(self) -> None:
         # self.impulse_response.plot_frequency_response(300)
         pass
 
 
 class TdlChannelTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
@@ -705,7 +705,7 @@ class TdlChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # noinspection PyTypeChecker
-    def test_constructor_and_num_taps(self):
+    def test_constructor_and_num_taps(self) -> None:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # test constructor if we only provide the fading generator
 
@@ -778,11 +778,11 @@ class TdlChannelTestCase(unittest.TestCase):
             fading.TdlChannel(self.jakes, channel_profile=tu_discretized)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_num_taps_with_and_without_padding(self):
+    def test_num_taps_with_and_without_padding(self) -> None:
         self.assertEqual(self.tdlchannel.num_taps_with_padding, 67)
         self.assertEqual(self.tdlchannel.num_taps, 15)
 
-    def test_generate_and_get_last_impulse_response(self):
+    def test_generate_and_get_last_impulse_response(self) -> None:
         with self.assertRaises(RuntimeError):
             self.tdlchannel.get_last_impulse_response()
         self.tdlchannel.generate_impulse_response(num_samples=20)
@@ -818,7 +818,7 @@ class TdlChannelTestCase(unittest.TestCase):
         self.assertEqual(last_impulse_response.tap_values.shape,
                          (67, 4, 3, 10))
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])
 
@@ -889,7 +889,7 @@ class TdlChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
 
-    def test_corrupt_data_in_freq_domain(self):
+    def test_corrupt_data_in_freq_domain(self) -> None:
         fft_size = 16
         num_samples = 5 * fft_size
         signal = np.ones(num_samples)
@@ -978,7 +978,7 @@ class TdlChannelTestCase(unittest.TestCase):
             freq_response[:, 4], freq_response_all[:, 4 * fft_size])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data_in_freq_domain2(self):
+    def test_corrupt_data_in_freq_domain2(self) -> None:
         # This method tests corrupt_data_in_freq_domain, but now specifying
         # the indexes of the used subcarriers
 
@@ -1067,7 +1067,7 @@ class TdlChannelTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class TdlMIMOChannelTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
@@ -1096,7 +1096,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
             tap_delays=fading.COST259_TUx.tap_delays)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_constructor_and_num_taps(self):
+    def test_constructor_and_num_taps(self) -> None:
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # test constructor if we only provide the fading generator
 
@@ -1129,11 +1129,11 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         self.assertEqual(tdlchannel_jakes.num_taps, 1)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_num_taps_with_and_without_padding(self):
+    def test_num_taps_with_and_without_padding(self) -> None:
         self.assertEqual(self.tdlmimochannel.num_taps_with_padding, 67)
         self.assertEqual(self.tdlmimochannel.num_taps, 15)
 
-    def test_generate_and_get_last_impulse_response(self):
+    def test_generate_and_get_last_impulse_response(self) -> None:
         with self.assertRaises(RuntimeError):
             self.tdlmimochannel.get_last_impulse_response()
         self.tdlmimochannel.generate_impulse_response(num_samples=20)
@@ -1159,7 +1159,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         self.assertEqual(last_impulse_response.tap_values.shape,
                          (67, 4, 3, 10))
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         # xxxxx Test sending single impulse in flat fading channel xxxxxxxx
         jakes = fading_generators.JakesSampleGenerator(shape=(3, 2))
 
@@ -1382,7 +1382,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
                                              received_signal)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data2(self):
+    def test_corrupt_data2(self) -> None:
         # This method tests test_corrupt_data, but now for a SIMO
         # system. The only difference is that the transmit signal can be a
         # 1D array (since we only have one transmit stream) or a 2D array
@@ -1406,7 +1406,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(received_signal_flat1,
                                              received_signal_flat2)
 
-    def test_corrupt_data_in_freq_domain(self):
+    def test_corrupt_data_in_freq_domain(self) -> None:
         fft_size = 16
         num_samples = 3 * fft_size
         signal = np.ones((2, num_samples))
@@ -1618,7 +1618,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_received_signal_uplink,
                                              received_signal_uplink)
 
-    def test_corrupt_data_in_freq_domain2(self):
+    def test_corrupt_data_in_freq_domain2(self) -> None:
         # This method tests corrupt_data_in_freq_domain, but now for a SIMO
         # system. The only difference is that the transmit signal can be a
         # 1D array (since we only have one transmit stream) or a 2D array
@@ -1661,7 +1661,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
         # We don't need to test if received_signal1 is correct, since it
         # was already tested for the MIMO case.
 
-    def test_corrupt_data_in_freq_domain3(self):
+    def test_corrupt_data_in_freq_domain3(self) -> None:
         # This method tests corrupt_data_in_freq_domain, but now specifying
         # the indexes of the used subcarriers
         num_rx_ant = 3
@@ -1787,7 +1787,7 @@ class TdlMIMOChannelTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Single user Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class SuSisoChannelTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
@@ -1813,7 +1813,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
             self.jakes, channel_profile=fading.COST259_TUx)
 
     # noinspection PyTypeChecker
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create a SuChannel without specifying any parameter. In this
         # case a Rayleigh generator will be assumed and channel will be
@@ -1853,7 +1853,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         self.assertEqual(suchannel.num_taps, 15)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_set_pathloss(self):
+    def test_set_pathloss(self) -> None:
         # Test that default value of set_pathloss is None
         self.susisochannel.set_pathloss(0.01)
         self.susisochannel.set_pathloss()  # Use default value
@@ -1878,7 +1878,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
                                1e-12,
                                delta=1e-20)
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         # xxxxxxxxxx Test sending just a single impulse xxxxxxxxxxxxxxxxxxx
         signal = np.array([1.])
 
@@ -1962,7 +1962,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_received_signal,
                                              received_signal)
 
-    def test_corrupt_data_in_freq_domain(self):
+    def test_corrupt_data_in_freq_domain(self) -> None:
         fft_size = 16
         num_samples = 5 * fft_size
         signal = np.ones(num_samples)
@@ -2061,7 +2061,7 @@ class SuSisoChannelTestCase(unittest.TestCase):
 
 
 class SuMimoChannelTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         maxSystemBand = 40e6  # 40 MHz bandwidth
         # Number of subcarriers in this bandwidth
@@ -2088,7 +2088,7 @@ class SuMimoChannelTestCase(unittest.TestCase):
             fading_generator=self.jakes,
             channel_profile=fading.COST259_TUx)
 
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         # xxxxxxxxxx IID Flat fading channel xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Create a SuMimoChannel without specifying any parameter. In this
         # case a Rayleigh generator will be assumed and channel will be
@@ -2138,11 +2138,11 @@ class SuMimoChannelTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # TODO: implement-me
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         pass
 
     # TODO: implement-me
-    def test_corrupt_data_in_freq_domain(self):
+    def test_corrupt_data_in_freq_domain(self) -> None:
         pass
 
 
@@ -2150,7 +2150,7 @@ class SuMimoChannelTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Multiuser Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class MuSisoChannelTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.musisochannel = multiuser.MuChannel(N=2)
         self.musisochannel2 = multiuser.MuChannel(N=3)
@@ -2158,7 +2158,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         # self.musisochannel = multiuser.MuSisoFlatFadingChannel(N=2)
         # self.musisochannel2 = multiuser.MuSisoFlatFadingChannel(N=3)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         self.assertEqual(repr(self.musisochannel),
                          "MuChannel(shape=2x2, switched=False)")
         self.musisochannel.switched_direction = True
@@ -2171,7 +2171,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         self.assertEqual(repr(self.musisochannel2),
                          "MuChannel(shape=3x3, switched=True)")
 
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         N = 4
         # We are only providing the N parameters. That means each link will
         # take only one path with power 0dB and delay 0. Ts will be 1 for
@@ -2257,7 +2257,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         musisochannel = multiuser.MuChannel(N=(1, 3))
         self.assertEqual(musisochannel._su_siso_channels.shape, (1, 3))
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         num_samples = 5
         # xxxxxxxxxx Test without pathloss xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # Generate data for 2 transmitters
@@ -2455,7 +2455,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data2(self):
+    def test_corrupt_data2(self) -> None:
         # Test for an unequal number of transmitters and receivers
 
         # xxxxxxxxxx Test for 1 receiver and 2 transmitters xxxxxxxxxxxxxxx
@@ -2581,7 +2581,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_received_data, output[0])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data_in_freq_domain(self):
+    def test_corrupt_data_in_freq_domain(self) -> None:
         Ts = 3.25e-8
         # Create a jakes fading generator
         jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
@@ -2671,7 +2671,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
             ]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data_in_freq_domain2(self):
+    def test_corrupt_data_in_freq_domain2(self) -> None:
         # This method tests corrupt_data_in_freq_domain, but now specifying
         # the indexes of the used subcarriers
 
@@ -2836,7 +2836,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
             ]))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data_in_freq_domain3(self):
+    def test_corrupt_data_in_freq_domain3(self) -> None:
         # Test for an unequal number of transmitters and receivers
         Ts = 3.25e-8
         num_tx = 1
@@ -3006,7 +3006,7 @@ class MuSisoChannelTestCase(unittest.TestCase):
 
 
 class MuMimoChannelTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.num_rx_antennas = 3
         self.num_tx_antennas = 2
@@ -3017,7 +3017,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
             num_rx_antennas=self.num_rx_antennas,
             num_tx_antennas=self.num_tx_antennas)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         self.assertEqual(repr(self.mumimochannel),
                          "MuMimoChannel(shape=2x2, switched=False)")
         self.mumimochannel.switched_direction = True
@@ -3033,7 +3033,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
         self.assertEqual(repr(mumimochannel2),
                          "MuMimoChannel(shape=4x4, switched=True)")
 
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         N = 4
         num_rx_antennas = 3
         num_tx_antennas = 2
@@ -3052,7 +3052,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
                     mumimochannel._su_siso_channels[rx, tx].num_rx_antennas,
                     num_rx_antennas)
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         num_samples = 10
         data1 = np.random.randint(0, 10,
                                   (self.N, self.num_tx_antennas, num_samples))
@@ -3122,7 +3122,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_output2[1], output2[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data_in_freq_domain(self):
+    def test_corrupt_data_in_freq_domain(self) -> None:
         Ts = 3.25e-8
         # Create a jakes fading generator
         jakes = fading_generators.JakesSampleGenerator(Fd=30, Ts=Ts, L=16)
@@ -3238,7 +3238,7 @@ class MuMimoChannelTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class MultiUserChannelMatrixTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.multiH = multiuser.MultiUserChannelMatrix()
         self.H = np.array([
@@ -3259,7 +3259,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.Nr = np.array([2, 4, 6])
         self.Nt = np.array([2, 3, 5])
 
-    def test_from_small_matrix_to_big_matrix(self):
+    def test_from_small_matrix_to_big_matrix(self) -> None:
         K = 3
         Nr = np.array([2, 4, 6])
         Nt = np.array([2, 3, 5])
@@ -3285,7 +3285,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(big_matrix, expected_big_matrix)
 
-    def test_randomize(self):
+    def test_randomize(self) -> None:
         K = 3
         Nr = np.array([2, 4, 6])
         Nt = np.array([2, 3, 5])
@@ -3314,7 +3314,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             for tx in np.arange(K):
                 self.assertEqual(self.multiH.H[rx, tx].shape, (Nr, Nt))
 
-    def test_init_from_channel_matrix(self):
+    def test_init_from_channel_matrix(self) -> None:
         H = self.H
         K = self.K
         Nr = self.Nr
@@ -3345,7 +3345,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         # We don't really need to test multiH.H because the code was already
         # tested in test_from_big_matrix
 
-    def test_get_channel(self):
+    def test_get_channel(self) -> None:
         H = self.H
         K = self.K
         Nr = self.Nr
@@ -3420,7 +3420,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             self.multiH.get_Hkl(2, 2),
             np.sqrt(self.multiH.pathloss[2, 2]) * np.ones([6, 5]) * 8)
 
-    def test_get_channel_all_transmitters_to_single_receiver(self):
+    def test_get_channel_all_transmitters_to_single_receiver(self) -> None:
         H = self.H
         K = self.K
         Nr = self.Nr
@@ -3446,7 +3446,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.multiH.get_Hk(1), expected_H2)
         np.testing.assert_array_equal(self.multiH.get_Hk(2), expected_H3)
 
-    def test_H_and_big_H_properties(self):
+    def test_H_and_big_H_properties(self) -> None:
         H = self.H
         K = self.K
         Nr = self.Nr
@@ -3470,7 +3470,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                     self.multiH.big_H[cumNr[row]:cumNr[row + 1],
                                       cumNt[col]:cumNt[col + 1]])
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         NSymbs = 20
         # Create some input data for the 3 users
         input_data = np.zeros(self.K, dtype=np.ndarray)
@@ -3533,7 +3533,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output3[1], expected_output2[1])
         np.testing.assert_array_almost_equal(output3[2], expected_output2[2])
 
-    def test_set_and_get_post_filter(self):
+    def test_set_and_get_post_filter(self) -> None:
         self.multiH.randomize(self.Nr, self.Nt, self.K)
         self.assertIsNone(self.multiH._W)
         self.assertIsNone(self.multiH._big_W)
@@ -3566,7 +3566,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                                              self.multiH.big_W)
         self.assertIsNotNone(self.multiH._big_W)
 
-    def test_corrupt_data_with_post_filter(self):
+    def test_corrupt_data_with_post_filter(self) -> None:
         NSymbs = 20
         # Create some input data for the 3 users
         input_data = np.zeros(self.K, dtype=np.ndarray)
@@ -3602,7 +3602,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(output[1], expected_output[1])
         np.testing.assert_array_almost_equal(output[2], expected_output[2])
 
-    def test_last_noise_property(self):
+    def test_last_noise_property(self) -> None:
         noise_var = 1e-2
         self.multiH.noise_var = noise_var
 
@@ -3630,7 +3630,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         self.assertIsNone(self.multiH.last_noise)
         self.assertIsNone(self.multiH.noise_var)
 
-    def test_calc_Q(self):
+    def test_calc_Q(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([2, 2, 2])
@@ -3711,7 +3711,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Qk, expected_Q2 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_JP_Q(self):
+    def test_calc_JP_Q(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([2, 2, 2])
@@ -3786,7 +3786,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
             Qk, expected_Q2 + noise_var * np.eye(2))
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_Bkl_cov_matrix_first_part(self):
+    def test_calc_Bkl_cov_matrix_first_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -3874,7 +3874,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 self.multiH._calc_Bkl_cov_matrix_first_part(F, k, noise_power))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_Bkl_cov_matrix_second_part(self):
+    def test_calc_Bkl_cov_matrix_second_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -3963,7 +3963,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                     expected_second_part,
                     self.multiH._calc_Bkl_cov_matrix_second_part(F[k], k, l))
 
-    def test_calc_Bkl(self):
+    def test_calc_Bkl(self) -> None:
         # For the case of a single stream oer user Bkl (which only has l=0)
         # is equal to Qk plus I (identity matrix)
         K = 3
@@ -3987,7 +3987,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 F, k, N0_or_Rek=noise_power)[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
-    def test_underline_calc_SINR_k(self):
+    def test_underline_calc_SINR_k(self) -> None:
         multiUserChannel = multiuser.MultiUserChannelMatrix()
         multiUserChannel.noise_var = 0.0
 
@@ -4060,7 +4060,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
 
-    def test_calc_SINR(self):
+    def test_calc_SINR(self) -> None:
         multiUserChannel = multiuser.MultiUserChannelMatrix()
         K = 3
         Nt = np.ones(K, dtype=int) * 4
@@ -4135,7 +4135,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_JP_Bkl_cov_matrix_first_part(self):
+    def test_calc_JP_Bkl_cov_matrix_first_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -4224,7 +4224,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                     F, k, noise_power))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_JP_Bkl_cov_matrix_second_part(self):
+    def test_calc_JP_Bkl_cov_matrix_second_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -4288,7 +4288,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                     self.multiH._calc_JP_Bkl_cov_matrix_second_part(
                         F[k], k, l))
 
-    def test_calc_JP_Bkl_cov_matrix_all_l(self):
+    def test_calc_JP_Bkl_cov_matrix_all_l(self) -> None:
         # For the case of a single stream oer user Bkl (which only has l=0)
         # is equal to Qk plus I (identity matrix)
         K = 3
@@ -4318,7 +4318,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl,
                                                      Bkl_all_l[l])
 
-    def test_underline_calc_JP_SINR_k(self):
+    def test_underline_calc_JP_SINR_k(self) -> None:
         # Test the _calc_JP_SINR_k method when joint processing is used.
         K = 3
         Nr = np.ones(K, dtype=int) * 2
@@ -4395,7 +4395,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
 
-    def test_calc_SINR_with_JP(self):
+    def test_calc_SINR_with_JP(self) -> None:
         # Test the _calc_SINR_k method when joint processing is used.
         K = 3
         Nr = np.ones(K, dtype=int) * 2
@@ -4469,7 +4469,7 @@ class MultiUserChannelMatrixTestCase(unittest.TestCase):
 
 # noinspection PyPep8
 class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.multiH = multiuser.MultiUserChannelMatrixExtInt()
         self.H = np.array([
@@ -4500,7 +4500,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # Big channel matrix from the external interference to each receiver
         self.extH = 9 * np.ones([12, np.sum(self.NtE)], dtype=int)
 
-    def test_init_from_channel_matrix_and_properties(self):
+    def test_init_from_channel_matrix_and_properties(self) -> None:
         # In order to call the init_from_channel_matrix method we need a
         # channel matrix that accounts not only the users' channel but also
         # the external interference sources.
@@ -4538,7 +4538,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         # _big_H and _H was already well tested in the
         # MultiUserChannelMatrix class.
 
-    def test_randomize(self):
+    def test_randomize(self) -> None:
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
 
         # Test the properties
@@ -4557,12 +4557,12 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         self.assertEqual(self.multiH.extIntK, 1)
         np.testing.assert_array_equal(self.multiH.extIntNt, np.array([1]))
 
-    def test_big_H_no_ext_int_property(self):
+    def test_big_H_no_ext_int_property(self) -> None:
         self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
         np.testing.assert_array_almost_equal(self.multiH.big_H_no_ext_int,
                                              self.multiH.big_H[:, :-2])
 
-    def test_H_no_ext_int_property(self):
+    def test_H_no_ext_int_property(self) -> None:
         self.multiH.randomize(np.array([2, 2]), np.array([2, 2]), 2, 2)
         big_H_no_ext_int = self.multiH.big_H_no_ext_int
 
@@ -4578,7 +4578,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(H_no_ext_int[1, 1],
                                              big_H_no_ext_int[2:, 2:])
 
-    def test_set_pathloss(self):
+    def test_set_pathloss(self) -> None:
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
         K = self.multiH.K
         extIntK = self.multiH.extIntK
@@ -4613,7 +4613,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         self.assertIsNone(self.multiH.pathloss)
         self.assertIsNone(self.multiH._pathloss_big_matrix)
 
-    def test_get_H_property(self):
+    def test_get_H_property(self) -> None:
         # test the get_H property when there is pathloss
         self.multiH.randomize(self.Nr, self.Nt, self.K, self.NtE)
         K = self.multiH.K
@@ -4638,7 +4638,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                                                      self.multiH.H[r, c])
                 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_corrupt_data(self):
+    def test_corrupt_data(self) -> None:
         Nt = np.array([2, 2])
         Nr = np.array([3, 2])
         K = len(Nt)
@@ -4703,7 +4703,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             np.testing.assert_almost_equal(received_data2[index],
                                            received_data2_expected[index])
 
-    def test_corrupt_data_with_post_filter(self):
+    def test_corrupt_data_with_post_filter(self) -> None:
         Nt = np.array([2, 2])
         Nr = np.array([3, 2])
         K = len(Nt)
@@ -4784,7 +4784,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             np.testing.assert_almost_equal(received_data2[index],
                                            received_data2_expected[index])
 
-    def test_get_channel_all_transmitters_to_single_receiver(self):
+    def test_get_channel_all_transmitters_to_single_receiver(self) -> None:
         big_H = np.hstack([self.H, self.extH])
         K = self.K
         extIntK = self.NtE.size
@@ -4820,7 +4820,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.multiH.get_Hk_without_ext_int(2),
                                       expected_H3)
 
-    def test_calc_cov_matrix_extint_plus_noise(self):
+    def test_calc_cov_matrix_extint_plus_noise(self) -> None:
         self.K = 3
         self.Nr = np.array([2, 4, 6])
         # self.Nt = np.array([2, 3, 5])
@@ -4868,7 +4868,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(cov_int_plus_noise[2],
                                              expected_cov_int_plus_noise[2])
 
-    def test_calc_Q(self):
+    def test_calc_Q(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([2, 2, 2])
@@ -5004,7 +5004,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_JP_Q(self):
+    def test_calc_JP_Q(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([2, 2, 2])
@@ -5126,7 +5126,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_Bkl_cov_matrix_first_part(self):
+    def test_calc_Bkl_cov_matrix_first_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -5223,7 +5223,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 self.multiH._calc_Bkl_cov_matrix_first_part(F, k, Re[k]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_Bkl(self):
+    def test_calc_Bkl(self) -> None:
         # For the case of a single stream oer user Bkl (which only has l=0)
         # is equal to Qk
         K = 3
@@ -5251,7 +5251,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
             Bk0 = self.multiH._calc_Bkl_cov_matrix_all_l(F, k, Re[k])[0]
             np.testing.assert_array_almost_equal(expected_Bk0, Bk0)
 
-    def test_underline_calc_SINR_k(self):
+    def test_underline_calc_SINR_k(self) -> None:
         multiUserChannel = multiuser.MultiUserChannelMatrixExtInt()
         # iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
@@ -5335,7 +5335,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                                                      SINR_k_all_l[l])
 
     # noinspection PyTypeChecker
-    def test_calc_SINR(self):
+    def test_calc_SINR(self) -> None:
         multiUserChannel = multiuser.MultiUserChannelMatrixExtInt()
         K = 3
         Nt = np.ones(K, dtype=int) * 4
@@ -5424,7 +5424,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(expected_SINR2, SINR_all_users[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_JP_Bkl_cov_matrix_first_part(self):
+    def test_calc_JP_Bkl_cov_matrix_first_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -5513,7 +5513,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 self.multiH._calc_JP_Bkl_cov_matrix_first_part(F, k, Re[k]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_JP_Bkl_cov_matrix_second_part(self):
+    def test_calc_JP_Bkl_cov_matrix_second_part(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -5580,7 +5580,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                     self.multiH._calc_JP_Bkl_cov_matrix_second_part(
                         F[k], k, l))
 
-    def test_calc_JP_Bkl_cov_matrix_all_l(self):
+    def test_calc_JP_Bkl_cov_matrix_all_l(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -5610,7 +5610,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl,
                                                      Bkl_all_l[l])
 
-    def test_underline_calc_JP_SINR_k(self):
+    def test_underline_calc_JP_SINR_k(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -5684,7 +5684,7 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
                 np.testing.assert_array_almost_equal(expectedSINRkl,
                                                      SINR_k_all_l[l])
 
-    def test_calc_SINR_with_JP(self):
+    def test_calc_SINR_with_JP(self) -> None:
         K = 3
         Nr = np.ones(K, dtype=int) * 2
         Nt = np.ones(K, dtype=int) * 2
@@ -5764,14 +5764,14 @@ class MultiUserChannelMatrixExtIntTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Pathloss Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class PathLossFreeSpaceTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.pl = pathloss.PathLossFreeSpace()
 
-    def test_type(self):
+    def test_type(self) -> None:
         self.assertEqual(self.pl.type, 'outdoor')
 
-    def test_calc_path_loss(self):
+    def test_calc_path_loss(self) -> None:
         # with a very small distance the path loss (in linear scale) would
         # be negative, which is not valid. For these cases we should throw
         # an exception.
@@ -5862,7 +5862,7 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
             self.pl.calc_path_loss([1.2, 1.4, 1.6]), expected_pl_linear)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_which_distance(self):
+    def test_calc_which_distance(self) -> None:
         # Test which_distance and which_distance_dB for a single value.
         self.assertAlmostEqual(self.pl.which_distance(4.88624535312e-10), 1.2)
         self.assertAlmostEqual(self.pl.which_distance_dB(93.1102472958), 1.2)
@@ -5886,14 +5886,14 @@ class PathLossFreeSpaceTestCase(unittest.TestCase):
 
 
 class PathLoss3GPP1TestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.pl = pathloss.PathLoss3GPP1()
 
-    def test_type(self):
+    def test_type(self) -> None:
         self.assertEqual(self.pl.type, 'outdoor')
 
-    def test_calc_path_loss(self):
+    def test_calc_path_loss(self) -> None:
         # xxxxxxxxxx Test the case for very small distances xxxxxxxxxxxxxxx
         # with a very small distance the path loss (in linear scale) would
         # be negative, which is not valid. For these cases we should throw
@@ -5930,7 +5930,7 @@ class PathLoss3GPP1TestCase(unittest.TestCase):
                                              decimal=16)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_which_distance(self):
+    def test_calc_which_distance(self) -> None:
         np.testing.assert_array_almost_equal(self.pl.which_distance(
             self.pl.calc_path_loss(np.array([1.2, 1.5, 1.8, 2.3]))),
                                              np.array([1.2, 1.5, 1.8, 2.3]),
@@ -5939,14 +5939,14 @@ class PathLoss3GPP1TestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class PathLossMetisPS7TestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.pl = pathloss.PathLossMetisPS7()
 
-    def test_type(self):
+    def test_type(self) -> None:
         self.assertEqual(self.pl.type, 'indoor')
 
-    def test_calc_PS7_path_loss_dB_same_floor(self):
+    def test_calc_PS7_path_loss_dB_same_floor(self) -> None:
         A = 36.8
         B = 43.8
         C = 20
@@ -6068,20 +6068,20 @@ class PathLossMetisPS7TestCase(unittest.TestCase):
             expected_pl_dB)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_path_loss(self):
+    def test_calc_path_loss(self) -> None:
         pass
 
 
 # TODO: finish implementation
 class PathLossOkomuraHataTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.pl = pathloss.PathLossOkomuraHata()
 
-    def test_type(self):
+    def test_type(self) -> None:
         self.assertEqual(self.pl.type, 'outdoor')
 
-    def test_model_parameters(self):
+    def test_model_parameters(self) -> None:
         self.assertAlmostEqual(self.pl.hms, 1.0)
         self.assertAlmostEqual(self.pl.hbs, 30.0)
         self.assertAlmostEqual(self.pl.fc, 900.0)
@@ -6110,7 +6110,7 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.pl.fc = 1600.0
 
-    def test_calc_deterministic_path_loss_dB(self):
+    def test_calc_deterministic_path_loss_dB(self) -> None:
         self.pl.fc = 900.0
         self.pl.hbs = 30.0
         self.pl.hms = 1.0
@@ -6208,7 +6208,7 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Antenna Gain Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx1xx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class AntGainOmniTestCase(unittest.TestCase):
-    def test_get_antenna_gain(self):
+    def test_get_antenna_gain(self) -> None:
         A = antennagain.AntGainOmni()
         angle1 = 10
         angle2 = -35
@@ -6241,7 +6241,7 @@ class AntGainOmniTestCase(unittest.TestCase):
 
 class AntGain3GPP25996TestCase(unittest.TestCase):
     # noinspection PyPep8
-    def test_get_antenna_gain(self):
+    def test_get_antenna_gain(self) -> None:
         # \(-\min\left[ 12\left( \frac{\theta}{\theta_{3dB}} \right)^2, A_m \right]\), where \(-180 \geq \theta \geq 180\)
         # xxxxxxxxxx Test for 3-Sector cells xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         A = antennagain.AntGainBS3GPP25996()

@@ -77,33 +77,33 @@ class SimulationsDoctestsTestCase(unittest.TestCase):
     Test case that run all the doctests in the modules of the simulations
     package.
     """
-    def test_configobjvalidation(self):
+    def test_configobjvalidation(self) -> None:
         """Run configobjvalidation doctests"""
         doctest.testmod(configobjvalidation)
 
-    def test_parameters(self):
+    def test_parameters(self) -> None:
         """Run parameters doctests"""
         doctest.testmod(parameters)
 
-    def test_progressbar(self):
+    def test_progressbar(self) -> None:
         """Run progressbar doctests"""
         doctest.testmod(progressbar)
 
-    def test_results(self):
+    def test_results(self) -> None:
         """Run results doctests"""
         doctest.testmod(results)
 
-    def test_simulationhelpers(self):
+    def test_simulationhelpers(self) -> None:
         """Run simulationhelpers doctests"""
         doctest.testmod(simulationhelpers)
 
-    def test_runner(self):
+    def test_runner(self) -> None:
         """Run runner doctests"""
         doctest.testmod(runner)
 
 
 class SimulationHelpersTestCase(unittest.TestCase):
-    def test_get_common_parser(self):
+    def test_get_common_parser(self) -> None:
         p = get_common_parser()
         p2 = get_common_parser()
         self.assertTrue(p is p2)
@@ -118,11 +118,11 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     Unit-tests for the module functions in the in the configobjvalidation
     module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_parse_range_expr(self):
+    def test_parse_range_expr(self) -> None:
         try:
             # noinspection PyUnresolvedReferences
             import validate
@@ -165,7 +165,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     # Note: Since the "real_scalar_or_real_numpy_array_check" function will
     # call the "real_numpy_array_check" function we only need a test case
     # for the "real_scalar_or_real_numpy_array_check" function.
-    def test_real_scalar_or_real_numpy_array_check(self):
+    def test_real_scalar_or_real_numpy_array_check(self) -> None:
         try:
             # noinspection PyUnresolvedReferences
             import validate
@@ -261,7 +261,7 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
     # function will call the "integer_numpy_array_check" function we only
     # need a test case for the
     # "integer_scalar_or_integer_numpy_array_check" function.
-    def test_integer_scalar_or_integer_numpy_array_check(self):
+    def test_integer_scalar_or_integer_numpy_array_check(self) -> None:
         try:
             # noinspection PyUnresolvedReferences
             import validate
@@ -298,6 +298,14 @@ class ConfigobjvalidationModuleFunctionsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Now we will parse range expressions xxxxxxxxxxxxxxxxxx
+        # test when the input is a list of strings
+        list_of_strings = ['0', '6', '17']
+        parsed_array = integer_scalar_or_integer_numpy_array_check(
+            list_of_strings, min=0, max=30)
+        expected_parsed_array = np.array([0, 6, 17])
+        self.assertTrue(np.array(parsed_array).dtype is np.dtype('int'))
+        np.testing.assert_array_equal(parsed_array, expected_parsed_array)
+
         array_string = "[0 5 10:15]"
         parsed_array = integer_scalar_or_integer_numpy_array_check(
             array_string, min=0, max=30)
@@ -347,11 +355,11 @@ class ParametersModuleFunctionsTestCase(unittest.TestCase):
     """
     Unit-tests for the functions in the parameters module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_combine_simulation_parameters(self):
+    def test_combine_simulation_parameters(self) -> None:
         sim_params1 = SimulationParameters.create({
             'first':
             10,
@@ -460,23 +468,23 @@ class SimulationParametersTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationParameters class in the parameters module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         params_dict = {'first': 10, 'second': 20}
         self.sim_params = SimulationParameters.create(params_dict)
 
-    def test_create(self):
+    def test_create(self) -> None:
         # The create method was already called in the setUp.
         self.assertEqual(len(self.sim_params), 2)
         self.assertEqual(self.sim_params['first'], 10)
         self.assertEqual(self.sim_params['second'], 20)
 
-    def test_add(self):
+    def test_add(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.assertEqual(len(self.sim_params), 3)
         np.testing.assert_array_equal(self.sim_params['third'],
                                       np.array([1, 3, 2, 5]))
 
-    def test_unpacking_parameters(self):
+    def test_unpacking_parameters(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
@@ -534,7 +542,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.sim_params.set_unpack_parameter('fourth', False)
         self.assertEqual(set(self.sim_params.unpacked_parameters), {'third'})
 
-    def test_remove(self):
+    def test_remove(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.sim_params.add('fifth', ['Z', 'W', 'Y'])
@@ -557,7 +565,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(set(self.sim_params.unpacked_parameters),
                          expected_unpacked_parameters)
 
-    def test_equal_and_not_equal_operators(self):
+    def test_equal_and_not_equal_operators(self) -> None:
         other = SimulationParameters()
         self.assertFalse(self.sim_params == other)
         self.assertTrue(self.sim_params != other)
@@ -606,13 +614,13 @@ class SimulationParametersTestCase(unittest.TestCase):
         b._unpack_index = 3
         self.assertFalse(a == b)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.set_unpack_parameter("third")
         self.assertEqual(repr(self.sim_params),
                          "{'first': 10, 'second': 20, 'third*': [1 3 2 5]}")
 
-    def test_get_unpacked_params_list(self):
+    def test_get_unpacked_params_list(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
 
@@ -648,7 +656,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             self.assertTrue(
                 unpacked_param_list[i]._original_sim_params is self.sim_params)
 
-    def test_get_num_unpacked_variations(self):
+    def test_get_num_unpacked_variations(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.assertEqual(self.sim_params.get_num_unpacked_variations(), 1)
@@ -671,7 +679,7 @@ class SimulationParametersTestCase(unittest.TestCase):
             self.assertEqual(self.sim_params.get_num_unpacked_variations(),
                              u.get_num_unpacked_variations())
 
-    def test_get_pack_indexes(self):
+    def test_get_pack_indexes(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.sim_params.add('fifth', ['Z', 'X', 'W'])
@@ -791,7 +799,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(unpacked_list[index3]['fourth'], 'A')
         self.assertEqual(unpacked_list[index3]['fifth'], 'Z')
 
-    def test_to_dict_and_from_dict(self):
+    def test_to_dict_and_from_dict(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.sim_params.set_unpack_parameter('third')
@@ -845,7 +853,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         self.assertEqual(empty_simparams, empty_simparams_d)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_to_json_and_from_json(self):
+    def test_to_json_and_from_json(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.sim_params.set_unpack_parameter('third')
@@ -884,7 +892,7 @@ class SimulationParametersTestCase(unittest.TestCase):
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_save_to_and_load_from_pickle_file(self):
+    def test_save_to_and_load_from_pickle_file(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
         self.sim_params.set_unpack_parameter('third')
@@ -922,7 +930,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         delete_file_if_possible(filename2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_save_and_load_sanity(self):
+    def test_save_and_load_sanity(self) -> None:
         # Test if when saving and loading the simulation parameters the
         # list of unpacked parameters is in the same order.
         #
@@ -1018,7 +1026,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         delete_file_if_possible(filename)
 
     # noinspection PyUnresolvedReferences
-    def test_load_from_config_file(self):
+    def test_load_from_config_file(self) -> None:
         try:
             import configobj
             import validate
@@ -1099,7 +1107,7 @@ class SimulationParametersTestCase(unittest.TestCase):
         delete_file_if_possible(filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_to_dataframe(self):
+    def test_to_dataframe(self) -> None:
         # If the pandas package is not installed, we will skip testing this
         # method
         if not _PANDAS_AVAILABLE:  # pragma: nocover
@@ -1138,11 +1146,11 @@ class SimulationParametersTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx Results Module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class ResultsModuleFunctionsTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_combine_simulation_results(self):
+    def test_combine_simulation_results(self) -> None:
         dummyrunner = _DummyRunner()
         dummyrunner.simulate()
 
@@ -1260,21 +1268,21 @@ class ResultTestCase(unittest.TestCase):
     """
     Unit-tests for the Result class in the results module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.result1 = Result("name", Result.SUMTYPE)
         self.result2 = Result("name2", Result.RATIOTYPE)
         self.result3 = Result("name3", Result.MISCTYPE)
         self.result4 = Result("name4", Result.CHOICETYPE, choice_num=6)
 
-    def test_init(self):
+    def test_init(self) -> None:
         # Test if an exception is raised if we try to create a result type
         # with choice_num not being an integer
         with self.assertRaises(RuntimeError):
             # noinspection PyTypeChecker
             Result("name4", Result.CHOICETYPE, choice_num=6.6)
 
-    def test_get_update_type(self):
+    def test_get_update_type(self) -> None:
         """
         Test the two properties, one to get the update type code and other to
         get the update type name. Note that both properties reflect the
@@ -1300,7 +1308,7 @@ class ResultTestCase(unittest.TestCase):
                 Result.CHOICETYPE
             }))
 
-    def test_update(self):
+    def test_update(self) -> None:
         # Test the update function of the SUMTYPE
         self.result1.update(13)
         self.result1.update(4)
@@ -1357,7 +1365,7 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.result4.update(3.4)
 
-    def test_update_with_accumulate(self):
+    def test_update_with_accumulate(self) -> None:
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         self.assertEqual(result1.accumulate_values_bool,
                          result1._accumulate_values_bool)
@@ -1405,7 +1413,7 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(result4._value_list, [3, 1, 0, 3, 4])
         self.assertEqual(result4._total_list, [])
 
-    def test_create(self):
+    def test_create(self) -> None:
         r1 = Result.create(name='nome1',
                            update_type=Result.SUMTYPE,
                            value=10.4,
@@ -1444,7 +1452,7 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(r4.num_updates, 2)
         np.testing.assert_equal(r4._value, [0, 0, 0, 1, 0, 1])
 
-    def test_merge(self):
+    def test_merge(self) -> None:
         # Test merge of Results of SUMTYPE
         self.result1.update(13)
         self.result1.update(30)
@@ -1519,7 +1527,7 @@ class ResultTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.result1.merge(result6)
 
-    def test_merge_with_accumulate(self):
+    def test_merge_with_accumulate(self) -> None:
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         result1.update(13)
         result1.update(30)
@@ -1593,7 +1601,7 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(result4.get_result(),
                                              np.array([2, 0, 1, 2]) / 5.)
 
-    def test_get_result_mean_and_var(self):
+    def test_get_result_mean_and_var(self) -> None:
         # Test for Result.SUMTYPE
         result1 = Result('name', Result.SUMTYPE, accumulate_values=True)
         result1.update(13)
@@ -1635,7 +1643,7 @@ class ResultTestCase(unittest.TestCase):
         expected_var2 = aux2.var()
         self.assertAlmostEqual(result2.get_result_var(), expected_var2)
 
-    def test_representation(self):
+    def test_representation(self) -> None:
         self.assertEqual(self.result1.__repr__(),
                          "Result -> name: Nothing yet")
         self.assertEqual(self.result2.__repr__(),
@@ -1658,7 +1666,7 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result4.__repr__(),
                          "Result -> name4: [0.  0.  0.5 0.5 0.  0. ]")
 
-    def test_equal_and_not_equal_operators(self):
+    def test_equal_and_not_equal_operators(self) -> None:
         self.result1.update(10)
         self.result1.update(7)
 
@@ -1695,7 +1703,7 @@ class ResultTestCase(unittest.TestCase):
         # Test comparison with something of a different class
         self.assertFalse(self.result4 == 10.4)
 
-    def test_calc_confidence_interval(self):
+    def test_calc_confidence_interval(self) -> None:
         # Test if an exceptions is raised for a Result object of the
         # MISCTYPE update type.
         with self.assertRaises(RuntimeError):
@@ -1731,7 +1739,7 @@ class ResultTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_confidence_interval,
                                              confidence_interval)
 
-    def test_to_dict_from_dict(self):
+    def test_to_dict_from_dict(self) -> None:
         self.result1.update(13)
         self.result1.update(30)
 
@@ -1777,7 +1785,7 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(self.result4, result4)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_to_json_and_from_json(self):
+    def test_to_json_and_from_json(self) -> None:
         self.result1.update(13)
         self.result1.update(30)
 
@@ -1827,7 +1835,7 @@ class SimulationResultsTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationResults class in the results module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         # First SimulationResults object
         self.simresults = SimulationResults()
         self.simresults.add_new_result("lala", Result.SUMTYPE, 13)
@@ -1852,7 +1860,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         result4_other.update(5)
         self.other_simresults.add_result(result4_other)
 
-    def test_params_property(self):
+    def test_params_property(self) -> None:
         params = SimulationParameters()
         params.add('number', 10)
         params.add('name', 'lala')
@@ -1871,7 +1879,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(params['number'], params2['number'])
         self.assertEqual(params['name'], params2['name'])
 
-    def test_get_result_names(self):
+    def test_get_result_names(self) -> None:
         # The output of the get_result_names is a list of names. We
         # transform it into a set in this test only to make the order of
         # the names unimportant.
@@ -1882,7 +1890,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults.__repr__(),
                          """SimulationResults: ['lala', 'lele', 'lulu']""")
 
-    def test_add_result(self):
+    def test_add_result(self) -> None:
         # Add a result with the same name of an existing result -> Should
         # replace it
         result1_other = Result.create("lala", Result.SUMTYPE, 25)
@@ -1897,7 +1905,7 @@ class SimulationResultsTestCase(unittest.TestCase):
                          {"lala", "lele", "lili", "lulu"})
         self.assertEqual(self.simresults['lili'][0].get_result(), "a string")
 
-    def test_append_result(self):
+    def test_append_result(self) -> None:
         result1_other = Result.create("lala", Result.SUMTYPE, 25)
         self.simresults.append_result(result1_other)
         # Since we append a new Result with the name 'lala', then now we
@@ -1914,7 +1922,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.simresults.append_result(result1_wrong)
 
-    def test_append_all_results(self):
+    def test_append_all_results(self) -> None:
         self.simresults.append_all_results(self.other_simresults)
         # Note that self.simresults only has the 'lala' and 'lele' results.
         # After we append the results in self.other_simresults
@@ -1928,7 +1936,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(len(self.simresults['lili']), 1)
         self.assertEqual(len(self.simresults['lulu']), 2)
 
-    def test_merge_all_results(self):
+    def test_merge_all_results(self) -> None:
         # Note that even though there is a 'lili' result in
         # self.other_simresults, only 'lala' and 'lele' will be
         # merged. Also, self.other_simresults must have all the results in
@@ -1971,7 +1979,7 @@ class SimulationResultsTestCase(unittest.TestCase):
                          {'name1', 'num_skipped_reps'})
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_equal_and_not_equal_operators(self):
+    def test_equal_and_not_equal_operators(self) -> None:
         elapsed_time_result = Result.create('elapsed_time', Result.SUMTYPE, 30)
         self.simresults.add_result(elapsed_time_result)
 
@@ -2024,7 +2032,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         # noinspection PyTypeChecker
         self.assertFalse(self.simresults == 20)
 
-    def test_get_result_values_list(self):
+    def test_get_result_values_list(self) -> None:
         self.simresults.append_all_results(self.other_simresults)
 
         self.assertEqual(self.simresults.get_result_values_list('lala'),
@@ -2044,7 +2052,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults.get_result_values_list('lili'),
                          ['a string'])
 
-    def test_get_result_values_confidence_intervals(self):
+    def test_get_result_values_confidence_intervals(self) -> None:
         simresults = SimulationResults()
         simresults.params.add('P', [1, 2])
         simresults.params.set_unpack_parameter('P')
@@ -2087,7 +2095,7 @@ class SimulationResultsTestCase(unittest.TestCase):
             c2[0], expected_list_of_confidence_intervals[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_to_dict_from_dict(self):
+    def test_to_dict_from_dict(self) -> None:
         # xxxxxxxxxx Test converting to a dictionary xxxxxxxxxxxxxxxxxxxxxx
         simresults_dict = self.simresults._to_dict()
         self.assertIsInstance(simresults_dict, dict)
@@ -2107,7 +2115,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults, simresults)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_to_json_and_from_json(self):
+    def test_to_json_and_from_json(self) -> None:
         # xxxxxxxxxx Test converting to and from a json xxxxxxxxxxxxxxxxxxx
         # First test converting to json
         simresults_json = self.simresults.to_json()
@@ -2120,7 +2128,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         self.assertEqual(self.simresults, simresults)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_save_to_and_load_from_file(self):
+    def test_save_to_and_load_from_file(self) -> None:
         base_filename = 'results_({age})_({temperature})_({factor})'
         base_pickle_filename = "{0}.pickle".format(base_filename)
         base_json_filename = "{0}.json".format(base_filename)
@@ -2233,7 +2241,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         delete_file_if_possible(filename_json)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_to_dataframe(self):
+    def test_to_dataframe(self) -> None:
         # If the pandas package is not installed, we will skip testing this
         # method
         if not _PANDAS_AVAILABLE:  # pragma: nocover
@@ -2462,12 +2470,12 @@ class SimulationRunnerTestCase(unittest.TestCase):
     """
     Unit-tests for the SimulationRunner class in the runner module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         self.runner = SimulationRunner(read_command_line_args=False)
 
     # Test if the SimulationRunner sets a few default attributes in its init
     # method.
-    def test_default_values(self):
+    def test_default_values(self) -> None:
         # Note that we are also testing the elapsed_time and runned_reps
         # properties, which should just return these attributes.
         self.assertEqual(self.runner.rep_max, 1)
@@ -2477,20 +2485,20 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertTrue(isinstance(self.runner.results, SimulationResults))
         self.assertEqual(self.runner.progressbar_message, "Progress")
 
-    def test_not_implemented_methods(self):
+    def test_not_implemented_methods(self) -> None:
         # self.assertRaises(NotImplementedError,
         #                   self.S1._get_vertex_positions)
         with self.assertRaises(NotImplementedError):
             # noinspection PyTypeChecker
             self.runner._run_simulation(None)
 
-    def test_keep_going(self):
+    def test_keep_going(self) -> None:
         # the _keep_going method in the SimulationRunner class should
         # return True
         # noinspection PyTypeChecker
         self.assertTrue(self.runner._keep_going(None, None, None))
 
-    def test_set_results_filename(self):
+    def test_set_results_filename(self) -> None:
         dummyrunner = _DummyRunner()
         dummyrunner.set_results_filename()
         self.assertIsNone(dummyrunner.results_filename)
@@ -2519,7 +2527,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
                          dummyrunner2.results_filename)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_simulate(self):
+    def test_simulate(self) -> None:
         # from tests.simulations_package_test import _DummyRunner
         dummyrunner = _DummyRunner()
 
@@ -2618,7 +2626,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # Delete the pickle files in the same folder
         _delete_pickle_files()
 
-    def test_simulate_with_param_variation_index(self):
+    def test_simulate_with_param_variation_index(self) -> None:
         # Test the "simulate" method when the param_variation_index
         # argument is specified.
         # from tests.simulations_package_test import _DummyRunner
@@ -2658,7 +2666,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
-    def test_simulate_in_parallel(self):  # pragma: no cover
+    def test_simulate_in_parallel(self) -> None:  # pragma: no cover
         if not _IPYTHON_AVAILABLE:
             self.skipTest(
                 "test_simulate_in_parallel - IPython is not installed")
@@ -2768,7 +2776,8 @@ class SimulationRunnerTestCase(unittest.TestCase):
     # This test method is normally skipped, unless you have started an
     # IPython cluster with a "tests" profile so that you have at least one
     # engine running.
-    def test_simulate_in_parallel_with_random_values(self):  # pragma: no cover
+    def test_simulate_in_parallel_with_random_values(  # pragma: no cover
+            self) -> None:
         if not _IPYTHON_AVAILABLE:
             self.skipTest("test_simulate_in_parallel_with_random_values - "
                           "IPython is not installed")
@@ -2857,7 +2866,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
 
     # Test the simulate method when the SkipThisOne exception is raised in
     # the _run_simulation method.
-    def test_simulate_with_skipthisone(self):
+    def test_simulate_with_skipthisone(self) -> None:
         # from tests.simulations_package_test import _DummyRunnerWithSkip
         dummyrunner = _DummyRunnerWithSkip()
 

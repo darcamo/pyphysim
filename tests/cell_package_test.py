@@ -24,12 +24,15 @@ class ConcreteShape(shapes.Shape):
     Because the shapes.Shape class is an abstract class, we define a
     concrete version here only for testing purposes.
     """
-    def __init__(self, pos, radius, rotation=0):
+    def __init__(self,
+                 pos: complex,
+                 radius: float,
+                 rotation: float = 0) -> None:
         """Initialize the shape.
         """
         super().__init__(pos, radius, rotation)
 
-    def _get_vertex_positions(self):
+    def _get_vertex_positions(self) -> None:
         """This method will not be called in our tests.
         """
         pass  # pragma: nocover
@@ -41,13 +44,13 @@ class CellDoctestsTestCase(unittest.TestCase):
     """
     Test case that run all the doctests in the modules of the cell package.
     """
-    def test_shapes(self):
+    def test_shapes(self) -> None:
         """
         Run doctests in the shapes module.
         """
         doctest.testmod(shapes)
 
-    def test_cell(self):
+    def test_cell(self) -> None:
         """
         Run doctests in the cell module.
         """
@@ -58,13 +61,13 @@ class CellDoctestsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx SHAPES module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class CoordinateTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C1 = shapes.Coordinate(0 + 3j)
         self.C2 = shapes.Coordinate(2 - 4j)
         self.C3 = shapes.Coordinate(5 - 0j)
 
-    def test_calc_dist(self):
+    def test_calc_dist(self) -> None:
         # Sanity check
         self.assertEqual(self.C1.calc_dist(self.C2),
                          self.C2.calc_dist(self.C1))
@@ -76,14 +79,14 @@ class CoordinateTestCase(unittest.TestCase):
         self.assertAlmostEqual(np.sqrt((3**2) + (4**2)),
                                self.C2.calc_dist(self.C3))
 
-    def test_move_by_relative_coordinate(self):
+    def test_move_by_relative_coordinate(self) -> None:
         self.assertEqual(self.C1.pos, 0 + 3j)
         self.C1.move_by_relative_coordinate(2 - 1.5j)
         self.assertEqual(self.C1.pos, 2 + 1.5j)
         self.C1.move_by_relative_coordinate(-1 + 4j)
         self.assertEqual(self.C1.pos, 1 + 5.5j)
 
-    def test_move_by_relative_polar_coordinate(self):
+    def test_move_by_relative_polar_coordinate(self) -> None:
         self.C1.move_by_relative_polar_coordinate(1, np.pi / 2)
         self.assertAlmostEqual(self.C1.pos, 0 + 4j)
 
@@ -95,41 +98,41 @@ class CoordinateTestCase(unittest.TestCase):
 
 
 class ShapeTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         #         ConcreteShape(pos, radius, rotation)
         self.S1 = ConcreteShape(0 + 0j, 1.5, 0)
         self.S2 = ConcreteShape(2 + 3j, 2, 0)
         self.S3 = ConcreteShape(3 + 5j, 1.2, 30)
 
-    def test_radius_property(self):
+    def test_radius_property(self) -> None:
         self.assertAlmostEqual(self.S1.radius, 1.5)
         self.assertAlmostEqual(self.S2.radius, 2.0)
         self.assertAlmostEqual(self.S3.radius, 1.2)
         self.S1.radius = 3.3
         self.assertAlmostEqual(self.S1.radius, 3.3)
 
-    def test_rotation_property(self):
+    def test_rotation_property(self) -> None:
         self.assertAlmostEqual(self.S1.rotation, 0)
         self.assertAlmostEqual(self.S3.rotation, 30)
         self.S1.rotation = 25
         self.assertAlmostEqual(self.S1.rotation, 25)
 
-    def test_is_point_inside_shape(self):
+    def test_is_point_inside_shape(self) -> None:
         # This method uses the _get_vertex_positions method. Therefore, it
         # can only be tested in subclasses of the Shape class.
         #
         # This method was tested in the Hexagon unittests.
         pass
 
-    def test_get_border_point(self):
+    def test_get_border_point(self) -> None:
         # This method uses the _get_vertex_positions method. Therefore, it
         # can only be tested in subclasses of the Shape class.
         #
         # This method was tested in the Hexagon unittests.
         pass
 
-    def test_rotate(self):
+    def test_rotate(self) -> None:
         """Test the static method Shape._rotate
         """
         cur_pos = 1 - 2j
@@ -140,13 +143,13 @@ class ShapeTestCase(unittest.TestCase):
 
 
 class HexagonTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.H1 = shapes.Hexagon(0 + 0j, 1.5, 0)
         self.H2 = shapes.Hexagon(2 + 3j, 2, 0)
         self.H3 = shapes.Hexagon(3 + 5j, 1.5, 30)
 
-    def test_height_property(self):
+    def test_height_property(self) -> None:
         # The height of an Hexagon is given by sqrt(3) * side_length, where
         # the side of the Hexagon is the radius property of the Shape.
         self.assertAlmostEqual(self.H1.height,
@@ -156,7 +159,7 @@ class HexagonTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.H3.height,
                                np.sqrt(3.0) * self.H3.radius / 2.0)
 
-    def test_get_vertex_positions(self):
+    def test_get_vertex_positions(self) -> None:
         # Even though H1 and H2 have different position and rotation, they
         # have the same radius and since _get_vertex_positions does not
         # account translation and rotation then the _get_vertex_positions
@@ -187,7 +190,7 @@ class HexagonTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_vertexes2,
                                              obtained_vertexes2)
 
-    def test_get_vertices(self):
+    def test_get_vertices(self) -> None:
         # H1 does not have any translation or rotation. Therefore,
         # _get_vertex_positions should return the same values as the
         # vertices property
@@ -203,7 +206,7 @@ class HexagonTestCase(unittest.TestCase):
             shapes.Shape.calc_rotated_pos(self.H3._get_vertex_positions(), 30)
             + 3 + 5j, self.H3.vertices)
 
-    def test_is_point_inside_shape(self, ):
+    def test_is_point_inside_shape(self) -> None:
         # If the point is exactly in the shape's border, such as the
         # shape's vertexes, then is_point_inside_shape could return either
         # true or false.
@@ -217,7 +220,7 @@ class HexagonTestCase(unittest.TestCase):
             # This test is very incomplete. If any bugs are found in
             # is_point_inside_shape add tests for them here
 
-    def test_get_border_point(self):
+    def test_get_border_point(self) -> None:
         # Test for an angle of 0 degrees
         point_0_degrees = self.H3.get_border_point(0., 1.)
         point_0_degrees_expected = self.H3.pos + self.H3.height
@@ -250,7 +253,7 @@ class HexagonTestCase(unittest.TestCase):
 
 
 class RectangleTestCase(unittest.TestCase):
-    def test_get_vertex_positions(self):
+    def test_get_vertex_positions(self) -> None:
         A1 = 0 + 0j
         B1 = 1 + 1j
         R1 = shapes.Rectangle(A1, B1)
@@ -281,7 +284,7 @@ class RectangleTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(R1._get_vertex_positions(),
                                        R3._get_vertex_positions())
 
-    def test_is_point_inside_shape(self):
+    def test_is_point_inside_shape(self) -> None:
         A1 = -1.2 + -0.000001j
         B1 = 1 + 3.4j
         R1 = shapes.Rectangle(A1, B1)
@@ -302,11 +305,11 @@ class RectangleTestCase(unittest.TestCase):
 
 
 class CircleTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C1 = shapes.Circle(3 - 5j, 2)
 
-    def test_get_border_point(self):
+    def test_get_border_point(self) -> None:
         C1 = self.C1
         point = C1.get_border_point(90, 1)
         expected_point = C1.pos + 1j * C1.radius
@@ -322,7 +325,7 @@ class CircleTestCase(unittest.TestCase):
         #     ax.plot(border_point2.real, border_point2.imag, 'bo')
         # pylab.show()
 
-    def test_get_vertex_positions(self):
+    def test_get_vertex_positions(self) -> None:
         num_vertexes = 12
         # The angles need to be in degrees for the get_border_point method
         angles = np.linspace(0, (num_vertexes - 1.) / num_vertexes * 360,
@@ -335,7 +338,7 @@ class CircleTestCase(unittest.TestCase):
         vertexes = self.C1._get_vertex_positions()
         np.testing.assert_array_almost_equal(expected_vertexes, vertexes)
 
-    def test_is_point_inside_shape(self):
+    def test_is_point_inside_shape(self) -> None:
         # Note that the Shape class version of the is_point_inside_shape
         # method will fail in these tests. That is because it uses the
         # shape's vertexes to determine if a point is inside of the shape
@@ -372,7 +375,7 @@ class ShapesModuleMethodsTestCase(unittest.TestCase):
 # xxxxxxxxxxxxxxx CELL module xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 class NodeTestCase(unittest.TestCase):
-    def test_attributes(self):
+    def test_attributes(self) -> None:
         n = cell.Node(1 + 3j, plot_marker='v', marker_color='g')
         self.assertEqual(n.pos, 1 + 3j)
         self.assertEqual(n.plot_marker, 'v')
@@ -380,17 +383,17 @@ class NodeTestCase(unittest.TestCase):
 
 
 class CellTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C1 = cell.Cell(pos=2 - 3j, radius=2.5, cell_id=1, rotation=30)
         self.C2 = cell.Cell(pos=0 + 2j, radius=2, cell_id=2, rotation=20)
         self.C3 = cell.Cell(pos=-3 + 5j, radius=1.5, cell_id=3, rotation=70)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         self.assertEqual(repr(self.C1),
                          'Cell(pos=(2-3j),radius=2.5,cell_id=1,rotation=30)')
 
-    def test_add_user(self):
+    def test_add_user(self) -> None:
         # The cell has no users yet
         self.assertEqual(self.C1.num_users, 0)
 
@@ -452,7 +455,7 @@ class CellTestCase(unittest.TestCase):
         self.C1.delete_all_users()
         self.assertEqual(self.C1.num_users, 0)
 
-    def test_add_border_user(self):
+    def test_add_border_user(self) -> None:
         # xxxxx Test adding a single user
         angles = 30
         ratio = 0.8
@@ -497,7 +500,7 @@ class CellTestCase(unittest.TestCase):
             self.assertAlmostEqual(self.C3.users[index].pos, absolute_pos)
             self.assertEqual(self.C3.users[index].marker_color, colors[index])
 
-    def test_add_random_user(self):
+    def test_add_random_user(self) -> None:
         self.C1.add_random_user(user_color='y')
         self.assertEqual(self.C1.num_users, 1)
         self.assertEqual(self.C1.users[0].marker_color, 'y')
@@ -511,7 +514,7 @@ class CellTestCase(unittest.TestCase):
             min_dist = self.C1.radius * min_dist_ratio
             self.assertTrue(self.C1.calc_dist(self.C1.users[index]) > min_dist)
 
-    def test_set_pos(self):
+    def test_set_pos(self) -> None:
         # When the position of a cell is changed, the position of any user
         # in the cell must be updated.
         self.C1.add_border_user(0, 0.1)
@@ -533,7 +536,7 @@ class CellTestCase(unittest.TestCase):
 
 
 class Cell3SecTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C1 = cell.Cell3Sec(pos=2 - 3j, radius=2.5, cell_id=1, rotation=0)
         self.C2 = cell.Cell3Sec(pos=-3.5 + 3j,
@@ -547,7 +550,7 @@ class Cell3SecTestCase(unittest.TestCase):
         self.C3.fill_color = 'b'
         self.C3.fill_face_bool = True
 
-    def test_calc_sectors_positions(self):
+    def test_calc_sectors_positions(self) -> None:
         expected_sec_positions = np.array(
             [0.75 - 3.72168784j, 3.25 - 3.72168784j, 2.00 - 1.55662433j])
 
@@ -564,7 +567,7 @@ class Cell3SecTestCase(unittest.TestCase):
         ])
         np.testing.assert_array_almost_equal(pos, expected_sec_positions)
 
-    def test_set_pos(self):
+    def test_set_pos(self) -> None:
         # Add a few users in the cell
         self.C1.add_random_users(5)
 
@@ -586,7 +589,7 @@ class Cell3SecTestCase(unittest.TestCase):
 
         # self.C1.plot()
 
-    def test_secradius(self):
+    def test_secradius(self) -> None:
         expected_secradius = np.sqrt(3) * self.C1.radius / 3.0
         self.assertAlmostEqual(self.C1.secradius, expected_secradius)
 
@@ -594,7 +597,7 @@ class Cell3SecTestCase(unittest.TestCase):
         expected_secradius = np.sqrt(3) * self.C1.radius / 3.0
         self.assertAlmostEqual(self.C1.secradius, expected_secradius)
 
-    def test_set_radius(self):
+    def test_set_radius(self) -> None:
         # Whenever the radius property of the Cell3Sec object changes, the
         # position and radius of each individual sector should change
         expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
@@ -617,7 +620,7 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertAlmostEqual(expected_sec2_pos, self.C1._sec2.pos)
         self.assertAlmostEqual(expected_sec3_pos, self.C1._sec3.pos)
 
-    def test_set_rotation(self):
+    def test_set_rotation(self) -> None:
         # Whenever the rotation property of the Cell3Sec object changes, the
         # position and rotation of each individual sector should change
         expected_sec1_pos, expected_sec2_pos, expected_sec3_pos \
@@ -646,7 +649,7 @@ class Cell3SecTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.C1._sec2.rotation, expected_sec_rotataion)
         self.assertAlmostEqual(self.C1._sec3.rotation, expected_sec_rotataion)
 
-    def test_get_vertex_positions(self):
+    def test_get_vertex_positions(self) -> None:
         # The _get_vertex_positions method return the vertexes of the cell
         # ignoring the cell position as if the cell was located at the
         # origin.
@@ -677,7 +680,7 @@ class Cell3SecTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             expected_vertexes_with_translation, vertexes_with_translation)
 
-    def test_add_random_users_in_sector(self):
+    def test_add_random_users_in_sector(self) -> None:
         self.C1.add_random_user_in_sector(1)
         self.assertEqual(self.C1.num_users, 1)
 
@@ -712,7 +715,7 @@ class Cell3SecTestCase(unittest.TestCase):
 
 # TODO: finish implementation
 class CellSquareTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C1 = cell.CellSquare(pos=2 - 3j,
                                   side_length=2.5,
@@ -726,7 +729,7 @@ class CellSquareTestCase(unittest.TestCase):
         self.C2.fill_face_bool = True
 
     # TODO: Add test methods for the CellSquare class
-    def test_constructor(self):
+    def test_constructor(self) -> None:
         self.assertAlmostEqual(self.C1.pos, 2 - 3j)
         self.assertAlmostEqual(self.C1.rotation, 0)
         self.assertAlmostEqual(self.C1.cell_id, 1)
@@ -744,25 +747,25 @@ class CellSquareTestCase(unittest.TestCase):
 
 
 class CellWrapTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C = cell.Cell(1 - 1j, 1.0, cell_id=1, rotation=10)
         self.C2 = cell.Cell(-2 + 3j, 2.0, rotation=60)
         self.W = cell.CellWrap(-1 + 0j, self.C)
         self.W2 = cell.CellWrap(0 + 0j, self.C2)
 
-    def test_init(self):
+    def test_init(self) -> None:
         with self.assertRaises(AssertionError):
             # noinspection PyTypeChecker
             cell.CellWrap(pos=0, wrapped_cell='should_be_cell_object')
 
-    def test_pos(self):
+    def test_pos(self) -> None:
         self.assertAlmostEqual(self.W.pos, -1 + 0j)
 
         self.W.pos = 4 - 2j
         self.assertAlmostEqual(self.W.pos, 4 - 2j)
 
-    def test_radius(self):
+    def test_radius(self) -> None:
         self.assertAlmostEqual(self.W.radius, 1.0)
         self.assertAlmostEqual(self.W2.radius, 2.0)
 
@@ -771,7 +774,7 @@ class CellWrapTestCase(unittest.TestCase):
             # noinspection PyPropertyAccess
             self.W.radius = 2.0
 
-    def test_rotation(self):
+    def test_rotation(self) -> None:
         self.assertAlmostEqual(self.W.rotation, 10.0)
         self.assertAlmostEqual(self.W2.rotation, 60.0)
 
@@ -781,7 +784,7 @@ class CellWrapTestCase(unittest.TestCase):
             self.W.rotation = 30
         self.assertAlmostEqual(self.W.rotation, 10.0)
 
-    def test_get_users(self):
+    def test_get_users(self) -> None:
         self.C.add_random_users(5)
         self.assertEqual(self.C.num_users, 5)
         orig_users = self.C.users
@@ -808,11 +811,11 @@ class CellWrapTestCase(unittest.TestCase):
         for u, ou in zip(users, orig_users):
             self.assertAlmostEqual(u.pos, ou.pos + pos_diff)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         self.assertEqual(repr(self.W), 'CellWrap(pos=(-1+0j),cell_id=Wrap 1)')
         self.assertEqual(repr(self.W2), 'CellWrap(pos=0j,cell_id=None)')
 
-    def test_get_vertex_positions(self):
+    def test_get_vertex_positions(self) -> None:
         A = self.C._get_vertex_positions()
         B = self.W._get_vertex_positions()
         np.testing.assert_array_almost_equal(A, B)
@@ -821,7 +824,7 @@ class CellWrapTestCase(unittest.TestCase):
 # TODO: Extend the tests to consider the case of the Cell3Sec class.
 # noinspection PyMethodMayBeStatic
 class ClusterTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.C1 = cell.Cluster(pos=1 - 2j, cell_radius=1.0, num_cells=3)
         self.C2 = cell.Cluster(pos=-2 + 3j,
@@ -850,7 +853,7 @@ class ClusterTestCase(unittest.TestCase):
         self.C1._cells[2].add_random_user()
         self.C1._cells[2].add_random_user()
 
-    def test_init(self):
+    def test_init(self) -> None:
         self.assertAlmostEqual(self.C1.pos, 1 - 2j)
         self.assertAlmostEqual(self.C2.pos, -2 + 3j)
         self.assertAlmostEqual(self.C3.pos, -1.1j)
@@ -868,7 +871,7 @@ class ClusterTestCase(unittest.TestCase):
             # cell_type can only be 'simple' or '3sec'
             cell.Cluster(1.0, num_cells=19, cell_type='invalid_type')
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         self.assertEqual(repr(self.C1),
                          ("Cluster(cell_radius=1.0,num_cells=3,pos=(1-2j),"
                           "cluster_id=None,cell_type='simple',rotation=0.0)"))
@@ -882,7 +885,7 @@ class ClusterTestCase(unittest.TestCase):
                          ("Cluster(cell_radius=1.0,num_cells=19,pos=-1.1j,"
                           "cluster_id=None,cell_type='3sec',rotation=0.0)"))
 
-    def test_cell_id_fontsize_property(self):
+    def test_cell_id_fontsize_property(self) -> None:
         self.assertIsNone(self.C1.cell_id_fontsize)
         for c in self.C1:
             self.assertIsNone(c.id_fontsize)
@@ -895,7 +898,7 @@ class ClusterTestCase(unittest.TestCase):
             # The effect of the cell_id_fontsize can only be seen when plotting
             # self.C1.plot()
 
-    def test_pos_and_rotation(self):
+    def test_pos_and_rotation(self) -> None:
         self.assertAlmostEqual(self.C2.pos, -2 + 3j)
         self.assertAlmostEqual(self.C2.rotation, 20)
 
@@ -907,7 +910,7 @@ class ClusterTestCase(unittest.TestCase):
             self.C2.rotation = 30
         self.assertAlmostEqual(self.C2.rotation, 20.0)
 
-    def test_get_ii_and_jj(self):
+    def test_get_ii_and_jj(self) -> None:
         # This test is here simple to indicate if the Cluster._ii_and_jj
         # variable ever changes, in which case it will fail. If this is the
         # case change this test_get_ii_and_jj unittest to reflect the
@@ -925,7 +928,7 @@ class ClusterTestCase(unittest.TestCase):
         # Test if we get (0,0) for an invalid key.
         self.assertEqual(cell.Cluster._get_ii_and_jj(30), (0, 0))
 
-    def test_get_cell_by_id(self):
+    def test_get_cell_by_id(self) -> None:
         for cell_id in range(1, self.C1.num_cells + 1):
             c = self.C1.get_cell_by_id(cell_id)
             self.assertEqual(c.id, cell_id)
@@ -938,7 +941,7 @@ class ClusterTestCase(unittest.TestCase):
             c = self.C3.get_cell_by_id(cell_id)
             self.assertEqual(c.id, cell_id)
 
-    def test_remove_all_users(self):
+    def test_remove_all_users(self) -> None:
         # Remove all users from the second cell
         self.C1.delete_all_users(2)
         self.assertEqual(self.C1._cells[0].num_users, 2)
@@ -957,7 +960,7 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(self.C1._cells[1].num_users, 0)
         self.assertEqual(self.C1._cells[2].num_users, 0)
 
-    def test_get_all_users(self):
+    def test_get_all_users(self) -> None:
         self.assertEqual(len(self.C1.get_all_users()), 10)
 
         self.C1._cells[0].delete_all_users()
@@ -967,10 +970,10 @@ class ClusterTestCase(unittest.TestCase):
         self.assertEqual(len(self.C1.get_all_users()), 0)
 
     # TODO: implement or remove
-    def test_calc_cluster_radius(self):
+    def test_calc_cluster_radius(self) -> None:
         pass
 
-    def test_calc_cluster_external_radius(self):
+    def test_calc_cluster_external_radius(self) -> None:
         self.assertAlmostEqual(self.C1._calc_cluster_external_radius(),
                                2.0 * self.C1.cell_radius)
 
@@ -983,7 +986,7 @@ class ClusterTestCase(unittest.TestCase):
                                4.3588989435406731 * self.C3.cell_radius)
 
     # noinspection PyTypeChecker
-    def test_calc_cell_positions_hexagon(self):
+    def test_calc_cell_positions_hexagon(self) -> None:
         # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
         positions = cell.Cluster._calc_cell_positions_hexagon(cell_radius=1.0,
                                                               num_cells=19,
@@ -1026,7 +1029,7 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # noinspection PyTypeChecker
-    def test_calc_cell_positions_3sec(self):
+    def test_calc_cell_positions_3sec(self) -> None:
         # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
         positions = cell.Cluster._calc_cell_positions_3sec(cell_radius=1.0,
                                                            num_cells=19,
@@ -1073,7 +1076,7 @@ class ClusterTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     # noinspection PyTypeChecker
-    def test_calc_cell_positions_square(self):
+    def test_calc_cell_positions_square(self) -> None:
         # xxxxxxxxxx Test with a rotation of 0 degrees xxxxxxxxxxxxxxxxxxxx
         positions = cell.Cluster._calc_cell_positions_square(side_length=1.0,
                                                              num_cells=9,
@@ -1107,7 +1110,7 @@ class ClusterTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(positions2[:, 1], 30.0)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_get_vertex_positions(self):
+    def test_get_vertex_positions(self) -> None:
         # For a cluster of a single cell, the cluster vertexes are the same
         # as the cell vertexes
         C1 = cell.Cluster(cell_radius=1.0, num_cells=1)
@@ -1139,7 +1142,7 @@ class ClusterTestCase(unittest.TestCase):
         Cinvalid = cell.Cluster(cell_radius=1.0, num_cells=20)
         self.assertEqual(len(Cinvalid.vertices), 0)
 
-    def test_add_random_users(self):
+    def test_add_random_users(self) -> None:
         # Test adding 2 users to the third cell in the cluster
         self.C2.add_random_users(3, 2, 'aqua')
         self.assertEqual(self.C2.num_users, 2)
@@ -1180,7 +1183,7 @@ class ClusterTestCase(unittest.TestCase):
 
             # self.C3.plot()
 
-    def test_add_border_users(self):
+    def test_add_border_users(self) -> None:
         self.C1.delete_all_users()
         cell_ids = [1, 2, 3]
         angles = [210, 30, 90]
@@ -1214,7 +1217,7 @@ class ClusterTestCase(unittest.TestCase):
         self.C1.add_border_users(cell_ids, angles, 0.9, ['g', 'b', 'k'])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_dist_all_users_to_each_cell_no_wrap_around(self):
+    def test_calc_dist_all_users_to_each_cell_no_wrap_around(self) -> None:
         all_dists = self.C1.calc_dist_all_users_to_each_cell_no_wrap_around()
 
         self.assertEqual(all_dists.shape, (10, 3))
@@ -1232,7 +1235,7 @@ class ClusterTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(expected_all_dists, all_dists)
 
-    def test_calc_dist_all_cells_to_all_users(self):
+    def test_calc_dist_all_cells_to_all_users(self) -> None:
         all_dists = self.C1.calc_dist_all_users_to_each_cell()
         self.assertEqual(all_dists.shape, (10, 3))
 
@@ -1249,7 +1252,7 @@ class ClusterTestCase(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(expected_all_dists, all_dists)
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         # Test num_cells property
         self.assertEqual(self.C1.num_cells, 3)
         self.assertEqual(self.C2.num_cells, 7)
@@ -1280,7 +1283,7 @@ class ClusterTestCase(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.C1.radius = 3.0
 
-    def test_iterator_cells_in_the_cluster(self):
+    def test_iterator_cells_in_the_cluster(self) -> None:
         i = -1  # Initialize the i variable
         for i, c in enumerate(self.C1):
             self.assertTrue(isinstance(c, cell.Cell))
@@ -1291,7 +1294,7 @@ class ClusterTestCase(unittest.TestCase):
             self.assertTrue(isinstance(c, cell.Cell))
         self.assertEqual(i, 6)
 
-    def test_create_wrap_around_cells(self):
+    def test_create_wrap_around_cells(self) -> None:
         # It is complicated to test the create_wrap_around_cells method.
         # However, with a simple plot you can easily see if it was done
         # correctly. Therefore, for now we don't implement proper unittests for
@@ -1303,11 +1306,11 @@ class ClusterTestCase(unittest.TestCase):
 
 
 class GridTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_create_clusters(self):
+    def test_create_clusters(self) -> None:
         G1 = cell.Grid()
 
         # Try to create a grid with invalid number cells per cluster
@@ -1352,13 +1355,13 @@ class GridTestCase(unittest.TestCase):
                 -2.16506351 - 0.75j, -0.43301270 - 2.25j, 1.73205081 - 1.5j
             ]))
 
-    def test_get_cluster_from_index(self):
+    def test_get_cluster_from_index(self) -> None:
         G1 = cell.Grid()
         G1.create_clusters(7, 3, 0.5)
         for i in range(7):
             self.assertTrue(G1._clusters[i] is G1.get_cluster_from_index(i))
 
-    def test_iterator_for_clusters(self):
+    def test_iterator_for_clusters(self) -> None:
         G1 = cell.Grid()
         G1.create_clusters(2, 2, 0.5)
         i = -1  # Initialize the i variable

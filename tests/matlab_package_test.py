@@ -22,14 +22,14 @@ class MATLABDoctestsTestCase(unittest.TestCase):
     package.
 
     """
-    def test_python2MATLAB(self):
+    def test_python2MATLAB(self) -> None:
         """Run python2MATLAB doctests"""
         doctest.testmod(python2MATLAB)
 
 
 # noinspection PyMethodMayBeStatic
 class MATLABFunctionsTestCase(unittest.TestCase):
-    def test_mmat(self):
+    def test_mmat(self) -> None:
         # Test 1D numpy array
         a = np.arange(10) + (10 - np.arange(10)) * 1j
 

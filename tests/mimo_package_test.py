@@ -114,11 +114,11 @@ def calc_SINRs(channel, W, G_H, noise_var):
 class BlastTestCase(unittest.TestCase):
     """Unittests for the Blast class in the mimo module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.blast_object = Blast()
 
-    def test_set_channel_matrix(self):
+    def test_set_channel_matrix(self) -> None:
         # Test if a warning is raised when the number of transmit antennas
         # is greater then the number of receive antennas
         #
@@ -129,7 +129,7 @@ class BlastTestCase(unittest.TestCase):
             # and we test if captured 1 warning.
             self.assertEqual(len(w), 1, msg='Warning was not raised')
 
-    def test_getNumberOfLayers(self):
+    def test_getNumberOfLayers(self) -> None:
         channel = np.eye(3)
         self.blast_object.set_channel_matrix(channel)
 
@@ -139,7 +139,7 @@ class BlastTestCase(unittest.TestCase):
         blast2 = Blast(channel2)
         self.assertEqual(blast2.getNumberOfLayers(), 5)
 
-    def test_encode(self):
+    def test_encode(self) -> None:
         channel = np.eye(3)
         # Set the channel so that the getNumberOfLayers method works
         self.blast_object.set_channel_matrix(channel)
@@ -156,7 +156,7 @@ class BlastTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.blast_object.encode(data),
                                              expected_encoded_data)
 
-    def test_set_noise_var(self):
+    def test_set_noise_var(self) -> None:
         self.blast_object.set_noise_var(0.001)
         self.assertAlmostEqual(self.blast_object._noise_var, 0.001)
 
@@ -166,7 +166,7 @@ class BlastTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.blast_object.set_noise_var(-0.001)
 
-    def test_decode(self):
+    def test_decode(self) -> None:
         data = np.r_[0:15]
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -195,7 +195,7 @@ class BlastTestCase(unittest.TestCase):
         decoded_data3 = self.blast_object.decode(received_data3)
         np.testing.assert_array_almost_equal(decoded_data3.round(5), data)
 
-    def test_calc_post_processing_SINRs(self):
+    def test_calc_post_processing_SINRs(self) -> None:
         Nr = 4
         Nt = 3
         noise_var = 0.001
@@ -221,11 +221,11 @@ class BlastTestCase(unittest.TestCase):
 
 
 class MRTTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.mrt_object = MRT()
 
-    def test_init(self):
+    def test_init(self) -> None:
         channel1 = randn_c(3)
         mrt_object1 = MRT(channel1)
         self.assertEqual(3, mrt_object1.Nt)
@@ -242,10 +242,10 @@ class MRTTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             MRT(channel3)
 
-    def test_getNumberOfLayers(self):
+    def test_getNumberOfLayers(self) -> None:
         self.assertEqual(self.mrt_object.getNumberOfLayers(), 1)
 
-    def test_encode(self):
+    def test_encode(self) -> None:
         data = np.r_[0:15]
 
         # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -296,7 +296,7 @@ class MRTTestCase(unittest.TestCase):
                                              encoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_decode(self):
+    def test_decode(self) -> None:
         Nt = 4
 
         # xxxxxxxxxx test the case with a single receive antenna xxxxxxxxxx
@@ -331,7 +331,7 @@ class MRTTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(decoded_data, data, decimal=4)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_post_processing_SINRs(self):
+    def test_calc_post_processing_SINRs(self) -> None:
         Nr = 1
         Nt = 3
         noise_var = 0.001
@@ -357,11 +357,11 @@ class MRTTestCase(unittest.TestCase):
 
 
 class MRCTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.mrc_object = MRC()
 
-    def test_decode(self):
+    def test_decode(self) -> None:
         data = np.r_[0:15]
         num_streams = 3
 
@@ -389,7 +389,7 @@ class MRCTestCase(unittest.TestCase):
         self.mrc_object.set_channel_matrix(channel)
         received_data3 = np.dot(channel, encoded_data)
         decoded_data3 = self.mrc_object.decode(received_data3)
-        np.testing.assert_array_almost_equal(decoded_data3.round(7), data)
+        np.testing.assert_array_almost_equal(decoded_data3.round(6), data)
 
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         # test with a single stream
@@ -401,7 +401,7 @@ class MRCTestCase(unittest.TestCase):
         decoded_data4 = self.mrc_object.decode(received_data4)
         np.testing.assert_array_almost_equal(decoded_data4, data)
 
-    def test_calc_post_processing_SINRs(self):
+    def test_calc_post_processing_SINRs(self) -> None:
         Nr = 3
         Nt = 1
         noise_var = 0.001
@@ -426,11 +426,11 @@ class MRCTestCase(unittest.TestCase):
 
 
 class SVDMimoTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.svdmimo_object = SVDMimo()
 
-    def test_encode(self):
+    def test_encode(self) -> None:
         # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
@@ -475,7 +475,7 @@ class SVDMimoTestCase(unittest.TestCase):
             self.svdmimo_object.encode(data2)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_decode(self):
+    def test_decode(self) -> None:
         # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
@@ -489,7 +489,7 @@ class SVDMimoTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(data, decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_post_processing_SINRs(self):
+    def test_calc_post_processing_SINRs(self) -> None:
         Nr = 3
         Nt = 3
         noise_var = 0.01
@@ -514,11 +514,11 @@ class SVDMimoTestCase(unittest.TestCase):
 
 
 class GMDMimoTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.gmdmimo_object = GMDMimo()
 
-    def test_encode(self):
+    def test_encode(self) -> None:
         # xxxxxxxxxx test the case with Ntx=2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
@@ -547,7 +547,7 @@ class GMDMimoTestCase(unittest.TestCase):
             self.gmdmimo_object.encode(data2)
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_decode(self):
+    def test_decode(self) -> None:
         # xxxxxxxxxx test the case with Ntx=2, NRx=2 xxxxxxxxxxxxxxxxxxxxxx
         Nt = 2
         Nr = 2
@@ -562,7 +562,7 @@ class GMDMimoTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(data, decoded_data)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_post_processing_SINRs(self):
+    def test_calc_post_processing_SINRs(self) -> None:
         Nr = 3
         Nt = 3
         noise_var = 0.01
@@ -590,16 +590,16 @@ class GMDMimoTestCase(unittest.TestCase):
 class AlamoutiTestCase(unittest.TestCase):
     """Unittests for the Alamouti class in the mimo module.
     """
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         self.alamouti_object = Alamouti()
 
-    def test_getNumberOfLayers(self):
+    def test_getNumberOfLayers(self) -> None:
         # The number of layers in the Alamouti scheme is always equal to
         # one.
         self.assertEqual(self.alamouti_object.getNumberOfLayers(), 1)
 
-    def test_set_channel_matrix(self):
+    def test_set_channel_matrix(self) -> None:
         self.alamouti_object.set_channel_matrix(randn_c(2))
         self.assertEqual(self.alamouti_object.Nt, 2)
         self.assertEqual(self.alamouti_object.Nr, 1)
@@ -611,7 +611,7 @@ class AlamoutiTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.alamouti_object.set_channel_matrix(randn_c(4, 3))
 
-    def test_encode(self):
+    def test_encode(self) -> None:
         data = np.r_[0:16] + np.r_[0:16] * 1j
 
         expected_encoded_data = np.array(
@@ -629,7 +629,7 @@ class AlamoutiTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self.alamouti_object.encode(data),
                                              expected_encoded_data)
 
-    def test_decode(self):
+    def test_decode(self) -> None:
         data = np.r_[0:16] + np.r_[0:16] * 1j
 
         encoded_data = self.alamouti_object.encode(data)
@@ -640,7 +640,7 @@ class AlamoutiTestCase(unittest.TestCase):
         decoded_data = self.alamouti_object.decode(received_data)
         np.testing.assert_array_almost_equal(decoded_data, data)
 
-    def test_calc_post_processing_SINRs(self):
+    def test_calc_post_processing_SINRs(self) -> None:
         Nr = 1
         Nt = 2
         noise_var = 0.01

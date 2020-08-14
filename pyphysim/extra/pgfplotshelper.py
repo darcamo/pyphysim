@@ -24,8 +24,16 @@ One example of tex code for a plot using pgfplots is show below
 
 """
 
+from typing import Collection, Optional
 
-def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
+import numpy as np
+
+
+def generate_pgfplots_plotline(x: Collection[float],
+                               y: Collection[float],
+                               errors: Optional[np.ndarray] = None,
+                               options: Optional[str] = None,
+                               legend: Optional[str] = None) -> str:
     """
     This function generates the code corresponding to the "addplot" command
     in a pgfplots plot for the coordinates given in `x` and `y`.
@@ -40,7 +48,7 @@ def generate_pgfplots_plotline(x, y, errors=None, options=None, legend=None):
         The data for the 'x' axis in the plot.
     y : np.ndarray | list[float] | list[int]
         The data for the 'x' axis in the plot
-    errors : np.ndarray | list[float] | list[int], optional
+    errors : np.ndarray, optional
         The error for plotting the errorbars.
     options : str
         pgfplot options for the plot line.

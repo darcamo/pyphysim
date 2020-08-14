@@ -7,7 +7,7 @@ This module is not intended to be used directly. The functions defined here
 are used in the other modules in the :mod:`pyphysim.simulations` package.
 """
 
-from typing import Any, Callable, List, Optional, Union
+from typing import Callable, List, Optional, Union, cast
 
 import numpy as np
 import validate
@@ -88,9 +88,9 @@ def _parse_int_range_expr(value: str) -> np.ndarray:
 
 # pylint: disable= W0622
 # noinspection PyShadowingBuiltins
-def real_numpy_array_check(value: str,
-                           min: Optional[int] = None,
-                           max: Optional[int] = None):
+def real_numpy_array_check(value: Union[str, List[str]],
+                           min: Optional[float] = None,
+                           max: Optional[float] = None) -> List[float]:
     """
     Parse and validate `value` as a numpy array (of floats).
 
@@ -100,15 +100,16 @@ def real_numpy_array_check(value: str,
 
     Parameters
     ----------
-    value : str
-        The string to be converted. This can be either a single number, a
-        range expression in the form of min:max or min:step:max, or even a
-        list containing numbers and range expressions.
-    min : int
+    value : str, List[str]
+        The string to be converted (of a list of strings to ve converted). This
+        can be either a single number, a range expression in the form of min:max
+         or min:step:max, or even a list containing numbers and range
+         expressions.
+    min : float
         The minimum allowed value. If the converted value is (or have)
         lower than `min` then the VdtValueTooSmallError exception will be
         raised.
-    max : int
+    max : float
         The maximum allowed value. If the converted value is (or have)
         greater than `man` then the VdtValueTooSmallError exception will be
         raised.
@@ -143,15 +144,13 @@ def real_numpy_array_check(value: str,
         # expression' that can be parsed with _parse_float_range_expr. We
         # simple apply real_numpy_array_check on each element in the list
         # to do the work and stack horizontally all the results.
-        value = [real_numpy_array_check(a, min, max) for a in value]
-        out = np.hstack(value)
+        out = np.hstack([real_numpy_array_check(a, min, max) for a in value])
 
     else:
         # It its not a list, it can be either a single number of a 'range
         # expression' that can be parsed with _parse_float_range_expr
         try:
-            value = validate.is_float(value)
-            out = np.array([value])
+            out = np.array([validate.is_float(value)])
         except validate.VdtTypeError:
             out = _parse_float_range_expr(value)
 
@@ -171,12 +170,15 @@ def real_numpy_array_check(value: str,
             raise validate.VdtValueTooBigError(out.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    return out.tolist()
+    return cast(List[float], out.tolist())
 
 
 # pylint: disable= W0622
 # noinspection PyShadowingBuiltins
-def real_scalar_or_real_numpy_array_check(value: str, min=None, max=None):
+def real_scalar_or_real_numpy_array_check(
+        value: Union[str, List[str]],
+        min: Optional[float] = None,
+        max: Optional[float] = None) -> Union[float, List[float]]:
     """
     Parse and validate `value` as a float number if possible and, if not,
     parse it as a numpy array (of floats).
@@ -194,11 +196,11 @@ def real_scalar_or_real_numpy_array_check(value: str, min=None, max=None):
         The string to be converted. This can be either a single number, a
         range expression in the form of min:max or min:step:max, or even a
         list containing numbers and range expressions.
-    min : int | float
+    min : float
         The minimum allowed value. If the converted value is (or have)
         lower than `min` then the VdtValueTooSmallError exception will be
         raised.
-    max : int | float
+    max : float
         The maximum allowed value. If the converted value is (or have)
         greater than `man` then the VdtValueTooSmallError exception will be
         raised.
@@ -219,18 +221,18 @@ def real_scalar_or_real_numpy_array_check(value: str, min=None, max=None):
     >> SNR = [0 5 10:20]
     """
     try:
-        value = validate.is_float(value, min, max)
+        return cast(float, validate.is_float(value, min, max))
     except validate.VdtTypeError:
-        value = real_numpy_array_check(value, min, max)
+        return real_numpy_array_check(value, min, max)
 
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-
-    return value
+    # if isinstance(value, np.ndarray):
+    #     return cast(List[float], value.tolist())
+    #
+    # return value
 
 
 # noinspection PyShadowingBuiltins
-def integer_numpy_array_check(value: str,
+def integer_numpy_array_check(value: Union[str, List[str]],
                               min: Optional[int] = None,
                               max: Optional[int] = None) -> List[int]:
     """
@@ -242,7 +244,7 @@ def integer_numpy_array_check(value: str,
 
     Parameters
     ----------
-    value : str
+    value : str, List[str]
         The string to be converted. This can be either a single number, a
         range expression in the form of min:max or min:step:max, or even a
         list containing numbers and range expressions.
@@ -276,8 +278,8 @@ def integer_numpy_array_check(value: str,
             value = value[1:-1].strip()
             value = value.replace(',', ' ')  # Replace commas by spaces
             value = value.split()  # Split based on spaces
-
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
     # Test if it is a list or not
     if isinstance(value, list):
         # If it is a list, each element can be either a number of a
@@ -285,15 +287,14 @@ def integer_numpy_array_check(value: str,
         # _parse_int_range_expr. We simple apply
         # integer_numpy_array_check on each element in the list to do
         # the work and stack horizontally all the results.
-        value = [integer_numpy_array_check(a, min, max) for a in value]
-        out = np.hstack(value)
+        out = np.hstack(
+            [integer_numpy_array_check(a, min, max) for a in value])
 
     else:
         # It its not a list, it can be either a single number of a 'range
         # expression' that can be parsed with _parse_int_range_expr
         try:
-            value = validate.is_integer(value)
-            out = np.array([value])
+            out = np.array([validate.is_integer(value)])
         except validate.VdtTypeError:
             out = _parse_int_range_expr(value)
 
@@ -313,12 +314,12 @@ def integer_numpy_array_check(value: str,
             raise validate.VdtValueTooBigError(out.max())
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    return out.tolist()
+    return cast(List[int], out.tolist())
 
 
 # noinspection PyShadowingBuiltins
 def integer_scalar_or_integer_numpy_array_check(
-        value: str,
+        value: Union[str, List[str]],
         min: Optional[int] = None,
         max: Optional[int] = None) -> Union[int, List[int]]:
     """
@@ -363,8 +364,6 @@ def integer_scalar_or_integer_numpy_array_check(
     >> max_iter = [0 5 10:20]
     """
     try:
-        value = validate.is_integer(value, min, max)
+        return cast(int, validate.is_integer(value, min, max))
     except validate.VdtTypeError:
-        value = integer_numpy_array_check(value, min, max)
-
-    return value
+        return integer_numpy_array_check(value, min, max)

@@ -158,7 +158,7 @@ class CustomTestCase(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class IaDoctestsTestCase(unittest.TestCase):
     """Test case that run all the doctests in the modules of the ia package. """
-    def test_ia(self):
+    def test_ia(self) -> None:
         """Run doctests in the ia module."""
         doctest.testmod(pyphysim.ia)
 
@@ -191,22 +191,22 @@ class IterativeIASolverBaseClassConcrete(IterativeIASolverBaseClass):
 
 
 class IASolverBaseClassTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = IASolverBaseClassConcret(multiUserChannel)
 
-    def test_init(self):
+    def test_init(self) -> None:
         # Try to initialize the IASolverBaseClass object with some
         # parameter which is not a MultiUserChannelMatrix object
         with self.assertRaises(ValueError):
             # noinspection PyTypeChecker
             IASolverBaseClassConcret(3)
 
-    def test_get_cost(self):
+    def test_get_cost(self) -> None:
         self.assertEqual(self.iasolver.get_cost(), -1)
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         K = 3
         Nr = np.array([2, 4, 6])
         Nt = np.array([2, 3, 5])
@@ -267,7 +267,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         self.assertEqual(self.iasolver.noise_var, 1.5)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_randomizeF(self):
+    def test_randomizeF(self) -> None:
         K = 3
         Nt = np.array([2, 3, 5])
         Ns = np.array([1, 2, 3])
@@ -318,7 +318,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         # test method self.iasolver.P is a zero length array.
         self.assertIsNone(self.iasolver._P)
 
-    def test_F_and_full_F(self):
+    def test_F_and_full_F(self) -> None:
         self.iasolver._multiUserChannel.randomize(4, 4, 3)
         self.iasolver.randomizeF(1)
         self.assertIsNotNone(self.iasolver._F)
@@ -343,7 +343,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_almost_equal(self.iasolver.F[2],
                                        self.iasolver.full_F[2])
 
-    def test_set_precoders(self):
+    def test_set_precoders(self) -> None:
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
@@ -404,7 +404,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                                              full_F_other[2])
         np.testing.assert_array_equal(iasolver3.Ns, np.array([2, 1, 2]))
 
-    def test_set_receive_filters(self):
+    def test_set_receive_filters(self) -> None:
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         multiUserChannel.randomize(4, 4, 3)
 
@@ -454,7 +454,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(iasolver1.W_H[1], W_H[1])
         np.testing.assert_array_almost_equal(iasolver1.W_H[2], W_H[2])
 
-    def test_calc_Q(self):
+    def test_calc_Q(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([2, 2, 2])
@@ -511,7 +511,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(Qk, expected_Q2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_remaining_interference_percentage(self):
+    def test_calc_remaining_interference_percentage(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([2, 2, 2])
@@ -551,7 +551,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         expected_pk = np.sum(np.abs(D)) / np.abs(np.trace(Qk))
         self.assertAlmostEqual(pk, expected_pk)
 
-    def test_calc_Bkl_cov_matrix_first_part(self):
+    def test_calc_Bkl_cov_matrix_first_part(self) -> None:
         Nr = 2
         Nt = 2
         Ns = 1 * np.ones(3, dtype=int)
@@ -611,7 +611,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                 self.iasolver._calc_Bkl_cov_matrix_first_part(k))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_Bkl_cov_matrix_second_part(self):
+    def test_calc_Bkl_cov_matrix_second_part(self) -> None:
         Nr = 2
         Nt = 2
         Ns = 1 * np.ones(3, dtype=int)
@@ -665,7 +665,7 @@ class IASolverBaseClassTestCase(unittest.TestCase):
                     self.iasolver._calc_Bkl_cov_matrix_second_part(k, l))
 
     # noinspection PyTypeChecker
-    def test_calc_Bkl(self):
+    def test_calc_Bkl(self) -> None:
         # For the case of a single stream per user Bkl (which only has l=0)
         # is equal to Qk plus I (identity matrix)
         Nr = 2
@@ -797,13 +797,13 @@ class IASolverBaseClassTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_B21, B2[1])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_SINR_k(self):
+    def test_calc_SINR_k(self) -> None:
         # This test is implemented in the MaxSinrIASolverTestCase class.
         pass
 
 
 class ClosedFormIASolverTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = ClosedFormIASolver(multiUserChannel)
@@ -812,12 +812,12 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         self.Nt = np.array([2, 2, 2])
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-    def test_sanity(self):
+    def test_sanity(self) -> None:
         # The number of users is always equal to 3
         self.assertEqual(self.iasolver.K, 3)
         # np.testing.assert_array_equal(np.ones(3), self.iasolver.Ns)
 
-    def test_invalid_solve(self):
+    def test_invalid_solve(self) -> None:
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         Ns = 1
         # ClosedFormIASolver only works with 3 users ...
@@ -829,7 +829,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         with self.assertRaises(AssertionError):
             iasolver2.solve(Ns)
 
-    def test_calc_E(self):
+    def test_calc_E(self) -> None:
         H31 = self.iasolver._get_channel(2, 0)
         H32 = self.iasolver._get_channel(2, 1)
         H12 = self.iasolver._get_channel(0, 1)
@@ -842,7 +842,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_E,
                                              self.iasolver._calc_E())
 
-    def test_calc_all_F_initializations(self):
+    def test_calc_all_F_initializations(self) -> None:
         # xxxxx Test the case with Nt = Ns = 2 and Ns = 1 xxxxxxxxxxxxxxxxx
         Ns = 1
         E = self.iasolver._calc_E()
@@ -878,7 +878,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         for a, b in zip(expected_all_subsets2, all_subsets2):
             np.testing.assert_array_almost_equal(a, b)
 
-    def test_updateF(self):
+    def test_updateF(self) -> None:
         P = np.array([1.1, 0.86, 1.328])
         self.iasolver.P = P
         Ns = 1
@@ -933,7 +933,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             self.iasolver.full_F[2], self.iasolver.F[2] * np.sqrt(P[2]))
 
     # noinspection PyTypeChecker
-    def test_updateW(self):
+    def test_updateW(self) -> None:
         P = np.array([1.1, 0.86, 1.328])
         self.iasolver.P = P
         Ns = 1
@@ -1007,7 +1007,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             # test_solve_and_calc_equivalent_channel method.
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_solve_and_calc_equivalent_channel(self):
+    def test_solve_and_calc_equivalent_channel(self) -> None:
         Ns = 1
         P = [0.8, 1.1, 0.956]
         self.iasolver._multiUserChannel.noise_var = 1e-4
@@ -1050,7 +1050,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
             iasolver.solve(Ns=np.array([1, 1]))
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_solve_best_solution(self):
+    def test_solve_best_solution(self) -> None:
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = ClosedFormIASolver(multiUserChannel, use_best_init=True)
         iasolver2 = ClosedFormIASolver(multiUserChannel, use_best_init=False)
@@ -1091,7 +1091,7 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
         sum_capacity2 = np.sum(np.log2(1 + np.hstack(SINRs2)))
         self.assertTrue(sum_capacity1 >= sum_capacity2)
 
-    def test_full_W_H_property(self):
+    def test_full_W_H_property(self) -> None:
         Ns = 1
         P = np.array([0.7, 1.34, 0.94])
         self.iasolver.solve(Ns, P)
@@ -1104,11 +1104,11 @@ class ClosedFormIASolverTestCase(unittest.TestCase):
 
 
 class IterativeIASolverBaseClassTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_is_diff_significant(self):
+    def test_is_diff_significant(self) -> None:
         F0 = np.array([[1, 2, 3], [3, 2, 2], [1, 4, 2]], dtype=float)
         F1 = np.array([[2, 4, 5], [2, -3, -2], [5, -4, 3]], dtype=float)
         F2 = np.array([[4, 1, 1], [-3, -7, 4], [2, -2, 5]], dtype=float)
@@ -1135,7 +1135,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
             IterativeIASolverBaseClass._is_diff_significant(
                 F_old, F_new, 1e-3))
 
-    def test_initialize_with_property(self):
+    def test_initialize_with_property(self) -> None:
         channel = channels.multiuser.MultiUserChannelMatrix()
         solver = IterativeIASolverBaseClassConcrete(channel)
 
@@ -1164,7 +1164,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
             # case here, an exception should be raised.
             solver._dont_initialize_F_and_only_and_find_W()
 
-    def test_solve_init(self):
+    def test_solve_init(self) -> None:
         channel = channels.multiuser.MultiUserChannelMatrix()
         channel.randomize(4, 4, 3)
         solver = IterativeIASolverBaseClassConcrete(channel)
@@ -1289,7 +1289,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
         # It is not really necessary to test this case
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_clear(self):
+    def test_clear(self) -> None:
         # This method is tested in the AlternatingMinIASolverTestCase class
         pass
 
@@ -1297,7 +1297,7 @@ class IterativeIASolverBaseClassTestCase(unittest.TestCase):
 # noinspection PyMethodMayBeStatic
 class AlternatingMinIASolverTestCase(CustomTestCase):
     """Unittests for the AlternatingMinIASolver class in the ia module."""
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = AlternatingMinIASolver(multiUserChannel)
@@ -1313,7 +1313,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-    def test_updateC(self):
+    def test_updateC(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
 
         # Dimensions of the interference subspace
@@ -1369,7 +1369,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(self.iasolver._C[2], expected_C2)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_updateF(self):
+    def test_updateF(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateC()
         self.iasolver._updateF()
@@ -1450,7 +1450,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         self.assertAlmostEqual(np.linalg.norm(full_F2, 'fro')**2, self.P[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_updateW(self):
+    def test_updateW(self) -> None:
         # Initialize with some random precoders and then call _updateC()
         # and _updateW()
         self.iasolver._solve_init(self.Ns, self.P)
@@ -1516,7 +1516,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
                                                  self.iasolver.W_H[k])
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_getCost(self):
+    def test_getCost(self) -> None:
         P = np.array([1.23, 0.965])
         K = 2
         Nr = np.array([3, 3])
@@ -1550,7 +1550,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
         self.assertAlmostEqual(self.iasolver.get_cost(), Cost)
 
-    def test_solve(self):
+    def test_solve(self) -> None:
         Nr = 2
         Nt = 2
         Ns = 1
@@ -1654,7 +1654,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
             # print np.linalg.norm(full_W_H2 * H21 * full_F1)**2
 
     # noinspection PyTypeChecker
-    def test_calc_SINR_old(self):
+    def test_calc_SINR_old(self) -> None:
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = AlternatingMinIASolver(multiUserChannel)
         K = 3
@@ -1753,7 +1753,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
         for k in range(K):
             np.testing.assert_array_almost_equal(SINRs[k], expected_SINRs2[k])
 
-    def test_clear(self):
+    def test_clear(self) -> None:
         Ns = 1
         self.iasolver.solve(Ns)
         self.iasolver.clear()
@@ -1766,7 +1766,7 @@ class AlternatingMinIASolverTestCase(CustomTestCase):
 
 # noinspection PyMethodMayBeStatic
 class MaxSinrIASolverTestCase(CustomTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = MaxSinrIASolver(multiUserChannel)
@@ -1782,7 +1782,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
         # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-    def test_calc_Bkl_cov_matrix_first_part_rev(self):
+    def test_calc_Bkl_cov_matrix_first_part_rev(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -1805,7 +1805,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                 self.iasolver._calc_Bkl_cov_matrix_first_part_rev(k))
 
     # noinspection PyPep8
-    def test_calc_Bkl_cov_matrix_second_part_rev(self):
+    def test_calc_Bkl_cov_matrix_second_part_rev(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -1826,7 +1826,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                     expected_second_part,
                     self.iasolver._calc_Bkl_cov_matrix_second_part_rev(k, l))
 
-    def test_calc_Bkl_cov_matrix_all_l(self):
+    def test_calc_Bkl_cov_matrix_all_l(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -1876,7 +1876,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl[l],
                                                      Bkl_all_l[l])
 
-    def test_calc_Bkl_cov_matrix_all_l_rev(self):
+    def test_calc_Bkl_cov_matrix_all_l_rev(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -1904,7 +1904,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                 np.testing.assert_array_almost_equal(expected_Bkl[l],
                                                      Bkl_all_l[l])
 
-    def test_calc_Ukl(self):
+    def test_calc_Ukl(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
 
         for k in range(self.K):
@@ -1933,7 +1933,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                     Hkk, Vk, Bkl_all_l[l], l)[:, 0]
             np.testing.assert_array_almost_equal(expected_Uk, Uk)
 
-    def test_underline_calc_SINR_k(self):
+    def test_underline_calc_SINR_k(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
 
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
@@ -1969,7 +1969,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
 
                 self.assertAlmostEqual(expectedSINRkl, SINR_k_all_l[l])
 
-    def test_calc_SINR(self):
+    def test_calc_SINR(self) -> None:
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         iasolver = MaxSinrIASolver(multiUserChannel)
         K = 3
@@ -2037,7 +2037,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                                        SINR_all_users_in_dB[2])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_get_channel_rev(self):
+    def test_get_channel_rev(self) -> None:
 
         for k in range(self.K):
             for l in range(self.K):
@@ -2046,7 +2046,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
                 Hkl_rev = self.iasolver._get_channel_rev(k, l)
                 np.testing.assert_array_almost_equal(expected_Hkl_rev, Hkl_rev)
 
-    def test_calc_Uk_all_k(self):
+    def test_calc_Uk_all_k(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
 
         Uk = self.iasolver._calc_Uk_all_k()
@@ -2058,7 +2058,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
             expectedUk = self.iasolver._calc_Uk(Hkk, Vk, Bkl_all_l)
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
-    def test_calc_Uk_all_k_rev(self):
+    def test_calc_Uk_all_k_rev(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -2072,7 +2072,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
             np.testing.assert_array_almost_equal(Uk[k], expectedUk)
 
     # Test the calc_Q_rev method from IASolverBaseClass
-    def test_calc_Q_rev(self):
+    def test_calc_Q_rev(self) -> None:
         K = 3
         Nt = np.array([2, 2, 2])
         Nr = np.array([3, 3, 3])
@@ -2147,7 +2147,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(Q2_rev, expected_Q2_rev)
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_updateW(self):
+    def test_updateW(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -2175,7 +2175,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
         self.assertIsNone(self.iasolver.W_H)
         self.assertIsNone(self.iasolver.full_W_H)
 
-    def test_full_W_H_property(self):
+    def test_full_W_H_property(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -2192,7 +2192,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
         self.assertAlmostEqual(
             np.dot(full_W_H[2], np.dot(H22, full_F[2]))[0][0], 1.0)
 
-    def test_solve(self):
+    def test_solve(self) -> None:
         K = 3
         Nt = np.ones(K, dtype=int) * 2
         Nr = np.ones(K, dtype=int) * 2
@@ -2304,7 +2304,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
             # print map(linear2dB, iasolver.calc_SINR())
             # print iasolver.initialize_with
 
-    def test_solve_finalize(self):
+    def test_solve_finalize(self) -> None:
         K = 3
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4
@@ -2350,7 +2350,7 @@ class MaxSinrIASolverTestCase(CustomTestCase):
 
 # TODO: Finish the implementation
 class MinLeakageIASolverTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = MinLeakageIASolver(multiUserChannel)
@@ -2364,7 +2364,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-    def test_getCost(self):
+    def test_getCost(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
@@ -2393,7 +2393,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 
         self.assertTrue(expected_cost2 < expected_cost)
 
-    def test_calc_Uk_all_k(self):
+    def test_calc_Uk_all_k(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
 
         Uk_all = self.iasolver._calc_Uk_all_k()
@@ -2419,7 +2419,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_Uk2, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_calc_Uk_all_k_rev(self):
+    def test_calc_Uk_all_k_rev(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
@@ -2446,7 +2446,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(expected_Uk2_rev, Uk_all[k])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_step(self):
+    def test_step(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
@@ -2457,7 +2457,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
             self.assertTrue(new_cost < last_cost)
             last_cost = new_cost
 
-    def test_updateW(self):
+    def test_updateW(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._updateW()
 
@@ -2485,7 +2485,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.assertIsNone(self.iasolver.W_H)
         self.assertIsNone(self.iasolver.full_W_H)
 
-    def test_full_W_H_property(self):
+    def test_full_W_H_property(self) -> None:
         self.iasolver.randomizeF(self.Ns, self.P)
         self.iasolver._W = self.iasolver._calc_Uk_all_k()
 
@@ -2502,7 +2502,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
         self.assertAlmostEqual(
             np.dot(full_W_H[2], np.dot(H22, full_F[2]))[0][0], 1.0)
 
-    def test_solve(self):
+    def test_solve(self) -> None:
         self.iasolver.max_iterations = 1
         # We are only testing if this does not thrown an exception. That's
         # why there is no assert clause here
@@ -2511,7 +2511,7 @@ class MinLeakageIASolverTestCase(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class MMSEIASolverTestCase(CustomTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         self.iasolver = MMSEIASolver(multiUserChannel)
@@ -2527,7 +2527,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         # Randomize the channel
         multiUserChannel.randomize(self.Nr, self.Nt, self.K)
 
-    def test_updateW(self):
+    def test_updateW(self) -> None:
         self.iasolver._multiUserChannel.noise_var = 1e-2
         P = self.P
         # self.iasolver._initialize_F_and_W_from_closed_form(self.Ns, self.P)
@@ -2602,7 +2602,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(self.iasolver.W[2], expected_W2)
 
     # noinspection PyTypeChecker
-    def test_updateW_with_very_small_power(self):
+    def test_updateW_with_very_small_power(self) -> None:
         self.iasolver._multiUserChannel.noise_var = 1e-22
         P = self.P * 1e-20
         # self.iasolver._initialize_F_and_W_from_closed_form(self.Ns, self.P)
@@ -2679,7 +2679,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(1e-10 * self.iasolver.W[2],
                                              1e-10 * expected_W2)
 
-    def test_calc_Vi_for_a_given_mu(self):
+    def test_calc_Vi_for_a_given_mu(self) -> None:
         sum_term = randn_c(3, 3)
         sum_term = sum_term.dot(sum_term.conj().T)
 
@@ -2696,7 +2696,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         np.testing.assert_array_almost_equal(expected_vi, vi)
         np.testing.assert_array_almost_equal(expected_vi, vi2)
 
-    def test_calc_Vi(self):
+    def test_calc_Vi(self) -> None:
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
         self._maybe_load_state_and_randomize_channel(
@@ -2813,7 +2813,7 @@ class MMSEIASolverTestCase(CustomTestCase):
             self._save_state(filename='MMSE_test_calc_Vi_state.pickle')
             raise  # re-raises the last exception
 
-    def test_updateF(self):
+    def test_updateF(self) -> None:
         # We are only testing the transmit powers here. If the precoders
         # are not calculated correctly then the test for the solve method
         # should fail.
@@ -2834,7 +2834,7 @@ class MMSEIASolverTestCase(CustomTestCase):
         self.assertTrue((norm(self.iasolver.full_F[2], 'fro')**2 <=
                          1.0000000001 * self.iasolver.P[2]))
 
-    def test_updateF_with_very_small_power(self):
+    def test_updateF_with_very_small_power(self) -> None:
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
         self._maybe_load_state_and_randomize_channel(
@@ -2872,7 +2872,7 @@ class MMSEIASolverTestCase(CustomTestCase):
                 filename='MMSE_test_updateF_with_very_small_power.pickle')
             raise  # re-raises the last exception
 
-    def test_solve(self):
+    def test_solve(self) -> None:
         # If a previous run of this test failed, this will load the state
         # of the failed test so that it is reproduced.
         self._maybe_load_state_and_randomize_channel(
@@ -3064,7 +3064,7 @@ class MMSEIASolverTestCase(CustomTestCase):
             raise  # re-raises the last exception
             # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-    def test_solve_finalize(self):
+    def test_solve_finalize(self) -> None:
         K = 3
         Nt = np.ones(K, dtype=int) * 4
         Nr = np.ones(K, dtype=int) * 4
@@ -3109,11 +3109,11 @@ class MMSEIASolverTestCase(CustomTestCase):
 
 
 class GreedStreamIASolverTestCase(CustomTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_solve(self):
+    def test_solve(self) -> None:
         # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         multiUserChannel = channels.multiuser.MultiUserChannelMatrix()
         alt_min_iasolver = AlternatingMinIASolver(multiUserChannel)
@@ -3223,11 +3223,11 @@ class GreedStreamIASolverTestCase(CustomTestCase):
 
 
 class BruteForceStreamIASolverTestCase(CustomTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Called before each test."""
         pass
 
-    def test_solve_and_clear(self):
+    def test_solve_and_clear(self) -> None:
         # Test the solve method and the clear method
 
         # xxxxxxxxxx Initializations xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
