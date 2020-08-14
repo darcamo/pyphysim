@@ -1631,7 +1631,7 @@ class PathLossOkomuraHata(PathLossOutdoorBase):
         if np.any(d < 1.0) or np.any(d > 20.0):
             msg = ('Distance for the Okomura Hata model should be between'
                    ' 1Km and 20Km')
-            warnings.warn(Warning(msg))
+            warnings.warn(msg)
 
         # $L (\text{in dB}) = 69.55 + 26.16 \log(f) -13.82 \log(h_{bs}) - a(h_{ms}) + (44.9 - 6.55\log(h_{bs})) \log(d) - K$
 

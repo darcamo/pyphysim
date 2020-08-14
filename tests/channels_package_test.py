@@ -6120,14 +6120,9 @@ class PathLossOkomuraHataTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.pl.area_type = 'some_invalid_string'
 
-        # Test if a warning is raised when the distance is smaller then
-        # 1Km. For that we capture the warnings ...
-        with warnings.catch_warnings(record=True) as w:
-            # then we call the method with the distance smaller than 1Km
-            # ...
+        # Test if a warning is raised when the distance is smaller than 1Km
+        with self.assertWarns(UserWarning):
             self.pl._calc_deterministic_path_loss_dB(0.9)
-            # and we test if captured 1 warning.
-            self.assertEqual(len(w), 1, msg='Warning was not raised')
 
         # Test with a single distance value
         self.pl.area_type = 'open'

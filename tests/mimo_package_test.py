@@ -122,12 +122,8 @@ class BlastTestCase(unittest.TestCase):
         # Test if a warning is raised when the number of transmit antennas
         # is greater then the number of receive antennas
         #
-        # For that we capture the warnings ...
-        with warnings.catch_warnings(record=True) as w:
-            # then we call the set_channel_matrix method
+        with self.assertWarns(UserWarning):
             self.blast_object.set_channel_matrix(np.random.randn(3, 4))
-            # and we test if captured 1 warning.
-            self.assertEqual(len(w), 1, msg='Warning was not raised')
 
     def test_getNumberOfLayers(self) -> None:
         channel = np.eye(3)
