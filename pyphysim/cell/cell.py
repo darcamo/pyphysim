@@ -3,8 +3,8 @@
 
 try:
     # noinspection PyUnresolvedReferences
-    from matplotlib import patches
     # noinspection PyUnresolvedReferences
+    from matplotlib import patches
     from matplotlib import pyplot as plt
 
     _MATPLOTLIB_AVAILABLE = True
@@ -17,7 +17,8 @@ import math
 from collections.abc import Iterable
 from io import BytesIO
 from typing import Any, Dict
-from typing import Iterable as Iterable_t  # distinguish it from collections.abc.Iterable
+from typing import \
+    Iterable as Iterable_t  # distinguish it from collections.abc.Iterable
 from typing import Iterator, List, Optional, Tuple, Type, Union, cast
 
 import numpy as np
@@ -88,6 +89,16 @@ class Node(shapes.Coordinate):
             Node's position.
         """
         return self._relative_pos
+
+    def set_parent_pos(self, parent_pos: complex):
+        """
+        Set the parent position
+
+        Parameters
+        ----------
+        parent_pos
+        """
+        self._relative_pos = self.pos - parent_pos
 
     def plot_node(self, ax: Optional[Any] = None) -> None:  # pragma: no cover
         """
@@ -234,7 +245,7 @@ class AccessPoint(Node):
         """
         self._users = []
 
-    def add_user(self, new_user: Node, relative_pos_bool: bool = True) -> None:
+    def add_user(self, new_user: Node) -> None:
         """
         Associate a new user with the access point.
 
@@ -242,8 +253,6 @@ class AccessPoint(Node):
         ----------
         new_user : Node
             The new user to be associated with the access point.
-        relative_pos_bool : bool
-            Indicates it the position of the `new_user` is relative.
         """
         new_user.cell_id = self.id
         self._users.append(new_user)
@@ -373,23 +382,23 @@ class CellBase(shapes.Shape, AccessPoint):  # pylint: disable=W0223
             If the user position is outside the cell (the user won't be
             added).
         """
-        if isinstance(new_user, Node):
-            if relative_pos_bool is True:
-                # If the position of the user is relative to the cell, that
-                # means that the real and imaginary parts of new_user.pos
-                # are in the [-1, 1] range. We need to convert them to an
-                # absolute coordinate.
-                new_user.pos = new_user.pos * self.radius + self.pos
-            if self.is_point_inside_shape(new_user.pos):
-                # pylint: disable=W0212
-                new_user.cell_id = self.id
-                new_user._relative_pos = new_user.pos - self.pos
-                self._users.append(new_user)
-            else:
-                raise ValueError("User position is outside the cell -> "
-                                 "User not added")
-        else:
+        if not isinstance(new_user, Node):
             raise TypeError("User must be Node object.")
+
+        if relative_pos_bool is True:
+            # If the position of the user is relative to the cell, that
+            # means that the real and imaginary parts of new_user.pos
+            # are in the [-1, 1] range. We need to convert them to an
+            # absolute coordinate.
+            new_user.pos = new_user.pos * self.radius + self.pos
+
+        if not self.is_point_inside_shape(new_user.pos):
+            raise ValueError("User position is outside the cell -> "
+                             "User not added")
+
+        new_user.set_parent_pos(self.pos)
+        # Call add_user from AccessPoint class
+        super().add_user(new_user)
 
     def add_border_user(
             self,
@@ -1079,26 +1088,17 @@ class CellSquare(shapes.Rectangle, CellBase):
             If the user position is outside the cell (the user won't be
             added).
         """
-        if isinstance(new_user, Node):
-            if relative_pos_bool is True:
-                # If the position of the user is relative to the cell, that
-                # means that the real and imaginary parts of new_user.pos
-                # are in the [-1, 1] range. We need to convert them to an
-                # absolute coordinate.
-                half_side = abs(self._lower_coord.real -
-                                self._upper_coord.real) / 2
+        if relative_pos_bool is True:
+            # If the position of the user is relative to the cell, that
+            # means that the real and imaginary parts of new_user.pos
+            # are in the [-1, 1] range. We need to convert them to an
+            # absolute coordinate.
+            half_side = abs(self._lower_coord.real -
+                            self._upper_coord.real) / 2
+            new_user.pos = new_user.pos * half_side + self.pos
 
-                new_user.pos = new_user.pos * half_side + self.pos
-            if self.is_point_inside_shape(new_user.pos):
-                # pylint: disable=W0212
-                new_user.cell_id = self.id
-                new_user._relative_pos = new_user.pos - self.pos
-                self._users.append(new_user)
-            else:
-                raise ValueError("User position is outside the cell -> "
-                                 "User not added")
-        else:
-            raise TypeError("User must be Node object.")
+        # Call add_user from CellBase class
+        super().add_user(new_user, relative_pos_bool=False)
 
 
 class CellWrap(CellBase):
@@ -2440,9 +2440,7 @@ class Cluster(shapes.Shape):
         one, then when calculating the distance between two cells if the
         distance between a given cell and the wrapped version of another
         cell is smaller then the distance to that other cell it will be
-        sued instead.
-
-        For instance, the
+        used instead.
 
         Returns
         -------
@@ -2450,20 +2448,23 @@ class Cluster(shapes.Shape):
             A matrix with the distance from each cell to each other cell in
             the cluster.
         """
-        if self._cell_pos_diffs is None:
-            diffs = np.empty([self.num_cells, self.num_cells], dtype=complex)
+        # TODO: Fix this implementation and test it
 
-            pos = [np.array(p) for p in self._cell_pos]
-            for i, c in enumerate(self._cells):
-                a = np.abs(c.pos - pos)
-                indexes = map(np.argmin, a)
-
-                for j, idx in enumerate(indexes):
-                    diffs[i, j] = (c.pos - pos[j][idx])
-
-            self._cell_pos_diffs = diffs
-
-        return self._cell_pos_diffs
+        # if self._cell_pos_diffs is None:
+        #     diffs = np.empty([self.num_cells, self.num_cells], dtype=complex)
+        #
+        #     pos = [np.array(p) for p in self._cell_pos]
+        #     for i, c in enumerate(self._cells):
+        #         a = np.abs(c.pos - pos)
+        #         indexes = map(np.argmin, a)
+        #
+        #         for j, idx in enumerate(indexes):
+        #             diffs[i, j] = (c.pos - pos[j][idx])
+        #
+        #     self._cell_pos_diffs = diffs
+        #
+        # return self._cell_pos_diffs
+        return np.array([])
 
     # This method was originally created to calculate the distance between
     # each user and each cell before wrap around was implemented.

@@ -484,6 +484,11 @@ class SimulationParametersTestCase(unittest.TestCase):
         np.testing.assert_array_equal(self.sim_params['third'],
                                       np.array([1, 3, 2, 5]))
 
+        # We can also add a parameter with __setitem__
+        self.sim_params["fourth"] = 17.5
+        self.assertEqual(len(self.sim_params), 4)
+        np.testing.assert_array_equal(self.sim_params['fourth'], 17.5)
+
     def test_unpacking_parameters(self) -> None:
         self.sim_params.add('third', np.array([1, 3, 2, 5]))
         self.sim_params.add('fourth', ['A', 'B'])
@@ -1443,6 +1448,14 @@ class ResultTestCase(unittest.TestCase):
         self.assertEqual(r3.num_updates, 1)
         self.assertEqual(r3.get_result(), 'valor')
 
+        with self.assertRaises(RuntimeError):
+            # Try to create a result of CHOICETYPE without specifying the total
+            # raises an exception
+            Result.create(name='nome4',
+                          update_type=Result.CHOICETYPE,
+                          value=3,
+                          accumulate_values=True)
+
         r4 = Result.create(name='nome4',
                            update_type=Result.CHOICETYPE,
                            value=3,
@@ -2146,7 +2159,9 @@ class SimulationResultsTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # Save to the file and get the actual filename used to save the file
-        filename_pickle = self.simresults.save_to_file(base_pickle_filename)
+        # Note that if we pass the base filename without extension a 'pickle'
+        # extension will be added
+        filename_pickle = self.simresults.save_to_file(base_filename)
         filename_json = self.simresults.save_to_file(base_json_filename)
 
         # Load from the file
@@ -2274,6 +2289,11 @@ class SimulationResultsTestCase(unittest.TestCase):
                 Result.create('res2', Result.SUMTYPE, bias * SNR + extra))
         sim_results.set_parameters(params)
 
+        # When a simulation results is obtained from the simulation runner it
+        # will also have a "runner_reps" attribute that should be converted to the dtaframe
+        runned_reps = [2] * params.get_num_unpacked_variations()
+        sim_results.runned_reps = runned_reps
+
         # Now lets convert this SimulationResults object to a pandas
         # DataFrame
         df = sim_results.to_dataframe()
@@ -2292,6 +2312,7 @@ class SimulationResultsTestCase(unittest.TestCase):
         np.testing.assert_array_equal(df.SNR, expected_SNR)
         np.testing.assert_array_equal(df.Name, expected_name)
         np.testing.assert_array_equal(df.extra, expected_extra)
+        np.testing.assert_array_equal(df.runned_reps, runned_reps)
 
         # Test the results
         for index, p in enumerate(params.get_unpacked_params_list()):
@@ -2484,6 +2505,7 @@ class SimulationRunnerTestCase(unittest.TestCase):
         self.assertTrue(isinstance(self.runner.params, SimulationParameters))
         self.assertTrue(isinstance(self.runner.results, SimulationResults))
         self.assertEqual(self.runner.progressbar_message, "Progress")
+        self.assertEqual(self.runner.update_progress_function_style, 'text2')
 
     def test_not_implemented_methods(self) -> None:
         # self.assertRaises(NotImplementedError,
@@ -2528,14 +2550,29 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
     def test_simulate(self) -> None:
+        self.runner.progressbar_message = "Simulating"
+        self.assertEqual(self.runner.progressbar_message, "Simulating")
+
+        self.assertEqual(self.runner.partial_results_folder, 'partial_results')
+        self.runner.partial_results_folder = "partial_test_results"
+
         # from tests.simulations_package_test import _DummyRunner
         dummyrunner = _DummyRunner()
 
         # xxxxxxxxxx Set the name of the results file xxxxxxxxxxxxxxxxxxxxx
         filename = 'dummyrunner_results_bias_{bias}'
         dummyrunner.set_results_filename(filename)
+
+        # We will set the progress_output_type to 'file'
         # This will make the progressbar print to a file, instead of stdout
         dummyrunner.progress_output_type = 'file'  # Default is 'screen'
+        self.assertEqual(dummyrunner.progress_output_type, 'file')
+
+        # Note that progress_output_type can only be 'screen' of 'file' and any
+        # other value raises an exception without changing the value
+        with self.assertRaises(RuntimeError):
+            dummyrunner.progress_output_type = 'invalid_value'  # type: ignore
+        self.assertEqual(dummyrunner.progress_output_type, 'file')
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
         # xxxxxxxxxx Perform a simulation of a single params variation xxxx
@@ -2599,7 +2636,9 @@ class SimulationRunnerTestCase(unittest.TestCase):
         # First we run a usual simulation and keep the partial results
         dummyrunner3 = _DummyRunner()
         dummyrunner3.set_results_filename('dummyrunner3_results')
+        self.assertEqual(dummyrunner3.delete_partial_results_bool, True)
         dummyrunner3.delete_partial_results_bool = False
+        self.assertEqual(dummyrunner3.delete_partial_results_bool, False)
         dummyrunner3.simulate()
         self.assertGreater(dummyrunner3._simulation_tracking._elapsed_time,
                            0.0)

@@ -10,9 +10,10 @@ from .fading_generators import JakesSampleGenerator, RayleighSampleGenerator
 
 try:
     import matplotlib.pyplot as plt
+
     # from mpl_toolkits.mplot3d import art3d
     _MATPLOTLIB_AVAILABLE = True
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False
 
 Shape = Tuple[int, ...]

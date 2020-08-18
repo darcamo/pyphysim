@@ -21,7 +21,7 @@ from .results import Result, SimulationResults
 
 try:
     # noinspection PyUnresolvedReferences
-    from ipyparallel import LoadBalancedView, DirectView
+    from ipyparallel import DirectView, LoadBalancedView
 except ImportError:  # pragma: no cover
     LoadBalancedView = Any
     DirectView = Any
@@ -300,7 +300,7 @@ class SimulationTracking:
         self._num_variations = num_variations
 
     def set_parallel_tracking(self, num_variations: int) -> None:
-        self._num_variations = num_variations
+        self._num_variations = num_variations  # pragma: no cover
 
     def clear(self) -> None:
         self._elapsed_time = 0.0
@@ -342,7 +342,7 @@ class SimulationTracking:
             self, value: Optional[ProgressBarStyle]) -> None:
         self._update_progress_function_style = value
 
-        if value == 'ipython':
+        if value == 'ipython':  # pragma: no cover
             try:
                 # Try to create a ProgressBarIPython to check that it is
                 # available
@@ -359,7 +359,7 @@ class SimulationTracking:
         """
         Start the updating of the (parallel) progressbar
         """
-        if self._pbar is not None:
+        if self._pbar is not None:  # pragma: no cover
             assert (isinstance(self._pbar, ProgressbarZMQServer))
             self._pbar.start_updater()
 
@@ -367,7 +367,7 @@ class SimulationTracking:
         """
         Stop the updating of the (parallel) progressbar
         """
-        if self.update_progress_function_style is not None:
+        if self.update_progress_function_style is not None:  # pragma: no cover
             assert (isinstance(self._pbar, ProgressbarZMQServer))
             # pragma: no cover
             self._pbar.stop_updater()
@@ -529,7 +529,7 @@ class SimulationTracking:
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     def get_parallel_update_progress_functions(
         self, simulation_parameters: SimulationParameters
-    ) -> List[Union[ProgressbarZMQClient, UpdateFunction]]:
+    ) -> List[Union[ProgressbarZMQClient, UpdateFunction]]:  # pragma: no cover
         """
         Return a list of functions (actually, function objects) that should
         be called to update the progress accounting each parameter variation
@@ -671,7 +671,7 @@ class SimulationTracking:
                 yield i
 
     def next_variation(self) -> None:
-        if self._var_print_iter is None:
+        if self._var_print_iter is None:  # pragma: no cover
             warnings.warn(
                 "The `next_variation` method was called without "
                 "`set_serial_tracking` method have been called before")
@@ -879,7 +879,10 @@ class SimulationResultsSaver:
 
         return results_filename
 
-    def add_partial_filename_for_cleaning(self, filename: str) -> None:
+    # Note: This methos is calles in SimulationRunner class only for parallel
+    # simulations. That is will it is being ignored from code coverage
+    def add_partial_filename_for_cleaning(
+            self, filename: str) -> None:  # pragma: no cover
         """
         Manually add a filename for later deletion (if
         delete_partial_results_bool is True).
@@ -992,7 +995,8 @@ class SimulationResultsSaver:
 
     def save_partial_results_maybe(
             self, current_rep: int, current_params: SimulationParameters,
-            current_sim_results: SimulationResults) -> None:
+            current_sim_results: SimulationResults
+    ) -> None:  # pragma: no cover
         """
         Calls `save_partial_results` if `current_rep` is multiple of 500 OR
         the elapsed time since the last call to this method is more then 5
@@ -1178,7 +1182,7 @@ class SimulationRunner:
         # the actual results of performing an asynchronous task in IPython.
         self._async_results: Optional[Any] = None
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         class_name = self.__class__.__name__
         if self.results_filename is None:
             return f"{class_name}(rep_max={self.rep_max}, num_params_variations={self.params.get_num_unpacked_variations()})"
@@ -1274,7 +1278,7 @@ class SimulationRunner:
         if self._simulation_results_saver.results_base_filename is not None:
             self._simulation_tracking.results_base_filename = \
                 self._simulation_results_saver.results_base_filename
-        else:
+        else:  # pragma: no cover
             self._simulation_tracking.results_base_filename = "simulation"
 
     def clear(self) -> None:  # pragma: no cover
@@ -1732,7 +1736,8 @@ class SimulationRunner:
                 param_variation_index)
 
     @staticmethod
-    def __create_default_ipyparallel_view() -> LoadBalancedView:
+    def __create_default_ipyparallel_view(
+    ) -> LoadBalancedView:  # pragma: no cover
         """
         Create a default view for parallel computation.
 
@@ -1751,6 +1756,7 @@ class SimulationRunner:
 
         try:
             import cloudpickle
+
             # Use cloudpickle library if available
             # It can pickle more things than standard pickle module
             c[:].use_cloudpickle()

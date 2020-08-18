@@ -1583,7 +1583,7 @@ class SimulationResults(JsonSerializable):
             The SimulationResults object loaded from the file `filename`.
         """
         ext = os.path.splitext(filename)[-1]
-        if ext == '':
+        if ext == '':  # pragma: no cover
             filename = '{0}.pickle'.format(filename)
             ext = '.pickle'
 
@@ -1614,7 +1614,7 @@ class SimulationResults(JsonSerializable):
 
         return pd.DataFrame(data)
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str:  # pragma: no cover
         """
         Method used by the jupyter rich display.
 

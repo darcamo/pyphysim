@@ -31,13 +31,13 @@ rm -f .coverage
 for file in *test.py;
 do
     echo "xxxxxxxxxx Running coverage on file $file"
-    coverage run -a --omit "/usr/*" --source "../pyphysim" $file > /dev/null;
+    coverage run -a --omit "/usr/*","*/pyphysim/extra/*" --source "../pyphysim" $file > /dev/null;
     echo "xxxxxxxxxx Done xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 done
 
 # Generate the report
 echo "xxxxxxxxxx Creating Coverage Report xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-coverage report -m --omit "/usr/*","/*__init__*","/*setup.*","/*apps/*"
+coverage report -m --omit "/usr/*","/*__init__*","/*apps/*"
 echo "xxxxxxxxxx Done xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 

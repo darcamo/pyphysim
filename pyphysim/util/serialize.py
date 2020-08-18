@@ -94,7 +94,7 @@ def json_numpy_or_set_obj_hook(
             data = dct['data']
             return np.array(data)
 
-        raise ValueError(
+        raise ValueError(  # pragma: no cover
             'Json representation contains the "_is_numpy_array" key '
             'indicating that the object should be a numpy array, but it '
             'was set to False, which is not valid.')
@@ -103,7 +103,7 @@ def json_numpy_or_set_obj_hook(
             data = dct['data']
             return set(data)
 
-        raise ValueError(
+        raise ValueError(  # pragma: no cover
             'Json representation contains the "_is_set" key '
             'indicating that the object should be python set, but it '
             'was set to False, which is not valid.')
@@ -129,7 +129,8 @@ class JsonSerializable:
         dict
             The dictionary representation of the object.
         """
-        raise NotImplementedError("Implement in a subclass")
+        raise NotImplementedError(
+            "Implement in a subclass")  # pragma: no cover
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -157,7 +158,8 @@ class JsonSerializable:
         Result
             The converted object.
         """
-        raise NotImplementedError("Implement in a subclass")
+        raise NotImplementedError(
+            "Implement in a subclass")  # pragma: no cover
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> Any:
@@ -206,10 +208,10 @@ class JsonSerializable:
         return cls._from_dict(d)
 
 
-# xxxxxxxxxx Test and Example Usage xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-if __name__ == '__main__':
-    expected = np.arange(100, dtype=np.float)
-    dumped = json.dumps(expected, cls=NumpyOrSetEncoder)
-    result = json.loads(dumped, object_hook=json_numpy_or_set_obj_hook)
-    print(type(result))
-    print(result)
+# # xxxxxxxxxx Test and Example Usage xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# if __name__ == '__main__':
+#     expected = np.arange(100, dtype=np.float)
+#     dumped = json.dumps(expected, cls=NumpyOrSetEncoder)
+#     result = json.loads(dumped, object_hook=json_numpy_or_set_obj_hook)
+#     print(type(result))
+#     print(result)

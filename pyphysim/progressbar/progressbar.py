@@ -43,7 +43,7 @@ try:
     from ipywidgets import FloatProgress, HBox, Label
 
     _IPYTHON_AVAILABLE = True
-except:
+except:  # pragma: no cover
     _IPYTHON_AVAILABLE = False
 
 try:
@@ -361,7 +361,7 @@ class ProgressBarBase:
             self._update_iteration(count)
 
             tic = time.time()
-            if tic - self.__last_display_time > self._display_interval:
+            if tic - self.__last_display_time > self.display_interval:
                 # Refresh the progress representation.
                 self._display_current_progress()  # Implemented in a subclass
                 self.__last_display_time = tic
@@ -566,8 +566,9 @@ class ProgressbarTextBase(ProgressBarBase):  # pylint: disable=R0902,W0223
         In the simplest case this could be just a call to the
         `_get_percentage_representation` method.
         """
-        NotImplementedError("Implement this method in a subclass")
-        return ""
+        NotImplementedError(  # pragma: no cover
+            "Implement this method in a subclass")
+        return ""  # pragma: no cover
 
     def _maybe_delete_output_file(self) -> None:
         """
@@ -1307,17 +1308,17 @@ class ProgressbarDistributedServerBase:
 
     # Only called inside `_update_progress`
     def __create_inner_progressbar(self, output: TextIO) -> ProgressBarBase:
-        if self._style == 'text1':
+        if self._style == 'text1':  # pragma: no cover
             return ProgressbarText(self.finalcount,
                                    self._progresschar,
                                    self._message,
                                    output=output)
-        if self._style == 'text3':
+        if self._style == 'text3':  # pragma: no cover
             return ProgressbarText3(self.finalcount,
                                     self._progresschar,
                                     self._message,
                                     output=output)
-        if self._style == 'ipython':
+        if self._style == 'ipython':  # pragma: no cover
             return ProgressBarIPython(self.finalcount, self._message)
 
         # Default style
@@ -1756,7 +1757,7 @@ class ProgressbarZMQServer(ProgressbarDistributedServerBase):
         # This will be set to a ZMQ Socket in the _update_progress method
         self._zmq_pull_socket: Optional[zmq.sugar.socket.Socket] = None
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         status = '-> updating' if self.is_running else '-> stopped'
         return f"ProgressbarZMQServer(ip={self.ip}, port={self.port}, " \
                f"num_clients={self.num_clients}) {status}"
@@ -1960,7 +1961,7 @@ class ProgressbarZMQClient(ProgressbarDistributedClientBase):
         assert (self._zmq_push_socket is not None)
         self._zmq_push_socket.send_string(message, flags=zmq.NOBLOCK)
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return f"ProgressbarZMQClient(client_id={self.client_id}, ip='{self.ip}', port={self.port}, finalcount={self._finalcount})"
 
 

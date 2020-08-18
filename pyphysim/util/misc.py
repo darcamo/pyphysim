@@ -71,7 +71,7 @@ def gmd(U: np.ndarray,
 
     # If there is no singular value greater than the tolerance, then we
     # throw an exception
-    if p < 1:
+    if p < 1:  # pragma: no cover
         raise RuntimeError(
             "This is no singular value greater than the tolerance")
 

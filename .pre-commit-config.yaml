@@ -3,7 +3,7 @@
 exclude: ^ipython_notebooks/*
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v3.1.0
+  rev: v3.2.0
   hooks:
   - id: trailing-whitespace
   - id: end-of-file-fixer
@@ -23,10 +23,18 @@ repos:
 #     rev: v0.761
 #     hooks:
 #     -   id: mypy
-- repo: https://github.com/saily/pre-commit-yapf-isort
-  rev: 598ff67cc598dddee43bc611d0bf4a07f4b08619
-  hooks:
-  - id: yapf-isort
+# - repo: https://github.com/saily/pre-commit-yapf-isort
+#   rev: 598ff67cc598dddee43bc611d0bf4a07f4b08619
+#   hooks:
+#   - id: yapf-isort
+-   repo: https://github.com/pre-commit/mirrors-yapf
+    rev: 'v0.30.0'
+    hooks:
+    -   id: yapf
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: 'v5.4.2'
+    hooks:
+    -   id: isort
 - repo: https://github.com/darcamo/version_check_hook.git
   rev: v1.2
   hooks:

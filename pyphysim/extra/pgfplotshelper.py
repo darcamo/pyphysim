@@ -29,11 +29,12 @@ from typing import Collection, Optional
 import numpy as np
 
 
-def generate_pgfplots_plotline(x: Collection[float],
-                               y: Collection[float],
-                               errors: Optional[np.ndarray] = None,
-                               options: Optional[str] = None,
-                               legend: Optional[str] = None) -> str:
+def generate_pgfplots_plotline(
+        x: Collection[float],  # pragma: no cover
+        y: Collection[float],
+        errors: Optional[np.ndarray] = None,
+        options: Optional[str] = None,
+        legend: Optional[str] = None) -> str:
     """
     This function generates the code corresponding to the "addplot" command
     in a pgfplots plot for the coordinates given in `x` and `y`.

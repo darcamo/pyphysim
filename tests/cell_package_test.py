@@ -311,9 +311,12 @@ class CircleTestCase(unittest.TestCase):
 
     def test_get_border_point(self) -> None:
         C1 = self.C1
-        point = C1.get_border_point(90, 1)
+        point = C1.get_border_point(90)
+        # Same as before
+        point2 = C1.get_border_point(90, 1)
         expected_point = C1.pos + 1j * C1.radius
         self.assertAlmostEqual(point, expected_point)
+        self.assertAlmostEqual(point2, expected_point)
 
         # from matplotlib import pylab
         # ax = pylab.axes()
@@ -402,12 +405,14 @@ class CellTestCase(unittest.TestCase):
         self.C1.add_user(user1, relative_pos_bool=False)
         self.assertEqual(user1.cell_id, self.C1.id)
         self.assertAlmostEqual(user1.relative_pos, user1.pos - self.C1.pos)
+        self.assertIn(user1, self.C1.users)
 
         # User (relative to cell center) located at the top of the cell
         user2 = cell.Node(0 + 0.99999j, marker_color='r')
         self.C1.add_user(user2)
         self.assertEqual(user2.cell_id, self.C1.id)
         self.assertAlmostEqual(user2.relative_pos, user2.pos - self.C1.pos)
+        self.assertIn(user2, self.C1.users)
 
         # User (relative to cell center) located at some point in the north
         # east part of the cell
@@ -415,6 +420,7 @@ class CellTestCase(unittest.TestCase):
         self.C1.add_user(user3)
         self.assertEqual(user3.cell_id, self.C1.id)
         self.assertAlmostEqual(user3.relative_pos, user3.pos - self.C1.pos)
+        self.assertIn(user3, self.C1.users)
 
         # We have successfully added 3 users to the cell
         self.assertEqual(self.C1.num_users, 3)
@@ -458,10 +464,19 @@ class CellTestCase(unittest.TestCase):
     def test_add_border_user(self) -> None:
         # xxxxx Test adding a single user
         angles = 30
+        ratio = 1.0
+        # The get_border_point comes from the shape class and it should be
+        # already tested.
+        expected_pos = self.C1.get_border_point(angles, ratio)
+        self.C1.add_border_user(angles, ratio, user_color='g')
+        self.assertAlmostEqual(self.C1.users[0].pos, expected_pos)
+
+        angles = 30
         ratio = 0.8
         # The get_border_point comes from the shape class and it should be
         # already tested.
         expected_pos = self.C1.get_border_point(angles, ratio)
+        self.C1.delete_all_users()
         self.C1.add_border_user(angles, ratio, user_color='g')
         self.assertAlmostEqual(self.C1.users[0].pos, expected_pos)
 
@@ -744,6 +759,30 @@ class CellSquareTestCase(unittest.TestCase):
         # cluster = cell.Cluster(
         #     cell_radius=1.5, num_cells=9, cell_type='square')
         # cluster.plot()
+
+    def test_add_user(self):
+        # The cell has no users yet
+        self.assertEqual(self.C1.num_users, 0)
+
+        # User with the same position as the cell center
+        user1 = cell.Node(self.C1.pos, marker_color='b')
+        self.C1.add_user(user1, relative_pos_bool=False)
+        self.assertEqual(user1.cell_id, self.C1.id)
+        self.assertAlmostEqual(user1.relative_pos, user1.pos - self.C1.pos)
+        self.assertIn(user1, self.C1.users)
+
+        # User (relative to cell center) located at the top of the cell
+        user2 = cell.Node(0 + 1.0j, marker_color='r')
+        self.C1.add_user(user2)
+        self.assertEqual(user2.cell_id, self.C1.id)
+        self.assertAlmostEqual(user2.relative_pos, user2.pos - self.C1.pos)
+        self.assertIn(user2, self.C1.users)
+
+        user3 = cell.Node(-1, marker_color='r')
+        self.C1.add_user(user3)
+        self.assertEqual(user3.cell_id, self.C1.id)
+        self.assertAlmostEqual(user3.relative_pos, user3.pos - self.C1.pos)
+        self.assertIn(user3, self.C1.users)
 
 
 class CellWrapTestCase(unittest.TestCase):
@@ -1216,6 +1255,17 @@ class ClusterTestCase(unittest.TestCase):
         # cell.
         self.C1.add_border_users(cell_ids, angles, 0.9, ['g', 'b', 'k'])
         # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    def test_calc_dists_between_cells(self):
+        # Without wrap around
+        # pos = np.array([i.pos for i in self.C1._cells])
+        # expected_dists = np.abs(pos[:, np.newaxis] - pos.T)
+        # dists = self.C1.calc_dists_between_cells()
+        # np.testing.assert_array_almost_equal(dists, expected_dists)
+
+        # With wrap around
+        # TODO: implement-me
+        pass
 
     def test_calc_dist_all_users_to_each_cell_no_wrap_around(self) -> None:
         all_dists = self.C1.calc_dist_all_users_to_each_cell_no_wrap_around()

@@ -997,7 +997,7 @@ class SimulationParameters(JsonSerializable):
             data[name] = [a[name] for a in all_params_list]
         return pd.DataFrame(data)  # type: ignore
 
-    def _repr_html_(self) -> str:
+    def _repr_html_(self) -> str:  # pragma: no cover
         """
         Method used by the jupyter rich display.
 

@@ -103,17 +103,41 @@ class ProgressbarTextTestCase(unittest.TestCase):
         # sys.stdout
         self.out = StringIO()
         self.tic = time()
+        # width argument is not passed -> default 50 is used
         self.pbar = progressbar.ProgressbarText(50,
                                                 '*',
                                                 self.message,
                                                 output=self.out)
 
         self.out2 = StringIO()
+        # Note that width below 40 will be changed to 40
         self.pbar2 = progressbar.ProgressbarText(25, 'x', output=self.out2)
 
         # For testing purposes we set _display_interval to zero
-        self.pbar._display_interval = 0.0
-        self.pbar2._display_interval = 0.0
+        self.pbar.display_interval = -1.0  # negative values are set to zero
+        self.pbar2.display_interval = 0.0
+
+    def test_properties(self):
+        # Test display_internal property
+        self.assertEqual(self.pbar.display_interval, 0.0)
+        self.assertEqual(self.pbar2.display_interval, 0.0)
+
+        # Test message property
+        self.assertEqual(self.pbar.message, "ProgressbarText Unittest")
+        self.assertIsNone(self.pbar2.message)
+
+        # Test width property
+        self.assertEqual(self.pbar.width, 50)
+        self.assertEqual(self.pbar2.width, 50)
+
+        # Width below 40 will be set to 40
+        pbar = progressbar.ProgressbarText(25, 'x', output=self.out2, width=25)
+        pbar2 = progressbar.ProgressbarText(25,
+                                            'x',
+                                            output=self.out2,
+                                            width=70)
+        self.assertEqual(pbar.width, 40)
+        self.assertEqual(pbar2.width, 70)
 
     def test_write_initialization(self) -> None:
         out = StringIO()
@@ -326,6 +350,20 @@ class ProgressbarText2TestCase(unittest.TestCase):
 
         self.out2 = StringIO()
         self.pbar2 = progressbar.ProgressbarText2(50, '*', output=self.out2)
+
+    def test_setting_width(self):
+        self.assertEqual(self.pbar.width, 50)
+        self.pbar.width = 70
+        self.assertEqual(self.pbar.width, 70)
+
+        # A value below 40 will be set to 40
+        self.pbar.width = 20
+        self.assertEqual(self.pbar.width, 40)
+
+    def test_setting_message(self):
+        self.assertEqual(self.pbar.message, "ProgressbarText Unittest")
+        self.pbar.message = "Some message"
+        self.assertEqual(self.pbar.message, "Some message")
 
     def test_get_percentage_representation(self) -> None:
         # xxxxxxxxxx Tests for bar width of 50 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
