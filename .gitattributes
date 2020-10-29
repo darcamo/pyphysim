@@ -1,0 +1,5 @@
+# Notebooks in these folders are mean to be documentation demonstrating the
+# usage of features in pyphysim
+ipython_notebooks/* linguist-vendored
+notebooks/* linguist-vendored
+docs/* linguist-vendored
