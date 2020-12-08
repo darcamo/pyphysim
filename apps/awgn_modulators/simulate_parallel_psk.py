@@ -195,6 +195,7 @@ if __name__ == '__main__':
     dview.execute('sys.path.append("{0}")'.format(os.getcwd()))
 
     from matplotlib import pyplot as plt
+
     # noinspection PyUnresolvedReferences
     from apps.awgn_modulators.simulate_parallel_psk import \
         VerySimplePskSimulationRunner

@@ -805,9 +805,11 @@ if __name__ == '__main__':
     # defined in this file, but they are important when the simulation is
     # performed in parallel in IPython engines.
     # noinspection PyUnresolvedReferences
-    from apps.ia.simulate_ia import ClosedFormSimulationRunner, \
-    AlternatingSimulationRunner, MMSESimulationRunner, \
-    MaxSINRSimulationRunner  #, MinLeakageSimulationRunner
+    from apps.ia.simulate_ia import \
+        MaxSINRSimulationRunner  # , MinLeakageSimulationRunner
+    from apps.ia.simulate_ia import (AlternatingSimulationRunner,
+                                     ClosedFormSimulationRunner,
+                                     MMSESimulationRunner)
 
     # xxxxxxxxxx Command Line options xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     # The returned parser already has two possible arguments: "config" and

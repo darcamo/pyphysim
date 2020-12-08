@@ -725,6 +725,7 @@ def plot_psd_OFDM_symbols():  # pragma: no cover
     should.
     """
     from matplotlib import pyplot as plt
+
     # xxxxxxxxxx OFDM Details xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     fft_size = 64
     cp_size = 12

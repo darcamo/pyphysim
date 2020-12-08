@@ -31,8 +31,10 @@ class VerySimpleBpskSimulationRunner(VerySimplePskSimulationRunner):
 if __name__ == '__main__':
     # noinspection PyPackageRequirements
     from pylab import *
+
     # noinspection PyUnresolvedReferences
-    from apps.awgn_modulators.simulate_bpsk import VerySimpleBpskSimulationRunner
+    from apps.awgn_modulators.simulate_bpsk import \
+        VerySimpleBpskSimulationRunner
 
     sim = VerySimpleBpskSimulationRunner()
     sim.simulate()

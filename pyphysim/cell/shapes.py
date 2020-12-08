@@ -7,9 +7,9 @@ Each shape knows how to plot itself.
 
 try:
     # noinspection PyUnresolvedReferences
-    from matplotlib import pyplot as plt
     # noinspection PyUnresolvedReferences
     from matplotlib import patches, path
+    from matplotlib import pyplot as plt
     _MATPLOTLIB_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MATPLOTLIB_AVAILABLE = False

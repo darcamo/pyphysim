@@ -9,7 +9,7 @@ from .runner import SimulationRunner
 
 try:
     # noinspection PyUnresolvedReferences
-    from ipyparallel import Client, LoadBalancedView, DirectView
+    from ipyparallel import Client, DirectView, LoadBalancedView
 except ImportError:  # pragma: no cover
     Client = Any
     LoadBalancedView = Any
@@ -131,6 +131,7 @@ def _simulate_do_what_i_mean_single_runner(
             # engines are running. In that case we will perform the
             # simulation in parallel
             from ipyparallel import Client
+
             # cl = Client(profile="ssh")
             # noinspection PyTypeChecker
             cl = Client(profile="default", timeout=2.0)
