@@ -20,7 +20,7 @@ include = ["LICENSE.md", "pyphysim/py.typed"]
 # build = 'build.py'
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 numpy = "*"
 scipy = "*"
 matplotlib = "*"
