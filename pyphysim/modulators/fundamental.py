@@ -644,7 +644,7 @@ class BPSK(Modulator):
             The demodulated data.
         """
         # noinspection PyUnresolvedReferences
-        return (receivedData < 0).astype(int)
+        return [int(i > 0) for i in receivedData]
 
 
 # xxxxx End of BPSK Class xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
